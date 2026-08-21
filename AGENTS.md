@@ -37,6 +37,8 @@ identifiers or comments to match the language of the request.
 - Documentation lives in `docs/`; this file stays short and points there.
 - `README.md` describes the piece for a reader who has never seen it. Keep the vision text and
   the implementation notes separate.
+- `script/` holds the narration text (`en.md`, `de.md`). It is the authoritative wording of the
+  voiceover — treat it as content, not as a draft, and do not reword it while working on code.
 
 ## Toolchain
 
