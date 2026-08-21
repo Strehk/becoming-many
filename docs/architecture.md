@@ -3,7 +3,8 @@
 **Status: DRAFT v2 — core decisions confirmed in the design session of 2026-08-21; items
 marked SPIKE still need validation on real hardware before they count as final.** Sources: a
 full exploration of `../bm-base` (app + M5/bridge/firmware, including the firmware that
-actually lives in `../Icaros_Host`), the three experiments in `../experiments`, and the
+actually lives in `../Icaros_Host`), the four experiments in `../experiments`
+(`pico-remote-control` findings integrated 2026-08-21), and the
 Futurium deployment decisions recorded in §2.
 
 ---
@@ -59,7 +60,7 @@ Consequences that simplify everything:
   context (WebXR works) with **no mixed-content blocking**, so plain `ws://` to LAN devices
   is allowed. The entire TLS/relay/BLE problem space from the old project disappears.
 - The perf budget is a **desktop GPU**, not a mobile chipset. Standalone-headset budgets no
-  longer bind (they return only if the on-headset fallback in §10.4 is ever exercised).
+  longer bind (they return only if the on-headset fallback in §10.5 is ever exercised).
 - The operator page's "live visitor view" is trivial: the visitor's frame is rendered on
   this very machine.
 
@@ -110,6 +111,7 @@ becoming-many/
     setup/              # code for setup.html (Web Serial config + esp-web-tools flashing)
   station/
     server/             # tiny localhost server: serves pages, brokers operator/session/agent messages, OpenVR telemetry
+    tools/headsetctl/   # tethered technician CLI: ADB install/launch/reboot/screenshot + bounded scrcpy mirror (§10.4)
   firmware/
     m5-broadcast/       # PlatformIO project, ESP32 (M5StickC Plus2)
   headset-agent/        # Android app for the PICO 4 Enterprise (see §10.3)
@@ -297,6 +299,10 @@ idle ──staff: arm──► boarding ──staff: tutorial──► tutorial 
   confirming in the tutorial), not the session trigger.
 - **Safety exit is available from every state** and does the same thing everywhere: fade
   the world to white, command the headset agent back to see-through, keep audio calm.
+- **Missing acknowledgement = do not advance.** Every staff phase button gates on the
+  relevant *confirmed* state (agent / streaming / M5 as applicable); a stale connection,
+  lost tracking, or missing acknowledgement blocks the transition with an operator-visible
+  reason. Staff can override explicitly (the agent is optional, §10.3) — never silently.
 - Language (DE/EN) is fixed at `arm` time for the whole session.
 
 ### 10.2 Operator page (`operator.html`)
@@ -336,23 +342,69 @@ small agent app that connects to the station server over the network and provide
   (SteamVR) for device/tracking state; the PICO Business Streaming client's minimal
   "connection established" check is used if accessible.
 
-**SPIKE P1 (highest-risk item in the project):** on real hardware, validate the
-agent ↔ streaming-client foreground handover (both directions, including "streaming client
-reconnects cleanly after being backgrounded"), see-through control from the agent, and
-telemetry access. The session state machine treats the agent as optional: if the agent is
-unreachable, staff fall back to guiding the visitor manually (headset gestures / removal)
-and the operator page shows agent-degraded state — the piece itself is unaffected.
+**Agent protocol discipline** (proven in `../experiments/pico-remote-control`): every
+agent command is correlated and distinguishes **requested → pending → headset-confirmed**
+state — a successful socket `send()` is never proof the headset applied anything. The
+operator page renders confirmed state only; `shared/protocol/` carries the correlation
+ids and state tags.
 
-### 10.4 Explicitly rejected alternatives (recorded so they aren't re-litigated)
+**SPIKE P1 (highest-risk item in the project):** on real hardware, in this order:
+
+1. **Business Streaming seethrough first.** PICO Business Streaming 2.2 (2026-06)
+   officially lists "Seethrough during streaming" for specific Enterprise device/software
+   combinations (source survey:
+   `../experiments/pico-remote-control/docs/enterprise-kiosk-and-passthrough.md`). If it
+   works on our exact matrix (§14, item 6), boarding/safety see-through comes from the
+   streaming client itself and the agent shrinks to a telemetry-only app.
+2. **Agent-driven handover as the in-spike fallback:** validate the
+   agent ↔ streaming-client foreground handover (both directions, including "streaming
+   client reconnects cleanly after being backgrounded"), see-through control from the
+   agent, and telemetry access.
+
+Record the outcome with its full hardware/software matrix (§12). Either way, the session
+state machine treats the agent as optional: if the agent is unreachable, staff fall back
+to guiding the visitor manually (headset gestures / removal) and the operator page shows
+agent-degraded state — the piece itself is unaffected.
+
+### 10.4 Headset provisioning and diagnostics (`station/tools/headsetctl/`)
+
+The M5 has a full provisioning story (§9); the headsets get one too, on the pattern
+proven by `picoctl` in `../experiments/pico-remote-control`. This is a maintenance
+plane, never part of runtime control:
+
+- **`headsetctl`** — a small tethered technician CLI over USB-C ADB: inspect device/OS
+  versions, install the agent APK and streaming client, fire launch intents, reboot,
+  screenshot, and open a bounded read-only scrcpy mirror (≤640 px, ≤15 fps, its failure
+  isolated from everything else).
+- **Kiosk/boot configuration** via PICO Business Device Manager: the streaming client
+  (or agent) is pinned as the boot foreground app, so a power-cycled headset returns to
+  a known state without anyone touching headset menus.
+- **scrcpy is diagnostics, not operations.** The operator page's live visitor view stays
+  the local render mirror (§10.2); but in `idle`/`boarding` and during failures the
+  headset shows its own OS/streaming UI, which the PC render cannot show. The scrcpy
+  mirror answers "what is the visitor actually seeing" — tethered and technician-only,
+  since headsets are untethered in operation.
+
+### 10.5 Explicitly rejected alternatives (recorded so they aren't re-litigated)
 
 - **Blended passthrough under PC-streamed content** — architecturally impossible: the
   headset cameras never reach the PC, and PICO's streaming clients cannot composite
   passthrough under a streamed frame. WebXR `immersive-ar` does not help: desktop Chrome
   has no AR runtime; AR sessions only exist where the browser runs on the camera-bearing
-  device.
+  device. Business Streaming 2.2's "Seethrough during streaming" does not soften this
+  verdict: it switches to the camera view during a stream rather than compositing
+  passthrough under streamed frames — it supports the switching model of §10.3, not
+  blending.
 - **Running the app in the PICO's on-headset browser** — would enable real `immersive-ar`
   but sacrifices the desktop GPU, the streaming pipeline, and the operator architecture.
-  Kept only as a thought-experiment fallback; not planned.
+  Not planned — but no longer a mere thought experiment: `../experiments/pico-remote-control`
+  proves the essentials on real hardware (persistent `immersive-ar` session on a PICO 4
+  Ultra Enterprise, remote world switching and passthrough ↔ opaque presentation changes
+  with no further user gesture, over a plain WebSocket). If SPIKE P1 fails on both paths,
+  this is a runnable, evidenced escape hatch: TSL falls back to WebGL2 in the PICO
+  Browser, and §1.5's runtime capacity knobs turn the same app down to standalone
+  budgets. Caveat: the demo's `alpha-blend` passthrough is a browser-rendered capability
+  and does not transfer to the streaming topology — the rejection above stands.
 - **BLE / Web Bluetooth for the M5** — viable on desktop Chrome, but pointless once the
   page is a localhost secure context on a station network; plain WS is simpler and also
   serves the operator/setup pages.
@@ -384,6 +436,16 @@ and the operator page shows agent-degraded state — the piece itself is unaffec
   machine-specific paths (the old repo had ten hardcoded macOS one-offs).
 - CI additionally builds the firmware + esp-web-tools manifest, and the headset-agent APK,
   so app, firmware, and agent cannot drift apart unnoticed.
+- **Dated hardware evidence.** Every spike result (R1/P1/H1) and every station acceptance
+  run is recorded with its exact matrix: headset edition + model number, PICO OS,
+  streaming-client/TobService versions, GPU/driver, build revision. A result without its
+  matrix is not evidence. (Methodology:
+  `../experiments/pico-remote-control/docs/validation.md`.)
+- **Station acceptance protocol** (Phase 5): measurable gates on real hardware — a
+  two-hour soak cycling the full session state machine, streaming and M5
+  disconnect/reconnect recovery without manual repair, renderer resource counts returning
+  to baseline after repeated cycles, and a bounded overhead budget if the scrcpy
+  diagnostic mirror (§10.4) is used during measurement.
 - Everything in the repo is English (AGENTS.md rule); German exists only as experience
   content (`script/de.md`, narration assets).
 
@@ -392,8 +454,8 @@ and the operator page shows agent-degraded state — the piece itself is unaffec
 - **Phase 0 — spikes (throwaway):**
   **R1** WebGPU+WebXR (`XRGPUBinding`) on desktop Chrome + SteamVR + PICO Business
   Streaming, and the WebGL2-fallback delta;
-  **P1** headset agent: see-through toggle + streaming-client handover + telemetry on a
-  PICO 4 Enterprise;
+  **P1** see-through path on real hardware: Business Streaming 2.2 seethrough first,
+  then agent-driven handover + telemetry as the in-spike fallback (§10.3);
   **H1** esp-web-tools flash on the M5StickC Plus2 with the corrected board def.
 - **Phase 1 — skeleton:** core (signals/bus/clock/schedule), renderer + XR rig, white void,
   glider flight with keyboard source, session state machine + minimal operator page
@@ -405,9 +467,10 @@ and the operator page shows agent-degraded state — the piece itself is unaffec
   motion → infrared → magnetic → network → UV → colour.
 - **Phase 4 — dramaturgy & audio:** schedule player + authoring loop, narration (DE/EN) +
   drone-organ engine, tutorial mini-course, Overload/Return sequencing, credits.
-- **Phase 5 — hardware & operations:** firmware, setup page, headset agent, full operator
-  page (telemetry + live view), rig-profile calibration at the actual stations, two-station
-  network configuration (deviceId binding).
+- **Phase 5 — hardware & operations:** firmware, setup page, headset agent, headset
+  provisioning (`headsetctl` + kiosk/boot configuration, §10.4), full operator page
+  (telemetry + live view), rig-profile calibration at the actual stations, two-station
+  network configuration (deviceId binding), station acceptance protocol (§12).
 
 ## 14. Remaining open items
 
@@ -425,3 +488,9 @@ and the operator page shows agent-degraded state — the piece itself is unaffec
    constraints (client isolation) would break M5→PC traffic and must be ruled out early.
 5. **Station PC spec** — needed to set the `station` perf budget (GPU model, encoder load
    of PICO Business Streaming at 90 Hz).
+6. **Exact headset edition.** The `pico-remote-control` evidence hardware was a PICO 4
+   **Ultra** Enterprise (model A9210); this document assumes PICO 4 Enterprise.
+   Enterprise SDK APIs and Business Streaming 2.2's "Seethrough during streaming" depend
+   on device model, PICO OS, and TobService versions — confirm the Futurium units' exact
+   edition and versions before SPIKE P1, since spike results bind only to the tested
+   matrix.
