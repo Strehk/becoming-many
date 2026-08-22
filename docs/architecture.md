@@ -3,8 +3,9 @@
 **Status: DRAFT v2 — core decisions confirmed in the design session of 2026-08-21; items
 marked SPIKE still need validation on real hardware before they count as final.** Sources: a
 full exploration of `../bm-base` (app + M5/bridge/firmware, including the firmware that
-actually lives in `../Icaros_Host`), the four experiments in `../experiments`
-(`pico-remote-control` findings integrated 2026-08-21), and the
+actually lives in `../Icaros_Host`), the five experiments in `../experiments`
+(`pico-remote-control` findings integrated 2026-08-21, `magnetic-sense-webxr` 2026-08-22),
+and the
 Futurium deployment decisions recorded in §2.
 
 ---
@@ -25,8 +26,12 @@ structural decision below follows from one of them.
    disabled, or crashed without taking the piece down. This is both the artistic rule
    ("senses layer, never swap") and the robustness rule.
 3. **CPU sets up, GPU animates.** Setup work produces immutable typed arrays; per-frame cost
-   is uniforms and bounded prefix uploads only. All three experiments independently
-   converged on this idiom — it becomes law.
+   is uniforms and bounded prefix uploads only. All four rendering experiments independently
+   converged on this idiom — it becomes law. Corollary from `magnetic-sense-webxr`:
+   procedural per-instance variation (jitter, rotation, size, wind phase, fades) is derived
+   by hashing the **integer world cell**, never a buffer index or a floating position —
+   camera-centred origin snaps then cannot reseed anything, which is what keeps
+   re-origining flicker-free.
 4. **One source of truth per concern.** One schedule authority, one uniform set, one animal
    substrate, one wire-protocol module, one height field feeding terrain + placement +
    networks. bm-base decayed by growing second copies of each of these.
@@ -36,7 +41,10 @@ structural decision below follows from one of them.
    589,824 grass blades into the dispatch size.)
 6. **Strict gates from commit one.** The bm-base tsconfig discipline (`strict`,
    `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`, …, Biome banning `any`/`!`/`as`)
-   demonstrably held across 36k lines. It is retrofit-proof, so it starts with the repo.
+   demonstrably held across 36k lines. It is retrofit-proof, so it starts with the repo —
+   as do Biome's formatter (machine formatting, not editor preference) and the rule that
+   new pure logic lands with its tests in the same change. One command (`bun run check`,
+   §12) is the gate humans and CI both run.
 
 ## 2. Deployment topology (decided)
 
@@ -82,6 +90,11 @@ Consequences that simplify everything:
   node does not resolve under the WebXR+WebGPU path; every camera-relative effect reads a
   CPU-fed uniform. Expensive knowledge; do not rediscover. Likewise the small TSL kit
   (`viewReveal`, `distanceFog`, `fresnelEdge`, `depthBands`).
+- **Undeformed-footprint rule** (from `magnetic-sense-webxr`): a sense that paints a
+  pattern onto animated geometry samples its field at the *undeformed* world position,
+  passed alongside the deformed vertex. Wind moves the rendered blade; the pattern stays
+  nailed to the landscape instead of swimming with the animation. Standard idiom in the
+  TSL kit for every field-on-geometry effect.
 - **Run modes: PC-VR and desktop dev mode (keyboard flight) only.** The old mobile-gyro
   mode is dropped.
 
@@ -183,15 +196,36 @@ interface SenseLayer {
 | `wurzeln` | traffic-reinforced network topology (MST + kNN + BFS transport) and one-drawcall instanced-tube growth shader | `senses/network` — topology moves into a worker (it is O(n²) and main-thread today) |
 | `EZ-Tree-Demo` | chunk pool + prefix-upload instancing + wind uniform contract + population lattice + ecology zones + worker tree-LOD generation + frame histogram + Playwright perf gates | `src/world/`, `src/beings/`, perf harness |
 | bm-base | scent field (movable local anchor), magnetfeld sky (9 modes by weight uniforms), motion trail ring buffer, WFC root web with hash-agreed borders, grass TSL | respective senses — these are already TSL |
+| `magnetic-sense-webxr` | geometry-clipmap terrain with vertex-shader height; additive-density instanced grass with view-directed coverage and integer-cell hashing; magnetic field contract coloring terrain + grass through one uniform set | `src/world/` (terrain surface, ground cover) — port to TSL; field visuals into `senses/magnetic` (ground counterpart to the bm-base sky) |
 
 ## 7. World and beings
 
 - **One height field** (domain-warped fBm from EZ-Tree-Demo) is the single source for
   terrain mesh, placement lattice, water, and underground networks.
-- **Chunk streaming** merges the two proven implementations: bm-base's `ChunkScheduler`
-  hook contract (`onChunkBuilt`/`onChunkDisposed` that flora, grass, fauna, networks all
-  attach to) + EZ-Tree-Demo's recycled chunk pool and direction-prioritized prefetch. One
-  worker, one transport (bm-base shipped a second, dead worker-pool path — not again).
+- **Terrain surface: geometry clipmap, not chunks** (proven in `magnetic-sense-webxr`).
+  Eight permanently reused concentric ring meshes, re-centred only on the coarsest grid
+  spacing so overlapping LOD samples keep identical world positions (no "breathing"
+  relief), height evaluated entirely in the vertex shader. Roughly 24 km of terrain in
+  eight draw calls with **zero runtime geometry builds or uploads** — the "terrain chunk
+  build" work-item class disappears from the frame loop. Hazard to manage: the height
+  field now exists twice — TSL for the GPU surface, a TS mirror for placement, water,
+  and flight — and one mismatch means floating objects. Both implementations derive from
+  one shared constants module, and a CI readback test asserts CPU/GPU height agreement
+  (§12).
+- **Chunk streaming (populations only)** merges the two proven implementations: bm-base's
+  `ChunkScheduler` hook contract (`onChunkBuilt`/`onChunkDisposed` that flora, fauna, and
+  networks attach to) + EZ-Tree-Demo's recycled chunk pool and direction-prioritized
+  prefetch. One worker, one transport (bm-base shipped a second, dead worker-pool path —
+  not again).
+- **Ground cover** (grass and similar dense instancing) bypasses chunks and uses the
+  `magnetic-sense-webxr` model: **additive density layers** — a sparse far grid supplies
+  the baseline, medium and dense grids add only their density *difference*, so zone
+  boundaries drop a supplement instead of popping an LOD and nothing stacks full-detail
+  grids — plus **view-directed coverage**: a complete underfoot circle, then fixed
+  sectors whose profiles trade horizontal spread for forward range. Normal movement
+  changes grid origins, instance counts, and sector visibility only; placement buffers
+  rebuild solely on setting edits. Coverage profiles and per-layer counts are
+  perf-governor knobs by construction (§1.5, §11).
 - **One animal substrate.** bm-base had persistent boids, a second mosquito system, and
   per-event GLB clones of the same animals — three implementations, three material paths.
   Here: `beings/` owns instanced actor pools + drivers (boids, baked routes via the route
@@ -418,8 +452,8 @@ plane, never part of runtime control:
   `desktop-dev` and `station` (the actual PC spec, 90 Hz stereo + streaming encode
   headroom — the encoder steals GPU time; budget for it).
 - **Runtime governor**: frame-histogram-driven tier degradation turning PerfRouter knobs
-  (render scale, instance counts, particle draw ranges, compute skip radii). All knobs work
-  at runtime by construction (§1.5).
+  (render scale, instance counts, particle draw ranges, ground-cover coverage profiles,
+  compute skip radii). All knobs work at runtime by construction (§1.5).
 - **No measurement overhead in the audience path**: perf sampling and GPU timestamp queries
   exist only while the ops HUD is open (bm-base permanently wrapped `renderer.render`).
 - **Known ceilings from the old stack** (starting envelope, to be re-measured on the
@@ -430,10 +464,18 @@ plane, never part of runtime control:
 - `bun test` — everything in `core/`, `control/` (the ported 50 pipeline tests), `session/`
   state machine, world topology/height-field/lattice math, schedule player. All pure
   functions by design.
-- `tsc` strict profile + Biome (the full bm-base flag set) — from the first commit; nothing
-  is ever excluded from the typecheck.
+- `tsc` strict profile + Biome lint **and format** (the full bm-base flag set and formatter
+  config) — from the first commit; nothing is ever excluded from the typecheck, and
+  formatting is CI-enforced, never editor-dependent.
+- **One gate command**: `bun run check` chains format check, lint, typecheck, and
+  `bun test`, and CI runs exactly that command on every push — the same one a human runs
+  locally. bm-base had all the scripts but no CI enforcement, which is precisely what
+  decayed. Tests are not a phase: new pure logic lands with its tests in the same change.
 - Playwright perf harness with per-profile budgets — one parameterized harness, no
   machine-specific paths (the old repo had ten hardcoded macOS one-offs).
+- **CPU/GPU height agreement**: a readback test evaluates the TS height mirror against the
+  TSL terrain height over a grid of sample points. The floating-grass failure mode is a
+  red test, not a visual bug hunt (§7).
 - CI additionally builds the firmware + esp-web-tools manifest, and the headset-agent APK,
   so app, firmware, and agent cannot drift apart unnoticed.
 - **Dated hardware evidence.** Every spike result (R1/P1/H1) and every station acceptance
@@ -460,10 +502,11 @@ plane, never part of runtime control:
 - **Phase 1 — skeleton:** core (signals/bus/clock/schedule), renderer + XR rig, white void,
   glider flight with keyboard source, session state machine + minimal operator page
   (arm/start/reset + FPS), frame-loop phases. *Already "showable": void + wind + flight.*
-- **Phase 2 — world:** height field, chunk streaming + pool, terrain material, wind,
+- **Phase 2 — world:** height field (TSL + TS mirror + agreement test), clipmap terrain
+  surface, population chunk streaming + pool, terrain material, ground cover, wind,
   ecology lattice, perf harness gating in CI on the station profile.
 - **Phase 3 — senses:** one layer at a time against the SenseLayer contract, each landing
-  with its audio counterpart and its dev-console panel. Order by dramaturgy: scent → echo →
+  with its tests, its audio counterpart, and its dev-console panel. Order by dramaturgy: scent → echo →
   motion → infrared → magnetic → network → UV → colour.
 - **Phase 4 — dramaturgy & audio:** schedule player + authoring loop, narration (DE/EN) +
   drone-organ engine, tutorial mini-course, Overload/Return sequencing, credits.
