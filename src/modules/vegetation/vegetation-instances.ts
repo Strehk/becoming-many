@@ -17,6 +17,10 @@ import {
   uploadCommittedModels,
   writeModelInstance,
 } from "../../utils/asset-loader/instanced-model-pool";
+import {
+  applyMaterialEffects,
+  type UnlitMaterialEffect,
+} from "../../utils/asset-loader/material-effect";
 import { createStaticModelAsset } from "../../utils/asset-loader/static-model";
 import {
   type ChunkCandidate,
@@ -48,6 +52,7 @@ interface VegetationInstancesOptions {
   readonly chunkSize: number;
   readonly chunkSlotCount: number;
   readonly worldSurface: WorldSurface;
+  readonly effects?: readonly UnlitMaterialEffect[];
 }
 
 export interface VegetationInstances {
@@ -73,6 +78,7 @@ export function createVegetationInstances({
   chunkSize,
   chunkSlotCount,
   worldSurface,
+  effects,
 }: VegetationInstancesOptions): VegetationInstances {
   validateStaticPopulation(parameters, chunkSize, "Vegetation");
   const candidateGrid = createChunkCandidateGrid(
@@ -87,6 +93,13 @@ export function createVegetationInstances({
       (material) => getVegetationColor(colors, material.name, assetIndex),
     ),
   }));
+  if (effects) {
+    for (const { model } of sources) {
+      for (const part of model.parts) {
+        applyMaterialEffects(effects, part.material);
+      }
+    }
+  }
   const modelPool = createInstancedModelPool({
     name: "Vegetation",
     sources,

@@ -10,6 +10,7 @@ import {
   disposeGltfAssets,
   type GltfAssets,
 } from "../../utils/asset-loader/gltf-assets";
+import type { UnlitMaterialEffect } from "../../utils/asset-loader/material-effect";
 import {
   type ChunkAssignment,
   ChunkWindow,
@@ -53,6 +54,7 @@ export interface RocksModuleOptions {
   readonly assets: GltfAssets;
   readonly streamQueue: StreamQueue;
   readonly worldSurface: WorldSurface;
+  readonly effects?: readonly UnlitMaterialEffect[];
 }
 
 interface RocksRuntimeOptions {
@@ -63,6 +65,7 @@ interface RocksRuntimeOptions {
   readonly assets: GltfAssets;
   readonly streamQueue: StreamQueue;
   readonly worldSurface: WorldSurface;
+  readonly effects?: readonly UnlitMaterialEffect[];
 }
 
 interface RockStream {
@@ -154,6 +157,7 @@ function createRockStream(options: RocksRuntimeOptions): RockStream {
     chunkSize,
     chunkSlotCount: chunkWindow.slotCount,
     worldSurface: options.worldSurface,
+    effects: options.effects,
   });
   const slotJobKeys = Array.from({ length: chunkWindow.slotCount }, () => ({}));
   return { chunkWindow, instances, slotJobKeys };

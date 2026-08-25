@@ -13,6 +13,7 @@ import {
   InstancedMesh,
   Matrix4,
   Mesh,
+  type MeshBasicMaterial,
   MeshStandardMaterial,
   Quaternion,
   Vector3,
@@ -134,6 +135,43 @@ test("Vegetation keeps complete model footprints outside river channels", () => 
 
   expect(readDrawCount(instances.modelPool.group.children[0])).toBe(0);
   disposeVegetationInstances(instances);
+});
+
+test("Vegetation applies shared material effects to every part material", () => {
+  const decorated: MeshBasicMaterial[] = [];
+  const instances = createVegetationInstances({
+    colors: VEGETATION_COLORS,
+    parameters: createVegetationParameters("meadow"),
+    assets: createMultiPartAssets("plant"),
+    chunkSize: 16,
+    chunkSlotCount: 1,
+    worldSurface: createFlatSurface("meadow"),
+    effects: [{ applyTo: (material) => decorated.push(material) }],
+  });
+
+  expect(decorated).toHaveLength(2);
+  expect(new Set(decorated).size).toBe(2);
+  expect(decorated.every((material) => material.isMeshBasicMaterial)).toBe(
+    true,
+  );
+  disposeVegetationInstances(instances);
+});
+
+test("Rocks apply shared material effects to every part material", () => {
+  const decorated: MeshBasicMaterial[] = [];
+  const instances = createRockInstances({
+    colors: ROCK_COLORS,
+    parameters: createRockParameters("meadow"),
+    assets: createMultiPartAssets("rock"),
+    chunkSize: 16,
+    chunkSlotCount: 1,
+    worldSurface: createFlatSurface("meadow"),
+    effects: [{ applyTo: (material) => decorated.push(material) }],
+  });
+
+  expect(decorated).toHaveLength(2);
+  expect(new Set(decorated).size).toBe(2);
+  disposeRockInstances(instances);
 });
 
 test("Rocks exclude water and retain fixed multi-part buffers", () => {

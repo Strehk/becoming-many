@@ -4,13 +4,16 @@ The narrative levels in **Becoming Many** are continuous world states, not separ
 
 ## Current Source Preset
 
-Four sparse presets currently exist under `src/levels`:
+Five sparse presets currently exist under `src/levels`:
 
 - `white-world.level.ts` defines the narrative White World without Terrain.
 - `scent.level.ts` is the Scent World base experiment: no rendered surface
   modules, the test overlay, the White World air layer, streamed deterministic
   scent emitters, and the invisible ground flag that clamps flight above the
   shared world surface.
+- `echo.level.ts` is the Echolocation level: rendered Terrain, Vegetation, and
+  Rocks whose materials are decorated by the shared Echo Depth effect, showing
+  the world through the level-03 distance ramp.
 - `test.level.ts` is the diagnostic development preset and adds Terrain plus the
   Zone Visualizer for landscape work.
 - `designTest.level.ts` is the active visual-design preset and adds authored
@@ -54,6 +57,21 @@ The Scent preset additionally activates:
   vertical extent and a gentle 1.5-metre rise
 - one fixed streamed pool of 192 opaque round particles per emitter in one
   draw call, recycled at chunk edges while traveling
+
+The Echo preset additionally activates:
+
+- generated Terrain with its plain material at full opacity
+- zone-driven Vegetation and Rocks with base colors authored from the dark
+  end of the 03 palette and Test Level densities
+- the shared Echo Depth material effect: one camera-distance palette ramp
+  from near-dark silhouettes into the warm off-white haze background,
+  patched into the Terrain, Vegetation, and Rock materials without
+  additional geometry, scene passes, or draw calls; every surface always
+  shows only its depth-ramp color
+- the unchanged White World air-particle layer and the unchanged Scent World
+  layer carried over, because senses layer instead of swapping; scent clouds
+  now anchor above the rendered ground and keep their 02-palette signatures
+- no grass or animals
 
 The level does not contain asset URLs, model names, seeds, candidate spacing,
 or weighted variants. Those stable content definitions belong to the concrete
@@ -225,11 +243,22 @@ Color and scent recede while depth response becomes dominant. Motion cues may be
 
 Prefer material changes over duplicate geometry or additional scene passes. A post-processing solution is allowed only if measurement proves it affordable on PICO.
 
+### Decided Art Direction
+
+Aerial-perspective depth mapping, decided 2026-08-25 and implemented in
+`src/modules/echo-depth/`: near geometry reads as dark indigo silhouettes
+(`#0E1017`, `#0D1730`) and recedes through `#3C4782` and `#CBD9E5` into a
+warm off-white haze (`#F6F0E9`) that equals the background color. Every
+surface always shows only its depth-ramp color; a cyan rim accent on near
+forms was tried and removed the same day because approaching geometry must
+darken, not light up. See [03 — Echolocation](03-echolocation/README.md)
+for the exact preset.
+
 ### Open Art Decisions
 
-- exact depth-map appearance and distance mapping
-- depth falloff and silhouette treatment
-- background and highlight colors
+- ramp stop tuning and rim strength against real headset contrast
+- whether a pale near-field air-particle layer should return as an
+  optic-flow comfort cue
 
 ## 04 — Motion Perception
 

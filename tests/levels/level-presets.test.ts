@@ -7,6 +7,7 @@
 
 import { expect, test } from "bun:test";
 import { level as designTestLevel } from "../../src/levels/designTest.level";
+import { level as echoLevel } from "../../src/levels/echo.level";
 import type { LevelPreset } from "../../src/levels/level-runtime";
 import { level as scentLevel } from "../../src/levels/scent.level";
 import { level as testLevel } from "../../src/levels/test.level";
@@ -52,6 +53,50 @@ test("only the Test Level activates development diagnostics", () => {
   expect(whiteWorldPreset.invisibleGround).toBeUndefined();
   expect(testPreset.scentParticles).toBeUndefined();
   expect(designTestLevel.scentParticles).toBeUndefined();
+  expect(testPreset.echoDepth).toBeUndefined();
+  expect(whiteWorldPreset.echoDepth).toBeUndefined();
+  expect(designTestLevel.echoDepth).toBeUndefined();
+  expect(scentLevel.echoDepth).toBeUndefined();
+});
+
+test("Echo Level renders depth through shared materials only", () => {
+  const echoPreset: LevelPreset = echoLevel;
+  const echoWorldPalette = [
+    0x0e1017, 0x0d1730, 0x3c4782, 0x3fa7e2, 0xcbd9e5, 0xf6f0e9,
+  ];
+  const { echoDepth, terrain, vegetation, rocks } = echoPreset;
+  if (!echoDepth || !terrain || !vegetation || !rocks) {
+    throw new Error("Echo Level must author terrain, vegetation, and rocks");
+  }
+
+  expect(echoPreset.testUi).toBe(true);
+  expect(terrain.opacity).toBe(1);
+  expect(terrain.presentation).toBeUndefined();
+  expect(terrain.magneticSense).toBeUndefined();
+  expect(echoPreset.grass).toBeUndefined();
+  expect(echoPreset.animals).toBeUndefined();
+  // Senses layer, never swap: the air and scent layers carry over unchanged.
+  expect(echoPreset.airParticles).toEqual(whiteWorld.airParticles);
+  expect(echoPreset.scentParticles).toEqual(scentLevel.scentParticles);
+  expect(echoPreset.invisibleGround).toBeUndefined();
+
+  expect(echoDepth.intensity).toBe(1);
+  expect(echoDepth.nearDistanceMeters).toBeLessThan(
+    echoDepth.farDistanceMeters,
+  );
+  expect(echoDepth.farDistanceMeters).toBeLessThan(
+    echoPreset.viewDistance ?? 0,
+  );
+  expect(echoPreset.backgroundColor).toBe(echoDepth.colors.hazeColor);
+
+  const authoredColors = [
+    ...Object.values(echoDepth.colors),
+    ...Object.values(vegetation.colors),
+    ...Object.values(rocks.colors),
+  ];
+  expect(
+    authoredColors.every((color) => echoWorldPalette.includes(color)),
+  ).toBe(true);
 });
 
 test("Scent Level layers scent onto the White World air baseline", () => {
