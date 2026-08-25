@@ -8,6 +8,12 @@ actually lives in `../Icaros_Host`), the five experiments in `../experiments`
 and the
 Futurium deployment decisions recorded in §2.
 
+**Working basis (2026-08-25):** the codebase from
+[becoming_many_new](https://github.com/dweigend/becoming_many_new) has been imported into
+this repository as the implementation starting point. Its as-built structure is documented
+in [code-architecture.md](code-architecture.md); where it diverges from this document,
+this document takes priority.
+
 ---
 
 ## 1. Design principles

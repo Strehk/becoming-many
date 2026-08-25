@@ -32,8 +32,13 @@ emptiness.
 
 ## Status
 
-This repository is a clean-slate rewrite. The concept, storyboard, and script are settled; the
-implementation starts here from scratch. Nothing in this repo is stable yet.
+The concept, storyboard, and script are settled. The implementation working basis is the
+codebase imported from
+[becoming_many_new](https://github.com/dweigend/becoming_many_new) (2026-08-25): a
+Three.js/WebXR world with streamed terrain, instanced vegetation, animals, and the first
+sense modules. The authoritative target architecture is
+[docs/architecture.md](docs/architecture.md); see [docs/README.md](docs/README.md) for the
+full documentation index. Nothing in this repo is stable yet.
 
 Background, concept, storyboard and script:
 [Notion — Becoming Many](https://futurerealiteslab.notion.site/Becoming-Many-34b29d8a9fe280ceb963f133aa2689ee)
