@@ -18,8 +18,8 @@ the concise entry point for the current implementation.
 
 - a warm off-white haze background equal to the depth ramp's far stop
 - rendered Terrain, Vegetation, and Rocks whose surface colors are replaced
-  by the shared Echo Depth ramp: dark indigo silhouettes nearby receding
-  into the haze, with no proximity accents anywhere
+  by the shared Echo Depth ramp: near-black grayscale silhouettes nearby
+  receding into the off-white haze, with no proximity accents anywhere
 - distant geometry dissolves into the background before the chunk streaming
   edge, so recycling happens inside the haze
 - the carried-over earlier senses, because senses layer instead of swapping:
