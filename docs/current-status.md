@@ -7,28 +7,30 @@ Boundary: Product vision and long-term design remain in the specialized document
 
 # Current Development Status
 
-Snapshot: 2026-08-24
+Snapshot: 2026-08-25
 
 The current `src/` and `public/` trees are the source of truth. This page is
 the concise entry point for the current implementation.
 
 ## Runnable Result
 
-`bun run dev` starts a Vite application that shows the current Design Test level:
+`bun run dev` starts a Vite application that shows the Scent World base experiment:
 
-- pale blue background with authored semantic module colors
-- sparse dark air particles extending around the camera
-- generated terrain with one continuous carved river
-- deterministic tall meadow grass and short shrub-slope grass
-- deterministic zone-driven trees, bushes, and rocks
-- a ten-actor, four-species population with at most four animations visible
-- deterministic water, meadow, forest, and shrub-slope zones
+- pale warm background from the 02-palette base tone
+- deterministic scent emitters streaming with travel wherever the invisible
+  zone facts grow forest, each with one signature color and a flat cloud of
+  rising, swaying, fading round particles hugging the invisible ground
+- the White World layer of sparse dark air particles around the camera
+- no rendered terrain or other surface modules; the invisible shared world
+  surface still clamps flight to one metre above the ground
+- the diagnostic test overlay
 - pointer-lock mouse look
 - WASD and arrow-key flight along the mouse look direction
 - a user-triggered Three.js `immersive-vr` button
 
-The application currently selects `designTest.level.ts` in its minimal browser entry.
-It has one Level Runtime composition root and one render loop.
+The application currently selects `scent.level.ts` in its minimal browser entry.
+It has one Level Runtime composition root and one render loop. The Design Test
+landscape remains available by selecting `designTest.level.ts` instead.
 
 ## Implemented System
 
@@ -52,6 +54,12 @@ It has one Level Runtime composition root and one render loop.
   parameters it needs.
 - `white-world.level.ts` defines a white background, a 128-metre view distance,
   and Air Particles parameters without Terrain.
+- `scent.level.ts` is the Scent World base experiment: a pale warm background,
+  a 128-metre view distance, the test overlay, Scent Particles, the unchanged
+  White World Air Particles layer, and the invisible ground flag.
+- The sparse `invisibleGround: true` flag clamps flight above the shared
+  deterministic world surface without creating the Terrain module or any
+  rendered geometry.
 - `test.level.ts` uses a 180-metre view distance, activates
   Terrain, Grass, Vegetation, Rocks, and Animals, selects Zone Visualizer as
   the Terrain presentation, and adds Magnetic Sense as a material effect.
@@ -60,9 +68,10 @@ It has one Level Runtime composition root and one render loop.
   in module-owned definitions.
 - `ModuleRuntime` implements `load`, `activate`, `update`, `deactivate`, and
   `unload`.
-- Air Particles, Grass, Terrain, Vegetation, Rocks, and Animals are implemented
-  content modules. Zone Visualizer is the active test-only Terrain
-  presentation; Magnetic Sense is a composable material effect.
+- Air Particles, Scent Particles, Grass, Terrain, Vegetation, Rocks, and
+  Animals are implemented content modules. Zone Visualizer is the active
+  test-only Terrain presentation; Magnetic Sense is a composable material
+  effect.
 
 ### World Surface
 
@@ -104,6 +113,28 @@ It has one Level Runtime composition root and one render loop.
   only the changed buffer ranges for upload.
 - One vertex-shader time uniform gives every particle a subtle independent
   drift without per-frame position-buffer uploads.
+- Module unload removes the object and disposes geometry and material.
+
+### Scent Particles
+
+- Every resident 64-metre chunk deterministically tries a bounded candidate
+  search for up to two emitters from its absolute coordinates and keeps only
+  candidates inside the module-owned source zones (conifer and deciduous
+  forest); misses stay hidden in their fixed particle range and never
+  rasterize.
+- Kept emitters anchor 1–2 metres above the sampled world ground as flat
+  clouds (one-metre vertical extent, gentle rise), each with one signature
+  color from the level palette.
+- The Scent Level's 128-metre camera range plus one preload layer produces a
+  7 x 7 resident window with 49 reusable slots and 18,816 buffered points in
+  one `THREE.Points` object and one draw call.
+- Recycled chunk slots rewrite only their position, color, phase, and
+  visibility buffer ranges through the shared frame-budgeted stream queue;
+  revisiting a chunk recreates the same emitters.
+- One looping vertex-shader time uniform drives rise, sway, and a life-cycle
+  point-size fade; fully faded points leave clip space and rasterize nothing.
+- A sense-intensity uniform (0..1) scales the fade; it is authored through the
+  preset because the runtime schedule driver remains an open decision.
 - Module unload removes the object and disposes geometry and material.
 
 ### Terrain
@@ -213,12 +244,12 @@ Manifests remain metadata rather than a parallel runtime configuration system.
 
 The last clean verification recorded:
 
-- `bun test`: 78 tests
+- `bun test`: 85 tests
 - `bun run check`: strict TypeScript
+- `bun run lint`: clean Biome run
 - `bun run build`: Vite production build
 
-The current worktree still needs a clean Biome run after its local `src/main.ts`
-change. Fallow reports no dead production exports or complexity violations, but
+Fallow reports no dead production exports or complexity violations, but
 does report known duplicated placement code in Vegetation and Rocks.
 
 Vegetation and Rocks share deterministic density acceptance and weighted asset
@@ -244,6 +275,8 @@ loading or target-device evidence requires it.
 - asset prefetching, retries, progress UI, and distance-based stream priorities
 - visible water, other perception effects, mycelium, sky additions, and sound
   modules
+- wind-coupled scent drift, scent fields, emitters that move while placed,
+  scent for non-forest zones or animals, and a runtime scent-intensity driver
 
 ## Recommended Next Steps
 

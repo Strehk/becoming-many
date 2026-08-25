@@ -23,6 +23,10 @@ import {
 } from "../modules/magnetic-sense/magnetic-sense";
 import { createRocksModule, type RocksPreset } from "../modules/rocks/rocks";
 import { ROCKS_DEFINITION } from "../modules/rocks/rocks-definition";
+import {
+  createScentParticlesModule,
+  type ScentParticlesParameters,
+} from "../modules/scent-particles/scent-particles";
 import { createTerrainModule } from "../modules/terrain/terrain";
 import {
   createTerrainColors,
@@ -69,7 +73,11 @@ export interface LevelPreset {
   readonly backgroundColor?: number;
   readonly viewDistance?: number;
   readonly testUi?: true;
+
+  /** Clamp flight above the shared world surface without rendering Terrain. */
+  readonly invisibleGround?: true;
   readonly airParticles?: AirParticlesParameters;
+  readonly scentParticles?: ScentParticlesParameters;
   readonly terrain?: TerrainPreset;
   readonly grass?: GrassPreset;
   readonly vegetation?: VegetationPreset;
@@ -126,7 +134,7 @@ function setupLevel(
     world.camera,
     world.renderer.domElement,
   );
-  const hasGround = hasVisibleSurface(level);
+  const hasGround = level.invisibleGround === true || hasVisibleSurface(level);
   const testOverlay = level.testUi
     ? createTestOverlay(container, world.renderer)
     : undefined;
@@ -158,6 +166,7 @@ function createConfiguredModules(setup: LevelSetup): WorldModule[] {
 
   addModule(modules, createTerrain(setup));
   addModule(modules, createAirParticles(setup));
+  addModule(modules, createScentParticles(setup));
   addModule(modules, createGrass(setup));
   addModule(modules, createVegetation(setup));
   addModule(modules, createRocks(setup));
@@ -201,6 +210,20 @@ function createAirParticles(setup: LevelSetup): WorldModule | undefined {
     parameters,
     streamQueue: setup.world.streamQueue,
     surfaceYAt,
+  });
+}
+
+function createScentParticles(setup: LevelSetup): WorldModule | undefined {
+  const parameters = setup.level.scentParticles;
+  if (!parameters) return undefined;
+
+  return createScentParticlesModule({
+    scene: setup.world.scene,
+    camera: setup.world.camera,
+    parameters,
+    streamQueue: setup.world.streamQueue,
+    groundYAt: setup.worldSurface.groundYAt,
+    zoneAt: setup.worldSurface.zoneAt,
   });
 }
 

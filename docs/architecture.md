@@ -35,6 +35,7 @@ src/
 ├── levels/
 │   ├── level-runtime.ts
 │   ├── designTest.level.ts
+│   ├── scent.level.ts
 │   ├── test.level.ts
 │   └── white-world.level.ts
 ├── modules/
@@ -247,6 +248,7 @@ is proven twice; zone and placement policy remain module-owned.
 | `WORLD_WIND` | Shared immutable wind direction, strength, and speed |
 | `GrassPreset` | Level-authored density and blade height per supported grass zone |
 | `MagneticSenseParameters` | Magnetic direction, line, pulse, opacity, flow, and intensity values |
+| `ScentParticlesParameters` | Level-authored scent palette, per-chunk emitter density, pool size, and drift values |
 | `StaticPopulationPreset` | Level-authored instances per hectare for enabled land zones |
 | `StaticPopulationDefinition` | Module-owned candidate grid, seed, assets, sizes, and zone variants |
 | `AnimalsDefinition` | Module-owned species assets, habitats, movement, radius, and visibility budget |

@@ -4,15 +4,19 @@ The narrative levels in **Becoming Many** are continuous world states, not separ
 
 ## Current Source Preset
 
-Three sparse presets currently exist under `src/levels`:
+Four sparse presets currently exist under `src/levels`:
 
 - `white-world.level.ts` defines the narrative White World without Terrain.
+- `scent.level.ts` is the Scent World base experiment: no rendered surface
+  modules, the test overlay, the White World air layer, streamed deterministic
+  scent emitters, and the invisible ground flag that clamps flight above the
+  shared world surface.
 - `test.level.ts` is the diagnostic development preset and adds Terrain plus the
   Zone Visualizer for landscape work.
 - `designTest.level.ts` is the active visual-design preset and adds authored
   semantic colors to the landscape modules.
 
-The White World and Test presets use these presentation values:
+The White World, Scent, and Test presets use these presentation values:
 
 - white background (`0xffffff`)
 - point size `0.075`
@@ -21,6 +25,7 @@ The White World and Test presets use these presentation values:
 Their current capacity differs deliberately:
 
 - White World uses a 128-metre view distance and 192 particles per volume.
+- Scent uses a 128-metre view distance and 192 particles per volume.
 - Test Level uses a 180-metre view distance and 80 particles per volume.
 - Design Test uses a 180-metre view distance and 80 particles per volume.
 
@@ -36,6 +41,19 @@ The Test and Design Test presets additionally activate:
 
 Test uses the Zone Visualizer and Magnetic Sense for diagnostics. Design Test
 uses authored semantic colors instead.
+
+The Scent preset additionally activates:
+
+- the unchanged White World air-particle layer as the neutral depth baseline
+- the invisible ground: the continuous world terrain restricts flight without
+  being rendered
+- up to two deterministic scent emitters per resident 64-metre chunk, only
+  where the invisible zone facts grow forest, one 02-palette signature color
+  each
+- flat clouds anchored 1–2 metres above the invisible ground with a one-metre
+  vertical extent and a gentle 1.5-metre rise
+- one fixed streamed pool of 192 opaque round particles per emitter in one
+  draw call, recycled at chunk edges while traveling
 
 The level does not contain asset URLs, model names, seeds, candidate spacing,
 or weighted variants. Those stable content definitions belong to the concrete
@@ -367,7 +385,9 @@ Active art direction is stored beside each level:
 docs/levels/
 ├── README.md
 ├── 01-white-world/mood/moodboard.png
-├── 02-scent-world/mood/moodboard.png
+├── 02-scent-world/
+│   ├── README.md
+│   └── mood/moodboard.png
 ├── 03-echolocation/mood/moodboard.png
 ├── 04-motion-perception/mood/moodboard.png
 ├── 05-thermal-perception/mood/moodboard.png
