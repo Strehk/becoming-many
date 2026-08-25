@@ -4,18 +4,11 @@ The current `src/` and `public/` trees define the running system. These
 documents explain that implementation and keep future product direction
 separate from verified technical status.
 
-## Target Architecture
-
-- [Architecture](architecture.md) — the authoritative target architecture (deployment
-  topology, runtime design, quality gates). Takes priority over the as-built docs below.
-- [Architecture Review — 2026-08-22](architecture-review-2026-08-22.md) — critical
-  feedback on the target architecture draft.
-
 ## Current System
 
 - [Current Status](current-status.md) — implemented runtime, verification state, known gaps, and recommended next steps.
 - [Engineering Standards](engineering-standards.md) — coding, architecture, Three.js, documentation, and validation rules.
-- [Code Architecture](code-architecture.md) — current project structure, ownership boundaries, contracts, and lifecycle.
+- [Architecture](architecture.md) — current project structure, ownership boundaries, contracts, and lifecycle.
 - [World Streaming](world-streaming.md) — current chunk window, stream queue, Air Particles consumer, and extension rules.
 - [Landscape Module Contracts](landscape-modules.md) — current boundaries for Rivers, Vegetation, Grass, Rocks, and Animals.
 - [Performance](performance.md) — current evidence, target metrics, and acceptance gates.
@@ -28,6 +21,7 @@ separate from verified technical status.
 - [Platforms](platforms.md) — current WebXR entry plus standalone PICO and wired PCVR direction.
 - [Roadmap](roadmap.md) — implementation status and the next measurable milestones.
 - [Architecture Decisions](architecture-decisions.md) — confirmed decisions that constrain future implementation.
+- [Installation Direction](direction/README.md) — where the piece is headed at the Futurium: deployment, senses, dramaturgy, controls, operator, headset. Subordinate to the current-system documents; conflicts are tracked in [Open Decisions](direction/open-decisions.md).
 
 ## Assets and Visual References
 

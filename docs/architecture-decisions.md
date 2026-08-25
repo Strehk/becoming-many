@@ -2,15 +2,24 @@
 Purpose: Record confirmed architecture decisions for Becoming Many.
 Context: Separate durable decisions from sketches, proposals, and current status reporting.
 Responsibility: Preserve constraints that guide implementation.
-Boundary: The running architecture is documented in code-architecture.md.
+Boundary: The running architecture is documented in architecture.md.
 -->
 
 # Architecture Decisions
 
-The [current architecture](code-architecture.md) describes what is implemented.
+The [current architecture](architecture.md) describes what is implemented.
 This file records decisions that constrain current and upcoming work.
 
 ## Applied Decisions
+
+### WebGL2 and GLSL Rendering Stack
+
+- The rendering stack is Three.js on WebGL2 with raw GLSL ES 3.00 shaders in
+  dedicated `*.vert.glsl` / `*.frag.glsl` files, as the engineering standards
+  require.
+- WebGPU and TSL were evaluated and rejected (2026-08-25). Do not add
+  `three/webgpu`, TSL, or WGSL code paths; TSL reference material is rewritten
+  as GLSL when extracted.
 
 ### One Composition Root and Render Loop
 
