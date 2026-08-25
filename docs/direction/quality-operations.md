@@ -1,0 +1,40 @@
+# Quality and Operations Direction
+
+Extends the current gates (`bun test`, `bun run check`, `bun run lint`,
+[engineering standards](../engineering-standards.md)) toward the installation.
+
+## Gates and CI
+
+- **One gate command.** Direction: `bun run check` chains format check, lint,
+  typecheck, and tests, and CI runs exactly that command on every push — the
+  same one a human runs locally. Scripts without CI enforcement decay.
+- **Performance budgets in CI.** The roadmap's performance harness (roadmap §2)
+  grows into per-profile CI budgets: frame-time p50/p95/p99, draw-call and
+  triangle ceilings. The profile set depends on
+  [Open Decision 1](open-decisions.md).
+- **Runtime governor.** Frame-histogram-driven tier degradation turning module
+  capacity values (render scale, instance counts, draw ranges) — possible by
+  construction because capacities are runtime values
+  ([Rendering Constraints](rendering-constraints.md)).
+- **Multi-artifact CI** once firmware and agent exist: build the firmware +
+  esp-web-tools manifest and the agent APK in CI, so app, firmware, and agent
+  cannot drift apart unnoticed.
+
+## Spikes (throwaway, before dependent work)
+
+- **P1 — see-through path on real hardware** ([Headset](headset.md)). The
+  highest-risk item in the project.
+- **H1 — esp-web-tools flash** of the M5StickC Plus2 with the corrected board
+  definition ([Controls and M5](controls-m5.md)).
+
+## Evidence rules
+
+- **Dated hardware evidence.** Every spike result and every station acceptance
+  run records its exact matrix: headset edition and model number, PICO OS,
+  streaming-client/TobService versions, GPU/driver, build revision. A result
+  without its matrix is not evidence.
+- **Station acceptance protocol**: a two-hour soak cycling the full session
+  state machine; streaming and M5 disconnect/reconnect recovery without manual
+  repair; renderer resource counts returning to baseline after repeated
+  cycles; a bounded overhead budget if the scrcpy diagnostic mirror is used
+  during measurement.

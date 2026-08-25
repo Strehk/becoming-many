@@ -2,7 +2,7 @@
 Purpose: Define the engineering standards used throughout Becoming Many.
 Context: The working MVP has established readable TypeScript, clear ownership, and bounded Three.js runtime patterns.
 Responsibility: Keep coding, architecture, Three.js, documentation, and validation rules in one concise reference.
-Boundary: Current implementation details remain in code-architecture.md and current-status.md.
+Boundary: Current implementation details remain in architecture.md and current-status.md.
 -->
 
 # Engineering Standards
@@ -126,7 +126,7 @@ should extend it. They are defaults, not reasons to add infrastructure.
 - Record physical PICO results separately from desktop or browser results.
 - Use folder READMEs to explain ownership and boundaries, not to duplicate
   implementation walkthroughs.
-- Keep `current-status.md` factual, `code-architecture.md` implementation-based,
+- Keep `current-status.md` factual, `architecture.md` implementation-based,
   `roadmap.md` forward-looking, and `architecture-decisions.md` limited to
   confirmed decisions.
 - Update only the documents affected by a change. Remove stale statements
