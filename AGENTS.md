@@ -32,6 +32,15 @@ language — a German chat still produces English artifacts.
 
 - Follow [docs/engineering-standards.md](docs/engineering-standards.md) for
   coding, architecture, Three.js, documentation, and validation conventions.
+- **Contracts and modularity are of utmost importance.** Small,
+  self-contained modules own their resources and complete lifecycle; data
+  crosses an ownership boundary only through a small, strict TypeScript
+  contract; concrete modules never import sibling modules. Extending a
+  contract cleanly always beats reaching around one.
+- **All configuration is TypeScript.** Settings, presets, definitions, and
+  tunables live in typed `.ts` files (`*-settings.ts`, `*.level.ts`, module
+  definitions) — never in JSON, YAML, or environment formats. JSON under
+  `public/` records asset provenance only.
 - Build the smallest viable step. Follow KISS and YAGNI. Plan every change
   before implementing; work one step at a time.
 - **Ask before assuming.** If a task depends on an unwritten or open decision,

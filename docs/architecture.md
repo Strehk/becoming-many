@@ -14,6 +14,8 @@ Implementation conventions are defined in the
 - Keep one render loop and one composition root.
 - Keep permanent engine mechanisms separate from unloadable content modules.
 - Share data through small strict TypeScript contracts.
+- Keep all authored configuration in typed TypeScript files (settings,
+  presets, module definitions); no JSON, YAML, or environment configuration.
 - Add abstractions only when a current feature requires them.
 - Treat `src/` and `public/` as the canonical source and asset roots.
 
