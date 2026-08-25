@@ -1,0 +1,13 @@
+// Purpose: Model intentional project export conventions for Fallow.
+// Context: Every level preset exposes the same named `level` contract.
+// Responsibility: Exclude that deliberate namespace pattern from duplicate-export findings.
+// Boundary: Production code and architecture rules remain outside analyzer configuration.
+{
+  "$schema": "https://raw.githubusercontent.com/fallow-rs/fallow/main/schema.json",
+  "ignoreExports": [
+    {
+      "file": "src/levels/*.level.ts",
+      "exports": ["level"]
+    }
+  ]
+}

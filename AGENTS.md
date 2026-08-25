@@ -5,9 +5,12 @@ Guidance for AI coding agents working in this repository. Humans are welcome to 
 ## What this project is
 
 **Becoming Many** is a speculative VR experience about layered, non-human perception — see
-[README.md](README.md) for the concept. This repository is a clean-slate rewrite; the previous
-implementation is not carried over. Treat any decision here as fresh unless it is written down
-in this file.
+[README.md](README.md) for the concept. The working basis is the codebase imported from
+[becoming_many_new](https://github.com/dweigend/becoming_many_new) (2026-08-25). The
+authoritative target architecture is [docs/architecture.md](docs/architecture.md); the
+imported code's as-built structure is described in
+[docs/code-architecture.md](docs/code-architecture.md). Where they disagree, the target
+architecture takes priority.
 
 ## Language rule
 
@@ -40,8 +43,32 @@ identifiers or comments to match the language of the request.
 - `script/` holds the narration text (`en.md`, `de.md`). It is the authoritative wording of the
   voiceover — treat it as content, not as a draft, and do not reword it while working on code.
 
-## Toolchain
+## Toolchain and quality gates
 
-Not yet established — this repo is empty by design. When the stack lands, record here: package
-manager, dev/build/test commands, the quality gates that must pass before code counts as done,
-and the rendering rules. Until then, do not assume the previous project's setup still applies.
+- **Bun** is the package manager and test runner; **Vite** builds; **Biome** lints and
+  formats; **Fallow** analyzes exports (config in `.fallowrc.jsonc`). Run all Bun, Vite,
+  and Fallow checks before checkpoints and commits.
+- Commands: `bun run dev` (dev server), `bun test`, `bun run check` (typecheck),
+  `bun run lint` (Biome), `bun run build` (typecheck + production build).
+- Strict TypeScript and strict linting throughout. Follow
+  [docs/engineering-standards.md](docs/engineering-standards.md) for coding, architecture,
+  Three.js, documentation, and validation conventions.
+- Build the smallest viable MVP. Follow KISS and YAGNI. Plan every change before
+  implementation; work one step at a time.
+- Keep `main` clean: develop features on dedicated branches and merge only verified work.
+
+## Performance rules
+
+- Target PICO 4. Performance is the highest priority; target stable 90 FPS. Any
+  performance regression blocks completion.
+- Always choose the simplest, most GPU-friendly solution.
+- Keep shaders mobile-first and minimal: prefer opaque, unlit, or baked lighting; minimize
+  fragment work, texture samples, variants, and overdraw; avoid dynamic branches and loops.
+  Store shaders only in dedicated GLSL ES 3.00 files (`*.vert.glsl`, `*.frag.glsl`); never
+  inline them.
+- Minimize draw calls. Use Three.js `InstancedMesh` for repeated geometry and materials,
+  and `BatchedMesh` for varied geometry sharing a material. Reuse geometry, materials, and
+  buffers.
+- Stream procedural content in bounded, distance-based chunks. Generate only nearby
+  content; pool and recycle instances, use LOD and frustum culling, prefer KTX2 textures,
+  and always dispose unused GPU resources.

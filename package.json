@@ -1,0 +1,23 @@
+{
+  "name": "becoming-many",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "vite",
+    "test": "bun test",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "check": "tsc --noEmit",
+    "lint": "biome check ."
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.5.9",
+    "@types/bun": "latest",
+    "@types/three": "^0.185.4",
+    "typescript": "^7.0.2",
+    "vite": "^8.2.2"
+  },
+  "dependencies": {
+    "three": "^0.185.1"
+  }
+}

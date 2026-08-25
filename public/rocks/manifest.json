@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "author": "Quaternius",
+  "license": "CC0-1.0",
+  "assets": [
+    {
+      "id": "gold-rocks",
+      "file": "/rocks/gold-rocks.glb",
+      "sourcePage": "https://poly.pizza/m/49NgnJzOHc",
+      "sourceDownload": "https://static.poly.pizza/b5523c60-3263-4d97-a4c0-8526ad2443fb.glb",
+      "sha256": "964efe177a2708075212da778b87054cca2d4ea95db7943885c83fdb5d638163"
+    },
+    {
+      "id": "rock-medium",
+      "file": "/rocks/rock-medium.glb",
+      "sourcePage": "https://poly.pizza/m/KZdEP3uUpa",
+      "sourceDownload": "https://static.poly.pizza/aaf0aaa7-c244-430a-908b-2ac57567d81c.glb",
+      "sha256": "c2ab966f16264b4e77de53b61a8a310028eb0a0a74ee40603dba7cf23ca3f322"
+    },
+    {
+      "id": "rocks-pack",
+      "file": "/rocks/rocks-pack.glb",
+      "sourcePage": "https://poly.pizza/m/gYhoEOKItJ",
+      "sourceDownload": "https://static.poly.pizza/01671e28-0504-4db1-a5d5-af71ce0a6a1e.glb",
+      "sha256": "122f937f06b8e1d05d750a38a478196533925be515eded7ca0396b759058973f"
+    },
+    {
+      "id": "rocks",
+      "file": "/rocks/rocks.glb",
+      "sourcePage": "https://poly.pizza/m/OQvi8PIZ40",
+      "sourceDownload": "https://static.poly.pizza/c6f65def-08c5-4c81-b17f-f37b171ad911.glb",
+      "sha256": "f2085fb5edfe6ec33b7fe9dd8969fdc016900c18649b94c9ba703d8413cdcd97"
+    }
+  ]
+}

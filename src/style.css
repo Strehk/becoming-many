@@ -1,0 +1,26 @@
+/*
+ * Purpose: Give the renderer an exact full-viewport surface.
+ * Boundary: Visual world styling belongs to the renderer, not this stylesheet.
+ */
+
+:root {
+  background: #ffffff;
+}
+
+html,
+body,
+.app {
+  width: 100%;
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  overflow: hidden;
+}
+
+canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}

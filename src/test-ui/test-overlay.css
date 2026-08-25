@@ -1,0 +1,53 @@
+/*
+ * Purpose: Style the browser-only performance overlay for the Test Level.
+ * Context: Development metrics must remain legible without obscuring the world.
+ * Responsibility: Define the fixed grid, cards, labels, and numeric typography.
+ * Boundary: World presentation and interactive controls are styled elsewhere.
+ */
+
+.test-overlay {
+  position: fixed;
+  top: 16px;
+  left: 16px;
+  z-index: 10;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  width: min(420px, calc(100vw - 32px));
+  color: #f4f7f5;
+  font-family:
+    ui-monospace, "SFMono-Regular", Menlo, Monaco, Consolas, monospace;
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+}
+
+.test-overlay__card {
+  min-width: 0;
+  padding: 12px 16px;
+  overflow: hidden;
+  background: rgb(15 21 18 / 90%);
+  border: 1px solid rgb(255 255 255 / 8%);
+  border-radius: 12px;
+}
+
+.test-overlay__label {
+  display: block;
+  margin-bottom: 4px;
+  overflow: hidden;
+  color: #aeb8b2;
+  font-size: 12px;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.test-overlay__value {
+  display: block;
+  overflow: hidden;
+  color: inherit;
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
