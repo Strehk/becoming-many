@@ -33,13 +33,16 @@ Palette (see [moodboard](mood/moodboard.png)):
 `#0E1017` `#0D1730` `#3C4782` `#3FA7E2` `#CBD9E5` `#F6F0E9`
 
 Decided art direction (2026-08-25): aerial-perspective depth mapping in the
-spirit of the moodboard. Near geometry reads as dark indigo silhouettes and
-recedes through indigo and pale blue-grey into a warm off-white haze that
-equals the background color, so distant geometry dissolves completely. Every
-surface shows only its depth-ramp color: there are no proximity accents, so
-approaching a tree darkens it toward the near color instead of lighting it
-up. Individual visible echo waves or ping ripples are excluded by the level
-intent. No audio counterpart exists yet.
+spirit of the moodboard, authored as a grayscale ramp that keeps the
+moodboard palette's luminance steps:
+`#101010` `#171717` `#494949` `#959595` `#D7D7D7` `#F1F1F1`
+
+Near geometry reads as near-black silhouettes and recedes through gray into
+an off-white haze that equals the background color, so distant geometry
+dissolves completely. Every surface shows only its depth-ramp color: there
+are no proximity accents, so approaching a tree darkens it toward the near
+color instead of lighting it up. Individual visible echo waves or ping
+ripples are excluded by the level intent. No audio counterpart exists yet.
 
 ## Exact Typed Preset and Active Modules
 
@@ -113,9 +116,12 @@ intent. No audio counterpart exists yet.
 - The runtime intensity driver is blocked on open-decisions §2; a future
   driver must deactivate the effect rather than merely zero the uniform,
   because only the composition-root skip removes the GPU work.
+- The ramp is authored grayscale (decided 2026-08-25); the indigo moodboard
+  palette remains the documented reference and can return by editing only
+  the preset colors.
 - Open art decisions: ramp stop tuning against real headset contrast;
-  whether the carried-over dark air motes should adopt a pale palette tone
-  for legibility against dark near forms; whether scent intensity should be
+  whether the carried-over dark air motes should adopt a pale gray tone for
+  legibility against dark near forms; whether scent intensity should be
   reduced here to express "color and scent recede" from the Level Guide
-  transition; where the unused cyan palette tone (`#3FA7E2`) should appear,
-  if anywhere.
+  transition; whether the moodboard's indigo and cyan tones return once the
+  grayscale base is approved.

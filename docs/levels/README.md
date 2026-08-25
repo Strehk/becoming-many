@@ -246,13 +246,14 @@ Prefer material changes over duplicate geometry or additional scene passes. A po
 ### Decided Art Direction
 
 Aerial-perspective depth mapping, decided 2026-08-25 and implemented in
-`src/modules/echo-depth/`: near geometry reads as dark indigo silhouettes
-(`#0E1017`, `#0D1730`) and recedes through `#3C4782` and `#CBD9E5` into a
-warm off-white haze (`#F6F0E9`) that equals the background color. Every
-surface always shows only its depth-ramp color; a cyan rim accent on near
-forms was tried and removed the same day because approaching geometry must
-darken, not light up. See [03 — Echolocation](03-echolocation/README.md)
-for the exact preset.
+`src/modules/echo-depth/`: near geometry reads as near-black silhouettes
+and recedes into an off-white haze that equals the background color. The
+ramp is currently authored grayscale (`#101010` to `#F1F1F1`), keeping the
+moodboard palette's luminance steps; the indigo moodboard tones remain the
+documented reference. Every surface always shows only its depth-ramp
+color; a cyan rim accent on near forms was tried and removed the same day
+because approaching geometry must darken, not light up. See
+[03 — Echolocation](03-echolocation/README.md) for the exact preset.
 
 ### Open Art Decisions
 

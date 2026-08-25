@@ -9,7 +9,7 @@ import type { LevelPreset } from "./level-runtime";
 
 export const level: LevelPreset = {
   // Background equals the ramp haze stop, so far geometry dissolves into it.
-  backgroundColor: 0xf6f0e9,
+  backgroundColor: 0xf1f1f1,
   viewDistance: 128,
   testUi: true,
   terrain: {
@@ -20,10 +20,10 @@ export const level: LevelPreset = {
   // intensity ramp fades between related tones instead of clashing ones.
   vegetation: {
     colors: {
-      trunkColor: 0x0e1017,
-      leafColor: 0x0d1730,
-      leafAccentColor: 0x3c4782,
-      flowerColor: 0x3fa7e2,
+      trunkColor: 0x101010,
+      leafColor: 0x171717,
+      leafAccentColor: 0x494949,
+      flowerColor: 0x959595,
     },
     instancesPerHectareByZone: {
       meadow: 12,
@@ -34,8 +34,8 @@ export const level: LevelPreset = {
   },
   rocks: {
     colors: {
-      darkColor: 0x0d1730,
-      lightColor: 0x3c4782,
+      darkColor: 0x171717,
+      lightColor: 0x494949,
     },
     instancesPerHectareByZone: {
       meadow: 8,
@@ -93,14 +93,15 @@ export const level: LevelPreset = {
     nearDistanceMeters: 6,
     // Below the view distance, so chunk streaming happens inside the haze.
     farDistanceMeters: 120,
-    // The fixed level-03 palette, near to far; every surface shows only its
-    // depth-ramp color regardless of proximity.
+    // Grayscale ramp, near to far, keeping the luminance steps of the
+    // moodboard palette; every surface shows only its depth-ramp color
+    // regardless of proximity.
     colors: {
-      nearColor: 0x0e1017,
-      nearShadeColor: 0x0d1730,
-      midColor: 0x3c4782,
-      farColor: 0xcbd9e5,
-      hazeColor: 0xf6f0e9,
+      nearColor: 0x101010,
+      nearShadeColor: 0x171717,
+      midColor: 0x494949,
+      farColor: 0xd7d7d7,
+      hazeColor: 0xf1f1f1,
     },
   },
 };
