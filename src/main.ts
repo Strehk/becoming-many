@@ -6,7 +6,7 @@
  */
 
 import "./style.css";
-import { level } from "./levels/designTest.level";
 import { startLevel } from "./levels/level-runtime";
+import { level } from "./levels/scent.level";
 
 await startLevel(document.querySelector(".app"), level);

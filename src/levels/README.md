@@ -19,9 +19,13 @@ satisfies the shared `LevelPreset` contract. Presets are sparse: omitted values
 remain unchanged.
 
 `white-world.level.ts` owns the narrative White World values and does not
-activate Terrain. `test.level.ts` is the current development entry and activates
-Terrain and Grass, uses Zone Visualizer as the base presentation, and overlays
-the Magnetic Sense stripe effect.
+activate Terrain. `scent.level.ts` is the Scent World base experiment and
+activates Scent Particles and the White World Air Particles layer beside the
+test overlay; its invisible ground flag clamps flight above the shared world
+surface without rendering Terrain. `test.level.ts` is the
+diagnostic development preset and activates Terrain and Grass, uses Zone
+Visualizer as the base presentation, and overlays the Magnetic Sense stripe
+effect.
 
 Presentation values can include the background, the camera view distance, and
 optional module parameters. The view distance is also the hard visibility
