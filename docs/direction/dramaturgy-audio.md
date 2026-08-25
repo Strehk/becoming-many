@@ -2,15 +2,18 @@
 
 ## Schedule
 
-- The runtime plays **plain schedule JSON**: per-sense intensity envelopes
-  (keyframed 0..1 curves), narration cue times, and audio gains — against one
-  virtual clock with pause/seek/timeScale, so scrubbing and rehearsal work.
+- The runtime plays **plain baked schedule data**: per-sense intensity
+  envelopes (keyframed 0..1 curves), narration cue times, and audio gains —
+  against one virtual clock with pause/seek/timeScale, so scrubbing and
+  rehearsal work. Schedules are committed as typed TypeScript data files, per
+  the repository's configuration rule — no JSON schedule format.
 - There are two schedules: the **tutorial** (a short scripted mini-course
   confirming the visitor can steer) and the **piece** (roughly five minutes:
   discovery → realisation → overload → return).
-- Authoring loop: tune in the browser → export JSON → commit. Any curve-editor
-  tool is **dev-only and exports baked JSON** — never a runtime dependency,
-  never a second schedule authority.
+- Authoring loop: tune in the browser → export the baked schedule as a typed
+  TypeScript data file → commit. Any curve-editor tool is **dev-only and
+  exports baked data** — never a runtime dependency, never a second schedule
+  authority.
 - One schedule authority total. How clock and schedule integrate with the Level
   Runtime is [Open Decision 2](open-decisions.md).
 

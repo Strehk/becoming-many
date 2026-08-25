@@ -33,6 +33,10 @@ should extend it. They are defaults, not reasons to add infrastructure.
   Comments should explain why the value exists or how it was measured.
 - Use explicit TypeScript contracts at ownership boundaries. Prefer `readonly`
   data and narrow unions when they prevent invalid states.
+- Keep all authored configuration in typed TypeScript files: settings,
+  presets, and module definitions. Do not introduce JSON, YAML, or
+  environment-variable configuration; JSON under `public/` records asset
+  provenance, not configuration.
 - Do not write the same settings structure as both a value and an interface.
   When the settings object is the source of truth, derive its type with
   `export type Settings = typeof SETTINGS;`.
