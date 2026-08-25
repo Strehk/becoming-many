@@ -14,23 +14,26 @@ the concise entry point for the current implementation.
 
 ## Runnable Result
 
-`bun run dev` starts a Vite application that shows the Scent World base experiment:
+`bun run dev` starts a Vite application that shows the Echolocation level:
 
-- pale warm background from the 02-palette base tone
-- deterministic scent emitters streaming with travel wherever the invisible
-  zone facts grow forest, each with one signature color and a flat cloud of
-  rising, swaying, fading round particles hugging the invisible ground
-- the White World layer of sparse dark air particles around the camera
-- no rendered terrain or other surface modules; the invisible shared world
-  surface still clamps flight to one metre above the ground
+- a warm off-white haze background equal to the depth ramp's far stop
+- rendered Terrain, Vegetation, and Rocks whose surface colors are replaced
+  by the shared Echo Depth ramp: dark indigo silhouettes nearby receding
+  into the haze, with no proximity accents anywhere
+- distant geometry dissolves into the background before the chunk streaming
+  edge, so recycling happens inside the haze
+- the carried-over earlier senses, because senses layer instead of swapping:
+  the White World air-particle layer and the Scent World clouds with their
+  02-palette signatures, now anchored above the rendered ground
 - the diagnostic test overlay
 - pointer-lock mouse look
 - WASD and arrow-key flight along the mouse look direction
 - a user-triggered Three.js `immersive-vr` button
 
-The application currently selects `scent.level.ts` in its minimal browser entry.
-It has one Level Runtime composition root and one render loop. The Design Test
-landscape remains available by selecting `designTest.level.ts` instead.
+The application currently selects `echo.level.ts` in its minimal browser
+entry. It has one Level Runtime composition root and one render loop. The
+Scent World base experiment remains available by selecting `scent.level.ts`
+instead, and the Design Test landscape by selecting `designTest.level.ts`.
 
 ## Implemented System
 
@@ -57,6 +60,11 @@ landscape remains available by selecting `designTest.level.ts` instead.
 - `scent.level.ts` is the Scent World base experiment: a pale warm background,
   a 128-metre view distance, the test overlay, Scent Particles, the unchanged
   White World Air Particles layer, and the invisible ground flag.
+- `echo.level.ts` is the Echolocation level: a 128-metre view distance, the
+  test overlay, Terrain with its plain material, dark-palette Vegetation and
+  Rocks, the unchanged White World air layer and Scent World layer carried
+  over as accumulated senses, and the `echoDepth` field that decorates the
+  three surface modules' materials with one shared distance ramp.
 - The sparse `invisibleGround: true` flag clamps flight above the shared
   deterministic world surface without creating the Terrain module or any
   rendered geometry.
@@ -70,8 +78,10 @@ landscape remains available by selecting `designTest.level.ts` instead.
   `unload`.
 - Air Particles, Scent Particles, Grass, Terrain, Vegetation, Rocks, and
   Animals are implemented content modules. Zone Visualizer is the active
-  test-only Terrain presentation; Magnetic Sense is a composable material
-  effect.
+  test-only Terrain presentation; Magnetic Sense and Echo Depth are
+  composable material effects. Echo Depth is the first multi-consumer
+  effect: the composition root applies one instance to Terrain, Vegetation,
+  and Rocks through the shared `UnlitMaterialEffect` contract.
 
 ### World Surface
 
@@ -227,6 +237,23 @@ landscape remains available by selecting `designTest.level.ts` instead.
   stripes retain their base ground color.
 - Grass remains visually and architecturally independent.
 
+### Echo Depth
+
+- Echo Depth replaces the surface color of Terrain, Vegetation, and Rocks
+  with one camera-distance palette ramp; it adds no geometry, texture,
+  light, scene pass, or draw call.
+- The vertex stage writes only the rotation-invariant camera-space radial
+  distance; the effect uses no normals, so Terrain's deleted `normal`
+  attribute needs no special handling.
+- The fragment stage blends four smoothstep segments across the authored
+  level-03 palette; the final intensity mix (0..1) fades the whole sense
+  against the base color. Every surface shows only its depth-ramp color —
+  a near-form rim accent was removed by an art decision.
+- All patched programs share one uniform set. The composition root skips the
+  effect entirely when the preset omits `echoDepth` or authors intensity
+  zero, so an inactive sense costs no GPU work; a future runtime driver must
+  deactivate rather than merely zero the uniform.
+
 ## Runtime Assets
 
 `public/animals` contains four animated animal GLBs, `public/trees` contains
@@ -244,13 +271,15 @@ Manifests remain metadata rather than a parallel runtime configuration system.
 
 The last clean verification recorded:
 
-- `bun test`: 85 tests
+- `bun test`: 96 tests
 - `bun run check`: strict TypeScript
 - `bun run lint`: clean Biome run
 - `bun run build`: Vite production build
 
 Fallow reports no dead production exports or complexity violations, but
-does report known duplicated placement code in Vegetation and Rocks.
+does report known duplicated placement code in Vegetation and Rocks and the
+deliberately parallel shader-patch idiom shared by Magnetic Sense and Echo
+Depth.
 
 Vegetation and Rocks share deterministic density acceptance and weighted asset
 selection. Their transform and placement policies remain module-local.

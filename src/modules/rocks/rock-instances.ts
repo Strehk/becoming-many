@@ -17,6 +17,10 @@ import {
   uploadCommittedModels,
   writeModelInstance,
 } from "../../utils/asset-loader/instanced-model-pool";
+import {
+  applyMaterialEffects,
+  type UnlitMaterialEffect,
+} from "../../utils/asset-loader/material-effect";
 import { createStaticModelAsset } from "../../utils/asset-loader/static-model";
 import {
   type ChunkCandidate,
@@ -46,6 +50,7 @@ interface RockInstancesOptions {
   readonly chunkSize: number;
   readonly chunkSlotCount: number;
   readonly worldSurface: WorldSurface;
+  readonly effects?: readonly UnlitMaterialEffect[];
 }
 
 export interface RockInstances {
@@ -71,6 +76,7 @@ export function createRockInstances({
   chunkSize,
   chunkSlotCount,
   worldSurface,
+  effects,
 }: RockInstancesOptions): RockInstances {
   validateStaticPopulation(parameters, chunkSize, "Rock");
   const candidateGrid = createChunkCandidateGrid(
@@ -85,6 +91,13 @@ export function createRockInstances({
       (material) => getRockColor(colors, material.name, assetIndex),
     ),
   }));
+  if (effects) {
+    for (const { model } of sources) {
+      for (const part of model.parts) {
+        applyMaterialEffects(effects, part.material);
+      }
+    }
+  }
   const modelPool = createInstancedModelPool({
     name: "Rocks",
     sources,

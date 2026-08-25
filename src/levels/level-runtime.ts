@@ -16,6 +16,11 @@ import {
   createAnimalsModule,
 } from "../modules/animals/animals";
 import { ANIMALS_DEFINITION } from "../modules/animals/animals-definition";
+import {
+  createEchoDepth,
+  type EchoDepthEffect,
+  type EchoDepthParameters,
+} from "../modules/echo-depth/echo-depth";
 import { createGrassModule, type GrassPreset } from "../modules/grass/grass";
 import {
   createMagneticSense,
@@ -83,6 +88,9 @@ export interface LevelPreset {
   readonly vegetation?: VegetationPreset;
   readonly rocks?: RocksPreset;
   readonly animals?: AnimalsPreset;
+
+  /** One depth ramp shared by Terrain, Vegetation, and Rocks materials. */
+  readonly echoDepth?: EchoDepthParameters;
 }
 
 interface LoadedLevelAssets {
@@ -163,19 +171,32 @@ function applyLevelPresentation(
 
 function createConfiguredModules(setup: LevelSetup): WorldModule[] {
   const modules: WorldModule[] = [];
+  const echoDepth = createEchoDepthEffect(setup.level);
 
-  addModule(modules, createTerrain(setup));
+  addModule(modules, createTerrain(setup, echoDepth));
   addModule(modules, createAirParticles(setup));
   addModule(modules, createScentParticles(setup));
   addModule(modules, createGrass(setup));
-  addModule(modules, createVegetation(setup));
-  addModule(modules, createRocks(setup));
+  addModule(modules, createVegetation(setup, echoDepth));
+  addModule(modules, createRocks(setup, echoDepth));
   addModule(modules, createAnimals(setup));
 
   return modules;
 }
 
-function createTerrain(setup: LevelSetup): WorldModule | undefined {
+/** Skip the sense entirely at intensity zero so its GPU work never runs. */
+function createEchoDepthEffect(
+  level: LevelPreset,
+): EchoDepthEffect | undefined {
+  const parameters = level.echoDepth;
+  if (!parameters || parameters.intensity === 0) return undefined;
+  return createEchoDepth(parameters);
+}
+
+function createTerrain(
+  setup: LevelSetup,
+  echoDepth: EchoDepthEffect | undefined,
+): WorldModule | undefined {
   const preset = setup.level.terrain;
   if (!preset) return undefined;
 
@@ -184,6 +205,7 @@ function createTerrain(setup: LevelSetup): WorldModule | undefined {
   if (preset.magneticSense) {
     effects.push(createMagneticSense(preset.magneticSense));
   }
+  if (echoDepth) effects.push(echoDepth);
 
   return createTerrainModule({
     scene: setup.world.scene,
@@ -240,7 +262,10 @@ function createGrass(setup: LevelSetup): WorldModule | undefined {
   });
 }
 
-function createVegetation(setup: LevelSetup): WorldModule | undefined {
+function createVegetation(
+  setup: LevelSetup,
+  echoDepth: EchoDepthEffect | undefined,
+): WorldModule | undefined {
   const preset = setup.level.vegetation;
   if (!preset) return undefined;
 
@@ -251,10 +276,14 @@ function createVegetation(setup: LevelSetup): WorldModule | undefined {
     assets: setup.assets.vegetation,
     streamQueue: setup.world.streamQueue,
     worldSurface: setup.worldSurface,
+    effects: echoDepth ? [echoDepth] : undefined,
   });
 }
 
-function createRocks(setup: LevelSetup): WorldModule | undefined {
+function createRocks(
+  setup: LevelSetup,
+  echoDepth: EchoDepthEffect | undefined,
+): WorldModule | undefined {
   const preset = setup.level.rocks;
   if (!preset) return undefined;
 
@@ -265,6 +294,7 @@ function createRocks(setup: LevelSetup): WorldModule | undefined {
     assets: setup.assets.rocks,
     streamQueue: setup.world.streamQueue,
     worldSurface: setup.worldSurface,
+    effects: echoDepth ? [echoDepth] : undefined,
   });
 }
 

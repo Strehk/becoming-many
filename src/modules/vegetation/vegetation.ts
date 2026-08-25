@@ -8,6 +8,7 @@
 import type { PerspectiveCamera, Scene } from "three";
 import type { GltfAssets } from "../../utils/asset-loader/gltf-assets";
 import { disposeGltfAssets } from "../../utils/asset-loader/gltf-assets";
+import type { UnlitMaterialEffect } from "../../utils/asset-loader/material-effect";
 import {
   type ChunkAssignment,
   ChunkWindow,
@@ -53,6 +54,7 @@ export interface VegetationModuleOptions {
   readonly assets: GltfAssets;
   readonly streamQueue: StreamQueue;
   readonly worldSurface: WorldSurface;
+  readonly effects?: readonly UnlitMaterialEffect[];
 }
 
 interface VegetationRuntimeOptions {
@@ -63,6 +65,7 @@ interface VegetationRuntimeOptions {
   readonly assets: GltfAssets;
   readonly streamQueue: StreamQueue;
   readonly worldSurface: WorldSurface;
+  readonly effects?: readonly UnlitMaterialEffect[];
 }
 
 interface VegetationStream {
@@ -164,6 +167,7 @@ function createVegetationStream(
     chunkSize,
     chunkSlotCount: chunkWindow.slotCount,
     worldSurface: options.worldSurface,
+    effects: options.effects,
   });
   const slotJobKeys = Array.from({ length: chunkWindow.slotCount }, () => ({}));
   return { chunkWindow, instances, slotJobKeys };

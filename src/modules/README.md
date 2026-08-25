@@ -31,6 +31,13 @@ creating a second mesh, draw call, texture, or runtime lifecycle.
 world-space stripes and flowing light packets while preserving the selected
 base ground color outside those stripes. It does not import or recolor Grass.
 
+`echo-depth` is the second composable material effect and the first with
+several consumers: the composition root creates one instance and applies it
+to Terrain, Vegetation, and Rocks through the shared `UnlitMaterialEffect`
+contract in `src/utils/asset-loader/material-effect.ts`. It replaces surface
+color with the level-03 camera-distance ramp and never imports a sibling
+module.
+
 Landscape modules share only stable contracts: `WorldModule` for lifecycle,
 `WorldSurface` for read-only facts, `WORLD_WIND` for the immutable global wind,
 `ChunkAssignment` for finite spatial ownership, and `StreamJob` for bounded
