@@ -46,6 +46,11 @@ import type {
   TerrainPresentation,
 } from "../modules/terrain/terrain-geometry";
 import {
+  createThermalPerception,
+  type ThermalPerceptionEffects,
+  type ThermalPerceptionParameters,
+} from "../modules/thermal-perception/thermal-perception";
+import {
   createVegetationModule,
   type VegetationPreset,
 } from "../modules/vegetation/vegetation";
@@ -57,6 +62,7 @@ import {
   type GltfAssets,
   loadGltfAssets,
 } from "../utils/asset-loader/gltf-assets";
+import type { UnlitMaterialEffect } from "../utils/asset-loader/material-effect";
 import type { WorldModule } from "../world/module-runtime";
 import {
   startWorld,
@@ -98,6 +104,13 @@ export interface LevelPreset {
 
   /** Fly swarms printing motion trails; movement becomes the visible signal. */
   readonly motion?: MotionSenseParameters;
+
+  /**
+   * One false-color heat view inside a viewer-centred radius, shared by
+   * Terrain, Vegetation, Rocks, and Animals; it wins the surface color over
+   * the carried echo ramp and feathers back into it at the radius edge.
+   */
+  readonly thermal?: ThermalPerceptionParameters;
 }
 
 interface LoadedLevelAssets {
@@ -179,17 +192,31 @@ function applyLevelPresentation(
 function createConfiguredModules(setup: LevelSetup): WorldModule[] {
   const modules: WorldModule[] = [];
   const echoDepth = createEchoDepthEffect(setup.level);
+  const thermal = createThermalEffects(setup);
 
-  addModule(modules, createTerrain(setup, echoDepth));
+  addModule(modules, createTerrain(setup, echoDepth, thermal));
   addModule(modules, createAirParticles(setup));
   addModule(modules, createScentParticles(setup));
   addModule(modules, createGrass(setup));
-  addModule(modules, createVegetation(setup, echoDepth));
-  addModule(modules, createRocks(setup, echoDepth));
-  addModule(modules, createAnimals(setup));
+  addModule(modules, createVegetation(setup, echoDepth, thermal));
+  addModule(modules, createRocks(setup, echoDepth, thermal));
+  addModule(modules, createAnimals(setup, thermal));
   addModule(modules, createMotionSense(setup));
 
   return modules;
+}
+
+/** Skip the sense entirely at intensity zero so its GPU work never runs. */
+function createThermalEffects(
+  setup: LevelSetup,
+): ThermalPerceptionEffects | undefined {
+  const parameters = setup.level.thermal;
+  if (!parameters || parameters.intensity === 0) return undefined;
+
+  return createThermalPerception(parameters, {
+    surfaceSettings: WORLD_SURFACE_SETTINGS,
+    conditionsAt: setup.worldSurface.zoneConditionsAt,
+  });
 }
 
 /** Skip the sense entirely at intensity zero so its GPU work never runs. */
@@ -218,12 +245,17 @@ function createEchoDepthEffect(
 function createTerrain(
   setup: LevelSetup,
   echoDepth: EchoDepthEffect | undefined,
+  thermal: ThermalPerceptionEffects | undefined,
 ): WorldModule | undefined {
   const preset = setup.level.terrain;
   if (!preset) return undefined;
 
   const presentation = createTerrainPresentation(preset, setup.worldSurface);
+  // The first-applied effect executes last and wins the final color (see
+  // material-shader-patch): thermal covers everything inside its radius,
+  // magnetic stripes print over the echo ramp outside it.
   const effects: TerrainMaterialEffect[] = [];
+  if (thermal) effects.push(thermal.terrain);
   if (preset.magneticSense) {
     effects.push(createMagneticSense(preset.magneticSense));
   }
@@ -287,6 +319,7 @@ function createGrass(setup: LevelSetup): WorldModule | undefined {
 function createVegetation(
   setup: LevelSetup,
   echoDepth: EchoDepthEffect | undefined,
+  thermal: ThermalPerceptionEffects | undefined,
 ): WorldModule | undefined {
   const preset = setup.level.vegetation;
   if (!preset) return undefined;
@@ -298,13 +331,14 @@ function createVegetation(
     assets: setup.assets.vegetation,
     streamQueue: setup.world.streamQueue,
     worldSurface: setup.worldSurface,
-    effects: echoDepth ? [echoDepth] : undefined,
+    effects: buildSurfaceEffects(thermal?.vegetation, echoDepth),
   });
 }
 
 function createRocks(
   setup: LevelSetup,
   echoDepth: EchoDepthEffect | undefined,
+  thermal: ThermalPerceptionEffects | undefined,
 ): WorldModule | undefined {
   const preset = setup.level.rocks;
   if (!preset) return undefined;
@@ -316,11 +350,25 @@ function createRocks(
     assets: setup.assets.rocks,
     streamQueue: setup.world.streamQueue,
     worldSurface: setup.worldSurface,
-    effects: echoDepth ? [echoDepth] : undefined,
+    effects: buildSurfaceEffects(thermal?.rocks, echoDepth),
   });
 }
 
-function createAnimals(setup: LevelSetup): WorldModule | undefined {
+/** Order thermal before echo so it wins the color (first-applied wins). */
+function buildSurfaceEffects(
+  thermal: UnlitMaterialEffect | undefined,
+  echoDepth: EchoDepthEffect | undefined,
+): readonly UnlitMaterialEffect[] | undefined {
+  const effects = [thermal, echoDepth].filter(
+    (effect): effect is UnlitMaterialEffect => effect !== undefined,
+  );
+  return effects.length > 0 ? effects : undefined;
+}
+
+function createAnimals(
+  setup: LevelSetup,
+  thermal: ThermalPerceptionEffects | undefined,
+): WorldModule | undefined {
   if (!setup.level.animals) return undefined;
 
   return createAnimalsModule({
@@ -330,6 +378,7 @@ function createAnimals(setup: LevelSetup): WorldModule | undefined {
     preset: setup.level.animals,
     assets: setup.assets.animals,
     worldSurface: setup.worldSurface,
+    effects: thermal ? [thermal.animals] : undefined,
   });
 }
 

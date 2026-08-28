@@ -34,6 +34,7 @@ interface TerrainSlot {
   readonly mesh: Mesh<PlaneGeometry, MeshBasicMaterial>;
   readonly positionAttribute: BufferAttribute;
   readonly zoneConditionsAttribute: Float32BufferAttribute | undefined;
+  readonly thermalWarmthAttribute: Float32BufferAttribute | undefined;
   readonly stagedGroundHeights: Float32Array;
 }
 
@@ -42,6 +43,7 @@ interface TerrainSlotOptions {
   readonly segmentsPerSide: number;
   readonly material: MeshBasicMaterial;
   readonly storesZoneConditions: boolean;
+  readonly storesThermalWarmth: boolean;
 }
 
 export interface TerrainPresentation {
@@ -53,6 +55,13 @@ export interface TerrainPresentation {
 export interface TerrainMaterialEffect {
   readonly applyTo: (material: MeshBasicMaterial) => void;
   readonly update?: (deltaSeconds: number) => void;
+
+  /** Declaring a sampler makes Terrain stream a per-vertex warmth attribute. */
+  readonly warmthAt?: (
+    worldX: number,
+    worldZ: number,
+    groundYMeters: number,
+  ) => number;
 }
 
 export interface TerrainGeometry {
@@ -91,6 +100,9 @@ export function createTerrainGeometry({
   for (const effect of effects) effect.applyTo(material);
 
   const storesZoneConditions = presentation?.conditionsAt !== undefined;
+  const storesThermalWarmth = effects.some(
+    (effect) => effect.warmthAt !== undefined,
+  );
   const group = new Group();
   const slots = Array.from({ length: chunkSlotCount }, () =>
     createTerrainSlot({
@@ -98,6 +110,7 @@ export function createTerrainGeometry({
       segmentsPerSide,
       material,
       storesZoneConditions,
+      storesThermalWarmth,
     }),
   );
 
@@ -169,6 +182,7 @@ function createTerrainSlot({
   segmentsPerSide,
   material,
   storesZoneConditions,
+  storesThermalWarmth,
 }: TerrainSlotOptions): TerrainSlot {
   const geometry = new PlaneGeometry(
     chunkSize,
@@ -191,12 +205,21 @@ function createTerrainSlot({
   positionAttribute.setUsage(DynamicDrawUsage);
 
   const vertexCount = (segmentsPerSide + 1) ** 2;
-  const zoneConditionsAttribute = createZoneConditionsAttribute(
+  const zoneConditionsAttribute = createStreamedAttribute(
     vertexCount,
+    4,
     storesZoneConditions,
   );
   if (zoneConditionsAttribute) {
     geometry.setAttribute("zoneConditions", zoneConditionsAttribute);
+  }
+  const thermalWarmthAttribute = createStreamedAttribute(
+    vertexCount,
+    1,
+    storesThermalWarmth,
+  );
+  if (thermalWarmthAttribute) {
+    geometry.setAttribute("thermalWarmth", thermalWarmthAttribute);
   }
 
   const mesh = new Mesh(geometry, material);
@@ -206,17 +229,22 @@ function createTerrainSlot({
     mesh,
     positionAttribute,
     zoneConditionsAttribute,
+    thermalWarmthAttribute,
     stagedGroundHeights: new Float32Array(vertexCount),
   };
 }
 
-function createZoneConditionsAttribute(
+function createStreamedAttribute(
   vertexCount: number,
-  storesZoneConditions: boolean,
+  itemSize: number,
+  stored: boolean,
 ): Float32BufferAttribute | undefined {
-  if (!storesZoneConditions) return undefined;
+  if (!stored) return undefined;
 
-  const attribute = new Float32BufferAttribute(vertexCount * 4, 4);
+  const attribute = new Float32BufferAttribute(
+    vertexCount * itemSize,
+    itemSize,
+  );
   attribute.setUsage(DynamicDrawUsage);
   return attribute;
 }
@@ -235,12 +263,28 @@ function writeTerrainRow(
       (column / terrain.segmentsPerSide) * terrain.chunkSize;
     const worldZ =
       assignment.originZ + (row / terrain.segmentsPerSide) * terrain.chunkSize;
-    slot.stagedGroundHeights[vertexIndex] = terrain.worldSurface.groundYAt(
-      worldX,
-      worldZ,
-    );
+    const groundY = terrain.worldSurface.groundYAt(worldX, worldZ);
+    slot.stagedGroundHeights[vertexIndex] = groundY;
     writeZoneConditions(terrain, slot, vertexIndex, worldX, worldZ);
+    writeThermalWarmth(terrain, slot, vertexIndex, worldX, worldZ, groundY);
   }
+}
+
+function writeThermalWarmth(
+  terrain: TerrainGeometry,
+  slot: TerrainSlot,
+  vertexIndex: number,
+  worldX: number,
+  worldZ: number,
+  groundYMeters: number,
+): void {
+  const warmthAt = terrain.effects.find(
+    (effect) => effect.warmthAt !== undefined,
+  )?.warmthAt;
+  const attribute = slot.thermalWarmthAttribute;
+  if (!warmthAt || !attribute) return;
+
+  attribute.setX(vertexIndex, warmthAt(worldX, worldZ, groundYMeters));
 }
 
 function writeZoneConditions(
@@ -284,6 +328,9 @@ function publishTerrainChunk(
   slot.positionAttribute.needsUpdate = true;
   if (slot.zoneConditionsAttribute) {
     slot.zoneConditionsAttribute.needsUpdate = true;
+  }
+  if (slot.thermalWarmthAttribute) {
+    slot.thermalWarmthAttribute.needsUpdate = true;
   }
 
   // PlaneGeometry is centered locally, while assignments describe its corner.

@@ -215,6 +215,33 @@ test("Terrain writes optional zone conditions into its existing mesh pool", () =
   );
 });
 
+test("Terrain writes optional thermal warmth into its existing mesh pool", () => {
+  const effect: TerrainMaterialEffect = {
+    applyTo: () => {},
+    warmthAt: (_worldX, _worldZ, groundYMeters) =>
+      groundYMeters > -8 ? 1 : 0.25,
+  };
+  const { terrainGroup } = createLoadedTerrain(
+    undefined,
+    DEFAULT_TERRAIN_PARAMETERS,
+    undefined,
+    [effect],
+  );
+  const meshes = getTerrainMeshes(terrainGroup);
+  const attribute = meshes[0]?.geometry.getAttribute("thermalWarmth");
+  if (!attribute) throw new Error("Expected a thermalWarmth attribute");
+
+  expect(
+    meshes.every((mesh) => mesh.geometry.hasAttribute("thermalWarmth")),
+  ).toBe(true);
+  expect(attribute.itemSize).toBe(1);
+  expect([0.25, 1]).toContain(attribute.getX(0));
+
+  const plainTerrain = createLoadedTerrain();
+  const plainMesh = getTerrainMeshes(plainTerrain.terrainGroup)[0];
+  expect(plainMesh?.geometry.hasAttribute("thermalWarmth")).toBe(false);
+});
+
 test("Terrain replaces obsolete partially generated work", () => {
   const { camera, module, streamQueue, terrainGroup } = createLoadedTerrain();
 

@@ -46,6 +46,18 @@ outward drift, and collapse derive GPU-only from one frame uniform. Each
 actor feeds its ring through the module's `MotionPointSource` seam, where
 further moving actors can join; the module never imports a sibling.
 
+`thermal-perception` is the third composable material effect and the first
+with per-consumer warmth sources: one shared radius-and-palette uniform set
+decorates Terrain (a CPU-sampled per-vertex warmth attribute from elevation
+and zone conditions), Vegetation and Rocks (a stable hashed per-instance
+warmth), and Animals (one constant living-body warmth). The false-color
+ramp exists only inside the authored viewer radius, measured as the
+camera-space view distance, and feathers back into the carried base color.
+All material effects patch through the shared
+`src/utils/asset-loader/material-shader-patch.ts` helper; the composition
+root orders thermal first so it wins the final surface color. The module
+never imports a sibling.
+
 Landscape modules share only stable contracts: `WorldModule` for lifecycle,
 `WorldSurface` for read-only facts, `WORLD_WIND` for the immutable global wind,
 `ChunkAssignment` for finite spatial ownership, and `StreamJob` for bounded

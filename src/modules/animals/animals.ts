@@ -10,6 +10,7 @@ import {
   disposeGltfAssets,
   type GltfAssets,
 } from "../../utils/asset-loader/gltf-assets";
+import type { UnlitMaterialEffect } from "../../utils/asset-loader/material-effect";
 import type { WorldModule } from "../../world/module-runtime";
 import type { WorldSurface } from "../../world-surface/world-surface";
 import {
@@ -40,6 +41,7 @@ export interface AnimalsModuleOptions {
   readonly preset: AnimalsPreset;
   readonly assets: GltfAssets;
   readonly worldSurface: WorldSurface;
+  readonly effects?: readonly UnlitMaterialEffect[];
 }
 
 interface AnimalsState {
@@ -102,6 +104,7 @@ function loadAnimals(state: AnimalsState, options: AnimalsModuleOptions): void {
     assets: options.assets,
     parameters: options.definition,
     colors: options.preset.colors,
+    effects: options.effects,
     worldSurface: options.worldSurface,
     startX: options.camera.position.x,
     startZ: options.camera.position.z,

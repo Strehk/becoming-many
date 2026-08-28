@@ -71,7 +71,8 @@ export function getZoneId(
   return "meadow";
 }
 
-function isWater(conditions: ZoneConditions): boolean {
+/** The one shared water fact: inside the channel and below the water line. */
+export function isWater(conditions: ZoneConditions): boolean {
   return (
     conditions.riverChannelMarginMeters >= 0 && conditions.waterDepthMeters > 0
   );

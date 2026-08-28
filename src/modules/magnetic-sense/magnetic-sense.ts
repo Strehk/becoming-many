@@ -7,12 +7,10 @@
 
 import type { MeshBasicMaterial } from "three";
 import { Color, MathUtils, Vector2 } from "three";
+import { applyShaderPatch } from "../../utils/asset-loader/material-shader-patch";
 import fragmentShader from "./magnetic-sense.frag.glsl?raw";
 import vertexShader from "./magnetic-sense.vert.glsl?raw";
 
-const THREE_COMMON_SHADER = "#include <common>";
-const THREE_POSITION_SHADER = "#include <begin_vertex>";
-const THREE_COLOR_FRAGMENT = "#include <color_fragment>";
 const MAGNETIC_SENSE_CACHE_KEY = "magnetic-sense-v1";
 const ANIMATION_LOOP_SECONDS = 60;
 
@@ -43,46 +41,30 @@ export function createMagneticSense(
   const directionUniform = {
     value: getFieldDirection(parameters.fieldDirectionDegreesFromNorth),
   };
+  const uniforms = {
+    magneticTime: timeUniform,
+    magneticLineSpacing: { value: parameters.lineSpacingMeters },
+    magneticLineWidth: { value: parameters.lineWidthMeters },
+    magneticPulseWidth: { value: parameters.pulseWidthMeters },
+    magneticLineOpacity: { value: parameters.lineOpacity },
+    magneticFlowSpeed: { value: parameters.flowSpeedMetersPerSecond },
+    magneticIntensity: { value: parameters.intensity },
+    magneticFieldDirection: directionUniform,
+    magneticLineColor: { value: LINE_COLOR },
+    magneticPulseColor: { value: PULSE_COLOR },
+  };
   return {
     applyTo: (material) => {
-      const compileBaseMaterial = material.onBeforeCompile.bind(material);
-      const baseCacheKey = material.customProgramCacheKey();
-
-      material.onBeforeCompile = (shader, renderer) => {
-        compileBaseMaterial(shader, renderer);
-        Object.assign(shader.uniforms, {
-          magneticTime: timeUniform,
-          magneticLineSpacing: { value: parameters.lineSpacingMeters },
-          magneticLineWidth: { value: parameters.lineWidthMeters },
-          magneticPulseWidth: { value: parameters.pulseWidthMeters },
-          magneticLineOpacity: { value: parameters.lineOpacity },
-          magneticFlowSpeed: { value: parameters.flowSpeedMetersPerSecond },
-          magneticIntensity: { value: parameters.intensity },
-          magneticFieldDirection: directionUniform,
-          magneticLineColor: { value: LINE_COLOR },
-          magneticPulseColor: { value: PULSE_COLOR },
-        });
-        shader.vertexShader = shader.vertexShader
-          .replace(
-            THREE_COMMON_SHADER,
-            `${THREE_COMMON_SHADER}\n${vertexShader}`,
-          )
-          .replace(
-            THREE_POSITION_SHADER,
-            `${THREE_POSITION_SHADER}\npassMagneticWorldPosition(transformed);`,
-          );
-        shader.fragmentShader = shader.fragmentShader
-          .replace(
-            THREE_COMMON_SHADER,
-            `${THREE_COMMON_SHADER}\n${fragmentShader}`,
-          )
-          .replace(
-            THREE_COLOR_FRAGMENT,
-            `${THREE_COLOR_FRAGMENT}\ndiffuseColor.rgb = applyMagneticLines(diffuseColor.rgb);`,
-          );
-      };
-      material.customProgramCacheKey = () =>
-        `${baseCacheKey}:${MAGNETIC_SENSE_CACHE_KEY}`;
+      applyShaderPatch(material, {
+        cacheKey: MAGNETIC_SENSE_CACHE_KEY,
+        uniforms,
+        vertexHeader: vertexShader,
+        vertexAnchor: "#include <begin_vertex>",
+        vertexCall: "passMagneticWorldPosition(transformed);",
+        fragmentHeader: fragmentShader,
+        colorFragmentCall:
+          "diffuseColor.rgb = applyMagneticLines(diffuseColor.rgb);",
+      });
     },
     update: (deltaSeconds) => {
       timeUniform.value =

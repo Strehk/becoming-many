@@ -17,6 +17,10 @@ import {
 import type { GLTF } from "three/addons/loaders/GLTFLoader.js";
 import { clone } from "three/addons/utils/SkeletonUtils.js";
 import type { GltfAssets } from "../../utils/asset-loader/gltf-assets";
+import {
+  applyMaterialEffects,
+  type UnlitMaterialEffect,
+} from "../../utils/asset-loader/material-effect";
 import { createUnlitMaterial } from "../../utils/asset-loader/unlit-material";
 import { getCellRandom } from "../../world/chunk-candidates";
 import type { WorldSurface } from "../../world-surface/world-surface";
@@ -63,6 +67,7 @@ interface CreateAnimalActorsOptions {
   readonly assets: GltfAssets;
   readonly parameters: AnimalsDefinition;
   readonly colors: AnimalColors;
+  readonly effects?: readonly UnlitMaterialEffect[];
   readonly worldSurface: WorldSurface;
   readonly startX: number;
   readonly startZ: number;
@@ -113,6 +118,7 @@ function createConfiguredActors(
     const actor = createAnimalActor(
       options.assets,
       options.colors,
+      options.effects ?? [],
       plan,
       actorIndex,
     );
@@ -176,6 +182,7 @@ export function disposeAnimalActors(population: AnimalActors): void {
 function createAnimalActor(
   assets: GltfAssets,
   colors: AnimalColors,
+  effects: readonly UnlitMaterialEffect[],
   plan: AnimalPlan,
   actorIndex: number,
 ): AnimalActor {
@@ -191,6 +198,7 @@ function createAnimalActor(
       const replacements = sources.map((source) =>
         createUnlitMaterial(source, getAnimalColor(colors, source.name)),
       );
+      applyMaterialEffects(effects, replacements);
       object.material = Array.isArray(object.material)
         ? replacements
         : (replacements[0] ?? object.material);

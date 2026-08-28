@@ -26,7 +26,9 @@ surface without rendering Terrain. `echo.level.ts` is the Echolocation level
 and decorates the rendered landscape materials with the shared Echo Depth
 distance ramp. `motion.level.ts` is the Motion Perception level and layers
 the Motion Sense fly swarms and their printed trails onto the carried Echo
-world. `test.level.ts` is the
+world. `thermal.level.ts` is the Thermal Perception level and layers the
+radius-bounded false-color heat view onto the carried Motion world while
+adding the warm animal population. `test.level.ts` is the
 diagnostic development preset and activates Terrain and Grass, uses Zone
 Visualizer as the base presentation, and overlays the Magnetic Sense stripe
 effect.

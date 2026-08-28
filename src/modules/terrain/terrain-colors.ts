@@ -6,6 +6,7 @@
  */
 
 import { Color, MeshBasicMaterial } from "three";
+import { getElevationRange } from "../../world-surface/height-field";
 import type { WorldSurfaceSettings } from "../../world-surface/surface-settings";
 import type { WorldSurface } from "../../world-surface/world-surface";
 import fragmentShader from "./terrain-colors.frag.glsl?raw";
@@ -59,26 +60,5 @@ export function createTerrainColors(
   return {
     material,
     conditionsAt: worldSurface.zoneConditionsAt,
-  };
-}
-
-function getElevationRange(settings: WorldSurfaceSettings): {
-  readonly minimumElevation: number;
-  readonly maximumElevation: number;
-} {
-  const { heightField, river } = settings;
-  const minimumNaturalElevation =
-    heightField.baseHeightY -
-    heightField.rollingElevationMeters -
-    heightField.detailElevationMeters;
-  const maximumElevation =
-    heightField.baseHeightY +
-    heightField.rollingElevationMeters +
-    heightField.detailElevationMeters +
-    heightField.mountainElevationMeters;
-
-  return {
-    minimumElevation: Math.min(minimumNaturalElevation, river.riverBedHeightY),
-    maximumElevation,
   };
 }

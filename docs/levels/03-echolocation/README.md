@@ -107,9 +107,11 @@ ripples are excluded by the level intent. No audio counterpart exists yet.
   its depth-ramp color. The removal also dropped the effect's only use of
   normals, so Terrain's deleted `normal` attribute needs no special
   handling.
-- The `applyTo` shader-patch idiom is deliberately parallel to Magnetic
-  Sense; Fallow reports the two as a clone group. A shared patch helper is a
-  candidate refactor once a third material effect appears.
+- The `applyTo` shader-patch idiom was deliberately parallel to Magnetic
+  Sense. When Thermal Perception arrived as the third material effect
+  (2026-08-28), the wrap-and-inject block was extracted into the shared
+  `src/utils/asset-loader/material-shader-patch.ts` helper, which also
+  documents the first-applied-wins anchor ordering.
 - Vegetation and Rock base colors are visible only below full intensity; they
   are authored from the dark palette end so a future intensity ramp fades
   between related tones.

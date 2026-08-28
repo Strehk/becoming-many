@@ -12,6 +12,7 @@ import type { LevelPreset } from "../../src/levels/level-runtime";
 import { level as motionLevel } from "../../src/levels/motion.level";
 import { level as scentLevel } from "../../src/levels/scent.level";
 import { level as testLevel } from "../../src/levels/test.level";
+import { level as thermalLevel } from "../../src/levels/thermal.level";
 import { level as whiteWorld } from "../../src/levels/white-world.level";
 
 test("only the Test Level activates development diagnostics", () => {
@@ -63,6 +64,12 @@ test("only the Test Level activates development diagnostics", () => {
   expect(designTestLevel.motion).toBeUndefined();
   expect(scentLevel.motion).toBeUndefined();
   expect(echoLevel.motion).toBeUndefined();
+  expect(testPreset.thermal).toBeUndefined();
+  expect(whiteWorldPreset.thermal).toBeUndefined();
+  expect(designTestLevel.thermal).toBeUndefined();
+  expect(scentLevel.thermal).toBeUndefined();
+  expect(echoLevel.thermal).toBeUndefined();
+  expect(motionLevel.thermal).toBeUndefined();
 });
 
 test("Echo Level renders depth through shared materials only", () => {
@@ -178,6 +185,49 @@ test("Motion Level layers fly swarms onto the carried Echo world", () => {
   expect(motion.birds?.flockCount).toBeGreaterThan(0);
   expect(motion.birds?.birdsPerFlock).toBeGreaterThan(0);
   expect(motion.birds?.flightHeightMeters).toBeGreaterThan(0);
+});
+
+test("Thermal Level layers heat onto the carried Motion world", () => {
+  const thermalPreset: LevelPreset = thermalLevel;
+  // The documented level-05 false-color palette, cold to hot.
+  const thermalPalette = [
+    0x2e1386, 0x0c47d1, 0x2eb4e8, 0xd5198a, 0xfb5f16, 0xfcce43,
+  ];
+  const { thermal, animals } = thermalPreset;
+  if (!thermal) throw new Error("Thermal Level must author the thermal sense");
+  if (!animals) throw new Error("Thermal Level must author warm animals");
+
+  expect(thermalPreset.testUi).toBe(true);
+  // Senses layer, never swap: every motion-world layer carries over unchanged.
+  expect(thermalPreset.airParticles).toEqual(motionLevel.airParticles);
+  expect(thermalPreset.scentParticles).toEqual(motionLevel.scentParticles);
+  expect(thermalPreset.echoDepth).toEqual(motionLevel.echoDepth);
+  expect(thermalPreset.terrain).toEqual(motionLevel.terrain);
+  expect(thermalPreset.vegetation).toEqual(motionLevel.vegetation);
+  expect(thermalPreset.rocks).toEqual(motionLevel.rocks);
+  expect(thermalPreset.motion).toEqual(motionLevel.motion);
+  expect(thermalPreset.backgroundColor).toBe(motionLevel.backgroundColor ?? -1);
+  expect(thermalPreset.grass).toBeUndefined();
+  expect(thermalPreset.invisibleGround).toBeUndefined();
+
+  expect(thermal.intensity).toBe(1);
+  expect(Object.values(thermal.colors)).toEqual(thermalPalette);
+  // Heat is a near sense: it feathers out well inside the echo far distance.
+  expect(thermal.edgeFeatherMeters).toBeLessThan(thermal.radiusMeters);
+  expect(thermal.radiusMeters + thermal.edgeFeatherMeters).toBeLessThan(
+    thermalPreset.echoDepth?.farDistanceMeters ?? 0,
+  );
+  // Living bodies outrank every static surface warmth.
+  expect(thermal.actorWarmth).toBeGreaterThan(
+    thermal.surfaces.vegetationWarmth,
+  );
+  expect(thermal.actorWarmth).toBeGreaterThan(thermal.surfaces.rockWarmth);
+
+  // Animals outside the radius sit inside the carried echo grayscale.
+  const echoWorldPalette = [0x101010, 0x171717, 0x494949];
+  for (const color of Object.values(animals.colors)) {
+    expect(echoWorldPalette).toContain(color);
+  }
 });
 
 test("Design Test authors semantic colors without development diagnostics", () => {

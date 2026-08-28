@@ -41,6 +41,7 @@ src/
 │   ├── motion.level.ts
 │   ├── scent.level.ts
 │   ├── test.level.ts
+│   ├── thermal.level.ts
 │   └── white-world.level.ts
 ├── modules/
 │   ├── air-particles/
@@ -57,6 +58,7 @@ src/
 │   ├── scent-particles/
 │   ├── static-population.ts
 │   ├── terrain/
+│   ├── thermal-perception/
 │   ├── zone-visualizer/
 │   └── vegetation/
 ├── sound/
@@ -99,6 +101,7 @@ tests/
 │   ├── scent-particles.test.ts
 │   ├── static-populations.test.ts
 │   ├── terrain.test.ts
+│   ├── thermal-perception.test.ts
 │   └── zone-visualizer.test.ts
 ├── test-ui/
 │   └── frame-metrics.test.ts
@@ -253,13 +256,14 @@ is proven twice; zone and placement policy remain module-owned.
 | `LevelPreset` | Optional level presentation and module parameters |
 | `TerrainPresentationPreset` | Optional Zone Visualizer base presentation |
 | `TerrainPresentation` | Material plus optional sampled conditions and frame update |
-| `TerrainMaterialEffect` | Effect that decorates and optionally updates the Terrain material |
+| `TerrainMaterialEffect` | Effect that decorates and optionally updates the Terrain material, with an optional per-vertex warmth sampler |
 | `WORLD_WIND` | Shared immutable wind direction, strength, and speed |
 | `GrassPreset` | Level-authored density and blade height per supported grass zone |
 | `MagneticSenseParameters` | Magnetic direction, line, pulse, opacity, flow, and intensity values |
 | `ScentParticlesParameters` | Level-authored scent palette, per-chunk emitter density, pool size, and drift values |
 | `MotionSenseParameters` | Level-authored motion intensity, swarm pool, appearance, and trail values |
 | `MotionPointSource` | World-position stream a moving actor exposes for motion-trail printing |
+| `ThermalPerceptionParameters` | Level-authored thermal intensity, viewer radius, feather, palette, and warmth values |
 | `StaticPopulationPreset` | Level-authored instances per hectare for enabled land zones |
 | `StaticPopulationDefinition` | Module-owned candidate grid, seed, assets, sizes, and zone variants |
 | `AnimalsDefinition` | Module-owned species assets, habitats, movement, radius, and visibility budget |

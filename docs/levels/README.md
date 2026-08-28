@@ -367,12 +367,25 @@ Thermal values first attach to moving forms, then become the dominant world repr
 
 Reuse existing geometry. Compute thermal color through shared uniforms, procedural fields, and compact instance attributes without an additional thermal camera or duplicate render pass.
 
+### Decided Art Direction
+
+The heat view is radius-bounded and static (decided 2026-08-28),
+implemented in `src/modules/thermal-perception/`: the documented six-stop
+palette maps cold to hot inside a 30-metre viewer radius that feathers
+back into the carried echo grayscale. Temperature is expressive but
+physically motivated — water coldest and colder with depth, dry ground
+warmer with elevation, forest and slope holding extra warmth — sampled per
+terrain vertex, hashed per vegetation and rock instance, and constant
+near-hot on animals, which join the world here as the strongest
+signatures. See [05 — Thermal Perception](05-thermal-perception/README.md)
+for the exact preset.
+
 ### Open Art Decisions
 
-- physical versus expressive temperature mapping
-- thermal palette
+- physical versus expressive temperature mapping tuning against real
+  headset contrast
+- radius and feather width against the dramaturgy
 - temporal variation and heat trails
-- relationship between altitude, ground type, and temperature
 
 ## 06 — Magnetic Field Perception
 
@@ -464,7 +477,9 @@ docs/levels/
 ├── 04-motion-perception/
 │   ├── README.md
 │   └── mood/moodboard.png
-├── 05-thermal-perception/mood/moodboard.png
+├── 05-thermal-perception/
+│   ├── README.md
+│   └── mood/moodboard.png
 ├── 06-magnetic-field-perception/mood/moodboard.png
 └── 07-connections/mood/moodboard.png
 ```

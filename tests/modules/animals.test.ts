@@ -74,6 +74,32 @@ test("Animals animate only the nearest bounded population", () => {
   expect(scene.children).toHaveLength(0);
 });
 
+test("Animals decorate every actor material with supplied effects", () => {
+  const scene = new Scene();
+  const camera = new PerspectiveCamera();
+  const decoratedMaterials: MeshBasicMaterial[] = [];
+  const module = createAnimalsModule({
+    scene,
+    camera,
+    definition: DEFINITION,
+    preset: PRESET,
+    assets: createAnimalAssets(),
+    worldSurface: createFlatSurface(),
+    effects: [{ applyTo: (material) => decoratedMaterials.push(material) }],
+  });
+
+  module.load();
+
+  // Two species with two actors each and one material per cloned model.
+  expect(decoratedMaterials).toHaveLength(4);
+  expect(
+    decoratedMaterials.every(
+      (material) => material instanceof MeshBasicMaterial,
+    ),
+  ).toBe(true);
+  module.unload();
+});
+
 test("Animals reject an impossible visibility budget", () => {
   expect(() =>
     createAnimalsModule({

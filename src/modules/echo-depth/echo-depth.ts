@@ -7,6 +7,7 @@
 
 import { Color, Vector3 } from "three";
 import type { UnlitMaterialEffect } from "../../utils/asset-loader/material-effect";
+import { applyShaderPatch } from "../../utils/asset-loader/material-shader-patch";
 import fragmentShader from "./echo-depth.frag.glsl?raw";
 import vertexShader from "./echo-depth.vert.glsl?raw";
 import {
@@ -16,9 +17,6 @@ import {
 
 export type { EchoDepthParameters } from "./echo-depth-settings";
 
-const THREE_COMMON_SHADER = "#include <common>";
-const THREE_PROJECT_SHADER = "#include <project_vertex>";
-const THREE_COLOR_FRAGMENT = "#include <color_fragment>";
 const ECHO_DEPTH_CACHE_KEY = "echo-depth-v2";
 
 export type EchoDepthEffect = UnlitMaterialEffect;
@@ -50,33 +48,16 @@ export function createEchoDepth(
 
   return {
     applyTo: (material) => {
-      const compileBaseMaterial = material.onBeforeCompile.bind(material);
-      const baseCacheKey = material.customProgramCacheKey();
-
-      material.onBeforeCompile = (shader, renderer) => {
-        compileBaseMaterial(shader, renderer);
-        Object.assign(shader.uniforms, uniforms);
-        shader.vertexShader = shader.vertexShader
-          .replace(
-            THREE_COMMON_SHADER,
-            `${THREE_COMMON_SHADER}\n${vertexShader}`,
-          )
-          .replace(
-            THREE_PROJECT_SHADER,
-            `${THREE_PROJECT_SHADER}\npassEchoDepth(mvPosition);`,
-          );
-        shader.fragmentShader = shader.fragmentShader
-          .replace(
-            THREE_COMMON_SHADER,
-            `${THREE_COMMON_SHADER}\n${fragmentShader}`,
-          )
-          .replace(
-            THREE_COLOR_FRAGMENT,
-            `${THREE_COLOR_FRAGMENT}\ndiffuseColor.rgb = applyEchoDepth(diffuseColor.rgb);`,
-          );
-      };
-      material.customProgramCacheKey = () =>
-        `${baseCacheKey}:${ECHO_DEPTH_CACHE_KEY}`;
+      applyShaderPatch(material, {
+        cacheKey: ECHO_DEPTH_CACHE_KEY,
+        uniforms,
+        vertexHeader: vertexShader,
+        vertexAnchor: "#include <project_vertex>",
+        vertexCall: "passEchoDepth(mvPosition);",
+        fragmentHeader: fragmentShader,
+        colorFragmentCall:
+          "diffuseColor.rgb = applyEchoDepth(diffuseColor.rgb);",
+      });
     },
   };
 }

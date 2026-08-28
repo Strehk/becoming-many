@@ -97,6 +97,28 @@ function getNaturalGroundY(
   );
 }
 
+/** Bound every reachable ground height so consumers can normalize elevation. */
+export function getElevationRange(settings: WorldSurfaceSettings): {
+  readonly minimumElevation: number;
+  readonly maximumElevation: number;
+} {
+  const { heightField, river } = settings;
+  const minimumNaturalElevation =
+    heightField.baseHeightY -
+    heightField.rollingElevationMeters -
+    heightField.detailElevationMeters;
+  const maximumElevation =
+    heightField.baseHeightY +
+    heightField.rollingElevationMeters +
+    heightField.detailElevationMeters +
+    heightField.mountainElevationMeters;
+
+  return {
+    minimumElevation: Math.min(minimumNaturalElevation, river.riverBedHeightY),
+    maximumElevation,
+  };
+}
+
 export function getRiverDistance(
   worldX: number,
   worldZ: number,

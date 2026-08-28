@@ -7,40 +7,40 @@ Boundary: Product vision and long-term design remain in the specialized document
 
 # Current Development Status
 
-Snapshot: 2026-08-27
+Snapshot: 2026-08-28
 
 The current `src/` and `public/` trees are the source of truth. This page is
 the concise entry point for the current implementation.
 
 ## Runnable Result
 
-`bun run dev` starts a Vite application that shows the Motion Perception
+`bun run dev` starts a Vite application that shows the Thermal Perception
 level:
 
-- the complete Echolocation world carried over unchanged: the warm off-white
-  haze background, the grayscale Echo Depth ramp on Terrain, Vegetation, and
-  Rocks, and the earlier air and scent layers, because senses layer instead
-  of swapping
-- twelve persistent fly swarms buzzing in ground-near clouds on
-  player-centred distance rings, rendered as ink-dark round specks in one
-  draw call
-- three invisible bird flocks circling the traveler on 30–90-metre air
-  rings; only their cyan traces render ("swarm traces in the air")
-- one motion-trail ring buffer per actor class printing a fading particle
-  behind every moving point each frame; trails age, drift outward, and
-  collapse GPU-only in one draw call per ring
-- swarms deterministically re-anchor around the player after eighty metres
-  of travel and never dip below their terrain clearance
+- the complete Motion Perception world carried over unchanged: the warm
+  off-white haze background, the grayscale Echo Depth ramp on Terrain,
+  Vegetation, and Rocks, the earlier air and scent layers, and the fly
+  swarms, bird flocks, and printed motion trails, because senses layer
+  instead of swapping
+- a false-color heat view inside a 30-metre viewer radius that feathers
+  over 10 metres back into the grayscale world: water reads coldest and
+  colder with depth, dry ground warms with elevation, forest and slope
+  hold extra warmth, and every plant and rock keeps a stable hashed
+  temperature variation across restreaming
+- the bounded animal population joining the world as the strongest heat
+  signatures: warm bodies read in the hot magenta-to-yellow palette bands
+  inside the radius and sit in the echo grayscale outside it
 - the diagnostic test overlay
 - pointer-lock mouse look
 - WASD and arrow-key flight along the mouse look direction
 - a user-triggered Three.js `immersive-vr` button
 
-The application currently selects `motion.level.ts` in its minimal browser
+The application currently selects `thermal.level.ts` in its minimal browser
 entry. It has one Level Runtime composition root and one render loop. The
-Echolocation level remains available by selecting `echo.level.ts` instead,
-the Scent World base experiment by selecting `scent.level.ts`, and the
-Design Test landscape by selecting `designTest.level.ts`.
+Motion Perception level remains available by selecting `motion.level.ts`
+instead, the Echolocation level by selecting `echo.level.ts`, the Scent
+World base experiment by selecting `scent.level.ts`, and the Design Test
+landscape by selecting `designTest.level.ts`.
 
 ## Implemented System
 
@@ -76,6 +76,11 @@ Design Test landscape by selecting `designTest.level.ts`.
   carried over unchanged plus the `motion` field that activates the Motion
   Sense fly swarms, the invisible bird flocks, and their printed motion
   trails.
+- `thermal.level.ts` is the Thermal Perception level: every Motion
+  Perception value carried over unchanged plus the `animals` field (fur
+  colors from the echo dark stops) and the `thermal` field that decorates
+  Terrain, Vegetation, Rocks, and Animals with the radius-bounded
+  false-color heat view.
 - The sparse `invisibleGround: true` flag clamps flight above the shared
   deterministic world surface without creating the Terrain module or any
   rendered geometry.
@@ -89,11 +94,12 @@ Design Test landscape by selecting `designTest.level.ts`.
   `unload`.
 - Air Particles, Scent Particles, Grass, Terrain, Vegetation, Rocks,
   Animals, and Motion Sense are implemented content modules. Zone Visualizer
-  is the active test-only Terrain presentation; Magnetic Sense and Echo
-  Depth are composable material effects. Echo Depth is the first
-  multi-consumer effect: the composition root applies one instance to
-  Terrain, Vegetation, and Rocks through the shared `UnlitMaterialEffect`
-  contract.
+  is the active test-only Terrain presentation; Magnetic Sense, Echo Depth,
+  and Thermal Perception are composable material effects patching through
+  the shared `material-shader-patch.ts` helper. Echo Depth was the first
+  multi-consumer effect (Terrain, Vegetation, and Rocks through the shared
+  `UnlitMaterialEffect` contract); Thermal Perception extends the pattern
+  to Animals and to per-consumer warmth sources.
 
 ### World Surface
 
@@ -293,6 +299,30 @@ Design Test landscape by selecting `designTest.level.ts`.
   flies alone. The exported `MotionPointSource` interface remains the seam
   for further moving actors without a bus or sibling import.
 
+### Thermal Perception
+
+- Thermal Perception is the level-05 material-effect family: one shared
+  radius-and-palette uniform set (intensity, 30-metre viewer radius,
+  10-metre feather, six-stop false-color ramp) with a per-consumer warmth
+  source. The radius is the camera-space view distance already used by
+  Echo Depth, so the effect needs no camera uniform and no per-frame
+  update; the field is fully static.
+- Terrain declares an optional `warmthAt` sampler on its material-effect
+  contract: during row-bounded chunk streaming it samples elevation plus
+  zone conditions per vertex (water coldest and colder with depth, dry
+  ground warmer with elevation, forest and slope boosts) into one streamed
+  float attribute. Vegetation and Rocks hash their quantized instance
+  world position into a stable warmth variation around authored base
+  values; Animals gained the shared `effects` option and carry one
+  constant near-hot warmth.
+- The composition root orders thermal first in every effect list because
+  the first-applied patch executes last and wins the final surface color
+  (documented in the shared `material-shader-patch.ts` helper, which all
+  three material effects now use); the carried echo ramp shows through
+  outside the radius and at the feathered edge. The root skips the effect
+  entirely when the preset omits `thermal` or authors intensity zero, so
+  an inactive sense costs no GPU work and no warmth attribute.
+
 ## Runtime Assets
 
 `public/animals` contains four animated animal GLBs, `public/trees` contains
@@ -310,16 +340,18 @@ Manifests remain metadata rather than a parallel runtime configuration system.
 
 The last clean verification recorded:
 
-- `bun test`: 108 tests
+- `bun test`: 119 tests
 - `bun run check`: strict TypeScript
 - `bun run lint`: clean Biome run
 - `bun run build`: Vite production build
 
 Fallow reports no dead production exports or complexity violations, but
-does report known duplicated placement code in Vegetation and Rocks, the
-deliberately parallel shader-patch idiom shared by Magnetic Sense and Echo
-Depth, and the deliberate data duplication between the sparse level presets
-that carry earlier sense layers verbatim (`scent`, `echo`, `motion`).
+does report known duplicated placement code in Vegetation and Rocks and
+the deliberate data duplication between the sparse level presets that
+carry earlier sense layers verbatim (`scent`, `echo`, `motion`,
+`thermal`). The formerly parallel shader-patch idiom of Magnetic Sense and
+Echo Depth was extracted into the shared `material-shader-patch.ts` helper
+when Thermal Perception arrived as the third material effect.
 
 Vegetation and Rocks share deterministic density acceptance and weighted asset
 selection. Their transform and placement policies remain module-local.
