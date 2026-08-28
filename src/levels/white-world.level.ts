@@ -6,22 +6,10 @@
  */
 
 import type { LevelPreset } from "./level-runtime";
+import { sharedAirParticles } from "./shared-level-values";
 
 export const level: LevelPreset = {
   backgroundColor: 0xffffff,
   viewDistance: 128,
-  airParticles: {
-    density: {
-      particlesPerChunk: 192,
-    },
-    appearance: {
-      color: 0x202126,
-      sizeMeters: 0.075,
-    },
-    motion: {
-      horizontalAmplitudeMeters: 0.12,
-      verticalAmplitudeMeters: 0.24,
-      speedMultiplier: 1,
-    },
-  },
+  airParticles: sharedAirParticles,
 };

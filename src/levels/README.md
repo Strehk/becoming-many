@@ -18,6 +18,20 @@ Every `*.level.ts` file exports its preset as a named `level` constant that
 satisfies the shared `LevelPreset` contract. Presets are sparse: omitted values
 remain unchanged.
 
+`shared-level-values.ts` holds the blocks that several presets carry verbatim
+— the White World air layer, the Scent World layer, the echo-world vegetation
+and rock palettes, the Echo Depth ramp, the Motion Sense response, and the
+decided population densities and grass distribution. Level files compose these
+constants and overwrite single values with object spreads where they diverge;
+values unique to one level stay in its file.
+
+From Echolocation onward the narrative levels also inherit literally:
+`motion.level.ts` spreads the echo preset and adds the motion block, and
+`thermal.level.ts` spreads the motion preset and adds the animal and thermal
+blocks. Editing an earlier level in that chain therefore carries into every
+later one ("senses layer, never swap"). These preset imports stay data-only
+and do not break the module-boundary rule.
+
 `white-world.level.ts` owns the narrative White World values and does not
 activate Terrain. `scent.level.ts` is the Scent World base experiment and
 activates Scent Particles and the White World Air Particles layer beside the

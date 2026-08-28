@@ -6,102 +6,27 @@
  */
 
 import type { LevelPreset } from "./level-runtime";
+import {
+  sharedAirParticles,
+  sharedEchoDepth,
+  sharedEchoHazeColor,
+  sharedEchoRocks,
+  sharedEchoVegetation,
+  sharedScentParticles,
+} from "./shared-level-values";
 
 export const level: LevelPreset = {
-  // Background equals the ramp haze stop, so far geometry dissolves into it.
-  backgroundColor: 0xf1f1f1,
+  backgroundColor: sharedEchoHazeColor,
   viewDistance: 128,
   testUi: true,
   terrain: {
     opacity: 1,
   },
-  // Base module colors show only below full echo intensity; they are
-  // authored from the dark end of the level-03 palette so a future
-  // intensity ramp fades between related tones instead of clashing ones.
-  vegetation: {
-    colors: {
-      trunkColor: 0x101010,
-      leafColor: 0x171717,
-      leafAccentColor: 0x494949,
-      flowerColor: 0x959595,
-    },
-    instancesPerHectareByZone: {
-      meadow: 12,
-      coniferForest: 150,
-      deciduousForest: 150,
-      shrubSlope: 70,
-    },
-  },
-  rocks: {
-    colors: {
-      darkColor: 0x171717,
-      lightColor: 0x494949,
-    },
-    instancesPerHectareByZone: {
-      meadow: 8,
-      coniferForest: 10,
-      deciduousForest: 10,
-      shrubSlope: 60,
-    },
-  },
+  vegetation: sharedEchoVegetation,
+  rocks: sharedEchoRocks,
   // Senses layer, never swap: the White World air layer and the Scent World
   // layer stay present while the depth response becomes dominant.
-  // The air layer keeps the unchanged White World values; dark motes read
-  // against the haze, not against near-dark forms.
-  airParticles: {
-    density: {
-      particlesPerChunk: 192,
-    },
-    appearance: {
-      color: 0x202126,
-      sizeMeters: 0.075,
-    },
-    motion: {
-      horizontalAmplitudeMeters: 0.12,
-      verticalAmplitudeMeters: 0.24,
-      speedMultiplier: 1,
-    },
-  },
-  // Scent values match scent.level.ts with the level-02 signature colors;
-  // clouds now anchor above the rendered ground.
-  scentParticles: {
-    colors: [0xb8e0e1, 0x9dd2c8, 0xd1c1d7, 0xfda39d, 0xfdbb54],
-    placement: {
-      emittersPerChunk: 2,
-      minHeightMeters: 1,
-      maxHeightMeters: 2,
-    },
-    emission: {
-      particlesPerEmitter: 192,
-      cloudRadiusMeters: 3,
-      cloudHeightMeters: 1,
-    },
-    appearance: {
-      sizeMeters: 0.15,
-    },
-    motion: {
-      riseHeightMeters: 1.5,
-      riseDurationSeconds: 10,
-      driftAmplitudeMeters: 0.4,
-      speedMultiplier: 1,
-    },
-  },
-  echoDepth: {
-    // Full sense strength until a dramaturgy driver exists.
-    intensity: 1,
-    // The nearest band stays one solid silhouette tone during fast flight.
-    nearDistanceMeters: 6,
-    // Below the view distance, so chunk streaming happens inside the haze.
-    farDistanceMeters: 120,
-    // Grayscale ramp, near to far, keeping the luminance steps of the
-    // moodboard palette; every surface shows only its depth-ramp color
-    // regardless of proximity.
-    colors: {
-      nearColor: 0x101010,
-      nearShadeColor: 0x171717,
-      midColor: 0x494949,
-      farColor: 0xd7d7d7,
-      hazeColor: 0xf1f1f1,
-    },
-  },
+  airParticles: sharedAirParticles,
+  scentParticles: sharedScentParticles,
+  echoDepth: sharedEchoDepth,
 };

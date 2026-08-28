@@ -6,6 +6,10 @@
  */
 
 import type { LevelPreset } from "./level-runtime";
+import {
+  sharedAirParticles,
+  sharedScentParticles,
+} from "./shared-level-values";
 
 export const level: LevelPreset = {
   backgroundColor: 0xf6eee0,
@@ -14,42 +18,6 @@ export const level: LevelPreset = {
   // The continuous world terrain stays invisible but bounds flight from below.
   invisibleGround: true,
   // The White World air layer stays present as the neutral depth baseline.
-  airParticles: {
-    density: {
-      particlesPerChunk: 192,
-    },
-    appearance: {
-      color: 0x202126,
-      sizeMeters: 0.075,
-    },
-    motion: {
-      horizontalAmplitudeMeters: 0.12,
-      verticalAmplitudeMeters: 0.24,
-      speedMultiplier: 1,
-    },
-  },
-  scentParticles: {
-    // Forest chunks spawn low, flat clouds; one 02-palette signature each.
-    // The pale base tone stays reserved for the background.
-    colors: [0xb8e0e1, 0x9dd2c8, 0xd1c1d7, 0xfda39d, 0xfdbb54],
-    placement: {
-      emittersPerChunk: 2,
-      minHeightMeters: 1,
-      maxHeightMeters: 2,
-    },
-    emission: {
-      particlesPerEmitter: 192,
-      cloudRadiusMeters: 3,
-      cloudHeightMeters: 1,
-    },
-    appearance: {
-      sizeMeters: 0.15,
-    },
-    motion: {
-      riseHeightMeters: 1.5,
-      riseDurationSeconds: 10,
-      driftAmplitudeMeters: 0.4,
-      speedMultiplier: 1,
-    },
-  },
+  airParticles: sharedAirParticles,
+  scentParticles: sharedScentParticles,
 };

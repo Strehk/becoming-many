@@ -6,23 +6,22 @@
  */
 
 import type { LevelPreset } from "./level-runtime";
+import {
+  sharedAirParticles,
+  sharedGrassZones,
+  sharedRocksDensities,
+  sharedVegetationDensities,
+} from "./shared-level-values";
 
 export const level: LevelPreset = {
   backgroundColor: 0xffffff,
   viewDistance: 180,
   testUi: true,
   airParticles: {
+    ...sharedAirParticles,
+    // Thinner than the narrative layer; diagnostics need an uncluttered view.
     density: {
       particlesPerChunk: 80,
-    },
-    appearance: {
-      color: 0x202126,
-      sizeMeters: 0.075,
-    },
-    motion: {
-      horizontalAmplitudeMeters: 0.12,
-      verticalAmplitudeMeters: 0.24,
-      speedMultiplier: 1,
     },
   },
   terrain: {
@@ -41,16 +40,7 @@ export const level: LevelPreset = {
   grass: {
     rootColor: 0x173a32,
     tipColor: 0x6fae7c,
-    zones: {
-      meadow: {
-        tuftsPerSquareMeter: 1.5,
-        bladeHeightMeters: 0.75,
-      },
-      shrubSlope: {
-        tuftsPerSquareMeter: 0.4,
-        bladeHeightMeters: 0.22,
-      },
-    },
+    zones: sharedGrassZones,
   },
   vegetation: {
     colors: {
@@ -59,24 +49,14 @@ export const level: LevelPreset = {
       leafAccentColor: 0x78b85a,
       flowerColor: 0xd65f8d,
     },
-    instancesPerHectareByZone: {
-      meadow: 12,
-      coniferForest: 150,
-      deciduousForest: 150,
-      shrubSlope: 70,
-    },
+    instancesPerHectareByZone: sharedVegetationDensities,
   },
   rocks: {
     colors: {
       darkColor: 0x4a4e57,
       lightColor: 0x7c838c,
     },
-    instancesPerHectareByZone: {
-      meadow: 8,
-      coniferForest: 10,
-      deciduousForest: 10,
-      shrubSlope: 60,
-    },
+    instancesPerHectareByZone: sharedRocksDensities,
   },
   animals: {
     colors: {
