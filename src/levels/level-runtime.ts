@@ -12,6 +12,7 @@ import {
   createAirParticlesModule,
 } from "../modules/air-particles/air-particles";
 import {
+  type AnimalsModule,
   type AnimalsPreset,
   createAnimalsModule,
 } from "../modules/animals/animals";
@@ -150,7 +151,7 @@ function setupLevel(
     WORLD_SURFACE_SETTINGS,
     ZONE_SETTINGS,
   );
-  const modules = createConfiguredModules({
+  const { modules, publishHeatSources } = createConfiguredModules({
     world,
     level,
     worldSurface,
@@ -172,6 +173,9 @@ function setupLevel(
     if (hasGround) {
       keepFlightAboveGround(world.camera.position, worldSurface.groundYAt);
     }
+    // Runs before the module updates, so the pools follow the actors by one
+    // frame. At walking speed that is under two centimetres of lag.
+    publishHeatSources?.();
     testOverlay?.update(deltaSeconds);
   };
 }
@@ -189,21 +193,50 @@ function applyLevelPresentation(
   camera.updateProjectionMatrix();
 }
 
-function createConfiguredModules(setup: LevelSetup): WorldModule[] {
+interface ConfiguredModules {
+  readonly modules: readonly WorldModule[];
+
+  /** Present only when both a heat view and warm bodies exist in this level. */
+  readonly publishHeatSources?: () => void;
+}
+
+function createConfiguredModules(setup: LevelSetup): ConfiguredModules {
   const modules: WorldModule[] = [];
   const echoDepth = createEchoDepthEffect(setup.level);
   const thermal = createThermalEffects(setup);
+  const animals = createAnimals(setup, thermal);
 
   addModule(modules, createTerrain(setup, echoDepth, thermal));
   addModule(modules, createAirParticles(setup));
   addModule(modules, createScentParticles(setup));
-  addModule(modules, createGrass(setup));
+  addModule(modules, createGrass(setup, echoDepth, thermal));
   addModule(modules, createVegetation(setup, echoDepth, thermal));
   addModule(modules, createRocks(setup, echoDepth, thermal));
-  addModule(modules, createAnimals(setup, thermal));
+  addModule(modules, animals);
   addModule(modules, createMotionSense(setup));
 
-  return modules;
+  return {
+    modules,
+    publishHeatSources: createHeatSourcePublisher(thermal, animals),
+  };
+}
+
+/**
+ * Connect warm bodies to the ground they stand on. Neither module knows the
+ * other: Animals publishes actor positions, Thermal Perception consumes heat
+ * sources, and this composition root is the only place that joins them.
+ */
+function createHeatSourcePublisher(
+  thermal: ThermalPerceptionEffects | undefined,
+  animals: AnimalsModule | undefined,
+): (() => void) | undefined {
+  if (!thermal || !animals) return undefined;
+
+  const { clearHeatSources, addHeatSource } = thermal.terrain;
+  return () => {
+    clearHeatSources();
+    animals.forEachVisibleActor(addHeatSource);
+  };
 }
 
 /** Skip the sense entirely at intensity zero so its GPU work never runs. */
@@ -303,7 +336,11 @@ function createScentParticles(setup: LevelSetup): WorldModule | undefined {
   });
 }
 
-function createGrass(setup: LevelSetup): WorldModule | undefined {
+function createGrass(
+  setup: LevelSetup,
+  echoDepth: EchoDepthEffect | undefined,
+  thermal: ThermalPerceptionEffects | undefined,
+): WorldModule | undefined {
   const preset = setup.level.grass;
   if (!preset) return undefined;
 
@@ -313,6 +350,7 @@ function createGrass(setup: LevelSetup): WorldModule | undefined {
     preset,
     streamQueue: setup.world.streamQueue,
     worldSurface: setup.worldSurface,
+    effects: buildSurfaceEffects(thermal?.grass, echoDepth),
   });
 }
 
@@ -368,7 +406,7 @@ function buildSurfaceEffects(
 function createAnimals(
   setup: LevelSetup,
   thermal: ThermalPerceptionEffects | undefined,
-): WorldModule | undefined {
+): AnimalsModule | undefined {
   if (!setup.level.animals) return undefined;
 
   return createAnimalsModule({

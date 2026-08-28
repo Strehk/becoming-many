@@ -305,16 +305,31 @@ landscape by selecting `designTest.level.ts`.
   radius-and-palette uniform set (intensity, 30-metre viewer radius,
   10-metre feather, six-stop false-color ramp) with a per-consumer warmth
   source. The radius is the camera-space view distance already used by
-  Echo Depth, so the effect needs no camera uniform and no per-frame
-  update; the field is fully static.
-- Terrain declares an optional `warmthAt` sampler on its material-effect
-  contract: during row-bounded chunk streaming it samples elevation plus
-  zone conditions per vertex (water coldest and colder with depth, dry
-  ground warmer with elevation, forest and slope boosts) into one streamed
-  float attribute. Vegetation and Rocks hash their quantized instance
-  world position into a stable warmth variation around authored base
-  values; Animals gained the shared `effects` option and carry one
-  constant near-hot warmth.
+  Echo Depth, so the effect needs no camera uniform; each ramp segment
+  interpolates linearly, because a smoothstep chain flattens to zero slope
+  at every stop and reads as a color band.
+- Warmth is a continuous field varying across each object rather than one
+  value per object. Terrain declares an optional `warmthAt` sampler on its
+  material-effect contract: during row-bounded chunk streaming it samples
+  elevation plus zone conditions per vertex (water coldest and colder with
+  depth, dry ground warmer with elevation, forest and slope boosts) into
+  one streamed float attribute, plus two octaves of add-only mottling that
+  vary cold ground without reordering the zone bands. Vegetation and Rocks
+  hash their quantized instance world position into a stable base warmth
+  and then vary it across the model through zero-mean height and axis
+  gradients and an organic grain; Animals gained the shared `effects`
+  option and hold their authored warmth at a body core that cools off
+  outward, anchored to the bind pose so the pattern does not swim during
+  the walk cycle. All three carry a grazing-angle term that keeps
+  silhouettes readable.
+- Warm bodies pool heat on the ground beneath them: Animals publishes the
+  world positions of its rendered actors through `forEachVisibleActor`,
+  the terrain thermal variant consumes them through
+  `clearHeatSources`/`addHeatSource` into a fixed-size uniform array, and
+  the composition root republishes them each frame. Neither module knows
+  the other. This is the ground-only stand-in for a screen-space thermal
+  bloom, which would need a second render pass the frame budget does not
+  have.
 - The composition root orders thermal first in every effect list because
   the first-applied patch executes last and wins the final surface color
   (documented in the shared `material-shader-patch.ts` helper, which all

@@ -16,6 +16,7 @@ import {
   ShaderMaterial,
   Vector2,
 } from "three";
+import type { UnlitMaterialEffect } from "../../utils/asset-loader/material-effect";
 import type { ChunkAssignment } from "../../world/chunk-system";
 import { WORLD_WIND } from "../../world/wind";
 import type { WorldSurface } from "../../world-surface/world-surface";
@@ -24,7 +25,12 @@ import fragmentShader from "./grass.frag.glsl?raw";
 import vertexShader from "./grass.vert.glsl?raw";
 
 const INSTANCE_COMPONENT_COUNT = 4;
-const TUFT_WIDTH_TO_HEIGHT_RATIO = 0.32;
+// Base width as a fraction of tuft height. The vertex shader scales a tuft's
+// horizontal extent by its own height, so this ratio alone decides how stubby
+// a blade reads: at a third of its height a tuft is a fat wedge, and slimming
+// it is the only way to stop the crossed triangles looking like thorns.
+// Slimmer still would start to shimmer, because the renderer runs without MSAA.
+const TUFT_WIDTH_TO_HEIGHT_RATIO = 0.12;
 const RANDOM_VALUE_RANGE = 0x1_0000_0000;
 const HIDDEN_SEED = -1;
 const SHRUB_SLOPE_SEED_OFFSET = 1;
@@ -48,6 +54,7 @@ interface GrassFieldOptions {
   readonly chunkSize: number;
   readonly chunkSlotCount: number;
   readonly worldSurface: WorldSurface;
+  readonly effects?: readonly UnlitMaterialEffect[];
 }
 
 export interface GrassField {
@@ -75,6 +82,7 @@ export function createGrassField({
   chunkSize,
   chunkSlotCount,
   worldSurface,
+  effects,
 }: GrassFieldOptions): GrassField {
   validateGrassParameters(parameters);
   const maximumTuftsPerSquareMeter = getMaximumGrassDensity(parameters);
@@ -97,6 +105,7 @@ export function createGrassField({
     chunkSlotCount,
   );
   const material = createGrassMaterial(parameters);
+  for (const effect of effects ?? []) effect.applyTo(material);
   const mesh = new Mesh(geometry, material);
   mesh.frustumCulled = false;
   mesh.visible = false;
@@ -204,6 +213,15 @@ function createGrassMaterial(parameters: GrassPreset): ShaderMaterial {
     fragmentShader,
     side: DoubleSide,
     uniforms: {
+      // The conventional three.js base-color uniform, so shared material
+      // effects can read this material's tone like any other. Grass shades
+      // from root to tip, and the midpoint is its representative colour.
+      diffuse: {
+        value: new Color(parameters.rootColor).lerp(
+          new Color(parameters.tipColor),
+          0.5,
+        ),
+      },
       grassTime: { value: 0 },
       grassMeadowHeight: { value: baseHeight },
       grassShrubSlopeHeightScale: {

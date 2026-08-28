@@ -11,7 +11,7 @@
  * lists with the winning effect first (see the push sites in level-runtime).
  */
 
-import type { MeshBasicMaterial } from "three";
+import type { Material } from "three";
 
 const THREE_COMMON_SHADER = "#include <common>";
 const THREE_COLOR_FRAGMENT = "#include <color_fragment>";
@@ -38,7 +38,7 @@ export interface MaterialShaderPatch {
 
 /** Decorate the material's shader program while preserving earlier patches. */
 export function applyShaderPatch(
-  material: MeshBasicMaterial,
+  material: Material,
   patch: MaterialShaderPatch,
 ): void {
   const compileBaseMaterial = material.onBeforeCompile.bind(material);

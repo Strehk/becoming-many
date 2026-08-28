@@ -176,14 +176,20 @@ export const sharedMotionSense: SharedBlock<"motion"> = {
   },
 };
 
-/** The decided grass distribution, shared by the diagnostic and design test levels. */
+/** The decided grass distribution, shared by every level that renders grass. */
 export const sharedGrassZones: SharedBlock<"grass">["zones"] = {
+  // The shader gives every tuft a random 0.4..1.0 of its authored height, so
+  // the authored value is the tallest tuft, not the average one: a meadow set
+  // to 1 metre reads at roughly 0.7.
+  // The largest density here fixes the GPU capacity for every zone, so raising
+  // meadow alone resizes the whole instance buffer. See the grass README for
+  // what that costs.
   meadow: {
-    tuftsPerSquareMeter: 1.5,
-    bladeHeightMeters: 0.75,
+    tuftsPerSquareMeter: 14,
+    bladeHeightMeters: 1.35,
   },
   shrubSlope: {
-    tuftsPerSquareMeter: 0.4,
-    bladeHeightMeters: 0.22,
+    tuftsPerSquareMeter: 5,
+    bladeHeightMeters: 0.45,
   },
 };

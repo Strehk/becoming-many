@@ -10,7 +10,7 @@ import {
   disposeGltfAssets,
   type GltfAssets,
 } from "../../utils/asset-loader/gltf-assets";
-import type { UnlitMaterialEffect } from "../../utils/asset-loader/material-effect";
+import type { ActorMaterialEffect } from "../../utils/asset-loader/material-effect";
 import type { WorldModule } from "../../world/module-runtime";
 import type { WorldSurface } from "../../world-surface/world-surface";
 import {
@@ -34,6 +34,18 @@ export interface AnimalsPreset {
   readonly colors: AnimalColors;
 }
 
+/** Animals as a world module plus the read access other senses need. */
+export interface AnimalsModule extends WorldModule {
+  /**
+   * Visit the world position of every currently rendered actor. Living bodies
+   * are heat sources, and a sense that reacts to them needs to know where they
+   * are without reaching into this module's population.
+   */
+  readonly forEachVisibleActor: (
+    visit: (worldX: number, worldY: number, worldZ: number) => void,
+  ) => void;
+}
+
 export interface AnimalsModuleOptions {
   readonly scene: Scene;
   readonly camera: PerspectiveCamera;
@@ -41,7 +53,13 @@ export interface AnimalsModuleOptions {
   readonly preset: AnimalsPreset;
   readonly assets: GltfAssets;
   readonly worldSurface: WorldSurface;
-  readonly effects?: readonly UnlitMaterialEffect[];
+
+  /**
+   * Effects are handed the species' body height alongside the material: a
+   * sense that models a living body has to scale its response to the size of
+   * the one in front of it.
+   */
+  readonly effects?: readonly ActorMaterialEffect[];
 }
 
 interface AnimalsState {
@@ -50,7 +68,7 @@ interface AnimalsState {
 
 export function createAnimalsModule(
   options: AnimalsModuleOptions,
-): WorldModule {
+): AnimalsModule {
   validateAnimalsDefinition(options.definition);
   const state: AnimalsState = { population: undefined };
 
@@ -61,7 +79,23 @@ export function createAnimalsModule(
       updateAnimals(state, options.camera, deltaSeconds),
     deactivate: () => setAnimalsVisible(state, false),
     unload: () => unloadAnimals(state, options.scene, options.assets),
+    forEachVisibleActor: (visit) => visitVisibleActors(state, visit),
   };
+}
+
+function visitVisibleActors(
+  state: AnimalsState,
+  visit: (worldX: number, worldY: number, worldZ: number) => void,
+): void {
+  const population = state.population;
+  if (!population?.group.visible) return;
+
+  for (const actor of population.actors) {
+    if (!actor.root.visible) continue;
+
+    const { x, y, z } = actor.root.position;
+    visit(x, y, z);
+  }
 }
 
 function validateAnimalsDefinition(parameters: AnimalsDefinition): void {

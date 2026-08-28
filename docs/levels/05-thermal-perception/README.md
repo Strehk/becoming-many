@@ -46,6 +46,27 @@ warmth (0.92) and read as magenta-to-yellow signatures; their base fur
 colors come from the level-03 dark stops so they sit inside the echo
 palette outside the radius. No audio counterpart exists yet.
 
+Continuous temperature field (decided 2026-08-28, revising the above):
+the first build assigned one warmth per object, which read as flat color
+regions rather than a thermal image. Warmth became a continuous field that
+varies across every sensed surface.
+
+Per-fragment temperature field (decided 2026-08-28, revising both of the
+above and reversing a ruling below): that continuous field was still
+carried entirely by vertex attributes, so on terrain nothing finer than
+the 2-metre vertex grid could exist and the ground still read as broad
+flat regions. Temperature is now measured in the fragment stage as well —
+two octaves of continuous noise, localized hotspots taken from the high
+tail of the coarse one, and the ground pools under warm bodies. The
+warmth axis was also split into two bands that cannot meet, because the
+old terrain budget could saturate the top of the ramp and let a sunlit
+forest slope read hotter than a deer standing on it.
+
+The palette itself is unchanged: the six documented moodboard stops still
+map cold to hot. They are now anchors rather than visible colors — the
+ramp interpolates between them in gamma space with a C1 easing, so what
+the level shows is the continuous gradient through them.
+
 ## Exact Typed Preset and Active Modules
 
 - Preset: `src/levels/thermal.level.ts` (`testUi: true`, 128-metre view
@@ -55,38 +76,78 @@ palette outside the radius. No audio counterpart exists yet.
   `motion.level.ts`, plus `animals` (echo-palette fur colors) and
   `thermal: ThermalPerceptionParameters` (intensity 1, 30-metre radius,
   10-metre edge feather, the six documented palette stops, vegetation
-  warmth 0.45 ± 0.12, rock warmth 0.3 ± 0.08, actor warmth 0.92).
+  warmth 0.44 ± 0.14, rock warmth 0.31 ± 0.11, actor warmth 0.95). The
+  three warmth values are the centre of a distribution, not a color
+  anyone sees; `actorWarmth` is a body core and validation rejects a
+  value that does not clear the module's environment ceiling.
 - Active modules: everything the Motion level activates, plus Animals and
   Thermal Perception (`src/modules/thermal-perception/`): one shared
   material-effect family applied by the composition root to Terrain
   (per-vertex CPU-sampled warmth attribute), Vegetation and Rocks (stable
-  hashed per-instance warmth), and Animals (constant actor warmth). The
+  hashed per-instance warmth), and Animals (a body-height profile). The
   composition root orders thermal first in every effect list so it wins
   the final surface color over the carried echo ramp, and skips the module
   entirely at intensity zero. The sense never imports or recolors a
   sibling.
-- Excluded by intent: Grass (raw shader without a material-effect hook,
-  unchanged from Echo).
+- Grass is now sensed (decided 2026-08-28, reversing its exclusion). It
+  was excluded because its hand-written shaders had none of the anchors
+  `applyShaderPatch` needs; they now carry those anchors, so both the echo
+  ramp and the heat view reach grass like any other surface. Grass also
+  publishes its blade progress and current sway at the injection point,
+  which is how the heat reading shimmers as the wind moves it.
+- Grass still sits in the wrong level. Ground cover is a world element,
+  not a sense, so if it stays it belongs in `echo.level.ts` and levels 03
+  and 04 should carry it too; today it appears for the first time when
+  thermal starts. Three test assertions currently lock grass out of those
+  levels.
 
 ## Asset and Shader Requirements
 
 - No new external assets; the level reuses the existing animal, tree, and
   rock GLBs.
-- Four module-owned GLSL ES 3.00 files: `thermal-perception.frag.glsl`
-  (six-stop ramp plus the radius feather mask), and three vertex variants
-  — `thermal-terrain.vert.glsl` (warmth attribute pass-through),
-  `thermal-instanced.vert.glsl` (quantized instance-position hash),
-  `thermal-actor.vert.glsl` (constant warmth). All patch consumers'
-  existing materials through the shared `applyShaderPatch` helper; the
-  radius needs no camera uniform because the camera-space view distance is
-  already camera-relative.
+- Eight module-owned GLSL files. Fragment stage:
+  `thermal-perception.frag.glsl` (the eased gamma-space ramp, the soft
+  ceiling, the slot-tone warmth, and the radius feather mask),
+  `thermal-detail-field.glsl` (the two noise octaves and the hotspot
+  tail, shared by every consumer), `thermal-ground-heat.glsl` (compiled
+  only into Terrain's program). Vertex stage:
+  `thermal-surface-structure.glsl` (grain field, grazing-angle term, and
+  hemispheric shade, shared by the instanced and actor variants) plus
+  four variants — `thermal-terrain.vert.glsl` (warmth attribute and world
+  sampling position), `thermal-instanced.vert.glsl` (instance-position
+  hash, within-model gradients, per-instance detail phase),
+  `thermal-actor.vert.glsl` (the body-height temperature profile),
+  `thermal-grass.vert.glsl` (root-to-tip warmth and sway shimmer). All
+  patch consumers' existing materials through the shared
+  `applyShaderPatch` helper; the radius needs no camera uniform because
+  the camera-space view distance is already camera-relative.
+- The injected GLSL is a function at global scope and cannot read a local
+  of three.js's `main()`, which is why the animal grazing term uses the
+  bind-pose normal instead of the skinned one.
 
 ## Performance Budget and Measured Evidence
 
 - No additional thermal camera, render pass, geometry, texture, or draw
   call; the effect rides the existing opaque surface passes.
-- Per-fragment cost inside the radius: five `mix`/`smoothstep` segments
-  plus one feather smoothstep on top of the carried echo ramp.
+- **Per-fragment cost rose substantially, and this is the open risk in
+  the level.** Every sensed surface now evaluates six sines and three dot
+  products for the two detail octaves, two smoothsteps (detail distance
+  fade, hotspot tail), one `sqrt` for the slot tone, one `exp` for the
+  soft ceiling, and five eased ramp segments instead of five plain
+  `mix`es. Terrain adds a constant-bounded four-iteration pool loop, now
+  per fragment rather than per vertex; the kernel is a compact cubic with
+  no square root and no smoothstep to keep that affordable.
+- The lever for that cost is compiled, not multiplied by zero: a consumer
+  whose three detail amplitudes in `THERMAL_PERCEPTION_SETTINGS` are all
+  zero compiles no detail field at all (`#define THERMAL_DETAIL` is
+  omitted), and it can be pulled per surface kind. Grass carries the
+  worst overdraw in the scene and is the cheapest one to give up.
+- Removed per-vertex cost: the ground-heat loop left the terrain vertex
+  stage. Remaining added per-vertex cost: three sines and a dot product
+  for the grain and grazing terms on instanced props and animals. Terrain
+  carries roughly 27k vertices at the level's 128-metre view distance.
+- Terrain warmth sampling gained two `ImprovedNoise` lookups per streamed
+  vertex, inside the existing row-bounded chunk jobs.
 - Terrain streaming samples one extra `zoneConditionsAt` per vertex during
   row-bounded chunk generation (the same order of work as the Terrain
   Colors presentation path) and uploads one extra float attribute
@@ -103,8 +164,11 @@ palette outside the radius. No audio counterpart exists yet.
   the viewer" is implemented as the camera-space radial distance already
   used by Echo Depth, so the effect needs no per-frame uniform updates and
   no update hook on Vegetation or Rocks effects.
-- Static field (decided 2026-08-28): no time uniform; temporal variation
-  and heat trails remain open art decisions.
+- Static field (decided 2026-08-28, refined): the sense still has no time
+  uniform and no heat trails. Two things move anyway, and both borrow
+  motion that already exists rather than adding a clock — the ground heat
+  pools follow the animals, and grass warmth shimmers with its own sway.
+  Temporal variation of the field itself remains an open art decision.
 - The echo ramp is carried verbatim (senses layer, never swap) even though
   the thermal ramp covers it inside the radius; the composition-root
   ordering comment and a regression test lock the thermal-wins behavior.
@@ -112,7 +176,119 @@ palette outside the radius. No audio counterpart exists yet.
   preset combines the Terrain Colors presentation with thermal, the same
   conditions are sampled twice per vertex (bounded by row streaming, noted
   in the module README).
+- Per-part warmth (decided 2026-08-28, closing the open question below):
+  vegetation warmth reads per part, not per plant. The instance hash still
+  fixes one stable base temperature per plant, and zero-mean height and
+  axis gradients plus an organic grain vary it across trunk, branches, and
+  foliage, so the authored value keeps its meaning as the plant average.
+- Animal body profile (decided 2026-08-28, replacing the earlier
+  fixed-metre body core): `actorWarmth` is the core body temperature, and
+  the distribution around it is a torso band plus a separate head-and-neck
+  lobe, both placed as fractions of the species' own body height, with a
+  cooler slice at the top for ears and antler tips and a smooth falloff
+  downward through legs into cold hooves. Normalized height is the only
+  body coordinate used, because the actor's world offset turns with its
+  heading and height is the one coordinate that survives without the
+  sense learning which way each species faces; it also carries almost all
+  of the information in a thermal image of a standing quadruped. The cost
+  is that a deer's head and its rump sit in the same warm band.
+- Species body height crosses the boundary (decided 2026-08-28): a
+  distribution in fractions of body height needs the body height, so
+  Animals now hands effects the species height alongside the material
+  through a new `ActorMaterialEffect` contract in
+  `src/utils/asset-loader/material-effect.ts`. An `UnlitMaterialEffect`
+  satisfies it unchanged, and every actor material carries its own copy
+  of that one value while sharing the program. Extending the contract was
+  chosen over the alternative of authoring thermal anatomy per species in
+  `animals-definition.ts`, which would have put sense knowledge inside
+  the Animals module.
+- Two warmth bands (decided 2026-08-28): everything that is not alive
+  passes through a soft ceiling it approaches but never reaches, and
+  living bodies start above it. The old terrain budget summed floor,
+  elevation, forest, slope, and mottling to exactly 1.0, so a high
+  forested slope saturated the hottest palette color while an animal sat
+  at 0.92 — the environment could read hotter than the animals the level
+  exists to reveal, and clipping at the top also parked large regions on
+  one flat value. Terrain now reaches 0.62, and the compression above the
+  knee is what absorbs the ground pools instead of clipping them. Forest
+  cover also changed sign: canopy shade now scales the solar-exposure
+  gain down rather than adding warmth, which is both more physical and
+  keeps dry land above the water band.
+- Ramp continuity (decided 2026-08-28, refining the linear segments):
+  every segment is still linear but is now eased by a cubic whose end
+  slopes match, so the chained ramp is C1 across each stop — no Mach band
+  at a corner — while never reaching zero slope, which is what a
+  smoothstep chain does and why it is still not used. The easing is only
+  C1 while neighbouring segments are the same width, so the stops must
+  stay evenly spaced; a test locks that. Interpolation also moved to
+  gamma space, because in linear light the cyan-to-magenta crossing
+  collapses into grey and reads as a dead zone between two solid regions.
+- Material tone as temperature (decided 2026-08-28): a thermal camera has
+  no albedo, so the surface-slot brightness that used to only darken the
+  false color now also shifts the temperature, and the brightness share
+  was reduced. The tone is read on a gamma rather than a linear scale
+  because the carried echo palette authors its dark stops close enough
+  together that in linear light a trunk and a leaf differ by four
+  thousandths. That cue stays weak on vegetation for the same reason —
+  it is level data, and separating trunk and leaf colors in the level
+  would widen it.
+- Grass `diffuse` declaration (fixed 2026-08-28): `grass.frag.glsl`
+  declared its `diffuse` uniform *after* `#include <common>`, which is
+  exactly where every material effect injects, so any effect reading the
+  documented base tone referenced an identifier declared below it. The
+  declaration moved above the include.
+- Ground heat pools (decided 2026-08-28, revised the same day): warm
+  bodies warm the ground under them through a fixed-size uniform array on
+  the terrain variant, republished each frame by the composition root
+  from the positions Animals publishes. This adds the one per-frame
+  uniform update the original design avoided. The pool moved from the
+  vertex stage to the fragment stage: at 2-metre vertex spacing a short
+  pool resolved into three or four samples and read as the flat faceted
+  disc it was meant to replace. It is now 3.2 metres with a cubic
+  falloff, and its squared radius is displaced by the ground's own detail
+  field so the edge wanders instead of drawing a circle.
+- Surface tone through the ramp (decided 2026-08-28): the false color is
+  shaded by the material's authored `diffuse` luminance, so trunk, foliage,
+  fur, and feature slots stay distinguishable instead of flattening onto
+  one tone. It reads `diffuse` rather than the incoming `diffuseColor`
+  because the carried echo ramp at intensity 1 replaces `diffuseColor`
+  with a pure camera-distance value before thermal runs — there is no
+  lighting, shadow, or texture left in the pipeline at that point, and the
+  authored material color is the last place surface identity survives.
+- Hemispheric shade (decided 2026-08-28): Thermal Perception adds one
+  geometric light — a ground-to-sky gradient from the world normal on
+  Vegetation, Rocks, and Animals — so branches and foliage read as volume.
+  This is the first shading in the piece, which is otherwise entirely
+  unlit; it was taken deliberately because per-part material tone alone
+  cannot separate leaves inside one canopy material. It stays a vertex
+  term on normals already fetched for the grazing coolness, so it adds no
+  fragment work, no light object, and no material change. The contrast is
+  kept moderate because double-sided foliage cards carry inverted normals
+  on their back faces. If the piece later wants its unlit look back, the
+  two shade values in `THERMAL_PERCEPTION_SETTINGS.surfaceShade` set to 1
+  remove it.
+- Ruled out (2026-08-28): heat bleeding into the air *around* a body. It
+  is a screen-space effect needing the scene rendered to a texture and a
+  blur pass, which contradicts this level's no-extra-pass budget while the
+  PICO 4 / 90 FPS gate is still unmeasured. The ground pools are the cheap
+  stand-in; the grazing-angle rim carries the rest of the read.
+- Ruled out (2026-08-28): a wider rainbow ramp reaching green and white.
+  The documented six-stop moodboard palette stands; the flatness was
+  caused by per-object warmth, by smoothstep plateaus at the ramp stops,
+  and by the absence of any temperature detail below mesh resolution —
+  not by the number of colors.
+- Reversed (2026-08-28): "finer ground texture would need per-fragment
+  noise on the largest fill-rate consumer in the scene, which the
+  performance rules rule out." Per-fragment noise is now in, on every
+  sensed surface, on an explicit instruction to make the temperature
+  field itself finer. The earlier ruling was made on PICO 4 / 90 FPS
+  grounds and **that gate is still unmeasured**, so the reversal is a
+  deliberate open risk rather than a settled trade: the noise is a
+  three-wave sum rather than a hashed lattice, the fine octave fades out
+  with distance, and the whole field compiles out per surface kind. If
+  the headset measurement fails, that switch is the first thing to pull —
+  before raising terrain segments per chunk, which remains the
+  alternative for ground texture specifically.
 - Open art decisions: physical versus expressive temperature mapping
   tuning against real headset contrast; radius and feather width against
-  the dramaturgy; whether vegetation warmth should read per-part instead
-  of per-plant; temporal variation and heat trails.
+  the dramaturgy; temporal variation and heat trails.

@@ -10,6 +10,7 @@ import {
   AnimationClip,
   BoxGeometry,
   Group,
+  type Material,
   Mesh,
   MeshBasicMaterial,
   PerspectiveCamera,
@@ -77,7 +78,7 @@ test("Animals animate only the nearest bounded population", () => {
 test("Animals decorate every actor material with supplied effects", () => {
   const scene = new Scene();
   const camera = new PerspectiveCamera();
-  const decoratedMaterials: MeshBasicMaterial[] = [];
+  const decoratedMaterials: Material[] = [];
   const module = createAnimalsModule({
     scene,
     camera,
@@ -97,6 +98,40 @@ test("Animals decorate every actor material with supplied effects", () => {
       (material) => material instanceof MeshBasicMaterial,
     ),
   ).toBe(true);
+  module.unload();
+});
+
+test("Animals publish only the rendered actors as world positions", () => {
+  const scene = new Scene();
+  const camera = new PerspectiveCamera();
+  const module = createAnimalsModule({
+    scene,
+    camera,
+    definition: DEFINITION,
+    preset: PRESET,
+    assets: createAnimalAssets(),
+    worldSurface: createFlatSurface(),
+  });
+
+  module.load();
+  module.activate();
+  module.update?.(0.25);
+
+  const visiblePositions: number[][] = [];
+  module.forEachVisibleActor((worldX, worldY, worldZ) =>
+    visiblePositions.push([worldX, worldY, worldZ]),
+  );
+  expect(visiblePositions).toHaveLength(DEFINITION.maxVisible);
+
+  // A deactivated population has nothing rendered and therefore nothing to
+  // publish, so a consumer never keeps heat under a hidden animal.
+  module.deactivate();
+  const hiddenPositions: number[][] = [];
+  module.forEachVisibleActor((worldX, worldY, worldZ) =>
+    hiddenPositions.push([worldX, worldY, worldZ]),
+  );
+  expect(hiddenPositions).toHaveLength(0);
+
   module.unload();
 });
 

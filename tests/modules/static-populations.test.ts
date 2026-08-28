@@ -11,9 +11,10 @@ import {
   Euler,
   Group,
   InstancedMesh,
+  type Material,
   Matrix4,
   Mesh,
-  type MeshBasicMaterial,
+  MeshBasicMaterial,
   MeshStandardMaterial,
   Quaternion,
   Vector3,
@@ -138,7 +139,7 @@ test("Vegetation keeps complete model footprints outside river channels", () => 
 });
 
 test("Vegetation applies shared material effects to every part material", () => {
-  const decorated: MeshBasicMaterial[] = [];
+  const decorated: Material[] = [];
   const instances = createVegetationInstances({
     colors: VEGETATION_COLORS,
     parameters: createVegetationParameters("meadow"),
@@ -151,14 +152,14 @@ test("Vegetation applies shared material effects to every part material", () => 
 
   expect(decorated).toHaveLength(2);
   expect(new Set(decorated).size).toBe(2);
-  expect(decorated.every((material) => material.isMeshBasicMaterial)).toBe(
-    true,
-  );
+  expect(
+    decorated.every((material) => material instanceof MeshBasicMaterial),
+  ).toBe(true);
   disposeVegetationInstances(instances);
 });
 
 test("Rocks apply shared material effects to every part material", () => {
-  const decorated: MeshBasicMaterial[] = [];
+  const decorated: Material[] = [];
   const instances = createRockInstances({
     colors: ROCK_COLORS,
     parameters: createRockParameters("meadow"),

@@ -6,6 +6,7 @@
  */
 
 import type { PerspectiveCamera, Scene } from "three";
+import type { UnlitMaterialEffect } from "../../utils/asset-loader/material-effect";
 import {
   type ChunkAssignment,
   ChunkWindow,
@@ -26,8 +27,15 @@ import {
 
 export type { GrassPreset } from "./grass-field";
 
-const GRASS_CHUNK_LEVEL = 2;
+// 32-metre chunks let the window hug the camera: grass is only legible close
+// up, so a finer grid wastes far less capacity than the 64-metre one.
+const GRASS_CHUNK_LEVEL = 1;
 const PRELOAD_LAYER_COUNT = 1;
+// Grass keeps its own reach instead of following the level view distance.
+// Capacity scales with the window area, and thin blades alias into shimmer
+// long before this distance anyway, so streaming them to the horizon buys
+// nothing and costs everything.
+const GRASS_VIEW_DISTANCE_METERS = 64;
 
 export interface GrassModuleOptions {
   readonly scene: Scene;
@@ -35,6 +43,7 @@ export interface GrassModuleOptions {
   readonly preset: GrassPreset;
   readonly streamQueue: StreamQueue;
   readonly worldSurface: WorldSurface;
+  readonly effects?: readonly UnlitMaterialEffect[];
 }
 
 interface GrassStream {
@@ -126,7 +135,8 @@ function unloadGrass(state: GrassState, scene: Scene): void {
 
 function createGrassStream(options: GrassModuleOptions): GrassStream {
   const chunkSize = getChunkSize(GRASS_CHUNK_LEVEL);
-  const visibleRadius = Math.max(1, Math.ceil(options.camera.far / chunkSize));
+  const grassReach = Math.min(options.camera.far, GRASS_VIEW_DISTANCE_METERS);
+  const visibleRadius = Math.max(1, Math.ceil(grassReach / chunkSize));
   const chunkWindow = new ChunkWindow({
     level: GRASS_CHUNK_LEVEL,
     radius: visibleRadius + PRELOAD_LAYER_COUNT,
@@ -136,6 +146,7 @@ function createGrassStream(options: GrassModuleOptions): GrassStream {
     chunkSize,
     chunkSlotCount: chunkWindow.slotCount,
     worldSurface: options.worldSurface,
+    effects: options.effects,
   });
   const slotJobKeys = Array.from({ length: chunkWindow.slotCount }, () => ({}));
 

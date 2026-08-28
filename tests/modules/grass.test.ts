@@ -183,7 +183,8 @@ test("Grass keeps one fixed draw while recycling chunk ranges", () => {
   expect(geometry.instanceCount).toBe(25);
   expect(instanceAttribute.updateRanges).toHaveLength(0);
 
-  camera.position.x = 64;
+  // One 32-metre chunk of travel recycles exactly the one incoming edge.
+  camera.position.x = 32;
   module.update?.(0.5);
   expect(streamQueue.size).toBe(5);
   streamQueue.update();

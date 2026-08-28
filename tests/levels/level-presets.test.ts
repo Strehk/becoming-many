@@ -25,12 +25,12 @@ test("only the Test Level activates development diagnostics", () => {
   expect(testPreset.terrain?.magneticSense?.pulseWidthMeters).toBe(0.1);
   expect(testPreset.terrain?.magneticSense?.lineOpacity).toBe(0.2);
   expect(testPreset.grass?.zones.meadow).toEqual({
-    tuftsPerSquareMeter: 1.5,
-    bladeHeightMeters: 0.75,
+    tuftsPerSquareMeter: 14,
+    bladeHeightMeters: 1.35,
   });
   expect(testPreset.grass?.zones.shrubSlope).toEqual({
-    tuftsPerSquareMeter: 0.4,
-    bladeHeightMeters: 0.22,
+    tuftsPerSquareMeter: 5,
+    bladeHeightMeters: 0.45,
   });
   expect(testPreset.vegetation?.instancesPerHectareByZone).toEqual({
     meadow: 12,
@@ -187,15 +187,8 @@ test("Motion Level layers fly swarms onto the carried Echo world", () => {
   expect(motion.birds?.flightHeightMeters).toBeGreaterThan(0);
 });
 
-test("Thermal Level layers heat onto the carried Motion world", () => {
+test("Thermal Level carries the Motion world forward unchanged", () => {
   const thermalPreset: LevelPreset = thermalLevel;
-  // The documented level-05 false-color palette, cold to hot.
-  const thermalPalette = [
-    0x2e1386, 0x0c47d1, 0x2eb4e8, 0xd5198a, 0xfb5f16, 0xfcce43,
-  ];
-  const { thermal, animals } = thermalPreset;
-  if (!thermal) throw new Error("Thermal Level must author the thermal sense");
-  if (!animals) throw new Error("Thermal Level must author warm animals");
 
   expect(thermalPreset.testUi).toBe(true);
   // Senses layer, never swap: every motion-world layer carries over unchanged.
@@ -207,8 +200,27 @@ test("Thermal Level layers heat onto the carried Motion world", () => {
   expect(thermalPreset.rocks).toEqual(motionLevel.rocks);
   expect(thermalPreset.motion).toEqual(motionLevel.motion);
   expect(thermalPreset.backgroundColor).toBe(motionLevel.backgroundColor ?? -1);
-  expect(thermalPreset.grass).toBeUndefined();
   expect(thermalPreset.invisibleGround).toBeUndefined();
+});
+
+test("Thermal Level grows ground cover inside the carried echo palette", () => {
+  // Grass sits in this level under evaluation: ground cover is a world
+  // element, so if it stays it belongs in the Echo Level instead. Either way
+  // its colors must sit in the carried echo palette.
+  expect(thermalLevel.grass?.rootColor).toBe(0x101010);
+  expect(thermalLevel.grass?.tipColor).toBe(0x494949);
+  expect(thermalLevel.grass?.zones).toEqual(testLevel.grass?.zones ?? {});
+});
+
+test("Thermal Level layers heat onto the carried Motion world", () => {
+  const thermalPreset: LevelPreset = thermalLevel;
+  // The documented level-05 false-color palette, cold to hot.
+  const thermalPalette = [
+    0x2e1386, 0x0c47d1, 0x2eb4e8, 0xd5198a, 0xfb5f16, 0xfcce43,
+  ];
+  const { thermal, animals } = thermalPreset;
+  if (!thermal) throw new Error("Thermal Level must author the thermal sense");
+  if (!animals) throw new Error("Thermal Level must author warm animals");
 
   expect(thermal.intensity).toBe(1);
   expect(Object.values(thermal.colors)).toEqual(thermalPalette);

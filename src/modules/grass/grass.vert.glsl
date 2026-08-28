@@ -3,7 +3,18 @@
  * Context: Streamed CPU work supplies stable roots while ordinary frames update only time.
  * Responsibility: Apply per-tuft variation, rotation, height, and opaque wind deformation.
  * Boundary: World-surface sampling and chunk recycling remain in TypeScript.
+ *
+ * Sense contract: this shader carries the shared injection anchors, so a
+ * material effect can decorate it exactly as it decorates a three.js material.
+ * At the `project_vertex` anchor an effect may read `mvPosition`, plus three
+ * values Grass publishes about the current vertex:
+ *   transformed         the deformed vertex; this mesh sits at the world
+ *                       origin, so it is already a world position
+ *   grassBladeProgress  0 at the root, 1 at the tip
+ *   grassSway           signed wind lean, strongest at the tip
  */
+
+#include <common>
 
 attribute vec4 grassInstance;
 
@@ -25,11 +36,11 @@ vec2 rotateGrass(vec2 value, float angle) {
 }
 
 void main() {
-  if (grassInstance.w < 0.0) {
-    grassHeightProgress = 0.0;
-    gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
-    return;
-  }
+  // Rejected candidates used to return early. They now fall through and are
+  // collapsed off screen at the end instead, because an early return would
+  // skip the injected sense call and leave its varyings unwritten — and a
+  // branchless cull suits the mobile target better than a divergent one.
+  float hidden = step(grassInstance.w, -0.5);
 
   float zoneHeightScale = mix(
     1.0,
@@ -50,12 +61,19 @@ void main() {
   vec2 windOffset = grassWindDirection * wind * grassWindStrength *
     tuftHeight * tipWeight;
 
-  vec3 worldPosition = vec3(
+  grassHeightProgress = position.y;
+  float grassBladeProgress = position.y;
+  float grassSway = wind * tipWeight;
+
+  vec3 transformed = vec3(
     grassInstance.x + localPosition.x + windOffset.x,
     grassInstance.y + bladeHeight,
     grassInstance.z + localPosition.y + windOffset.y
   );
 
-  grassHeightProgress = position.y;
-  gl_Position = projectionMatrix * viewMatrix * vec4(worldPosition, 1.0);
+  // The mesh sits at the world origin, so modelViewMatrix is the view matrix
+  // and the shared anchor projects these world-space tufts unchanged.
+  #include <project_vertex>
+
+  gl_Position = mix(gl_Position, vec4(2.0, 2.0, 2.0, 1.0), hidden);
 }

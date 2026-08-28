@@ -7,12 +7,23 @@
 
 import type { LevelPreset } from "./level-runtime";
 import { level as motionLevel } from "./motion.level";
+import { sharedGrassZones } from "./shared-level-values";
 
 export const level: LevelPreset = {
   // Senses layer, never swap: the world carries the Motion Perception preset
   // verbatim; the heat view exists only inside a viewer-centred radius, and
   // outside it the carried Motion world shows unchanged.
   ...motionLevel,
+  // Under evaluation, not a decision: Grass is documented as excluded by
+  // intent because its raw shader has no material-effect hook, so neither the
+  // echo ramp nor the heat view reaches it. Its colors come from the level-03
+  // dark stops, which is right outside the thermal radius and visibly wrong
+  // inside it. Either Grass gains a hook or this field comes back out.
+  grass: {
+    rootColor: 0x101010,
+    tipColor: 0x494949,
+    zones: sharedGrassZones,
+  },
   // New in level 05: warm bodies against the carried grayscale world. Fur
   // colors come from the level-03 dark stops so animals outside the thermal
   // radius sit inside the echo palette like vegetation does.
@@ -25,7 +36,9 @@ export const level: LevelPreset = {
     },
   },
   // Level 05 palette from docs/levels/README.md: #2E1386 #0C47D1 #2EB4E8
-  // #D5198A #FB5F16 #FCCE43, mapped cold to hot.
+  // #D5198A #FB5F16 #FCCE43, mapped cold to hot. These six are anchors, not
+  // the visible colors: the module interpolates between them in gamma space,
+  // so what the level actually shows is the continuous gradient through them.
   thermal: {
     // Full sense strength until a dramaturgy driver exists.
     intensity: 1,
@@ -42,14 +55,18 @@ export const level: LevelPreset = {
       hottestColor: 0xfcce43,
     },
     surfaces: {
-      // Plants hold mid warmth with visible per-plant variation; rocks sit
-      // cooler and more uniform so living things stand out against them.
-      vegetationWarmth: 0.45,
-      vegetationWarmthSpread: 0.12,
-      rockWarmth: 0.3,
-      rockWarmthSpread: 0.08,
+      // The average temperature of one plant or rock; the module spreads every
+      // instance around it and varies the temperature across each model, so
+      // these are the centre of a distribution rather than a color anyone
+      // sees. Rocks sit cooler and vary less than living plants do.
+      vegetationWarmth: 0.44,
+      vegetationWarmthSpread: 0.14,
+      rockWarmth: 0.31,
+      rockWarmthSpread: 0.11,
     },
-    // Warm-blooded animals reach the hottest palette bands.
-    actorWarmth: 0.92,
+    // Core body temperature. It has to clear the module's environment ceiling
+    // by enough that the whole body — torso down through legs to hooves —
+    // still reads as alive against the ground the animal stands on.
+    actorWarmth: 0.95,
   },
 };
