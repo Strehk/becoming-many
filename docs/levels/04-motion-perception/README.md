@@ -12,10 +12,11 @@ Boundary: The Level Guide owns the cross-level sequence; modules own their imple
 Make movement the primary way the world becomes visible ("Frog and insects").
 For many animals, what holds still is nearly invisible; what twitches is
 everything. The level expresses this through moving actors: persistent fly
-swarms buzz in ground-near clouds, and every fly prints a fading motion
-trail into the air — movement literally leaves a visible trace. This is a
-port of the proven bm-base motion layer (fly swarms plus the motion-trail
-ring buffer), not a material effect that dims static geometry.
+swarms buzz in ground-near clouds, invisible bird flocks circle the
+traveler on air rings, and every moving point prints a fading motion trail
+— movement literally leaves a visible trace. This is a port of the proven
+bm-base motion layer (fly swarms plus the motion-trail ring buffer), not a
+material effect that dims static geometry.
 
 ## Entry, Exit, and Timeline Cues
 
@@ -38,9 +39,13 @@ the sense is carried by moving actors, not by dimming static modules or
 reacting to user movement. The world carries the Echolocation grayscale
 ramp and pale haze unchanged (senses layer, never swap), and the motion
 language prints against it in the ink-dark bm-base contrast style: flies as
-near-black specks (`#212133`), trails as dark indigo (`#312758`). The cyan
-accent `#10BEDB` and the orange `#F3952D` stay reserved for later motion
-actors (bird trails, exit cues). No audio counterpart exists yet.
+near-black specks (`#212133`), trails as dark indigo (`#312758`).
+
+Decided 2026-08-28: bird flocks are implemented as **procedural point
+birds** — invisible perception-only actors of three points each (body plus
+two flapping wingtips) circling the traveler, whose traces print in the
+cyan accent `#10BEDB` that the palette reserved for them. The orange
+`#F3952D` stays reserved (exit cues). No audio counterpart exists yet.
 
 ## Exact Typed Preset and Active Modules
 
@@ -49,15 +54,18 @@ actors (bird trails, exit cues). No audio counterpart exists yet.
 - Fields: `terrain`, `vegetation`, `rocks`, `airParticles`,
   `scentParticles`, and `echoDepth` copied unchanged from `echo.level.ts`,
   plus `motion: MotionSenseParameters` (intensity 1, twelve swarms of sixty
-  flies, ink-dark appearance, fourteen-frame trails with motion gain 26).
+  flies, ink-dark appearance, fourteen-frame trails with motion gain 26,
+  and three bird flocks of twelve birds on 30–90-metre air rings printing
+  cyan traces).
 - Active modules: everything the Echo level activates, plus Motion Sense
   (`src/modules/motion-sense/`): one fly-swarm boid simulation rendered as
-  one opaque Points draw, and one motion-trail ring buffer rendered as one
-  transparent Points draw. The composition root skips the module entirely
-  at intensity zero, and the sense never imports or recolors a sibling.
-- Excluded by intent: Grass and Animals (unchanged from Echo); bird-flock
-  trails are the module's documented follow-up through its
-  `MotionPointSource` seam.
+  one opaque Points draw, and one motion-trail ring per actor class (fly
+  trails and bird trails) rendered as one transparent Points draw each.
+  Bird bodies render nothing — they are perception-only actors whose
+  position stream feeds a trail ring through the `MotionPointSource` seam.
+  The composition root skips the module entirely at intensity zero, and
+  the sense never imports or recolors a sibling.
+- Excluded by intent: Grass and Animals (unchanged from Echo).
 
 ## Asset and Shader Requirements
 
@@ -70,18 +78,21 @@ actors (bird trails, exit cues). No audio counterpart exists yet.
 
 ## Performance Budget and Measured Evidence
 
-- CPU per frame: 720 boids with stepped hash noise and eight strided
-  flockmate samples each (never the full pairing), plus 720 trail-distance
-  computations — well under 0.2 ms of the 11.1 ms 90 FPS frame.
-- Uploads per frame are bounded and contiguous: one printed trail ring slot
-  (720 × 8 floats ≈ 23 KB) plus the live fly positions (≈ 8.6 KB), each as
-  one `addUpdateRange`. All other trail animation derives GPU-only from one
-  frame uniform — the port deliberately moved bm-base's full-ring CPU
-  rewrite onto the GPU to honour "CPU sets up, GPU animates".
-- Draw calls: the Echo baseline plus exactly two (opaque flies, transparent
-  trails). Trail overdraw is negligible: 10,080 points of a few pixels each
-  with a one-discard, one-pow fragment.
-- Memory: trail ring ≈ 322 KB of attributes, fly buffers ≈ 26 KB.
+- CPU per frame: 720 fly boids with stepped hash noise and eight strided
+  flockmate samples each (never the full pairing), 36 birds composing 108
+  orbit-and-flap points, plus 828 trail-distance computations — well under
+  0.25 ms of the 11.1 ms 90 FPS frame.
+- Uploads per frame are bounded and contiguous: one printed ring slot per
+  trail (720 and 108 points × 8 floats ≈ 26 KB) plus the live fly positions
+  (≈ 8.6 KB), each as one `addUpdateRange`. All other trail animation
+  derives GPU-only from one frame uniform — the port deliberately moved
+  bm-base's full-ring CPU rewrite onto the GPU to honour "CPU sets up, GPU
+  animates".
+- Draw calls: the Echo baseline plus exactly three (opaque flies,
+  transparent fly trails, transparent bird trails; bird bodies render
+  nothing). Trail overdraw is negligible: 11,592 ring points of a few
+  pixels each with a one-discard, one-pow fragment.
+- Memory: trail rings ≈ 371 KB of attributes, fly and bird buffers ≈ 30 KB.
 - No hardware desktop measurement has been recorded for this level yet.
 - The standalone PICO 4 / 90 FPS gate is not yet measured; no 72 Hz or 90 Hz
   headset claim is approved.
@@ -92,11 +103,13 @@ actors (bird trails, exit cues). No audio counterpart exists yet.
   world, and no receding material effect dims static modules in this step;
   whether static elements should recede beyond the carried depth ramp is an
   open art decision.
-- Bird-flock trails are deferred until the flies are approved in-world. The
-  fidelity decision — porting bm-base's rigged `bird_erasmus.glb` with
-  animated wing-vertex sampling versus procedural point birds — is open; the
-  module's `MotionPointSource` seam and per-source trail structure keep both
-  options pluggable without a bus.
+- Procedural point birds (decided 2026-08-28): each bird is three points
+  with a deterministic wing-flap oscillation on a circling flock orbit, so
+  traces read as flowing swarm streaks. Upgrading to bm-base's rigged
+  `bird_erasmus.glb` with animated wing-vertex sampling (true
+  wing-silhouette traces, and root-space sampling so only the flap — not
+  world flight — prints) remains open behind the same `MotionPointSource`
+  seam.
 - The bm-base path-flyby swarm event is a follow-up blocked on the runtime
   coordination decision (open-decisions §2); the current swarms are
   persistent and statically authored.

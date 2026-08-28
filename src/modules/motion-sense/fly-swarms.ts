@@ -14,13 +14,13 @@ import {
 } from "three";
 import type { WorldSurface } from "../../world-surface/world-surface";
 import { createFlySwarmMaterial } from "./fly-swarm-material";
+import { getMotionRandom, getSignedNoise } from "./motion-random";
 import {
   MOTION_SENSE_SETTINGS,
   type MotionSenseParameters,
 } from "./motion-sense-settings";
 
 const COMPONENTS_PER_VALUE = 3;
-const RANDOM_VALUE_RANGE = 0x1_0000_0000;
 const TAU = Math.PI * 2;
 
 /** Fixed random channel indexes keeping every hash stream independent. */
@@ -527,34 +527,4 @@ function writeWorldPositions(
 
   positionAttribute.addUpdateRange(0, state.worldPositions.length);
   positionAttribute.needsUpdate = true;
-}
-
-/**
- * Return one stable pseudo-random value in [0, 1) without keeping RNG state.
- * Fly-level values leave epoch and attempt at zero; anchor candidates use them.
- */
-function getMotionRandom(
-  index: number,
-  channel: number,
-  epoch = 0,
-  attempt = 0,
-): number {
-  let hash = Math.imul(index + 1, 73_856_093);
-  hash ^= Math.imul(channel + 1, 19_349_663);
-  hash ^= Math.imul(epoch + 1, 2_971_215_073);
-  hash ^= Math.imul(attempt + 1, 83_492_791);
-  hash = Math.imul(hash ^ (hash >>> 16), 2_246_822_519);
-  hash = Math.imul(hash ^ (hash >>> 13), 3_266_489_917);
-
-  return (hash >>> 0) / RANDOM_VALUE_RANGE;
-}
-
-/** Stable stepped noise in [-1, 1) for the abrupt per-fly buzz jitter. */
-function getSignedNoise(index: number, channel: number, step: number): number {
-  let hash =
-    Math.imul(index + 1, 374_761_393) ^
-    Math.imul(channel + 1, 668_265_263) ^
-    Math.imul(step + 1, 1_274_126_177);
-  hash = Math.imul(hash ^ (hash >>> 13), 1_274_126_177);
-  return ((hash ^ (hash >>> 16)) >>> 0) / 0x7fff_ffff - 1;
 }

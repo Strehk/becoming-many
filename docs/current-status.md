@@ -24,9 +24,11 @@ level:
 - twelve persistent fly swarms buzzing in ground-near clouds on
   player-centred distance rings, rendered as ink-dark round specks in one
   draw call
-- one motion-trail ring buffer printing a fading indigo particle behind
-  every fly each frame; trails age, drift outward, and collapse GPU-only in
-  one additional draw call
+- three invisible bird flocks circling the traveler on 30–90-metre air
+  rings; only their cyan traces render ("swarm traces in the air")
+- one motion-trail ring buffer per actor class printing a fading particle
+  behind every moving point each frame; trails age, drift outward, and
+  collapse GPU-only in one draw call per ring
 - swarms deterministically re-anchor around the player after eighty metres
   of travel and never dip below their terrain clearance
 - the diagnostic test overlay
@@ -72,7 +74,8 @@ Design Test landscape by selecting `designTest.level.ts`.
   three surface modules' materials with one shared distance ramp.
 - `motion.level.ts` is the Motion Perception level: every Echolocation value
   carried over unchanged plus the `motion` field that activates the Motion
-  Sense fly swarms and their printed motion trails.
+  Sense fly swarms, the invisible bird flocks, and their printed motion
+  trails.
 - The sparse `invisibleGround: true` flag clamps flight above the shared
   deterministic world surface without creating the Terrain module or any
   rendered geometry.
@@ -265,9 +268,13 @@ Design Test landscape by selecting `designTest.level.ts`.
 
 ### Motion Sense
 
-- Motion Sense is the level-04 content module: persistent fly swarms whose
-  movement prints a motion-trail ring buffer, ported from the proven bm-base
-  motion layer and rewritten from TSL to the repository's raw GLSL idiom.
+- Motion Sense is the level-04 content module: persistent fly swarms and
+  invisible circling bird flocks whose movement prints motion-trail ring
+  buffers, ported from the proven bm-base motion layer and rewritten from
+  TSL to the repository's raw GLSL idiom. Each actor implements the
+  module's `MotionPointSource` seam and prints into its own trail ring;
+  bird bodies render nothing (perception-only actors, three points per
+  bird with a deterministic wing flap).
 - The fly simulation is a bounded boid integration: stepped hash noise for
   the insect jitter, eight strided flockmate samples per fly (never the full
   pairing), soft cloud envelopes, and a hard clamp that guarantees no fly
@@ -279,12 +286,12 @@ Design Test landscape by selecting `designTest.level.ts`.
   direction, spawn intensity, and spawn frame) as one contiguous
   `addUpdateRange` per attribute; fading, drift, and collapse derive
   GPU-only from one advancing frame uniform. At the authored 720 flies and
-  fourteen-frame trails this is roughly 32 KB of bounded uploads per frame
-  and two added draw calls.
+  108 bird points with fourteen-frame trails this is roughly 35 KB of
+  bounded uploads per frame and three added draw calls.
 - The composition root skips the module entirely when the preset omits
-  `motion` or authors intensity zero. The exported `MotionPointSource`
-  interface is the documented seam for future moving actors (bird flocks)
-  to print trails without a bus or sibling import.
+  `motion` or authors intensity zero; omitting the `birds` block runs the
+  flies alone. The exported `MotionPointSource` interface remains the seam
+  for further moving actors without a bus or sibling import.
 
 ## Runtime Assets
 
@@ -303,7 +310,7 @@ Manifests remain metadata rather than a parallel runtime configuration system.
 
 The last clean verification recorded:
 
-- `bun test`: 104 tests
+- `bun test`: 108 tests
 - `bun run check`: strict TypeScript
 - `bun run lint`: clean Biome run
 - `bun run build`: Vite production build

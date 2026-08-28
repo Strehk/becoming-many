@@ -172,6 +172,12 @@ test("Motion Level layers fly swarms onto the carried Echo world", () => {
   expect(motion.trail.lifetimeFrames).toBeGreaterThan(1);
   expect(motion.trail.density).toBeGreaterThan(0);
   expect(motion.trail.density).toBeLessThanOrEqual(1);
+
+  // Bird traces use the cyan accent reserved for them in the 04 palette.
+  expect(motion.birds?.appearance.trailColor).toBe(0x10bedb);
+  expect(motion.birds?.flockCount).toBeGreaterThan(0);
+  expect(motion.birds?.birdsPerFlock).toBeGreaterThan(0);
+  expect(motion.birds?.flightHeightMeters).toBeGreaterThan(0);
 });
 
 test("Design Test authors semantic colors without development diagnostics", () => {

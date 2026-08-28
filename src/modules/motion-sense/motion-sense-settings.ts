@@ -22,6 +22,14 @@ export const MOTION_SENSE_SETTINGS = {
   maxBoidStepSeconds: 0.05, // Clamps frame-time spikes out of the integration.
   anchorGroundFollowRate: 0.2, // Per-update fraction anchors settle toward the ground.
   trailIntensityFloor: 0.04, // Faint print for barely moving flies; thinned points stay at zero.
+  // Bird flocks circle the traveler on air rings well above the fly layer.
+  birdOrbitRadius: { minMeters: 30, maxMeters: 90 }, // Interpolated across the flock pool.
+  birdAnchorFollowRate: 0.02, // Per-update fraction flock centres drift after the player.
+  birdScatter: { radiusMeters: 6, heightMeters: 1.5 }, // Bird slots inside one flock.
+  birdWingSpanMeters: 0.9, // Lateral wingtip distance printing the wing traces.
+  birdFlapAmplitudeMeters: 0.28, // Vertical wingtip travel per flap.
+  birdFlapFrequency: { minHertz: 4, maxHertz: 8 }, // Per-bird deterministic flap rate.
+  birdPointsPerBird: 3, // Body plus two wingtips; the whole trace of one bird.
 } as const;
 
 /** Level-authored sense strength, swarm pool, appearance, and trail values. */
@@ -58,4 +66,25 @@ export interface MotionSenseParameters {
     /** Deterministic fraction of flies that print trails, 0..1. */
     readonly density: number;
   };
+
+  /** Invisible bird flocks whose flight prints trails; omitted means no birds. */
+  readonly birds?: {
+    /** Orbit rings interpolate near to far across this count. */
+    readonly flockCount: number;
+    readonly birdsPerFlock: number;
+
+    /** Orbit speed along the flock's air ring. */
+    readonly flightSpeedMetersPerSecond: number;
+
+    /** Flock centre height above the sampled ground. */
+    readonly flightHeightMeters: number;
+    readonly appearance: MotionTrailAppearance;
+  };
+}
+
+/** The per-source trail appearance shared by the fly and bird trail rings. */
+export interface MotionTrailAppearance {
+  readonly trailColor: number;
+  readonly trailSizeMeters: number;
+  readonly trailOpacity: number;
 }

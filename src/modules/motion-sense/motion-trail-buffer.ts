@@ -15,6 +15,7 @@ import {
 import {
   MOTION_SENSE_SETTINGS,
   type MotionSenseParameters,
+  type MotionTrailAppearance,
 } from "./motion-sense-settings";
 import { createMotionTrailMaterial } from "./motion-trail-material";
 
@@ -23,7 +24,9 @@ const COMPONENTS_PER_VALUE = 3;
 interface MotionTrailBufferOptions {
   /** Fixed number of tracked points; every frame prints one slot of this size. */
   readonly pointCount: number;
-  readonly parameters: MotionSenseParameters;
+  readonly trail: MotionSenseParameters["trail"];
+  readonly appearance: MotionTrailAppearance;
+  readonly intensity: number;
 }
 
 /**
@@ -40,9 +43,10 @@ export interface MotionTrailBuffer {
 /** Allocate the one fixed-capacity trail object used for the loaded lifetime. */
 export function createMotionTrailBuffer({
   pointCount,
-  parameters,
+  trail,
+  appearance,
+  intensity,
 }: MotionTrailBufferOptions): MotionTrailBuffer {
-  const { trail } = parameters;
   const capacity = pointCount * trail.lifetimeFrames;
   const printedPositions = new Float32Array(capacity * COMPONENTS_PER_VALUE);
   const expansionDirections = new Float32Array(capacity * COMPONENTS_PER_VALUE);
@@ -64,11 +68,7 @@ export function createMotionTrailBuffer({
   geometry.setAttribute("motionExpansionDirection", directionAttribute);
   geometry.setAttribute("motionSpawnIntensity", intensityAttribute);
   geometry.setAttribute("motionSpawnFrame", frameAttribute);
-  const material = createMotionTrailMaterial({
-    appearance: parameters.appearance,
-    trail,
-    intensity: parameters.intensity,
-  });
+  const material = createMotionTrailMaterial({ appearance, trail, intensity });
   const points = new Points(geometry, material.pointsMaterial);
 
   // The ring follows the traveling swarms, so its bounds change every frame.

@@ -84,11 +84,16 @@ The Motion preset additionally activates:
 - twelve persistent fly swarms of sixty flies each on player-centred distance
   rings (5–65 metres), simulated as bounded buzzing boids that re-anchor
   after eighty metres of travel and never dip below their ground clearance
-- one motion-trail ring buffer printing one particle per fly per frame;
-  printed particles fade and drift outward GPU-only over fourteen frames
-- ink-dark specks and indigo trails from the level-04 dark palette stops, two
-  added draw calls in total
-- no grass or animals; bird-flock trails are a documented follow-up
+- three invisible bird flocks circling the traveler on 30–90-metre air
+  rings, each bird three points (body plus two flapping wingtips) — only
+  their traces are real
+- one motion-trail ring buffer per actor class printing one particle per
+  moving point per frame; printed particles fade and drift outward GPU-only
+  over fourteen frames
+- ink-dark specks and indigo fly trails from the level-04 dark palette
+  stops, cyan bird traces from the reserved accent; three added draw calls
+  in total
+- no grass or animals
 
 The level does not contain asset URLs, model names, seeds, candidate spacing,
 or weighted variants. Those stable content definitions belong to the concrete
@@ -311,22 +316,23 @@ Motion must be derived from shared shader values or compact instance data. Avoid
 ### Decided Art Direction
 
 World motion alone controls visibility (decided 2026-08-27): the sense is
-carried by moving actors — fly swarms now, bird-flock trails later — rather
-than by dimming static modules or reacting to user movement. Implemented in
-`src/modules/motion-sense/` as persistent boid fly swarms printing a
-motion-trail ring buffer; the world itself carries the Echolocation
-grayscale unchanged. The flies and trails use the ink-dark bm-base contrast
-language authored from the level-04 dark stops (`#212133`, `#312758`); the
-cyan accent `#10BEDB` stays reserved. See
+carried by moving actors rather than by dimming static modules or reacting
+to user movement. Implemented in `src/modules/motion-sense/` as persistent
+boid fly swarms and invisible circling bird flocks (procedural point birds,
+decided 2026-08-28), each printing a motion-trail ring buffer; the world
+itself carries the Echolocation grayscale unchanged. Flies and their trails
+use the ink-dark bm-base contrast language authored from the level-04 dark
+stops (`#212133`, `#312758`); bird traces use the cyan accent `#10BEDB`
+reserved for them. See
 [04 — Motion Perception](04-motion-perception/README.md) for the exact
 preset.
 
 ### Open Art Decisions
 
-- bird-flock trails: rigged wing-vertex sampling versus procedural point
-  birds, decided once the flies are approved in-world
+- upgrading the point birds to bm-base's rigged wing-vertex sampling
+  (wing-silhouette traces, flap-only intensity)
 - how long motion remains visible (trail length and fade curve tuning)
-- whether the trails adopt the cyan accent instead of ink-dark indigo
+- whether the fly trails adopt the cyan accent instead of ink-dark indigo
 - whether static elements should additionally recede beyond the carried
   depth ramp
 - balance between wind motion and animal motion once wind-driven vegetation

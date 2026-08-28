@@ -129,5 +129,20 @@ export const level: LevelPreset = {
       fadePower: 1.6,
       density: 1,
     },
+    birds: {
+      // Three invisible flocks circle the traveler on 30-90 metre air rings;
+      // only their traces are real ("swarm traces in the air").
+      flockCount: 3,
+      birdsPerFlock: 12,
+      flightSpeedMetersPerSecond: 8,
+      flightHeightMeters: 14,
+      appearance: {
+        // The cyan accent reserved for the bird traces; larger prints than
+        // the fly trails so distant swarms stay readable against the haze.
+        trailColor: 0x10bedb,
+        trailSizeMeters: 0.18,
+        trailOpacity: 1,
+      },
+    },
   },
 };

@@ -1,13 +1,18 @@
 /**
  * Purpose: Connect the Motion Sense effect to the shared world lifecycle.
- * Context: Movement becomes visible through fly swarms printing fading motion trails.
- * Responsibility: Compose the fly simulation and trail ring, drive per-frame printing, and dispose.
+ * Context: Movement becomes visible through moving actors printing fading motion trails.
+ * Responsibility: Compose the actor simulations and trail rings, drive printing, and dispose.
  * Boundary: Simulation, buffers, and materials live beside this file; siblings stay untouched.
  */
 
 import type { PerspectiveCamera, Scene } from "three";
 import type { WorldModule } from "../../world/module-runtime";
 import type { WorldSurface } from "../../world-surface/world-surface";
+import {
+  type BirdFlocks,
+  createBirdFlocks,
+  getBirdPointCount,
+} from "./bird-flocks";
 import { createFlySwarms, type FlySwarms } from "./fly-swarms";
 import type { MotionSenseParameters } from "./motion-sense-settings";
 import {
@@ -18,9 +23,9 @@ import {
 export type { MotionSenseParameters } from "./motion-sense-settings";
 
 /**
- * The seam for future moving actors (bird flocks) to print trails: the
- * composition root adapts their positions into one additional trail ring.
- * The fly swarms are the only source until level 04's bird decision lands.
+ * The seam every moving actor prints trails through: the module pairs each
+ * source's position stream with its own trail ring. Fly swarms and bird
+ * flocks implement it today; further actors join without touching either.
  */
 // fallow-ignore-next-line unused-type
 export interface MotionPointSource {
@@ -36,10 +41,16 @@ export interface MotionSenseModuleOptions {
   readonly zoneAt: WorldSurface["zoneAt"];
 }
 
+/** One actor's position stream paired with the ring it prints into. */
+interface MotionTrailPrinter {
+  readonly source: MotionPointSource;
+  readonly trail: MotionTrailBuffer;
+}
+
 interface MotionSenseResources {
   readonly flySwarms: FlySwarms;
-  readonly flyTrailSource: MotionPointSource;
-  readonly flyTrail: MotionTrailBuffer;
+  readonly birdFlocks: BirdFlocks | undefined;
+  readonly printers: readonly MotionTrailPrinter[];
 }
 
 interface MotionSenseState {
@@ -72,18 +83,50 @@ function loadMotionSense(
     initialPlayerX: camera.position.x,
     initialPlayerZ: camera.position.z,
   });
-  const flyTrail = createMotionTrailBuffer({
-    pointCount: parameters.swarms.swarmCount * parameters.swarms.fliesPerSwarm,
-    parameters,
-  });
+  const printers: MotionTrailPrinter[] = [
+    {
+      source: flySwarms,
+      trail: createMotionTrailBuffer({
+        pointCount:
+          parameters.swarms.swarmCount * parameters.swarms.fliesPerSwarm,
+        trail: parameters.trail,
+        appearance: parameters.appearance,
+        intensity: parameters.intensity,
+      }),
+    },
+  ];
 
-  // Loading happens before the first render. Keep both objects hidden until
-  // the module lifecycle activates them.
+  // Bird bodies stay invisible (perception-only actors): only their trail
+  // ring joins the scene beside the visible fly specks.
+  const birdFlocks = parameters.birds
+    ? createBirdFlocks({
+        birds: parameters.birds,
+        groundYAt: options.groundYAt,
+        initialPlayerX: camera.position.x,
+        initialPlayerZ: camera.position.z,
+      })
+    : undefined;
+  if (birdFlocks && parameters.birds) {
+    printers.push({
+      source: birdFlocks,
+      trail: createMotionTrailBuffer({
+        pointCount: getBirdPointCount(parameters.birds),
+        trail: parameters.trail,
+        appearance: parameters.birds.appearance,
+        intensity: parameters.intensity,
+      }),
+    });
+  }
+
+  // Loading happens before the first render. Keep every object hidden until
+  // the module lifecycle activates it.
   flySwarms.points.visible = false;
-  flyTrail.points.visible = false;
   scene.add(flySwarms.points);
-  scene.add(flyTrail.points);
-  state.currentResources = { flySwarms, flyTrailSource: flySwarms, flyTrail };
+  for (const printer of printers) {
+    printer.trail.points.visible = false;
+    scene.add(printer.trail.points);
+  }
+  state.currentResources = { flySwarms, birdFlocks, printers };
 }
 
 function updateMotionSense(
@@ -100,9 +143,14 @@ function updateMotionSense(
     camera.position.x,
     camera.position.z,
   );
-  resources.flyTrail.spawnFromWorldPoints(
-    resources.flyTrailSource.getWorldPositions(),
+  resources.birdFlocks?.update(
+    deltaSeconds,
+    camera.position.x,
+    camera.position.z,
   );
+  for (const printer of resources.printers) {
+    printer.trail.spawnFromWorldPoints(printer.source.getWorldPositions());
+  }
 }
 
 function setMotionSenseVisible(
@@ -113,7 +161,9 @@ function setMotionSenseVisible(
   if (!resources) return;
 
   resources.flySwarms.points.visible = visible;
-  resources.flyTrail.points.visible = visible;
+  for (const printer of resources.printers) {
+    printer.trail.points.visible = visible;
+  }
 }
 
 function unloadMotionSense(state: MotionSenseState, scene: Scene): void {
@@ -122,7 +172,9 @@ function unloadMotionSense(state: MotionSenseState, scene: Scene): void {
 
   state.currentResources = undefined;
   scene.remove(resources.flySwarms.points);
-  scene.remove(resources.flyTrail.points);
   resources.flySwarms.dispose();
-  resources.flyTrail.dispose();
+  for (const printer of resources.printers) {
+    scene.remove(printer.trail.points);
+    printer.trail.dispose();
+  }
 }

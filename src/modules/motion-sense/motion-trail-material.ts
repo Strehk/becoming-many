@@ -6,7 +6,10 @@
  */
 
 import { PointsMaterial } from "three";
-import type { MotionSenseParameters } from "./motion-sense-settings";
+import type {
+  MotionSenseParameters,
+  MotionTrailAppearance,
+} from "./motion-sense-settings";
 import fadeShader from "./motion-trail.frag.glsl?raw";
 import ageShader from "./motion-trail.vert.glsl?raw";
 
@@ -18,7 +21,7 @@ const THREE_CLIPPING_FRAGMENT_SHADER = "#include <clipping_planes_fragment>";
 const MATERIAL_CACHE_KEY = "motion-trail-material-v1";
 
 interface MotionTrailMaterialOptions {
-  readonly appearance: MotionSenseParameters["appearance"];
+  readonly appearance: MotionTrailAppearance;
   readonly trail: MotionSenseParameters["trail"];
   readonly intensity: number;
 }

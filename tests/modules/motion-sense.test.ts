@@ -13,6 +13,7 @@ import {
   type PointsMaterial,
   Scene,
 } from "three";
+import { createBirdFlocks } from "../../src/modules/motion-sense/bird-flocks";
 import { createFlySwarms } from "../../src/modules/motion-sense/fly-swarms";
 import { createMotionSenseModule } from "../../src/modules/motion-sense/motion-sense";
 import {
@@ -66,7 +67,7 @@ describe("Motion Trail ring buffer", () => {
     const parameters = createMotionParameters();
     const pointCount = 2;
     const lifetimeFrames = parameters.trail.lifetimeFrames;
-    const trail = createMotionTrailBuffer({ pointCount, parameters });
+    const trail = createTrailBufferForTest(pointCount, parameters);
     const geometry = trail.points.geometry;
     const positionAttribute = getBufferAttribute(geometry, "position");
     const frameAttribute = getBufferAttribute(geometry, "motionSpawnFrame");
@@ -106,7 +107,7 @@ describe("Motion Trail ring buffer", () => {
   test("prints the floor when resting and full intensity when moving", () => {
     const parameters = createMotionParameters();
     const pointCount = 1;
-    const trail = createMotionTrailBuffer({ pointCount, parameters });
+    const trail = createTrailBufferForTest(pointCount, parameters);
     const intensities = trail.points.geometry.getAttribute(
       "motionSpawnIntensity",
     ).array;
@@ -128,7 +129,7 @@ describe("Motion Trail ring buffer", () => {
       trail: { ...createMotionParameters().trail, density: 0.5 },
     });
     const pointCount = 32;
-    const trail = createMotionTrailBuffer({ pointCount, parameters });
+    const trail = createTrailBufferForTest(pointCount, parameters);
     const intensities = trail.points.geometry.getAttribute(
       "motionSpawnIntensity",
     ).array;
@@ -243,6 +244,88 @@ describe("Fly swarms", () => {
   });
 });
 
+describe("Bird flocks", () => {
+  const createBirds = () =>
+    createBirdFlocks({
+      birds: createBirdParameters(),
+      groundYAt: () => 10,
+      initialPlayerX: 0,
+      initialPlayerZ: 0,
+    });
+
+  test("streams identical deterministic flocks and flapping wingtips", () => {
+    const first = createBirds();
+    const repeated = createBirds();
+    for (let step = 0; step < 30; step += 1) {
+      first.update(1 / 90, 0, 0);
+      repeated.update(1 / 90, 0, 0);
+    }
+
+    expect(repeated.getWorldPositions()).toEqual(first.getWorldPositions());
+
+    // Wingtips sit half a wingspan beside the body and lift with the flap.
+    const points = first.getWorldPositions();
+    const bodyY = points[1] ?? 0;
+    const leftTipY = points[4] ?? 0;
+    const rightTipY = points[7] ?? 0;
+    expect(leftTipY).toBe(rightTipY);
+    expect(Math.abs(leftTipY - bodyY)).toBeLessThanOrEqual(
+      MOTION_SENSE_SETTINGS.birdFlapAmplitudeMeters + 1e-6,
+    );
+    const wingDistance = Math.hypot(
+      (points[3] ?? 0) - (points[0] ?? 0),
+      (points[5] ?? 0) - (points[2] ?? 0),
+    );
+    expect(wingDistance).toBeCloseTo(
+      MOTION_SENSE_SETTINGS.birdWingSpanMeters / 2,
+    );
+  });
+
+  test("keeps every bird on its air ring above the sampled ground", () => {
+    const birds = createBirds();
+    const parameters = createBirdParameters();
+    for (let step = 0; step < 240; step += 1) {
+      birds.update(1 / 90, 0, 0);
+    }
+
+    const points = birds.getWorldPositions();
+    const lowestAllowedY =
+      10 +
+      parameters.flightHeightMeters -
+      MOTION_SENSE_SETTINGS.birdScatter.heightMeters -
+      MOTION_SENSE_SETTINGS.birdFlapAmplitudeMeters;
+    const farthestAllowed =
+      MOTION_SENSE_SETTINGS.birdOrbitRadius.maxMeters +
+      MOTION_SENSE_SETTINGS.birdScatter.radiusMeters +
+      1;
+    for (let point = 0; point < points.length; point += 3) {
+      expect(points[point + 1] ?? 0).toBeGreaterThanOrEqual(lowestAllowedY);
+      expect(
+        Math.hypot(points[point] ?? 0, points[point + 2] ?? 0),
+      ).toBeLessThanOrEqual(farthestAllowed);
+    }
+  });
+
+  test("moves every point between frames so trails always print", () => {
+    const birds = createBirds();
+    const before = Array.from(birds.getWorldPositions());
+
+    birds.update(1 / 90, 0, 0);
+
+    const after = birds.getWorldPositions();
+    let movedPoints = 0;
+    for (let point = 0; point < after.length; point += 3) {
+      const movedMeters = Math.hypot(
+        (after[point] ?? 0) - (before[point] ?? 0),
+        (after[point + 1] ?? 0) - (before[point + 1] ?? 0),
+        (after[point + 2] ?? 0) - (before[point + 2] ?? 0),
+      );
+      if (movedMeters > 0.001) movedPoints += 1;
+    }
+    expect(movedPoints).toBe(after.length / 3);
+  });
+});
+
 describe("Motion Sense module", () => {
   test("keeps two fixed draws through the whole lifecycle", () => {
     const scene = new Scene();
@@ -275,6 +358,40 @@ describe("Motion Sense module", () => {
 
     module.deactivate();
     expect(scene.children.every((child) => !child.visible)).toBe(true);
+
+    module.unload();
+    expect(scene.children).toHaveLength(0);
+  });
+
+  test("adds one invisible-actor trail draw when birds are authored", () => {
+    const scene = new Scene();
+    const camera = new PerspectiveCamera(50, 1, 0.1, 128);
+    const module = createMotionSenseModule({
+      scene,
+      camera,
+      parameters: createMotionParameters({ birds: createBirdParameters() }),
+      groundYAt: () => 0,
+      zoneAt: () => "meadow",
+    });
+
+    module.load();
+    module.activate();
+
+    // Flies, fly trails, and bird trails; bird bodies render nothing.
+    expect(scene.children).toHaveLength(3);
+    expect(scene.children.every((child) => child instanceof Points)).toBe(true);
+
+    module.update?.(1 / 90);
+    module.update?.(1 / 90);
+    const trailFrameAttributes = scene.children
+      .map((child) =>
+        (child as Points).geometry.getAttribute("motionSpawnFrame"),
+      )
+      .filter((attribute) => attribute !== undefined);
+    expect(trailFrameAttributes).toHaveLength(2);
+    for (const attribute of trailFrameAttributes) {
+      expect(Array.from(attribute.array)).toContain(1);
+    }
 
     module.unload();
     expect(scene.children).toHaveLength(0);
@@ -313,6 +430,32 @@ function createMotionParameters(
     },
     ...overrides,
   };
+}
+
+function createBirdParameters(): NonNullable<MotionSenseParameters["birds"]> {
+  return {
+    flockCount: 2,
+    birdsPerFlock: 4,
+    flightSpeedMetersPerSecond: 8,
+    flightHeightMeters: 14,
+    appearance: {
+      trailColor: 0x10bedb,
+      trailSizeMeters: 0.18,
+      trailOpacity: 1,
+    },
+  };
+}
+
+function createTrailBufferForTest(
+  pointCount: number,
+  parameters: MotionSenseParameters,
+) {
+  return createMotionTrailBuffer({
+    pointCount,
+    trail: parameters.trail,
+    appearance: parameters.appearance,
+    intensity: parameters.intensity,
+  });
 }
 
 function compileMaterialForTest(material: PointsMaterial): TestShader {

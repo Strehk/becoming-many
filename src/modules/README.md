@@ -38,13 +38,13 @@ contract in `src/utils/asset-loader/material-effect.ts`. It replaces surface
 color with the level-03 camera-distance ramp and never imports a sibling
 module.
 
-`motion-sense` owns both halves of the level-04 motion language: a bounded
-boid simulation of persistent fly swarms and the motion-trail ring buffer
-their movement prints into. The CPU writes only the newest ring slot per
-frame; fading, outward drift, and collapse derive GPU-only from one frame
-uniform. Its `MotionPointSource` seam is where the composition root will
-later adapt further moving actors (bird flocks) into additional trails; the
-module never imports a sibling.
+`motion-sense` owns the level-04 motion language: a bounded boid simulation
+of persistent fly swarms, invisible circling bird flocks (perception-only
+point actors), and one motion-trail ring buffer per actor printing their
+movement. The CPU writes only the newest ring slot per frame; fading,
+outward drift, and collapse derive GPU-only from one frame uniform. Each
+actor feeds its ring through the module's `MotionPointSource` seam, where
+further moving actors can join; the module never imports a sibling.
 
 Landscape modules share only stable contracts: `WorldModule` for lifecycle,
 `WorldSurface` for read-only facts, `WORLD_WIND` for the immutable global wind,

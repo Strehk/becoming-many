@@ -8,21 +8,28 @@ Boundary: Level values live in presets; composition lives in the Level Runtime.
 # Motion Sense
 
 Motion Sense is the level-04 content module: persistent ambient fly swarms
-whose movement prints a fading motion-trail ring buffer — movement literally
-leaves a visible trace. It is a port of the proven bm-base motion layer
-(`mosquito-flocks` plus the `ParticleTrailBuffer`), rewritten from
-WebGPU/TSL to this repository's WebGL2 idiom: `THREE.Points`,
-`PointsMaterial`, `onBeforeCompile` patches, and raw GLSL ES 3.00 files.
+and invisible circling bird flocks whose movement prints fading motion-trail
+ring buffers — movement literally leaves a visible trace. It is a port of
+the proven bm-base motion layer (`mosquito-flocks` plus the
+`ParticleTrailBuffer`), rewritten from WebGPU/TSL to this repository's
+WebGL2 idiom: `THREE.Points`, `PointsMaterial`, `onBeforeCompile` patches,
+and raw GLSL ES 3.00 files.
 
 ## Ownership
 
-- `motion-sense.ts` connects both halves to the shared `WorldModule`
-  lifecycle and exports the level contract plus the `MotionPointSource`
-  seam. It never imports a sibling module.
-- `fly-swarms.ts` owns the boid simulation: deterministic hash placement on
-  player-centred distance rings, stepped-noise buzz, strided flockmate
+- `motion-sense.ts` connects the actors to the shared `WorldModule`
+  lifecycle, pairs each `MotionPointSource` with its own trail ring, and
+  exports the level contract. It never imports a sibling module.
+- `fly-swarms.ts` owns the fly boid simulation: deterministic hash placement
+  on player-centred distance rings, stepped-noise buzz, strided flockmate
   sampling, soft cloud envelopes, a hard ground-clearance clamp, epoch-based
   re-anchoring, and the opaque fly point pool.
+- `bird-flocks.ts` owns the perception-only bird flocks: deterministic
+  orbits on air rings that drift after the traveler, three points per bird
+  (body plus two wingtips on a hashed flap oscillation), and no scene
+  object at all — only the position stream.
+- `motion-random.ts` keeps the shared stateless hash streams both actors
+  derive their placement and character from.
 - `motion-trail-buffer.ts` owns the ring of `pointCount × lifetimeFrames`
   particles: newest-slot printing, frame-to-frame motion intensity,
   deterministic density thinning, and bounded partial uploads.
@@ -42,12 +49,12 @@ printing and hides both objects; nothing per-particle is ever rewritten.
 
 ## The `MotionPointSource` seam
 
-Bird-flock trails ("swarm traces in the air") are the documented follow-up.
-The trail ring already consumes nothing but a packed world-position stream,
-so a future birds module exposes its positions through `MotionPointSource`
-and the composition root adapts it into an additional trail ring — no bus,
-no sibling import, no change to the fly path. The bird fidelity decision
-(rigged wing-vertex sampling versus procedural point birds) is recorded in
+Every actor prints trails through the same seam: a trail ring consumes
+nothing but a packed world-position stream, so the module pairs each source
+with its own ring and appearance. Flies and birds implement it today;
+further moving actors join without a bus, a sibling import, or any change
+to the existing paths. Upgrading the point birds to bm-base's rigged
+wing-vertex sampling is recorded in
 `docs/levels/04-motion-perception/README.md`.
 
 ## Known simplifications
