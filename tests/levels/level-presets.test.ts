@@ -9,6 +9,7 @@ import { expect, test } from "bun:test";
 import { level as designTestLevel } from "../../src/levels/designTest.level";
 import { level as echoLevel } from "../../src/levels/echo.level";
 import type { LevelPreset } from "../../src/levels/level-runtime";
+import { level as motionLevel } from "../../src/levels/motion.level";
 import { level as scentLevel } from "../../src/levels/scent.level";
 import { level as testLevel } from "../../src/levels/test.level";
 import { level as whiteWorld } from "../../src/levels/white-world.level";
@@ -57,6 +58,11 @@ test("only the Test Level activates development diagnostics", () => {
   expect(whiteWorldPreset.echoDepth).toBeUndefined();
   expect(designTestLevel.echoDepth).toBeUndefined();
   expect(scentLevel.echoDepth).toBeUndefined();
+  expect(testPreset.motion).toBeUndefined();
+  expect(whiteWorldPreset.motion).toBeUndefined();
+  expect(designTestLevel.motion).toBeUndefined();
+  expect(scentLevel.motion).toBeUndefined();
+  expect(echoLevel.motion).toBeUndefined();
 });
 
 test("Echo Level renders depth through shared materials only", () => {
@@ -136,6 +142,36 @@ test("Scent Level layers scent onto the White World air baseline", () => {
     driftAmplitudeMeters: 0.4,
     speedMultiplier: 1,
   });
+});
+
+test("Motion Level layers fly swarms onto the carried Echo world", () => {
+  const motionPreset: LevelPreset = motionLevel;
+  // The dark stops of the level-04 moodboard palette color the motion actors.
+  const motionDarkStops = [0x212133, 0x312758, 0x45577a];
+  const { motion } = motionPreset;
+  if (!motion) throw new Error("Motion Level must author the motion sense");
+
+  expect(motionPreset.testUi).toBe(true);
+  // Senses layer, never swap: every echo-world layer carries over unchanged.
+  expect(motionPreset.airParticles).toEqual(echoLevel.airParticles);
+  expect(motionPreset.scentParticles).toEqual(echoLevel.scentParticles);
+  expect(motionPreset.echoDepth).toEqual(echoLevel.echoDepth);
+  expect(motionPreset.terrain).toEqual(echoLevel.terrain);
+  expect(motionPreset.vegetation).toEqual(echoLevel.vegetation);
+  expect(motionPreset.rocks).toEqual(echoLevel.rocks);
+  expect(motionPreset.backgroundColor).toBe(echoLevel.backgroundColor ?? -1);
+  expect(motionPreset.grass).toBeUndefined();
+  expect(motionPreset.animals).toBeUndefined();
+  expect(motionPreset.invisibleGround).toBeUndefined();
+
+  expect(motion.intensity).toBe(1);
+  expect(motion.swarms.swarmCount).toBeGreaterThan(0);
+  expect(motion.swarms.fliesPerSwarm).toBeGreaterThan(0);
+  expect(motionDarkStops).toContain(motion.appearance.flyColor);
+  expect(motionDarkStops).toContain(motion.appearance.trailColor);
+  expect(motion.trail.lifetimeFrames).toBeGreaterThan(1);
+  expect(motion.trail.density).toBeGreaterThan(0);
+  expect(motion.trail.density).toBeLessThanOrEqual(1);
 });
 
 test("Design Test authors semantic colors without development diagnostics", () => {

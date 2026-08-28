@@ -26,6 +26,10 @@ import {
   createMagneticSense,
   type MagneticSenseParameters,
 } from "../modules/magnetic-sense/magnetic-sense";
+import {
+  createMotionSenseModule,
+  type MotionSenseParameters,
+} from "../modules/motion-sense/motion-sense";
 import { createRocksModule, type RocksPreset } from "../modules/rocks/rocks";
 import { ROCKS_DEFINITION } from "../modules/rocks/rocks-definition";
 import {
@@ -91,6 +95,9 @@ export interface LevelPreset {
 
   /** One depth ramp shared by Terrain, Vegetation, and Rocks materials. */
   readonly echoDepth?: EchoDepthParameters;
+
+  /** Fly swarms printing motion trails; movement becomes the visible signal. */
+  readonly motion?: MotionSenseParameters;
 }
 
 interface LoadedLevelAssets {
@@ -180,8 +187,23 @@ function createConfiguredModules(setup: LevelSetup): WorldModule[] {
   addModule(modules, createVegetation(setup, echoDepth));
   addModule(modules, createRocks(setup, echoDepth));
   addModule(modules, createAnimals(setup));
+  addModule(modules, createMotionSense(setup));
 
   return modules;
+}
+
+/** Skip the sense entirely at intensity zero so its GPU work never runs. */
+function createMotionSense(setup: LevelSetup): WorldModule | undefined {
+  const parameters = setup.level.motion;
+  if (!parameters || parameters.intensity === 0) return undefined;
+
+  return createMotionSenseModule({
+    scene: setup.world.scene,
+    camera: setup.world.camera,
+    parameters,
+    groundYAt: setup.worldSurface.groundYAt,
+    zoneAt: setup.worldSurface.zoneAt,
+  });
 }
 
 /** Skip the sense entirely at intensity zero so its GPU work never runs. */

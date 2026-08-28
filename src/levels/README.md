@@ -22,7 +22,11 @@ remain unchanged.
 activate Terrain. `scent.level.ts` is the Scent World base experiment and
 activates Scent Particles and the White World Air Particles layer beside the
 test overlay; its invisible ground flag clamps flight above the shared world
-surface without rendering Terrain. `test.level.ts` is the
+surface without rendering Terrain. `echo.level.ts` is the Echolocation level
+and decorates the rendered landscape materials with the shared Echo Depth
+distance ramp. `motion.level.ts` is the Motion Perception level and layers
+the Motion Sense fly swarms and their printed trails onto the carried Echo
+world. `test.level.ts` is the
 diagnostic development preset and activates Terrain and Grass, uses Zone
 Visualizer as the base presentation, and overlays the Magnetic Sense stripe
 effect.

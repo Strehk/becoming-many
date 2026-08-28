@@ -6,7 +6,7 @@
  */
 
 import "./style.css";
-import { level } from "./levels/echo.level";
 import { startLevel } from "./levels/level-runtime";
+import { level } from "./levels/motion.level";
 
 await startLevel(document.querySelector(".app"), level);

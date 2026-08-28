@@ -4,7 +4,7 @@ The narrative levels in **Becoming Many** are continuous world states, not separ
 
 ## Current Source Preset
 
-Five sparse presets currently exist under `src/levels`:
+Six sparse presets currently exist under `src/levels`:
 
 - `white-world.level.ts` defines the narrative White World without Terrain.
 - `scent.level.ts` is the Scent World base experiment: no rendered surface
@@ -14,6 +14,9 @@ Five sparse presets currently exist under `src/levels`:
 - `echo.level.ts` is the Echolocation level: rendered Terrain, Vegetation, and
   Rocks whose materials are decorated by the shared Echo Depth effect, showing
   the world through the level-03 distance ramp.
+- `motion.level.ts` is the Motion Perception level: the carried Echo world
+  plus persistent fly swarms whose movement prints fading motion trails
+  through the Motion Sense module.
 - `test.level.ts` is the diagnostic development preset and adds Terrain plus the
   Zone Visualizer for landscape work.
 - `designTest.level.ts` is the active visual-design preset and adds authored
@@ -72,6 +75,20 @@ The Echo preset additionally activates:
   layer carried over, because senses layer instead of swapping; scent clouds
   now anchor above the rendered ground and keep their 02-palette signatures
 - no grass or animals
+
+The Motion preset additionally activates:
+
+- everything the Echo preset activates, carried over unchanged (background,
+  depth ramp, air, and scent included), because senses layer instead of
+  swapping
+- twelve persistent fly swarms of sixty flies each on player-centred distance
+  rings (5–65 metres), simulated as bounded buzzing boids that re-anchor
+  after eighty metres of travel and never dip below their ground clearance
+- one motion-trail ring buffer printing one particle per fly per frame;
+  printed particles fade and drift outward GPU-only over fourteen frames
+- ink-dark specks and indigo trails from the level-04 dark palette stops, two
+  added draw calls in total
+- no grass or animals; bird-flock trails are a documented follow-up
 
 The level does not contain asset URLs, model names, seeds, candidate spacing,
 or weighted variants. Those stable content definitions belong to the concrete
@@ -291,12 +308,29 @@ Depth-driven visibility yields to motion-driven visibility. Thermal values can a
 
 Motion must be derived from shared shader values or compact instance data. Avoid per-object frame updates and large active animal populations.
 
+### Decided Art Direction
+
+World motion alone controls visibility (decided 2026-08-27): the sense is
+carried by moving actors — fly swarms now, bird-flock trails later — rather
+than by dimming static modules or reacting to user movement. Implemented in
+`src/modules/motion-sense/` as persistent boid fly swarms printing a
+motion-trail ring buffer; the world itself carries the Echolocation
+grayscale unchanged. The flies and trails use the ink-dark bm-base contrast
+language authored from the level-04 dark stops (`#212133`, `#312758`); the
+cyan accent `#10BEDB` stays reserved. See
+[04 — Motion Perception](04-motion-perception/README.md) for the exact
+preset.
+
 ### Open Art Decisions
 
-- whether user motion, world motion, or both control visibility
-- how long motion remains visible
-- animal species and movement style
-- balance between wind motion and animal motion
+- bird-flock trails: rigged wing-vertex sampling versus procedural point
+  birds, decided once the flies are approved in-world
+- how long motion remains visible (trail length and fade curve tuning)
+- whether the trails adopt the cyan accent instead of ink-dark indigo
+- whether static elements should additionally recede beyond the carried
+  depth ramp
+- balance between wind motion and animal motion once wind-driven vegetation
+  or animals join the level
 
 ## 05 — Thermal Perception
 
@@ -418,8 +452,12 @@ docs/levels/
 ├── 02-scent-world/
 │   ├── README.md
 │   └── mood/moodboard.png
-├── 03-echolocation/mood/moodboard.png
-├── 04-motion-perception/mood/moodboard.png
+├── 03-echolocation/
+│   ├── README.md
+│   └── mood/moodboard.png
+├── 04-motion-perception/
+│   ├── README.md
+│   └── mood/moodboard.png
 ├── 05-thermal-perception/mood/moodboard.png
 ├── 06-magnetic-field-perception/mood/moodboard.png
 └── 07-connections/mood/moodboard.png

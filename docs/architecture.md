@@ -37,6 +37,8 @@ src/
 ├── levels/
 │   ├── level-runtime.ts
 │   ├── designTest.level.ts
+│   ├── echo.level.ts
+│   ├── motion.level.ts
 │   ├── scent.level.ts
 │   ├── test.level.ts
 │   └── white-world.level.ts
@@ -44,8 +46,10 @@ src/
 │   ├── air-particles/
 │   ├── animals/
 │   ├── atmosphere/
+│   ├── echo-depth/
 │   ├── grass/
 │   ├── magnetic-sense/
+│   ├── motion-sense/
 │   ├── mycelium/
 │   ├── paths/
 │   ├── rivers/
@@ -88,8 +92,11 @@ tests/
 ├── modules/
 │   ├── air-particles.test.ts
 │   ├── animals.test.ts
+│   ├── echo-depth.test.ts
 │   ├── grass.test.ts
 │   ├── magnetic-sense.test.ts
+│   ├── motion-sense.test.ts
+│   ├── scent-particles.test.ts
 │   ├── static-populations.test.ts
 │   ├── terrain.test.ts
 │   └── zone-visualizer.test.ts
@@ -251,6 +258,8 @@ is proven twice; zone and placement policy remain module-owned.
 | `GrassPreset` | Level-authored density and blade height per supported grass zone |
 | `MagneticSenseParameters` | Magnetic direction, line, pulse, opacity, flow, and intensity values |
 | `ScentParticlesParameters` | Level-authored scent palette, per-chunk emitter density, pool size, and drift values |
+| `MotionSenseParameters` | Level-authored motion intensity, swarm pool, appearance, and trail values |
+| `MotionPointSource` | World-position stream a moving actor exposes for motion-trail printing |
 | `StaticPopulationPreset` | Level-authored instances per hectare for enabled land zones |
 | `StaticPopulationDefinition` | Module-owned candidate grid, seed, assets, sizes, and zone variants |
 | `AnimalsDefinition` | Module-owned species assets, habitats, movement, radius, and visibility budget |

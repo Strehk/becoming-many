@@ -7,33 +7,38 @@ Boundary: Product vision and long-term design remain in the specialized document
 
 # Current Development Status
 
-Snapshot: 2026-08-25
+Snapshot: 2026-08-27
 
 The current `src/` and `public/` trees are the source of truth. This page is
 the concise entry point for the current implementation.
 
 ## Runnable Result
 
-`bun run dev` starts a Vite application that shows the Echolocation level:
+`bun run dev` starts a Vite application that shows the Motion Perception
+level:
 
-- a warm off-white haze background equal to the depth ramp's far stop
-- rendered Terrain, Vegetation, and Rocks whose surface colors are replaced
-  by the shared Echo Depth ramp: near-black grayscale silhouettes nearby
-  receding into the off-white haze, with no proximity accents anywhere
-- distant geometry dissolves into the background before the chunk streaming
-  edge, so recycling happens inside the haze
-- the carried-over earlier senses, because senses layer instead of swapping:
-  the White World air-particle layer and the Scent World clouds with their
-  02-palette signatures, now anchored above the rendered ground
+- the complete Echolocation world carried over unchanged: the warm off-white
+  haze background, the grayscale Echo Depth ramp on Terrain, Vegetation, and
+  Rocks, and the earlier air and scent layers, because senses layer instead
+  of swapping
+- twelve persistent fly swarms buzzing in ground-near clouds on
+  player-centred distance rings, rendered as ink-dark round specks in one
+  draw call
+- one motion-trail ring buffer printing a fading indigo particle behind
+  every fly each frame; trails age, drift outward, and collapse GPU-only in
+  one additional draw call
+- swarms deterministically re-anchor around the player after eighty metres
+  of travel and never dip below their terrain clearance
 - the diagnostic test overlay
 - pointer-lock mouse look
 - WASD and arrow-key flight along the mouse look direction
 - a user-triggered Three.js `immersive-vr` button
 
-The application currently selects `echo.level.ts` in its minimal browser
+The application currently selects `motion.level.ts` in its minimal browser
 entry. It has one Level Runtime composition root and one render loop. The
-Scent World base experiment remains available by selecting `scent.level.ts`
-instead, and the Design Test landscape by selecting `designTest.level.ts`.
+Echolocation level remains available by selecting `echo.level.ts` instead,
+the Scent World base experiment by selecting `scent.level.ts`, and the
+Design Test landscape by selecting `designTest.level.ts`.
 
 ## Implemented System
 
@@ -65,6 +70,9 @@ instead, and the Design Test landscape by selecting `designTest.level.ts`.
   Rocks, the unchanged White World air layer and Scent World layer carried
   over as accumulated senses, and the `echoDepth` field that decorates the
   three surface modules' materials with one shared distance ramp.
+- `motion.level.ts` is the Motion Perception level: every Echolocation value
+  carried over unchanged plus the `motion` field that activates the Motion
+  Sense fly swarms and their printed motion trails.
 - The sparse `invisibleGround: true` flag clamps flight above the shared
   deterministic world surface without creating the Terrain module or any
   rendered geometry.
@@ -76,12 +84,13 @@ instead, and the Design Test landscape by selecting `designTest.level.ts`.
   in module-owned definitions.
 - `ModuleRuntime` implements `load`, `activate`, `update`, `deactivate`, and
   `unload`.
-- Air Particles, Scent Particles, Grass, Terrain, Vegetation, Rocks, and
-  Animals are implemented content modules. Zone Visualizer is the active
-  test-only Terrain presentation; Magnetic Sense and Echo Depth are
-  composable material effects. Echo Depth is the first multi-consumer
-  effect: the composition root applies one instance to Terrain, Vegetation,
-  and Rocks through the shared `UnlitMaterialEffect` contract.
+- Air Particles, Scent Particles, Grass, Terrain, Vegetation, Rocks,
+  Animals, and Motion Sense are implemented content modules. Zone Visualizer
+  is the active test-only Terrain presentation; Magnetic Sense and Echo
+  Depth are composable material effects. Echo Depth is the first
+  multi-consumer effect: the composition root applies one instance to
+  Terrain, Vegetation, and Rocks through the shared `UnlitMaterialEffect`
+  contract.
 
 ### World Surface
 
@@ -254,6 +263,29 @@ instead, and the Design Test landscape by selecting `designTest.level.ts`.
   zero, so an inactive sense costs no GPU work; a future runtime driver must
   deactivate rather than merely zero the uniform.
 
+### Motion Sense
+
+- Motion Sense is the level-04 content module: persistent fly swarms whose
+  movement prints a motion-trail ring buffer, ported from the proven bm-base
+  motion layer and rewritten from TSL to the repository's raw GLSL idiom.
+- The fly simulation is a bounded boid integration: stepped hash noise for
+  the insect jitter, eight strided flockmate samples per fly (never the full
+  pairing), soft cloud envelopes, and a hard clamp that guarantees no fly
+  sinks below its terrain clearance. All placement and per-fly character
+  values derive from stateless integer hashes; the module uses no
+  `Math.random`.
+- The trail ring holds `flyCount × lifetimeFrames` particles. The CPU writes
+  only the newest ring slot per frame (immutable spawn position, outward
+  direction, spawn intensity, and spawn frame) as one contiguous
+  `addUpdateRange` per attribute; fading, drift, and collapse derive
+  GPU-only from one advancing frame uniform. At the authored 720 flies and
+  fourteen-frame trails this is roughly 32 KB of bounded uploads per frame
+  and two added draw calls.
+- The composition root skips the module entirely when the preset omits
+  `motion` or authors intensity zero. The exported `MotionPointSource`
+  interface is the documented seam for future moving actors (bird flocks)
+  to print trails without a bus or sibling import.
+
 ## Runtime Assets
 
 `public/animals` contains four animated animal GLBs, `public/trees` contains
@@ -271,15 +303,16 @@ Manifests remain metadata rather than a parallel runtime configuration system.
 
 The last clean verification recorded:
 
-- `bun test`: 96 tests
+- `bun test`: 104 tests
 - `bun run check`: strict TypeScript
 - `bun run lint`: clean Biome run
 - `bun run build`: Vite production build
 
 Fallow reports no dead production exports or complexity violations, but
-does report known duplicated placement code in Vegetation and Rocks and the
+does report known duplicated placement code in Vegetation and Rocks, the
 deliberately parallel shader-patch idiom shared by Magnetic Sense and Echo
-Depth.
+Depth, and the deliberate data duplication between the sparse level presets
+that carry earlier sense layers verbatim (`scent`, `echo`, `motion`).
 
 Vegetation and Rocks share deterministic density acceptance and weighted asset
 selection. Their transform and placement policies remain module-local.
