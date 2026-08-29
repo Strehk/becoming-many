@@ -53,12 +53,13 @@ The Scent preset additionally activates:
 - the unchanged White World air-particle layer as the neutral depth baseline
 - the invisible ground: the continuous world terrain restricts flight without
   being rendered
-- up to two deterministic scent emitters per resident 64-metre chunk, only
+- up to six deterministic scent emitters per resident 64-metre chunk, only
   where the invisible zone facts grow forest, one 02-palette signature color
   each
-- flat clouds anchored 1–2 metres above the invisible ground with a one-metre
-  vertical extent and a gentle 1.5-metre rise
-- one fixed streamed pool of 192 opaque round particles per emitter in one
+- flat clouds anchored 0.7–1.3 metres above the invisible ground with a
+  one-metre vertical extent and a gentle 1.5-metre rise, their particle
+  density peaking at the anchor and tapering to nothing at the boundary
+- one fixed streamed pool of 90 opaque round particles per emitter in one
   draw call, recycled at chunk edges while traveling
 
 The Echo preset additionally activates:

@@ -139,15 +139,16 @@ Test landscape by selecting `designTest.level.ts`.
 ### Scent Particles
 
 - Every resident 64-metre chunk deterministically tries a bounded candidate
-  search for up to two emitters from its absolute coordinates and keeps only
+  search for up to six emitters from its absolute coordinates and keeps only
   candidates inside the module-owned source zones (conifer and deciduous
   forest); misses stay hidden in their fixed particle range and never
   rasterize.
-- Kept emitters anchor 1–2 metres above the sampled world ground as flat
-  clouds (one-metre vertical extent, gentle rise), each with one signature
-  color from the level palette.
+- Kept emitters anchor 0.7–1.3 metres above the sampled world ground as flat
+  clouds (one-metre vertical extent, gentle rise) whose particle density peaks
+  at the anchor and tapers to nothing at the cloud boundary, each with one
+  signature color from the level palette.
 - The Scent Level's 128-metre camera range plus one preload layer produces a
-  7 x 7 resident window with 49 reusable slots and 18,816 buffered points in
+  7 x 7 resident window with 49 reusable slots and 26,460 buffered points in
   one `THREE.Points` object and one draw call.
 - Recycled chunk slots rewrite only their position, color, phase, and
   visibility buffer ranges through the shared frame-budgeted stream queue;

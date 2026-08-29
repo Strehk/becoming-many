@@ -133,20 +133,20 @@ test("Scent Level layers scent onto the White World air baseline", () => {
   }
   expect(scentPreset.scentParticles?.colors).toHaveLength(5);
   expect(scentPreset.scentParticles?.placement).toEqual({
-    emittersPerChunk: 2,
-    minHeightMeters: 1,
-    maxHeightMeters: 2,
+    emittersPerChunk: 6,
+    minHeightMeters: 0.7,
+    maxHeightMeters: 1.3,
   });
   expect(scentPreset.scentParticles?.emission).toEqual({
-    particlesPerEmitter: 270,
-    cloudRadiusMeters: 3,
+    particlesPerEmitter: 90,
+    cloudRadiusMeters: 2.8,
     cloudHeightMeters: 1,
   });
   expect(scentPreset.scentParticles?.appearance.sizeMeters).toBe(0.15);
   expect(scentPreset.scentParticles?.motion).toEqual({
     riseHeightMeters: 1.5,
     riseDurationSeconds: 10,
-    driftAmplitudeMeters: 0.4,
+    driftAmplitudeMeters: 0.9,
     speedMultiplier: 1,
   });
 });

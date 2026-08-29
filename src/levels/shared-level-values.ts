@@ -38,17 +38,28 @@ export const sharedAirParticles: SharedBlock<"airParticles"> = {
  * The Scent World layer with the level-02 signature colors: forest chunks
  * spawn low, flat clouds anchored above the rendered ground. The pale base
  * tone stays reserved for the background.
+ *
+ * Every emitter renders the same box at the same particle count, so variety
+ * comes from the placement instead: many small clouds per chunk land
+ * independently, and where they overlap they read as one larger, denser
+ * mass. The clouds are flat so they can sit close to the ground, which
+ * leaves the sway alone to carry the box edges into an undulating
+ * silhouette.
+ *
+ * The anchor height is drawn uniformly between its two ends, so the range
+ * stays low and narrow. Its top end is the only lever on how high a cloud
+ * sits, and raising it lifts the whole layer instead of a few clouds in it.
  */
 export const sharedScentParticles: SharedBlock<"scentParticles"> = {
   colors: [0xb8e0e1, 0x9dd2c8, 0xd1c1d7, 0xfda39d, 0xfdbb54],
   placement: {
-    emittersPerChunk: 2,
-    minHeightMeters: 1,
-    maxHeightMeters: 2,
+    emittersPerChunk: 6,
+    minHeightMeters: 0.7,
+    maxHeightMeters: 1.3,
   },
   emission: {
-    particlesPerEmitter: 270,
-    cloudRadiusMeters: 3,
+    particlesPerEmitter: 90,
+    cloudRadiusMeters: 2.8,
     cloudHeightMeters: 1,
   },
   appearance: {
@@ -57,7 +68,7 @@ export const sharedScentParticles: SharedBlock<"scentParticles"> = {
   motion: {
     riseHeightMeters: 1.5,
     riseDurationSeconds: 10,
-    driftAmplitudeMeters: 0.4,
+    driftAmplitudeMeters: 0.9,
     speedMultiplier: 1,
   },
 };

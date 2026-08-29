@@ -46,10 +46,11 @@ signature color. No audio counterpart exists yet.
 - Active modules: Scent Particles (`src/modules/scent-particles/`) and Air
   Particles (the level 01 layer carried over as the neutral depth baseline),
   plus the test overlay. Scent sources stream with travel: every resident
-  64-metre chunk deterministically spawns up to two emitters where the zone
-  facts grow forest, anchored 1–2 m above the invisible ground as flat clouds
-  (one-metre vertical extent), one palette signature each, 192 particles per
-  emitter.
+  64-metre chunk deterministically spawns up to six emitters where the zone
+  facts grow forest, anchored 0.7–1.3 m above the invisible ground as flat
+  clouds (one-metre vertical extent) whose particle density peaks at the
+  anchor and tapers to nothing at the cloud boundary, one palette signature
+  each, 90 particles per emitter.
 
 ## Asset and Shader Requirements
 
