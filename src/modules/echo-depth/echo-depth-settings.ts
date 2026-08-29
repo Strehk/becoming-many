@@ -34,4 +34,15 @@ export interface EchoDepthParameters {
   readonly nearDistanceMeters: number;
   readonly farDistanceMeters: number;
   readonly colors: EchoDepthColors;
+
+  /**
+   * The one exception to the ramp: where the river holds water, Terrain shows
+   * this tone instead of its depth color, and it fades into the haze over the
+   * same last ramp segment as every other surface. Omitting it leaves the
+   * river as the carved shape the ramp already draws, and costs nothing — the
+   * per-vertex water measure is streamed only when a level authors a color.
+   *
+   * Terrain alone can show it. Vegetation, Rocks, and Grass carry no water.
+   */
+  readonly waterColor?: number;
 }

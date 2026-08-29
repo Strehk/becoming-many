@@ -17,13 +17,16 @@ uniform vec3 echoHazeColor;
 
 varying float echoViewDistance;
 
-vec3 applyEchoDepth(vec3 baseColor) {
-  float rampProgress = clamp(
+float getEchoRampProgress() {
+  return clamp(
     (echoViewDistance - echoNearDistance) /
       (echoFarDistance - echoNearDistance),
     0.0,
     1.0
   );
+}
+
+vec3 getEchoRampColor(float rampProgress) {
   vec3 ramp = mix(
     echoNearColor,
     echoNearShadeColor,
@@ -39,10 +42,13 @@ vec3 applyEchoDepth(vec3 baseColor) {
     echoFarColor,
     smoothstep(echoRampStops.y, echoRampStops.z, rampProgress)
   );
-  ramp = mix(
+  return mix(
     ramp,
     echoHazeColor,
     smoothstep(echoRampStops.z, 1.0, rampProgress)
   );
-  return mix(baseColor, ramp, echoIntensity);
+}
+
+vec3 applyEchoDepth(vec3 baseColor) {
+  return mix(baseColor, getEchoRampColor(getEchoRampProgress()), echoIntensity);
 }

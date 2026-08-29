@@ -20,6 +20,7 @@ import { ANIMALS_DEFINITION } from "../modules/animals/animals-definition";
 import {
   createEchoDepth,
   type EchoDepthEffect,
+  type EchoDepthEffects,
   type EchoDepthParameters,
 } from "../modules/echo-depth/echo-depth";
 import { createGrassModule, type GrassPreset } from "../modules/grass/grass";
@@ -269,7 +270,7 @@ function createMotionSense(setup: LevelSetup): WorldModule | undefined {
 /** Skip the sense entirely at intensity zero so its GPU work never runs. */
 function createEchoDepthEffect(
   level: LevelPreset,
-): EchoDepthEffect | undefined {
+): EchoDepthEffects | undefined {
   const parameters = level.echoDepth;
   if (!parameters || parameters.intensity === 0) return undefined;
   return createEchoDepth(parameters);
@@ -277,7 +278,7 @@ function createEchoDepthEffect(
 
 function createTerrain(
   setup: LevelSetup,
-  echoDepth: EchoDepthEffect | undefined,
+  echoDepth: EchoDepthEffects | undefined,
   thermal: ThermalPerceptionEffects | undefined,
 ): WorldModule | undefined {
   const preset = setup.level.terrain;
@@ -292,7 +293,7 @@ function createTerrain(
   if (preset.magneticSense) {
     effects.push(createMagneticSense(preset.magneticSense));
   }
-  if (echoDepth) effects.push(echoDepth);
+  if (echoDepth) effects.push(echoDepth.terrain);
 
   return createTerrainModule({
     scene: setup.world.scene,
@@ -338,7 +339,7 @@ function createScentParticles(setup: LevelSetup): WorldModule | undefined {
 
 function createGrass(
   setup: LevelSetup,
-  echoDepth: EchoDepthEffect | undefined,
+  echoDepth: EchoDepthEffects | undefined,
   thermal: ThermalPerceptionEffects | undefined,
 ): WorldModule | undefined {
   const preset = setup.level.grass;
@@ -350,13 +351,13 @@ function createGrass(
     preset,
     streamQueue: setup.world.streamQueue,
     worldSurface: setup.worldSurface,
-    effects: buildSurfaceEffects(thermal?.grass, echoDepth),
+    effects: buildSurfaceEffects(thermal?.grass, echoDepth?.surfaces),
   });
 }
 
 function createVegetation(
   setup: LevelSetup,
-  echoDepth: EchoDepthEffect | undefined,
+  echoDepth: EchoDepthEffects | undefined,
   thermal: ThermalPerceptionEffects | undefined,
 ): WorldModule | undefined {
   const preset = setup.level.vegetation;
@@ -369,13 +370,13 @@ function createVegetation(
     assets: setup.assets.vegetation,
     streamQueue: setup.world.streamQueue,
     worldSurface: setup.worldSurface,
-    effects: buildSurfaceEffects(thermal?.vegetation, echoDepth),
+    effects: buildSurfaceEffects(thermal?.vegetation, echoDepth?.surfaces),
   });
 }
 
 function createRocks(
   setup: LevelSetup,
-  echoDepth: EchoDepthEffect | undefined,
+  echoDepth: EchoDepthEffects | undefined,
   thermal: ThermalPerceptionEffects | undefined,
 ): WorldModule | undefined {
   const preset = setup.level.rocks;
@@ -388,7 +389,7 @@ function createRocks(
     assets: setup.assets.rocks,
     streamQueue: setup.world.streamQueue,
     worldSurface: setup.worldSurface,
-    effects: buildSurfaceEffects(thermal?.rocks, echoDepth),
+    effects: buildSurfaceEffects(thermal?.rocks, echoDepth?.surfaces),
   });
 }
 

@@ -16,6 +16,15 @@ classifies each pixel, so hard test boundaries can cross triangles instead of
 following a vertex-color staircase. Disabling the visualizer removes the
 attribute and all zone sampling from Terrain.
 
+A material effect can ask for two further optional vertex attributes, and
+each one is allocated and sampled only while some effect declares it:
+`warmthAt` streams the `thermalWarmth` float the effect itself computes, and
+`needsSurfaceWater` streams the `surfaceWater` float Terrain reads from
+`WorldSurface.getWaterMeasure()`. Water is a world fact rather than an
+effect's own model, so the effect only asks for it; the value is positive
+exactly where the surface holds water, which puts the shoreline on its
+interpolated zero crossing.
+
 `terrain.ts` owns lifecycle, one `ChunkWindow`, queue jobs, and the fixed mesh
 pool. `terrain-geometry.ts` owns Three.js geometry, row sampling, atomic chunk
 publication, bounds, and disposal.

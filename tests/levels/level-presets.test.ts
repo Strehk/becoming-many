@@ -194,7 +194,16 @@ test("Thermal Level carries the Motion world forward unchanged", () => {
   // Senses layer, never swap: every motion-world layer carries over unchanged.
   expect(thermalPreset.airParticles).toEqual(motionLevel.airParticles);
   expect(thermalPreset.scentParticles).toEqual(motionLevel.scentParticles);
-  expect(thermalPreset.echoDepth).toEqual(motionLevel.echoDepth);
+  // The depth ramp carries forward with one addition: the river shows its
+  // water here, and only here.
+  const thermalEchoDepth = thermalPreset.echoDepth;
+  const carriedEchoDepth = motionLevel.echoDepth;
+  if (!thermalEchoDepth || !carriedEchoDepth) {
+    throw new Error("Both levels must author the depth ramp");
+  }
+  const { waterColor, ...carriedRamp } = thermalEchoDepth;
+  expect(carriedRamp).toEqual(carriedEchoDepth);
+  expect(waterColor).toBe(0x0c47d1);
   expect(thermalPreset.terrain).toEqual(motionLevel.terrain);
   expect(thermalPreset.vegetation).toEqual(motionLevel.vegetation);
   expect(thermalPreset.rocks).toEqual(motionLevel.rocks);
@@ -203,13 +212,16 @@ test("Thermal Level carries the Motion world forward unchanged", () => {
   expect(thermalPreset.invisibleGround).toBeUndefined();
 });
 
-test("Thermal Level grows ground cover inside the carried echo palette", () => {
-  // Grass sits in this level under evaluation: ground cover is a world
-  // element, so if it stays it belongs in the Echo Level instead. Either way
-  // its colors must sit in the carried echo palette.
-  expect(thermalLevel.grass?.rootColor).toBe(0x101010);
-  expect(thermalLevel.grass?.tipColor).toBe(0x494949);
-  expect(thermalLevel.grass?.zones).toEqual(testLevel.grass?.zones ?? {});
+test("Thermal Level shows the river as water and grows no ground cover", () => {
+  // Grass is out of this level by request, not because the senses cannot
+  // reach it; where ground cover belongs is still open.
+  expect(thermalLevel.grass).toBeUndefined();
+  // The water tone is the level-05 `coldColor` anchor, so the one colored
+  // thing in the carried grayscale world still comes from this level's six.
+  expect(thermalLevel.echoDepth?.waterColor).toBe(0x0c47d1);
+  // Levels 03 and 04 keep the river as the carved shape their ramp draws.
+  expect(echoLevel.echoDepth?.waterColor).toBeUndefined();
+  expect(motionLevel.echoDepth?.waterColor).toBeUndefined();
 });
 
 test("Thermal Level layers heat onto the carried Motion world", () => {

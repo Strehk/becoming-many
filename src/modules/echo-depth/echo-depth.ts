@@ -14,17 +14,36 @@ import {
   ECHO_DEPTH_SETTINGS,
   type EchoDepthParameters,
 } from "./echo-depth-settings";
+import waterFragmentShader from "./echo-depth-water.frag.glsl?raw";
+import waterVertexShader from "./echo-depth-water.vert.glsl?raw";
 
 export type { EchoDepthParameters } from "./echo-depth-settings";
 
 const ECHO_DEPTH_CACHE_KEY = "echo-depth-v2";
+const ECHO_DEPTH_WATER_CACHE_KEY = "echo-depth-water-v1";
 
 export type EchoDepthEffect = UnlitMaterialEffect;
+
+/**
+ * The Terrain variant. It is the same ramp, and additionally asks for the
+ * per-vertex water measure when the level authors a water color.
+ */
+export interface TerrainEchoDepthEffect extends EchoDepthEffect {
+  readonly needsSurfaceWater?: true;
+}
+
+export interface EchoDepthEffects {
+  /** Terrain: the only sensed surface the river can run across. */
+  readonly terrain: TerrainEchoDepthEffect;
+
+  /** Vegetation, Rocks, and Grass: the pure ramp, with no water to show. */
+  readonly surfaces: EchoDepthEffect;
+}
 
 /** Create one shared depth ramp; apply it to every sensed material. */
 export function createEchoDepth(
   parameters: EchoDepthParameters,
-): EchoDepthEffect {
+): EchoDepthEffects {
   validateEchoDepthParameters(parameters);
   // One uniform object each, shared by every patched program, so a future
   // runtime intensity driver reaches all consumers through a single value.
@@ -45,7 +64,26 @@ export function createEchoDepth(
     echoFarColor: { value: new Color(parameters.colors.farColor) },
     echoHazeColor: { value: new Color(parameters.colors.hazeColor) },
   };
+  const surfaces = createRampEffect(uniforms);
 
+  if (parameters.waterColor === undefined) {
+    // Without an authored water color both consumers compile the identical
+    // program, and Terrain streams no water attribute.
+    return { terrain: surfaces, surfaces };
+  }
+
+  return {
+    terrain: createWaterRampEffect({
+      ...uniforms,
+      echoWaterColor: { value: new Color(parameters.waterColor) },
+    }),
+    surfaces,
+  };
+}
+
+type EchoDepthUniforms = Readonly<Record<string, { value: unknown }>>;
+
+function createRampEffect(uniforms: EchoDepthUniforms): EchoDepthEffect {
   return {
     applyTo: (material) => {
       applyShaderPatch(material, {
@@ -57,6 +95,27 @@ export function createEchoDepth(
         fragmentHeader: fragmentShader,
         colorFragmentCall:
           "diffuseColor.rgb = applyEchoDepth(diffuseColor.rgb);",
+      });
+    },
+  };
+}
+
+/** The same ramp, with the water surface held out of it. */
+function createWaterRampEffect(
+  uniforms: EchoDepthUniforms,
+): TerrainEchoDepthEffect {
+  return {
+    needsSurfaceWater: true,
+    applyTo: (material) => {
+      applyShaderPatch(material, {
+        cacheKey: ECHO_DEPTH_WATER_CACHE_KEY,
+        uniforms,
+        vertexHeader: `${vertexShader}\n${waterVertexShader}`,
+        vertexAnchor: "#include <project_vertex>",
+        vertexCall: "passEchoDepth(mvPosition);\npassEchoWater();",
+        fragmentHeader: `${fragmentShader}\n${waterFragmentShader}`,
+        colorFragmentCall:
+          "diffuseColor.rgb = applyEchoDepthWithWater(diffuseColor.rgb);",
       });
     },
   };

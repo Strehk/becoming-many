@@ -78,6 +78,20 @@ export function isWater(conditions: ZoneConditions): boolean {
   );
 }
 
+/**
+ * The same water fact as one signed value, positive exactly where `isWater` is
+ * true. A shader cannot evaluate the two conditions after interpolation and
+ * still land the shoreline in the right place: interpolating this single value
+ * instead puts the bank exactly on its zero crossing, so a fragment only has to
+ * test its sign.
+ */
+export function getWaterMeasure(conditions: ZoneConditions): number {
+  return Math.min(
+    conditions.riverChannelMarginMeters,
+    conditions.waterDepthMeters,
+  );
+}
+
 function getGroundSlope(
   worldX: number,
   worldZ: number,

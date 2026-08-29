@@ -16,6 +16,7 @@ import {
 } from "three";
 import type { ChunkAssignment } from "../../world/chunk-system";
 import type { WorldSurface } from "../../world-surface/world-surface";
+import { getWaterMeasure } from "../../world-surface/zone-field";
 
 const POSITION_COMPONENT_COUNT = 3;
 const TERRAIN_COLOR = 0xdfe8d5;
@@ -35,6 +36,7 @@ interface TerrainSlot {
   readonly positionAttribute: BufferAttribute;
   readonly zoneConditionsAttribute: Float32BufferAttribute | undefined;
   readonly thermalWarmthAttribute: Float32BufferAttribute | undefined;
+  readonly surfaceWaterAttribute: Float32BufferAttribute | undefined;
   readonly stagedGroundHeights: Float32Array;
 }
 
@@ -44,6 +46,7 @@ interface TerrainSlotOptions {
   readonly material: MeshBasicMaterial;
   readonly storesZoneConditions: boolean;
   readonly storesThermalWarmth: boolean;
+  readonly storesSurfaceWater: boolean;
 }
 
 export interface TerrainPresentation {
@@ -62,6 +65,13 @@ export interface TerrainMaterialEffect {
     worldZ: number,
     groundYMeters: number,
   ) => number;
+
+  /**
+   * Declaring this makes Terrain stream a per-vertex water measure. Where the
+   * river is is a world-surface fact rather than an effect's own model, so the
+   * effect only asks for it and World Surface decides what water is.
+   */
+  readonly needsSurfaceWater?: true;
 }
 
 export interface TerrainGeometry {
@@ -103,6 +113,9 @@ export function createTerrainGeometry({
   const storesThermalWarmth = effects.some(
     (effect) => effect.warmthAt !== undefined,
   );
+  const storesSurfaceWater = effects.some(
+    (effect) => effect.needsSurfaceWater === true,
+  );
   const group = new Group();
   const slots = Array.from({ length: chunkSlotCount }, () =>
     createTerrainSlot({
@@ -111,6 +124,7 @@ export function createTerrainGeometry({
       material,
       storesZoneConditions,
       storesThermalWarmth,
+      storesSurfaceWater,
     }),
   );
 
@@ -183,6 +197,7 @@ function createTerrainSlot({
   material,
   storesZoneConditions,
   storesThermalWarmth,
+  storesSurfaceWater,
 }: TerrainSlotOptions): TerrainSlot {
   const geometry = new PlaneGeometry(
     chunkSize,
@@ -221,6 +236,14 @@ function createTerrainSlot({
   if (thermalWarmthAttribute) {
     geometry.setAttribute("thermalWarmth", thermalWarmthAttribute);
   }
+  const surfaceWaterAttribute = createStreamedAttribute(
+    vertexCount,
+    1,
+    storesSurfaceWater,
+  );
+  if (surfaceWaterAttribute) {
+    geometry.setAttribute("surfaceWater", surfaceWaterAttribute);
+  }
 
   const mesh = new Mesh(geometry, material);
   mesh.visible = false;
@@ -230,6 +253,7 @@ function createTerrainSlot({
     positionAttribute,
     zoneConditionsAttribute,
     thermalWarmthAttribute,
+    surfaceWaterAttribute,
     stagedGroundHeights: new Float32Array(vertexCount),
   };
 }
@@ -267,7 +291,22 @@ function writeTerrainRow(
     slot.stagedGroundHeights[vertexIndex] = groundY;
     writeZoneConditions(terrain, slot, vertexIndex, worldX, worldZ);
     writeThermalWarmth(terrain, slot, vertexIndex, worldX, worldZ, groundY);
+    writeSurfaceWater(terrain, slot, vertexIndex, worldX, worldZ);
   }
+}
+
+function writeSurfaceWater(
+  terrain: TerrainGeometry,
+  slot: TerrainSlot,
+  vertexIndex: number,
+  worldX: number,
+  worldZ: number,
+): void {
+  const attribute = slot.surfaceWaterAttribute;
+  if (!attribute) return;
+
+  const conditions = terrain.worldSurface.zoneConditionsAt(worldX, worldZ);
+  attribute.setX(vertexIndex, getWaterMeasure(conditions));
 }
 
 function writeThermalWarmth(
@@ -331,6 +370,9 @@ function publishTerrainChunk(
   }
   if (slot.thermalWarmthAttribute) {
     slot.thermalWarmthAttribute.needsUpdate = true;
+  }
+  if (slot.surfaceWaterAttribute) {
+    slot.surfaceWaterAttribute.needsUpdate = true;
   }
 
   // PlaneGeometry is centered locally, while assignments describe its corner.

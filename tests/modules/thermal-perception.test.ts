@@ -168,7 +168,7 @@ test("Thermal Perception wins the final color over a carried echo ramp", () => {
   });
   const material = new MeshBasicMaterial();
   effects.terrain.applyTo(material);
-  echoDepth.applyTo(material);
+  echoDepth.terrain.applyTo(material);
   const shader = createBasicShaderSource();
 
   material.onBeforeCompile(shader, undefined as never);

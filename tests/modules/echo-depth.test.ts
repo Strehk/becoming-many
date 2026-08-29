@@ -30,7 +30,7 @@ const PARAMETERS: EchoDepthParameters = {
 };
 
 test("Echo Depth injects one view-distance ramp into both stages", () => {
-  const effect = createEchoDepth(PARAMETERS);
+  const effect = createEchoDepth(PARAMETERS).surfaces;
   const material = new MeshBasicMaterial({ color: 0x0d1730 });
   effect.applyTo(material);
   const shader = createBasicShaderSource();
@@ -47,7 +47,7 @@ test("Echo Depth injects one view-distance ramp into both stages", () => {
 });
 
 test("Echo Depth shows only the depth ramp without proximity accents", () => {
-  const effect = createEchoDepth(PARAMETERS);
+  const effect = createEchoDepth(PARAMETERS).surfaces;
   const material = new MeshBasicMaterial();
   effect.applyTo(material);
   const shader = createBasicShaderSource();
@@ -61,7 +61,7 @@ test("Echo Depth shows only the depth ramp without proximity accents", () => {
 });
 
 test("Echo Depth shares one uniform set across patched materials", () => {
-  const effect = createEchoDepth(PARAMETERS);
+  const effect = createEchoDepth(PARAMETERS).surfaces;
   const first = new MeshBasicMaterial();
   const second = new MeshBasicMaterial();
   effect.applyTo(first);
@@ -84,7 +84,7 @@ test("Echo Depth preserves the Zone Visualizer as its base color", () => {
   );
   const zoneVisualization = createZoneVisualizer(worldSurface, ZONE_SETTINGS);
   const baseCacheKey = zoneVisualization.material.customProgramCacheKey();
-  createEchoDepth(PARAMETERS).applyTo(zoneVisualization.material);
+  createEchoDepth(PARAMETERS).surfaces.applyTo(zoneVisualization.material);
   const shader = createBasicShaderSource();
 
   zoneVisualization.material.onBeforeCompile(shader, undefined as never);
@@ -93,6 +93,73 @@ test("Echo Depth preserves the Zone Visualizer as its base color", () => {
   expect(shader.fragmentShader).toContain("applyEchoDepth(diffuseColor.rgb)");
   expect(zoneVisualization.material.customProgramCacheKey()).toBe(
     `${baseCacheKey}:echo-depth-v2`,
+  );
+});
+
+test("Echo Depth leaves both variants identical without a water color", () => {
+  const effects = createEchoDepth(PARAMETERS);
+  const material = new MeshBasicMaterial();
+  effects.terrain.applyTo(material);
+  const shader = createBasicShaderSource();
+
+  material.onBeforeCompile(shader, undefined as never);
+
+  // Terrain streams the water measure only for a level that authors a color.
+  expect(effects.terrain.needsSurfaceWater).toBeUndefined();
+  expect(shader.vertexShader).not.toContain("surfaceWater");
+  expect(shader.fragmentShader).toContain("applyEchoDepth(diffuseColor.rgb)");
+  expect(shader.uniforms.echoWaterColor).toBeUndefined();
+});
+
+test("Echo Depth holds the water surface out of the ramp on Terrain", () => {
+  const effects = createEchoDepth({ ...PARAMETERS, waterColor: 0x0c47d1 });
+  const material = new MeshBasicMaterial();
+  effects.terrain.applyTo(material);
+  const shader = createBasicShaderSource();
+
+  material.onBeforeCompile(shader, undefined as never);
+
+  expect(effects.terrain.needsSurfaceWater).toBe(true);
+  expect(shader.vertexShader).toContain("attribute float surfaceWater");
+  expect(shader.vertexShader).toContain("passEchoWater()");
+  expect(shader.fragmentShader).toContain(
+    "applyEchoDepthWithWater(diffuseColor.rgb)",
+  );
+  expect(shader.uniforms.echoWaterColor?.value.getHex()).toBe(0x0c47d1);
+});
+
+test("Echo Depth keeps water off every surface that cannot carry it", () => {
+  const effects = createEchoDepth({ ...PARAMETERS, waterColor: 0x0c47d1 });
+  const material = new MeshBasicMaterial();
+  effects.surfaces.applyTo(material);
+  const shader = createBasicShaderSource();
+
+  material.onBeforeCompile(shader, undefined as never);
+
+  // Vegetation, Rocks, and Grass pay nothing for a river they never touch.
+  expect(shader.vertexShader).not.toContain("surfaceWater");
+  expect(shader.fragmentShader).not.toContain("applyEchoDepthWithWater");
+  expect(shader.fragmentShader).toContain("applyEchoDepth(diffuseColor.rgb)");
+});
+
+test("Echo Depth drives both variants from one uniform set", () => {
+  const effects = createEchoDepth({ ...PARAMETERS, waterColor: 0x0c47d1 });
+  const terrainMaterial = new MeshBasicMaterial();
+  const surfaceMaterial = new MeshBasicMaterial();
+  effects.terrain.applyTo(terrainMaterial);
+  effects.surfaces.applyTo(surfaceMaterial);
+  const terrainShader = createBasicShaderSource();
+  const surfaceShader = createBasicShaderSource();
+
+  terrainMaterial.onBeforeCompile(terrainShader, undefined as never);
+  surfaceMaterial.onBeforeCompile(surfaceShader, undefined as never);
+
+  expect(terrainShader.uniforms.echoIntensity).toBe(
+    surfaceShader.uniforms.echoIntensity as never,
+  );
+  // Two programs, so their cache keys must stay distinct.
+  expect(terrainMaterial.customProgramCacheKey()).not.toBe(
+    surfaceMaterial.customProgramCacheKey(),
   );
 });
 

@@ -29,6 +29,7 @@ import {
   createWorldSurface,
   type WorldSurface,
 } from "../../src/world-surface/world-surface";
+import { getWaterMeasure } from "../../src/world-surface/zone-field";
 import { ZONE_SETTINGS } from "../../src/world-surface/zone-settings";
 
 const TERRAIN_VERTEX_ROWS = 33;
@@ -240,6 +241,50 @@ test("Terrain writes optional thermal warmth into its existing mesh pool", () =>
   const plainTerrain = createLoadedTerrain();
   const plainMesh = getTerrainMeshes(plainTerrain.terrainGroup)[0];
   expect(plainMesh?.geometry.hasAttribute("thermalWarmth")).toBe(false);
+});
+
+test("Terrain writes the optional water measure into its existing mesh pool", () => {
+  const worldSurface = createTestWorldSurface();
+  const effect: TerrainMaterialEffect = {
+    applyTo: () => {},
+    needsSurfaceWater: true,
+  };
+  const { terrainGroup } = createLoadedTerrain(
+    worldSurface,
+    DEFAULT_TERRAIN_PARAMETERS,
+    undefined,
+    [effect],
+  );
+  const meshes = getTerrainMeshes(terrainGroup);
+  const mesh = meshes[0];
+  const positions = mesh?.geometry.getAttribute("position");
+  const attribute = mesh?.geometry.getAttribute("surfaceWater");
+  if (!mesh || !(positions instanceof BufferAttribute)) {
+    throw new Error("Expected a positioned terrain mesh");
+  }
+  if (!(attribute instanceof BufferAttribute)) {
+    throw new Error("Expected a surfaceWater attribute");
+  }
+
+  expect(
+    meshes.every((slotMesh) => slotMesh.geometry.hasAttribute("surfaceWater")),
+  ).toBe(true);
+  expect(attribute.itemSize).toBe(1);
+  // Every vertex carries the world surface's own measure, so the zero crossing
+  // a shader tests is exactly the shoreline World Surface defines.
+  for (let vertexIndex = 0; vertexIndex < positions.count; vertexIndex += 1) {
+    const worldX = mesh.position.x + positions.getX(vertexIndex);
+    const worldZ = mesh.position.z + positions.getZ(vertexIndex);
+    const conditions = worldSurface.zoneConditionsAt(worldX, worldZ);
+    expect(attribute.getX(vertexIndex)).toBeCloseTo(
+      getWaterMeasure(conditions),
+      3,
+    );
+  }
+
+  const plainTerrain = createLoadedTerrain();
+  const plainMesh = getTerrainMeshes(plainTerrain.terrainGroup)[0];
+  expect(plainMesh?.geometry.hasAttribute("surfaceWater")).toBe(false);
 });
 
 test("Terrain replaces obsolete partially generated work", () => {

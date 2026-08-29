@@ -72,8 +72,10 @@ the level shows is the continuous gradient through them.
 - Preset: `src/levels/thermal.level.ts` (`testUi: true`, 128-metre view
   distance, background `0xF1F1F1` equal to the carried ramp haze stop).
 - Fields: `terrain`, `vegetation`, `rocks`, `airParticles`,
-  `scentParticles`, `echoDepth`, and `motion` copied unchanged from
-  `motion.level.ts`, plus `animals` (echo-palette fur colors) and
+  `scentParticles`, and `motion` copied unchanged from `motion.level.ts`;
+  `echoDepth` copied with one addition, the `waterColor` that shows the
+  river as water here and in no earlier level; plus `animals`
+  (echo-palette fur colors) and
   `thermal: ThermalPerceptionParameters` (intensity 1, 30-metre radius,
   10-metre edge feather, the six documented palette stops, vegetation
   warmth 0.44 ± 0.14, rock warmth 0.31 ± 0.11, actor warmth 0.95). The
@@ -89,17 +91,15 @@ the level shows is the continuous gradient through them.
   the final surface color over the carried echo ramp, and skips the module
   entirely at intensity zero. The sense never imports or recolors a
   sibling.
-- Grass is now sensed (decided 2026-08-28, reversing its exclusion). It
-  was excluded because its hand-written shaders had none of the anchors
-  `applyShaderPatch` needs; they now carry those anchors, so both the echo
-  ramp and the heat view reach grass like any other surface. Grass also
-  publishes its blade progress and current sway at the injection point,
-  which is how the heat reading shimmers as the wind moves it.
-- Grass still sits in the wrong level. Ground cover is a world element,
-  not a sense, so if it stays it belongs in `echo.level.ts` and levels 03
-  and 04 should carry it too; today it appears for the first time when
-  thermal starts. Three test assertions currently lock grass out of those
-  levels.
+- Grass is sensed when it is present (decided 2026-08-28, reversing its
+  exclusion). It was excluded because its hand-written shaders had none of
+  the anchors `applyShaderPatch` needs; they now carry those anchors, so
+  both the echo ramp and the heat view reach grass like any other surface.
+  Grass also publishes its blade progress and current sway at the injection
+  point, which is how the heat reading shimmers as the wind moves it.
+- Grass is out of the preset (2026-08-29, see the decision below). The
+  module and its effect hooks are untouched; only the level field is gone,
+  so no level renders grass today outside the Test and Design levels.
 
 ## Asset and Shader Requirements
 
@@ -152,6 +152,13 @@ the level shows is the continuous gradient through them.
   row-bounded chunk generation (the same order of work as the Terrain
   Colors presentation path) and uploads one extra float attribute
   (~4 KB per 33×33 chunk).
+- The river water adds a second such pair on this level: one more
+  `zoneConditionsAt` per streamed vertex and one more float attribute
+  (~4 KB per chunk) for the water measure. The two samplers do not share a
+  result — thermal warmth reads the conditions inside its own callback —
+  so this level samples the field twice per vertex. Both stay inside the
+  row-bounded chunk jobs. The fragment cost is one `smoothstep`, one
+  `mix`, and one `step` on terrain fragments only.
 - Animals add their bounded population cost (at most six visible actors, the
   same budget the Test Level now carries), and terrain fragments evaluate one
   ground heat pool per visible actor.
@@ -161,6 +168,42 @@ the level shows is the continuous gradient through them.
 
 ## Decisions, Risks, and Open Questions
 
+- The river shows its water (decided 2026-08-29): the depth ramp replaces
+  every base color at intensity 1, so until now the river existed in the
+  echo world only as the trench its carved bed draws — Terrain's own
+  `waterColor` is authored on a presentation the echo levels do not have,
+  and the ramp would overwrite it in any case. Echo Depth therefore gained
+  one exception: an optional `waterColor` that the Terrain variant of the
+  ramp shows wherever the surface holds water. It is authored here alone,
+  as `#0C47D1`, the `coldColor` anchor this level's palette already
+  reserves for water and the coldest ground — so the one colored thing in
+  the carried grayscale world still comes from the documented six. Levels
+  03 and 04 keep the river as a shape.
+
+  The water fades into the haze across the same last ramp segment as every
+  other surface, which was the deciding constraint: a flat print over the
+  ramp would have left a saturated blue thread running to the horizon
+  through fog that dissolves everything else. Distance keeps its meaning.
+
+  Two alternatives were rejected. Lowering `echoDepth.intensity` so the
+  Terrain presentation's own water color bleeds through fades the whole
+  depth image, since intensity is global rather than per surface. Raising
+  the thermal ramp's `transparentBelowWarmth` so water reads violet would
+  contradict the transparent cold end decided the same day, and would show
+  the river only inside the 30-metre radius.
+
+  Where water is stays with World Surface: it gained `getWaterMeasure()`,
+  one signed value positive exactly where `isWater()` is true, and Terrain
+  streams it per vertex for any effect that declares `needsSurfaceWater`.
+  The interpolated zero crossing is the shoreline, so the fragment test is
+  a `step` on a sign rather than two conditions evaluated after
+  interpolation.
+- Grass out of the preset (2026-08-29): grass was removed from this level
+  on request. Nothing technical forced it out — its effect anchors work
+  and both senses reach it. The open question above is unchanged and now
+  unblocked in the other direction: ground cover is a world element, so
+  when it returns it belongs in `echo.level.ts` with levels 03 and 04
+  carrying it, not in the level where the heat view starts.
 - Radius through view distance (decided 2026-08-28): "thermal only near
   the viewer" is implemented as the camera-space radial distance already
   used by Echo Depth, so the effect needs no per-frame uniform updates and

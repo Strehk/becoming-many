@@ -7,22 +7,27 @@
 
 import type { LevelPreset } from "./level-runtime";
 import { level as motionLevel } from "./motion.level";
-import { sharedGrassZones } from "./shared-level-values";
+import { sharedEchoDepth } from "./shared-level-values";
 
 export const level: LevelPreset = {
   // Senses layer, never swap: the world carries the Motion Perception preset
   // verbatim; the heat view exists only inside a viewer-centred radius, and
   // outside it the carried Motion world shows unchanged.
   ...motionLevel,
-  // Under evaluation, not a decision: Grass is documented as excluded by
-  // intent because its raw shader has no material-effect hook, so neither the
-  // echo ramp nor the heat view reaches it. Its colors come from the level-03
-  // dark stops, which is right outside the thermal radius and visibly wrong
-  // inside it. Either Grass gains a hook or this field comes back out.
-  grass: {
-    rootColor: 0x101010,
-    tipColor: 0x494949,
-    zones: sharedGrassZones,
+  // Grass is out of this level for now, by request. Nothing technical forces
+  // it out — its shaders carry the effect anchors, so both the echo ramp and
+  // the heat view do reach it — and the open question is still where ground
+  // cover belongs: it is a world element, so if it returns it belongs in the
+  // Echo Level, with levels 03 and 04 carrying it too.
+  //
+  // New in level 05: the river shows its water instead of the depth ramp. The
+  // tone is the level-05 `coldColor` anchor, the palette's own place for water
+  // and the coldest ground, so the one colored thing in the carried grayscale
+  // world still comes from this level's documented six. Levels 03 and 04 keep
+  // the river as the carved shape their ramp already draws.
+  echoDepth: {
+    ...sharedEchoDepth,
+    waterColor: 0x0c47d1,
   },
   // New in level 05: warm bodies against the carried grayscale world. Fur
   // colors come from the level-03 dark stops so animals outside the thermal
