@@ -21,11 +21,11 @@ export const WORLD_SURFACE_SETTINGS = {
     waterHeightY: -7, // Sets the fixed world height of the water surface.
     riverBedHeightY: -9.5, // Sets the ground height at the center of the river.
     channelHalfWidthMeters: 2.5, // Sets the water channel width from center to one side.
-    bankHalfWidthMeters: 12, // Sets where carved banks return to natural terrain.
-    primaryMeanderAmplitudeMeters: 40, // Sets the sideways reach of broad river bends.
-    primaryMeanderLengthMeters: 190, // Larger values make broad bends change more slowly.
-    secondaryMeanderAmplitudeMeters: 22, // Adds smaller sideways bends to the river.
-    secondaryMeanderLengthMeters: 59, // Larger values make small bends change more slowly.
+    bankHalfWidthMeters: 24, // Sets where carved banks return to natural terrain.
+    primaryMeanderAmplitudeMeters: 52, // Sets the sideways reach of broad river bends.
+    primaryMeanderLengthMeters: 170, // Larger values make broad bends change more slowly.
+    secondaryMeanderAmplitudeMeters: 34, // Adds smaller sideways bends to the river.
+    secondaryMeanderLengthMeters: 72, // Larger values make small bends change more slowly.
   },
 };
 
