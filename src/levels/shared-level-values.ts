@@ -21,7 +21,7 @@ export const sharedEchoHazeColor = 0xf1f1f1;
  */
 export const sharedAirParticles: SharedBlock<"airParticles"> = {
   density: {
-    particlesPerChunk: 192,
+    particlesPerChunk: 270,
   },
   appearance: {
     color: 0x202126,
@@ -47,7 +47,7 @@ export const sharedScentParticles: SharedBlock<"scentParticles"> = {
     maxHeightMeters: 2,
   },
   emission: {
-    particlesPerEmitter: 192,
+    particlesPerEmitter: 270,
     cloudRadiusMeters: 3,
     cloudHeightMeters: 1,
   },

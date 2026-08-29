@@ -138,7 +138,7 @@ test("Scent Level layers scent onto the White World air baseline", () => {
     maxHeightMeters: 2,
   });
   expect(scentPreset.scentParticles?.emission).toEqual({
-    particlesPerEmitter: 192,
+    particlesPerEmitter: 270,
     cloudRadiusMeters: 3,
     cloudHeightMeters: 1,
   });
