@@ -6,7 +6,7 @@
  */
 
 import { expect, test } from "bun:test";
-import { MeshBasicMaterial } from "three";
+import { Matrix4, MeshBasicMaterial } from "three";
 import { createEchoDepth } from "../../src/modules/echo-depth/echo-depth";
 import {
   createThermalPerception,
@@ -31,10 +31,19 @@ const PARAMETERS: ThermalPerceptionParameters = {
   surfaces: {
     vegetationWarmth: 0.45,
     vegetationWarmthSpread: 0.12,
+    vegetationHeightWarmthPerMeter: -0.02,
+    vegetationAxisWarmthPerMeter: -0.03,
+    vegetationTextureWarmth: 0.07,
     rockWarmth: 0.3,
     rockWarmthSpread: 0.08,
+    rockHeightWarmthPerMeter: 0.22,
+    rockAxisWarmthPerMeter: -0.07,
+    rockTextureWarmth: 0.05,
   },
+  terrainTextureWarmth: 0.06,
   actorWarmth: 0.92,
+  actorExtremityFalloff: 0.4,
+  actorTextureWarmth: 0.1,
 };
 
 test("Thermal Perception injects the radius-bounded ramp into both stages", () => {
@@ -45,7 +54,9 @@ test("Thermal Perception injects the radius-bounded ramp into both stages", () =
 
   material.onBeforeCompile(shader, undefined as never);
 
-  expect(shader.vertexShader).toContain("passThermalPerception(mvPosition)");
+  expect(shader.vertexShader).toContain(
+    "passThermalPerception(mvPosition, transformed)",
+  );
   expect(shader.vertexShader).toContain("attribute float thermalWarmth");
   expect(shader.fragmentShader).toContain(
     "applyThermalPerception(diffuseColor.rgb)",
@@ -61,7 +72,7 @@ test("Thermal Perception gives each consumer its own warmth source", () => {
   const effects = createThermalEffects();
   const vegetationShader = compileEffect(effects.vegetation);
   const rocksShader = compileEffect(effects.rocks);
-  const animalsShader = compileEffect(effects.animals);
+  const animalsShader = compileEffect(effects.animals(new Matrix4()));
 
   expect(vegetationShader.vertexShader).toContain("thermalInstanceHash");
   expect(vegetationShader.uniforms.thermalBaseWarmth?.value).toBe(0.45);
@@ -72,11 +83,86 @@ test("Thermal Perception gives each consumer its own warmth source", () => {
   expect(animalsShader.uniforms.thermalActorWarmth?.value).toBe(0.92);
 });
 
+test("Thermal Perception varies warmth across each object it decorates", () => {
+  const effects = createThermalEffects();
+  const bodyMatrix = new Matrix4().makeScale(0.5, 0.5, 0.5);
+  const vegetationShader = compileEffect(effects.vegetation);
+  const rocksShader = compileEffect(effects.rocks);
+  const animalsShader = compileEffect(effects.animals(bodyMatrix));
+
+  // Plants shed heat upward and outward; a sunlit rock top gains it.
+  expect(vegetationShader.uniforms.thermalHeightWarmthPerMeter?.value).toBe(
+    -0.02,
+  );
+  expect(vegetationShader.uniforms.thermalAxisWarmthPerMeter?.value).toBe(
+    -0.03,
+  );
+  expect(rocksShader.uniforms.thermalHeightWarmthPerMeter?.value).toBe(0.22);
+  expect(rocksShader.uniforms.thermalAxisWarmthPerMeter?.value).toBe(-0.07);
+  expect(vegetationShader.vertexShader).toContain(
+    "thermalHeightWarmthPerMeter",
+  );
+
+  // Each animated mesh measures against its own actor's body space.
+  expect(animalsShader.uniforms.thermalActorBodyMatrix?.value).toBe(bodyMatrix);
+  expect(animalsShader.uniforms.thermalActorExtremityFalloff?.value).toBe(0.4);
+  expect(animalsShader.vertexShader).toContain("thermalActorBodyMatrix");
+  expect(animalsShader.vertexShader).toContain(
+    "passThermalPerception(mvPosition, transformed)",
+  );
+});
+
+test("Thermal Perception textures every sensed surface at its own depth", () => {
+  const effects = createThermalEffects();
+  const terrainShader = compileEffect(effects.terrain);
+  const vegetationShader = compileEffect(effects.vegetation);
+  const rocksShader = compileEffect(effects.rocks);
+  const animalsShader = compileEffect(effects.animals(new Matrix4()));
+
+  expect(terrainShader.uniforms.thermalTextureWarmth?.value).toBe(0.06);
+  expect(vegetationShader.uniforms.thermalTextureWarmth?.value).toBe(0.07);
+  expect(rocksShader.uniforms.thermalTextureWarmth?.value).toBe(0.05);
+  expect(animalsShader.uniforms.thermalTextureWarmth?.value).toBe(0.1);
+
+  // World surfaces share one patch size in metres; a body measures its own
+  // texture as a share of its height, so every species carries like detail.
+  const worldFeatureSize = terrainShader.uniforms.thermalTextureFeatureSize
+    ?.value as number;
+  expect(vegetationShader.uniforms.thermalTextureFeatureSize?.value).toBe(
+    worldFeatureSize,
+  );
+  expect(rocksShader.uniforms.thermalTextureFeatureSize?.value).toBe(
+    worldFeatureSize,
+  );
+  expect(animalsShader.uniforms.thermalTextureFeatureSize?.value).not.toBe(
+    worldFeatureSize,
+  );
+
+  // The texture is multi-scale and reaches the ramp before the palette does.
+  expect(terrainShader.fragmentShader).toContain("thermalTextureField");
+  expect(terrainShader.vertexShader).toContain("thermalTexturePosition");
+  expect(terrainShader.uniforms.thermalTextureShape).toBe(
+    animalsShader.uniforms.thermalTextureShape as never,
+  );
+});
+
+test("Thermal Perception gives each animated mesh its own body matrix", () => {
+  const effects = createThermalEffects();
+  const first = new Matrix4().makeTranslation(1, 0, 0);
+  const second = new Matrix4().makeTranslation(0, 2, 0);
+
+  const firstShader = compileEffect(effects.animals(first));
+  const secondShader = compileEffect(effects.animals(second));
+
+  expect(firstShader.uniforms.thermalActorBodyMatrix?.value).toBe(first);
+  expect(secondShader.uniforms.thermalActorBodyMatrix?.value).toBe(second);
+});
+
 test("Thermal Perception shares one uniform set across all variants", () => {
   const effects = createThermalEffects();
   const terrainShader = compileEffect(effects.terrain);
   const vegetationShader = compileEffect(effects.vegetation);
-  const animalsShader = compileEffect(effects.animals);
+  const animalsShader = compileEffect(effects.animals(new Matrix4()));
 
   expect(terrainShader.uniforms.thermalIntensity).toBe(
     vegetationShader.uniforms.thermalIntensity as never,
@@ -95,12 +181,12 @@ test("Thermal Perception keeps one program per consumer geometry kind", () => {
   effects.terrain.applyTo(terrain);
   effects.vegetation.applyTo(vegetation);
   effects.rocks.applyTo(rocks);
-  effects.animals.applyTo(animals);
+  effects.animals(new Matrix4()).applyTo(animals);
 
-  expect(terrain.customProgramCacheKey()).toEndWith(":thermal-terrain-v1");
-  expect(vegetation.customProgramCacheKey()).toEndWith(":thermal-instanced-v1");
-  expect(rocks.customProgramCacheKey()).toEndWith(":thermal-instanced-v1");
-  expect(animals.customProgramCacheKey()).toEndWith(":thermal-actor-v1");
+  expect(terrain.customProgramCacheKey()).toEndWith(":thermal-terrain-v3");
+  expect(vegetation.customProgramCacheKey()).toEndWith(":thermal-instanced-v3");
+  expect(rocks.customProgramCacheKey()).toEndWith(":thermal-instanced-v3");
+  expect(animals.customProgramCacheKey()).toEndWith(":thermal-actor-v3");
 });
 
 test("Thermal Perception wins the final color over a carried echo ramp", () => {

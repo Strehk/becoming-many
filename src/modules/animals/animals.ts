@@ -5,7 +5,7 @@
  * Boundary: Species data lives in animals-definition; world facts come from World Surface.
  */
 
-import type { PerspectiveCamera, Scene } from "three";
+import type { Matrix4, PerspectiveCamera, Scene } from "three";
 import {
   disposeGltfAssets,
   type GltfAssets,
@@ -34,6 +34,16 @@ export interface AnimalsPreset {
   readonly colors: AnimalColors;
 }
 
+/**
+ * Build the effects for one animated mesh. The body matrix maps that mesh's
+ * local space onto its actor's normalized body space (y 0..1 from lowest
+ * point to crown), so an effect can vary across a body without knowing which
+ * species it decorates.
+ */
+export type AnimalMaterialEffectsFor = (
+  bodyMatrix: Matrix4,
+) => readonly UnlitMaterialEffect[];
+
 export interface AnimalsModuleOptions {
   readonly scene: Scene;
   readonly camera: PerspectiveCamera;
@@ -41,7 +51,7 @@ export interface AnimalsModuleOptions {
   readonly preset: AnimalsPreset;
   readonly assets: GltfAssets;
   readonly worldSurface: WorldSurface;
-  readonly effects?: readonly UnlitMaterialEffect[];
+  readonly effectsFor?: AnimalMaterialEffectsFor;
 }
 
 interface AnimalsState {
@@ -104,7 +114,7 @@ function loadAnimals(state: AnimalsState, options: AnimalsModuleOptions): void {
     assets: options.assets,
     parameters: options.definition,
     colors: options.preset.colors,
-    effects: options.effects,
+    effectsFor: options.effectsFor,
     worldSurface: options.worldSurface,
     startX: options.camera.position.x,
     startZ: options.camera.position.z,

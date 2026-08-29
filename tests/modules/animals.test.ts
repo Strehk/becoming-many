@@ -10,6 +10,7 @@ import {
   AnimationClip,
   BoxGeometry,
   Group,
+  Matrix4,
   Mesh,
   MeshBasicMaterial,
   PerspectiveCamera,
@@ -78,6 +79,7 @@ test("Animals decorate every actor material with supplied effects", () => {
   const scene = new Scene();
   const camera = new PerspectiveCamera();
   const decoratedMaterials: MeshBasicMaterial[] = [];
+  const bodyMatrices: Matrix4[] = [];
   const module = createAnimalsModule({
     scene,
     camera,
@@ -85,13 +87,24 @@ test("Animals decorate every actor material with supplied effects", () => {
     preset: PRESET,
     assets: createAnimalAssets(),
     worldSurface: createFlatSurface(),
-    effects: [{ applyTo: (material) => decoratedMaterials.push(material) }],
+    effectsFor: (bodyMatrix) => {
+      bodyMatrices.push(bodyMatrix);
+      return [
+        {
+          applyTo: (material: MeshBasicMaterial) =>
+            decoratedMaterials.push(material),
+        },
+      ];
+    },
   });
 
   module.load();
 
   // Two species with two actors each and one material per cloned model.
   expect(decoratedMaterials).toHaveLength(4);
+  // Every decorated mesh is handed the route into its own body space.
+  expect(bodyMatrices).toHaveLength(4);
+  expect(bodyMatrices.every((matrix) => matrix instanceof Matrix4)).toBe(true);
   expect(
     decoratedMaterials.every(
       (material) => material instanceof MeshBasicMaterial,

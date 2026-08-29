@@ -5,7 +5,7 @@
  * Boundary: Consumers own materials and geometry; colors outside the radius stay theirs.
  */
 
-import { Color, type MeshBasicMaterial, Vector4 } from "three";
+import { Color, type Matrix4, type MeshBasicMaterial, Vector4 } from "three";
 import type { UnlitMaterialEffect } from "../../utils/asset-loader/material-effect";
 import {
   applyShaderPatch,
@@ -25,9 +25,9 @@ import terrainVertexShader from "./thermal-terrain.vert.glsl?raw";
 
 export type { ThermalPerceptionParameters } from "./thermal-perception-settings";
 
-const THERMAL_TERRAIN_CACHE_KEY = "thermal-terrain-v1";
-const THERMAL_INSTANCED_CACHE_KEY = "thermal-instanced-v1";
-const THERMAL_ACTOR_CACHE_KEY = "thermal-actor-v1";
+const THERMAL_TERRAIN_CACHE_KEY = "thermal-terrain-v3";
+const THERMAL_INSTANCED_CACHE_KEY = "thermal-instanced-v3";
+const THERMAL_ACTOR_CACHE_KEY = "thermal-actor-v3";
 
 /** Terrain variant; the sampler fills the per-vertex warmth attribute. */
 export interface ThermalTerrainEffect {
@@ -44,7 +44,12 @@ export interface ThermalPerceptionEffects {
   readonly terrain: ThermalTerrainEffect;
   readonly vegetation: UnlitMaterialEffect;
   readonly rocks: UnlitMaterialEffect;
-  readonly animals: UnlitMaterialEffect;
+  /**
+   * Actor variant; the caller supplies the matrix mapping one animated mesh's
+   * local space onto its actor's normalized body space, so the core-to-limb
+   * falloff measures against the body it belongs to instead of world metres.
+   */
+  readonly animals: (bodyMatrix: Matrix4) => UnlitMaterialEffect;
 }
 
 export interface ThermalPerceptionOptions {
@@ -78,13 +83,46 @@ export function createThermalPerception(
     thermalWarmColor: { value: new Color(parameters.colors.warmColor) },
     thermalHotColor: { value: new Color(parameters.colors.hotColor) },
     thermalHottestColor: { value: new Color(parameters.colors.hottestColor) },
+    thermalTextureShape: {
+      value: new Vector4(
+        THERMAL_PERCEPTION_SETTINGS.texture.lacunarity,
+        THERMAL_PERCEPTION_SETTINGS.texture.gain,
+        THERMAL_PERCEPTION_SETTINGS.texture.quietWarmth,
+        THERMAL_PERCEPTION_SETTINGS.texture.quietAmount,
+      ),
+    },
+  };
+  const worldFeatureSize =
+    THERMAL_PERCEPTION_SETTINGS.texture.featureSizeMeters;
+  const actorBody = THERMAL_PERCEPTION_SETTINGS.actorBody;
+  const actorUniforms = {
+    thermalActorWarmth: { value: parameters.actorWarmth },
+    thermalActorExtremityFalloff: { value: parameters.actorExtremityFalloff },
+    ...createTextureUniforms(
+      parameters.actorTextureWarmth,
+      THERMAL_PERCEPTION_SETTINGS.texture.bodyFeatureFraction,
+    ),
+    thermalActorBodyShape: {
+      value: new Vector4(
+        actorBody.coreHeightFraction,
+        actorBody.coreRadiusFraction,
+        actorBody.extremityReachFraction,
+        actorBody.horizontalWeight,
+      ),
+    },
   };
 
   return {
     terrain: {
       applyTo: createPatchApplier({
         cacheKey: THERMAL_TERRAIN_CACHE_KEY,
-        uniforms: sharedUniforms,
+        uniforms: {
+          ...sharedUniforms,
+          ...createTextureUniforms(
+            parameters.terrainTextureWarmth,
+            worldFeatureSize,
+          ),
+        },
         vertexHeader: terrainVertexShader,
       }),
       warmthAt: createTerrainWarmthSampler(options),
@@ -97,6 +135,12 @@ export function createThermalPerception(
           ...createInstancedWarmthUniforms(
             parameters.surfaces.vegetationWarmth,
             parameters.surfaces.vegetationWarmthSpread,
+            parameters.surfaces.vegetationHeightWarmthPerMeter,
+            parameters.surfaces.vegetationAxisWarmthPerMeter,
+          ),
+          ...createTextureUniforms(
+            parameters.surfaces.vegetationTextureWarmth,
+            worldFeatureSize,
           ),
         },
         vertexHeader: instancedVertexShader,
@@ -110,21 +154,30 @@ export function createThermalPerception(
           ...createInstancedWarmthUniforms(
             parameters.surfaces.rockWarmth,
             parameters.surfaces.rockWarmthSpread,
+            parameters.surfaces.rockHeightWarmthPerMeter,
+            parameters.surfaces.rockAxisWarmthPerMeter,
+          ),
+          ...createTextureUniforms(
+            parameters.surfaces.rockTextureWarmth,
+            worldFeatureSize,
           ),
         },
         vertexHeader: instancedVertexShader,
       }),
     },
-    animals: {
+    // One variant per animated mesh: everything but the body matrix is
+    // shared, so every actor still answers to a single sense intensity.
+    animals: (bodyMatrix) => ({
       applyTo: createPatchApplier({
         cacheKey: THERMAL_ACTOR_CACHE_KEY,
         uniforms: {
           ...sharedUniforms,
-          thermalActorWarmth: { value: parameters.actorWarmth },
+          ...actorUniforms,
+          thermalActorBodyMatrix: { value: bodyMatrix },
         },
         vertexHeader: actorVertexShader,
       }),
-    },
+    }),
   };
 }
 
@@ -135,7 +188,7 @@ function createPatchApplier(
     applyShaderPatch(material, {
       ...variant,
       vertexAnchor: "#include <project_vertex>",
-      vertexCall: "passThermalPerception(mvPosition);",
+      vertexCall: "passThermalPerception(mvPosition, transformed);",
       fragmentHeader: fragmentShader,
       colorFragmentCall:
         "diffuseColor.rgb = applyThermalPerception(diffuseColor.rgb);",
@@ -143,13 +196,28 @@ function createPatchApplier(
   };
 }
 
+/** Depth and patch size of the organic texture for one consumer. */
+function createTextureUniforms(
+  textureWarmth: number,
+  featureSize: number,
+): Record<string, { value: number }> {
+  return {
+    thermalTextureWarmth: { value: textureWarmth },
+    thermalTextureFeatureSize: { value: featureSize },
+  };
+}
+
 function createInstancedWarmthUniforms(
   baseWarmth: number,
   warmthSpread: number,
+  heightWarmthPerMeter: number,
+  axisWarmthPerMeter: number,
 ): Record<string, { value: number }> {
   return {
     thermalBaseWarmth: { value: baseWarmth },
     thermalWarmthSpread: { value: warmthSpread },
+    thermalHeightWarmthPerMeter: { value: heightWarmthPerMeter },
+    thermalAxisWarmthPerMeter: { value: axisWarmthPerMeter },
     thermalHashCellMeters: {
       value: THERMAL_PERCEPTION_SETTINGS.instanceHashCellMeters,
     },
@@ -206,11 +274,26 @@ function validateThermalPerceptionParameters(
     parameters.surfaces.rockWarmth,
     parameters.surfaces.rockWarmthSpread,
     parameters.actorWarmth,
+    parameters.actorExtremityFalloff,
+    parameters.terrainTextureWarmth,
+    parameters.actorTextureWarmth,
+    parameters.surfaces.vegetationTextureWarmth,
+    parameters.surfaces.rockTextureWarmth,
   ];
   if (!normalizedValues.every(isNormalized)) {
     throw new RangeError(
       "Thermal intensity and warmth values must be between zero and one",
     );
+  }
+  // Signed by design: a canopy cools upward while a sunlit rock top warms.
+  const gradients = [
+    parameters.surfaces.vegetationHeightWarmthPerMeter,
+    parameters.surfaces.vegetationAxisWarmthPerMeter,
+    parameters.surfaces.rockHeightWarmthPerMeter,
+    parameters.surfaces.rockAxisWarmthPerMeter,
+  ];
+  if (!gradients.every((value) => Number.isFinite(value))) {
+    throw new RangeError("Thermal surface gradients must be finite");
   }
   if (!isPositiveFinite(parameters.radiusMeters)) {
     throw new RangeError("Thermal radius must be positive and finite");

@@ -299,19 +299,39 @@ Test landscape by selecting `designTest.level.ts`.
 ### Thermal Perception
 
 - Thermal Perception is the level-05 material-effect family: one shared
-  radius-and-palette uniform set (intensity, 30-metre viewer radius,
-  10-metre feather, six-stop false-color ramp) with a per-consumer warmth
+  radius-and-palette uniform set (intensity, 60-metre viewer radius,
+  20-metre feather, six-stop false-color ramp) with a per-consumer warmth
   source. The radius is the camera-space view distance already used by
   Echo Depth, so the effect needs no camera uniform and no per-frame
   update; the field is fully static.
-- Terrain declares an optional `warmthAt` sampler on its material-effect
+- Warmth varies across every sensed surface, not only between surfaces.
+  Terrain declares an optional `warmthAt` sampler on its material-effect
   contract: during row-bounded chunk streaming it samples elevation plus
   zone conditions per vertex (water coldest and colder with depth, dry
   ground warmer with elevation, forest and slope boosts) into one streamed
   float attribute. Vegetation and Rocks hash their quantized instance
   world position into a stable warmth variation around authored base
-  values; Animals gained the shared `effects` option and carry one
-  constant near-hot warmth.
+  values, then shade each object internally from its own base and axis in
+  metres, so one authored gradient reads alike on a shrub and a tall tree.
+- Animals take a per-mesh effect through the Animals module's `effectsFor`
+  option: the module measures each cloned actor once and hands the effect
+  the matrix mapping that mesh's local space onto normalized body space.
+  The actor shader reads the posed vertex through that matrix and falls off
+  from an authored body core, so a torso holds the hottest reading while
+  legs, snouts, tails, and antlers cool with how far they reach away from
+  it. The falloff is authored in fractions of each actor's own height, so
+  one core fits every species without per-species values.
+- One organic texture then varies the warmth of every sensed surface. The
+  fragment stage sums three octaves of value noise, each turned by an
+  orthonormal rotation and stepped by a non-integer factor so no grid,
+  checkerboard, or repeat can form; sampling per fragment keeps the detail
+  independent of mesh density. Ground, plants, and rocks sample it in world
+  space; animals sample it in body space at a feature size expressed as a
+  share of body height, so it travels with the animal and reads alike on
+  every species. Each consumer authors its own texture depth, and the shader
+  eases the texture off above an authored quiet warmth so body cores keep a
+  defined shape. Fragments outside the radius return the carried color before
+  the texture or the ramp is evaluated.
 - The composition root orders thermal first in every effect list because
   the first-applied patch executes last and wins the final surface color
   (documented in the shared `material-shader-patch.ts` helper, which all

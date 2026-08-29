@@ -378,7 +378,11 @@ function createAnimals(
     preset: setup.level.animals,
     assets: setup.assets.animals,
     worldSurface: setup.worldSurface,
-    effects: thermal ? [thermal.animals] : undefined,
+    // One effect per animated mesh: the body matrix lets the heat view fall
+    // off from each actor's own core instead of coloring it uniformly.
+    effectsFor: thermal
+      ? (bodyMatrix) => [thermal.animals(bodyMatrix)]
+      : undefined,
   });
 }
 
