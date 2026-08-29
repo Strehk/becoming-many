@@ -9,7 +9,7 @@ export const ZONE_SETTINGS = {
   featureSizeMeters: 112, // Larger values create larger connected forest and meadow regions.
   coniferForestThreshold: -0.25, // Lower region values become conifer forest.
   deciduousForestThreshold: 0.28, // Higher region values become deciduous forest.
-  shrubSlopeThreshold: 0.32, // Ground at or above this slope becomes shrub-covered terrain.
+  shrubSlopeThreshold: 0.17, // Ground at or above this slope becomes shrub-covered terrain.
 };
 
 export type ZoneSettings = typeof ZONE_SETTINGS;

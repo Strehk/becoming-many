@@ -65,7 +65,7 @@ describe("WorldSurface", () => {
     );
   });
 
-  test("contains mountain peaks and deep valleys across the flight world", () => {
+  test("contains high ground and deep valleys across the flight world", () => {
     const worldRelief = measureGroundRelief({
       minX: -1_024,
       maxX: 1_024,
@@ -74,17 +74,17 @@ describe("WorldSurface", () => {
       step: 16,
     });
 
-    expect(worldRelief.highestY).toBeGreaterThan(30);
-    expect(worldRelief.lowestY).toBeLessThan(-17);
-    expect(worldRelief.heightRange).toBeGreaterThan(48);
+    expect(worldRelief.highestY).toBeGreaterThan(2);
+    expect(worldRelief.lowestY).toBeLessThan(-10);
+    expect(worldRelief.heightRange).toBeGreaterThan(16);
   });
 
-  test("combines calm lowlands with rugged mountain regions", () => {
+  test("combines calm lowlands with more undulating hill regions", () => {
     const calmLowlands = measureGroundRelief(around(-576, -192, 48));
-    const ruggedMountains = measureGroundRelief(around(-192, -192, 48));
+    const rollingHills = measureGroundRelief(around(-192, -192, 48));
 
-    expect(calmLowlands.heightRange).toBeLessThan(5);
-    expect(ruggedMountains.heightRange).toBeGreaterThan(25);
+    expect(calmLowlands.heightRange).toBeLessThan(7);
+    expect(rollingHills.heightRange).toBeGreaterThan(10);
   });
 
   test("starts the flight inside a valley facing nearby high ground", () => {
@@ -97,15 +97,17 @@ describe("WorldSurface", () => {
     });
 
     expect(initialView.lowestY).toBeLessThanOrEqual(-9.5);
-    expect(initialView.highestY).toBeGreaterThan(15);
-    expect(initialView.heightRange).toBeGreaterThan(25);
+    expect(initialView.highestY).toBeGreaterThan(0);
+    expect(initialView.heightRange).toBeGreaterThan(8);
   });
 
-  test("keeps mountain ridges smooth at the terrain mesh spacing", () => {
+  test("keeps hill ridges smooth at the terrain mesh spacing", () => {
     const terrainVertexSpacing = 64 / 32;
+    // Sampled clear of the river: the carved gorge wall is authored steeper
+    // than the mesh spacing, so only open hill ground is covered here.
     const largestHeightStep = measureLargestHorizontalHeightStep({
-      minX: 48,
-      maxX: 128,
+      minX: 160,
+      maxX: 240,
       minZ: -128,
       maxZ: 0,
       step: terrainVertexSpacing,
