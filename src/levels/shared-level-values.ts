@@ -114,15 +114,21 @@ export const sharedEchoDepth: SharedBlock<"echoDepth"> = {
   intensity: 1,
   // The nearest band stays one solid silhouette tone during fast flight.
   nearDistanceMeters: 6,
-  // Below the view distance, so chunk streaming happens inside the haze.
-  farDistanceMeters: 120,
-  // Grayscale ramp, near to far, keeping the luminance steps of the
-  // moodboard palette; every surface shows only its depth-ramp color
-  // regardless of proximity.
+  // Well below the 128 m view distance, so a chunk has dissolved into the haze
+  // a full 32 metres before it reaches the streaming edge: new ground emerges
+  // out of the fog instead of appearing at a visible tone.
+  farDistanceMeters: 96,
+  // Grayscale ramp, near to far, walking the luminance steps of the moodboard
+  // palette one at a time; every surface shows only its depth-ramp color
+  // regardless of proximity. The ramp used to skip #959595 and hold the two
+  // darkest stops out past sixty metres, which read as a black middle distance
+  // that brightened all at once near the horizon. Using every step in order
+  // spends the brightening evenly across the whole range, so distance reads as
+  // depth in haze rather than as darkness.
   colors: {
     nearColor: 0x101010,
-    nearShadeColor: 0x171717,
-    midColor: 0x494949,
+    nearShadeColor: 0x494949,
+    midColor: 0x959595,
     farColor: 0xd7d7d7,
     hazeColor: sharedEchoHazeColor,
   },
