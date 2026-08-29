@@ -236,7 +236,7 @@ The current tests verify:
 - vertical face recycling and revision invalidation
 - exclusion of Air Particles below the sampled visible surface
 - deterministic ground, river carving, water surfaces, and zone identities
-- mountain peaks, deep valleys, calm lowlands, and rugged local relief
+- bounded low relief, calm lowlands, gently raised regions, and shallow slopes
 - a fixed view-dependent Terrain mesh pool and cooperative row completion through recycling
 - identical heights along shared Terrain chunk borders
 - identical zone conditions along shared Terrain chunk borders

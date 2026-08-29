@@ -180,9 +180,10 @@ landscape by selecting `designTest.level.ts`.
   Terrain stores four continuous conditions in one optional `vec4` attribute;
   the fragment shader classifies after interpolation. Visualization adds no
   meshes, textures, draw calls, or duplicate geometry.
-- The height field combines rolling terrain, small detail, and mountain ridges
-  behind a continuous region mask. The current authored seed contains calm
-  lowlands, deep valleys, and mountain areas without discrete seams.
+- The height field combines rolling terrain, small detail, and broad ridges
+  behind a continuous region mask. The current authored settings keep the world
+  flat: about 14 metres of relief across two kilometres, calm lowlands, shallow
+  valleys, and gently raised regions without discrete seams or steep faces.
 - Terrain unload removes its group and disposes every geometry and its shared
   material.
 

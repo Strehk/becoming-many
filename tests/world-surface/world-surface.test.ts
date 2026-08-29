@@ -65,7 +65,7 @@ describe("WorldSurface", () => {
     );
   });
 
-  test("contains mountain peaks and deep valleys across the flight world", () => {
+  test("keeps the flight world uneven but low across its full extent", () => {
     const worldRelief = measureGroundRelief({
       minX: -1_024,
       maxX: 1_024,
@@ -74,20 +74,22 @@ describe("WorldSurface", () => {
       step: 16,
     });
 
-    expect(worldRelief.highestY).toBeGreaterThan(30);
-    expect(worldRelief.lowestY).toBeLessThan(-17);
-    expect(worldRelief.heightRange).toBeGreaterThan(48);
+    expect(worldRelief.highestY).toBeGreaterThan(0);
+    expect(worldRelief.highestY).toBeLessThan(10);
+    expect(worldRelief.lowestY).toBeLessThan(-10);
+    expect(worldRelief.heightRange).toBeGreaterThan(10);
+    expect(worldRelief.heightRange).toBeLessThan(20);
   });
 
-  test("combines calm lowlands with rugged mountain regions", () => {
+  test("combines calm lowlands with gently raised regions", () => {
     const calmLowlands = measureGroundRelief(around(-576, -192, 48));
-    const ruggedMountains = measureGroundRelief(around(-192, -192, 48));
+    const raisedRegion = measureGroundRelief(around(-192, -192, 48));
 
-    expect(calmLowlands.heightRange).toBeLessThan(5);
-    expect(ruggedMountains.heightRange).toBeGreaterThan(25);
+    expect(calmLowlands.heightRange).toBeLessThan(3);
+    expect(raisedRegion.heightRange).toBeGreaterThan(6);
   });
 
-  test("starts the flight inside a valley facing nearby high ground", () => {
+  test("starts the flight inside a valley facing nearby higher ground", () => {
     const initialView = measureGroundRelief({
       minX: -80,
       maxX: 80,
@@ -97,8 +99,20 @@ describe("WorldSurface", () => {
     });
 
     expect(initialView.lowestY).toBeLessThanOrEqual(-9.5);
-    expect(initialView.highestY).toBeGreaterThan(15);
-    expect(initialView.heightRange).toBeGreaterThan(25);
+    expect(initialView.highestY).toBeGreaterThan(-2);
+    expect(initialView.heightRange).toBeGreaterThan(6);
+  });
+
+  test("keeps ground slopes shallow across the flight world", () => {
+    const steepestSlope = measureSteepestGroundSlope({
+      minX: -1_024,
+      maxX: 1_024,
+      minZ: -1_024,
+      maxZ: 1_024,
+      step: 8,
+    });
+
+    expect(steepestSlope).toBeLessThan(0.8);
   });
 
   test("keeps mountain ridges smooth at the terrain mesh spacing", () => {
@@ -166,6 +180,26 @@ function measureGroundRelief(area: SampleArea): GroundRelief {
   const highestY = Math.max(...heights);
 
   return { lowestY, highestY, heightRange: highestY - lowestY };
+}
+
+function measureSteepestGroundSlope(area: SampleArea): number {
+  let steepestSlope = 0;
+
+  for (let worldX = area.minX; worldX <= area.maxX; worldX += area.step) {
+    for (let worldZ = area.minZ; worldZ <= area.maxZ; worldZ += area.step) {
+      const slopeX =
+        (worldSurface.groundYAt(worldX + 1, worldZ) -
+          worldSurface.groundYAt(worldX - 1, worldZ)) /
+        2;
+      const slopeZ =
+        (worldSurface.groundYAt(worldX, worldZ + 1) -
+          worldSurface.groundYAt(worldX, worldZ - 1)) /
+        2;
+      steepestSlope = Math.max(steepestSlope, Math.hypot(slopeX, slopeZ));
+    }
+  }
+
+  return steepestSlope;
 }
 
 function measureLargestHorizontalHeightStep(area: SampleArea): number {
