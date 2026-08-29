@@ -5,8 +5,8 @@ material effect family.
 
 The effect shows heat directly as a false-color ramp, but only inside an
 authored radius around the viewer: the vertex stage writes the camera-space
-radial distance (rotation-invariant, exactly like Echo Depth, so no camera
-position uniform or per-frame update exists), and the fragment stage feathers
+radial distance (rotation-invariant, exactly like Echo Depth, so the radius
+still needs no camera position uniform), and the fragment stage feathers
 the six-stop palette ramp back into the underlying carried color at the radius
 edge. The warmth value 0..1 comes from a different source per consumer, and
 in every case it varies across the surface rather than flooding it with one
@@ -46,9 +46,23 @@ the hottest surfaces — a living body core above all — keep a defined shape.
 Fragments outside the sensed radius return the carried color before either
 the texture or the ramp is evaluated.
 
+Living bodies also warm what stands around them. `setHeatSources` takes the
+warm bodies now in the world and packs each one as an oriented segment on its
+own body axis — centre, half length, facing, reach, and strength — into
+uniform objects every patched program shares, so one call reaches every
+sensed surface. Ground, plants, and rocks add the radiated warmth on top of
+their own reading, which keeps their variation inside a warm pool instead of
+flooding it flat; a living body does not radiate onto itself. Because the
+emitter is a segment rather than a point, the pool is as long as the animal
+and turns with it, and displacing the measured distance by the texture field
+breaks its boundary into an irregular bloom instead of an oval. The reach
+follows each animal's own height, so a stag blooms wider than a rat. This is
+the module's one per-frame input: the consumer reports its bodies each frame
+and nothing else about the field changes over time.
+
 One shared uniform set (intensity, radius, feather, ramp stops, palette,
-texture shape) is merged into every patched program, so all consumers respond
-to one sense intensity. The composition root applies the terrain variant through
+texture shape, heat sources) is merged into every patched program, so all
+consumers respond to one sense intensity. The composition root applies the terrain variant through
 `TerrainMaterialEffect` (whose optional `warmthAt` sampler triggers the
 attribute) and the other variants through the shared `UnlitMaterialEffect`
 contract; this module never imports a sibling module. All variants patch
@@ -59,8 +73,9 @@ carried echo ramp (first-applied executes last; see
 
 Not part of this version: a runtime intensity driver (the preset authors
 intensity statically and the composition root skips the effect entirely at
-intensity zero), temporal heat variation or heat trails (the field is fully
-static), any surface texture or material map beyond the procedural warmth
+intensity zero), temporal heat variation or heat trails (a body warms its
+surroundings only where it stands now, and leaves nothing behind when it
+moves on), any surface texture or material map beyond the procedural warmth
 texture described above, and any additional thermal camera or duplicate
 render pass. The per-fragment texture costs three noise octaves inside the
 sensed radius; its headroom on PICO needs runtime acceptance.

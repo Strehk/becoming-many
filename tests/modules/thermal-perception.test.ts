@@ -44,6 +44,10 @@ const PARAMETERS: ThermalPerceptionParameters = {
   actorWarmth: 0.92,
   actorExtremityFalloff: 0.4,
   actorTextureWarmth: 0.1,
+  heatEmission: {
+    strength: 0.3,
+    reachPerBodyHeight: 1.6,
+  },
 };
 
 test("Thermal Perception injects the radius-bounded ramp into both stages", () => {
@@ -146,6 +150,57 @@ test("Thermal Perception textures every sensed surface at its own depth", () => 
   );
 });
 
+test("Thermal Perception radiates warmth from the bodies it is told about", () => {
+  const effects = createThermalEffects();
+  const terrainShader = compileEffect(effects.terrain);
+  const animalsShader = compileEffect(effects.animals(new Matrix4()));
+
+  // Nothing radiates until the world reports its warm bodies.
+  expect(terrainShader.uniforms.thermalHeatCount?.value).toBe(0);
+
+  effects.setHeatSources([
+    { x: 4, y: -8, z: 6, headingRadians: 0, heightMeters: 1.4 },
+  ]);
+
+  // One shared source set reaches every sensed surface at once.
+  expect(terrainShader.uniforms.thermalHeatCount?.value).toBe(1);
+  expect(animalsShader.uniforms.thermalHeatCount).toBe(
+    terrainShader.uniforms.thermalHeatCount as never,
+  );
+
+  // Packed as an oriented segment on the body axis, lifted to the emitting
+  // core height, and reaching in proportion to the animal's own size.
+  const body = terrainShader.uniforms.thermalHeatBodies?.value[0];
+  const axis = terrainShader.uniforms.thermalHeatAxes?.value[0];
+  expect(body.x).toBe(4);
+  expect(body.y).toBeGreaterThan(-8);
+  expect(body.w).toBeGreaterThan(0);
+  expect(axis.z).toBeCloseTo(1.4 * 1.6, 5);
+  expect(axis.w).toBe(0.3);
+
+  // Ground, plants, and rocks answer to it; a living body does not.
+  expect(terrainShader.uniforms.thermalHeatResponse?.value).toBe(1);
+  expect(compileEffect(effects.rocks).uniforms.thermalHeatResponse?.value).toBe(
+    1,
+  );
+  expect(animalsShader.uniforms.thermalHeatResponse?.value).toBe(0);
+  expect(terrainShader.fragmentShader).toContain("thermalRadiatedWarmth");
+});
+
+test("Thermal Perception bounds the warm bodies it tracks", () => {
+  const effects = createThermalEffects();
+  const shader = compileEffect(effects.terrain);
+  const source = { x: 0, y: 0, z: 0, headingRadians: 0, heightMeters: 1 };
+
+  effects.setHeatSources(Array.from({ length: 12 }, () => source));
+
+  const bounded = shader.uniforms.thermalHeatCount?.value as number;
+  expect(bounded).toBeLessThanOrEqual(
+    shader.uniforms.thermalHeatBodies?.value.length as number,
+  );
+  expect(shader.fragmentShader).toContain("#define THERMAL_HEAT_SOURCES");
+});
+
 test("Thermal Perception gives each animated mesh its own body matrix", () => {
   const effects = createThermalEffects();
   const first = new Matrix4().makeTranslation(1, 0, 0);
@@ -183,10 +238,10 @@ test("Thermal Perception keeps one program per consumer geometry kind", () => {
   effects.rocks.applyTo(rocks);
   effects.animals(new Matrix4()).applyTo(animals);
 
-  expect(terrain.customProgramCacheKey()).toEndWith(":thermal-terrain-v3");
-  expect(vegetation.customProgramCacheKey()).toEndWith(":thermal-instanced-v3");
-  expect(rocks.customProgramCacheKey()).toEndWith(":thermal-instanced-v3");
-  expect(animals.customProgramCacheKey()).toEndWith(":thermal-actor-v3");
+  expect(terrain.customProgramCacheKey()).toEndWith(":thermal-terrain-v4");
+  expect(vegetation.customProgramCacheKey()).toEndWith(":thermal-instanced-v4");
+  expect(rocks.customProgramCacheKey()).toEndWith(":thermal-instanced-v4");
+  expect(animals.customProgramCacheKey()).toEndWith(":thermal-actor-v4");
 });
 
 test("Thermal Perception wins the final color over a carried echo ramp", () => {

@@ -73,5 +73,13 @@ export const level: LevelPreset = {
     // it off above the quiet warmth, so a coat varies while the hot core
     // keeps a defined edge.
     actorTextureWarmth: 0.1,
+    // A body warms what surrounds it. The strength is a third of what the
+    // ground's own elevation ramp spans, so a pool reads clearly while the
+    // ground inside it keeps its own variation; the reach follows the
+    // animal's size, so a stag blooms wider than a rat.
+    heatEmission: {
+      strength: 0.3,
+      reachPerBodyHeight: 1.6,
+    },
   },
 };

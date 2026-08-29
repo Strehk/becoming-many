@@ -17,6 +17,7 @@ import {
   type AnimalActors,
   createAnimalActors,
   disposeAnimalActors,
+  readVisibleAnimalBodies,
   updateAnimalActors,
 } from "./animal-actors";
 import type { AnimalsDefinition } from "./animals-definition";
@@ -44,6 +45,24 @@ export type AnimalMaterialEffectsFor = (
   bodyMatrix: Matrix4,
 ) => readonly UnlitMaterialEffect[];
 
+/** Where one visible animal stands, which way it faces, and how big it is. */
+export interface AnimalBody {
+  readonly x: number;
+  readonly y: number;
+  readonly z: number;
+  readonly headingRadians: number;
+  readonly heightMeters: number;
+}
+
+/** The writable form the module refills in place each frame. */
+export type MutableAnimalBody = { -readonly [Key in keyof AnimalBody]: number };
+
+/**
+ * Report the visible animals after every update. The array is reused between
+ * frames, so an observer that keeps it must copy what it needs.
+ */
+export type AnimalBodiesObserver = (bodies: readonly AnimalBody[]) => void;
+
 export interface AnimalsModuleOptions {
   readonly scene: Scene;
   readonly camera: PerspectiveCamera;
@@ -52,23 +71,24 @@ export interface AnimalsModuleOptions {
   readonly assets: GltfAssets;
   readonly worldSurface: WorldSurface;
   readonly effectsFor?: AnimalMaterialEffectsFor;
+  readonly onBodiesUpdated?: AnimalBodiesObserver;
 }
 
 interface AnimalsState {
   population: AnimalActors | undefined;
+  readonly bodies: MutableAnimalBody[];
 }
 
 export function createAnimalsModule(
   options: AnimalsModuleOptions,
 ): WorldModule {
   validateAnimalsDefinition(options.definition);
-  const state: AnimalsState = { population: undefined };
+  const state: AnimalsState = { population: undefined, bodies: [] };
 
   return {
     load: () => loadAnimals(state, options),
     activate: () => setAnimalsVisible(state, true),
-    update: (deltaSeconds) =>
-      updateAnimals(state, options.camera, deltaSeconds),
+    update: (deltaSeconds) => updateAnimals(state, options, deltaSeconds),
     deactivate: () => setAnimalsVisible(state, false),
     unload: () => unloadAnimals(state, options.scene, options.assets),
   };
@@ -126,12 +146,16 @@ function loadAnimals(state: AnimalsState, options: AnimalsModuleOptions): void {
 
 function updateAnimals(
   state: AnimalsState,
-  camera: PerspectiveCamera,
+  options: AnimalsModuleOptions,
   deltaSeconds: number,
 ): void {
-  if (state.population?.group.visible) {
-    updateAnimalActors(state.population, camera, deltaSeconds);
-  }
+  if (!state.population?.group.visible) return;
+
+  updateAnimalActors(state.population, options.camera, deltaSeconds);
+  if (!options.onBodiesUpdated) return;
+
+  readVisibleAnimalBodies(state.population, state.bodies);
+  options.onBodiesUpdated(state.bodies);
 }
 
 function setAnimalsVisible(state: AnimalsState, visible: boolean): void {

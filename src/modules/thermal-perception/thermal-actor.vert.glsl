@@ -14,6 +14,7 @@ uniform float thermalTextureFeatureSize;
 varying float thermalViewDistance;
 varying float interpolatedThermalWarmth;
 varying vec3 thermalTexturePosition;
+varying vec3 thermalWorldPosition;
 
 void passThermalPerception(vec4 viewPosition, vec3 localPosition) {
   thermalViewDistance = length(viewPosition.xyz);
@@ -42,4 +43,5 @@ void passThermalPerception(vec4 viewPosition, vec3 localPosition) {
   // feature size is a share of body height, so a fox and a stag carry the
   // same density of detail.
   thermalTexturePosition = bodyPosition / thermalTextureFeatureSize;
+  thermalWorldPosition = (modelMatrix * vec4(localPosition, 1.0)).xyz;
 }

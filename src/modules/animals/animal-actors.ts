@@ -26,7 +26,11 @@ import {
   type AlignAnimalToSurface,
   createAnimalSurfaceAlignment,
 } from "./animal-surface-orientation";
-import type { AnimalColors, AnimalMaterialEffectsFor } from "./animals";
+import type {
+  AnimalColors,
+  AnimalMaterialEffectsFor,
+  MutableAnimalBody,
+} from "./animals";
 import type {
   AnimalSpeciesDefinition,
   AnimalsDefinition,
@@ -161,6 +165,33 @@ export function updateAnimalActors(
     population.alignToSurface(actor.root, actor.headingRadians);
     actor.mixer.update(deltaSeconds);
   }
+}
+
+/**
+ * Fill `bodies` with the visible actors, reusing its entries so the per-frame
+ * report allocates nothing once the visible count settles.
+ */
+export function readVisibleAnimalBodies(
+  population: AnimalActors,
+  bodies: MutableAnimalBody[],
+): void {
+  let count = 0;
+  for (const actor of population.actors) {
+    if (!actor.root.visible) continue;
+
+    let body = bodies[count];
+    if (!body) {
+      body = { x: 0, y: 0, z: 0, headingRadians: 0, heightMeters: 0 };
+      bodies[count] = body;
+    }
+    body.x = actor.root.position.x;
+    body.y = actor.root.position.y;
+    body.z = actor.root.position.z;
+    body.headingRadians = actor.headingRadians;
+    body.heightMeters = actor.species.heightMeters;
+    count++;
+  }
+  bodies.length = count;
 }
 
 export function disposeAnimalActors(population: AnimalActors): void {

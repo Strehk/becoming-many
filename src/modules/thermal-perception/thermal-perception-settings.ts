@@ -62,6 +62,17 @@ export const THERMAL_PERCEPTION_SETTINGS = {
     quietAmount: 0.6, // Share of it removed at full heat.
   },
 
+  // How a living body radiates into what surrounds it. The emitter is a
+  // segment along the animal's own body axis rather than a point, so the
+  // warm pool is elongated nose to tail and turns as the animal turns
+  // instead of ringing it with a circle.
+  heat: {
+    maxSources: 4, // Matches the bounded count of visible animals.
+    bodyHalfLengthFraction: 0.55, // Segment half length, as a share of height.
+    coreHeightFraction: 0.45, // Height of the emitting axis above the ground.
+    edgeIrregularityMeters: 0.9, // Texture displacement of the pool's edge.
+  },
+
   // Instance world positions are quantized to this cell before hashing so all
   // parts of one plant or rock agree on a single stable warmth variation. A
   // cell near one plant's own footprint keeps neighbours in separate cells,
@@ -123,4 +134,24 @@ export interface ThermalPerceptionParameters {
 
   /** Depth of the organic texture across a living body. */
   readonly actorTextureWarmth: number;
+
+  /** Warmth each living body radiates onto the surfaces around it. */
+  readonly heatEmission: {
+    /** Added warmth at the body itself, before the distance falloff. */
+    readonly strength: number;
+
+    /** How far the warmth reaches, as a multiple of the animal's height. */
+    readonly reachPerBodyHeight: number;
+  };
+}
+
+/** One warm body radiating into the surfaces around it. */
+export interface ThermalHeatSource {
+  readonly x: number;
+  readonly y: number;
+  readonly z: number;
+
+  /** Facing, so the pool follows the body axis instead of ringing it. */
+  readonly headingRadians: number;
+  readonly heightMeters: number;
 }

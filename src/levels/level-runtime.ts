@@ -383,6 +383,9 @@ function createAnimals(
     effectsFor: thermal
       ? (bodyMatrix) => [thermal.animals(bodyMatrix)]
       : undefined,
+    // Warm bodies radiate onto the ground, plants, and rocks around them, so
+    // the heat view needs to know where they stand each frame.
+    onBodiesUpdated: thermal?.setHeatSources,
   });
 }
 

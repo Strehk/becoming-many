@@ -19,15 +19,25 @@ import instancedVertexShader from "./thermal-instanced.vert.glsl?raw";
 import fragmentShader from "./thermal-perception.frag.glsl?raw";
 import {
   THERMAL_PERCEPTION_SETTINGS,
+  type ThermalHeatSource,
   type ThermalPerceptionParameters,
 } from "./thermal-perception-settings";
 import terrainVertexShader from "./thermal-terrain.vert.glsl?raw";
 
-export type { ThermalPerceptionParameters } from "./thermal-perception-settings";
+export type {
+  ThermalHeatSource,
+  ThermalPerceptionParameters,
+} from "./thermal-perception-settings";
 
-const THERMAL_TERRAIN_CACHE_KEY = "thermal-terrain-v3";
-const THERMAL_INSTANCED_CACHE_KEY = "thermal-instanced-v3";
-const THERMAL_ACTOR_CACHE_KEY = "thermal-actor-v3";
+/*
+ * The bounded source count is a compile-time array size in the shared
+ * fragment stage, so it is injected rather than written twice.
+ */
+const HEAT_SOURCE_DEFINE = `#define THERMAL_HEAT_SOURCES ${THERMAL_PERCEPTION_SETTINGS.heat.maxSources}`;
+
+const THERMAL_TERRAIN_CACHE_KEY = "thermal-terrain-v4";
+const THERMAL_INSTANCED_CACHE_KEY = "thermal-instanced-v4";
+const THERMAL_ACTOR_CACHE_KEY = "thermal-actor-v4";
 
 /** Terrain variant; the sampler fills the per-vertex warmth attribute. */
 export interface ThermalTerrainEffect {
@@ -44,6 +54,13 @@ export interface ThermalPerceptionEffects {
   readonly terrain: ThermalTerrainEffect;
   readonly vegetation: UnlitMaterialEffect;
   readonly rocks: UnlitMaterialEffect;
+  /**
+   * Report the warm bodies now standing in the world. Every sensed surface
+   * shares one source set, so a single call reaches all of them; passing no
+   * sources leaves the world unwarmed.
+   */
+  readonly setHeatSources: (sources: readonly ThermalHeatSource[]) => void;
+
   /**
    * Actor variant; the caller supplies the matrix mapping one animated mesh's
    * local space onto its actor's normalized body space, so the core-to-limb
@@ -63,6 +80,7 @@ export function createThermalPerception(
   options: ThermalPerceptionOptions,
 ): ThermalPerceptionEffects {
   validateThermalPerceptionParameters(parameters);
+  const heat = createHeatSourceField(parameters.heatEmission);
   // One uniform object each, shared by every patched program, so a future
   // runtime intensity driver reaches all consumers through a single value.
   const sharedUniforms = {
@@ -91,6 +109,10 @@ export function createThermalPerception(
         THERMAL_PERCEPTION_SETTINGS.texture.quietAmount,
       ),
     },
+    thermalHeatEdgeMeters: {
+      value: THERMAL_PERCEPTION_SETTINGS.heat.edgeIrregularityMeters,
+    },
+    ...heat.uniforms,
   };
   const worldFeatureSize =
     THERMAL_PERCEPTION_SETTINGS.texture.featureSizeMeters;
@@ -113,6 +135,7 @@ export function createThermalPerception(
   };
 
   return {
+    setHeatSources: heat.setSources,
     terrain: {
       applyTo: createPatchApplier({
         cacheKey: THERMAL_TERRAIN_CACHE_KEY,
@@ -122,6 +145,7 @@ export function createThermalPerception(
             parameters.terrainTextureWarmth,
             worldFeatureSize,
           ),
+          ...HEAT_SENSED,
         },
         vertexHeader: terrainVertexShader,
       }),
@@ -142,6 +166,7 @@ export function createThermalPerception(
             parameters.surfaces.vegetationTextureWarmth,
             worldFeatureSize,
           ),
+          ...HEAT_SENSED,
         },
         vertexHeader: instancedVertexShader,
       }),
@@ -161,6 +186,7 @@ export function createThermalPerception(
             parameters.surfaces.rockTextureWarmth,
             worldFeatureSize,
           ),
+          ...HEAT_SENSED,
         },
         vertexHeader: instancedVertexShader,
       }),
@@ -173,6 +199,9 @@ export function createThermalPerception(
         uniforms: {
           ...sharedUniforms,
           ...actorUniforms,
+          // A body is already the hottest thing here; it does not radiate
+          // onto itself on top of that.
+          thermalHeatResponse: { value: 0 },
           thermalActorBodyMatrix: { value: bodyMatrix },
         },
         vertexHeader: actorVertexShader,
@@ -189,10 +218,61 @@ function createPatchApplier(
       ...variant,
       vertexAnchor: "#include <project_vertex>",
       vertexCall: "passThermalPerception(mvPosition, transformed);",
-      fragmentHeader: fragmentShader,
+      fragmentHeader: `${HEAT_SOURCE_DEFINE}\n${fragmentShader}`,
       colorFragmentCall:
         "diffuseColor.rgb = applyThermalPerception(diffuseColor.rgb);",
     });
+  };
+}
+
+/** Surfaces that answer to nearby warm bodies; a living body does not. */
+const HEAT_SENSED = { thermalHeatResponse: { value: 1 } };
+
+/**
+ * The live set of warm bodies, held in uniform objects every patched program
+ * shares. Bodies are packed as an oriented segment: xyz is the emitting axis
+ * centre, w its half length, while the axis vector carries the facing, the
+ * reach, and the strength.
+ */
+function createHeatSourceField(
+  emission: ThermalPerceptionParameters["heatEmission"],
+) {
+  const { maxSources, bodyHalfLengthFraction, coreHeightFraction } =
+    THERMAL_PERCEPTION_SETTINGS.heat;
+  const bodies = Array.from({ length: maxSources }, () => new Vector4());
+  const axes = Array.from({ length: maxSources }, () => new Vector4());
+  const count = { value: 0 };
+
+  return {
+    uniforms: {
+      thermalHeatCount: count,
+      thermalHeatBodies: { value: bodies },
+      thermalHeatAxes: { value: axes },
+    },
+    setSources: (sources: readonly ThermalHeatSource[]): void => {
+      const sourceCount = Math.min(sources.length, maxSources);
+      for (let index = 0; index < sourceCount; index++) {
+        const source = sources[index];
+        if (!source) continue;
+
+        const { heightMeters } = source;
+        bodies[index]?.set(
+          source.x,
+          source.y + heightMeters * coreHeightFraction,
+          source.z,
+          heightMeters * bodyHalfLengthFraction,
+        );
+        // Heading matches the actor's own travel convention (sin, cos), so
+        // the pool lies along the body rather than across it.
+        axes[index]?.set(
+          Math.sin(source.headingRadians),
+          Math.cos(source.headingRadians),
+          heightMeters * emission.reachPerBodyHeight,
+          emission.strength,
+        );
+      }
+      count.value = sourceCount;
+    },
   };
 }
 
@@ -279,6 +359,7 @@ function validateThermalPerceptionParameters(
     parameters.actorTextureWarmth,
     parameters.surfaces.vegetationTextureWarmth,
     parameters.surfaces.rockTextureWarmth,
+    parameters.heatEmission.strength,
   ];
   if (!normalizedValues.every(isNormalized)) {
     throw new RangeError(
@@ -294,6 +375,9 @@ function validateThermalPerceptionParameters(
   ];
   if (!gradients.every((value) => Number.isFinite(value))) {
     throw new RangeError("Thermal surface gradients must be finite");
+  }
+  if (!isPositiveFinite(parameters.heatEmission.reachPerBodyHeight)) {
+    throw new RangeError("Thermal heat reach must be positive and finite");
   }
   if (!isPositiveFinite(parameters.radiusMeters)) {
     throw new RangeError("Thermal radius must be positive and finite");

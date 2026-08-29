@@ -302,8 +302,9 @@ Test landscape by selecting `designTest.level.ts`.
   radius-and-palette uniform set (intensity, 60-metre viewer radius,
   20-metre feather, six-stop false-color ramp) with a per-consumer warmth
   source. The radius is the camera-space view distance already used by
-  Echo Depth, so the effect needs no camera uniform and no per-frame
-  update; the field is fully static.
+  Echo Depth, so the radius itself needs no camera uniform. The one
+  per-frame input is the set of warm bodies (see local heat emission
+  below); nothing else about the field changes over time.
 - Warmth varies across every sensed surface, not only between surfaces.
   Terrain declares an optional `warmthAt` sampler on its material-effect
   contract: during row-bounded chunk streaming it samples elevation plus
@@ -332,6 +333,20 @@ Test landscape by selecting `designTest.level.ts`.
   eases the texture off above an authored quiet warmth so body cores keep a
   defined shape. Fragments outside the radius return the carried color before
   the texture or the ramp is evaluated.
+- Living bodies warm what stands around them. The Animals module reports its
+  visible actors after every update through an optional `onBodiesUpdated`
+  observer — position, heading, and body height, in an array it refills in
+  place so a settled population allocates nothing — and the composition root
+  hands that straight to Thermal Perception's `setHeatSources`. Animals still
+  knows nothing about the heat view; it reports animal facts. The effect
+  packs each body as an oriented segment on its own axis and every sensed
+  surface adds the radiated warmth on top of its own reading, so ground
+  inside a pool keeps its variation, the pool lies along the animal and turns
+  with it rather than ringing it, its edge is displaced by the texture field
+  into an irregular bloom, and its reach follows the animal's own size. A
+  living body does not radiate onto itself. The source count is bounded by
+  the module and injected into the shared fragment stage as a compile-time
+  array size.
 - The composition root orders thermal first in every effect list because
   the first-applied patch executes last and wins the final surface color
   (documented in the shared `material-shader-patch.ts` helper, which all

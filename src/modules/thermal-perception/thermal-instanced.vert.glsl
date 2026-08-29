@@ -15,6 +15,7 @@ uniform float thermalTextureFeatureSize;
 varying float thermalViewDistance;
 varying float interpolatedThermalWarmth;
 varying vec3 thermalTexturePosition;
+varying vec3 thermalWorldPosition;
 
 float thermalInstanceHash(vec2 cell) {
   return fract(sin(dot(cell, vec2(127.1, 311.7))) * 43758.5453123);
@@ -52,4 +53,5 @@ void passThermalPerception(vec4 viewPosition, vec3 localPosition) {
   // World space, like the ground: neighbouring plants sample one continuous
   // field, so a stand varies across itself instead of repeating per model.
   thermalTexturePosition = worldPosition / thermalTextureFeatureSize;
+  thermalWorldPosition = worldPosition;
 }
