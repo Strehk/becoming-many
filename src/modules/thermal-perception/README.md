@@ -18,8 +18,9 @@ stable variation around an authored base warmth, so a plant keeps its
 temperature across restreaming, and then shade that base by the vertex's own
 height and axis distance measured in metres: because the instance matrix
 carries the per-object scale, one authored gradient per metre reads the same
-on a 0.6 m shrub and a 10 m tree, cooling a canopy that radiates to the sky
-and warming a rock top the sun reaches. Animals are warmest at a body core:
+on a 0.6 m shrub and a 10 m tree: warmth climbs toward an exposed crown and
+its fine outer branches, and toward the face of a rock the sun reaches, while
+a shaded trunk or a rock's flank stays near its own base temperature. Animals are warmest at a body core:
 the consumer supplies, per animated mesh, the matrix mapping mesh space onto
 its actor's normalized body space (y 0..1 from lowest point to crown), and
 the actor shader falls off from an authored core inside that space, so legs,
@@ -60,7 +61,21 @@ follows each animal's own height, so a stag blooms wider than a rat. This is
 the module's one per-frame input: the consumer reports its bodies each frame
 and nothing else about the field changes over time.
 
-Finally each surface is given definition. A monotone contrast curve pulls the
+Every reading a surface computes for itself is then folded into the warmth
+band its material belongs to. Both ends of the band are approached
+asymptotically inside a soft knee, so a surface can never leave the
+temperature range its substance would occupy however its base warmth,
+gradient, texture, and contrast happen to add up, and nothing piles into a
+flat plateau at the edge of the band. The bands carry the material hierarchy:
+ground and rock are held in the violet-to-cyan end, plants climb into magenta
+and orange where they are exposed, and only a living body owns the hottest
+colors. Terrain's own mapping is scaled to that end rather than left to the
+band to catch, so the band stays a guarantee instead of a routine clamp.
+Warmth radiated by a nearby body is added after the band and is the one thing
+allowed to carry a surface past its own range: heat borrowed from an animal is
+not the ground's own temperature, so a warm pool reads as exactly that.
+
+Each surface is also given definition. A monotone contrast curve pulls the
 finished reading away from an authored pivot: two halves meet there, each flat
 at its own end and steepest where they join, so cold, pivot, and full heat all
 stay in place while everything between them separates. Warmth that changes

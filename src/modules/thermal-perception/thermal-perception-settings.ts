@@ -17,24 +17,28 @@ export const THERMAL_PERCEPTION_SETTINGS = {
   warmStopFraction: 0.46,
   hotStopFraction: 0.64,
 
-  // Terrain warmth mapping from elevation and zone conditions.
+  // Terrain warmth mapping from elevation and zone conditions. Ground is the
+  // coldest substance in the world, so every value here is scaled to keep it
+  // inside the violet-to-cyan end of the palette: the elevation span is set
+  // so ordinary rolling hills fill that end, and the boosts are small enough
+  // to shade it rather than climb out of it. What overshoots — mountain
+  // flanks, mostly — is caught by the terrain's warmth band, not here.
   terrainWarmth: {
     // Warmth right at the waterline; deeper water reads colder from here, so
     // the channel carries its own gradient down into the coldest ramp stop.
-    shorelineWarmth: 0.1,
-    waterColdPerDepthMeter: 0.04,
+    shorelineWarmth: 0.05,
+    waterColdPerDepthMeter: 0.02,
     // Dry ground spans floor..floor+span across the reachable elevation
     // range. Rare mountains own the top of that range, so ordinary rolling
-    // ground occupies only its lowest fifth; the span reaches past one to
-    // stretch that fifth back across the palette, which is what turns the
-    // hills into a violet-to-magenta gradient instead of one flat tone.
-    // Only mountain flanks climb far enough to clamp at full heat.
-    landWarmthFloor: 0.1,
-    landElevationWarmthSpan: 1.3,
-    // Forest regions and steep faces hold extra warmth on top of elevation,
-    // printing the zone layout into the heat image as its own structure.
-    forestWarmthBoost: 0.18,
-    slopeWarmthBoost: 0.16,
+    // ground occupies only its lowest third of it, and the span stretches
+    // that third across violet, blue, and cyan.
+    landWarmthFloor: 0.06,
+    landElevationWarmthSpan: 0.7,
+    // Forest regions and steep faces hold a little extra warmth on top of
+    // elevation, printing the zone layout into the heat image without
+    // carrying the ground into the warm half of the ramp.
+    forestWarmthBoost: 0.05,
+    slopeWarmthBoost: 0.04,
   },
 
   // The body-relative shape of a living actor's heat, expressed in fractions
@@ -67,11 +71,17 @@ export const THERMAL_PERCEPTION_SETTINGS = {
   // pivot on the warmth a surface's own readings cluster around expands the
   // differences that carry its structure and leaves both ends unclipped.
   definition: {
-    terrainPivot: 0.4,
+    terrainPivot: 0.28,
     vegetationPivot: 0.5,
-    rockPivot: 0.35,
+    rockPivot: 0.28,
     actorPivot: 0.75,
   },
+
+  // Width of the soft knee at each end of a warmth band. Inside the knee the
+  // reading approaches the band's edge asymptotically instead of clipping, so
+  // a material stays in its own range without piling up into a flat plateau
+  // at the edge of it.
+  bandKneeWarmth: 0.08,
 
   // How a living body radiates into what surrounds it. The emitter is a
   // segment along the animal's own body axis rather than a point, so the
@@ -124,6 +134,19 @@ export interface ThermalSurfaceWarmth {
   readonly rockTextureWarmth: number;
 }
 
+/**
+ * The temperature range one material's own substance may occupy. Everything a
+ * surface computes for itself — its base warmth, its internal gradient, its
+ * texture, its contrast — is folded into this band, so ground cannot reach
+ * the colors that belong to a living body however its own values add up.
+ * Warmth borrowed from a nearby heat source is added afterwards and is the
+ * one thing allowed to carry a surface beyond its own range.
+ */
+export interface ThermalWarmthBand {
+  readonly floorWarmth: number;
+  readonly ceilingWarmth: number;
+}
+
 /** Level-authored strength, sensing radius, palette, and warmth targets. */
 export interface ThermalPerceptionParameters {
   /** Sense strength 0..1; the composition root skips the effect at zero. */
@@ -154,6 +177,14 @@ export interface ThermalPerceptionParameters {
 
   /** How far a living body's contrast curve is applied, 0..1. */
   readonly actorContrast: number;
+
+  /** The temperature range each material's own substance may occupy. */
+  readonly bands: {
+    readonly terrain: ThermalWarmthBand;
+    readonly vegetation: ThermalWarmthBand;
+    readonly rocks: ThermalWarmthBand;
+    readonly animals: ThermalWarmthBand;
+  };
 
   /** Warmth each living body radiates onto the surfaces around it. */
   readonly heatEmission: {

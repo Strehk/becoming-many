@@ -27,6 +27,7 @@ import {
   THERMAL_PERCEPTION_SETTINGS,
   type ThermalHeatSource,
   type ThermalPerceptionParameters,
+  type ThermalWarmthBand,
 } from "./thermal-perception-settings";
 import terrainVertexShader from "./thermal-terrain.vert.glsl?raw";
 
@@ -41,9 +42,9 @@ export type {
  */
 const HEAT_SOURCE_DEFINE = `#define THERMAL_HEAT_SOURCES ${THERMAL_PERCEPTION_SETTINGS.heat.maxSources}`;
 
-const THERMAL_TERRAIN_CACHE_KEY = "thermal-terrain-v5";
-const THERMAL_INSTANCED_CACHE_KEY = "thermal-instanced-v5";
-const THERMAL_ACTOR_CACHE_KEY = "thermal-actor-v5";
+const THERMAL_TERRAIN_CACHE_KEY = "thermal-terrain-v6";
+const THERMAL_INSTANCED_CACHE_KEY = "thermal-instanced-v6";
+const THERMAL_ACTOR_CACHE_KEY = "thermal-actor-v6";
 
 /** Terrain variant; the sampler fills the per-vertex warmth attribute. */
 export interface ThermalTerrainEffect {
@@ -134,6 +135,7 @@ export function createThermalPerception(
       parameters.actorContrast,
       THERMAL_PERCEPTION_SETTINGS.definition.actorPivot,
     ),
+    ...createBandUniforms(parameters.bands.animals),
     thermalActorBodyShape: {
       value: new Vector4(
         actorBody.coreHeightFraction,
@@ -159,6 +161,7 @@ export function createThermalPerception(
             parameters.terrainContrast,
             THERMAL_PERCEPTION_SETTINGS.definition.terrainPivot,
           ),
+          ...createBandUniforms(parameters.bands.terrain),
           ...HEAT_SENSED,
         },
         vertexHeader: terrainVertexShader,
@@ -184,6 +187,7 @@ export function createThermalPerception(
             parameters.surfaces.vegetationContrast,
             THERMAL_PERCEPTION_SETTINGS.definition.vegetationPivot,
           ),
+          ...createBandUniforms(parameters.bands.vegetation),
           ...HEAT_SENSED,
         },
         vertexHeader: instancedVertexShader,
@@ -208,6 +212,7 @@ export function createThermalPerception(
             parameters.surfaces.rockContrast,
             THERMAL_PERCEPTION_SETTINGS.definition.rockPivot,
           ),
+          ...createBandUniforms(parameters.bands.rocks),
           ...HEAT_SENSED,
         },
         vertexHeader: instancedVertexShader,
@@ -294,6 +299,16 @@ function createHeatSourceField(
         );
       }
       count.value = sourceCount;
+    },
+  };
+}
+
+/** The temperature range one consumer's own substance may occupy. */
+function createBandUniforms(band: ThermalWarmthBand) {
+  return {
+    thermalBand: { value: new Vector2(band.floorWarmth, band.ceilingWarmth) },
+    thermalBandKnee: {
+      value: THERMAL_PERCEPTION_SETTINGS.bandKneeWarmth,
     },
   };
 }
@@ -394,6 +409,10 @@ function validateThermalPerceptionParameters(
     parameters.actorContrast,
     parameters.surfaces.vegetationContrast,
     parameters.surfaces.rockContrast,
+    ...Object.values(parameters.bands).flatMap((band) => [
+      band.floorWarmth,
+      band.ceilingWarmth,
+    ]),
   ];
   if (!normalizedValues.every(isNormalized)) {
     throw new RangeError(
@@ -409,6 +428,15 @@ function validateThermalPerceptionParameters(
   ];
   if (!gradients.every((value) => Number.isFinite(value))) {
     throw new RangeError("Thermal surface gradients must be finite");
+  }
+  if (
+    Object.values(parameters.bands).some(
+      (band) => band.floorWarmth >= band.ceilingWarmth,
+    )
+  ) {
+    throw new RangeError(
+      "Thermal warmth bands must rise from floor to ceiling",
+    );
   }
   if (!isPositiveFinite(parameters.heatEmission.reachPerBodyHeight)) {
     throw new RangeError("Thermal heat reach must be positive and finite");

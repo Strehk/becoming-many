@@ -31,19 +31,25 @@ const PARAMETERS: ThermalPerceptionParameters = {
   surfaces: {
     vegetationWarmth: 0.45,
     vegetationWarmthSpread: 0.12,
-    vegetationHeightWarmthPerMeter: -0.02,
-    vegetationAxisWarmthPerMeter: -0.03,
+    vegetationHeightWarmthPerMeter: 0.022,
+    vegetationAxisWarmthPerMeter: 0.015,
     vegetationTextureWarmth: 0.07,
     vegetationContrast: 0.5,
     rockWarmth: 0.3,
     rockWarmthSpread: 0.08,
-    rockHeightWarmthPerMeter: 0.22,
+    rockHeightWarmthPerMeter: 0.05,
     rockAxisWarmthPerMeter: -0.07,
     rockTextureWarmth: 0.05,
     rockContrast: 0.5,
   },
+  bands: {
+    terrain: { floorWarmth: 0.02, ceilingWarmth: 0.36 },
+    vegetation: { floorWarmth: 0.2, ceilingWarmth: 0.78 },
+    rocks: { floorWarmth: 0.04, ceilingWarmth: 0.36 },
+    animals: { floorWarmth: 0.4, ceilingWarmth: 1 },
+  },
   terrainTextureWarmth: 0.06,
-  terrainContrast: 0.55,
+  terrainContrast: 0.3,
   actorWarmth: 0.92,
   actorExtremityFalloff: 0.4,
   actorTextureWarmth: 0.1,
@@ -98,14 +104,15 @@ test("Thermal Perception varies warmth across each object it decorates", () => {
   const rocksShader = compileEffect(effects.rocks);
   const animalsShader = compileEffect(effects.animals(bodyMatrix));
 
-  // Plants shed heat upward and outward; a sunlit rock top gains it.
+  // Plants carry heat up and outward toward an exposed crown; a sunlit rock
+  // top gains it while its flanks stay cooler.
   expect(vegetationShader.uniforms.thermalHeightWarmthPerMeter?.value).toBe(
-    -0.02,
+    0.022,
   );
   expect(vegetationShader.uniforms.thermalAxisWarmthPerMeter?.value).toBe(
-    -0.03,
+    0.015,
   );
-  expect(rocksShader.uniforms.thermalHeightWarmthPerMeter?.value).toBe(0.22);
+  expect(rocksShader.uniforms.thermalHeightWarmthPerMeter?.value).toBe(0.05);
   expect(rocksShader.uniforms.thermalAxisWarmthPerMeter?.value).toBe(-0.07);
   expect(vegetationShader.vertexShader).toContain(
     "thermalHeightWarmthPerMeter",
@@ -215,7 +222,7 @@ test("Thermal Perception defines each surface around its own warmth band", () =>
   // readings cluster.
   const terrainContrast = terrainShader.uniforms.thermalContrast?.value;
   const actorContrast = animalsShader.uniforms.thermalContrast?.value;
-  expect(terrainContrast.x).toBe(0.55);
+  expect(terrainContrast.x).toBe(0.3);
   expect(actorContrast.x).toBe(0.8);
   expect(actorContrast.x).toBeGreaterThan(terrainContrast.x);
   expect(actorContrast.y).toBeGreaterThan(terrainContrast.y);
@@ -223,6 +230,39 @@ test("Thermal Perception defines each surface around its own warmth band", () =>
   // Each consumer is curved on its own, not through a shared uniform.
   expect(actorContrast).not.toBe(terrainContrast);
   expect(terrainShader.fragmentShader).toContain("thermalDefinedWarmth");
+});
+
+test("Thermal Perception holds each material inside its own warmth band", () => {
+  const effects = createThermalEffects();
+  const terrainBand = compileEffect(effects.terrain).uniforms.thermalBand
+    ?.value;
+  const vegetationBand = compileEffect(effects.vegetation).uniforms.thermalBand
+    ?.value;
+  const rockBand = compileEffect(effects.rocks).uniforms.thermalBand?.value;
+  const animalBand = compileEffect(effects.animals(new Matrix4())).uniforms
+    .thermalBand?.value;
+
+  // Ground and rock stay in the cold end; only a living body owns the top.
+  expect(terrainBand.y).toBeLessThan(vegetationBand.y);
+  expect(rockBand.y).toBeLessThan(vegetationBand.y);
+  expect(vegetationBand.y).toBeLessThan(animalBand.y);
+  expect(terrainBand.y).toBe(0.36);
+  expect(animalBand.y).toBe(1);
+  expect(compileEffect(effects.terrain).fragmentShader).toContain(
+    "thermalBandedWarmth",
+  );
+});
+
+test("Thermal Perception rejects a warmth band that does not rise", () => {
+  expect(() =>
+    createThermalEffects({
+      ...PARAMETERS,
+      bands: {
+        ...PARAMETERS.bands,
+        terrain: { floorWarmth: 0.5, ceilingWarmth: 0.2 },
+      },
+    }),
+  ).toThrow("Thermal warmth bands must rise from floor to ceiling");
 });
 
 test("Thermal Perception gives each animated mesh its own body matrix", () => {
@@ -262,10 +302,10 @@ test("Thermal Perception keeps one program per consumer geometry kind", () => {
   effects.rocks.applyTo(rocks);
   effects.animals(new Matrix4()).applyTo(animals);
 
-  expect(terrain.customProgramCacheKey()).toEndWith(":thermal-terrain-v5");
-  expect(vegetation.customProgramCacheKey()).toEndWith(":thermal-instanced-v5");
-  expect(rocks.customProgramCacheKey()).toEndWith(":thermal-instanced-v5");
-  expect(animals.customProgramCacheKey()).toEndWith(":thermal-actor-v5");
+  expect(terrain.customProgramCacheKey()).toEndWith(":thermal-terrain-v6");
+  expect(vegetation.customProgramCacheKey()).toEndWith(":thermal-instanced-v6");
+  expect(rocks.customProgramCacheKey()).toEndWith(":thermal-instanced-v6");
+  expect(animals.customProgramCacheKey()).toEndWith(":thermal-actor-v6");
 });
 
 test("Thermal Perception wins the final color over a carried echo ramp", () => {

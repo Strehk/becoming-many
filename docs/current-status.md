@@ -347,6 +347,16 @@ Test landscape by selecting `designTest.level.ts`.
   living body does not radiate onto itself. The source count is bounded by
   the module and injected into the shared fragment stage as a compile-time
   array size.
+- Every reading a surface computes for itself is folded into the warmth band
+  its material belongs to, with both ends approached asymptotically inside a
+  soft knee, so no surface leaves the range its substance would occupy and
+  none piles into a plateau at the edge of it. The bands carry the material
+  hierarchy: ground and rock stay in the violet-to-cyan end, plants reach
+  magenta and orange where they are exposed, and only living bodies own the
+  hottest colors. Terrain's own elevation, forest, and slope mapping is scaled
+  to that end rather than left to the band to catch, and warmth radiated by a
+  nearby body is added after the band, the one thing that may carry a surface
+  past its own range.
 - A per-consumer contrast curve then gives each surface its definition. It is
   monotone and smooth, fixing cold, an authored pivot, and full heat in place
   while steepening in between, so readings that differ separate further and

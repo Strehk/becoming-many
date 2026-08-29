@@ -17,6 +17,8 @@ uniform vec4 thermalHeatBodies[THERMAL_HEAT_SOURCES];
 uniform vec4 thermalHeatAxes[THERMAL_HEAT_SOURCES];
 uniform float thermalHeatEdgeMeters;
 uniform vec2 thermalContrast;
+uniform vec2 thermalBand;
+uniform float thermalBandKnee;
 uniform vec3 thermalColdestColor;
 uniform vec3 thermalColdColor;
 uniform vec3 thermalCoolColor;
@@ -148,6 +150,26 @@ float thermalDefinedWarmth(float warmth) {
   return mix(warmth, shaped, thermalContrast.x);
 }
 
+/*
+ * Fold a reading into the temperature range its own material belongs to.
+ * Both ends approach asymptotically inside a soft knee, so ground cannot
+ * climb into the colors of a living body however its elevation, texture, and
+ * contrast happen to add up, and nothing piles into a flat plateau at the
+ * edge of the band. Outside the knees the reading passes through untouched.
+ */
+float thermalBandedWarmth(float warmth) {
+  float knee = max(thermalBandKnee, 0.0001);
+  float overCeiling = warmth - (thermalBand.y - knee);
+  if (overCeiling > 0.0) {
+    return thermalBand.y - knee * exp(-overCeiling / knee);
+  }
+  float underFloor = (thermalBand.x + knee) - warmth;
+  if (underFloor > 0.0) {
+    return thermalBand.x + knee * exp(-underFloor / knee);
+  }
+  return warmth;
+}
+
 vec3 applyThermalPerception(vec3 baseColor) {
   float senseReach = 1.0 - smoothstep(
     thermalRadiusMeters - thermalEdgeFeatherMeters,
@@ -168,20 +190,25 @@ vec3 applyThermalPerception(vec3 baseColor) {
   float textureGain =
     1.0 -
     smoothstep(thermalTextureShape.z, 1.0, warmth) * thermalTextureShape.w;
-  // Radiated warmth is added on top of the surface's own reading, so ground
-  // inside a warm pool keeps the variation it had rather than flooding flat.
+  warmth = clamp(warmth + texture * thermalTextureWarmth * textureGain, 0.0, 1.0);
+  // Definition next: the curve acts on the surface's own finished reading, so
+  // its base warmth, its internal gradient, and its texture all gain contrast
+  // from the same natural temperature difference.
+  warmth = thermalDefinedWarmth(warmth);
+  // Then the material's own range closes over all of it.
+  warmth = thermalBandedWarmth(warmth);
+  // Radiated warmth is added last and outside the band: heat borrowed from a
+  // body nearby is not the surface's own temperature, and it is the one thing
+  // that may carry ground past the range its substance would ever reach. It
+  // is added on top of the surface's reading, so ground inside a warm pool
+  // keeps the variation it had rather than flooding flat.
   warmth = clamp(
     warmth +
-      texture * thermalTextureWarmth * textureGain +
       thermalHeatResponse *
         thermalRadiatedWarmth(texture * thermalHeatEdgeMeters),
     0.0,
     1.0
   );
-  // Definition last: the curve acts on the finished reading, so the body
-  // core, the radiated pool, and the surface texture all gain contrast from
-  // the same natural temperature difference instead of separate treatments.
-  warmth = thermalDefinedWarmth(warmth);
 
   vec3 ramp = mix(
     thermalColdestColor,

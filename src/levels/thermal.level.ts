@@ -42,25 +42,36 @@ export const level: LevelPreset = {
       hottestColor: 0xfcce43,
     },
     surfaces: {
-      // Plants hold mid warmth with wide per-plant variation, so a stand
-      // fans across cyan into orange instead of massing into one tone; rocks
-      // sit cooler and vary less, so living things stay the warmer read.
-      // Each object then carries its own gradient: a plant holds its heat at
-      // the trunk and near the ground and sheds it toward an outer canopy
-      // open to the sky, while a rock is warmest on the face the sun reaches
-      // and cooler down its shaded flanks.
-      vegetationWarmth: 0.52,
-      vegetationWarmthSpread: 0.2,
-      vegetationHeightWarmthPerMeter: -0.02,
-      vegetationAxisWarmthPerMeter: -0.03,
+      // Plants are the warmest thing in the world that is not alive, and the
+      // warmth sits where the plant meets the sky: the base warmth is what a
+      // shaded trunk holds, and the gradient carries heat up and outward, so
+      // a crown and its fine outer branches read warmer than the stem that
+      // holds them. Only tall plants gain much from it, which is why a low
+      // shrub stays near its trunk temperature while a tree crown climbs.
+      vegetationWarmth: 0.4,
+      vegetationWarmthSpread: 0.14,
+      vegetationHeightWarmthPerMeter: 0.022,
+      vegetationAxisWarmthPerMeter: 0.015,
       vegetationTextureWarmth: 0.07,
-      vegetationContrast: 0.5,
-      rockWarmth: 0.26,
-      rockWarmthSpread: 0.14,
-      rockHeightWarmthPerMeter: 0.22,
-      rockAxisWarmthPerMeter: -0.07,
+      vegetationContrast: 0.45,
+      // Rock is cold, heavy substance: it sits near the ground's own range,
+      // warmest on the face the sun reaches and cooler down its flanks.
+      rockWarmth: 0.2,
+      rockWarmthSpread: 0.1,
+      rockHeightWarmthPerMeter: 0.05,
+      rockAxisWarmthPerMeter: -0.03,
       rockTextureWarmth: 0.05,
-      rockContrast: 0.5,
+      rockContrast: 0.3,
+    },
+    // What each material's own substance may reach, whatever its elevation,
+    // gradient, texture, and contrast add up to. Ground and rock are held in
+    // the violet-to-cyan end; plants may climb into magenta and orange where
+    // they are exposed; only a living body owns the hottest colors.
+    bands: {
+      terrain: { floorWarmth: 0.02, ceilingWarmth: 0.36 },
+      vegetation: { floorWarmth: 0.2, ceilingWarmth: 0.78 },
+      rocks: { floorWarmth: 0.04, ceilingWarmth: 0.36 },
+      animals: { floorWarmth: 0.4, ceilingWarmth: 1 },
     },
     // The organic texture over the ground: deep enough to break the elevation
     // ramp into mottled patches, shallow next to the 0.45 span that ramp
@@ -68,8 +79,10 @@ export const level: LevelPreset = {
     terrainTextureWarmth: 0.07,
     // Definition: the ground's readings cluster low on the ramp, so pulling
     // them apart around that cluster separates hollow from ridge and forest
-    // from meadow without touching either end of the palette.
-    terrainContrast: 0.55,
+    // from meadow. It stays the gentlest curve in the world, because the
+    // ground's band is narrow and a stronger one would only press its upper
+    // half against the ceiling instead of separating anything.
+    terrainContrast: 0.3,
     // Warm-blooded animals are the hottest thing in the world: the body core
     // reaches the yellow end of the ramp outright, and the falloff carries
     // legs, snouts, and tails back down into the magenta and cyan bands.
