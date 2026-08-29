@@ -347,6 +347,14 @@ Test landscape by selecting `designTest.level.ts`.
   living body does not radiate onto itself. The source count is bounded by
   the module and injected into the shared fragment stage as a compile-time
   array size.
+- A per-consumer contrast curve then gives each surface its definition. It is
+  monotone and smooth, fixing cold, an authored pivot, and full heat in place
+  while steepening in between, so readings that differ separate further and
+  neither end clips; there is no plateau anywhere that could posterize into a
+  band and no edge detection that could draw an outline. Each pivot sits on
+  the warmth that consumer's own readings cluster around, and the curve acts
+  on the finished reading, so body cores, radiated pools, and surface texture
+  all sharpen from the same temperature difference.
 - The composition root orders thermal first in every effect list because
   the first-applied patch executes last and wins the final surface color
   (documented in the shared `material-shader-patch.ts` helper, which all

@@ -5,7 +5,13 @@
  * Boundary: Consumers own materials and geometry; colors outside the radius stay theirs.
  */
 
-import { Color, type Matrix4, type MeshBasicMaterial, Vector4 } from "three";
+import {
+  Color,
+  type Matrix4,
+  type MeshBasicMaterial,
+  Vector2,
+  Vector4,
+} from "three";
 import type { UnlitMaterialEffect } from "../../utils/asset-loader/material-effect";
 import {
   applyShaderPatch,
@@ -35,9 +41,9 @@ export type {
  */
 const HEAT_SOURCE_DEFINE = `#define THERMAL_HEAT_SOURCES ${THERMAL_PERCEPTION_SETTINGS.heat.maxSources}`;
 
-const THERMAL_TERRAIN_CACHE_KEY = "thermal-terrain-v4";
-const THERMAL_INSTANCED_CACHE_KEY = "thermal-instanced-v4";
-const THERMAL_ACTOR_CACHE_KEY = "thermal-actor-v4";
+const THERMAL_TERRAIN_CACHE_KEY = "thermal-terrain-v5";
+const THERMAL_INSTANCED_CACHE_KEY = "thermal-instanced-v5";
+const THERMAL_ACTOR_CACHE_KEY = "thermal-actor-v5";
 
 /** Terrain variant; the sampler fills the per-vertex warmth attribute. */
 export interface ThermalTerrainEffect {
@@ -124,6 +130,10 @@ export function createThermalPerception(
       parameters.actorTextureWarmth,
       THERMAL_PERCEPTION_SETTINGS.texture.bodyFeatureFraction,
     ),
+    ...createContrastUniform(
+      parameters.actorContrast,
+      THERMAL_PERCEPTION_SETTINGS.definition.actorPivot,
+    ),
     thermalActorBodyShape: {
       value: new Vector4(
         actorBody.coreHeightFraction,
@@ -144,6 +154,10 @@ export function createThermalPerception(
           ...createTextureUniforms(
             parameters.terrainTextureWarmth,
             worldFeatureSize,
+          ),
+          ...createContrastUniform(
+            parameters.terrainContrast,
+            THERMAL_PERCEPTION_SETTINGS.definition.terrainPivot,
           ),
           ...HEAT_SENSED,
         },
@@ -166,6 +180,10 @@ export function createThermalPerception(
             parameters.surfaces.vegetationTextureWarmth,
             worldFeatureSize,
           ),
+          ...createContrastUniform(
+            parameters.surfaces.vegetationContrast,
+            THERMAL_PERCEPTION_SETTINGS.definition.vegetationPivot,
+          ),
           ...HEAT_SENSED,
         },
         vertexHeader: instancedVertexShader,
@@ -185,6 +203,10 @@ export function createThermalPerception(
           ...createTextureUniforms(
             parameters.surfaces.rockTextureWarmth,
             worldFeatureSize,
+          ),
+          ...createContrastUniform(
+            parameters.surfaces.rockContrast,
+            THERMAL_PERCEPTION_SETTINGS.definition.rockPivot,
           ),
           ...HEAT_SENSED,
         },
@@ -276,6 +298,14 @@ function createHeatSourceField(
   };
 }
 
+/** How far one consumer's contrast curve is applied, and where it is steepest. */
+function createContrastUniform(
+  amount: number,
+  pivot: number,
+): Record<string, { value: Vector2 }> {
+  return { thermalContrast: { value: new Vector2(amount, pivot) } };
+}
+
 /** Depth and patch size of the organic texture for one consumer. */
 function createTextureUniforms(
   textureWarmth: number,
@@ -360,6 +390,10 @@ function validateThermalPerceptionParameters(
     parameters.surfaces.vegetationTextureWarmth,
     parameters.surfaces.rockTextureWarmth,
     parameters.heatEmission.strength,
+    parameters.terrainContrast,
+    parameters.actorContrast,
+    parameters.surfaces.vegetationContrast,
+    parameters.surfaces.rockContrast,
   ];
   if (!normalizedValues.every(isNormalized)) {
     throw new RangeError(

@@ -60,9 +60,25 @@ follows each animal's own height, so a stag blooms wider than a rat. This is
 the module's one per-frame input: the consumer reports its bodies each frame
 and nothing else about the field changes over time.
 
+Finally each surface is given definition. A monotone contrast curve pulls the
+finished reading away from an authored pivot: two halves meet there, each flat
+at its own end and steepest where they join, so cold, pivot, and full heat all
+stay in place while everything between them separates. Warmth that changes
+quickly across a surface therefore separates the most, and warmth that barely
+changes stays where it was — contrast without an outline, and without a
+plateau anywhere that could posterize into a band. The pivot belongs to the
+module (it is ramp shape, and each consumer's pivot sits on the warmth its own
+readings cluster around); the amount is authored per level. Living bodies
+carry the strongest curve, which pushes a core toward full heat while limbs
+fall past the warm stop, so an animal reads as a contoured shape rather than a
+warm blob. Because the curve acts last, the body core, the radiated pool, and
+the surface texture all gain their definition from the same temperature
+difference instead of from separate treatments.
+
 One shared uniform set (intensity, radius, feather, ramp stops, palette,
 texture shape, heat sources) is merged into every patched program, so all
-consumers respond to one sense intensity. The composition root applies the terrain variant through
+consumers respond to one sense intensity; texture depth, heat response, and
+contrast are authored per consumer. The composition root applies the terrain variant through
 `TerrainMaterialEffect` (whose optional `warmthAt` sampler triggers the
 attribute) and the other variants through the shared `UnlitMaterialEffect`
 contract; this module never imports a sibling module. All variants patch

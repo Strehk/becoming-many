@@ -62,6 +62,17 @@ export const THERMAL_PERCEPTION_SETTINGS = {
     quietAmount: 0.6, // Share of it removed at full heat.
   },
 
+  // Where each surface's contrast curve is steepest. The curve fixes zero,
+  // the pivot, and full heat in place and steepens in between, so putting the
+  // pivot on the warmth a surface's own readings cluster around expands the
+  // differences that carry its structure and leaves both ends unclipped.
+  definition: {
+    terrainPivot: 0.4,
+    vegetationPivot: 0.5,
+    rockPivot: 0.35,
+    actorPivot: 0.75,
+  },
+
   // How a living body radiates into what surrounds it. The emitter is a
   // segment along the animal's own body axis rather than a point, so the
   // warm pool is elongated nose to tail and turns as the animal turns
@@ -98,6 +109,9 @@ export interface ThermalPaletteColors {
  * radiating to the sky), positive warms upward (a sun-facing rock top).
  */
 export interface ThermalSurfaceWarmth {
+  /** How far each surface's contrast curve is applied, 0..1. */
+  readonly vegetationContrast: number;
+  readonly rockContrast: number;
   readonly vegetationWarmth: number;
   readonly vegetationWarmthSpread: number;
   readonly vegetationHeightWarmthPerMeter: number;
@@ -126,6 +140,9 @@ export interface ThermalPerceptionParameters {
   /** Depth of the organic texture laid over the sampled ground warmth. */
   readonly terrainTextureWarmth: number;
 
+  /** How far the ground's contrast curve is applied, 0..1. */
+  readonly terrainContrast: number;
+
   /** Peak warmth at a living animal's body core; the hottest reading there is. */
   readonly actorWarmth: number;
 
@@ -134,6 +151,9 @@ export interface ThermalPerceptionParameters {
 
   /** Depth of the organic texture across a living body. */
   readonly actorTextureWarmth: number;
+
+  /** How far a living body's contrast curve is applied, 0..1. */
+  readonly actorContrast: number;
 
   /** Warmth each living body radiates onto the surfaces around it. */
   readonly heatEmission: {

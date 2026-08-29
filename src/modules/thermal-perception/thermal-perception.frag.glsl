@@ -16,6 +16,7 @@ uniform int thermalHeatCount;
 uniform vec4 thermalHeatBodies[THERMAL_HEAT_SOURCES];
 uniform vec4 thermalHeatAxes[THERMAL_HEAT_SOURCES];
 uniform float thermalHeatEdgeMeters;
+uniform vec2 thermalContrast;
 uniform vec3 thermalColdestColor;
 uniform vec3 thermalColdColor;
 uniform vec3 thermalCoolColor;
@@ -124,6 +125,29 @@ float thermalRadiatedWarmth(float edgeOffsetMeters) {
   return radiated;
 }
 
+/*
+ * Pull warmth away from an authored pivot so nearby readings separate. Two
+ * halves meet at the pivot, each flat at its own end and steepest where they
+ * join, which fixes cold, pivot, and full heat in place while expanding
+ * everything between them. The curve is monotone and smooth, so structures
+ * gain contrast without an outline or a posterized band appearing: warmth
+ * that changes quickly across a surface separates the most, and warmth that
+ * barely changes stays where it was.
+ */
+float thermalDefinedWarmth(float warmth) {
+  float pivot = thermalContrast.y;
+  float shaped;
+  if (warmth < pivot) {
+    float local = warmth / max(pivot, 0.0001);
+    shaped = pivot * local * local;
+  } else {
+    float local = (warmth - pivot) / max(1.0 - pivot, 0.0001);
+    float remaining = 1.0 - local;
+    shaped = pivot + (1.0 - pivot) * (1.0 - remaining * remaining);
+  }
+  return mix(warmth, shaped, thermalContrast.x);
+}
+
 vec3 applyThermalPerception(vec3 baseColor) {
   float senseReach = 1.0 - smoothstep(
     thermalRadiusMeters - thermalEdgeFeatherMeters,
@@ -154,6 +178,10 @@ vec3 applyThermalPerception(vec3 baseColor) {
     0.0,
     1.0
   );
+  // Definition last: the curve acts on the finished reading, so the body
+  // core, the radiated pool, and the surface texture all gain contrast from
+  // the same natural temperature difference instead of separate treatments.
+  warmth = thermalDefinedWarmth(warmth);
 
   vec3 ramp = mix(
     thermalColdestColor,

@@ -34,16 +34,20 @@ const PARAMETERS: ThermalPerceptionParameters = {
     vegetationHeightWarmthPerMeter: -0.02,
     vegetationAxisWarmthPerMeter: -0.03,
     vegetationTextureWarmth: 0.07,
+    vegetationContrast: 0.5,
     rockWarmth: 0.3,
     rockWarmthSpread: 0.08,
     rockHeightWarmthPerMeter: 0.22,
     rockAxisWarmthPerMeter: -0.07,
     rockTextureWarmth: 0.05,
+    rockContrast: 0.5,
   },
   terrainTextureWarmth: 0.06,
+  terrainContrast: 0.55,
   actorWarmth: 0.92,
   actorExtremityFalloff: 0.4,
   actorTextureWarmth: 0.1,
+  actorContrast: 0.8,
   heatEmission: {
     strength: 0.3,
     reachPerBodyHeight: 1.6,
@@ -201,6 +205,26 @@ test("Thermal Perception bounds the warm bodies it tracks", () => {
   expect(shader.fragmentShader).toContain("#define THERMAL_HEAT_SOURCES");
 });
 
+test("Thermal Perception defines each surface around its own warmth band", () => {
+  const effects = createThermalEffects();
+  const terrainShader = compileEffect(effects.terrain);
+  const animalsShader = compileEffect(effects.animals(new Matrix4()));
+
+  // Living bodies carry the strongest curve, pivoted high between their core
+  // and their limbs; the ground's is gentler and pivoted low, where its own
+  // readings cluster.
+  const terrainContrast = terrainShader.uniforms.thermalContrast?.value;
+  const actorContrast = animalsShader.uniforms.thermalContrast?.value;
+  expect(terrainContrast.x).toBe(0.55);
+  expect(actorContrast.x).toBe(0.8);
+  expect(actorContrast.x).toBeGreaterThan(terrainContrast.x);
+  expect(actorContrast.y).toBeGreaterThan(terrainContrast.y);
+
+  // Each consumer is curved on its own, not through a shared uniform.
+  expect(actorContrast).not.toBe(terrainContrast);
+  expect(terrainShader.fragmentShader).toContain("thermalDefinedWarmth");
+});
+
 test("Thermal Perception gives each animated mesh its own body matrix", () => {
   const effects = createThermalEffects();
   const first = new Matrix4().makeTranslation(1, 0, 0);
@@ -238,10 +262,10 @@ test("Thermal Perception keeps one program per consumer geometry kind", () => {
   effects.rocks.applyTo(rocks);
   effects.animals(new Matrix4()).applyTo(animals);
 
-  expect(terrain.customProgramCacheKey()).toEndWith(":thermal-terrain-v4");
-  expect(vegetation.customProgramCacheKey()).toEndWith(":thermal-instanced-v4");
-  expect(rocks.customProgramCacheKey()).toEndWith(":thermal-instanced-v4");
-  expect(animals.customProgramCacheKey()).toEndWith(":thermal-actor-v4");
+  expect(terrain.customProgramCacheKey()).toEndWith(":thermal-terrain-v5");
+  expect(vegetation.customProgramCacheKey()).toEndWith(":thermal-instanced-v5");
+  expect(rocks.customProgramCacheKey()).toEndWith(":thermal-instanced-v5");
+  expect(animals.customProgramCacheKey()).toEndWith(":thermal-actor-v5");
 });
 
 test("Thermal Perception wins the final color over a carried echo ramp", () => {

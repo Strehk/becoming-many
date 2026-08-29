@@ -54,16 +54,22 @@ export const level: LevelPreset = {
       vegetationHeightWarmthPerMeter: -0.02,
       vegetationAxisWarmthPerMeter: -0.03,
       vegetationTextureWarmth: 0.07,
+      vegetationContrast: 0.5,
       rockWarmth: 0.26,
       rockWarmthSpread: 0.14,
       rockHeightWarmthPerMeter: 0.22,
       rockAxisWarmthPerMeter: -0.07,
       rockTextureWarmth: 0.05,
+      rockContrast: 0.5,
     },
     // The organic texture over the ground: deep enough to break the elevation
     // ramp into mottled patches, shallow next to the 0.45 span that ramp
     // covers, so the landscape's shape still leads the reading.
     terrainTextureWarmth: 0.07,
+    // Definition: the ground's readings cluster low on the ramp, so pulling
+    // them apart around that cluster separates hollow from ridge and forest
+    // from meadow without touching either end of the palette.
+    terrainContrast: 0.55,
     // Warm-blooded animals are the hottest thing in the world: the body core
     // reaches the yellow end of the ramp outright, and the falloff carries
     // legs, snouts, and tails back down into the magenta and cyan bands.
@@ -73,6 +79,10 @@ export const level: LevelPreset = {
     // it off above the quiet warmth, so a coat varies while the hot core
     // keeps a defined edge.
     actorTextureWarmth: 0.1,
+    // Living bodies get the strongest curve of anything in the world: it
+    // pushes the core toward full heat and the limbs down past the warm
+    // stop, so an animal reads as a contoured shape rather than a warm blob.
+    actorContrast: 0.8,
     // A body warms what surrounds it. The strength is a third of what the
     // ground's own elevation ramp spans, so a pool reads clearly while the
     // ground inside it keeps its own variation; the reach follows the
