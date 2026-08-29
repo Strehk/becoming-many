@@ -28,9 +28,9 @@ the concise entry point for the current implementation.
 - WASD and arrow-key flight along the mouse look direction
 - a user-triggered Three.js `immersive-vr` button
 
-The application currently selects `motion.level.ts` in its minimal browser
+The application currently selects `thermal.level.ts` in its minimal browser
 entry. It has one Level Runtime composition root and one render loop. The
-Thermal Perception level remains available by selecting `thermal.level.ts`
+Motion Perception level remains available by selecting `motion.level.ts`
 instead, the Echolocation level by selecting `echo.level.ts`, the
 Scent World base experiment by selecting `scent.level.ts`, and the Design
 Test landscape by selecting `designTest.level.ts`.
