@@ -40,11 +40,14 @@ export type {
  * The bounded source count is a compile-time array size in the shared
  * fragment stage, so it is injected rather than written twice.
  */
-const HEAT_SOURCE_DEFINE = `#define THERMAL_HEAT_SOURCES ${THERMAL_PERCEPTION_SETTINGS.heat.maxSources}`;
+const SHADER_DEFINES = [
+  `#define THERMAL_HEAT_SOURCES ${THERMAL_PERCEPTION_SETTINGS.heat.maxSources}`,
+  `#define THERMAL_TEXTURE_OCTAVES ${THERMAL_PERCEPTION_SETTINGS.texture.octaves}`,
+].join("\n");
 
-const THERMAL_TERRAIN_CACHE_KEY = "thermal-terrain-v6";
-const THERMAL_INSTANCED_CACHE_KEY = "thermal-instanced-v6";
-const THERMAL_ACTOR_CACHE_KEY = "thermal-actor-v6";
+const THERMAL_TERRAIN_CACHE_KEY = "thermal-terrain-v8";
+const THERMAL_INSTANCED_CACHE_KEY = "thermal-instanced-v8";
+const THERMAL_ACTOR_CACHE_KEY = "thermal-actor-v8";
 
 /** Terrain variant; the sampler fills the per-vertex warmth attribute. */
 export interface ThermalTerrainEffect {
@@ -94,6 +97,7 @@ export function createThermalPerception(
     thermalIntensity: { value: parameters.intensity },
     thermalRadiusMeters: { value: parameters.radiusMeters },
     thermalEdgeFeatherMeters: { value: parameters.edgeFeatherMeters },
+    thermalCarriedColorBlend: { value: parameters.carriedColorBlend },
     thermalRampStops: {
       value: new Vector4(
         THERMAL_PERCEPTION_SETTINGS.coldStopFraction,
@@ -116,8 +120,8 @@ export function createThermalPerception(
         THERMAL_PERCEPTION_SETTINGS.texture.quietAmount,
       ),
     },
-    thermalHeatEdgeMeters: {
-      value: THERMAL_PERCEPTION_SETTINGS.heat.edgeIrregularityMeters,
+    thermalHeatShapeMeters: {
+      value: THERMAL_PERCEPTION_SETTINGS.heat.shapeIrregularityMeters,
     },
     ...heat.uniforms,
   };
@@ -245,7 +249,7 @@ function createPatchApplier(
       ...variant,
       vertexAnchor: "#include <project_vertex>",
       vertexCall: "passThermalPerception(mvPosition, transformed);",
-      fragmentHeader: `${HEAT_SOURCE_DEFINE}\n${fragmentShader}`,
+      fragmentHeader: `${SHADER_DEFINES}\n${fragmentShader}`,
       colorFragmentCall:
         "diffuseColor.rgb = applyThermalPerception(diffuseColor.rgb);",
     });
@@ -394,6 +398,7 @@ function validateThermalPerceptionParameters(
 ): void {
   const normalizedValues = [
     parameters.intensity,
+    parameters.carriedColorBlend,
     parameters.surfaces.vegetationWarmth,
     parameters.surfaces.vegetationWarmthSpread,
     parameters.surfaces.rockWarmth,

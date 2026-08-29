@@ -58,12 +58,16 @@ export const THERMAL_PERCEPTION_SETTINGS = {
   // grid, checkerboard, or repeat can form; the quiet values then ease the
   // texture off the hottest surfaces so a living body core keeps its shape.
   texture: {
-    featureSizeMeters: 2.6, // Largest patch size on ground, plants, and rocks.
-    bodyFeatureFraction: 0.4, // The same, as a share of an actor's height.
-    lacunarity: 2.17, // Non-integer: octave periods never line up.
-    gain: 0.5, // Each finer octave contributes half of the last.
+    // Four octaves spanning roughly nine metres down to a third of one, so a
+    // wide clearing carries variation at its own size and still breaks up
+    // into fine grain close to. Fewer octaves left the large scales flat.
+    octaves: 4,
+    featureSizeMeters: 9, // Largest patch size on ground, plants, and rocks.
+    bodyFeatureFraction: 0.5, // The same, as a share of an actor's height.
+    lacunarity: 2.9, // Non-integer: octave periods never line up.
+    gain: 0.55, // Each finer octave's share of the one before it.
     quietWarmth: 0.8, // Warmth above which the texture starts easing off.
-    quietAmount: 0.6, // Share of it removed at full heat.
+    quietAmount: 0.45, // Share of it removed at full heat.
   },
 
   // Where each surface's contrast curve is steepest. The curve fixes zero,
@@ -91,7 +95,7 @@ export const THERMAL_PERCEPTION_SETTINGS = {
     maxSources: 4, // Matches the bounded count of visible animals.
     bodyHalfLengthFraction: 0.55, // Segment half length, as a share of height.
     coreHeightFraction: 0.45, // Height of the emitting axis above the ground.
-    edgeIrregularityMeters: 0.9, // Texture displacement of the pool's edge.
+    shapeIrregularityMeters: 1.8, // Texture displacement of the pool's shape.
   },
 
   // Instance world positions are quantized to this cell before hashing so all
@@ -157,6 +161,15 @@ export interface ThermalPerceptionParameters {
 
   /** Blend width of the fade back into the carried base color at the edge. */
   readonly edgeFeatherMeters: number;
+
+  /**
+   * Share of the carried world color kept visible inside the radius, 0..1.
+   * At zero the false color replaces the surface outright; raising it lets
+   * the grey echo world show through everywhere, so the heat image sits in
+   * that world rather than being painted over it, and the depth ramp's own
+   * near-dark to far-pale shading returns as a quiet cue underneath.
+   */
+  readonly carriedColorBlend: number;
   readonly colors: ThermalPaletteColors;
   readonly surfaces: ThermalSurfaceWarmth;
 

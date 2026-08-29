@@ -8,7 +8,10 @@ authored radius around the viewer: the vertex stage writes the camera-space
 radial distance (rotation-invariant, exactly like Echo Depth, so the radius
 still needs no camera position uniform), and the fragment stage feathers
 the six-stop palette ramp back into the underlying carried color at the radius
-edge. The warmth value 0..1 comes from a different source per consumer, and
+edge. The carried color also keeps an authored share of every sensed surface,
+so the false color reads as heat seen through the grey echo world rather than
+painted over it, and that ramp's own near-dark to far-pale shading stays
+underneath as a quiet depth cue. The warmth value 0..1 comes from a different source per consumer, and
 in every case it varies across the surface rather than flooding it with one
 tone. Terrain samples elevation plus zone conditions on the CPU into a
 per-vertex `thermalWarmth` attribute during row streaming (water reads cold
@@ -31,7 +34,8 @@ authored shape valid for every species. Grass has no material-effect hook
 (raw shader) and is excluded, as it is from Echo Depth.
 
 On top of that measured warmth, the fragment stage lays one organic texture:
-three octaves of value noise, each turned by an orthonormal rotation and
+several octaves of value noise spanning roughly nine metres down to a third
+of one, each turned by an orthonormal rotation and
 stepped by a non-integer factor, so neither the lattice axes nor the octave
 periods can line up into a grid, a checkerboard, or a repeat. It is sampled
 per fragment rather than per vertex, so its detail is not bounded by mesh
@@ -56,8 +60,12 @@ their own reading, which keeps their variation inside a warm pool instead of
 flooding it flat; a living body does not radiate onto itself. Because the
 emitter is a segment rather than a point, the pool is as long as the animal
 and turns with it, and displacing the measured distance by the texture field
-breaks its boundary into an irregular bloom instead of an oval. The reach
-follows each animal's own height, so a stag blooms wider than a rat. This is
+pulls the bloom out of symmetry so it never reads as a shape laid on the
+ground. The falloff has a gaussian tail and a spread several times the
+animal's own height, so the warmth thins out over many metres and never
+reaches a distance where it stops: there is no boundary anywhere that could
+read as a ring. The spread follows each animal's height, so a stag blooms
+wider than a rat. This is
 the module's one per-frame input: the consumer reports its bodies each frame
 and nothing else about the field changes over time.
 

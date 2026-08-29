@@ -301,7 +301,9 @@ Test landscape by selecting `designTest.level.ts`.
 - Thermal Perception is the level-05 material-effect family: one shared
   radius-and-palette uniform set (intensity, 60-metre viewer radius,
   20-metre feather, six-stop false-color ramp) with a per-consumer warmth
-  source. The radius is the camera-space view distance already used by
+  source, and an authored share of the carried echo color stays visible on
+  every sensed surface so the false color sits inside the grey world instead
+  of replacing it. The radius is the camera-space view distance already used by
   Echo Depth, so the radius itself needs no camera uniform. The one
   per-frame input is the set of warm bodies (see local heat emission
   below); nothing else about the field changes over time.
@@ -323,7 +325,9 @@ Test landscape by selecting `designTest.level.ts`.
   it. The falloff is authored in fractions of each actor's own height, so
   one core fits every species without per-species values.
 - One organic texture then varies the warmth of every sensed surface. The
-  fragment stage sums three octaves of value noise, each turned by an
+  fragment stage sums several octaves of value noise, spanning roughly nine
+  metres down to a third of one so a wide surface varies at its own size and
+  still breaks into fine grain close to, each turned by an
   orthonormal rotation and stepped by a non-integer factor so no grid,
   checkerboard, or repeat can form; sampling per fragment keeps the detail
   independent of mesh density. Ground, plants, and rocks sample it in world
@@ -342,8 +346,10 @@ Test landscape by selecting `designTest.level.ts`.
   packs each body as an oriented segment on its own axis and every sensed
   surface adds the radiated warmth on top of its own reading, so ground
   inside a pool keeps its variation, the pool lies along the animal and turns
-  with it rather than ringing it, its edge is displaced by the texture field
-  into an irregular bloom, and its reach follows the animal's own size. A
+  with it rather than ringing it, its shape is pulled out of symmetry by the
+  texture field, and its gaussian tail spreads over several times the
+  animal's own height without ever reaching a distance where it stops, so no
+  boundary can read as a ring. A
   living body does not radiate onto itself. The source count is bounded by
   the module and injected into the shared fragment stage as a compile-time
   array size.

@@ -8,6 +8,7 @@
 uniform float thermalIntensity;
 uniform float thermalRadiusMeters;
 uniform float thermalEdgeFeatherMeters;
+uniform float thermalCarriedColorBlend;
 uniform vec4 thermalRampStops;
 uniform vec4 thermalTextureShape;
 uniform float thermalTextureWarmth;
@@ -15,7 +16,7 @@ uniform float thermalHeatResponse;
 uniform int thermalHeatCount;
 uniform vec4 thermalHeatBodies[THERMAL_HEAT_SOURCES];
 uniform vec4 thermalHeatAxes[THERMAL_HEAT_SOURCES];
-uniform float thermalHeatEdgeMeters;
+uniform float thermalHeatShapeMeters;
 uniform vec2 thermalContrast;
 uniform vec2 thermalBand;
 uniform float thermalBandKnee;
@@ -76,10 +77,12 @@ float thermalTextureNoise(vec3 samplePosition) {
 }
 
 /*
- * Three octaves, centred on zero. Each octave is turned by an orthonormal
+ * Several octaves, centred on zero. Each octave is turned by an orthonormal
  * rotation and stepped by a non-integer factor, so neither the lattice axes
  * nor the octave periods can ever line up: no grid, no checkerboard, and no
- * repeat, only irregular patches at three sizes at once.
+ * repeat, only irregular patches at every size at once. The coarsest octave
+ * is what keeps a wide flat surface from reading as one temperature; the
+ * finest is what keeps it from reading as smooth up close.
  */
 float thermalTextureField(vec3 samplePosition) {
   mat3 turn = mat3(
@@ -91,7 +94,7 @@ float thermalTextureField(vec3 samplePosition) {
   float amplitude = 1.0;
   float total = 0.0;
   float sum = 0.0;
-  for (int octave = 0; octave < 3; octave++) {
+  for (int octave = 0; octave < THERMAL_TEXTURE_OCTAVES; octave++) {
     sum += amplitude * thermalTextureNoise(point);
     total += amplitude;
     point = turn * point * thermalTextureShape.x;
@@ -104,9 +107,10 @@ float thermalTextureField(vec3 samplePosition) {
  * Warmth radiated onto this surface by the living bodies near it. Each body
  * emits along a segment on its own axis, so the pool is as long as the animal
  * and turns with it; displacing the measured distance by the texture field
- * breaks the boundary into an irregular bloom instead of an oval.
+ * pulls the bloom out of symmetry so it never reads as a shape laid on the
+ * ground.
  */
-float thermalRadiatedWarmth(float edgeOffsetMeters) {
+float thermalRadiatedWarmth(float shapeOffsetMeters) {
   float radiated = 0.0;
   for (int index = 0; index < THERMAL_HEAT_SOURCES; index++) {
     if (index >= thermalHeatCount) {
@@ -118,11 +122,13 @@ float thermalRadiatedWarmth(float edgeOffsetMeters) {
     float along = clamp(dot(toSurface.xz, axis.xy), -body.w, body.w);
     vec3 nearestOnBody = vec3(axis.x, 0.0, axis.y) * along;
     float distanceMeters =
-      length(toSurface - nearestOnBody) + edgeOffsetMeters;
-    // Squared falloff concentrates the heat where the body actually is and
-    // lets it thin out early, so the ground stays its own temperature.
-    float reach = 1.0 - smoothstep(0.0, axis.z, distanceMeters);
-    radiated += axis.w * reach * reach;
+      max(length(toSurface - nearestOnBody) + shapeOffsetMeters, 0.0);
+    // A gaussian tail: warmth thins out forever instead of stopping at a
+    // distance, so the pool has no edge anywhere to read as a ring, and its
+    // spread reaches far enough that the falloff is gradual throughout.
+    float spread = max(axis.z, 0.0001);
+    float reach = distanceMeters / spread;
+    radiated += axis.w * exp(-reach * reach);
   }
   return radiated;
 }
@@ -205,7 +211,7 @@ vec3 applyThermalPerception(vec3 baseColor) {
   warmth = clamp(
     warmth +
       thermalHeatResponse *
-        thermalRadiatedWarmth(texture * thermalHeatEdgeMeters),
+        thermalRadiatedWarmth(texture * thermalHeatShapeMeters),
     0.0,
     1.0
   );
@@ -235,5 +241,8 @@ vec3 applyThermalPerception(vec3 baseColor) {
     thermalHottestColor,
     smoothstep(thermalRampStops.w, 1.0, warmth)
   );
-  return mix(baseColor, ramp, sensed);
+  // The carried world keeps a fixed share of every sensed surface, so the
+  // false color reads as heat seen through that world instead of replacing
+  // it, and its near-dark to far-pale shading stays as a quiet depth cue.
+  return mix(baseColor, ramp, sensed * (1.0 - thermalCarriedColorBlend));
 }

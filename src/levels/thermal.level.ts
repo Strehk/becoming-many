@@ -33,6 +33,11 @@ export const level: LevelPreset = {
     // feathers back into the echo ramp well inside its 96 m far distance.
     radiusMeters: 60,
     edgeFeatherMeters: 20,
+    // Heat seen through the carried grey world rather than painted over it:
+    // roughly a fifth of the echo ramp stays visible everywhere inside the
+    // radius, which mutes the false color toward the world it belongs to and
+    // brings that ramp's near-dark to far-pale shading back as a depth cue.
+    carriedColorBlend: 0.22,
     colors: {
       coldestColor: 0x2e1386,
       coldColor: 0x0c47d1,
@@ -52,7 +57,7 @@ export const level: LevelPreset = {
       vegetationWarmthSpread: 0.14,
       vegetationHeightWarmthPerMeter: 0.022,
       vegetationAxisWarmthPerMeter: 0.015,
-      vegetationTextureWarmth: 0.07,
+      vegetationTextureWarmth: 0.14,
       vegetationContrast: 0.45,
       // Rock is cold, heavy substance: it sits near the ground's own range,
       // warmest on the face the sun reaches and cooler down its flanks.
@@ -60,7 +65,7 @@ export const level: LevelPreset = {
       rockWarmthSpread: 0.1,
       rockHeightWarmthPerMeter: 0.05,
       rockAxisWarmthPerMeter: -0.03,
-      rockTextureWarmth: 0.05,
+      rockTextureWarmth: 0.1,
       rockContrast: 0.3,
     },
     // What each material's own substance may reach, whatever its elevation,
@@ -76,7 +81,7 @@ export const level: LevelPreset = {
     // The organic texture over the ground: deep enough to break the elevation
     // ramp into mottled patches, shallow next to the 0.45 span that ramp
     // covers, so the landscape's shape still leads the reading.
-    terrainTextureWarmth: 0.07,
+    terrainTextureWarmth: 0.16,
     // Definition: the ground's readings cluster low on the ramp, so pulling
     // them apart around that cluster separates hollow from ridge and forest
     // from meadow. It stays the gentlest curve in the world, because the
@@ -91,18 +96,19 @@ export const level: LevelPreset = {
     // A quarter of what the core-to-limb falloff spans, and the shader eases
     // it off above the quiet warmth, so a coat varies while the hot core
     // keeps a defined edge.
-    actorTextureWarmth: 0.1,
+    actorTextureWarmth: 0.16,
     // Living bodies get the strongest curve of anything in the world: it
     // pushes the core toward full heat and the limbs down past the warm
     // stop, so an animal reads as a contoured shape rather than a warm blob.
     actorContrast: 0.8,
-    // A body warms what surrounds it. The strength is a third of what the
-    // ground's own elevation ramp spans, so a pool reads clearly while the
-    // ground inside it keeps its own variation; the reach follows the
-    // animal's size, so a stag blooms wider than a rat.
+    // A body warms what surrounds it, faintly and over a long distance. The
+    // spread is several times the animal's own height and the falloff has a
+    // gaussian tail, so the warmth thins out for metres without ever reaching
+    // an edge that could read as a ring; the strength is what it adds
+    // directly beneath the body, where the pool is at its warmest.
     heatEmission: {
-      strength: 0.3,
-      reachPerBodyHeight: 1.6,
+      strength: 0.2,
+      reachPerBodyHeight: 5,
     },
   },
 };

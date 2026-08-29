@@ -20,6 +20,7 @@ const PARAMETERS: ThermalPerceptionParameters = {
   intensity: 1,
   radiusMeters: 30,
   edgeFeatherMeters: 10,
+  carriedColorBlend: 0.22,
   colors: {
     coldestColor: 0x2e1386,
     coldColor: 0x0c47d1,
@@ -33,13 +34,13 @@ const PARAMETERS: ThermalPerceptionParameters = {
     vegetationWarmthSpread: 0.12,
     vegetationHeightWarmthPerMeter: 0.022,
     vegetationAxisWarmthPerMeter: 0.015,
-    vegetationTextureWarmth: 0.07,
+    vegetationTextureWarmth: 0.14,
     vegetationContrast: 0.5,
     rockWarmth: 0.3,
     rockWarmthSpread: 0.08,
     rockHeightWarmthPerMeter: 0.05,
     rockAxisWarmthPerMeter: -0.07,
-    rockTextureWarmth: 0.05,
+    rockTextureWarmth: 0.1,
     rockContrast: 0.5,
   },
   bands: {
@@ -48,15 +49,15 @@ const PARAMETERS: ThermalPerceptionParameters = {
     rocks: { floorWarmth: 0.04, ceilingWarmth: 0.36 },
     animals: { floorWarmth: 0.4, ceilingWarmth: 1 },
   },
-  terrainTextureWarmth: 0.06,
+  terrainTextureWarmth: 0.16,
   terrainContrast: 0.3,
   actorWarmth: 0.92,
   actorExtremityFalloff: 0.4,
-  actorTextureWarmth: 0.1,
+  actorTextureWarmth: 0.16,
   actorContrast: 0.8,
   heatEmission: {
-    strength: 0.3,
-    reachPerBodyHeight: 1.6,
+    strength: 0.2,
+    reachPerBodyHeight: 5,
   },
 };
 
@@ -78,6 +79,9 @@ test("Thermal Perception injects the radius-bounded ramp into both stages", () =
   expect(shader.uniforms.thermalIntensity?.value).toBe(1);
   expect(shader.uniforms.thermalRadiusMeters?.value).toBe(30);
   expect(shader.uniforms.thermalEdgeFeatherMeters?.value).toBe(10);
+  // The carried grey world keeps a share of every sensed surface.
+  expect(shader.uniforms.thermalCarriedColorBlend?.value).toBe(0.22);
+  expect(shader.fragmentShader).toContain("thermalCarriedColorBlend");
   expect(shader.uniforms.thermalColdestColor?.value.getHex()).toBe(0x2e1386);
   expect(shader.uniforms.thermalHottestColor?.value.getHex()).toBe(0xfcce43);
 });
@@ -134,10 +138,10 @@ test("Thermal Perception textures every sensed surface at its own depth", () => 
   const rocksShader = compileEffect(effects.rocks);
   const animalsShader = compileEffect(effects.animals(new Matrix4()));
 
-  expect(terrainShader.uniforms.thermalTextureWarmth?.value).toBe(0.06);
-  expect(vegetationShader.uniforms.thermalTextureWarmth?.value).toBe(0.07);
-  expect(rocksShader.uniforms.thermalTextureWarmth?.value).toBe(0.05);
-  expect(animalsShader.uniforms.thermalTextureWarmth?.value).toBe(0.1);
+  expect(terrainShader.uniforms.thermalTextureWarmth?.value).toBe(0.16);
+  expect(vegetationShader.uniforms.thermalTextureWarmth?.value).toBe(0.14);
+  expect(rocksShader.uniforms.thermalTextureWarmth?.value).toBe(0.1);
+  expect(animalsShader.uniforms.thermalTextureWarmth?.value).toBe(0.16);
 
   // World surfaces share one patch size in metres; a body measures its own
   // texture as a share of its height, so every species carries like detail.
@@ -155,6 +159,10 @@ test("Thermal Perception textures every sensed surface at its own depth", () => 
 
   // The texture is multi-scale and reaches the ramp before the palette does.
   expect(terrainShader.fragmentShader).toContain("thermalTextureField");
+  // Multi-scale: the octave count reaches the shader as a compile-time bound.
+  expect(terrainShader.fragmentShader).toContain(
+    "#define THERMAL_TEXTURE_OCTAVES",
+  );
   expect(terrainShader.vertexShader).toContain("thermalTexturePosition");
   expect(terrainShader.uniforms.thermalTextureShape).toBe(
     animalsShader.uniforms.thermalTextureShape as never,
@@ -186,8 +194,8 @@ test("Thermal Perception radiates warmth from the bodies it is told about", () =
   expect(body.x).toBe(4);
   expect(body.y).toBeGreaterThan(-8);
   expect(body.w).toBeGreaterThan(0);
-  expect(axis.z).toBeCloseTo(1.4 * 1.6, 5);
-  expect(axis.w).toBe(0.3);
+  expect(axis.z).toBeCloseTo(1.4 * 5, 5);
+  expect(axis.w).toBe(0.2);
 
   // Ground, plants, and rocks answer to it; a living body does not.
   expect(terrainShader.uniforms.thermalHeatResponse?.value).toBe(1);
@@ -302,10 +310,10 @@ test("Thermal Perception keeps one program per consumer geometry kind", () => {
   effects.rocks.applyTo(rocks);
   effects.animals(new Matrix4()).applyTo(animals);
 
-  expect(terrain.customProgramCacheKey()).toEndWith(":thermal-terrain-v6");
-  expect(vegetation.customProgramCacheKey()).toEndWith(":thermal-instanced-v6");
-  expect(rocks.customProgramCacheKey()).toEndWith(":thermal-instanced-v6");
-  expect(animals.customProgramCacheKey()).toEndWith(":thermal-actor-v6");
+  expect(terrain.customProgramCacheKey()).toEndWith(":thermal-terrain-v8");
+  expect(vegetation.customProgramCacheKey()).toEndWith(":thermal-instanced-v8");
+  expect(rocks.customProgramCacheKey()).toEndWith(":thermal-instanced-v8");
+  expect(animals.customProgramCacheKey()).toEndWith(":thermal-actor-v8");
 });
 
 test("Thermal Perception wins the final color over a carried echo ramp", () => {
