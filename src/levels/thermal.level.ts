@@ -29,10 +29,10 @@ export const level: LevelPreset = {
   thermal: {
     // Full sense strength until a dramaturgy driver exists.
     intensity: 1,
-    // Heat is a near sense: the false-color view reaches 30 metres and
-    // feathers back into the echo ramp well inside its 120 m far distance.
-    radiusMeters: 30,
-    edgeFeatherMeters: 10,
+    // Heat is a near sense: the false-color view reaches 60 metres and
+    // feathers back into the echo ramp well inside its 96 m far distance.
+    radiusMeters: 60,
+    edgeFeatherMeters: 20,
     colors: {
       coldestColor: 0x2e1386,
       coldColor: 0x0c47d1,
