@@ -229,17 +229,20 @@ landscape by selecting `designTest.level.ts`.
 
 ### Animals
 
-- Deer, Stag, Fox, and Rat provide ten cloned actors in authored per-species
-  counts with explicit allowed zones, walk clip, target metre height, and speed.
+- Deer, Stag, Fox, and Rat provide seventeen cloned actors in authored
+  per-species counts with explicit allowed zones, walk clip, target metre
+  height, and speed. The population is larger than the visible budget: hidden
+  actors still walk and still relocate, so the visible slots always select from
+  a world that has been living.
 - Deterministic habitat search gives actors separate angular territories around
   the player, interleaves species, and chooses the nearest point allowed for
   each species. Simple movement follows `surfaceYAt()`, turns before a
   disallowed zone, and relocates actors outside the bounded active radius.
-- The Test Level selects at most four actors from separate directions before
+- The Test Level selects at most six actors from separate directions before
   filling vacant slots by distance. Animals do not import or query concrete
   sibling modules. Their animated mesh parts use the small population limit
   instead of stale static animation bounds.
-- The same four visible actors derive a local surface normal from four nearby
+- The same six visible actors derive a local surface normal from four nearby
   height samples. Their body follows the slope while its forward axis remains
   aligned with movement; hidden actors incur no orientation sampling cost.
 - Unload stops mixers, releases clone skeletons, and disposes source assets.
@@ -308,6 +311,13 @@ landscape by selecting `designTest.level.ts`.
   Echo Depth, so the effect needs no camera uniform; each ramp segment
   interpolates linearly, because a smoothstep chain flattens to zero slope
   at every stop and reads as a color band.
+- The cold end of that ramp is transparent rather than colored: below 0.18
+  warmth the carried echo depth map shows through untouched, and the false
+  color fades in to fully opaque by 0.62. Heat reads as a highlight inside
+  the depth world — water and cold ground carry no false color, warm
+  ground is tinted, and a living body is the only thing opaque enough to
+  hide the depth map. The fade is independent of the radius feather and
+  multiplies with it.
 - Warmth is a continuous field varying across each object rather than one
   value per object. Terrain declares an optional `warmthAt` sampler on its
   material-effect contract: during row-bounded chunk streaming it samples
@@ -318,10 +328,16 @@ landscape by selecting `designTest.level.ts`.
   hash their quantized instance world position into a stable base warmth
   and then vary it across the model through zero-mean height and axis
   gradients and an organic grain; Animals gained the shared `effects`
-  option and hold their authored warmth at a body core that cools off
-  outward, anchored to the bind pose so the pattern does not swim during
-  the walk cycle. All three carry a grazing-angle term that keeps
-  silhouettes readable.
+  option and hold their authored warmth in a torso core and a head lobe,
+  anchored to the bind pose so the pattern does not swim during the walk
+  cycle. The animal core is a lobe in both normalized height and distance
+  from the body's vertical axis — the two coordinates that survive the
+  actor's heading — so heat sits in the deep trunk and falls away
+  smoothly through the flanks to nose, tail, and hooves. It is the only
+  thing in the level that reaches the top of the ramp, and the fragment
+  detail on animals is held far under the profile's span so the gradient
+  reads rather than the grain. All three carry a grazing-angle term that
+  keeps silhouettes readable.
 - Warm bodies pool heat on the ground beneath them: Animals publishes the
   world positions of its rendered actors through `forEachVisibleActor`,
   the terrain thermal variant consumes them through

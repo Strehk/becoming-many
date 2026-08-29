@@ -5,8 +5,8 @@ The first animal set contains four unique animated GLB files. The Deer URL was s
 ## Current Runtime Status
 
 The files and manifest exist under `public/animals`. Test Level loads all four
-models from `/animals/...`; authored species counts produce ten actors while
-only the nearest four animation mixers advance.
+models from `/animals/...`; authored species counts produce seventeen actors
+while only the nearest six animation mixers advance.
 
 ## Inventory
 

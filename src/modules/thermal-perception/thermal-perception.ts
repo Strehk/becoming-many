@@ -128,6 +128,12 @@ export function createThermalPerception(
     thermalSegmentEase: {
       value: THERMAL_PERCEPTION_SETTINGS.ramp.segmentEase,
     },
+    thermalHeatVisibility: {
+      value: new Vector2(
+        THERMAL_PERCEPTION_SETTINGS.ramp.transparentBelowWarmth,
+        THERMAL_PERCEPTION_SETTINGS.ramp.opaqueAboveWarmth,
+      ),
+    },
     thermalColdestColor: {
       value: createRampColor(parameters.colors.coldestColor),
     },
@@ -462,6 +468,12 @@ function createActorWarmthUniforms(
         structure.coreOuterFraction,
       ),
     },
+    thermalCoreRadiusSpread: {
+      value: new Vector2(
+        structure.coreRadiusInnerFraction,
+        structure.coreRadiusOuterFraction,
+      ),
+    },
     thermalHeadHeightFraction: { value: structure.headHeightFraction },
     thermalHeadSpread: {
       value: new Vector2(
@@ -484,10 +496,11 @@ function createActorWarmthUniforms(
  * one 0..1 warmth.
  *
  * The budget is the point of this function: floor, exposure, and mottling
- * together reach 0.62, well under the environment ceiling. Ground that
- * saturated the top of the ramp is what let a sunlit forest slope read hotter
- * than a deer, and it left the heat pools warm bodies leave behind nowhere to
- * go but a flat clipped disc.
+ * together reach 0.48, far under the environment ceiling, so the warmest ground
+ * in the world still lands in the cool half of the ramp. Ground that saturated
+ * the top of the ramp is what let a sunlit forest slope read hotter than a
+ * deer, and it left the heat pools warm bodies leave behind nowhere to go but a
+ * flat clipped disc.
  */
 function createTerrainWarmthSampler({
   surfaceSettings,

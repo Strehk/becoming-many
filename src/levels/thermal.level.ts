@@ -36,9 +36,13 @@ export const level: LevelPreset = {
     },
   },
   // Level 05 palette from docs/levels/README.md: #2E1386 #0C47D1 #2EB4E8
-  // #D5198A #FB5F16 #FCCE43, mapped cold to hot. These six are anchors, not
-  // the visible colors: the module interpolates between them in gamma space,
-  // so what the level actually shows is the continuous gradient through them.
+  // #D5198A #FB5F16 #FCCE43, mapped cold to hot. An ironbow ramp was tried in
+  // its place on 2026-08-29 and reverted the same day; the decision log in
+  // docs/levels/05-thermal-perception/README.md keeps what that showed.
+  //
+  // These six are anchors, not the visible colors: the module interpolates
+  // between them in gamma space, so what the level actually shows is the
+  // continuous gradient through them.
   thermal: {
     // Full sense strength until a dramaturgy driver exists.
     intensity: 1,
@@ -47,10 +51,17 @@ export const level: LevelPreset = {
     radiusMeters: 30,
     edgeFeatherMeters: 10,
     colors: {
+      // Water and the coldest ground, which the transparent cold end of the
+      // ramp now leaves almost entirely to the carried echo depth map.
       coldestColor: 0x2e1386,
       coldColor: 0x0c47d1,
+      // Where the cooled ground budget lands: dry ground climbs from blue
+      // through cyan toward magenta with elevation and exposure, and stops
+      // well short of the warm end.
       coolColor: 0x2eb4e8,
       warmColor: 0xd5198a,
+      // The top two anchors belong to living bodies alone. Nothing that is
+      // not alive can reach the environment ceiling, which sits below them.
       hotColor: 0xfb5f16,
       hottestColor: 0xfcce43,
     },
@@ -64,9 +75,11 @@ export const level: LevelPreset = {
       rockWarmth: 0.31,
       rockWarmthSpread: 0.11,
     },
-    // Core body temperature. It has to clear the module's environment ceiling
-    // by enough that the whole body — torso down through legs to hooves —
-    // still reads as alive against the ground the animal stands on.
-    actorWarmth: 0.95,
+    // Core body temperature, and the one place in this world that reaches the
+    // top of the ramp: an animal's deep core and its face land on #FCCE43 and
+    // nothing else ever does. The module takes the rest of the body down from
+    // here, and the whole span still clears the environment ceiling, so even a
+    // hoof reads as alive against the ground the animal stands on.
+    actorWarmth: 1,
   },
 };

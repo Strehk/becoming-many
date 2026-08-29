@@ -152,8 +152,9 @@ the level shows is the continuous gradient through them.
   row-bounded chunk generation (the same order of work as the Terrain
   Colors presentation path) and uploads one extra float attribute
   (~4 KB per 33×33 chunk).
-- Animals add their bounded population cost (at most four visible actors,
-  unchanged from the Test Level budget).
+- Animals add their bounded population cost (at most six visible actors, the
+  same budget the Test Level now carries), and terrain fragments evaluate one
+  ground heat pool per visible actor.
 - No hardware desktop measurement has been recorded for this level yet.
 - The standalone PICO 4 / 90 FPS gate is not yet measured; no 72 Hz or
   90 Hz headset claim is approved.
@@ -181,17 +182,77 @@ the level shows is the continuous gradient through them.
   fixes one stable base temperature per plant, and zero-mean height and
   axis gradients plus an organic grain vary it across trunk, branches, and
   foliage, so the authored value keeps its meaning as the plant average.
-- Animal body profile (decided 2026-08-28, replacing the earlier
-  fixed-metre body core): `actorWarmth` is the core body temperature, and
-  the distribution around it is a torso band plus a separate head-and-neck
-  lobe, both placed as fractions of the species' own body height, with a
-  cooler slice at the top for ears and antler tips and a smooth falloff
-  downward through legs into cold hooves. Normalized height is the only
-  body coordinate used, because the actor's world offset turns with its
-  heading and height is the one coordinate that survives without the
-  sense learning which way each species faces; it also carries almost all
-  of the information in a thermal image of a standing quadruped. The cost
-  is that a deer's head and its rump sit in the same warm band.
+- Transparent cold end (decided 2026-08-29): the coldest end of the ramp
+  stopped being a color. Below 0.18 warmth the heat view is fully
+  transparent and the carried echo depth map shows through untouched;
+  the false color fades in with temperature and is fully opaque by 0.62.
+  Heat is now a highlight inside the depth world rather than an image
+  that replaces it: water and cold ground carry no false color at all,
+  warm ground is tinted, and a living body is the only thing solid enough
+  to hide the depth map underneath it. The stop sits below the
+  environment ceiling on purpose, so no part of an animal is ever
+  half-there; a test locks that. This is a second fade independent of the
+  radius feather, and the two multiply — one bounds the sense in space,
+  the other in temperature. It also settles what the first ramp anchor is
+  for: it now only ever appears part-way faded, as a cool wash over the
+  depth image rather than as a color anything actually reads as.
+- Ground budget lowered (decided 2026-08-29): terrain's floor, exposure,
+  and mottling were cut from 0.62 to 0.48 at the top, with water dropping
+  from 0.11 to 0.07 at the shoreline. Ground is the backdrop bodies are
+  read against, and the warmest patch in the world belongs in the cool
+  half of the ramp. Together with the transparent cold end this is what
+  leaves a typical meadow reading as almost pure echo depth.
+- Ironbow palette (tried and reverted 2026-08-29): the six anchors were
+  briefly replaced with a camera-style ironbow ramp — `#200A4E` `#2E3CC8`
+  `#D0342C` `#F97B14` `#FFD84A` `#FFFFFF`, dark purple and blue at the
+  cold end, red and orange through the middle, bright yellow and white at
+  the top — and the documented moodboard palette was restored the same
+  day. The level keeps `#2E1386` `#0C47D1` `#2EB4E8` `#D5198A` `#FB5F16`
+  `#FCCE43`.
+
+  One observation from the attempt is worth keeping, because it is a real
+  property of the moodboard ramp rather than an argument for replacing
+  it: brightness does not rise monotonically across the anchors. The cyan
+  stop is brighter (0.39 relative luminance) than the magenta above it
+  (0.17), so a mid temperature can look brighter than a higher one, and
+  ordering two readings by eye depends on hue rather than on brightness.
+  The transparent cold end and the lowered ground budget both reduce how
+  often that matters, since the cyan band now mostly appears part-way
+  faded over the depth image.
+- Animal body profile (decided 2026-08-28, revised 2026-08-29):
+  `actorWarmth` is the core body temperature, and the distribution around
+  it is a torso core plus a separate head-and-neck lobe, both placed as
+  fractions of the species' own body height, with a cooler slice at the
+  top for ears and antler tips and a smooth falloff downward through legs
+  into cold hooves.
+
+  The 2026-08-29 revision added the second body coordinate and took the
+  texture off the animals. The torso core is now a lobe in *two*
+  coordinates — normalized height and distance from the body's own
+  vertical axis — because the actor's world offset turns with its heading
+  and those are the two coordinates that survive it: rotating a body
+  turns it around exactly that axis. Height alone made one horizontal
+  slab of body read equally hot end to end, so a deer's head and its rump
+  sat in the same warm band; the radial term keeps the heat in the deep
+  trunk and lets it fall away through the flanks toward nose and tail.
+  The core's inner width also narrowed, so the top of the ramp is a place
+  on the animal rather than a plateau across a third of it, and
+  `actorWarmth` was authored up to 1.0: a living core and a face are now
+  the only things in this world that reach `#FCCE43`. The remaining cost
+  is that the profile still cannot tell a head from a tail — the head
+  lobe is a height, so a species carrying its head low would need a
+  forward axis the sense does not have.
+- Animal texture subordinate to the gradient (decided 2026-08-29): the
+  fragment detail on animals is now roughly a third of its previous
+  amplitude at two thirds of its wavelength, and the hotspot tail dropped
+  from the strongest in the scene (0.085) to 0.02. Animals were carrying
+  the same texture as the ground, and the hotspots in particular put
+  bright patches wherever the noise field happened to peak — heat that
+  the viewer reads as coming from somewhere on the body rather than from
+  the body's own structure. An animal is the one thing in this world
+  heated from inside, so on a body the detail is grain over a temperature
+  and never the temperature itself; a test locks the whole detail budget
+  under a third of the profile's core-to-hoof span.
 - Species body height crosses the boundary (decided 2026-08-28): a
   distribution in fractions of body height needs the body height, so
   Animals now hands effects the species height alongside the material
@@ -209,8 +270,11 @@ the level shows is the continuous gradient through them.
   forested slope saturated the hottest palette color while an animal sat
   at 0.92 — the environment could read hotter than the animals the level
   exists to reveal, and clipping at the top also parked large regions on
-  one flat value. Terrain now reaches 0.62, and the compression above the
-  knee is what absorbs the ground pools instead of clipping them. Forest
+  one flat value. Terrain now reaches 0.48 (lowered from 0.62 on
+  2026-08-29: ground is the backdrop bodies are read against, and the
+  warmest patch in the world belongs in the cool half of the ramp), and
+  the compression above the knee is what absorbs the ground pools
+  instead of clipping them. Forest
   cover also changed sign: canopy shade now scales the solar-exposure
   gain down rather than adding warmth, which is both more physical and
   keeps dry land above the water band.
@@ -237,16 +301,22 @@ the level shows is the continuous gradient through them.
   exactly where every material effect injects, so any effect reading the
   documented base tone referenced an identifier declared below it. The
   declaration moved above the include.
-- Ground heat pools (decided 2026-08-28, revised the same day): warm
+- Ground heat pools (decided 2026-08-28, revised 2026-08-29): warm
   bodies warm the ground under them through a fixed-size uniform array on
   the terrain variant, republished each frame by the composition root
   from the positions Animals publishes. This adds the one per-frame
   uniform update the original design avoided. The pool moved from the
   vertex stage to the fragment stage: at 2-metre vertex spacing a short
   pool resolved into three or four samples and read as the flat faceted
-  disc it was meant to replace. It is now 3.2 metres with a cubic
-  falloff, and its squared radius is displaced by the ground's own detail
-  field so the edge wanders instead of drawing a circle.
+  disc it was meant to replace. Its squared radius is displaced by the
+  ground's own detail field so the edge wanders instead of drawing a
+  circle. The 2026-08-29 revision halved it again, from 3.2 metres and
+  0.26 warmth to 1.8 and 0.15: at the old size an animal read as standing
+  in the middle of a warm clearing, which is the same failure as the
+  faceted disc in a softer form. The pool is a body length across, the
+  cubic falloff has given up most of its strength inside that, and the
+  ground under an animal now stays clearly below the animal's own coolest
+  skin.
 - Surface tone through the ramp (decided 2026-08-28): the false color is
   shaded by the material's authored `diffuse` luminance, so trunk, foliage,
   fur, and feature slots stay distinguishable instead of flattening onto

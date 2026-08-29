@@ -21,7 +21,7 @@
  * THERMAL_GROUND_HEAT_SOURCE_COUNT; the loop below is constant-bounded, so it
  * unrolls rather than becoming dynamic flow control.
  */
-const int THERMAL_HEAT_SOURCE_COUNT = 4;
+const int THERMAL_HEAT_SOURCE_COUNT = 6;
 
 uniform vec4 thermalHeatSources[THERMAL_HEAT_SOURCE_COUNT];
 uniform float thermalGroundHeatRadiusMeters;
@@ -30,7 +30,7 @@ uniform float thermalGroundHeatEdgeBreakup;
 /*
  * A compact cubic kernel: one at the source, exactly zero at the radius, and
  * smooth at both ends. It needs no square root and no smoothstep, which is
- * what makes four of them per fragment affordable.
+ * what makes one per visible animal per fragment affordable.
  *
  * `breakup` displaces the squared radius by the ground's own detail field, so
  * the pool edge wanders with the texture underneath it and never draws the

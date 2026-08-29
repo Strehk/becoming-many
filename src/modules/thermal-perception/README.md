@@ -11,6 +11,16 @@ the palette ramp back into the underlying carried color at the radius edge. The
 feather boundary is displaced by the detail field, so the heat view ends in a
 ragged front rather than drawing a circle around the viewer.
 
+**Heat is a highlight, not a replacement.** The cold end of the ramp is not a
+color at all: below `transparentBelowWarmth` the false color is fully
+transparent and the carried echo depth map shows through untouched, and it
+fades in to fully opaque by `opaqueAboveWarmth`. Cold ground and water keep the
+depth reading the viewer already knows how to read, warm ground is tinted, and
+a living body is the only thing solid enough to hide the depth map underneath
+it. That fade is independent of the radius feather and multiplies with it: one
+bounds the sense in space, the other in temperature. The second stop sits under
+the environment ceiling, so no part of any living body is ever half-there.
+
 ## The temperature model
 
 Every sensed surface reaches its final warmth the same way, and
@@ -55,8 +65,10 @@ same expression leaves them untouched without a branch or a second program.
   ground at the same elevation while dry land still never drops into the water
   band. The mottling only ever adds warmth, so the semantic order of water, low
   ground, and high ground survives. Floor, exposure, and mottling together reach
-  0.62 — deliberately short of the ceiling, which leaves the whole compression
-  range above it for the ground pools.
+  0.48 — the warmest ground in the world still lands in the cool half of the
+  ramp, far short of the ceiling, which leaves the whole compression range above
+  it for the ground pools. Ground is the backdrop this sense reads bodies
+  against, and it is budgeted to stay one.
 - **Vegetation and Rocks** hash their quantized instance world position into a
   stable base warmth, so a plant keeps its temperature across restreaming, and
   then vary it across the model: ground-warmed base grading into sky-facing
@@ -66,21 +78,40 @@ same expression leaves them untouched without a branch or a second program.
   fragment detail field — without it, every instance of one model comes out
   identically textured, which is exactly the "two nearby surfaces at the same
   temperature" this sense has to avoid.
-- **Animals** hold a torso band and a separate head-and-neck lobe, both placed
-  as fractions of the species' own body height, with a cooler slice at the very
-  top for ears and antler tips. The profile falls off smoothly downward, which
-  is what makes a hoof colder than a knee and a knee colder than a haunch with
-  no step anywhere between them.
+- **Animals** are the one thing in this world heated from inside, and their
+  profile is built to show that. A torso core and a separate head-and-neck lobe
+  hold the top of the ramp, with a cooler slice at the very top for ears and
+  antler tips, and everything else falls away from those two sources smoothly:
+  a hoof is colder than a knee and a knee colder than a haunch with no step
+  anywhere between them.
 
-  Normalized height is the *only* body coordinate the profile uses, and that is
-  a deliberate limit: the actor's world offset turns with its heading, so height
-  is the one coordinate that survives without the sense having to learn which
-  way a given species faces. It also carries almost all of the information in a
-  thermal image of a standing quadruped. Dividing by body height rather than
-  working in metres is what lets one profile fit a 0.25 m rat and a 1.6 m stag.
-  Animals is therefore handed the species height alongside the material, through
-  the `ActorMaterialEffect` contract; every actor material carries its own copy
-  of that one value while sharing the program.
+  The core is a lobe in **two** body coordinates, not a band across one.
+  Normalized height gives the vertical structure; distance from the body's own
+  vertical axis gives what height cannot, which is heat sitting in the deep
+  trunk and falling off outward through the flanks to nose and tail instead of
+  one horizontal slab of body reading equally hot end to end. Those two are a
+  deliberate limit: the actor's world offset turns with its heading, and they
+  are the two coordinates that survive it — rotating a body turns it around
+  exactly that axis. The head lobe carries no radial term, because a head is at
+  the far end of a body and a muzzle is genuinely one of the hottest things on
+  an animal; what keeps antlers and ear tips out of it is the tip term, which
+  is a height.
+
+  Both inner widths are narrow, so the hottest color is reached at a place on
+  the animal rather than across a third of it, and the level authors
+  `actorWarmth` at the top of the ramp: a living core and a face are the only
+  things here that reach it. Reading both coordinates as fractions of body
+  height rather than in metres is what lets one profile fit a 0.25 m rat and a
+  1.6 m stag. Animals is therefore handed the species height alongside the
+  material, through the `ActorMaterialEffect` contract; every actor material
+  carries its own copy of that one value while sharing the program.
+
+  The fragment detail on animals is deliberately finer and far weaker than on
+  any environment surface, and the hotspot tail is nearly off. On a body the
+  texture is grain over a temperature, never the temperature itself: bright
+  patches wherever a noise field happens to peak read as heat coming from
+  somewhere on the animal rather than from the animal's own structure. A test
+  locks the whole detail budget under a third of the core-to-hoof span.
 
   The pattern is anchored to the bind pose so it stays fixed to the body instead
   of swimming through it as the walk cycle plays.
@@ -103,14 +134,42 @@ object's silhouette and roundness readable once flat per-object color is gone.
 
 ## The detail field
 
-`thermal-detail-field.glsl` is a sum of three plane waves per octave rather than
-a hashed lattice noise. It is continuous and differentiable everywhere by
-construction, so no octave can show a cell seam or a grid; it costs three sines
-and three dot products instead of eight hashes and a trilinear blend; and its
-high tail already falls into isolated, smoothly-bounded lobes, which is where
-the **hotspots** are taken from instead of thresholding a second field. A
+`thermal-detail-field.glsl` is a sum of plane waves per octave rather than a
+hashed lattice noise. It is continuous and differentiable everywhere by
+construction, so no octave can show a cell seam or a grid; it costs a handful of
+sines and dot products instead of eight hashes and a trilinear blend per octave;
+and its high tail already falls into isolated, smoothly-bounded lobes, which is
+where the **hotspots** are taken from instead of thresholding a second field. A
 hotspot therefore rises out of the surrounding texture with a gradual falloff on
 all sides rather than being cut out of it.
+
+Wave sums have one failure mode, and most of that file is about avoiding it:
+waves of equal wavelength interfere into a crystal, and a crystal reads as a
+regular dot grid with aligned rows and columns — a pixel pattern rather than
+sensor noise. Three things break it. No two waves in an octave share a
+wavelength, a direction, an amplitude, or a phase, so the sum has no repeat
+period in any size that fits on screen and no origin where every wave peaks
+together. The sampling position is then **domain-warped** by a longer, slower
+wave field, so the lobes wander, stretch, and vary in size and spacing instead
+of sitting on a fixed pitch. Finally the coarse octave displaces the fine one a
+second time and swings its amplitude, both free from a value already in hand, so
+grain drifts and gathers rather than covering everything at one strength. All
+three are smooth functions of position, so the field stays continuous and stays
+coherent across a surface: it is the same field, unevenly walked.
+
+The warp is the most expensive term here — three sines on top of the eight the
+two octaves cost — and it is the first dial to turn if the frame budget needs
+it, ahead of the per-surface off switch below: dropping it costs the wandering,
+not the texture. Its amplitude and wavelength are chosen together, because their
+ratio is the steepest slope the displacement reaches and that has to stay under
+one; at one the warp folds the field over itself and shows a crease with an
+edge, which is the artefact this whole field exists to avoid.
+
+The same reasoning applies to the vertex-stage grain in
+`thermal-surface-structure.glsl`, where the axis-aligned failure is starker: a
+product of one sine per axis is separable, and a separable field is a
+checkerboard squarely aligned to the model axes. It is a sum of oblique waves
+for the same reason and at the same cost.
 
 Each variant publishes its own sampling position: terrain and grass publish
 world position, props their instance-local position pushed to a per-instance
@@ -206,9 +265,11 @@ variation or heat trails (the field is fully static apart from the ground pools
 following the actors), heat bleeding into the air around a body, and any
 additional thermal camera or duplicate render pass.
 
-Two limits are worth naming because they are level data, not code. The per-slot
-tone cue is weak on vegetation because the carried echo palette authors trunk
-and leaf almost the same darkness; separating those two colors in the level
-would widen it. And an animal's heat profile is vertical only, so a deer's head
-and its rump sit in the same warm band — telling them apart would require the
-sense to learn each species' forward axis.
+Two limits are worth naming. The per-slot tone cue is weak on vegetation
+because the carried echo palette authors trunk and leaf almost the same
+darkness; that one is level data rather than code, and separating those two
+colors in the level would widen it. And an animal's profile still knows no
+forward axis: height and distance from the body axis separate a rump from a
+core, but nothing distinguishes a head from a tail except the head lobe's
+height, so a species carrying its head low would need a coordinate the sense
+does not have.

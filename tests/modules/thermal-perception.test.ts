@@ -74,6 +74,35 @@ test("Thermal Perception carries the palette anchors in gamma space", () => {
   expect(squareColor(hottest).getHex()).toBe(0xfcce43);
 });
 
+test("Thermal Perception fades the cold end out to the carried world", () => {
+  // The cold end of the ramp is not a color at all: below the first stop the
+  // heat view is transparent and the echo depth map shows through untouched,
+  // so warmth reads as a highlight inside the depth world rather than as an
+  // image replacing it.
+  const shader = compileEffect(createThermalEffects().terrain);
+  const { transparentBelowWarmth, opaqueAboveWarmth } =
+    THERMAL_PERCEPTION_SETTINGS.ramp;
+  const visibility = shader.uniforms.thermalHeatVisibility?.value as Vector2;
+
+  expect(visibility.x).toBe(transparentBelowWarmth);
+  expect(visibility.y).toBe(opaqueAboveWarmth);
+  // It multiplies the radius feather rather than replacing it: one fade bounds
+  // the sense in space, the other in temperature.
+  expect(shader.fragmentShader).toContain(
+    "senseReach * thermalIntensity * heatVisibility",
+  );
+
+  // Water is the coldest thing in the world and must carry no false color at
+  // all, while every part of a living body stays fully opaque — the fade
+  // belongs to the cold end, and a body must never read as half-there.
+  expect(transparentBelowWarmth).toBeGreaterThan(
+    THERMAL_PERCEPTION_SETTINGS.terrainWarmth.shorelineWarmth,
+  );
+  expect(opaqueAboveWarmth).toBeLessThanOrEqual(
+    THERMAL_PERCEPTION_SETTINGS.environmentCeiling.ceilingWarmth,
+  );
+});
+
 test("Thermal Perception gives each consumer its own warmth source", () => {
   const effects = createThermalEffects();
   const vegetationShader = compileEffect(effects.vegetation);
@@ -251,12 +280,26 @@ test("Thermal Perception varies warmth inside every sensed object", () => {
     THERMAL_PERCEPTION_SETTINGS.propStructure.axisWarmthHalfDrop,
   );
 
-  // Animals hold a torso band and a separate head lobe, both placed as
+  // Animals hold a torso core and a separate head lobe, both placed as
   // fractions of the species' own body height.
   expect(animalsShader.vertexShader).toContain("coreLobe");
   expect(animalsShader.vertexShader).toContain("headLobe");
   expect(animalsShader.uniforms.thermalCoreHeightFraction?.value).toBe(
     THERMAL_PERCEPTION_SETTINGS.actorStructure.coreHeightFraction,
+  );
+
+  // The core is a volume rather than a band across a height: distance from the
+  // body's own vertical axis carries the heat down through the flanks toward
+  // nose and tail. It is the one lateral coordinate that survives the actor's
+  // heading, since rotating a body turns it around exactly that axis.
+  expect(animalsShader.vertexShader).toContain("bodyRadius");
+  const coreRadiusSpread = animalsShader.uniforms.thermalCoreRadiusSpread
+    ?.value as Vector2;
+  expect(coreRadiusSpread.x).toBe(
+    THERMAL_PERCEPTION_SETTINGS.actorStructure.coreRadiusInnerFraction,
+  );
+  expect(coreRadiusSpread.y).toBe(
+    THERMAL_PERCEPTION_SETTINGS.actorStructure.coreRadiusOuterFraction,
   );
   expect(animalsShader.uniforms.thermalActorWarmthRange?.value).toBe(
     THERMAL_PERCEPTION_SETTINGS.actorStructure.warmthRange,
@@ -314,6 +357,18 @@ test("Thermal Perception measures fine temperature detail per fragment", () => {
   const animalWavelengths = animalsShader.uniforms.thermalDetailWavelengthMeters
     ?.value as Vector2;
   expect(animalWavelengths.x).toBeLessThan(wavelengths.x);
+
+  // On a body the texture is grain over a temperature, never the temperature
+  // itself: an animal is the one thing here heated from inside, and the whole
+  // detail budget stays well under the span its profile covers from core to
+  // hoof, so the gradient is what the eye reads and the grain only breaks up
+  // the surface carrying it.
+  const actor = THERMAL_PERCEPTION_SETTINGS.actorStructure;
+  const detailReach =
+    actor.detail.coarseWarmth +
+    actor.detail.fineWarmth +
+    actor.detail.hotspotWarmth;
+  expect(detailReach).toBeLessThan(actor.warmthRange / 3);
 });
 
 test("Thermal Perception gives every prop instance its own detail phase", () => {
@@ -469,7 +524,13 @@ test("Thermal Perception pools ground heat per fragment under published sources"
   // flat faceted disc this replaces.
   expect(shader.fragmentShader).toContain("thermalGroundHeat(");
   expect(shader.vertexShader).not.toContain("thermalGroundHeat(");
-  expect(radiusMeters).toBeLessThan(4);
+  // A body length across, not a clearing: the pool is heat the animal leaves
+  // on the ground it stands on, and a wider or stronger one reads as the
+  // animal standing in the middle of a warm disc.
+  expect(radiusMeters).toBeLessThan(2);
+  expect(warmth).toBeLessThan(
+    THERMAL_PERCEPTION_SETTINGS.actorStructure.warmthRange,
+  );
 
   // Only terrain receives external heat, and only terrain's program compiles
   // the loop: nothing else pays for it.

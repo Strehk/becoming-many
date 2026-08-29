@@ -16,6 +16,7 @@ uniform float thermalEdgeFeatherMeters;
 uniform float thermalEdgeBreakupMeters;
 uniform vec4 thermalRampStops;
 uniform float thermalSegmentEase;
+uniform vec2 thermalHeatVisibility;
 uniform vec3 thermalColdestColor;
 uniform vec3 thermalColdColor;
 uniform vec3 thermalCoolColor;
@@ -183,9 +184,26 @@ vec3 applyThermalPerception(vec3 baseColor) {
     thermalRadiusMeters,
     thermalViewDistance + octaves.x * thermalEdgeBreakupMeters
   );
+  /*
+   * The cold end of the ramp is not a color at all: below the first stop the
+   * false color is fully transparent and the carried echo depth map shows
+   * through untouched, and it fades in to fully opaque by the second. Heat is
+   * therefore a highlight inside the depth world rather than an image that
+   * replaces it — cold ground and water keep the depth reading the viewer
+   * already knows how to read, and a living body is the only thing solid
+   * enough to hide it.
+   *
+   * This is a second, independent fade from the radius feather above, and the
+   * two multiply: one bounds the sense in space, the other in temperature.
+   */
+  float heatVisibility = smoothstep(
+    thermalHeatVisibility.x,
+    thermalHeatVisibility.y,
+    warmth
+  );
   return mix(
     baseColor,
     shadeBySurface(thermalRampColor(warmth), tone),
-    senseReach * thermalIntensity
+    senseReach * thermalIntensity * heatVisibility
   );
 }

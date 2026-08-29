@@ -29,8 +29,13 @@
  * compile-time constant shared with `thermal-ground-heat.glsl`. Changing it
  * requires changing the array size in that file; a regression test locks the
  * two together. Extra sources beyond the capacity are ignored.
+ *
+ * It is one pool per visible animal, so it tracks the Animals module's
+ * `maxVisible`. Below that number the nearest bodies still warm the ground and
+ * the rest stand on cold ground, which reads as a mistake rather than as a
+ * budget; above it the terrain pays for pools nothing can fill.
  */
-export const THERMAL_GROUND_HEAT_SOURCE_COUNT = 4;
+export const THERMAL_GROUND_HEAT_SOURCE_COUNT = 6;
 
 /**
  * One surface kind's fragment-stage detail. Two octaves rather than one: the
@@ -81,6 +86,25 @@ export const THERMAL_PERCEPTION_SETTINGS = {
     // the shape this level must not show. The feather boundary is displaced by
     // the detail field by this much, so the heat view ends in a ragged front.
     edgeBreakupMeters: 3.5,
+
+    /*
+     * The cold end of the ramp is not a color at all. Below the first stop the
+     * heat view is fully transparent and the carried echo depth map shows
+     * through untouched; by the second it is fully opaque. Between them the
+     * false color fades in with the temperature.
+     *
+     * This is what makes heat a highlight rather than a replacement. The world
+     * stays the depth image the viewer already knows how to read, and what
+     * this sense adds is where the warmth is in it: cold ground and water
+     * carry no color at all, warm ground is tinted, and a living body is the
+     * only thing solid enough to hide the depth map underneath it.
+     *
+     * The second stop sits under the environment ceiling, so every part of
+     * every living body is fully opaque — the fade belongs to the cold end,
+     * and a body must never read as half-there. A test locks that.
+     */
+    transparentBelowWarmth: 0.18,
+    opaqueAboveWarmth: 0.62,
   },
 
   /**
@@ -107,19 +131,30 @@ export const THERMAL_PERCEPTION_SETTINGS = {
     hotspotThreshold: 0.52,
   },
 
-  // Terrain warmth mapping from elevation, exposure, and zone conditions.
+  /*
+   * Terrain warmth mapping from elevation, exposure, and zone conditions.
+   *
+   * The whole budget is deliberately cold. Ground is the backdrop this sense
+   * reads bodies against, and every term below is bounded so that the sunniest,
+   * steepest, most exposed patch in the world still lands in the cool half of
+   * the ramp: floor, exposure, and mottling together reach 0.48, nowhere near
+   * the warm end that belongs to living bodies. Most ground also sits low
+   * enough that the ramp's transparent cold end leaves it as the carried echo
+   * depth image. The fragment detail varies each patch around its value from
+   * there.
+   */
   terrainWarmth: {
     // Warmth right at the waterline; deeper water reads colder from here.
-    shorelineWarmth: 0.11,
+    // Water is the coldest thing in the world and sits in the violet toe.
+    shorelineWarmth: 0.07,
     waterColdPerDepthMeter: 0.05,
 
     // Dry ground starts at the floor and gains warmth from solar exposure.
-    // Floor, exposure, and mottling together reach 0.62, comfortably under the
-    // environment ceiling: the ground pools that warm bodies leave behind then
-    // have somewhere to go instead of clipping at the top of the ramp.
-    landWarmthFloor: 0.2,
-    landElevationWarmthSpan: 0.19,
-    slopeWarmthBoost: 0.08,
+    // The floor stays above the top of the water band, and the gains above it
+    // are what separate a shaded valley from a sunlit ridge.
+    landWarmthFloor: 0.14,
+    landElevationWarmthSpan: 0.16,
+    slopeWarmthBoost: 0.06,
 
     // Canopy shade scales the exposure terms rather than subtracting from the
     // floor, so shaded forest ground reads cooler than open ground at the same
@@ -130,8 +165,8 @@ export const THERMAL_PERCEPTION_SETTINGS = {
     // It only ever adds warmth: land therefore never reaches down into the
     // water band and the semantic order of water, low ground, and high ground
     // survives unchanged.
-    landMottleWarmth: 0.15,
-    waterMottleWarmth: 0.05,
+    landMottleWarmth: 0.12,
+    waterMottleWarmth: 0.04,
     // Two octaves, both well above the 2-metre terrain vertex spacing. Nothing
     // finer belongs here — below roughly eight metres a vertex attribute
     // aliases instead of reading as mottling, which is why everything finer
@@ -221,24 +256,45 @@ export const THERMAL_PERCEPTION_SETTINGS = {
 
   /**
    * Temperature structure inside one animal, as fractions of the species' own
-   * body height so the same profile fits a rat and a stag. A thermal image of
-   * a standing quadruped is dominated by one fact: temperature falls off with
-   * height away from the torso, hard downward into the legs and gently upward
-   * through the neck. Both lobes are therefore bands in normalized height,
-   * which is the one body coordinate that survives the actor's heading without
-   * the sense having to learn which way a species faces.
+   * body height so the same profile fits a rat and a stag.
+   *
+   * An animal is the one thing in this world that is heated from inside, and
+   * the profile is built to show that: heat concentrates in a compact core,
+   * reaches the top of the ramp only there and at the head, and falls away
+   * smoothly and continuously in every direction from those two sources. Two
+   * body coordinates carry it — normalized height, and distance from the body's
+   * own vertical axis — because those are the two that survive the actor's
+   * heading without the sense having to learn which way a species faces.
+   *
+   * Every term below is a smooth lobe rather than a threshold, and the fragment
+   * detail on top of them is deliberately an order of magnitude weaker than the
+   * span between core and extremity: on an animal the texture is grain over a
+   * temperature, never the temperature itself.
    */
   actorStructure: {
     // How far below the authored core temperature the coolest skin sits. The
     // authored value is the torso; hooves and ear tips land at the far end.
-    warmthRange: 0.3,
+    // Narrowed from a third of the ramp so that a body authored at the top of
+    // it lands its coolest skin exactly on the environment ceiling — the value
+    // the ground approaches and never reaches. The whole profile, core to
+    // hoof, therefore sits in the band above everything that is not alive.
+    warmthRange: 0.26,
 
-    // The torso band: full core temperature through its inner width, falling
-    // to the cool end by its outer width. A deer's belly sits near 0.54 and
-    // its back near 0.75 of body height, so the band covers the whole trunk.
+    // The torso: full core temperature through the inner widths of both terms,
+    // falling to the cool end by the outer ones. A deer's belly sits near 0.54
+    // and its back near 0.75 of body height, so the height band covers the
+    // whole trunk; the inner width is narrow because the hottest part of an
+    // animal is a place on it, not a third of it.
     coreHeightFraction: 0.66,
-    coreInnerFraction: 0.1,
+    coreInnerFraction: 0.06,
     coreOuterFraction: 0.32,
+
+    // The same lobe in distance from the body's vertical axis. A deer's trunk
+    // is around 0.11 of its body height wide and 0.4 long, so the inner width
+    // holds the deep chest and belly at full core temperature while the outer
+    // one carries the falloff out through the flanks to nose and tail.
+    coreRadiusInnerFraction: 0.12,
+    coreRadiusOuterFraction: 0.45,
 
     // The head and neck carry their own, narrower lobe just under the top of
     // the body, slightly below core temperature.
@@ -252,19 +308,27 @@ export const THERMAL_PERCEPTION_SETTINGS = {
     tipStartFraction: 0.93,
     tipCoolShare: 0.4,
 
-    grainWavelengthMeters: 0.32,
-    grainWarmth: 0.035,
-    grazingCoolness: 0.12,
+    grainWavelengthMeters: 0.22,
+    grainWarmth: 0.014,
+    grazingCoolness: 0.1,
 
     detail: {
-      coarseWavelengthMeters: 0.16,
-      fineWavelengthMeters: 0.05,
-      coarseWarmth: 0.034,
-      fineWarmth: 0.019,
-      // The strongest hotspots in the scene, and weighted by the body profile,
-      // so the warm patches land around the torso and face rather than on the
-      // hooves.
-      hotspotWarmth: 0.085,
+      // Finer and far weaker than anything in the environment. A body's
+      // temperature is the smooth field above; this is the sensor grain lying
+      // over it, and at these amplitudes the two octaves together move the
+      // reading by about a twelfth of the span between core and hoof — enough
+      // to keep fur from looking painted, never enough to compete with the
+      // gradient or to survive as a pattern of its own.
+      coarseWavelengthMeters: 0.1,
+      fineWavelengthMeters: 0.03,
+      coarseWarmth: 0.013,
+      fineWarmth: 0.008,
+      // Small, and weighted by the body profile, so what is left of the
+      // hotspot tail lands inside the warm core and the face as the last few
+      // percent of the ramp rather than as bright spots scattered over an
+      // animal. Heat on a body comes from the profile; this only tips the
+      // hottest of it into the top color.
+      hotspotWarmth: 0.02,
       toneWarmth: 0.11,
     } satisfies ThermalDetailSettings,
   },
@@ -304,8 +368,15 @@ export const THERMAL_PERCEPTION_SETTINGS = {
    * region the animal sits in the middle of.
    */
   groundHeat: {
-    radiusMeters: 3.2,
-    warmth: 0.26,
+    // Short and weak on purpose. A body radiating into the ground is a real
+    // cue, but it is the second-weakest thing in the picture, not the second
+    // brightest: at this radius the cubic kernel has given up most of its
+    // strength within a body length, and at this warmth the ground under an
+    // animal stays clearly below the animal's coolest hoof. A wider or
+    // stronger pool is what made a deer read as standing in the middle of a
+    // warm disc instead of on ground it happens to be warming.
+    radiusMeters: 1.8,
+    warmth: 0.15,
     // Displaces the pool boundary by the detail field, so its edge follows the
     // ground texture instead of drawing a circle.
     edgeBreakup: 0.3,

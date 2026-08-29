@@ -372,7 +372,10 @@ Reuse existing geometry. Compute thermal color through shared uniforms, procedur
 The heat view is radius-bounded and static (decided 2026-08-28),
 implemented in `src/modules/thermal-perception/`: the documented six-stop
 palette maps cold to hot inside a 30-metre viewer radius that feathers
-back into the carried echo grayscale. Temperature is expressive but
+back into the carried echo grayscale. An ironbow ramp was tried in its
+place on 2026-08-29 and reverted the same day. The cold end of that ramp
+is now transparent rather than colored, so the depth image carries the
+cold world and heat reads as a highlight inside it. Temperature is expressive but
 physically motivated — water coldest and colder with depth, dry ground
 warmer with elevation, forest and slope holding extra warmth — sampled per
 terrain vertex, hashed per vegetation and rock instance, and constant

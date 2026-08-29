@@ -14,7 +14,8 @@ The current 180-metre landscape test structure is deliberately bounded:
 - 49 fixed Terrain meshes with 100,352 resident triangles
 - one fixed Grass mesh with 492,804 candidates and 985,608 resident triangles
 - compact instanced Vegetation and Rock draws that exclude rejected capacity
-- ten animal actors with at most four visible animation mixers and slope samples
+- seventeen animal actors with at most six visible animation mixers and slope
+  samples
 - Magnetic Sense reuses the Terrain draws and adds no geometry or render pass
 - fixed Terrain staging arrays and no geometry allocation during recycling
 - fixed chunk-window capacity

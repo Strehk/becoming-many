@@ -12,7 +12,10 @@ not create a separate render loop or import other concrete content modules.
   habitat, movement, and visibility budget. The level uses `animals: true` to
   enable that complete definition.
 - Each species defines a small clone count, target metre height, and allowed
-  zones. The current four species produce ten actors.
+  zones. The current four species produce seventeen actors, of which the six
+  nearest are drawn and animated: the population is larger than the visible
+  budget on purpose, so the slots select from a world that has been living
+  rather than from a ring of animals parked around the camera.
 - Homes are chosen deterministically in separate angular territories around
   the camera and use `surfaceYAt()`. Species are interleaved between territories,
   and each actor chooses the nearest point allowed for its species.
@@ -23,7 +26,8 @@ not create a separate render loop or import other concrete content modules.
   movement heading.
 - Visible actors are selected from separate directions before vacant slots are
   filled by distance. Only those actors advance animation mixers; the current
-  Test Level limit is four.
+  limit is six, which is also the number of ground heat pools Thermal
+  Perception carries so that every visible body warms the ground it stands on.
 - Unload stops mixers, releases cloned skeletons, removes actors, and disposes
   the shared source assets.
 

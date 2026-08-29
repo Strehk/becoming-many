@@ -29,15 +29,25 @@ float thermalHemisphericShade(vec3 worldNormal) {
 }
 
 /*
- * A separable sine field rather than a hashed value noise: it is continuous
- * everywhere by construction, so interpolating it across a triangle can never
- * produce a seam, and it costs three sines in the vertex stage instead of a
- * hash lattice per fragment. The irrational-ish axis ratios keep the three
- * waves from repeating together into a visible grid.
+ * A wave field rather than a hashed value noise: it is continuous everywhere
+ * by construction, so interpolating it across a triangle can never produce a
+ * seam, and it costs three sines in the vertex stage instead of a hash lattice
+ * per fragment.
+ *
+ * A sum of obliquely-travelling waves rather than the product of one wave per
+ * axis. The product is separable, and a separable field is a checkerboard: its
+ * light and dark cells sit in rows and columns squarely on the model axes,
+ * which is the one thing a body's own heat pattern never does. Summing waves
+ * that travel across all three axes at once, at wavelengths with no rational
+ * ratio and with their peaks phase-shifted apart, leaves patches that drift
+ * over the surface instead. The amplitudes hold the spread near that of the
+ * product they replace, so the authored grain warmths still land the same.
  */
 float thermalGrain(vec3 positionMeters) {
   vec3 phase = positionMeters * (THERMAL_TAU / thermalGrainWavelengthMeters);
-  return sin(phase.x) * sin(phase.y * 1.31) * sin(phase.z * 0.77);
+  return sin(dot(phase, vec3(0.94, 0.28, -0.19)) + 0.87) * 0.34 +
+    sin(dot(phase, vec3(-0.37, 1.19, 0.61)) + 2.41) * 0.29 +
+    sin(dot(phase, vec3(0.53, -0.46, 1.57)) + 4.16) * 0.23;
 }
 
 /*
