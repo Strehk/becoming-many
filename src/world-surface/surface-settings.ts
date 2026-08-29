@@ -9,13 +9,13 @@ export const WORLD_SURFACE_SETTINGS = {
   seed: 174, // Changes the deterministic shape of terrain, river, and zones.
   heightField: {
     baseHeightY: -8, // Sets the starting world height before elevation is added.
-    rollingElevationMeters: 4, // Sets the maximum height of broad hills and valleys.
-    rollingFeatureSizeMeters: 70, // Larger values create wider, smoother hills.
-    detailElevationMeters: 1, // Sets the maximum height of small surface variation.
-    detailFeatureSizeMeters: 34, // Larger values spread surface details farther apart.
-    mountainElevationMeters: 20, // Sets the maximum height added by mountain ridges.
-    mountainFeatureSizeMeters: 480, // Larger values create broader mountain ridges.
-    mountainRegionSizeMeters: 460, // Larger values create larger mountain regions.
+    rollingElevationMeters: 5, // Sets the maximum height of broad hills and valleys.
+    rollingFeatureSizeMeters: 48, // Larger values create wider, smoother hills.
+    detailElevationMeters: 1.2, // Sets the maximum height of small surface variation.
+    detailFeatureSizeMeters: 28, // Larger values spread surface details farther apart.
+    mountainElevationMeters: 28, // Sets the maximum height added by mountain ridges.
+    mountainFeatureSizeMeters: 450, // Larger values create broader mountain ridges.
+    mountainRegionSizeMeters: 425, // Larger values create larger mountain regions.
   },
   river: {
     waterHeightY: -7, // Sets the fixed world height of the water surface.

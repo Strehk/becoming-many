@@ -7,40 +7,33 @@ Boundary: Product vision and long-term design remain in the specialized document
 
 # Current Development Status
 
-Snapshot: 2026-08-28
+Snapshot: 2026-08-29
 
 The current `src/` and `public/` trees are the source of truth. This page is
 the concise entry point for the current implementation.
 
 ## Runnable Result
 
-`bun run dev` starts a Vite application that shows the Thermal Perception
-level:
+`bun run dev` starts a Vite application that shows the Echolocation level:
 
-- the complete Motion Perception world carried over unchanged: the warm
-  off-white haze background, the grayscale Echo Depth ramp on Terrain,
-  Vegetation, and Rocks, the earlier air and scent layers, and the fly
-  swarms, bird flocks, and printed motion trails, because senses layer
-  instead of swapping
-- a false-color heat view inside a 30-metre viewer radius that feathers
-  over 10 metres back into the grayscale world: water reads coldest and
-  colder with depth, dry ground warms with elevation, forest and slope
-  hold extra warmth, and every plant and rock keeps a stable hashed
-  temperature variation across restreaming
-- the bounded animal population joining the world as the strongest heat
-  signatures: warm bodies read in the hot magenta-to-yellow palette bands
-  inside the radius and sit in the echo grayscale outside it
+- the grayscale Echo Depth ramp on Terrain, Vegetation, and Rocks, walking
+  every luminance step of the level-03 palette from the ink-dark nearest
+  band to the off-white haze it shares with the background, so the
+  landscape thickens into mist and is fully dissolved 32 metres before the
+  far plane
+- the White World air layer and the Scent World layer carried over
+  unchanged, because senses layer instead of swapping
 - the diagnostic test overlay
 - pointer-lock mouse look
 - WASD and arrow-key flight along the mouse look direction
 - a user-triggered Three.js `immersive-vr` button
 
-The application currently selects `thermal.level.ts` in its minimal browser
+The application currently selects `echo.level.ts` in its minimal browser
 entry. It has one Level Runtime composition root and one render loop. The
-Motion Perception level remains available by selecting `motion.level.ts`
-instead, the Echolocation level by selecting `echo.level.ts`, the Scent
-World base experiment by selecting `scent.level.ts`, and the Design Test
-landscape by selecting `designTest.level.ts`.
+Thermal Perception level remains available by selecting `thermal.level.ts`
+instead, the Motion Perception level by selecting `motion.level.ts`, the
+Scent World base experiment by selecting `scent.level.ts`, and the Design
+Test landscape by selecting `designTest.level.ts`.
 
 ## Implemented System
 
@@ -182,8 +175,10 @@ landscape by selecting `designTest.level.ts`.
   meshes, textures, draw calls, or duplicate geometry.
 - The height field combines rolling terrain, small detail, and broad hill
   swells behind a continuous region mask. The current authored seed contains
-  calm lowlands, deep valleys, and gently undulating hill areas without
-  discrete seams.
+  calm lowlands, deep valleys, and densely undulating hill areas without
+  discrete seams. The broad swells carry most of the height range while the
+  rolling layer sets how often hills recur, so relief grows without the
+  ground becoming steep.
 - Terrain unload removes its group and disposes every geometry and its shared
   material.
 
