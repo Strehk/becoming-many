@@ -133,7 +133,7 @@ test("Scent Level layers scent onto the White World air baseline", () => {
   }
   expect(scentPreset.scentParticles?.colors).toHaveLength(5);
   expect(scentPreset.scentParticles?.placement).toEqual({
-    emittersPerChunk: 5,
+    emittersPerChunk: 4,
     minHeightMeters: 0.7,
     maxHeightMeters: 1.3,
   });

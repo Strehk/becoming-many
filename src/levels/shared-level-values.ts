@@ -53,7 +53,7 @@ export const sharedAirParticles: SharedBlock<"airParticles"> = {
 export const sharedScentParticles: SharedBlock<"scentParticles"> = {
   colors: [0xb8e0e1, 0x9dd2c8, 0xd1c1d7, 0xfda39d, 0xfdbb54],
   placement: {
-    emittersPerChunk: 5,
+    emittersPerChunk: 4,
     minHeightMeters: 0.7,
     maxHeightMeters: 1.3,
   },
