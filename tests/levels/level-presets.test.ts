@@ -75,9 +75,11 @@ test("only the Test Level activates development diagnostics", () => {
 
 test("Echo Level renders depth through shared materials only", () => {
   const echoPreset: LevelPreset = echoLevel;
-  // Grayscale versions of the level-03 palette luminance steps.
+  // Grayscale versions of the level-03 palette luminance steps, with the two
+  // far stops lifted above theirs so the horizon thins instead of ending in a
+  // grey wall.
   const echoWorldPalette = [
-    0x101010, 0x171717, 0x494949, 0x959595, 0xd7d7d7, 0xf1f1f1,
+    0x101010, 0x171717, 0x494949, 0x959595, 0xe2e2e2, 0xf7f7f7,
   ];
   const { echoDepth, terrain, vegetation, rocks, grass } = echoPreset;
   if (!echoDepth || !terrain || !vegetation || !rocks || !grass) {

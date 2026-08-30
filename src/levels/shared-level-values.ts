@@ -11,9 +11,12 @@ type SharedBlock<Key extends keyof LevelPreset> = NonNullable<LevelPreset[Key]>;
 
 /**
  * The echo ramp haze stop. Levels that carry the echo world use it as the
- * background color, so far geometry dissolves into it.
+ * background color, so far geometry dissolves into it. It sits a little
+ * above the luminance of the moodboard stop it was derived from: the haze is
+ * what the world ends in, and lifting it nearer white thins the horizon
+ * rather than closing it with a wall of grey.
  */
-export const sharedEchoHazeColor = 0xf1f1f1;
+export const sharedEchoHazeColor = 0xf7f7f7;
 
 /**
  * The White World air layer: dark motes reading against a pale background.
@@ -137,7 +140,10 @@ export const sharedEchoDepth: SharedBlock<"echoDepth"> = {
     nearColor: 0x101010,
     nearShadeColor: 0x494949,
     midColor: 0x959595,
-    farColor: 0xd7d7d7,
+    // Lifted with the haze stop above it, so the two stay a pair: lightening
+    // only the end the world dissolves into would have left the band before
+    // it as a visible grey step short of the horizon.
+    farColor: 0xe2e2e2,
     hazeColor: sharedEchoHazeColor,
   },
 };

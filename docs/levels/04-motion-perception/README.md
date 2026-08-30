@@ -50,7 +50,7 @@ cyan accent `#10BEDB` that the palette reserved for them. The orange
 ## Exact Typed Preset and Active Modules
 
 - Preset: `src/levels/motion.level.ts` (`testUi: true`, 128-metre view
-  distance, background `0xF1F1F1` equal to the carried ramp haze stop).
+  distance, background `0xF7F7F7` equal to the carried ramp haze stop).
 - Fields: `terrain`, `grass`, `vegetation`, `rocks`, `airParticles`,
   `scentParticles`, and `echoDepth` copied unchanged from `echo.level.ts`,
   plus `motion: MotionSenseParameters` (intensity 1, twelve swarms of sixty

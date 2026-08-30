@@ -277,8 +277,8 @@ Prefer material changes over duplicate geometry or additional scene passes. A po
 Aerial-perspective depth mapping, decided 2026-08-25 and implemented in
 `src/modules/echo-depth/`: near geometry reads as near-black silhouettes
 and recedes into an off-white haze that equals the background color. The
-ramp is currently authored grayscale (`#101010` to `#F1F1F1`), keeping the
-moodboard palette's luminance steps; the indigo moodboard tones remain the
+ramp is currently authored grayscale (`#101010` to `#F7F7F7`), keeping the
+moodboard palette's luminance steps below its two lightened far stops; the indigo moodboard tones remain the
 documented reference. Every surface always shows only its depth-ramp
 color; a cyan rim accent on near forms was tried and removed the same day
 because approaching geometry must darken, not light up. See

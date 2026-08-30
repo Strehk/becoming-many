@@ -55,7 +55,7 @@ palette outside the radius. No audio counterpart exists yet.
 ## Exact Typed Preset and Active Modules
 
 - Preset: `src/levels/thermal.level.ts` (`testUi: true`, 128-metre view
-  distance, background `0xF1F1F1` equal to the carried ramp haze stop).
+  distance, background `0xF7F7F7` equal to the carried ramp haze stop).
 - Fields: `terrain`, `grass`, `vegetation`, `rocks`, `airParticles`,
   `scentParticles`, `echoDepth`, and `motion` copied unchanged from
   `motion.level.ts`, plus `animals` (echo-palette fur colors) and

@@ -34,8 +34,9 @@ Palette (see [moodboard](mood/moodboard.png)):
 
 Decided art direction (2026-08-25): aerial-perspective depth mapping in the
 spirit of the moodboard, authored as a grayscale ramp that keeps the
-moodboard palette's luminance steps:
-`#101010` `#171717` `#494949` `#959595` `#D7D7D7` `#F1F1F1`
+moodboard palette's luminance steps, the two far stops since lifted above
+theirs (see the 2026-08-30 decision below):
+`#101010` `#171717` `#494949` `#959595` `#E2E2E2` `#F7F7F7`
 
 Near geometry reads as near-black silhouettes and recedes through gray into
 an off-white haze that equals the background color, so distant geometry
@@ -47,7 +48,7 @@ ripples are excluded by the level intent. No audio counterpart exists yet.
 ## Exact Typed Preset and Active Modules
 
 - Preset: `src/levels/echo.level.ts` (`testUi: true`, 128-metre view
-  distance, background `0xF6F0E9` equal to the ramp haze stop).
+  distance, background `0xF7F7F7` equal to the ramp haze stop).
 - Fields: `terrain` (plain material, full opacity), `grass`, `vegetation`,
   and `rocks` (dark-palette base colors, Test Level densities), the
   unchanged White World `airParticles` values, the unchanged Scent World
@@ -126,6 +127,18 @@ ripples are excluded by the level intent. No audio counterpart exists yet.
 - The ramp is authored grayscale (decided 2026-08-25); the indigo moodboard
   palette remains the documented reference and can return by editing only
   the preset colors.
+- Lighter horizon (decided 2026-08-30): the two far stops rose from `#D7D7D7`
+  and `#F1F1F1` to `#E2E2E2` and `#F7F7F7`, so they now sit above the
+  luminance of the moodboard stops they were derived from. The haze is what
+  the world ends in, and at its old value the horizon read as a grey wall
+  closing the distance rather than as the world thinning out of sight. They
+  moved as a pair on purpose: lightening only the stop the world dissolves
+  into would have left the band before it as a visible step short of the
+  horizon. Every stop below them is untouched, so near geometry still reads
+  as near-black silhouette and the ramp still walks the palette's luminance
+  order. This reaches levels 04 and 05 as well — the echo ramp is carried
+  verbatim by both, there is no per-level override, and `sharedEchoHazeColor`
+  is also each of those levels' background color.
 - Open art decisions: ramp stop tuning against real headset contrast;
   whether the carried-over dark air motes should adopt a pale gray tone for
   legibility against dark near forms; whether scent intensity should be
