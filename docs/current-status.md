@@ -283,10 +283,18 @@ landscape by selecting `designTest.level.ts`.
   bird with a deterministic wing flap).
 - The fly simulation is a bounded boid integration: stepped hash noise for
   the insect jitter, eight strided flockmate samples per fly (never the full
-  pairing), soft cloud envelopes, and a hard clamp that guarantees no fly
-  sinks below its terrain clearance. All placement and per-fly character
-  values derive from stateless integer hashes; the module uses no
+  pairing), a boundary-free swarm envelope, and a hard clamp that guarantees
+  no fly sinks below its terrain clearance. All placement and per-fly
+  character values derive from stateless integer hashes; the module uses no
   `Math.random`.
+- Each swarm gets its own irregular volume: hashed anisotropic axes and a
+  yaw stretch and tilt the cloud, a few slowly drifting density lobes keep
+  its core lopsided, and flies are seeded Gaussian around those lobes. The
+  envelope is a spring written in that volume's normalized frame — gentle
+  inside the core, stiffening quadratically outside it — so density thins
+  smoothly outward, stragglers can drift well clear of the cluster and find
+  their way back, and no cloud has a straight edge or repeats another's
+  silhouette. The ground clamp is the only hard boundary left.
 - The trail ring holds `flyCount × lifetimeFrames` particles. The CPU writes
   only the newest ring slot per frame (immutable spawn position, outward
   direction, spawn intensity, and spawn frame) as one contiguous

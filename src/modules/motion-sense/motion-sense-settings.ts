@@ -12,8 +12,24 @@ export const MOTION_SENSE_SETTINGS = {
   farRing: { minMeters: 35, maxMeters: 65 }, // Below the 128-metre view distance.
   reanchorDistanceMeters: 80, // Player travel that relocates every swarm anchor.
   groundClearanceMeters: 0.9, // Swarm centre height above the sampled ground.
-  swarmRadiusMeters: 1.45, // Soft horizontal envelope of one fly cloud.
-  swarmHeightMeters: 0.65, // Soft vertical half extent of one fly cloud.
+  swarmRadiusMeters: 1.45, // Horizontal core scale of one fly cloud; density thins outward past it.
+  swarmHeightMeters: 0.65, // Vertical core scale of one fly cloud.
+  // Every swarm draws its own volume from these ranges, so no two clouds share
+  // a silhouette: stretched and tilted axes plus a few drifting density lobes.
+  swarmShape: {
+    minAxisScale: 0.6, // Narrowest an axis is drawn, in core radii.
+    maxAxisScale: 1.45, // Widest an axis is drawn, in core radii.
+    lobesPerSwarm: 3, // Overlapping clumps that keep the core lopsided.
+    lobeAngleJitter: 0.4, // Fraction of the even lobe spacing an angle may shift.
+    lobeOffsetFraction: 0.55, // Lobe distance from the cloud centre, in core radii.
+    minLobeSpread: 0.42, // Gaussian spread of one lobe's flies, in core radii.
+    maxLobeSpread: 0.72,
+    lobeDriftFraction: 0.3, // How far a lobe wanders from its rest place, in core radii.
+    lobeDriftRate: { minHertz: 0.03, maxHertz: 0.11 }, // Slow enough to read as the cloud breathing.
+  },
+  swarmCorePull: 1.3, // Envelope pull at the core edge; gentle, never a wall.
+  swarmOuterPull: 5.5, // Quadratic pull beyond the core that gathers strays back in.
+  swarmLobePull: 1.2, // Cohesion toward a fly's own drifting density lobe.
   minFlightSpeed: 0.45, // Metres per second before the level multiplier.
   maxFlightSpeed: 1.8, // Metres per second before the level multiplier.
   maxForce: 13, // Acceleration clamp keeping the buzz integration stable.

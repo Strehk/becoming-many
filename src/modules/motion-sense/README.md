@@ -22,8 +22,12 @@ and raw GLSL ES 3.00 files.
   exports the level contract. It never imports a sibling module.
 - `fly-swarms.ts` owns the fly boid simulation: deterministic hash placement
   on player-centred distance rings, stepped-noise buzz, strided flockmate
-  sampling, soft cloud envelopes, a hard ground-clearance clamp, epoch-based
+  sampling, lobe cohesion, a hard ground-clearance clamp, epoch-based
   re-anchoring, and the opaque fly point pool.
+- `swarm-shape.ts` owns the volume a swarm buzzes inside: the per-swarm
+  anisotropic axes and yaw, the drifting density lobes flies clump around,
+  the Gaussian seeding, and the envelope spring. It is what keeps the clouds
+  irregular, unequal, and free of any boundary but the ground.
 - `bird-flocks.ts` owns the perception-only bird flocks: deterministic
   orbits on air rings that drift after the traveler, three points per bird
   (body plus two wingtips on a hashed flap oscillation), and no scene
