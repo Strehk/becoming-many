@@ -65,30 +65,41 @@ export const level: LevelPreset = {
       hottestColor: 0xfcce43,
     },
     surfaces: {
-      // Plants are the warmest thing in the world that is not alive, and the
-      // warmth sits where the plant meets the sky: the base warmth is what a
-      // shaded trunk holds, and the gradient carries heat up and outward, so
-      // a crown and its fine outer branches read warmer than the stem that
-      // holds them. Only tall plants gain much from it, which is why a low
-      // shrub stays near its trunk temperature while a tree crown climbs.
-      // A shaded trunk is genuinely cold, so the base sits low and the
-      // gradient does nearly all the work: one tree then spans most of the
-      // ramp by itself, dark at the stem and hot at the canopy, which is the
-      // shading a single flat warmth could never give it. The base is lifted
-      // just clear of what the ground may now reach, so a low shrub still
-      // reads as the warmer substance where it stands in an open meadow.
-      // The spread widens with it, so a stand reads as many separate plants
-      // at many separate temperatures instead of one warm mass, and the
-      // texture over them is now the deepest in the world: foliage holds
-      // heat unevenly, and that mottling is what keeps a crown from reading
-      // as one painted surface however warm it gets. The curve then pulls
-      // those differences apart instead of letting them average back out.
-      vegetationWarmth: 0.34,
-      vegetationWarmthSpread: 0.3,
-      vegetationHeightWarmthPerMeter: 0.038,
-      vegetationAxisWarmthPerMeter: 0.022,
-      vegetationTextureWarmth: 0.46,
-      vegetationContrast: 0.72,
+      // Plants are the warmest thing in the world that is not alive, and one
+      // plant is not one temperature. The base is what a shaded stem holds,
+      // and the two gradients carry heat up the plant and outward from its
+      // axis, so a single tree spans most of the ramp by itself: a stem
+      // climbing out of violet through blue into cyan, a shaded inner crown
+      // in magenta, and fine outer foliage exposed to the sky reaching
+      // orange. Only tall plants gain much from it, so a low shrub still
+      // reads near its own stem temperature and stays the warmer substance
+      // where it stands in an open meadow.
+      // The height gradient is deliberately held short of what would drive a
+      // crown top through the band ceiling. Readings that pile into the knee
+      // all come back at the same orange, and a canopy flattened into one
+      // color at the top is exactly the reading this is meant to break. What
+      // it gives up there the axis gradient takes over, so depth into the
+      // crown reads as temperature rather than the crown reading as a warm
+      // shell: outer branches run warmest, and the interior beside the stem
+      // falls back through magenta toward the cyan of the stem itself.
+      // The spread between plants is narrower than it was. It is the one
+      // value that moves a whole plant at once, and while a stand does need
+      // to read as many separate plants, a spread wide enough to carry that
+      // alone was also enough to lift an entire tree into one color band and
+      // hide everything happening inside it. A stand now separates mostly
+      // through the texture field its plants stand in, which varies within
+      // each crown as well as between them.
+      // That texture is the deepest in the world by a clear margin: foliage
+      // holds heat unevenly, and the mottling is what keeps a crown reading
+      // as branches, gaps, and depth rather than as one painted surface
+      // however warm it gets. The curve then pulls those differences apart
+      // instead of letting them average back out.
+      vegetationWarmth: 0.32,
+      vegetationWarmthSpread: 0.2,
+      vegetationHeightWarmthPerMeter: 0.05,
+      vegetationAxisWarmthPerMeter: 0.028,
+      vegetationTextureWarmth: 0.58,
+      vegetationContrast: 0.76,
       // Rock is cold, heavy substance: it sits near the ground's own range,
       // warmest on the face the sun reaches and cooler down its flanks.
       // It was the last solid thing left in the image: the ground around it
@@ -121,15 +132,20 @@ export const level: LevelPreset = {
     // move made in two places.
     // Rock shares that range exactly, because it is the same cold substance
     // and any gap between the two showed up as boulders pasted on the ground.
-    // Plants may fall nearly as far as ground, so a shaded stem and a low
-    // shrub sit in the dark with the ground they stand in. A living body's
+    // Plants may fall as far as ground, so a shaded stem, the dark side of a
+    // crown, and a low shrub sit in the dark with the ground they stand in;
+    // the floor is open almost to the bottom of the ramp because a crown's
+    // own shadowed depths have nowhere else to go. Their ceiling sits exactly
+    // where orange is fully reached, so the most exposed foliage is allowed
+    // that color and one tree covers violet to orange with no stretch of it
+    // left flat. Yellow stays out of reach. A living body's
     // floor is lifted into the warm half instead: no part of an animal,
     // however far from its core, may fall back into the cold range the
     // landscape occupies, because an animal reading as ground temperature
     // stops being the heat this level is about.
     bands: {
       terrain: { floorWarmth: 0, ceilingWarmth: 0.48 },
-      vegetation: { floorWarmth: 0.08, ceilingWarmth: 0.78 },
+      vegetation: { floorWarmth: 0.04, ceilingWarmth: 0.86 },
       rocks: { floorWarmth: 0, ceilingWarmth: 0.48 },
       animals: { floorWarmth: 0.5, ceilingWarmth: 1 },
     },

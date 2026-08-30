@@ -65,27 +65,37 @@ export const THERMAL_PERCEPTION_SETTINGS = {
   // grid, checkerboard, or repeat can form; the quiet values then ease the
   // texture off the hottest surfaces so a living body core keeps its shape.
   texture: {
-    // Four octaves spanning roughly six metres down to a quarter of one, so a
-    // small clearing carries variation at its own size and still breaks up
-    // into fine grain close to. Fewer octaves left the large scales flat.
-    // The whole span was pulled finer than the nine metres it first covered:
-    // patches that size read as fields of temperature laid over the ground
-    // rather than as the grain of the ground itself, and one of them could
-    // cover a whole tree crown. The count stays at four — it is a compile-time
-    // define, and a fifth octave would land under a decimetre, which shimmers
-    // on a moving camera and costs another noise evaluation per fragment.
+    // Four octaves spanning roughly four and a half metres down to under a
+    // fifth of one, so a small clearing carries variation at its own size and
+    // still breaks up into fine grain close to. Fewer octaves left the large
+    // scales flat. The span has been pulled finer twice. At the nine metres
+    // it first covered, patches read as fields of temperature laid over the
+    // ground rather than as the grain of the ground itself. At six a patch
+    // still covered a whole tree crown, and since it is the coarsest octave
+    // that carries the most weight, that one patch decided the temperature of
+    // a whole tree: no depth of texture could make a crown read as internal
+    // structure while its largest scale was tinting the crown as a unit. Here
+    // the coarsest patch is about half a crown, so branch masses, gaps, and
+    // depth separate inside one tree. The count stays at four — it is a
+    // compile-time define, and a fifth octave would land under a decimetre,
+    // which shimmers on a moving camera and costs another noise evaluation
+    // per fragment.
     octaves: 4,
-    featureSizeMeters: 6, // Largest patch size on ground, plants, and rocks.
+    featureSizeMeters: 4.5, // Largest patch size on ground, plants, and rocks.
     // The same, as a share of an actor's height: a body now carries about
     // three patches head to hoof rather than two, so a coat mottles instead
     // of dividing into halves.
     bodyFeatureFraction: 0.35,
     lacunarity: 2.9, // Non-integer: octave periods never line up.
-    // Each finer octave's share of the one before it. Raised with the feature
-    // size: the coarsest octave used to carry nearly half the field on its
-    // own, so weighting the finer ones up is what makes the grain read as
-    // grain instead of as a faint dither over large patches.
-    gain: 0.62,
+    // Each finer octave's share of the one before it. Raised twice with the
+    // feature size, and for the same reason both times: the coarsest octave
+    // once carried nearly half the field on its own, which is the same
+    // failure as an oversized feature — one broad patch deciding what a whole
+    // surface, or a whole tree, reads as. It now holds about a third while
+    // the finest holds close to a fifth, so the grain reads as grain instead
+    // of as a faint dither over large patches, and the fine structure inside
+    // a crown survives the depth laid over it.
+    gain: 0.78,
     quietWarmth: 0.8, // Warmth above which the texture starts easing off.
     quietAmount: 0.45, // Share of it removed at full heat.
   },
@@ -96,7 +106,12 @@ export const THERMAL_PERCEPTION_SETTINGS = {
   // differences that carry its structure and leaves both ends unclipped.
   definition: {
     terrainPivot: 0.28,
-    vegetationPivot: 0.5,
+    // Plants cluster higher than the midpoint now that a crown climbs from a
+    // cyan stem into exposed orange foliage, so the pivot follows them there:
+    // the differences inside a canopy get the steepest part of the curve,
+    // while the shaded stem below sits on the flat lower half and is carried
+    // down toward violet rather than pulled up with the crown.
+    vegetationPivot: 0.56,
     rockPivot: 0.28,
     actorPivot: 0.75,
   },
