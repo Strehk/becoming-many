@@ -25,10 +25,12 @@ export const level: LevelPreset = {
     },
   },
   // Level 05 palette from docs/levels/README.md: #2E1386 #0C47D1 #2EB4E8
-  // #D5198A #FB5F16 #FCCE43, mapped cold to hot. Five of the six stops are
-  // those documented colors verbatim; the coldest is the one deviation, and
-  // it is described where it is authored below. How far up the warmth range
-  // each stop is reached is set by the ramp thresholds the module owns.
+  // #D5198A #FB5F16 #FCCE43, mapped cold to hot. The warm half is those
+  // documented colors verbatim. The cold half deviates, and only ever in
+  // value: all three cold stops are carried down their own hues so the
+  // landscape they cover can read dark. Every deviation is described where
+  // it is authored below. How far up the warmth range each stop is reached
+  // is set by the ramp thresholds the module owns.
   thermal: {
     // Full sense strength until a dramaturgy driver exists.
     intensity: 1,
@@ -48,10 +50,15 @@ export const level: LevelPreset = {
     // survives on every sensed surface. That ramp is the only true luminance
     // the heat view owns — near-dark to far-pale, shaded by the world's own
     // form — so the more of it survives, the more the image reads as
-    // structure at a distance rather than as temperature painted flat. It
-    // stops short of half because the blend is one shared value: past this
-    // the warm bodies grey out with the ground, and they are the one thing
-    // that must stay legible as heat.
+    // structure at a distance rather than as temperature painted flat.
+    // It was carried up to an even split to darken the cold ground and
+    // brought back here again, because the blend is one shared value applied
+    // to every sensed fragment at the same strength: it cannot be aimed at
+    // the cold end, so buying darkness with it charges the warm bodies for
+    // ground they are not standing on. The cold end pays for its own
+    // darkness now, in the colors authored below, and this value is left
+    // where it only has to do the thing it is actually for — keeping the
+    // depth ramp's shading present underneath the heat image.
     carriedColorBlend: 0.42,
     // The full moodboard ramp, cold to hot. A neutral cold end was tried here
     // and reverted: draining the hue out of violet and blue did let the
@@ -77,10 +84,23 @@ export const level: LevelPreset = {
     // near-black violet rather than true black because the carried echo world
     // keeps its own share of every sensed surface, and a black stop under
     // that share reads as a hole in the image instead of as cold.
+    // The cold half of the ramp is carried down to about three fifths of the
+    // luminance the moodboard gives it, hue untouched. Blue stays blue and
+    // cyan stays cyan; both simply stop being lit. The ground and the rock
+    // on it live entirely inside these three stops — their band runs out
+    // just past where cool is fully reached — so this is the whole landscape
+    // being darkened, and it is darkened at the source rather than by
+    // thinning the false color until the grey world shows through it. The
+    // cyan is the stop that mattered most: it is the ceiling the ground
+    // arrives at, so every exposed ridge and sunlit slope was landing on the
+    // brightest color in the cold half and the landscape read lit from
+    // within. Deepened, the ground ends dark and the warm half of the ramp
+    // is left as the only bright thing in the image, which is what a thermal
+    // view is supposed to say.
     colors: {
       coldestColor: 0x0e0628,
-      coldColor: 0x0c47d1,
-      coolColor: 0x2eb4e8,
+      coldColor: 0x072b7d,
+      coolColor: 0x1c6c8b,
       warmColor: 0xd5198a,
       hotColor: 0xfb5f16,
       hottestColor: 0xfcce43,

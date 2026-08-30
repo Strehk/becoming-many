@@ -34,11 +34,13 @@ back into the carried grayscale world beyond it.
 Palette (see [moodboard](mood/moodboard.png)):
 `#2E1386` `#0C47D1` `#2EB4E8` `#D5198A` `#FB5F16` `#FCCE43`
 
-The ramp's anchors are that palette cold to hot, five of them verbatim. The
-coldest is carried down its own hue to `#0E0628`; the decision below records
-why. What the anchors are and how far up the warmth range each one is reached
-are separate questions; the 2026-08-30 decision on the ramp thresholds below
-records where the stops were placed.
+The ramp's anchors are that palette cold to hot. The warm three are verbatim;
+the cold three are carried down their own hues — `#2E1386` to `#0E0628`,
+`#0C47D1` to `#072B7D`, `#2EB4E8` to `#1C6C8B` — so the landscape they cover
+can read dark. The decisions below record why. What the anchors are and how
+far up the warmth range each one is reached are separate questions; the
+2026-08-30 decision on the ramp thresholds below records where the stops were
+placed.
 
 Decided art direction (2026-08-28): the documented level-05 palette maps
 cold to hot across a six-stop ramp. The temperature field is expressive
@@ -131,6 +133,22 @@ palette outside the radius. No audio counterpart exists yet.
   preset combines the Terrain Colors presentation with thermal, the same
   conditions are sampled twice per vertex (bounded by row streaming, noted
   in the module README).
+- Cold half darkened in value, hue kept (decided 2026-08-30): `#0C47D1` and
+  `#2EB4E8` are carried to about three fifths of their luminance along their
+  own hues, joining the coldest stop, which was already deepened this way.
+  The cyan is the stop that mattered: the ground and rock band runs out just
+  past where cool is fully reached, so every exposed ridge and sunlit slope
+  landed on the brightest color in the cold half and the landscape read lit
+  from within. Deepened, the ground ends dark and the warm half of the ramp is
+  the only bright thing in the image. This is not the reverted neutral-cold
+  experiment: blue stays blue and cyan stays cyan, they only stop being lit,
+  so the level still reads cold to hot as violet through yellow.
+  - Reached for by way of `carriedColorBlend` first, and that route was
+    abandoned. Raising the blend to `0.5` did darken cold ground by letting
+    more of the near-dark echo ramp through, but the blend is one constant for
+    every fragment (see the known limit below), so it charged the warm bodies
+    for ground they are not standing on. The blend is back at `0.42` and the
+    cold end pays for its own darkness in its colors.
 - Cold end keeps the moodboard violet and blue (decided 2026-08-30): a
   neutral cold end was tried the same day and reverted. That experiment
   replaced `#2E1386` and `#0C47D1` with greys drawn from the carried echo
