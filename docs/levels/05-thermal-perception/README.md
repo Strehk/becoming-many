@@ -34,6 +34,11 @@ back into the carried grayscale world beyond it.
 Palette (see [moodboard](mood/moodboard.png)):
 `#2E1386` `#0C47D1` `#2EB4E8` `#D5198A` `#FB5F16` `#FCCE43`
 
+The ramp's six anchors are that palette verbatim, cold to hot. What the
+anchors are and how far up the warmth range each one is reached are separate
+questions; the 2026-08-30 decision on the ramp thresholds below records where
+the stops were placed.
+
 Decided art direction (2026-08-28): the documented level-05 palette maps
 cold to hot across a six-stop ramp. The temperature field is expressive
 but physically motivated — water reads coldest and colder with depth, dry
@@ -123,6 +128,44 @@ palette outside the radius. No audio counterpart exists yet.
   preset combines the Terrain Colors presentation with thermal, the same
   conditions are sampled twice per vertex (bounded by row streaming, noted
   in the module README).
+- Cold end keeps the moodboard violet and blue (decided 2026-08-30): a
+  neutral cold end was tried the same day and reverted. That experiment
+  replaced `#2E1386` and `#0C47D1` with greys drawn from the carried echo
+  ramp, so cold ground carried no hue of its own and the echo world's depth
+  image showed through it — heat as a highlight rather than a coat of paint.
+  It was rejected because it costs the level its identity: the moodboard
+  reads cold to hot as violet through yellow, and a landscape of greys is the
+  echolocation world with warm objects standing in it rather than a thermal
+  image. The concern behind it is real and is answered by where the ramp
+  thresholds sit instead (below) — the ground is held in violet, blue, and
+  cyan because magenta begins above anything it can measure, not because its
+  colors were taken away.
+  - Known limit, unchanged by either choice: `carriedColorBlend` is one
+    constant for every fragment, so the carried echo world is mixed into warm
+    and cold surfaces alike and pulls distant pale surfaces down toward their
+    own brightness. True transparency would fade the false color in with
+    temperature and leave cold surfaces untouched; that means a
+    warmth-dependent blend in the shader, which is a module change and is not
+    taken here.
+- Ramp thresholds (decided 2026-08-30): the stops at which each palette color
+  is fully reached moved from `0.14 / 0.30 / 0.46 / 0.64` to
+  `0.18 / 0.44 / 0.70 / 0.86`. The cold end now owns most of the warmth
+  range, and magenta, orange, and yellow are pushed into its top third, where
+  little but a living body reaches. The cyan stop is placed at the terrain
+  band's ceiling: the ground spreads its whole range of readings across
+  violet, blue, and cyan and arrives at saturated cyan exactly where its own
+  substance runs out, so it never tips into magenta however its elevation,
+  texture, and contrast add up. Holding the ground's hue with the ramp rather
+  than by lowering its band is deliberate — the band had been widened in the
+  same session to stop the ground's warmer readings being clipped onto one
+  color, and narrowing it again would undo that gradation. Yellow becomes
+  exclusive to living bodies and an exposed tree crown tops out between
+  magenta and orange. `actorExtremityFalloff` (0.42 to 0.32) and the animals
+  band floor (0.4 to 0.5) followed: with the warm stops higher, the old
+  falloff would have carried limbs down into the cyan the ground occupies,
+  handing the landscape's own color to the one thing that must read as hot.
+  A regression test in `tests/levels/level-presets.test.ts` locks the ground
+  and rock ceilings below the warm stop.
 - Open art decisions: physical versus expressive temperature mapping
   tuning against real headset contrast; radius and feather width against
   the dramaturgy; whether vegetation warmth should read per-part instead

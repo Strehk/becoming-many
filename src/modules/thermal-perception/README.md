@@ -34,7 +34,7 @@ authored shape valid for every species. Grass has no material-effect hook
 (raw shader) and is excluded, as it is from Echo Depth.
 
 On top of that measured warmth, the fragment stage lays one organic texture:
-several octaves of value noise spanning roughly nine metres down to a third
+several octaves of value noise spanning roughly six metres down to a quarter
 of one, each turned by an orthonormal rotation and
 stepped by a non-integer factor, so neither the lattice axes nor the octave
 periods can line up into a grid, a checkerboard, or a repeat. It is sampled
@@ -93,8 +93,8 @@ plateau anywhere that could posterize into a band. The pivot belongs to the
 module (it is ramp shape, and each consumer's pivot sits on the warmth its own
 readings cluster around); the amount is authored per level. Living bodies
 carry the strongest curve, which pushes a core toward full heat while limbs
-fall past the warm stop, so an animal reads as a contoured shape rather than a
-warm blob. Because the curve acts last, the body core, the radiated pool, and
+fall back to the warm stop, so an animal reads as a contoured shape rather
+than a warm blob. Because the curve acts last, the body core, the radiated pool, and
 the surface texture all gain their definition from the same temperature
 difference instead of from separate treatments.
 
@@ -116,5 +116,5 @@ intensity zero), temporal heat variation or heat trails (a body warms its
 surroundings only where it stands now, and leaves nothing behind when it
 moves on), any surface texture or material map beyond the procedural warmth
 texture described above, and any additional thermal camera or duplicate
-render pass. The per-fragment texture costs three noise octaves inside the
+render pass. The per-fragment texture costs four noise octaves inside the
 sensed radius; its headroom on PICO needs runtime acceptance.

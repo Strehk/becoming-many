@@ -14,6 +14,7 @@ import { level as scentLevel } from "../../src/levels/scent.level";
 import { level as testLevel } from "../../src/levels/test.level";
 import { level as thermalLevel } from "../../src/levels/thermal.level";
 import { level as whiteWorld } from "../../src/levels/white-world.level";
+import { THERMAL_PERCEPTION_SETTINGS } from "../../src/modules/thermal-perception/thermal-perception-settings";
 
 test("only the Test Level activates development diagnostics", () => {
   const testPreset: LevelPreset = testLevel;
@@ -218,6 +219,19 @@ test("Thermal Level layers heat onto the carried Motion world", () => {
 
   expect(thermal.intensity).toBe(1);
   expect(Object.values(thermal.colors)).toEqual(thermalPalette);
+  // The ground is held in violet, blue, and cyan by where the ramp's warm
+  // stop sits, not by draining its colors: no matter how a ground reading
+  // adds up, its own substance stops below the warmth at which magenta is
+  // reached. Rock shares that range, so it is checked with the ground.
+  for (const coldBand of [thermal.bands.terrain, thermal.bands.rocks]) {
+    expect(coldBand.ceilingWarmth).toBeLessThan(
+      THERMAL_PERCEPTION_SETTINGS.warmStopFraction,
+    );
+  }
+  // Only a living body reaches the top of the ramp.
+  expect(thermal.bands.animals.floorWarmth).toBeGreaterThan(
+    thermal.bands.terrain.ceilingWarmth,
+  );
   // Heat is a near sense: it feathers out well inside the echo far distance.
   expect(thermal.edgeFeatherMeters).toBeLessThan(thermal.radiusMeters);
   expect(thermal.radiusMeters + thermal.edgeFeatherMeters).toBeLessThan(

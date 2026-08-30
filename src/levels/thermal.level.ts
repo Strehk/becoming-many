@@ -25,7 +25,9 @@ export const level: LevelPreset = {
     },
   },
   // Level 05 palette from docs/levels/README.md: #2E1386 #0C47D1 #2EB4E8
-  // #D5198A #FB5F16 #FCCE43, mapped cold to hot.
+  // #D5198A #FB5F16 #FCCE43, mapped cold to hot. All six stops are those
+  // documented colors verbatim; how far up the warmth range each one is
+  // reached is set by the ramp thresholds the module owns, not here.
   thermal: {
     // Full sense strength until a dramaturgy driver exists.
     intensity: 1,
@@ -33,11 +35,27 @@ export const level: LevelPreset = {
     // feathers back into the echo ramp well inside its 96 m far distance.
     radiusMeters: 60,
     edgeFeatherMeters: 20,
-    // Heat seen through the carried grey world rather than painted over it:
-    // roughly a fifth of the echo ramp stays visible everywhere inside the
-    // radius, which mutes the false color toward the world it belongs to and
-    // brings that ramp's near-dark to far-pale shading back as a depth cue.
-    carriedColorBlend: 0.22,
+    // Heat seen through the carried grey world rather than painted over it,
+    // and translucently enough that more than two fifths of the echo ramp
+    // survives on every sensed surface. That ramp is the only true luminance
+    // the heat view owns — near-dark to far-pale, shaded by the world's own
+    // form — so the more of it survives, the more the image reads as
+    // structure at a distance rather than as temperature painted flat. It
+    // stops short of half because the blend is one shared value: past this
+    // the warm bodies grey out with the ground, and they are the one thing
+    // that must stay legible as heat.
+    carriedColorBlend: 0.42,
+    // The full moodboard ramp, cold to hot. A neutral cold end was tried here
+    // and reverted: draining the hue out of violet and blue did let the
+    // carried echo world show through cold ground, but it left the level
+    // looking like the echolocation world with warm objects standing in it
+    // rather than like a thermal image, which reads cold to hot as violet
+    // through yellow. What that experiment reached for is done by the ramp
+    // thresholds instead — the ground is held in violet, blue, and cyan
+    // because magenta now begins above anything it can measure, not because
+    // its colors were taken away from it. Exposed ground tips into cyan,
+    // plants climb through magenta into orange, and only a living body
+    // reaches the yellow at the top.
     colors: {
       coldestColor: 0x2e1386,
       coldColor: 0x0c47d1,
@@ -53,50 +71,95 @@ export const level: LevelPreset = {
       // a crown and its fine outer branches read warmer than the stem that
       // holds them. Only tall plants gain much from it, which is why a low
       // shrub stays near its trunk temperature while a tree crown climbs.
-      vegetationWarmth: 0.4,
-      vegetationWarmthSpread: 0.14,
-      vegetationHeightWarmthPerMeter: 0.022,
-      vegetationAxisWarmthPerMeter: 0.015,
-      vegetationTextureWarmth: 0.14,
-      vegetationContrast: 0.45,
+      // A shaded trunk is genuinely cold, so the base sits low and the
+      // gradient does nearly all the work: one tree then spans most of the
+      // ramp by itself, dark at the stem and hot at the canopy, which is the
+      // shading a single flat warmth could never give it. The base is lifted
+      // just clear of what the ground may now reach, so a low shrub still
+      // reads as the warmer substance where it stands in an open meadow.
+      // The spread widens with it, so a stand reads as many separate plants
+      // at many separate temperatures instead of one warm mass, and the
+      // texture over them is now the deepest in the world: foliage holds
+      // heat unevenly, and that mottling is what keeps a crown from reading
+      // as one painted surface however warm it gets. The curve then pulls
+      // those differences apart instead of letting them average back out.
+      vegetationWarmth: 0.34,
+      vegetationWarmthSpread: 0.3,
+      vegetationHeightWarmthPerMeter: 0.038,
+      vegetationAxisWarmthPerMeter: 0.022,
+      vegetationTextureWarmth: 0.46,
+      vegetationContrast: 0.72,
       // Rock is cold, heavy substance: it sits near the ground's own range,
       // warmest on the face the sun reaches and cooler down its flanks.
+      // It was the last solid thing left in the image: the ground around it
+      // had been broken into mottled, high-contrast patches while rock still
+      // carried one near-flat temperature, so every boulder read as a pasted
+      // shape. Its texture, its spread between instances, and its contrast
+      // now sit in the same register as the ground it lies on.
       rockWarmth: 0.2,
-      rockWarmthSpread: 0.1,
+      rockWarmthSpread: 0.18,
       rockHeightWarmthPerMeter: 0.05,
       rockAxisWarmthPerMeter: -0.03,
-      rockTextureWarmth: 0.1,
-      rockContrast: 0.3,
+      rockTextureWarmth: 0.24,
+      rockContrast: 0.52,
     },
     // What each material's own substance may reach, whatever its elevation,
-    // gradient, texture, and contrast add up to. Ground and rock are held in
-    // the violet-to-cyan end; plants may climb into magenta and orange where
-    // they are exposed; only a living body owns the hottest colors.
+    // gradient, texture, and contrast add up to. Ground and rock fill the
+    // cold end and stop at saturated cyan; plants climb through magenta into
+    // orange where they are exposed; only a living body reaches yellow.
+    // The ground's floor is open to the bottom of the ramp: the coldest
+    // ground is allowed to go dark. Its ceiling once sat only just past the
+    // cyan stop, and everything the ground measured above that — a forested
+    // slope, a sunlit ridge, and the warm half of the texture laid over both
+    // — was folded onto the one color, so the landscape read as a single
+    // tone with dark patches punched into it. The ceiling stays open well
+    // past that, and it is the ramp rather than the band that keeps the
+    // ground cold now: the cyan stop was moved up to meet this ceiling, so
+    // the ground's whole spread of readings separates across the cold end
+    // and runs out at cyan without ever being clipped and without tipping
+    // into magenta. Widening the range and holding the hue are the same
+    // move made in two places.
+    // Rock shares that range exactly, because it is the same cold substance
+    // and any gap between the two showed up as boulders pasted on the ground.
+    // Plants may fall nearly as far as ground, so a shaded stem and a low
+    // shrub sit in the dark with the ground they stand in. A living body's
+    // floor is lifted into the warm half instead: no part of an animal,
+    // however far from its core, may fall back into the cold range the
+    // landscape occupies, because an animal reading as ground temperature
+    // stops being the heat this level is about.
     bands: {
-      terrain: { floorWarmth: 0.02, ceilingWarmth: 0.36 },
-      vegetation: { floorWarmth: 0.2, ceilingWarmth: 0.78 },
-      rocks: { floorWarmth: 0.04, ceilingWarmth: 0.36 },
-      animals: { floorWarmth: 0.4, ceilingWarmth: 1 },
+      terrain: { floorWarmth: 0, ceilingWarmth: 0.48 },
+      vegetation: { floorWarmth: 0.08, ceilingWarmth: 0.78 },
+      rocks: { floorWarmth: 0, ceilingWarmth: 0.48 },
+      animals: { floorWarmth: 0.5, ceilingWarmth: 1 },
     },
-    // The organic texture over the ground: deep enough to break the elevation
-    // ramp into mottled patches, shallow next to the 0.45 span that ramp
-    // covers, so the landscape's shape still leads the reading.
-    terrainTextureWarmth: 0.16,
+    // The organic texture over the ground: deep enough that no stretch of
+    // ground holds one temperature anywhere, comparable now to the span the
+    // elevation ramp itself covers. The landscape's shape still leads the
+    // reading, but it arrives mottled rather than as flat fields of color,
+    // and the patches that fall below the ground's floor go dark.
+    terrainTextureWarmth: 0.28,
     // Definition: the ground's readings cluster low on the ramp, so pulling
     // them apart around that cluster separates hollow from ridge and forest
-    // from meadow. It stays the gentlest curve in the world, because the
-    // ground's band is narrow and a stronger one would only press its upper
-    // half against the ceiling instead of separating anything.
-    terrainContrast: 0.3,
+    // from meadow. The curve is steep now because everything below the
+    // cluster is driven toward black by it: that is where the ground's depth
+    // comes from, since a hollow has no shadow to cast and can only read
+    // dark by reading cold.
+    terrainContrast: 0.7,
     // Warm-blooded animals are the hottest thing in the world: the body core
     // reaches the yellow end of the ramp outright, and the falloff carries
-    // legs, snouts, and tails back down into the magenta and cyan bands.
+    // legs, snouts, and tails back down through orange into magenta. That
+    // falloff is shorter than it was, because the warm stops moved up: the
+    // same drop that used to end in magenta would now end in the cyan the
+    // ground occupies, which would hand the landscape's own color to the one
+    // thing in the world that has to read as hot.
     actorWarmth: 0.96,
-    actorExtremityFalloff: 0.42,
-    // A quarter of what the core-to-limb falloff spans, and the shader eases
-    // it off above the quiet warmth, so a coat varies while the hot core
-    // keeps a defined edge.
-    actorTextureWarmth: 0.16,
+    actorExtremityFalloff: 0.32,
+    // Over half of what the core-to-limb falloff spans, and the shader eases
+    // it off above the quiet warmth: the coat over flanks, legs, and tail
+    // breaks into uneven patches of heat, while the core the ease spares
+    // stays smooth and keeps a defined edge against them.
+    actorTextureWarmth: 0.24,
     // Living bodies get the strongest curve of anything in the world: it
     // pushes the core toward full heat and the limbs down past the warm
     // stop, so an animal reads as a contoured shape rather than a warm blob.

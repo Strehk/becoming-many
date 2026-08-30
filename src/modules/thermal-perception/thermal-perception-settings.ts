@@ -8,14 +8,21 @@
 export const THERMAL_PERCEPTION_SETTINGS = {
   // Normalized 0..1 ramp positions across the warmth value. Each value marks
   // where its palette color is fully reached; raising a value pushes that
-  // color band toward warmer surfaces. The stops sit closer together than an
-  // even split, so the warmth band the world actually occupies swings hue
-  // quickly: small heat differences separate the way an infrared camera
-  // separates them, while the ramp between the stops stays continuous.
-  coldStopFraction: 0.14,
-  coolStopFraction: 0.3,
-  warmStopFraction: 0.46,
-  hotStopFraction: 0.64,
+  // color band toward warmer surfaces. They are spaced unevenly on purpose.
+  // The cold end is given most of the range, because the landscape is what
+  // occupies it and its readings need room to separate from one another; the
+  // warm colors are pushed up into the top third, where almost nothing but a
+  // living body ever reaches. The cyan stop is placed at the ceiling of the
+  // terrain band, so the ground spans the whole cold end and arrives at
+  // saturated cyan exactly where its own substance runs out, and magenta
+  // begins above anything the ground can measure however its elevation,
+  // texture, and contrast add up. Orange and yellow sit higher still: they
+  // are what a warm-blooded body is made of, so the world reads as a cold
+  // one with heat moving through it rather than as a warm one.
+  coldStopFraction: 0.18,
+  coolStopFraction: 0.44,
+  warmStopFraction: 0.7,
+  hotStopFraction: 0.86,
 
   // Terrain warmth mapping from elevation and zone conditions. Ground is the
   // coldest substance in the world, so every value here is scaled to keep it
@@ -58,14 +65,27 @@ export const THERMAL_PERCEPTION_SETTINGS = {
   // grid, checkerboard, or repeat can form; the quiet values then ease the
   // texture off the hottest surfaces so a living body core keeps its shape.
   texture: {
-    // Four octaves spanning roughly nine metres down to a third of one, so a
-    // wide clearing carries variation at its own size and still breaks up
+    // Four octaves spanning roughly six metres down to a quarter of one, so a
+    // small clearing carries variation at its own size and still breaks up
     // into fine grain close to. Fewer octaves left the large scales flat.
+    // The whole span was pulled finer than the nine metres it first covered:
+    // patches that size read as fields of temperature laid over the ground
+    // rather than as the grain of the ground itself, and one of them could
+    // cover a whole tree crown. The count stays at four — it is a compile-time
+    // define, and a fifth octave would land under a decimetre, which shimmers
+    // on a moving camera and costs another noise evaluation per fragment.
     octaves: 4,
-    featureSizeMeters: 9, // Largest patch size on ground, plants, and rocks.
-    bodyFeatureFraction: 0.5, // The same, as a share of an actor's height.
+    featureSizeMeters: 6, // Largest patch size on ground, plants, and rocks.
+    // The same, as a share of an actor's height: a body now carries about
+    // three patches head to hoof rather than two, so a coat mottles instead
+    // of dividing into halves.
+    bodyFeatureFraction: 0.35,
     lacunarity: 2.9, // Non-integer: octave periods never line up.
-    gain: 0.55, // Each finer octave's share of the one before it.
+    // Each finer octave's share of the one before it. Raised with the feature
+    // size: the coarsest octave used to carry nearly half the field on its
+    // own, so weighting the finer ones up is what makes the grain read as
+    // grain instead of as a faint dither over large patches.
+    gain: 0.62,
     quietWarmth: 0.8, // Warmth above which the texture starts easing off.
     quietAmount: 0.45, // Share of it removed at full heat.
   },
