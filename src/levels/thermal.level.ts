@@ -109,68 +109,71 @@ export const level: LevelPreset = {
       // Plants are the warmest thing in the world that is not alive, and one
       // plant is still not one temperature — but the temperatures it holds
       // belong to it, and they are laid out along its own shape instead of
-      // scattered across it. The base is what the trunk itself holds, and it
-      // sits high on the ramp on purpose: a plant is read from its core
-      // outward now, so the authored warmth is the core's warmth and
-      // everything else on the plant is measured as a loss away from it.
-      // One gradient shapes the plant, and it is radial. Warmth falls with
-      // horizontal distance from the plant's own vertical axis, so the trunk
-      // line runs hottest from base to crown top, the inner crown beside it
-      // falls back through magenta, the mid canopy through cyan, and the
-      // outermost foliage — the part actually exposed to the sky — arrives at
-      // blue. It is a smooth continuous function of where a point sits on the
-      // plant, so every intermediate color between core and edge is genuinely
-      // visited on the way rather than jumped over.
-      // The height gradient is off. It used to carry the plant's range
-      // upward, which made a crown top and a trunk base two temperatures for
-      // a reason that had nothing to do with the plant's structure, and it
-      // fought the radial reading: a point far out on a high branch and a
-      // point on the trunk beside it could arrive at the same warmth from
-      // opposite directions, so depth into the crown stopped meaning
-      // anything. At zero the trunk axis holds one temperature over its whole
-      // length and distance from that axis is the only thing that changes the
-      // reading, which is what lets a tree read as a warm core inside a
-      // cooler shell rather than as a warm top.
+      // scattered across it. The base is what the plant holds where it meets
+      // the ground, and it sits high on the ramp on purpose: warmth enters a
+      // plant at the foot of its trunk, and everything else on it is measured
+      // as a loss on the way out from there.
+      // Two gradients shape the plant and they work as one. Both are negative
+      // and close to equal, so warmth falls with height above the foot and
+      // with distance out from the trunk line at nearly the same rate: what
+      // they add up to is a single falloff away from the base of the trunk in
+      // every direction at once. A point's reading is therefore set by
+      // roughly how far it lies from where the plant is rooted, which is as
+      // close as this level can come to how far heat had to travel through
+      // the plant to reach it. The trunk is the warmest line in the tree
+      // because it is the shortest path from the foot; it cools as it climbs,
+      // and the crown around it cools further with every metre outward — so a
+      // high outer twig, far from the foot by both measures, is the coldest
+      // thing on the plant, and the low inner trunk is the hottest.
+      // This replaces a purely radial reading. That one cooled outward from
+      // the trunk line but gave the trunk itself no gradient at all: the whole
+      // axis from root to crown top held one temperature, so a tree read as a
+      // hot vertical column standing inside a cooler shell, which is a
+      // description of the model's bounding cone rather than of the plant.
+      // What none of this does is follow the plant's actual branches. The
+      // shader is handed the offset from the instance origin and nothing else
+      // — no skeleton, no branch topology, no branch thickness, and no way to
+      // tell trunk geometry from foliage geometry, since both submeshes share
+      // one set of uniforms. A gradient measured from the foot approximates
+      // distance travelled through the plant; it does not measure it, and no
+      // value in this file can turn it into a measurement. The conifers have
+      // no branch geometry to follow in any case: their crowns are solid.
       // The spread between plants is nearly closed. It is the one value that
       // moves a whole plant at once, and a stand does not need it: neighbours
-      // separate through their own radial gradients and their own places in
-      // the world, while a spread wide enough to be read as a difference in
+      // separate through their own gradients and their own places in the
+      // world, while a spread wide enough to be read as a difference in
       // overall color was exactly what made two adjacent trees look like two
       // different substances. What is left is a hint, well inside one band.
-      // The texture is noise and the contrast curve steepens whatever it is
-      // given, so together they are what turn a gradient into hard
-      // boundaries: warm beside cold with nothing in between, isolated cold
-      // specks inside a warm crown. The curve stays pulled well back for that
-      // reason — applied lightly enough to keep the core-to-edge falloff
-      // separated without sharpening the grain inside it into edges.
-      // The texture is no longer held down with it. It was cut to a tenth
-      // when the radial gradient was made to carry the plant's whole range,
-      // and at that depth it could only shade the color the gradient had
-      // already chosen. That was right for the color and wrong for the model
-      // underneath it: these crowns are low-poly solids drawn with an unlit
-      // material, so nothing shades a facet by its normal, and a crown whose
-      // interior holds one smooth radial figure gives the eye nothing to read
-      // but its own outline — which is a cone. The noise is a world-space
-      // field sampled per fragment, so it is the one thing in the level that
-      // varies across a flat face rather than along it. Doubled, it mottles
-      // the crown into uneven patches and the silhouette stops being the only
-      // structure there is to see. It stays below the ground's own depth, so
-      // foliage still reads as the warmer substance, and the shader eases the
-      // texture off above the quiet warmth — which is the trunk core, not the
-      // outer foliage — so the mottling lands hardest exactly on the exposed
-      // canopy that draws the outline. The silhouette itself is asset
-      // geometry and no value here can reach it; this only stops it standing
-      // alone.
-      // Only tall plants have the radius to span that range. A bush is under
-      // a metre across, so it loses little on the way out and reads near its
-      // own core temperature — one small warm thing in a meadow rather than a
-      // gradient too small to see.
-      vegetationWarmth: 0.8,
+      // The texture is what stands in for the structure the geometry does not
+      // carry. It is a world-space noise field sampled per fragment — the one
+      // thing in the level that varies across a flat face rather than along
+      // it, which matters because these crowns are low-poly solids drawn with
+      // an unlit material and nothing shades a facet by its normal. It breaks
+      // the falloff into uneven warm masses and cold gaps at about half a
+      // crown and below, so a canopy reads as patches of held heat rather than
+      // as one airbrushed cone, and the silhouette stops being the only
+      // structure there is to see. It is deepened again here because the
+      // falloff it now breaks up spans the plant's whole range instead of the
+      // crown's outer half, and a smooth field that wide is exactly what reads
+      // as a solid. It stays below the ground's own depth, so foliage still
+      // reads as the warmer substance. These masses are noise: they are not
+      // the plant's branches and they do not know where its branches are.
+      // The contrast curve steepens whatever it is given, so it is what turns
+      // those masses into separate warm areas instead of soft blushes in one
+      // continuous field. It is raised with the texture and for the same
+      // reason, but held well short of full: the falloff from foot to tip has
+      // to stay continuous, so that every color between orange and blue is
+      // genuinely visited on the way out rather than jumped over.
+      // Only tall plants have the reach to span that range. A bush stands
+      // about a metre and is under a metre across, so it loses little from its
+      // foot in either direction and reads near its base temperature — one
+      // small warm thing in a meadow rather than a gradient too small to see.
+      vegetationWarmth: 0.84,
       vegetationWarmthSpread: 0.05,
-      vegetationHeightWarmthPerMeter: 0,
-      vegetationAxisWarmthPerMeter: -0.22,
-      vegetationTextureWarmth: 0.2,
-      vegetationContrast: 0.22,
+      vegetationHeightWarmthPerMeter: -0.06,
+      vegetationAxisWarmthPerMeter: -0.11,
+      vegetationTextureWarmth: 0.26,
+      vegetationContrast: 0.34,
       // Rock is cold, heavy substance: it sits near the ground's own range,
       // warmest on the face the sun reaches and cooler down its flanks.
       // It was the last solid thing left in the image: the ground around it
@@ -208,9 +211,10 @@ export const level: LevelPreset = {
     // crown fades out into cold blue rather than into the near-black the
     // ground's own hollows use: a plant sharing the ground's darkest color
     // stops reading as a separate object standing in it. Their ceiling still
-    // sits exactly where orange is fully reached, so the trunk core is
-    // allowed that color and one tree covers blue through cyan and magenta to
-    // orange along its own radius, with no stretch of it left flat. Yellow
+    // sits exactly where orange is fully reached, so the foot of the
+    // trunk is allowed that color and one tree covers blue through cyan and
+    // magenta to orange between that foot and its farthest tips, with no
+    // stretch of it left flat. Yellow
     // stays out of reach. A living body's floor is lifted far higher: it sits
     // above the warm stop, so the coolest reading anywhere on an animal — a
     // hoof tip, an antler end, the end of a tail — is a full magenta, and
