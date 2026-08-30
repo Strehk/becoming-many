@@ -290,11 +290,14 @@ landscape by selecting `designTest.level.ts`.
 - Each swarm gets its own irregular volume: hashed anisotropic axes and a
   yaw stretch and tilt the cloud, a few slowly drifting density lobes keep
   its core lopsided, and flies are seeded Gaussian around those lobes. The
-  envelope is a spring written in that volume's normalized frame — gentle
-  inside the core, stiffening quadratically outside it — so density thins
-  smoothly outward, stragglers can drift well clear of the cluster and find
-  their way back, and no cloud has a straight edge or repeats another's
-  silhouette. The ground clamp is the only hard boundary left.
+  envelope is a spring written in that volume's normalized frame, and outside
+  the core its hold relaxes into a gentle constant drift instead of
+  stiffening, so the cloud dissolves outward over several core radii; a
+  quadratic term far out is all that stops anything leaving for good. Each
+  fly also carries a hashed binding — most sit near one and make the dense
+  core, the loose few wander metres clear of it, alone or in twos and threes.
+  No cloud has a straight edge or repeats another's silhouette, and the
+  ground clamp is the only hard boundary left.
 - The trail ring holds `flyCount × lifetimeFrames` particles. The CPU writes
   only the newest ring slot per frame (immutable spawn position, outward
   direction, spawn intensity, and spawn frame) as one contiguous

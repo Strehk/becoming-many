@@ -23,6 +23,7 @@ import {
   accumulateEnvelopePull,
   accumulateLobePull,
   createSwarmShapes,
+  getFlyBinding,
   getFlyLobeIndex,
   getLobeSlot,
   getLobeSlotCount,
@@ -37,6 +38,7 @@ const TAU = Math.PI * 2;
 
 /** Fixed random channel indexes keeping every hash stream independent. */
 const FLY_RANDOM_LOBE = 0;
+const FLY_RANDOM_BINDING = 1;
 const FLY_RANDOM_VELOCITY_ANGLE = 3;
 const FLY_RANDOM_SPEED = 4;
 const FLY_RANDOM_PHASE = 5;
@@ -93,6 +95,7 @@ export function createFlySwarms(options: FlySwarmsOptions): FlySwarms {
   const frequencies = new Float32Array(flyCount);
   const strengths = new Float32Array(flyCount);
   const lobeSlots = new Int32Array(flyCount);
+  const bindings = new Float32Array(flyCount);
   const shapes = createSwarmShapes(swarmCount);
   const lobeCentres = new Float32Array(
     getLobeSlotCount(swarmCount) * COMPONENTS_PER_VALUE,
@@ -113,6 +116,7 @@ export function createFlySwarms(options: FlySwarmsOptions): FlySwarms {
     frequencies,
     strengths,
     lobeSlots,
+    bindings,
   });
   placeAnchors(options, anchors, anchorEpoch, anchorOrigin.x, anchorOrigin.z);
 
@@ -140,6 +144,7 @@ export function createFlySwarms(options: FlySwarmsOptions): FlySwarms {
     frequencies,
     strengths,
     lobeSlots,
+    bindings,
     lobeCentres,
     shapes,
     anchors,
@@ -182,6 +187,9 @@ interface FlyBuffers {
 
   /** The density lobe each fly clumps around, as a flat slot index. */
   readonly lobeSlots: Int32Array;
+
+  /** How tightly the swarm holds each fly; the loose ones are the wanderers. */
+  readonly bindings: Float32Array;
 }
 
 interface SwarmState extends FlyBuffers {
@@ -209,11 +217,15 @@ function initializeFlies(
     const swarmIndex = Math.floor(flyIndex / fliesPerSwarm);
     const shape = shapes[swarmIndex];
     const lobeIndex = getFlyLobeIndex(flyIndex, FLY_RANDOM_LOBE);
+    const binding = getFlyBinding(flyIndex, FLY_RANDOM_BINDING);
     buffers.lobeSlots[flyIndex] = getLobeSlot(swarmIndex, lobeIndex);
+    buffers.bindings[flyIndex] = binding;
     seed.x = 0;
     seed.y = 0;
     seed.z = 0;
-    if (shape) sampleSwarmPosition(shape, lobeIndex, flyIndex, seed);
+    if (shape) {
+      sampleSwarmPosition(shape, lobeIndex, flyIndex, binding, seed);
+    }
     buffers.localPositions[valueOffset] = seed.x;
     buffers.localPositions[valueOffset + 1] = seed.y;
     buffers.localPositions[valueOffset + 2] = seed.z;
@@ -378,6 +390,7 @@ function stepFly(
   );
   accumulateEnvelopePull(
     shape,
+    state.bindings[flyIndex] ?? 1,
     positionX,
     positionY,
     positionZ,

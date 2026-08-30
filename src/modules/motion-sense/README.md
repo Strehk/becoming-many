@@ -26,8 +26,10 @@ and raw GLSL ES 3.00 files.
   re-anchoring, and the opaque fly point pool.
 - `swarm-shape.ts` owns the volume a swarm buzzes inside: the per-swarm
   anisotropic axes and yaw, the drifting density lobes flies clump around,
-  the Gaussian seeding, and the envelope spring. It is what keeps the clouds
-  irregular, unequal, and free of any boundary but the ground.
+  the Gaussian seeding, the per-fly binding, and the envelope spring whose
+  outer hold relaxes rather than stiffens. It is what keeps the clouds
+  irregular, unequal, dense in the middle, and free of any boundary but the
+  ground.
 - `bird-flocks.ts` owns the perception-only bird flocks: deterministic
   orbits on air rings that drift after the traveler, three points per bird
   (body plus two wingtips on a hashed flap oscillation), and no scene
@@ -63,6 +65,10 @@ wing-vertex sampling is recorded in
 
 ## Known simplifications
 
+- Strays are held above their anchor's sampled ground, not their own: a fly
+  metres out over a rising slope can pass through terrain rather than over
+  it. Per-fly ground sampling is the known fix and costs a height-field
+  sample per fly per frame.
 - Trail expansion directions point away from the global fly centroid
   (bm-base parity); a per-swarm centroid is the known refinement.
 - Trail length is authored in rendered frames for bm-base parity; a

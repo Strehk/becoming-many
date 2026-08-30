@@ -24,12 +24,22 @@ export const MOTION_SENSE_SETTINGS = {
     lobeOffsetFraction: 0.55, // Lobe distance from the cloud centre, in core radii.
     minLobeSpread: 0.42, // Gaussian spread of one lobe's flies, in core radii.
     maxLobeSpread: 0.72,
-    lobeDriftFraction: 0.3, // How far a lobe wanders from its rest place, in core radii.
+    lobeDriftFraction: 0.55, // How far a lobe wanders from its rest place, in core radii.
     lobeDriftRate: { minHertz: 0.03, maxHertz: 0.11 }, // Slow enough to read as the cloud breathing.
   },
-  swarmCorePull: 1.3, // Envelope pull at the core edge; gentle, never a wall.
-  swarmOuterPull: 5.5, // Quadratic pull beyond the core that gathers strays back in.
+  swarmCorePull: 2.6, // Spring holding the dense core together, at the core edge.
+  // Past the core edge the hold relaxes to a gentle constant drift: the swarm
+  // keeps asking, never harder, so flies thin out over a long distance.
+  swarmDriftPull: 0.9, // The force a strayed fly feels, however far it has gone.
+  swarmRelaxRadii: 0.5, // Core radii over which the core hold gives way to it.
+  swarmDissolveRadii: 3, // Where the quadratic recapture finally takes over.
+  swarmRecapturePull: 8, // Strength of that recapture; nothing leaves for good.
   swarmLobePull: 1.2, // Cohesion toward a fly's own drifting density lobe.
+  swarmLobeReachRadii: 1.2, // Core radii at which lobe cohesion has halved.
+  // How tightly the swarm holds one fly. The skew keeps most flies near one,
+  // where they make the core; the loose few are the wanderers thinning out
+  // into the surrounding air, and how loose they are sets how far they get.
+  flyBinding: { minimum: 0.18, skewToHeld: 0.3 },
   minFlightSpeed: 0.45, // Metres per second before the level multiplier.
   maxFlightSpeed: 1.8, // Metres per second before the level multiplier.
   maxForce: 13, // Acceleration clamp keeping the buzz integration stable.

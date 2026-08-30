@@ -211,6 +211,7 @@ export function sampleSwarmPosition(
   shape: SwarmShape,
   lobeIndex: number,
   flyIndex: number,
+  binding: number,
   target: LocalPoint,
 ): void {
   const lobe = shape.lobes[lobeIndex];
@@ -221,21 +222,18 @@ export function sampleSwarmPosition(
     return;
   }
 
+  // A loosely bound fly settles further out, so it starts there too and no
+  // cloud has to visibly puff open in the first seconds of a level.
+  const spread = lobe.spread / Math.sqrt(binding);
   const shapeX =
     lobe.restX +
-    getSeedOffset(flyIndex, SEED_RANDOM_GAUSSIAN_X) *
-      lobe.spread *
-      shape.radiusX;
+    getSeedOffset(flyIndex, SEED_RANDOM_GAUSSIAN_X) * spread * shape.radiusX;
   const shapeY =
     lobe.restY +
-    getSeedOffset(flyIndex, SEED_RANDOM_GAUSSIAN_Y) *
-      lobe.spread *
-      shape.radiusY;
+    getSeedOffset(flyIndex, SEED_RANDOM_GAUSSIAN_Y) * spread * shape.radiusY;
   const shapeZ =
     lobe.restZ +
-    getSeedOffset(flyIndex, SEED_RANDOM_GAUSSIAN_Z) *
-      lobe.spread *
-      shape.radiusZ;
+    getSeedOffset(flyIndex, SEED_RANDOM_GAUSSIAN_Z) * spread * shape.radiusZ;
   target.x = shapeX * shape.yawCos - shapeZ * shape.yawSin;
   target.y = shapeY;
   target.z = shapeX * shape.yawSin + shapeZ * shape.yawCos;
@@ -247,12 +245,16 @@ function getSeedOffset(flyIndex: number, channel: number): number {
 }
 
 /**
- * The envelope: a spring that is gentle inside the core and stiffens with the
- * square of the distance outside it. Nothing here is a wall — a fly can always
- * stray out and wander back — but no fly leaves for good either.
+ * The envelope. Inside the core it is an ordinary spring, which is what keeps
+ * a dense middle worth recognizing. Outside it the return force *weakens* with
+ * distance instead of stiffening: the further out a fly gets, the less the
+ * swarm insists, so density trails off over several core radii instead of
+ * stopping somewhere. Only far past the cloud does a quadratic term take over
+ * and walk the straggler home, which it does slowly and from a long way out.
  */
 export function accumulateEnvelopePull(
   shape: SwarmShape,
+  binding: number,
   positionX: number,
   positionY: number,
   positionZ: number,
@@ -264,18 +266,40 @@ export function accumulateEnvelopePull(
     scratchNormalized.y,
     scratchNormalized.z,
   );
-  const beyondCore = Math.max(0, distance - 1);
   accumulateShapeSpring(
     shape,
-    MOTION_SENSE_SETTINGS.swarmCorePull +
-      MOTION_SENSE_SETTINGS.swarmOuterPull * beyondCore * beyondCore,
+    binding * getEnvelopeGain(distance),
     acceleration,
   );
 }
 
 /**
+ * The spring gain at one normalized distance. `accumulateShapeSpring` scales it
+ * by the offset, so a constant gain is a linear spring, and dividing by the
+ * distance instead turns a term into the plain force magnitude it reads as.
+ * Past the core edge the hold relaxes into a gentle constant: the swarm keeps
+ * asking, never harder, however far a fly has gone. That flat outer force is
+ * what makes the falloff long and smooth instead of an edge.
+ */
+function getEnvelopeGain(distance: number): number {
+  const settings = MOTION_SENSE_SETTINGS;
+  if (distance <= 1) return settings.swarmCorePull;
+
+  const stray = (distance - 1) / settings.swarmRelaxRadii;
+  const held =
+    settings.swarmDriftPull +
+    (settings.swarmCorePull - settings.swarmDriftPull) / (1 + stray);
+  const dissolved = Math.max(0, distance - settings.swarmDissolveRadii);
+  return (
+    (held + settings.swarmRecapturePull * dissolved * dissolved) / distance
+  );
+}
+
+/**
  * Weak cohesion toward the fly's own density lobe, measured in the same
- * normalized frame so a stretched cloud clumps along its own long axis.
+ * normalized frame so a stretched cloud clumps along its own long axis. It
+ * fades with distance: a fly that has left the cloud has left its clump too,
+ * and drifts on its own until the envelope brings it back.
  */
 export function accumulateLobePull(
   shape: SwarmShape,
@@ -285,10 +309,25 @@ export function accumulateLobePull(
   acceleration: LocalPoint,
 ): void {
   toShapeSpace(shape, offsetX, offsetY, offsetZ, scratchNormalized);
+  const reach =
+    Math.hypot(scratchNormalized.x, scratchNormalized.y, scratchNormalized.z) /
+    MOTION_SENSE_SETTINGS.swarmLobeReachRadii;
   accumulateShapeSpring(
     shape,
-    MOTION_SENSE_SETTINGS.swarmLobePull,
+    MOTION_SENSE_SETTINGS.swarmLobePull / (1 + reach * reach),
     acceleration,
+  );
+}
+
+/**
+ * How tightly one fly is held by its swarm, hashed once and kept for the
+ * session. The draw is skewed toward one: most flies belong to the core, and
+ * the few loose ones are what populate the thinning outer air.
+ */
+export function getFlyBinding(flyIndex: number, channel: number): number {
+  const { minimum, skewToHeld } = MOTION_SENSE_SETTINGS.flyBinding;
+  return (
+    minimum + (1 - minimum) * getMotionRandom(flyIndex, channel) ** skewToHeld
   );
 }
 
