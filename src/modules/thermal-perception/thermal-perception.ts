@@ -12,7 +12,10 @@ import {
   Vector2,
   Vector4,
 } from "three";
-import type { UnlitMaterialEffect } from "../../utils/asset-loader/material-effect";
+import type {
+  SensedMaterial,
+  UnlitMaterialEffect,
+} from "../../utils/asset-loader/material-effect";
 import {
   applyShaderPatch,
   type MaterialShaderPatch,
@@ -243,7 +246,7 @@ export function createThermalPerception(
 
 function createPatchApplier(
   variant: Pick<MaterialShaderPatch, "cacheKey" | "uniforms" | "vertexHeader">,
-): (material: MeshBasicMaterial) => void {
+): (material: SensedMaterial) => void {
   return (material) => {
     applyShaderPatch(material, {
       ...variant,

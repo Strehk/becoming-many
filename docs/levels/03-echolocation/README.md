@@ -48,23 +48,28 @@ ripples are excluded by the level intent. No audio counterpart exists yet.
 
 - Preset: `src/levels/echo.level.ts` (`testUi: true`, 128-metre view
   distance, background `0xF6F0E9` equal to the ramp haze stop).
-- Fields: `terrain` (plain material, full opacity), `vegetation` and `rocks`
-  (dark-palette base colors, Test Level densities), the unchanged White
-  World `airParticles` values, the unchanged Scent World `scentParticles`
-  values, and `echoDepth: EchoDepthParameters` (intensity 1, ramp from 6 to
-  120 metres, the fixed level palette).
-- Active modules: Terrain, Vegetation, and Rocks, plus Air Particles and
-  Scent Particles carried over as accumulated earlier senses ("senses layer,
-  never swap"), and the test overlay. Scent clouds keep their 02-palette
+- Fields: `terrain` (plain material, full opacity), `grass`, `vegetation`,
+  and `rocks` (dark-palette base colors, Test Level densities), the
+  unchanged White World `airParticles` values, the unchanged Scent World
+  `scentParticles` values, and `echoDepth: EchoDepthParameters` (intensity
+  1, ramp from 6 to 120 metres, the fixed level palette).
+- Active modules: Terrain, Grass, Vegetation, and Rocks, plus Air Particles
+  and Scent Particles carried over as accumulated earlier senses ("senses
+  layer, never swap"), and the test overlay. Scent clouds keep their 02-palette
   signature colors and now anchor above the rendered ground; the composition
   root never applies Echo Depth to them, so the sense does not recolor a
   sibling. The root creates one `EchoDepthEffect` (`src/modules/echo-depth/`)
   and applies the same instance to Terrain (through `TerrainMaterialEffect`)
-  and to every Vegetation and Rock part material (through the shared
-  `UnlitMaterialEffect` contract).
-- Excluded by intent: Grass (its raw shader has no material-effect hook and
-  blades do not read as silhouettes) and Animals (motion belongs to
-  level 04).
+  and to the Grass material and every Vegetation and Rock part material
+  (through the shared `UnlitMaterialEffect` contract).
+- Decided 2026-08-30: Grass is no longer excluded. Its own shader now carries
+  the three.js chunk anchors (`<common>`, `<project_vertex>`, and
+  `<color_fragment>`), so the same patch that decorates a built-in material
+  pass reaches it unchanged. Blades therefore recede into the haze with
+  everything around them instead of holding one flat color at every
+  distance. Grass took its own 64-metre range in the same step; see
+  [performance.md](../../performance.md).
+- Excluded by intent: Animals (motion belongs to level 04).
 
 ## Asset and Shader Requirements
 

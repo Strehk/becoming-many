@@ -10,7 +10,9 @@ boundary justifies moving them.
 ## Implemented MVP
 
 - One 64-metre `ChunkWindow` keeps a fixed camera-centred pool plus one preload
-  ring.
+  ring. Its radius comes from the module's own 64-metre range, not the level
+  view distance, so a far-seeing level cannot widen the grass window; a level
+  that sees less far still bounds it.
 - Absolute grid cells create deterministic roots. `groundYAt()` supplies their
   ground position. The level can set density and blade height independently for
   meadow and shrub-slope zones. Omitting a zone creates no grass there; water
@@ -25,6 +27,16 @@ boundary justifies moving them.
   jobs. Ordinary frames update only the wind-time uniform.
 - The module owns its geometry, typed buffer, material, animation, capacity,
   visibility, and disposal.
+- The shaders carry the three.js chunk anchors `<common>`, `<project_vertex>`,
+  and `<color_fragment>`. That is the whole material-effect hook: a sense
+  patches this `ShaderMaterial` through `applyShaderPatch` exactly as it
+  patches a built-in pass. The vertex stage hands its world-space tuft
+  placement to `<project_vertex>` as `transformed`, which yields the
+  `mvPosition` every effect measures against.
 
-Grass does not query Vegetation or Rivers. It imports the immutable `WORLD_WIND`
-configuration from `src/world/wind.ts`, as every wind-reactive component must.
+Grass does not query Vegetation or Rivers, and it imports no sense module. The
+composition root decides which effects decorate the grass material — currently
+Echo Depth and the Vegetation variant of Thermal Perception, because grass is
+the same living plant matter as the bushes it grows between. Grass imports the
+immutable `WORLD_WIND` configuration from `src/world/wind.ts`, as every
+wind-reactive component must.

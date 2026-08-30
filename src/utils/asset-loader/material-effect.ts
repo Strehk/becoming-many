@@ -5,17 +5,24 @@
  * Boundary: Concrete effects, material creation, and module lifecycle stay elsewhere.
  */
 
-import type { MeshBasicMaterial } from "three";
+import type { MeshBasicMaterial, ShaderMaterial } from "three";
+
+/**
+ * A material a sense effect may decorate. Three.js built-in passes and a
+ * module's own shader both qualify: what an effect needs is the chunk
+ * anchors it injects at, not a particular material class.
+ */
+export type SensedMaterial = MeshBasicMaterial | ShaderMaterial;
 
 /** One composable decoration for an unlit material; application is one-way. */
 export interface UnlitMaterialEffect {
-  readonly applyTo: (material: MeshBasicMaterial) => void;
+  readonly applyTo: (material: SensedMaterial) => void;
 }
 
 /** Apply every effect to one part's single or multi-slot material. */
 export function applyMaterialEffects(
   effects: readonly UnlitMaterialEffect[],
-  material: MeshBasicMaterial | MeshBasicMaterial[],
+  material: SensedMaterial | SensedMaterial[],
 ): void {
   const materials = Array.isArray(material) ? material : [material];
   for (const effect of effects) {

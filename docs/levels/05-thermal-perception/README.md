@@ -50,7 +50,7 @@ palette outside the radius. No audio counterpart exists yet.
 
 - Preset: `src/levels/thermal.level.ts` (`testUi: true`, 128-metre view
   distance, background `0xF1F1F1` equal to the carried ramp haze stop).
-- Fields: `terrain`, `vegetation`, `rocks`, `airParticles`,
+- Fields: `terrain`, `grass`, `vegetation`, `rocks`, `airParticles`,
   `scentParticles`, `echoDepth`, and `motion` copied unchanged from
   `motion.level.ts`, plus `animals` (echo-palette fur colors) and
   `thermal: ThermalPerceptionParameters` (intensity 1, 30-metre radius,
@@ -65,8 +65,19 @@ palette outside the radius. No audio counterpart exists yet.
   the final surface color over the carried echo ramp, and skips the module
   entirely at intensity zero. The sense never imports or recolors a
   sibling.
-- Excluded by intent: Grass (raw shader without a material-effect hook,
-  unchanged from Echo).
+- Decided 2026-08-30: Grass takes the Vegetation heat variant — the same
+  band, warmth, spread, texture, and contrast uniforms, shared through the
+  same effect instance. It is the same living plant matter growing between
+  the bushes that carry those values, and a meadow running cooler than the
+  shrubs standing in it would read as a different substance. Grass has no
+  `instanceMatrix`, so the variant's non-instanced branch measures its
+  world position instead: every tuft holds the plant base warmth, and the
+  shared world-space texture varies it across the meadow the way it varies
+  the ground beneath. The blade-scale height gradient is deliberately not
+  reproduced; over a 0.75-metre tuft the vegetation rate adds 0.017 warmth,
+  far below the texture's own variation.
+- Excluded by intent: nothing; every rendered surface now answers to the
+  heat view.
 
 ## Asset and Shader Requirements
 

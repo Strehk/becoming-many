@@ -3,7 +3,15 @@
  * Context: Streamed CPU work supplies stable roots while ordinary frames update only time.
  * Responsibility: Apply per-tuft variation, rotation, height, and opaque wind deformation.
  * Boundary: World-surface sampling and chunk recycling remain in TypeScript.
+ *
+ * The three.js chunk includes are this module's material-effect hook. A sense
+ * effect injects its declarations after <common> and its call after
+ * <project_vertex>, exactly as it does in the built-in material passes, so
+ * Grass answers to Echo Depth and Thermal Perception without either module
+ * knowing that grass is not an ordinary instanced surface.
  */
+
+#include <common>
 
 attribute vec4 grassInstance;
 
@@ -50,12 +58,17 @@ void main() {
   vec2 windOffset = grassWindDirection * wind * grassWindStrength *
     tuftHeight * tipWeight;
 
-  vec3 worldPosition = vec3(
+  // The grass mesh never leaves the world origin, so a tuft's placement is
+  // already world space. Handing it to <project_vertex> as `transformed`
+  // keeps one projection path and leaves every sense effect the `mvPosition`
+  // and world position it measures against.
+  vec3 transformed = vec3(
     grassInstance.x + localPosition.x + windOffset.x,
     grassInstance.y + bladeHeight,
     grassInstance.z + localPosition.y + windOffset.y
   );
 
   grassHeightProgress = position.y;
-  gl_Position = projectionMatrix * viewMatrix * vec4(worldPosition, 1.0);
+
+  #include <project_vertex>
 }

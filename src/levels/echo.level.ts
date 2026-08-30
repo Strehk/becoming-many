@@ -9,6 +9,7 @@ import type { LevelPreset } from "./level-runtime";
 import {
   sharedAirParticles,
   sharedEchoDepth,
+  sharedEchoGrass,
   sharedEchoHazeColor,
   sharedEchoRocks,
   sharedEchoVegetation,
@@ -22,6 +23,7 @@ export const level: LevelPreset = {
   terrain: {
     opacity: 1,
   },
+  grass: sharedEchoGrass,
   vegetation: sharedEchoVegetation,
   rocks: sharedEchoRocks,
   // Senses layer, never swap: the White World air layer and the Scent World

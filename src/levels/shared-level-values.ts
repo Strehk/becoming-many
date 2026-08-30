@@ -190,7 +190,7 @@ export const sharedMotionSense: SharedBlock<"motion"> = {
   },
 };
 
-/** The decided grass distribution, shared by the diagnostic and design test levels. */
+/** The decided grass distribution, shared by every level that grows grass. */
 export const sharedGrassZones: SharedBlock<"grass">["zones"] = {
   meadow: {
     tuftsPerSquareMeter: 1.5,
@@ -200,4 +200,16 @@ export const sharedGrassZones: SharedBlock<"grass">["zones"] = {
     tuftsPerSquareMeter: 0.4,
     bladeHeightMeters: 0.22,
   },
+};
+
+/**
+ * Grass in the carried echo world. Like Vegetation, its own colors show only
+ * below full echo intensity, so root and tip are authored from the same
+ * level-03 dark stops the plants around it use: a future intensity ramp then
+ * fades between related tones instead of clashing ones.
+ */
+export const sharedEchoGrass: SharedBlock<"grass"> = {
+  rootColor: 0x101010,
+  tipColor: 0x494949,
+  zones: sharedGrassZones,
 };

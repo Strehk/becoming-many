@@ -197,7 +197,7 @@ function createConfiguredModules(setup: LevelSetup): WorldModule[] {
   addModule(modules, createTerrain(setup, echoDepth, thermal));
   addModule(modules, createAirParticles(setup));
   addModule(modules, createScentParticles(setup));
-  addModule(modules, createGrass(setup));
+  addModule(modules, createGrass(setup, echoDepth, thermal));
   addModule(modules, createVegetation(setup, echoDepth, thermal));
   addModule(modules, createRocks(setup, echoDepth, thermal));
   addModule(modules, createAnimals(setup, thermal));
@@ -303,7 +303,11 @@ function createScentParticles(setup: LevelSetup): WorldModule | undefined {
   });
 }
 
-function createGrass(setup: LevelSetup): WorldModule | undefined {
+function createGrass(
+  setup: LevelSetup,
+  echoDepth: EchoDepthEffect | undefined,
+  thermal: ThermalPerceptionEffects | undefined,
+): WorldModule | undefined {
   const preset = setup.level.grass;
   if (!preset) return undefined;
 
@@ -313,6 +317,11 @@ function createGrass(setup: LevelSetup): WorldModule | undefined {
     preset,
     streamQueue: setup.world.streamQueue,
     worldSurface: setup.worldSurface,
+    // Grass takes the vegetation heat response: it is the same living plant
+    // matter, growing between the bushes that carry those values, and a
+    // meadow that ran cooler than the shrubs standing in it would read as a
+    // different substance.
+    effects: buildSurfaceEffects(thermal?.vegetation, echoDepth),
   });
 }
 

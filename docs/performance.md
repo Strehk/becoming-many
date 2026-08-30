@@ -12,7 +12,9 @@ The current 180-metre landscape test structure is deliberately bounded:
 - one `THREE.Points` object for all 58,320 resident Test Level Air Particles
 - fixed position and visibility buffers with partial slot-range updates
 - 49 fixed Terrain meshes with 100,352 resident triangles
-- one fixed Grass mesh with 492,804 candidates and 985,608 resident triangles
+- one fixed Grass mesh with 152,100 candidates and 304,200 resident triangles
+  inside its own 64-metre range, down from 492,804 and 985,608 when the range
+  followed the 180-metre view distance
 - compact instanced Vegetation and Rock draws that exclude rejected capacity
 - ten animal actors with at most four visible animation mixers and slope samples
 - Magnetic Sense reuses the Terrain draws and adds no geometry or render pass
@@ -80,6 +82,9 @@ percentiles, `renderer.info`, queue depth, and streaming duration.
 - Stable resource keys replace older pending work for the same slot.
 - Fixed resource pools are recycled instead of recreated.
 - Air Particles and Grass preload one chunk ring outside the visible radius.
+  Grass measures that radius against its own 64-metre range rather than the
+  level view distance, which is the 2026-08-24 audit's P1 fix: range and
+  preload before density, with the authored zone densities left untouched.
 
 Level Runtime asynchronously preloads the fixed asset definitions of enabled
 modules before World Runtime starts. Distance priorities, future-level

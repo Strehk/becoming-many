@@ -22,6 +22,7 @@ import { createAnimalSurfaceAlignment } from "../../src/modules/animals/animal-s
 import { createAnimalsModule } from "../../src/modules/animals/animals";
 import type { AnimalsDefinition } from "../../src/modules/animals/animals-definition";
 import type { GltfAssets } from "../../src/utils/asset-loader/gltf-assets";
+import type { SensedMaterial } from "../../src/utils/asset-loader/material-effect";
 import type { WorldSurface } from "../../src/world-surface/world-surface";
 import type { ZoneId } from "../../src/world-surface/zone-settings";
 
@@ -78,7 +79,7 @@ test("Animals animate only the nearest bounded population", () => {
 test("Animals decorate every actor material with supplied effects", () => {
   const scene = new Scene();
   const camera = new PerspectiveCamera();
-  const decoratedMaterials: MeshBasicMaterial[] = [];
+  const decoratedMaterials: SensedMaterial[] = [];
   const bodyMatrices: Matrix4[] = [];
   const module = createAnimalsModule({
     scene,
@@ -91,8 +92,9 @@ test("Animals decorate every actor material with supplied effects", () => {
       bodyMatrices.push(bodyMatrix);
       return [
         {
-          applyTo: (material: MeshBasicMaterial) =>
-            decoratedMaterials.push(material),
+          applyTo: (material: SensedMaterial) => {
+            decoratedMaterials.push(material);
+          },
         },
       ];
     },

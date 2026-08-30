@@ -6,6 +6,7 @@
  */
 
 import type { PerspectiveCamera, Scene } from "three";
+import type { UnlitMaterialEffect } from "../../utils/asset-loader/material-effect";
 import {
   type ChunkAssignment,
   ChunkWindow,
@@ -29,12 +30,27 @@ export type { GrassPreset } from "./grass-field";
 const GRASS_CHUNK_LEVEL = 2;
 const PRELOAD_LAYER_COUNT = 1;
 
+/**
+ * Grass carries its own reach instead of following the level view distance.
+ * The 2026-08-24 performance audit measured it as the second-largest content
+ * cost in the world and recorded the fix as range before density: at 64 m the
+ * resident window is 5 x 5 chunks instead of the 9 x 9 the 180-metre Test
+ * Level produced, which is 304,200 triangles instead of 985,608. Blades this
+ * far out already sit deep in the depth ramp's haze, so the shorter range
+ * costs almost nothing that can be seen. The preload ring stays, so recycled
+ * chunks still fill in before they come into view.
+ */
+const GRASS_VISIBLE_DISTANCE_METERS = 64;
+
 export interface GrassModuleOptions {
   readonly scene: Scene;
   readonly camera: PerspectiveCamera;
   readonly preset: GrassPreset;
   readonly streamQueue: StreamQueue;
   readonly worldSurface: WorldSurface;
+
+  /** Sense responses the composition root patches into the grass material. */
+  readonly effects?: readonly UnlitMaterialEffect[];
 }
 
 interface GrassStream {
@@ -126,7 +142,12 @@ function unloadGrass(state: GrassState, scene: Scene): void {
 
 function createGrassStream(options: GrassModuleOptions): GrassStream {
   const chunkSize = getChunkSize(GRASS_CHUNK_LEVEL);
-  const visibleRadius = Math.max(1, Math.ceil(options.camera.far / chunkSize));
+  // A level that sees less far than grass reaches still bounds it.
+  const visibleDistance = Math.min(
+    options.camera.far,
+    GRASS_VISIBLE_DISTANCE_METERS,
+  );
+  const visibleRadius = Math.max(1, Math.ceil(visibleDistance / chunkSize));
   const chunkWindow = new ChunkWindow({
     level: GRASS_CHUNK_LEVEL,
     radius: visibleRadius + PRELOAD_LAYER_COUNT,
@@ -136,6 +157,7 @@ function createGrassStream(options: GrassModuleOptions): GrassStream {
     chunkSize,
     chunkSlotCount: chunkWindow.slotCount,
     worldSurface: options.worldSurface,
+    effects: options.effects,
   });
   const slotJobKeys = Array.from({ length: chunkWindow.slotCount }, () => ({}));
 

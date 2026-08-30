@@ -65,17 +65,18 @@ The Scent preset additionally activates:
 The Echo preset additionally activates:
 
 - generated Terrain with its plain material at full opacity
-- zone-driven Vegetation and Rocks with base colors authored from the dark
-  end of the 03 palette and Test Level densities
+- zone-driven Grass, Vegetation, and Rocks with base colors authored from the
+  dark end of the 03 palette and Test Level densities; Grass keeps its own
+  64-metre range rather than following the level view distance
 - the shared Echo Depth material effect: one camera-distance palette ramp
   from near-dark silhouettes into the warm off-white haze background,
-  patched into the Terrain, Vegetation, and Rock materials without
+  patched into the Terrain, Grass, Vegetation, and Rock materials without
   additional geometry, scene passes, or draw calls; every surface always
   shows only its depth-ramp color
 - the unchanged White World air-particle layer and the unchanged Scent World
   layer carried over, because senses layer instead of swapping; scent clouds
   now anchor above the rendered ground and keep their 02-palette signatures
-- no grass or animals
+- no animals
 
 The Motion preset additionally activates:
 
@@ -94,7 +95,7 @@ The Motion preset additionally activates:
 - ink-dark specks and indigo fly trails from the level-04 dark palette
   stops, cyan bird traces from the reserved accent; three added draw calls
   in total
-- no grass or animals
+- no animals
 
 The level does not contain asset URLs, model names, seeds, candidate spacing,
 or weighted variants. Those stable content definitions belong to the concrete

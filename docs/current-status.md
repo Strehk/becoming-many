@@ -72,7 +72,7 @@ Test landscape by selecting `designTest.level.ts`.
 - `thermal.level.ts` is the Thermal Perception level: every Motion
   Perception value carried over unchanged plus the `animals` field (fur
   colors from the echo dark stops) and the `thermal` field that decorates
-  Terrain, Vegetation, Rocks, and Animals with the radius-bounded
+  Terrain, Grass, Vegetation, Rocks, and Animals with the radius-bounded
   false-color heat view.
 - The sparse `invisibleGround: true` flag clamps flight above the shared
   deterministic world surface without creating the Terrain module or any
@@ -92,7 +92,9 @@ Test landscape by selecting `designTest.level.ts`.
   the shared `material-shader-patch.ts` helper. Echo Depth was the first
   multi-consumer effect (Terrain, Vegetation, and Rocks through the shared
   `UnlitMaterialEffect` contract); Thermal Perception extends the pattern
-  to Animals and to per-consumer warmth sources.
+  to Animals and to per-consumer warmth sources. Both reach Grass as well:
+  a module's own `ShaderMaterial` is a patch target like any built-in pass
+  as long as its GLSL carries the chunk anchors.
 
 ### World Surface
 
@@ -185,9 +187,11 @@ Test landscape by selecting `designTest.level.ts`.
 
 ### Grass
 
-- Grass uses one fixed `InstancedBufferGeometry` with 81 reusable 64-metre
-  slots, including one preload ring around the 180-metre view distance.
-- The current maximum meadow density produces 492,804 fixed candidates. Each
+- Grass uses one fixed `InstancedBufferGeometry` with 25 reusable 64-metre
+  slots: its own 64-metre range plus one preload ring. The range is a module
+  constant, not the level view distance, so a level that sees 180 metres no
+  longer drags the grass window out behind it.
+- The current maximum meadow density produces 152,100 fixed candidates. Each
   candidate is one compact `vec4` and two crossed triangles.
 - Absolute integer cells recreate stable roots. The level independently sets
   meadow and shrub-slope density and height. Candidates rejected by that zone
@@ -198,6 +202,12 @@ Test landscape by selecting `designTest.level.ts`.
 - Wind direction, strength, and speed come from the immutable `WORLD_WIND`
   configuration in `src/world/wind.ts`, the shared source for all wind-reactive
   components.
+- Grass carries the three.js chunk anchors (`<common>`, `<project_vertex>`,
+  and `<color_fragment>`) in its own GLSL, so the shared `UnlitMaterialEffect`
+  patch decorates it exactly as it decorates a built-in material pass. The
+  composition root applies Echo Depth and the Vegetation thermal variant to
+  the grass material; Grass imports no sense module and its root-to-tip
+  gradient stays its own base color below full sense intensity.
 - Grass owns and disposes its mesh, geometry, material, and typed buffer.
 
 ### Vegetation and Rocks
@@ -250,7 +260,9 @@ Test landscape by selecting `designTest.level.ts`.
 - Magnetic base lines blend at 20% opacity. Narrow bright pulses run strictly
   inside their boundaries in the same opaque fragment pass. Pixels outside the
   stripes retain their base ground color.
-- Grass remains visually and architecturally independent.
+- Magnetic Sense never reaches Grass: the stripes stay a Terrain material
+  effect, and the composition root does not put them in the grass effect
+  list.
 
 ### Echo Depth
 

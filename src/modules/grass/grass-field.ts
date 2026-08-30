@@ -16,6 +16,10 @@ import {
   ShaderMaterial,
   Vector2,
 } from "three";
+import {
+  applyMaterialEffects,
+  type UnlitMaterialEffect,
+} from "../../utils/asset-loader/material-effect";
 import type { ChunkAssignment } from "../../world/chunk-system";
 import { WORLD_WIND } from "../../world/wind";
 import type { WorldSurface } from "../../world-surface/world-surface";
@@ -48,6 +52,7 @@ interface GrassFieldOptions {
   readonly chunkSize: number;
   readonly chunkSlotCount: number;
   readonly worldSurface: WorldSurface;
+  readonly effects?: readonly UnlitMaterialEffect[];
 }
 
 export interface GrassField {
@@ -75,6 +80,7 @@ export function createGrassField({
   chunkSize,
   chunkSlotCount,
   worldSurface,
+  effects = [],
 }: GrassFieldOptions): GrassField {
   validateGrassParameters(parameters);
   const maximumTuftsPerSquareMeter = getMaximumGrassDensity(parameters);
@@ -97,6 +103,7 @@ export function createGrassField({
     chunkSlotCount,
   );
   const material = createGrassMaterial(parameters);
+  applyMaterialEffects(effects, material);
   const mesh = new Mesh(geometry, material);
   mesh.frustumCulled = false;
   mesh.visible = false;
