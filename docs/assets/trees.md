@@ -6,9 +6,24 @@ and flowering bushes.
 
 ## Current Runtime Status
 
-The files and manifest exist under `public/trees`. Test Level currently loads
-three individual conifer variants, three individual deciduous variants, Bush,
-and Bush with Flowers. Shared source URLs are loaded only once.
+The files and manifest exist under `public/trees`. Every level that renders
+Vegetation loads seven conifer variants, five deciduous variants, three birch
+variants, two dead-tree variants, Bush, and Bush with Flowers. Shared source
+URLs are loaded only once, so the four added conifers and the two added
+deciduous crowns come out of `pine-trees-01.glb` and `trees.glb`, which were
+already being fetched, and cost no additional transfer.
+
+`birch-trees.glb` and `dead-trees.glb` are the only newly fetched files. They
+were brought in for silhouette variety: the source crowns are low-poly solids
+drawn with an unlit material, so a stand built from few variants reads as one
+constructed shape repeated. Both carry fewer triangles per instance than the
+deciduous trees whose share they take, so the mix does not raise the visible
+triangle count that
+[the 2026-08-24 performance audit](../performance-audit-2026-08-24.md) records
+as the dominant bottleneck. It does raise the startup transfer by about 6.9 MB
+against the roughly 19.4 MB that audit measured, which lands on the same
+document's P2 finding that startup waits for all enabled assets. Dropping
+either file from `variantsByZone` reverses that cost on its own.
 
 ## Inventory
 

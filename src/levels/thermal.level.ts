@@ -120,13 +120,27 @@ export const level: LevelPreset = {
       // The texture is noise and the contrast curve steepens whatever it is
       // given, so together they are what turn a gradient into hard
       // boundaries: warm beside cold with nothing in between, isolated cold
-      // specks inside a warm crown. Both are pulled well back. The texture is
-      // now shallow enough that it can only shade the color the gradient
-      // already chose and never carry a fragment into a neighbouring band,
-      // and the curve is applied lightly enough to keep the core-to-edge
-      // falloff separated without sharpening the grain inside it into edges.
-      // The plant's whole range comes from the radial gradient now; the
-      // texture is only what keeps foliage from reading as painted plastic.
+      // specks inside a warm crown. The curve stays pulled well back for that
+      // reason — applied lightly enough to keep the core-to-edge falloff
+      // separated without sharpening the grain inside it into edges.
+      // The texture is no longer held down with it. It was cut to a tenth
+      // when the radial gradient was made to carry the plant's whole range,
+      // and at that depth it could only shade the color the gradient had
+      // already chosen. That was right for the color and wrong for the model
+      // underneath it: these crowns are low-poly solids drawn with an unlit
+      // material, so nothing shades a facet by its normal, and a crown whose
+      // interior holds one smooth radial figure gives the eye nothing to read
+      // but its own outline — which is a cone. The noise is a world-space
+      // field sampled per fragment, so it is the one thing in the level that
+      // varies across a flat face rather than along it. Doubled, it mottles
+      // the crown into uneven patches and the silhouette stops being the only
+      // structure there is to see. It stays below the ground's own depth, so
+      // foliage still reads as the warmer substance, and the shader eases the
+      // texture off above the quiet warmth — which is the trunk core, not the
+      // outer foliage — so the mottling lands hardest exactly on the exposed
+      // canopy that draws the outline. The silhouette itself is asset
+      // geometry and no value here can reach it; this only stops it standing
+      // alone.
       // Only tall plants have the radius to span that range. A bush is under
       // a metre across, so it loses little on the way out and reads near its
       // own core temperature — one small warm thing in a meadow rather than a
@@ -135,7 +149,7 @@ export const level: LevelPreset = {
       vegetationWarmthSpread: 0.05,
       vegetationHeightWarmthPerMeter: 0,
       vegetationAxisWarmthPerMeter: -0.22,
-      vegetationTextureWarmth: 0.1,
+      vegetationTextureWarmth: 0.2,
       vegetationContrast: 0.22,
       // Rock is cold, heavy substance: it sits near the ground's own range,
       // warmest on the face the sun reaches and cooler down its flanks.
