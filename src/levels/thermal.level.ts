@@ -61,9 +61,10 @@ export const level: LevelPreset = {
     // through yellow. What that experiment reached for is done by the ramp
     // thresholds instead — the ground is held in violet, blue, and cyan
     // because magenta now begins above anything it can measure, not because
-    // its colors were taken away from it. Exposed ground tips into cyan,
-    // plants climb through magenta into orange, and only a living body
-    // reaches the yellow at the top.
+    // its colors were taken away from it. Exposed ground tips into cyan, a
+    // plant runs from blue at its outermost foliage inward through cyan and
+    // magenta to orange at its core, and only a living body reaches the
+    // yellow at the top.
     // The coldest stop is the one place the moodboard is departed from, and
     // only in value: the documented #2E1386 is carried down its own hue to
     // near-black. A thermal image has a black floor, and this ramp had none —
@@ -86,53 +87,56 @@ export const level: LevelPreset = {
     },
     surfaces: {
       // Plants are the warmest thing in the world that is not alive, and one
-      // plant is not one temperature. The base is what a shaded stem holds,
-      // and the two gradients carry heat up the plant and outward from its
-      // axis, so a single tree spans most of the ramp by itself: a stem
-      // climbing out of violet through blue into cyan, a shaded inner crown
-      // in magenta, and fine outer foliage exposed to the sky reaching
-      // orange. Only tall plants gain much from it, so a low shrub still
-      // reads near its own stem temperature and stays the warmer substance
-      // where it stands in an open meadow.
-      // The height gradient is deliberately held short of what would drive a
-      // crown top through the band ceiling. Readings that pile into the knee
-      // all come back at the same orange, and a canopy flattened into one
-      // color at the top is exactly the reading this is meant to break. What
-      // it gives up there the axis gradient takes over, so depth into the
-      // crown reads as temperature rather than the crown reading as a warm
-      // shell: outer branches run warmest, and the interior beside the stem
-      // falls back through magenta toward the cyan of the stem itself.
-      // The spread between plants is narrow. It is the one value that moves a
-      // whole plant at once, and while a stand does need to read as many
-      // separate plants, a spread wide enough to carry that alone was also
-      // enough to lift an entire tree into one color band and hide everything
-      // happening inside it.
-      // Which of the two sources carries the plant's range is the whole
-      // question here, because they do not read alike. The gradients are
-      // smooth continuous functions of where a point sits on the plant, so
-      // what they produce is layered: a stem passing through blue, cyan, and
-      // magenta on its way to an orange crown, every intermediate color
-      // actually visited on the way. The texture is noise, and the contrast
-      // curve steepens whatever it is given, so the two together turn gentle
-      // variation into hard boundaries — warm beside cold with nothing in
-      // between, a canopy of isolated dots rather than a thermally layered
-      // one. They had been carrying most of the range, and the texture was
-      // the deepest in the world by a clear margin.
-      // So the range moves onto the gradients, which are widened to carry it,
-      // and the texture drops back to what it should have been all along:
-      // subtle local variation riding on a broad gradient, still deep enough
-      // that foliage reads as uneven heat rather than as a painted surface.
-      // The curve softens with it. Its job is to separate readings that sit
-      // close together, and at this depth the texture no longer needs pulling
-      // apart — steepening it any further only sharpens the boundaries inside
-      // the noise into edges. The detail survives; what goes is the hardness
-      // between one patch of it and the next.
-      vegetationWarmth: 0.32,
-      vegetationWarmthSpread: 0.18,
-      vegetationHeightWarmthPerMeter: 0.052,
-      vegetationAxisWarmthPerMeter: 0.034,
-      vegetationTextureWarmth: 0.4,
-      vegetationContrast: 0.52,
+      // plant is still not one temperature — but the temperatures it holds
+      // belong to it, and they are laid out along its own shape instead of
+      // scattered across it. The base is what the trunk itself holds, and it
+      // sits high on the ramp on purpose: a plant is read from its core
+      // outward now, so the authored warmth is the core's warmth and
+      // everything else on the plant is measured as a loss away from it.
+      // One gradient shapes the plant, and it is radial. Warmth falls with
+      // horizontal distance from the plant's own vertical axis, so the trunk
+      // line runs hottest from base to crown top, the inner crown beside it
+      // falls back through magenta, the mid canopy through cyan, and the
+      // outermost foliage — the part actually exposed to the sky — arrives at
+      // blue. It is a smooth continuous function of where a point sits on the
+      // plant, so every intermediate color between core and edge is genuinely
+      // visited on the way rather than jumped over.
+      // The height gradient is off. It used to carry the plant's range
+      // upward, which made a crown top and a trunk base two temperatures for
+      // a reason that had nothing to do with the plant's structure, and it
+      // fought the radial reading: a point far out on a high branch and a
+      // point on the trunk beside it could arrive at the same warmth from
+      // opposite directions, so depth into the crown stopped meaning
+      // anything. At zero the trunk axis holds one temperature over its whole
+      // length and distance from that axis is the only thing that changes the
+      // reading, which is what lets a tree read as a warm core inside a
+      // cooler shell rather than as a warm top.
+      // The spread between plants is nearly closed. It is the one value that
+      // moves a whole plant at once, and a stand does not need it: neighbours
+      // separate through their own radial gradients and their own places in
+      // the world, while a spread wide enough to be read as a difference in
+      // overall color was exactly what made two adjacent trees look like two
+      // different substances. What is left is a hint, well inside one band.
+      // The texture is noise and the contrast curve steepens whatever it is
+      // given, so together they are what turn a gradient into hard
+      // boundaries: warm beside cold with nothing in between, isolated cold
+      // specks inside a warm crown. Both are pulled well back. The texture is
+      // now shallow enough that it can only shade the color the gradient
+      // already chose and never carry a fragment into a neighbouring band,
+      // and the curve is applied lightly enough to keep the core-to-edge
+      // falloff separated without sharpening the grain inside it into edges.
+      // The plant's whole range comes from the radial gradient now; the
+      // texture is only what keeps foliage from reading as painted plastic.
+      // Only tall plants have the radius to span that range. A bush is under
+      // a metre across, so it loses little on the way out and reads near its
+      // own core temperature — one small warm thing in a meadow rather than a
+      // gradient too small to see.
+      vegetationWarmth: 0.8,
+      vegetationWarmthSpread: 0.05,
+      vegetationHeightWarmthPerMeter: 0,
+      vegetationAxisWarmthPerMeter: -0.22,
+      vegetationTextureWarmth: 0.1,
+      vegetationContrast: 0.22,
       // Rock is cold, heavy substance: it sits near the ground's own range,
       // warmest on the face the sun reaches and cooler down its flanks.
       // It was the last solid thing left in the image: the ground around it
@@ -149,8 +153,8 @@ export const level: LevelPreset = {
     },
     // What each material's own substance may reach, whatever its elevation,
     // gradient, texture, and contrast add up to. Ground and rock fill the
-    // cold end and stop at saturated cyan; plants climb through magenta into
-    // orange where they are exposed; only a living body reaches yellow.
+    // cold end and stop at saturated cyan; a plant spans blue to orange from
+    // its outer foliage inward; only a living body reaches yellow.
     // The ground's floor is open to the bottom of the ramp: the coldest
     // ground is allowed to go dark. Its ceiling once sat only just past the
     // cyan stop, and everything the ground measured above that — a forested
@@ -165,22 +169,25 @@ export const level: LevelPreset = {
     // move made in two places.
     // Rock shares that range exactly, because it is the same cold substance
     // and any gap between the two showed up as boulders pasted on the ground.
-    // Plants may fall as far as ground, so a shaded stem, the dark side of a
-    // crown, and a low shrub sit in the dark with the ground they stand in;
-    // the floor is open almost to the bottom of the ramp because a crown's
-    // own shadowed depths have nowhere else to go. Their ceiling sits exactly
-    // where orange is fully reached, so the most exposed foliage is allowed
-    // that color and one tree covers violet to orange with no stretch of it
-    // left flat. Yellow stays out of reach. A living body's
-    // floor is lifted into the warm half instead: no part of an animal,
-    // however far from its core, may fall back into the cold range the
-    // landscape occupies, because an animal reading as ground temperature
-    // stops being the heat this level is about.
+    // Plants no longer reach the bottom of the ramp. Their floor sits where
+    // blue is fully reached, which is where the outermost foliage lands, so a
+    // crown fades out into cold blue rather than into the near-black the
+    // ground's own hollows use: a plant sharing the ground's darkest color
+    // stops reading as a separate object standing in it. Their ceiling still
+    // sits exactly where orange is fully reached, so the trunk core is
+    // allowed that color and one tree covers blue through cyan and magenta to
+    // orange along its own radius, with no stretch of it left flat. Yellow
+    // stays out of reach. A living body's floor is lifted far higher: it sits
+    // above the warm stop, so the coolest reading anywhere on an animal — a
+    // hoof tip, an antler end, the end of a tail — is a full magenta, and
+    // nothing on a body can arrive at the cyan the landscape ends on. That is
+    // a far narrower band than a plant's, deliberately: an animal is one warm
+    // thing, and the whole of it has to read that way.
     bands: {
       terrain: { floorWarmth: 0, ceilingWarmth: 0.48 },
-      vegetation: { floorWarmth: 0.04, ceilingWarmth: 0.86 },
+      vegetation: { floorWarmth: 0.16, ceilingWarmth: 0.86 },
       rocks: { floorWarmth: 0, ceilingWarmth: 0.48 },
-      animals: { floorWarmth: 0.5, ceilingWarmth: 1 },
+      animals: { floorWarmth: 0.72, ceilingWarmth: 1 },
     },
     // The organic texture over the ground: deep enough that no stretch of
     // ground holds one temperature anywhere, comparable now to the span the
@@ -195,24 +202,32 @@ export const level: LevelPreset = {
     // comes from, since a hollow has no shadow to cast and can only read
     // dark by reading cold.
     terrainContrast: 0.7,
-    // Warm-blooded animals are the hottest thing in the world: the body core
-    // reaches the yellow end of the ramp outright, and the falloff carries
-    // legs, snouts, and tails back down through orange into magenta. That
-    // falloff is shorter than it was, because the warm stops moved up: the
-    // same drop that used to end in magenta would now end in the cyan the
-    // ground occupies, which would hand the landscape's own color to the one
-    // thing in the world that has to read as hot.
+    // Warm-blooded animals are the hottest thing in the world, and every part
+    // of one is warm. The core reaches the yellow end of the ramp outright,
+    // and the falloff carries neck, head, legs, and tail down through orange
+    // into magenta — and stops there. It is short, because the distance from
+    // a chest to a hoof is not a reason for a leg to read as ground: a body
+    // is warm all over and merely warmest in the middle, and a falloff long
+    // enough to reach the cold colors describes a body cooling rather than an
+    // animal standing. What is left is a genuine gradient — magenta at the
+    // extremities, orange across neck and flank, yellow at the core — so the
+    // shape is still contoured, only entirely within the warm colors.
     actorWarmth: 0.96,
-    actorExtremityFalloff: 0.32,
-    // Over half of what the core-to-limb falloff spans, and the shader eases
-    // it off above the quiet warmth: the coat over flanks, legs, and tail
-    // breaks into uneven patches of heat, while the core the ease spares
-    // stays smooth and keeps a defined edge against them.
-    actorTextureWarmth: 0.24,
-    // Living bodies get the strongest curve of anything in the world: it
-    // pushes the core toward full heat and the limbs down past the warm
-    // stop, so an animal reads as a contoured shape rather than a warm blob.
-    actorContrast: 0.8,
+    actorExtremityFalloff: 0.2,
+    // About a third of what the core-to-limb falloff spans, and the shader
+    // still eases it off above the quiet warmth: the coat mottles, but only
+    // within the color the falloff has already put there. It used to be deep
+    // enough to move a patch of flank a whole band away from the flank around
+    // it, which is what put cold speckle inside a warm body.
+    actorTextureWarmth: 0.07,
+    // The curve is applied lightly now. At its old strength it pushed the
+    // core to full heat and drove everything below the pivot steeply down,
+    // which is most of why limbs left the warm range at all; the band floor
+    // then caught them at the bottom and flattened them against it. Softened
+    // to this it still lifts the core clear of the torso and keeps the
+    // gradations along a leg apart from one another, without manufacturing
+    // the fall it is only meant to shape.
+    actorContrast: 0.3,
     // A body warms what surrounds it, faintly and over a long distance. The
     // spread is several times the animal's own height and the falloff has a
     // gaussian tail, so the warmth thins out for metres without ever reaching
