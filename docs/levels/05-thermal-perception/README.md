@@ -59,8 +59,8 @@ palette outside the radius. No audio counterpart exists yet.
 - Fields: `terrain`, `grass`, `vegetation`, `rocks`, `airParticles`,
   `scentParticles`, `echoDepth`, and `motion` copied unchanged from
   `motion.level.ts`, plus `animals` (echo-palette fur colors) and
-  `thermal: ThermalPerceptionParameters` (intensity 1, 60-metre radius,
-  20-metre edge feather, five documented palette stops over a darkened
+  `thermal: ThermalPerceptionParameters` (intensity 1, 35-metre radius,
+  12-metre edge feather, five documented palette stops over a darkened
   coldest one, vegetation warmth 0.32 ± 0.18, rock warmth 0.2 ± 0.18, actor
   warmth 0.96). These figures had drifted from the preset across several
   tuning sessions and were brought back to it on 2026-08-30.
@@ -189,6 +189,22 @@ palette outside the radius. No audio counterpart exists yet.
   flat canopy top is the reading this change exists to break. Two costs were
   accepted: the finer texture reaches ground, rock, and animal coats as well,
   and exposed foliage now shares orange with animals, which keep yellow alone.
+- Sensing reach (decided 2026-08-30): the radius narrowed from 60 to 35
+  metres and the feather from 20 to 12, holding the feather at about a third
+  of the radius so the handover to the echo ramp keeps the same softness at
+  any reach. Heat becomes a pool that travels with the viewer: most of what
+  they can see stays the carried grey world, and a tree or an animal holds
+  its temperature back until they come close enough to be inside its reach,
+  which is the sense behaving like a sense rather than like a filter over the
+  whole image. Two consequences are accepted. A warm body beyond 35 metres
+  reads as ordinary echo grey with no heat at all, so the piece cannot depend
+  on spotting one across a clearing. And the heat view now lives entirely
+  inside the near third of the echo ramp's 6..96 m depth range, where that
+  ramp is still dark, so if sensed surfaces read murkier than intended the
+  value to reach for is `carriedColorBlend`, not the radius. The upper bound
+  is unchanged and still locked by a test in
+  `tests/levels/level-presets.test.ts`: radius plus feather must stay inside
+  the echo far distance, which caps the radius near 70 metres.
 - Smooth thermal transitions (decided 2026-08-30, refines the entry above):
   the structure that change bought was real but fragmented — warm sat beside
   cold with no intermediate temperature between them, and a canopy read as

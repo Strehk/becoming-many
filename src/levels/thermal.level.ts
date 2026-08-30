@@ -32,10 +32,17 @@ export const level: LevelPreset = {
   thermal: {
     // Full sense strength until a dramaturgy driver exists.
     intensity: 1,
-    // Heat is a near sense: the false-color view reaches 60 metres and
-    // feathers back into the echo ramp well inside its 96 m far distance.
-    radiusMeters: 60,
-    edgeFeatherMeters: 20,
+    // Heat is a near sense, and narrowly so: the false-color view reaches 35
+    // metres and feathers back into the echo ramp far inside its 96 m far
+    // distance. Most of what the viewer can see is therefore still the
+    // carried grey world, and heat is a pool that travels with them — a tree
+    // or an animal holds its temperature back until they come close enough
+    // to be inside its reach, which is the sense behaving like a sense
+    // rather than like a filter over the whole image. The feather stays at
+    // about a third of the radius, so the handover to the echo ramp keeps
+    // the same softness at any reach.
+    radiusMeters: 35,
+    edgeFeatherMeters: 12,
     // Heat seen through the carried grey world rather than painted over it,
     // and translucently enough that more than two fifths of the echo ramp
     // survives on every sensed surface. That ramp is the only true luminance
