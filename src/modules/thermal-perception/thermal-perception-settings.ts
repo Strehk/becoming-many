@@ -79,23 +79,28 @@ export const THERMAL_PERCEPTION_SETTINGS = {
     // depth separate inside one tree. The count stays at four — it is a
     // compile-time define, and a fifth octave would land under a decimetre,
     // which shimmers on a moving camera and costs another noise evaluation
-    // per fragment.
+    // per fragment. It settled a little above the four and a half metres it
+    // was first cut to: the finest octave there fell to under a fifth of a
+    // metre, which is fine enough to read as speckle rather than as grain on
+    // anything more than a few metres away.
     octaves: 4,
-    featureSizeMeters: 4.5, // Largest patch size on ground, plants, and rocks.
+    featureSizeMeters: 5, // Largest patch size on ground, plants, and rocks.
     // The same, as a share of an actor's height: a body now carries about
     // three patches head to hoof rather than two, so a coat mottles instead
     // of dividing into halves.
     bodyFeatureFraction: 0.35,
     lacunarity: 2.9, // Non-integer: octave periods never line up.
-    // Each finer octave's share of the one before it. Raised twice with the
-    // feature size, and for the same reason both times: the coarsest octave
-    // once carried nearly half the field on its own, which is the same
-    // failure as an oversized feature — one broad patch deciding what a whole
-    // surface, or a whole tree, reads as. It now holds about a third while
-    // the finest holds close to a fifth, so the grain reads as grain instead
-    // of as a faint dither over large patches, and the fine structure inside
-    // a crown survives the depth laid over it.
-    gain: 0.78,
+    // Each finer octave's share of the one before it, and a balance between
+    // two failures. Low, the coarsest octave carries nearly half the field on
+    // its own, which is one broad patch deciding what a whole surface, or a
+    // whole tree, reads as. High, the finest octaves carry enough amplitude
+    // to break a surface into isolated specks with no gradual step between
+    // them. It was raised to the far side of that balance to solve the first
+    // and overshot into the second; here the coarsest holds about two fifths
+    // and the finest an eighth, so the grain still reads as grain and still
+    // varies within one crown, but the fine scales modulate the broad ones
+    // rather than competing with them.
+    gain: 0.7,
     quietWarmth: 0.8, // Warmth above which the texture starts easing off.
     quietAmount: 0.45, // Share of it removed at full heat.
   },
@@ -119,8 +124,12 @@ export const THERMAL_PERCEPTION_SETTINGS = {
   // Width of the soft knee at each end of a warmth band. Inside the knee the
   // reading approaches the band's edge asymptotically instead of clipping, so
   // a material stays in its own range without piling up into a flat plateau
-  // at the edge of it.
-  bandKneeWarmth: 0.08,
+  // at the edge of it. It is wide, because the knee is also the last chance
+  // the image has to soften: readings crowd toward a band edge — an exposed
+  // crown toward orange, a sunlit ridge toward cyan — and a narrow knee turns
+  // that crowd into an abrupt arrival at the color. Over a wider one they
+  // approach it gradually and stay separated from each other while they do.
+  bandKneeWarmth: 0.11,
 
   // How a living body radiates into what surrounds it. The emitter is a
   // segment along the animal's own body axis rather than a point, so the

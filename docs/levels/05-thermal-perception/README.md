@@ -61,7 +61,7 @@ palette outside the radius. No audio counterpart exists yet.
   `motion.level.ts`, plus `animals` (echo-palette fur colors) and
   `thermal: ThermalPerceptionParameters` (intensity 1, 60-metre radius,
   20-metre edge feather, five documented palette stops over a darkened
-  coldest one, vegetation warmth 0.32 ± 0.20, rock warmth 0.2 ± 0.18, actor
+  coldest one, vegetation warmth 0.32 ± 0.18, rock warmth 0.2 ± 0.18, actor
   warmth 0.96). These figures had drifted from the preset across several
   tuning sessions and were brought back to it on 2026-08-30.
 - Active modules: everything the Motion level activates, plus Animals and
@@ -189,6 +189,28 @@ palette outside the radius. No audio counterpart exists yet.
   flat canopy top is the reading this change exists to break. Two costs were
   accepted: the finer texture reaches ground, rock, and animal coats as well,
   and exposed foliage now shares orange with animals, which keep yellow alone.
+- Smooth thermal transitions (decided 2026-08-30, refines the entry above):
+  the structure that change bought was real but fragmented — warm sat beside
+  cold with no intermediate temperature between them, and a canopy read as
+  isolated dots rather than as thermal layers. The cause was which of the two
+  sources carried the plant's range. The gradients are smooth continuous
+  functions of where a point sits on the plant, so what they produce is
+  layered and visits every intermediate color; the texture is noise, and the
+  contrast curve steepens whatever it is given, so together they turn gentle
+  variation into hard boundaries. The range moved onto the gradients (height
+  0.05 to 0.052, axis 0.028 to 0.034 per metre) and off the pair that
+  sharpens it (texture depth 0.58 to 0.40, contrast 0.76 to 0.52), with the
+  plant spread following to 0.18. In the module, `featureSizeMeters` settled
+  at 5 (at 4.5 the finest octave fell under a fifth of a metre, fine enough
+  to read as speckle beyond a few metres), `gain` came back to 0.7 from an
+  overshoot at 0.78 — high gain breaks a surface into specks exactly as low
+  gain lets one broad patch decide it — and `bandKneeWarmth` widened from
+  0.08 to 0.11, since the knee is the last place the image can soften and
+  readings crowding toward a band edge should arrive at it gradually. Note
+  that all three module values are shared with ground, rock, and animal
+  coats: no configuration value can soften plants alone. There is no blur or
+  spatial filter anywhere in this path, so smoothness is only ever reachable
+  this way — by lengthening what is smooth and lowering what is sharp.
 - Per-part plant warmth is not reachable from configuration (recorded
   2026-08-30, supersedes the open question): the instanced variant measures
   height above the instance base and distance from the instance's vertical

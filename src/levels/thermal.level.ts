@@ -95,24 +95,37 @@ export const level: LevelPreset = {
       // crown reads as temperature rather than the crown reading as a warm
       // shell: outer branches run warmest, and the interior beside the stem
       // falls back through magenta toward the cyan of the stem itself.
-      // The spread between plants is narrower than it was. It is the one
-      // value that moves a whole plant at once, and while a stand does need
-      // to read as many separate plants, a spread wide enough to carry that
-      // alone was also enough to lift an entire tree into one color band and
-      // hide everything happening inside it. A stand now separates mostly
-      // through the texture field its plants stand in, which varies within
-      // each crown as well as between them.
-      // That texture is the deepest in the world by a clear margin: foliage
-      // holds heat unevenly, and the mottling is what keeps a crown reading
-      // as branches, gaps, and depth rather than as one painted surface
-      // however warm it gets. The curve then pulls those differences apart
-      // instead of letting them average back out.
+      // The spread between plants is narrow. It is the one value that moves a
+      // whole plant at once, and while a stand does need to read as many
+      // separate plants, a spread wide enough to carry that alone was also
+      // enough to lift an entire tree into one color band and hide everything
+      // happening inside it.
+      // Which of the two sources carries the plant's range is the whole
+      // question here, because they do not read alike. The gradients are
+      // smooth continuous functions of where a point sits on the plant, so
+      // what they produce is layered: a stem passing through blue, cyan, and
+      // magenta on its way to an orange crown, every intermediate color
+      // actually visited on the way. The texture is noise, and the contrast
+      // curve steepens whatever it is given, so the two together turn gentle
+      // variation into hard boundaries — warm beside cold with nothing in
+      // between, a canopy of isolated dots rather than a thermally layered
+      // one. They had been carrying most of the range, and the texture was
+      // the deepest in the world by a clear margin.
+      // So the range moves onto the gradients, which are widened to carry it,
+      // and the texture drops back to what it should have been all along:
+      // subtle local variation riding on a broad gradient, still deep enough
+      // that foliage reads as uneven heat rather than as a painted surface.
+      // The curve softens with it. Its job is to separate readings that sit
+      // close together, and at this depth the texture no longer needs pulling
+      // apart — steepening it any further only sharpens the boundaries inside
+      // the noise into edges. The detail survives; what goes is the hardness
+      // between one patch of it and the next.
       vegetationWarmth: 0.32,
-      vegetationWarmthSpread: 0.2,
-      vegetationHeightWarmthPerMeter: 0.05,
-      vegetationAxisWarmthPerMeter: 0.028,
-      vegetationTextureWarmth: 0.58,
-      vegetationContrast: 0.76,
+      vegetationWarmthSpread: 0.18,
+      vegetationHeightWarmthPerMeter: 0.052,
+      vegetationAxisWarmthPerMeter: 0.034,
+      vegetationTextureWarmth: 0.4,
+      vegetationContrast: 0.52,
       // Rock is cold, heavy substance: it sits near the ground's own range,
       // warmest on the face the sun reaches and cooler down its flanks.
       // It was the last solid thing left in the image: the ground around it
