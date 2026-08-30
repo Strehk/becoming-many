@@ -242,14 +242,34 @@ export const level: LevelPreset = {
     // gradations along a leg apart from one another, without manufacturing
     // the fall it is only meant to shape.
     actorContrast: 0.3,
-    // A body warms what surrounds it, faintly and over a long distance. The
-    // spread is several times the animal's own height and the falloff has a
-    // gaussian tail, so the warmth thins out for metres without ever reaching
-    // an edge that could read as a ring; the strength is what it adds
-    // directly beneath the body, where the pool is at its warmest.
+    // A body warms what it stands on, and almost nothing further. Both values
+    // are cut hard from what they were, because radiated warmth is the one
+    // reading in the level that is added after a material's band is applied:
+    // it is the only thing allowed to carry ground past its own ceiling, and
+    // at its old depth it did exactly that over a wide area, tipping the
+    // landscape around an animal into the magenta that is supposed to mean a
+    // living body. A hoofed animal was dragging a warm lake behind it.
+    // The reach is a multiplier on the animal's own height, and the falloff
+    // is gaussian in it, so what it sets is how quickly the pool dies rather
+    // than where it ends. Just above one, a 1.6 m stag spreads about two
+    // metres: the ground it stands on takes the full addition, two metres out
+    // keeps about a third of it, and by four metres there is nothing left to
+    // measure. That is a pool the size of the animal's own footing, which is
+    // what a body pressed against cold ground would actually warm.
+    // The strength is what it adds directly beneath the body, and a twentieth
+    // is deliberately less than a fifth of the depth of the ground's own
+    // thermal texture. The trace can therefore never be the strongest thing
+    // happening on the ground it lies on — it reads as that ground running
+    // slightly warm, and it is swallowed by the terrain's own grain rather
+    // than sitting on top of it as a shape.
+    // The pool is rigidly attached to the body and is recomputed every frame
+    // from where the animals are now. Nothing is deposited and nothing decays:
+    // when an animal moves on, its warmth moves with it and the ground behind
+    // it is cold again immediately. There is no lingering footprint here to
+    // shorten, and no value in this file could make one.
     heatEmission: {
-      strength: 0.2,
-      reachPerBodyHeight: 5,
+      strength: 0.05,
+      reachPerBodyHeight: 1.2,
     },
   },
 };
