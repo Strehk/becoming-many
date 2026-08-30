@@ -34,10 +34,11 @@ back into the carried grayscale world beyond it.
 Palette (see [moodboard](mood/moodboard.png)):
 `#2E1386` `#0C47D1` `#2EB4E8` `#D5198A` `#FB5F16` `#FCCE43`
 
-The ramp's six anchors are that palette verbatim, cold to hot. What the
-anchors are and how far up the warmth range each one is reached are separate
-questions; the 2026-08-30 decision on the ramp thresholds below records where
-the stops were placed.
+The ramp's anchors are that palette cold to hot, five of them verbatim. The
+coldest is carried down its own hue to `#0E0628`; the decision below records
+why. What the anchors are and how far up the warmth range each one is reached
+are separate questions; the 2026-08-30 decision on the ramp thresholds below
+records where the stops were placed.
 
 Decided art direction (2026-08-28): the documented level-05 palette maps
 cold to hot across a six-stop ramp. The temperature field is expressive
@@ -58,9 +59,11 @@ palette outside the radius. No audio counterpart exists yet.
 - Fields: `terrain`, `grass`, `vegetation`, `rocks`, `airParticles`,
   `scentParticles`, `echoDepth`, and `motion` copied unchanged from
   `motion.level.ts`, plus `animals` (echo-palette fur colors) and
-  `thermal: ThermalPerceptionParameters` (intensity 1, 30-metre radius,
-  10-metre edge feather, the six documented palette stops, vegetation
-  warmth 0.45 ± 0.12, rock warmth 0.3 ± 0.08, actor warmth 0.92).
+  `thermal: ThermalPerceptionParameters` (intensity 1, 60-metre radius,
+  20-metre edge feather, five documented palette stops over a darkened
+  coldest one, vegetation warmth 0.32 ± 0.20, rock warmth 0.2 ± 0.18, actor
+  warmth 0.96). These figures had drifted from the preset across several
+  tuning sessions and were brought back to it on 2026-08-30.
 - Active modules: everything the Motion level activates, plus Animals and
   Thermal Perception (`src/modules/thermal-perception/`): one shared
   material-effect family applied by the composition root to Terrain
@@ -166,7 +169,54 @@ palette outside the radius. No audio counterpart exists yet.
   handing the landscape's own color to the one thing that must read as hot.
   A regression test in `tests/levels/level-presets.test.ts` locks the ground
   and rock ceilings below the warm stop.
+- Internal thermal structure of a tree (decided 2026-08-30): a crown was
+  reading as one color, and the cause was not the plant's own values but the
+  texture laid over them. The coarsest noise octave spanned six metres, wider
+  than a crown, and carried close to half the field on its own, so the
+  strongest scale in the image was tinting each tree as a unit; the per-plant
+  hash spread (0.3) then moved whole plants far enough to hide what little
+  internal variation survived. The module's texture was pulled to a 4.5-metre
+  coarsest octave with its finer octaves weighted up (`gain` 0.62 to 0.78), so
+  the largest patch is about half a crown, and the plant's spread narrowed to
+  0.2. On top of that the plant's own shaping widened: base 0.34 to 0.32,
+  height gradient 0.038 to 0.05 per metre, axis gradient 0.022 to 0.028 per
+  metre, texture depth 0.46 to 0.58, contrast 0.72 to 0.76, band 0.08..0.78 to
+  0.04..0.86, and the module's vegetation contrast pivot 0.5 to 0.56. One tree
+  now runs from a violet stem base through blue and cyan into a magenta inner
+  crown and orange exposed foliage, mottled throughout. The height gradient is
+  deliberately held short of what would drive a crown top through the band
+  ceiling: readings that pile into the knee all return the same orange, and a
+  flat canopy top is the reading this change exists to break. Two costs were
+  accepted: the finer texture reaches ground, rock, and animal coats as well,
+  and exposed foliage now shares orange with animals, which keep yellow alone.
+- Per-part plant warmth is not reachable from configuration (recorded
+  2026-08-30, supersedes the open question): the instanced variant measures
+  height above the instance base and distance from the instance's vertical
+  axis, and one gradient pair covers the whole plant. A warm trunk core
+  fading to cool edges cannot be authored at all, at any value — every point
+  on a trunk's rendered surface sits at the same distance from that axis, so
+  no radial term can vary across it. That look needs a normal- or view-facing
+  term in the thermal shaders, which have no access to normals; it is a
+  module change and is not taken here. Separating trunk from crown likewise
+  needs either a second gradient pair or a per-part warmth input, because a
+  coefficient steep enough to shade a 0.2-metre trunk drives a 3-metre crown
+  through the band floor.
+- Black floor at the cold end (decided 2026-08-30): the coldest stop moved
+  from the moodboard's `#2E1386` to `#0E0628`, the same hue at roughly a
+  third of its value. A thermal image has a black floor and this ramp had
+  none — its coldest reading was a lit violet, so shadowed depths inside a
+  crown, cold hollows in the ground, and deep water all bottomed out on a
+  color bright enough to read as a surface rather than as absence. The
+  vegetation band floor had been opened to 0.04 in the same session and had
+  nowhere dark to land. The hue is kept, so the cold end still runs violet
+  into blue and the level still reads cold to hot rather than dark to light;
+  this is a change of value, not the drained cold end rejected above. It
+  stops short of true black because `carriedColorBlend` keeps 0.42 of the
+  echo world on every sensed surface, and a black stop under that share reads
+  as a hole in the image instead of as cold. The moodboard table in
+  `docs/levels/README.md` still records the image's own `#2E1386`.
 - Open art decisions: physical versus expressive temperature mapping
   tuning against real headset contrast; radius and feather width against
-  the dramaturgy; whether vegetation warmth should read per-part instead
-  of per-plant; temporal variation and heat trails.
+  the dramaturgy; whether the shaders should gain a normal- or view-facing
+  term so a trunk can read as a warm core against cool edges; temporal
+  variation and heat trails.

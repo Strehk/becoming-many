@@ -25,9 +25,10 @@ export const level: LevelPreset = {
     },
   },
   // Level 05 palette from docs/levels/README.md: #2E1386 #0C47D1 #2EB4E8
-  // #D5198A #FB5F16 #FCCE43, mapped cold to hot. All six stops are those
-  // documented colors verbatim; how far up the warmth range each one is
-  // reached is set by the ramp thresholds the module owns, not here.
+  // #D5198A #FB5F16 #FCCE43, mapped cold to hot. Five of the six stops are
+  // those documented colors verbatim; the coldest is the one deviation, and
+  // it is described where it is authored below. How far up the warmth range
+  // each stop is reached is set by the ramp thresholds the module owns.
   thermal: {
     // Full sense strength until a dramaturgy driver exists.
     intensity: 1,
@@ -56,8 +57,20 @@ export const level: LevelPreset = {
     // its colors were taken away from it. Exposed ground tips into cyan,
     // plants climb through magenta into orange, and only a living body
     // reaches the yellow at the top.
+    // The coldest stop is the one place the moodboard is departed from, and
+    // only in value: the documented #2E1386 is carried down its own hue to
+    // near-black. A thermal image has a black floor, and this ramp had none —
+    // its coldest reading was a lit violet, so the shadowed depths inside a
+    // crown, the cold hollows of the ground, and deep water all bottomed out
+    // on a color bright enough to read as a surface rather than as absence.
+    // The hue is kept, so the cold end still runs violet into blue and the
+    // level still reads cold to hot rather than dark to light; what changes
+    // is that the bottom of the ramp can now actually go dark. It stays a
+    // near-black violet rather than true black because the carried echo world
+    // keeps its own share of every sensed surface, and a black stop under
+    // that share reads as a hole in the image instead of as cold.
     colors: {
-      coldestColor: 0x2e1386,
+      coldestColor: 0x0e0628,
       coldColor: 0x0c47d1,
       coolColor: 0x2eb4e8,
       warmColor: 0xd5198a,

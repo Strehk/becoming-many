@@ -196,9 +196,12 @@ test("Motion Level layers fly swarms onto the carried Echo world", () => {
 
 test("Thermal Level layers heat onto the carried Motion world", () => {
   const thermalPreset: LevelPreset = thermalLevel;
-  // The documented level-05 false-color palette, cold to hot.
+  // The documented level-05 false-color palette, cold to hot. The coldest
+  // stop is the documented #2E1386 carried down its own hue to near-black, so
+  // the ramp has a dark floor for shadowed crown depths, cold hollows, and
+  // deep water; the remaining five are the moodboard colors verbatim.
   const thermalPalette = [
-    0x2e1386, 0x0c47d1, 0x2eb4e8, 0xd5198a, 0xfb5f16, 0xfcce43,
+    0x0e0628, 0x0c47d1, 0x2eb4e8, 0xd5198a, 0xfb5f16, 0xfcce43,
   ];
   const { thermal, animals } = thermalPreset;
   if (!thermal) throw new Error("Thermal Level must author the thermal sense");

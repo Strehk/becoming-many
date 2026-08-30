@@ -133,6 +133,11 @@ The images were created for this project with OpenAI Image Gen on 2026-08-21. Tw
 | 06 — Magnetic Field Perception | [View](06-magnetic-field-perception/mood/moodboard.png) | `#151935` `#1140A4` `#69BDE1` `#CDDBE2` `#A394C3` `#F9B33C` |
 | 07 — Connections | [View](07-connections/mood/moodboard.png) | `#F2E3D3` `#683B5A` `#292E55` `#A5BDC3` `#D06780` `#E39E54` |
 
+The hexes above record what each moodboard image contains. Where an authored
+ramp departs from its moodboard, the level's own README carries the deviation
+and the reason: level 05 darkens the coldest anchor `#2E1386` to `#0E0628`
+along its own hue, so its thermal ramp has a black floor.
+
 ## Planned Level Specifications
 
 ## 00 — Test Level
