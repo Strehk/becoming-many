@@ -15,28 +15,25 @@ import {
 } from "three";
 import type { ChunkAssignment } from "../../world/chunk-system";
 import type { WorldSurface } from "../../world-surface/world-surface";
-import type { ZoneId } from "../../world-surface/zone-settings";
+import {
+  findScentEmitterAnchor,
+  getScentRandom,
+} from "./scent-emitter-anchors";
 import {
   createScentParticleMaterial,
   type ScentParticleMaterial,
 } from "./scent-particle-material";
-import {
-  SCENT_PARTICLES_SETTINGS,
-  type ScentParticlesParameters,
-} from "./scent-particles-settings";
+import type { ScentParticlesParameters } from "./scent-particles-settings";
 
 const COMPONENTS_PER_VALUE = 3;
-const RANDOM_VALUE_RANGE = 0x1_0000_0000;
 
-/** Fixed random component indexes; candidate components follow after them. */
-const EMITTER_RANDOM_HEIGHT = 2;
+/** Fixed random component indexes; emitter and candidate ones live with the anchors. */
 const EMITTER_RANDOM_COLOR = 3;
 // Scatter spends two component ranges: the three axes at 4..6 and their
 // second draw one axis count later at 7..9. Everything after starts at 10.
 const PARTICLE_RANDOM_FIRST_AXIS = 4;
 const SCATTER_AXIS_COUNT = 3;
 const PARTICLE_RANDOM_PHASE = 10;
-const CANDIDATE_RANDOM_FIRST = 11;
 
 interface ScentParticleFieldOptions {
   readonly parameters: ScentParticlesParameters;
@@ -44,12 +41,6 @@ interface ScentParticleFieldOptions {
   readonly chunkSlotCount: number;
   readonly groundYAt: WorldSurface["groundYAt"];
   readonly zoneAt: WorldSurface["zoneAt"];
-}
-
-interface ScentEmitterAnchor {
-  readonly worldX: number;
-  readonly worldY: number;
-  readonly worldZ: number;
 }
 
 /**
@@ -216,7 +207,14 @@ function writeEmitterParticles(
   const firstParticleIndex =
     assignment.slotIndex * field.particlesPerChunk +
     emitterIndex * emission.particlesPerEmitter;
-  const anchor = findSourceZoneAnchor(field, assignment, emitterIndex);
+  const anchor = findScentEmitterAnchor(
+    assignment,
+    field.chunkSize,
+    field.parameters.placement,
+    field.groundYAt,
+    field.zoneAt,
+    emitterIndex,
+  );
 
   if (!anchor) {
     field.renderedVisibility.fill(
@@ -282,51 +280,6 @@ function writeEmitterParticles(
 }
 
 /**
- * Try a bounded number of deterministic candidate positions and keep the
- * first one inside a scent source zone, anchored just above the ground.
- */
-function findSourceZoneAnchor(
-  field: ScentParticleField,
-  assignment: ChunkAssignment,
-  emitterIndex: number,
-): ScentEmitterAnchor | undefined {
-  const { placement } = field.parameters;
-  const sourceZones: readonly ZoneId[] = SCENT_PARTICLES_SETTINGS.sourceZones;
-
-  for (
-    let attempt = 0;
-    attempt < SCENT_PARTICLES_SETTINGS.placementAttemptsPerEmitter;
-    attempt += 1
-  ) {
-    const componentBase = CANDIDATE_RANDOM_FIRST + attempt * 2;
-    const worldX =
-      assignment.originX +
-      getScentRandom(assignment, emitterIndex, -1, componentBase) *
-        field.chunkSize;
-    const worldZ =
-      assignment.originZ +
-      getScentRandom(assignment, emitterIndex, -1, componentBase + 1) *
-        field.chunkSize;
-    if (!sourceZones.includes(field.zoneAt(worldX, worldZ))) continue;
-
-    const heightRandom = getScentRandom(
-      assignment,
-      emitterIndex,
-      -1,
-      EMITTER_RANDOM_HEIGHT,
-    );
-    const worldY =
-      field.groundYAt(worldX, worldZ) +
-      placement.minHeightMeters +
-      heightRandom * (placement.maxHeightMeters - placement.minHeightMeters);
-
-    return { worldX, worldY, worldZ };
-  }
-
-  return undefined;
-}
-
-/**
  * Return one symmetric scatter offset within the given half extent, drawn so
  * the cloud thins out toward its boundary instead of ending at a wall.
  *
@@ -375,26 +328,4 @@ function createSignatureColors(colors: readonly number[]): Float32Array {
   });
 
   return signatureColors;
-}
-
-/**
- * Return one stable pseudo-random value in [0, 1) without keeping RNG state.
- * Emitter-level values pass particleIndex -1 so they share no stream with
- * their particles.
- */
-function getScentRandom(
-  assignment: ChunkAssignment,
-  emitterIndex: number,
-  particleIndex: number,
-  componentIndex: number,
-): number {
-  let hash = Math.imul(assignment.chunkX, 73_856_093);
-  hash ^= Math.imul(assignment.chunkZ, 19_349_663);
-  hash ^= Math.imul(emitterIndex + 1, 2_971_215_073);
-  hash ^= Math.imul(particleIndex + 2, 83_492_791);
-  hash ^= Math.imul(componentIndex + 1, 1_103_515_245);
-  hash = Math.imul(hash ^ (hash >>> 16), 2_246_822_519);
-  hash = Math.imul(hash ^ (hash >>> 13), 3_266_489_917);
-
-  return (hash >>> 0) / RANDOM_VALUE_RANGE;
 }

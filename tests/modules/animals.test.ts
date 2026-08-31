@@ -52,7 +52,7 @@ const PRESET = {
 test("Animals animate only the nearest bounded population", () => {
   const scene = new Scene();
   const camera = new PerspectiveCamera();
-  const module = createAnimalsModule({
+  const { module } = createAnimalsModule({
     scene,
     camera,
     definition: DEFINITION,
@@ -81,7 +81,7 @@ test("Animals decorate every actor material with supplied effects", () => {
   const camera = new PerspectiveCamera();
   const decoratedMaterials: SensedMaterial[] = [];
   const bodyMatrices: Matrix4[] = [];
-  const module = createAnimalsModule({
+  const { module } = createAnimalsModule({
     scene,
     camera,
     definition: DEFINITION,
@@ -131,7 +131,7 @@ test("Animals reject an impossible visibility budget", () => {
 test("Animals occupy separate territories around the player", () => {
   const scene = new Scene();
   const camera = new PerspectiveCamera();
-  const module = createAnimalsModule({
+  const { module } = createAnimalsModule({
     scene,
     camera,
     definition: {
@@ -167,6 +167,43 @@ test("Animals occupy separate territories around the player", () => {
   expect(new Set(occupiedZones).size).toBe(4);
   expect(population.children.every(({ visible }) => visible)).toBe(true);
   module.unload();
+});
+
+test("Animals expose the visible actor positions within their budget", () => {
+  const scene = new Scene();
+  const camera = new PerspectiveCamera();
+  const handle = createAnimalsModule({
+    scene,
+    camera,
+    definition: DEFINITION,
+    preset: PRESET,
+    assets: createAnimalAssets(),
+    worldSurface: createFlatSurface(),
+  });
+
+  expect(handle.getVisibleWorldPositions()).toHaveLength(0);
+
+  handle.module.load();
+  handle.module.activate();
+  handle.module.update?.(0.25);
+
+  const positions = handle.getVisibleWorldPositions();
+  expect(positions.length / 3).toBeLessThanOrEqual(DEFINITION.maxVisible);
+  expect(positions).toHaveLength(3);
+
+  const population = scene.children[0];
+  if (!(population instanceof Group)) throw new Error("Expected animal Group");
+  const visibleActor = population.children.find(({ visible }) => visible);
+  if (!visibleActor) throw new Error("Expected one visible actor");
+  // The packed buffer stores 32-bit floats of the 64-bit actor positions.
+  expect(positions[0] ?? 0).toBeCloseTo(visibleActor.position.x, 4);
+  expect(positions[1] ?? 0).toBeCloseTo(visibleActor.position.y, 4);
+  expect(positions[2] ?? 0).toBeCloseTo(visibleActor.position.z, 4);
+
+  handle.module.deactivate();
+  handle.module.update?.(0.25);
+  expect(handle.getVisibleWorldPositions()).toHaveLength(3);
+  handle.module.unload();
 });
 
 test("Animals align their up axis with the local surface slope", () => {

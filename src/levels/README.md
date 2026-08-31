@@ -26,11 +26,13 @@ constants and overwrite single values with object spreads where they diverge;
 values unique to one level stay in its file.
 
 From Echolocation onward the narrative levels also inherit literally:
-`motion.level.ts` spreads the echo preset and adds the motion block, and
+`motion.level.ts` spreads the echo preset and adds the motion block,
 `thermal.level.ts` spreads the motion preset and adds the animal and thermal
-blocks. Editing an earlier level in that chain therefore carries into every
-later one ("senses layer, never swap"). These preset imports stay data-only
-and do not break the module-boundary rule.
+blocks, `magnetic.level.ts` spreads the thermal preset and adds the
+magnetic block, and `connections.level.ts` spreads the magnetic preset and
+adds the connections block. Editing an earlier level in that chain therefore
+carries into every later one ("senses layer, never swap"). These preset
+imports stay data-only and do not break the module-boundary rule.
 
 `white-world.level.ts` owns the narrative White World values and does not
 activate Terrain. `scent.level.ts` is the Scent World base experiment and
@@ -42,15 +44,24 @@ distance ramp. `motion.level.ts` is the Motion Perception level and layers
 the Motion Sense fly swarms and their printed trails onto the carried Echo
 world. `thermal.level.ts` is the Thermal Perception level and layers the
 radius-bounded false-color heat view onto the carried Motion world while
-adding the warm animal population. `test.level.ts` is the
+adding the warm animal population. `magnetic.level.ts` is the Magnetic Field
+Perception level and layers the directional ground field lines and the
+northern sky glow onto the carried Thermal world. `connections.level.ts` is
+the Connections level and layers the radius-bounded underground reveal and
+the pulsing mycelium web onto the carried Magnetic world. `test.level.ts` is the
 diagnostic development preset and activates Terrain and Grass, uses Zone
-Visualizer as the base presentation, and overlays the Magnetic Sense stripe
-effect.
+Visualizer as the base presentation, and authors its own diagnostic magnetic
+block.
 
 Presentation values can include the background, the camera view distance, and
 optional module parameters. The view distance is also the hard visibility
 boundary used to size streamed module windows with an additional preparation
 margin. It is level data; the permanent runtime does not invent a world look.
+
+`level-catalog.ts` names every preset so a run can select one without editing
+the entry point. It holds the default the browser opens and resolves an
+unknown request back to that default rather than failing. `?level=<name>` in
+the URL is a runtime request, not authored configuration.
 
 Preset files do not create Three.js resources, start render loops, or import
 concrete module implementations. `main.ts` only selects one preset and passes

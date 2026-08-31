@@ -194,6 +194,28 @@ export function readVisibleAnimalBodies(
   bodies.length = count;
 }
 
+/**
+ * Pack the world positions of the currently visible actors into the given
+ * buffer and return how many actors were written. The visible set is bounded
+ * by the definition's visibility budget.
+ */
+export function getVisibleActorPositions(
+  population: AnimalActors,
+  outPositions: Float32Array,
+): number {
+  let actorCount = 0;
+  for (const actor of population.actors) {
+    if (!actor.root.visible) continue;
+    const offset = actorCount * 3;
+    if (offset + 3 > outPositions.length) break;
+    outPositions[offset] = actor.root.position.x;
+    outPositions[offset + 1] = actor.root.position.y;
+    outPositions[offset + 2] = actor.root.position.z;
+    actorCount += 1;
+  }
+  return actorCount;
+}
+
 export function disposeAnimalActors(population: AnimalActors): void {
   const skeletons = new Set<SkinnedMesh["skeleton"]>();
   for (const actor of population.actors) {

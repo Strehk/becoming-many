@@ -28,6 +28,24 @@ export function getMotionRandom(
   return (hash >>> 0) / RANDOM_VALUE_RANGE;
 }
 
+/** Channel offset separating the second hash of one Box-Muller pair. */
+const GAUSSIAN_PAIR_CHANNEL_OFFSET = 101;
+const TAU = Math.PI * 2;
+
+/**
+ * Return one stable standard-normal sample. Placement uses it wherever a
+ * natural falloff is wanted: a Gaussian cloud is dense at its centre, thins
+ * gradually outward, and has tails instead of an edge.
+ */
+export function getMotionGaussian(index: number, channel: number): number {
+  const unitRadius = Math.max(getMotionRandom(index, channel), Number.EPSILON);
+  const unitAngle = getMotionRandom(
+    index,
+    channel + GAUSSIAN_PAIR_CHANNEL_OFFSET,
+  );
+  return Math.sqrt(-2 * Math.log(unitRadius)) * Math.cos(TAU * unitAngle);
+}
+
 /** Stable stepped noise in [-1, 1) for abrupt per-actor jitter. */
 export function getSignedNoise(
   index: number,

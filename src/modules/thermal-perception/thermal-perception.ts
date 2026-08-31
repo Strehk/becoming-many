@@ -20,6 +20,7 @@ import {
   applyShaderPatch,
   type MaterialShaderPatch,
 } from "../../utils/asset-loader/material-shader-patch";
+import { isNormalized, isPositiveFinite } from "../../utils/number-ranges";
 import { getElevationRange } from "../../world-surface/height-field";
 import type { WorldSurfaceSettings } from "../../world-surface/surface-settings";
 import { isWater, type ZoneConditions } from "../../world-surface/zone-field";
@@ -460,12 +461,4 @@ function validateThermalPerceptionParameters(
       "Thermal edge feather must be positive and fit inside the radius",
     );
   }
-}
-
-function isPositiveFinite(value: number): boolean {
-  return Number.isFinite(value) && value > 0;
-}
-
-function isNormalized(value: number): boolean {
-  return Number.isFinite(value) && value >= 0 && value <= 1;
 }

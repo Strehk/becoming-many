@@ -141,6 +141,79 @@ function selectModel(
   return undefined;
 }
 
+/** One requested aligned sub-chunk of a module's larger placement chunk. */
+export interface StaticAnchorRequest {
+  readonly chunkX: number;
+  readonly chunkZ: number;
+  readonly chunkSizeMeters: number;
+}
+
+/**
+ * Replay the accepted candidates of one requested chunk and push their world
+ * anchors. The request may cover a whole placement chunk or an aligned
+ * fraction of one; candidate jitter never leaves its cell, so iterating only
+ * the covering cells is exact. Shared by Vegetation and Rocks because the
+ * identical replay mechanism is proven twice; extra per-module rejection
+ * stays with each provider.
+ */
+export function appendStaticPlacementAnchors(
+  parameters: StaticPopulationParameters,
+  candidateGrid: ChunkCandidateGrid,
+  worldSurface: WorldSurface,
+  moduleChunkSizeMeters: number,
+  request: StaticAnchorRequest,
+  acceptCandidate: (candidate: ChunkCandidate) => boolean,
+  pushAnchor: (worldX: number, worldY: number, worldZ: number) => void,
+): void {
+  const chunkRatio = moduleChunkSizeMeters / request.chunkSizeMeters;
+  const cellsPerRequest = candidateGrid.cellsPerSide / chunkRatio;
+  if (!Number.isInteger(chunkRatio) || !Number.isInteger(cellsPerRequest)) {
+    throw new RangeError(
+      "Anchor requests must align with the placement chunk and candidate grid",
+    );
+  }
+
+  const moduleChunkX = Math.floor(request.chunkX / chunkRatio);
+  const moduleChunkZ = Math.floor(request.chunkZ / chunkRatio);
+  const assignment: ChunkAssignment = {
+    slotIndex: 0,
+    revision: 0,
+    chunkX: moduleChunkX,
+    chunkZ: moduleChunkZ,
+    originX: moduleChunkX * moduleChunkSizeMeters,
+    originZ: moduleChunkZ * moduleChunkSizeMeters,
+  };
+  const firstColumn =
+    (request.chunkX - moduleChunkX * chunkRatio) * cellsPerRequest;
+  const firstRow =
+    (request.chunkZ - moduleChunkZ * chunkRatio) * cellsPerRequest;
+
+  for (let row = firstRow; row < firstRow + cellsPerRequest; row += 1) {
+    for (
+      let column = firstColumn;
+      column < firstColumn + cellsPerRequest;
+      column += 1
+    ) {
+      const placement = selectStaticPlacement(
+        parameters,
+        candidateGrid,
+        worldSurface,
+        assignment,
+        row * candidateGrid.cellsPerSide + column,
+      );
+      if (!placement || !acceptCandidate(placement.candidate)) continue;
+      pushAnchor(
+        placement.candidate.worldX,
+        worldSurface.groundYAt(
+          placement.candidate.worldX,
+          placement.candidate.worldZ,
+        ),
+        placement.candidate.worldZ,
+      );
+    }
+  }
+}
+
 export function validateStaticPopulation(
   parameters: StaticPopulationParameters,
   chunkSize: number,

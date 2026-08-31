@@ -129,6 +129,53 @@ Decided 2026-08-30, applying the 2026-08-24 audit's P1 finding.
   inside those line boundaries in the same opaque material pass. Physical
   lights, transparent overlays, bloom, and additional terrain geometry remain
   outside the MVP.
+- Since level 06, line, pulse, and sky glow colors are preset-authored like
+  every other sense palette, and `magnetic` is a top-level `LevelPreset`
+  field beside `echoDepth`, `motion`, and `thermal`.
+
+### Magnetic Sky Cue and Contract Promotion (2026-08-31)
+
+- One `createMagneticSense` call returns both consumers as
+  `{ terrain, sky }`. The field-direction and intensity uniform objects are
+  created once and shared by identity, so a future dramaturgy driver steers
+  the whole sense through single values.
+- The sky cue is an analytic opaque dome instead of a transparent overlay or
+  bloom: a back-side sphere with `depthWrite` off and `renderOrder` −1 draws
+  first, every later opaque fragment paints over it, and the intensity fade
+  mixes the glow back into the level haze inside the fragment shader. One
+  added draw call, no extra render pass.
+- The dome follows the full camera position each frame; the world uses
+  absolute coordinates (no floating origin), so no shift compensation
+  exists or is needed.
+- The sky glow centres on the same `+fieldDirection` the ground pulses
+  travel toward, so the near field and the far cue always agree.
+- The composition root skips the sense entirely at intensity zero, matching
+  Echo Depth, Motion, and Thermal.
+
+### Module-Owned Web Worker for Connection Topology (2026-08-31)
+
+- The Connections web topology (kNN plus minimum spanning tree over up to
+  512 nodes) is O(n²) and runs in the repository's first Web Worker instead
+  of stream-queue steps. The Mycelium module owns the worker completely:
+  created on `load`, terminated on `unload`, reached only through the typed
+  transferable messages in `topology-messages.ts`. No global worker
+  infrastructure, registry, or shared channel exists.
+- The pure math lives worker-free in `network-topology.ts`, so Bun tests
+  cover it directly; the worker entry only relays one request. Tests inject
+  a synchronous fake through the narrow `TopologyPort` seam and never
+  construct a real worker.
+- Staleness is judged by an aggregate window generation the module owns
+  (per-slot chunk revisions cannot version a graph spanning all slots);
+  replies for an outdated generation are discarded, mirroring the
+  chunk-window currentness rule. Anchor gathering stays on the main thread
+  as bounded stream-queue steps, one 32-metre chunk per step, with the
+  stream queue's same-key replacement as the regather debounce.
+- The worker scope is typed locally in `topology.worker.ts`; the conflicting
+  `WebWorker` TypeScript lib is not added beside `DOM`.
+- Node anchors cross module boundaries only through the shared
+  `ConnectionNodeSource` / `ConnectionActorSource` contracts in
+  `src/modules/connection-nodes.ts`; providers replay their own
+  deterministic placement math and never import Mycelium.
 
 ## Approved Navigation Boundary
 

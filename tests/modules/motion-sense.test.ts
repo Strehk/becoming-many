@@ -22,6 +22,10 @@ import {
 } from "../../src/modules/motion-sense/motion-sense-settings";
 import { createMotionTrailBuffer } from "../../src/modules/motion-sense/motion-trail-buffer";
 import { createMotionTrailMaterial } from "../../src/modules/motion-sense/motion-trail-material";
+import {
+  accumulateEnvelopePull,
+  createSwarmShapes,
+} from "../../src/modules/motion-sense/swarm-shape";
 
 describe("Motion Trail material", () => {
   test("patches GPU aging, size fade, and the circle shape", () => {
@@ -201,6 +205,80 @@ describe("Fly swarms", () => {
     swarms.dispose();
   });
 
+  test("holds every fly above sloped ground, not just the anchor height", () => {
+    // A fly metres out from its anchor must ride the hill it is over. The
+    // anchor's own height alone would leave it inside the uphill terrain.
+    const groundSlope = 0.25;
+    const groundYAt = (worldX: number, worldZ: number) =>
+      (worldX + worldZ) * groundSlope;
+    const swarms = createFlySwarms({
+      parameters: createMotionParameters({
+        swarms: { swarmCount: 4, fliesPerSwarm: 30, flightSpeedMultiplier: 1 },
+      }),
+      groundYAt,
+      zoneAt: () => "meadow",
+      initialPlayerX: 0,
+      initialPlayerZ: 0,
+    });
+
+    for (let step = 0; step < 900; step += 1) {
+      swarms.update(1 / 90, 0, 0);
+    }
+
+    const worldPositions = swarms.getWorldPositions();
+    for (
+      let valueOffset = 0;
+      valueOffset < worldPositions.length;
+      valueOffset += 3
+    ) {
+      const flyX = worldPositions[valueOffset] ?? 0;
+      const flyY = worldPositions[valueOffset + 1] ?? 0;
+      const flyZ = worldPositions[valueOffset + 2] ?? 0;
+      expect(flyY).toBeGreaterThan(groundYAt(flyX, flyZ) + 0.1);
+    }
+    swarms.dispose();
+  });
+
+  test("settles at a bounded spread once the hard ceiling is gone", () => {
+    // The envelope is now the only thing holding a swarm together upward and
+    // outward. This guards the settled reach; the recapture that makes the
+    // reach finite at all is covered directly in "Swarm shape" below.
+    const maximumStrayMeters = 12;
+    const parameters = createMotionParameters({
+      swarms: { swarmCount: 4, fliesPerSwarm: 30, flightSpeedMultiplier: 1 },
+    });
+    const swarms = createFlySwarms({
+      parameters,
+      groundYAt: () => 0,
+      zoneAt: () => "meadow",
+      initialPlayerX: 0,
+      initialPlayerZ: 0,
+    });
+    const startCentroids = getSwarmCentroids(
+      swarms.getWorldPositions(),
+      parameters.swarms,
+    );
+
+    // Two simulated minutes is far past the point the spread settles.
+    for (let step = 0; step < 90 * 120; step += 1) {
+      swarms.update(1 / 90, 0, 0);
+    }
+
+    const worldPositions = swarms.getWorldPositions();
+    const endCentroids = getSwarmCentroids(worldPositions, parameters.swarms);
+    endCentroids.forEach((centroid, swarmIndex) => {
+      // No swarm walks away from its placement, however far its strays roam.
+      const start = startCentroids[swarmIndex];
+      expect(
+        Math.hypot(centroid.x - (start?.x ?? 0), centroid.z - (start?.z ?? 0)),
+      ).toBeLessThan(MOTION_SENSE_SETTINGS.swarmRadiusMeters);
+    });
+    expect(
+      getFurthestStrayMeters(worldPositions, parameters.swarms, endCentroids),
+    ).toBeLessThan(maximumStrayMeters);
+    swarms.dispose();
+  });
+
   test("re-anchors all swarms only after the player travels far enough", () => {
     const parameters = createMotionParameters();
     const swarms = createFlySwarms({
@@ -241,6 +319,80 @@ describe("Fly swarms", () => {
       expect(distance).toBeGreaterThan(1);
     }
     swarms.dispose();
+  });
+});
+
+describe("Swarm shape", () => {
+  test("draws one distinct deterministic volume per swarm", () => {
+    const first = createSwarmShapes(12);
+    const repeated = createSwarmShapes(12);
+
+    expect(repeated).toEqual(first);
+    // No two clouds may share a silhouette, which is the whole point of the
+    // per-swarm draw; the axes and yaw together are that silhouette.
+    const silhouettes = new Set(
+      first.map((shape) =>
+        [shape.radiusX, shape.radiusY, shape.radiusZ, shape.yawCos].join(":"),
+      ),
+    );
+    expect(silhouettes.size).toBe(first.length);
+  });
+
+  test("strengthens the envelope past the dissolve radius so nothing escapes", () => {
+    // Removing the ceiling clamp left this the only reason a straggler comes
+    // back at all: past the dissolve radius the pull must keep growing with
+    // distance. A loose fly feels the weakest version of it, so test that one.
+    const shape = createSwarmShapes(1)[0];
+    if (!shape) throw new Error("Expected one swarm shape");
+    const loosestBinding = MOTION_SENSE_SETTINGS.flyBinding.minimum;
+    const acceleration = { x: 0, y: 0, z: 0 };
+
+    // Every distance here is past three core radii for any drawn axis scale.
+    let previousPull = 0;
+    for (const strayMeters of [10, 15, 20, 30]) {
+      acceleration.x = 0;
+      acceleration.y = 0;
+      acceleration.z = 0;
+      accumulateEnvelopePull(
+        shape,
+        loosestBinding,
+        strayMeters,
+        0,
+        0,
+        acceleration,
+      );
+      // The pull points home, and further out it pulls harder.
+      expect(acceleration.x).toBeLessThan(0);
+      const pull = Math.hypot(acceleration.x, acceleration.y, acceleration.z);
+      expect(pull).toBeGreaterThan(previousPull);
+      previousPull = pull;
+    }
+  });
+
+  test("spaces the density lobes by the documented jitter", () => {
+    const { lobesPerSwarm, lobeAngleJitter } = MOTION_SENSE_SETTINGS.swarmShape;
+    // The jitter is authored as a fraction of the even spacing, so two
+    // neighbours can each close half of that fraction and no more. Applying it
+    // to a whole turn instead would let three lobes collapse into two.
+    const evenSpacingDegrees = 360 / lobesPerSwarm;
+    const closestAllowedDegrees = evenSpacingDegrees * (1 - lobeAngleJitter);
+
+    for (const shape of createSwarmShapes(12)) {
+      const angles = shape.lobes.map(
+        (lobe) =>
+          (Math.atan2(lobe.restZ / shape.radiusZ, lobe.restX / shape.radiusX) *
+            180) /
+          Math.PI,
+      );
+      for (let first = 0; first < angles.length; first += 1) {
+        for (let second = first + 1; second < angles.length; second += 1) {
+          const gap = Math.abs((angles[first] ?? 0) - (angles[second] ?? 0));
+          expect(Math.min(gap, 360 - gap)).toBeGreaterThanOrEqual(
+            closestAllowedDegrees,
+          );
+        }
+      }
+    }
   });
 });
 
@@ -494,6 +646,28 @@ function getBufferAttribute(
     throw new Error(`Expected a plain BufferAttribute for "${name}"`);
   }
   return attribute;
+}
+
+/** The single fly furthest from its own swarm centroid, in metres. */
+function getFurthestStrayMeters(
+  worldPositions: Float32Array,
+  swarms: MotionSenseParameters["swarms"],
+  centroids: readonly { readonly x: number; readonly z: number }[],
+): number {
+  let furthest = 0;
+  for (let flyIndex = 0; flyIndex < worldPositions.length / 3; flyIndex += 1) {
+    const centroid = centroids[Math.floor(flyIndex / swarms.fliesPerSwarm)];
+    const valueOffset = flyIndex * 3;
+    furthest = Math.max(
+      furthest,
+      Math.hypot(
+        (worldPositions[valueOffset] ?? 0) - (centroid?.x ?? 0),
+        worldPositions[valueOffset + 1] ?? 0,
+        (worldPositions[valueOffset + 2] ?? 0) - (centroid?.z ?? 0),
+      ),
+    );
+  }
+  return furthest;
 }
 
 function getSwarmCentroids(
