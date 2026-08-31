@@ -35,8 +35,11 @@ boundary justifies moving them.
   `mvPosition` every effect measures against.
 
 Grass does not query Vegetation or Rivers, and it imports no sense module. The
-composition root decides which effects decorate the grass material — currently
-Echo Depth and the Vegetation variant of Thermal Perception, because grass is
-the same living plant matter as the bushes it grows between. Grass imports the
-immutable `WORLD_WIND` configuration from `src/world/wind.ts`, as every
-wind-reactive component must.
+composition root decides which effects decorate the grass material: Echo Depth
+and the Vegetation variant of Thermal Perception, because grass is the same
+living plant matter as the bushes it grows between. Only the `test` and
+`design-test` presets author grass at present and neither authors a sense, so
+that path is currently covered by tests rather than by a running level — see
+the level-03 README for why the pair is parked. Grass imports the immutable
+`WORLD_WIND` configuration from `src/world/wind.ts`, as every wind-reactive
+component must.

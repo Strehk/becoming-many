@@ -9,7 +9,6 @@ import type { LevelPreset } from "./level-runtime";
 import {
   sharedAirParticles,
   sharedEchoDepth,
-  sharedEchoGrass,
   sharedEchoHazeColor,
   sharedEchoRocks,
   sharedEchoVegetation,
@@ -23,7 +22,9 @@ export const level: LevelPreset = {
   terrain: {
     opacity: 1,
   },
-  grass: sharedEchoGrass,
+  // Grass is parked: `sharedEchoGrass` still authors it, but no narrative
+  // level selects it while the heat view's per-fragment cost is unmeasured.
+  // Restoring it is one line here.
   vegetation: sharedEchoVegetation,
   rocks: sharedEchoRocks,
   // Senses layer, never swap: the White World air layer and the Scent World

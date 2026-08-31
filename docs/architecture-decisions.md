@@ -80,7 +80,7 @@ This file records decisions that constrain current and upcoming work.
 
 ### Any Module Shader May Be a Material-Effect Target
 
-Decided 2026-08-30, when Grass rejoined the narrative levels.
+Decided 2026-08-30, when Grass gained the anchors.
 
 - A sense effect targets the three.js chunk anchors `<common>`,
   `<project_vertex>`, and `<color_fragment>` — not a material class. A module
@@ -99,6 +99,10 @@ Decided 2026-08-30, when Grass rejoined the narrative levels.
   a measured visual reason, not a structural difference.
 - Modules keep their own base color. It is what shows below full sense
   intensity, so it is authored from the same palette the sense ramps through.
+- The decision stands without a live consumer. Grass was parked out of the
+  narrative levels on 2026-08-31 on cost grounds, so the anchors it carries
+  are currently exercised by tests only. What was decided here is where the
+  seam sits, not which module happens to sit on it.
 
 ### Grass Carries Its Own Range
 

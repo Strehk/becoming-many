@@ -82,7 +82,7 @@ frame times are machine-local measurements.
 - `thermal.level.ts` is the Thermal Perception level: every Motion
   Perception value carried over unchanged plus the `animals` field (fur
   colors from the echo dark stops) and the `thermal` field that decorates
-  Terrain, Grass, Vegetation, Rocks, and Animals with the radius-bounded
+  Terrain, Vegetation, Rocks, and Animals with the radius-bounded
   false-color heat view.
 - `magnetic.level.ts` is the Magnetic Field Perception level: every Thermal
   Perception value carried over unchanged plus the top-level `magnetic`
@@ -111,9 +111,10 @@ frame times are machine-local measurements.
   the shared `material-shader-patch.ts` helper. Echo Depth was the first
   multi-consumer effect (Terrain, Vegetation, and Rocks through the shared
   `UnlitMaterialEffect` contract); Thermal Perception extends the pattern
-  to Animals and to per-consumer warmth sources. Both reach Grass as well:
-  a module's own `ShaderMaterial` is a patch target like any built-in pass
-  as long as its GLSL carries the chunk anchors.
+  to Animals and to per-consumer warmth sources. Both can reach Grass as
+  well — a module's own `ShaderMaterial` is a patch target like any built-in
+  pass as long as its GLSL carries the chunk anchors — but no level pairs
+  them with grass at present, so that path is covered by tests only.
 
 ### World Surface
 
@@ -206,6 +207,12 @@ frame times are machine-local measurements.
 
 ### Grass
 
+- Only the `test` and `design-test` diagnostic presets author a `grass`
+  block. No narrative level does at present: grass is the densest
+  near-camera surface in the world and Thermal Perception samples a
+  four-octave noise field per fragment on every surface it decorates, so the
+  pair is parked until that cost is measured. Everything below still
+  describes the module, which is unchanged.
 - Grass uses one fixed `InstancedBufferGeometry` with 25 reusable 64-metre
   slots: its own 64-metre range plus one preload ring. The range is a module
   constant, not the level view distance, so a level that sees 180 metres no
@@ -224,9 +231,11 @@ frame times are machine-local measurements.
 - Grass carries the three.js chunk anchors (`<common>`, `<project_vertex>`,
   and `<color_fragment>`) in its own GLSL, so the shared `UnlitMaterialEffect`
   patch decorates it exactly as it decorates a built-in material pass. The
-  composition root applies Echo Depth and the Vegetation thermal variant to
-  the grass material; Grass imports no sense module and its root-to-tip
-  gradient stays its own base color below full sense intensity.
+  composition root decides which effects reach the grass material — Echo
+  Depth and the Vegetation thermal variant, when a level authoring grass
+  also authors those senses, which none currently does. Grass imports no
+  sense module and its root-to-tip gradient stays its own base color below
+  full sense intensity.
 - Grass owns and disposes its mesh, geometry, material, and typed buffer.
 
 ### Vegetation and Rocks

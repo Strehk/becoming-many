@@ -97,19 +97,17 @@ test("Echo Level renders depth through shared materials only", () => {
   const echoWorldPalette = [
     0x101010, 0x171717, 0x494949, 0x959595, 0xe2e2e2, 0xf7f7f7,
   ];
-  const { echoDepth, terrain, vegetation, rocks, grass } = echoPreset;
-  if (!echoDepth || !terrain || !vegetation || !rocks || !grass) {
-    throw new Error(
-      "Echo Level must author terrain, grass, vegetation, and rocks",
-    );
+  const { echoDepth, terrain, vegetation, rocks } = echoPreset;
+  if (!echoDepth || !terrain || !vegetation || !rocks) {
+    throw new Error("Echo Level must author terrain, vegetation, and rocks");
   }
 
   expect(echoPreset.testUi).toBe(true);
   expect(terrain.opacity).toBe(1);
   expect(terrain.presentation).toBeUndefined();
-  // One decided grass distribution: the echo world grows the same meadow
-  // and shrub slopes the Test Level does, recolored into the 03 palette.
-  expect(testLevel.grass?.zones).toEqual(grass.zones);
+  // Grass is parked while the heat view's per-fragment cost is unmeasured,
+  // so no level from here down the narrative chain grows any.
+  expect(echoPreset.grass).toBeUndefined();
   expect(echoPreset.animals).toBeUndefined();
   // Senses layer, never swap: the air and scent layers carry over unchanged.
   expect(echoPreset.airParticles).toEqual(whiteWorld.airParticles);
@@ -129,8 +127,6 @@ test("Echo Level renders depth through shared materials only", () => {
     ...Object.values(echoDepth.colors),
     ...Object.values(vegetation.colors),
     ...Object.values(rocks.colors),
-    grass.rootColor,
-    grass.tipColor,
   ];
   expect(
     authoredColors.every((color) => echoWorldPalette.includes(color)),
@@ -191,7 +187,7 @@ test("Motion Level layers fly swarms onto the carried Echo world", () => {
   expect(motionPreset.vegetation).toEqual(echoLevel.vegetation);
   expect(motionPreset.rocks).toEqual(echoLevel.rocks);
   expect(motionPreset.backgroundColor).toBe(echoLevel.backgroundColor ?? -1);
-  expect(motionPreset.grass).toEqual(echoLevel.grass);
+  expect(motionPreset.grass).toBeUndefined();
   expect(motionPreset.animals).toBeUndefined();
   expect(motionPreset.invisibleGround).toBeUndefined();
 
@@ -238,7 +234,7 @@ test("Thermal Level layers heat onto the carried Motion world", () => {
   expect(thermalPreset.rocks).toEqual(motionLevel.rocks);
   expect(thermalPreset.motion).toEqual(motionLevel.motion);
   expect(thermalPreset.backgroundColor).toBe(motionLevel.backgroundColor ?? -1);
-  expect(thermalPreset.grass).toEqual(motionLevel.grass);
+  expect(thermalPreset.grass).toBeUndefined();
   expect(thermalPreset.invisibleGround).toBeUndefined();
 
   expect(thermal.intensity).toBe(1);
@@ -299,7 +295,7 @@ test("Magnetic Level layers the field onto the carried Thermal world", () => {
   expect(magneticPreset.backgroundColor).toBe(
     thermalLevel.backgroundColor ?? -1,
   );
-  expect(magneticPreset.grass).toEqual(thermalLevel.grass);
+  expect(magneticPreset.grass).toBeUndefined();
   expect(magneticPreset.invisibleGround).toBeUndefined();
 
   expect(magnetic.intensity).toBe(1);
@@ -343,7 +339,7 @@ test("Connections Level layers the web onto the carried Magnetic world", () => {
   expect(connectionsPreset.backgroundColor).toBe(
     magneticLevel.backgroundColor ?? -1,
   );
-  expect(connectionsPreset.grass).toEqual(magneticLevel.grass);
+  expect(connectionsPreset.grass).toBeUndefined();
   expect(connectionsPreset.invisibleGround).toBeUndefined();
 
   expect(connections.intensity).toBe(1);

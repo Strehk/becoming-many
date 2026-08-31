@@ -73,12 +73,14 @@ The Scent preset additionally activates:
 The Echo preset additionally activates:
 
 - generated Terrain with its plain material at full opacity
-- zone-driven Grass, Vegetation, and Rocks with base colors authored from the
-  dark end of the 03 palette and Test Level densities; Grass keeps its own
-  64-metre range rather than following the level view distance
+- zone-driven Vegetation and Rocks with base colors authored from the dark
+  end of the 03 palette and Test Level densities. Grass is parked: the
+  module can take sense effects and holds its own 64-metre range, but no
+  narrative level authors a `grass` block while its cost under Thermal
+  Perception is unmeasured
 - the shared Echo Depth material effect: one camera-distance palette ramp
   from near-dark silhouettes into the warm off-white haze background,
-  patched into the Terrain, Grass, Vegetation, and Rock materials without
+  patched into the Terrain, Vegetation, and Rock materials without
   additional geometry, scene passes, or draw calls; every surface always
   shows only its depth-ramp color
 - the unchanged White World air-particle layer and the unchanged Scent World

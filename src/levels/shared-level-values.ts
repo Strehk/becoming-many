@@ -213,6 +213,12 @@ export const sharedGrassZones: SharedBlock<"grass">["zones"] = {
  * below full echo intensity, so root and tip are authored from the same
  * level-03 dark stops the plants around it use: a future intensity ramp then
  * fades between related tones instead of clashing ones.
+ *
+ * No narrative level selects this block at present. Grass is the densest
+ * near-camera surface in the world, and Thermal Perception samples a
+ * four-octave noise field per fragment on every surface it decorates, so the
+ * two together were parked until that cost is measured. The block stays
+ * authored so restoring grass is one line in `echo.level.ts`.
  */
 export const sharedEchoGrass: SharedBlock<"grass"> = {
   rootColor: 0x101010,
