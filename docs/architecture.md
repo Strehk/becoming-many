@@ -36,8 +36,10 @@ src/
 │   └── zone-settings.ts
 ├── levels/
 │   ├── level-runtime.ts
+│   ├── connections.level.ts
 │   ├── designTest.level.ts
 │   ├── echo.level.ts
+│   ├── magnetic.level.ts
 │   ├── motion.level.ts
 │   ├── scent.level.ts
 │   ├── test.level.ts
@@ -94,10 +96,12 @@ tests/
 ├── modules/
 │   ├── air-particles.test.ts
 │   ├── animals.test.ts
+│   ├── connection-nodes.test.ts
 │   ├── echo-depth.test.ts
 │   ├── grass.test.ts
 │   ├── magnetic-sense.test.ts
 │   ├── motion-sense.test.ts
+│   ├── mycelium.test.ts
 │   ├── scent-particles.test.ts
 │   ├── static-populations.test.ts
 │   ├── terrain.test.ts
@@ -113,16 +117,17 @@ tests/
     └── volume-chunk-window.test.ts
 ```
 
-Air Particles, Animals, Grass, Rocks, Terrain, Vegetation, Magnetic Sense, and
-Zone Visualizer contain runtime implementations. Zone Visualizer supplies
-Terrain's optional base presentation; Magnetic Sense decorates that material.
-Their integration and the remaining landscape contracts are defined in
+Air Particles, Animals, Grass, Rocks, Terrain, Vegetation, Magnetic Sense,
+Mycelium, and Zone Visualizer contain runtime implementations. Zone Visualizer
+supplies Terrain's optional base presentation; Magnetic Sense decorates that
+material. Their integration and the remaining landscape
+contracts are defined in
 [Landscape Module Contracts](landscape-modules.md).
 
 ## Composition and Frame Flow
 
-`src/main.ts` is the minimal browser entry. It selects the Magnetic Field
-Perception preset and
+`src/main.ts` is the minimal browser entry. It selects the Connections
+preset by default and
 passes it to `level-runtime.ts`, the single composition root. The Level Runtime
 interprets the preset, preloads only configured GLTF assets, starts the
 permanent World Runtime, creates enabled modules, and connects controls.
@@ -238,7 +243,15 @@ multi-part GPU buffers.
 Animals own a small animated population and habitat-constrained movement. Zone
 Visualizer supplies diagnostic colors; Magnetic Sense overlays world-space
 stripes in the same material pass and owns the camera-following sky-glow
-dome. Visible water remains a separate Rivers
+dome. Mycelium owns the Connections sense: two fixed-pool transparent web
+draw calls blended over the unchanged carried world, and the repository's
+first module-owned Web Worker,
+which computes the O(n²) web topology off the frame path (created on load,
+terminated on unload, stale replies discarded by generation). Its node
+anchors cross module boundaries only through the shared
+`ConnectionNodeSource` contracts in `connection-nodes.ts`, which the
+composition root wires from the enabled providers. Visible water remains a
+separate Rivers
 responsibility. Concrete sibling implementations do not import each other.
 
 ### `utils/asset-loader/`
@@ -267,6 +280,11 @@ is proven twice; zone and placement policy remain module-owned.
 | `MotionSenseParameters` | Level-authored motion intensity, swarm pool, appearance, and trail values |
 | `MotionPointSource` | World-position stream a moving actor exposes for motion-trail printing |
 | `ThermalPerceptionParameters` | Level-authored thermal intensity, viewer radius, feather, palette, and warmth values |
+| `ConnectionsParameters` | Level-authored connections intensity, web radius, pulse motion, per-source records, and palette |
+| `ConnectionNodeSource` | Deterministic per-chunk anchors one module exposes to the Connections web |
+| `ConnectionActorSource` | Live world positions of a bounded moving population |
+| `ConnectionTopologyRequest` / `ConnectionTopologyResult` | Typed transferable messages between Mycelium and its topology worker |
+| `AnimalsModuleHandle` | The Animals world module plus its visible-actor position stream |
 | `StaticPopulationPreset` | Level-authored instances per hectare for enabled land zones |
 | `StaticPopulationDefinition` | Module-owned candidate grid, seed, assets, sizes, and zone variants |
 | `AnimalsDefinition` | Module-owned species assets, habitats, movement, radius, and visibility budget |

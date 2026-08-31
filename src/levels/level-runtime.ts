@@ -12,10 +12,12 @@ import {
   createAirParticlesModule,
 } from "../modules/air-particles/air-particles";
 import {
+  type AnimalsModuleHandle,
   type AnimalsPreset,
   createAnimalsModule,
 } from "../modules/animals/animals";
 import { ANIMALS_DEFINITION } from "../modules/animals/animals-definition";
+import type { ConnectionNodeSource } from "../modules/connection-nodes";
 import {
   createEchoDepth,
   type EchoDepthEffect,
@@ -31,8 +33,14 @@ import {
   createMotionSenseModule,
   type MotionSenseParameters,
 } from "../modules/motion-sense/motion-sense";
+import {
+  type ConnectionsParameters,
+  createConnectionsModule,
+} from "../modules/mycelium/mycelium";
+import { createRockConnectionSource } from "../modules/rocks/rock-nodes";
 import { createRocksModule, type RocksPreset } from "../modules/rocks/rocks";
 import { ROCKS_DEFINITION } from "../modules/rocks/rocks-definition";
+import { createScentConnectionSource } from "../modules/scent-particles/scent-emitter-anchors";
 import {
   createScentParticlesModule,
   type ScentParticlesParameters,
@@ -56,6 +64,7 @@ import {
   type VegetationPreset,
 } from "../modules/vegetation/vegetation";
 import { VEGETATION_DEFINITION } from "../modules/vegetation/vegetation-definition";
+import { createVegetationConnectionSource } from "../modules/vegetation/vegetation-nodes";
 import { createZoneVisualizer } from "../modules/zone-visualizer/zone-visualizer";
 import { createTestOverlay } from "../test-ui/test-overlay";
 import {
@@ -118,6 +127,13 @@ export interface LevelPreset {
    * thermal radius and the dome stays behind every other surface.
    */
   readonly magnetic?: MagneticSenseParameters;
+
+  /**
+   * The final synthesis: inside a viewer-centred radius a pulsing root web
+   * blends over the carried world, connecting the same deterministic world
+   * positions the earlier senses already show.
+   */
+  readonly connections?: ConnectionsParameters;
 }
 
 interface LoadedLevelAssets {
@@ -201,6 +217,7 @@ function createConfiguredModules(setup: LevelSetup): WorldModule[] {
   const echoDepth = createEchoDepthEffect(setup.level);
   const thermal = createThermalEffects(setup);
   const magnetic = createMagneticEffects(setup);
+  const animals = createAnimals(setup, thermal);
 
   addModule(modules, createTerrain(setup, echoDepth, thermal, magnetic));
   addModule(modules, createAirParticles(setup));
@@ -208,11 +225,60 @@ function createConfiguredModules(setup: LevelSetup): WorldModule[] {
   addModule(modules, createGrass(setup));
   addModule(modules, createVegetation(setup, echoDepth, thermal));
   addModule(modules, createRocks(setup, echoDepth, thermal));
-  addModule(modules, createAnimals(setup, thermal));
+  addModule(modules, animals?.module);
   addModule(modules, createMotionSense(setup));
   addModule(modules, magnetic?.sky);
+  addModule(modules, createConnectionsWeb(setup, animals));
 
   return modules;
+}
+
+/**
+ * Skip the sense entirely at intensity zero so its GPU work never runs. A
+ * source class joins the web only when both its preset module block and its
+ * connections source entry exist.
+ */
+function createConnectionsWeb(
+  setup: LevelSetup,
+  animals: AnimalsModuleHandle | undefined,
+): WorldModule | undefined {
+  const parameters = setup.level.connections;
+  if (!parameters || parameters.intensity === 0) return undefined;
+
+  const { level, worldSurface } = setup;
+  const staticSources: ConnectionNodeSource[] = [];
+  if (level.vegetation && parameters.sources.vegetation) {
+    staticSources.push(
+      createVegetationConnectionSource(level.vegetation, worldSurface),
+    );
+  }
+  if (level.scentParticles && parameters.sources.scentEmitters) {
+    staticSources.push(
+      createScentConnectionSource(
+        level.scentParticles,
+        worldSurface.groundYAt,
+        worldSurface.zoneAt,
+      ),
+    );
+  }
+  if (level.rocks && parameters.sources.rocks) {
+    staticSources.push(createRockConnectionSource(level.rocks, worldSurface));
+  }
+  const animalSource =
+    animals && parameters.sources.animals
+      ? {
+          sourceClass: "animals" as const,
+          getWorldPositions: animals.getVisibleWorldPositions,
+        }
+      : undefined;
+
+  return createConnectionsModule(parameters, {
+    scene: setup.world.scene,
+    camera: setup.world.camera,
+    streamQueue: setup.world.streamQueue,
+    staticSources,
+    animalSource,
+  });
 }
 
 /** Skip the sense entirely at intensity zero so its GPU work never runs. */
@@ -390,7 +456,7 @@ function buildSurfaceEffects(
 function createAnimals(
   setup: LevelSetup,
   thermal: ThermalPerceptionEffects | undefined,
-): WorldModule | undefined {
+): AnimalsModuleHandle | undefined {
   if (!setup.level.animals) return undefined;
 
   return createAnimalsModule({

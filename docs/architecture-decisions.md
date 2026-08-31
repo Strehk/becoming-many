@@ -114,6 +114,31 @@ This file records decisions that constrain current and upcoming work.
 - The composition root skips the sense entirely at intensity zero, matching
   Echo Depth, Motion, and Thermal.
 
+### Module-Owned Web Worker for Connection Topology (2026-08-31)
+
+- The Connections web topology (kNN plus minimum spanning tree over up to
+  512 nodes) is O(n²) and runs in the repository's first Web Worker instead
+  of stream-queue steps. The Mycelium module owns the worker completely:
+  created on `load`, terminated on `unload`, reached only through the typed
+  transferable messages in `topology-messages.ts`. No global worker
+  infrastructure, registry, or shared channel exists.
+- The pure math lives worker-free in `network-topology.ts`, so Bun tests
+  cover it directly; the worker entry only relays one request. Tests inject
+  a synchronous fake through the narrow `TopologyPort` seam and never
+  construct a real worker.
+- Staleness is judged by an aggregate window generation the module owns
+  (per-slot chunk revisions cannot version a graph spanning all slots);
+  replies for an outdated generation are discarded, mirroring the
+  chunk-window currentness rule. Anchor gathering stays on the main thread
+  as bounded stream-queue steps, one 32-metre chunk per step, with the
+  stream queue's same-key replacement as the regather debounce.
+- The worker scope is typed locally in `topology.worker.ts`; the conflicting
+  `WebWorker` TypeScript lib is not added beside `DOM`.
+- Node anchors cross module boundaries only through the shared
+  `ConnectionNodeSource` / `ConnectionActorSource` contracts in
+  `src/modules/connection-nodes.ts`; providers replay their own
+  deterministic placement math and never import Mycelium.
+
 ## Approved Navigation Boundary
 
 ### Input and Navigation

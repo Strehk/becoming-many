@@ -4,7 +4,7 @@ The narrative levels in **Becoming Many** are continuous world states, not separ
 
 ## Current Source Preset
 
-Eight sparse presets currently exist under `src/levels`:
+Nine sparse presets currently exist under `src/levels`:
 
 - `white-world.level.ts` defines the narrative White World without Terrain.
 - `scent.level.ts` is the Scent World base experiment: no rendered surface
@@ -23,6 +23,8 @@ Eight sparse presets currently exist under `src/levels`:
 - `magnetic.level.ts` is the Magnetic Field Perception level: the carried
   Thermal world plus directional ground field lines and the northern sky glow
   of the Magnetic Sense module.
+- `connections.level.ts` is the Connections level: the carried Magnetic world
+  plus the pulsing mycelium web of the Mycelium module blended over it.
 - `test.level.ts` is the diagnostic development preset and adds Terrain plus the
   Zone Visualizer for landscape work.
 - `designTest.level.ts` is the active visual-design preset and adds authored
@@ -121,6 +123,22 @@ The Magnetic preset additionally activates:
 - the Magnetic Sense sky cue: one opaque camera-following dome carrying the
   level haze everywhere except a deep-blue glow at the horizon toward the
   field direction
+
+The Connections preset additionally activates:
+
+- everything the Magnetic preset activates, carried over unchanged, because
+  senses layer instead of swapping
+- the streamed mycelium web alpha-blended over the unchanged carried
+  world inside an 88-metre viewer radius: every edge a bundle of three
+  fine meandering filaments with periodic knot junctions hallucinated in
+  the fragment shader, plus node glows, connecting the deterministic
+  positions of trees and bushes, scent emitters, rocks, and the visible
+  animals, colored per source class from the level-07 palette with cream
+  pulses traveling the cords; exactly two added transparent draw calls
+  from fixed pools
+- the repository's first Web Worker, module-owned, computing the kNN plus
+  minimum-spanning-tree topology off the frame path over the module's 7×7
+  window of 32-metre chunks
 
 The level does not contain asset URLs, model names, seeds, candidate spacing,
 or weighted variants. Those stable content definitions belong to the concrete
@@ -496,12 +514,31 @@ The magnetic field resolves into local relationships and network flow. At the en
 
 Use bounded, pooled network geometry tied to the active world window. Generate topology outside the frame hot path and avoid one scene object per connection.
 
+### Decided Art Direction
+
+The web overlays the carried world without changing it (decided
+2026-08-31, after a same-day soil-darkening variant was rejected),
+implemented in `src/modules/mycelium/`: alpha-blended strands inside an
+88-metre viewer radius; the terrain keeps its carried presentation. All
+four world-element classes participate — trees and bushes, the level-02
+scent emitters, rocks, and the visible animals — each configured as a
+per-source preset record with its own palette node color and weight;
+edges inherit their heavier hub's color. The network is pulses on a
+static web: kNN plus minimum-spanning-tree topology (principles extracted
+from the `../experiments/wurzeln` project, without its reinforcement
+simulation) computed in the repository's first module-owned Web Worker,
+with cream light pulses traveling the cords. The carried magnetic world
+stays at full intensity ("senses layer, never swap"); earlier languages
+return by remaining present, and any reduction waits for the dramaturgy
+driver. See [07 — Connections](07-connections/README.md) for the exact
+preset.
+
 ### Open Art Decisions
 
-- which world elements participate in the network
-- visible depth and terrain transparency
-- network growth, pulse, and reinforcement behavior
-- which earlier visual languages return in the final synthesis
+- web radius and fade band against real headset contrast and the
+  transparent fill-rate measurement
+- pulse density, speed, and glow widths
+- the warm background shift toward the palette's cream
 - final audio and offboarding transition
 
 ## Level Folders
@@ -527,7 +564,9 @@ docs/levels/
 ├── 06-magnetic-field-perception/
 │   ├── README.md
 │   └── mood/moodboard.png
-└── 07-connections/mood/moodboard.png
+└── 07-connections/
+    ├── README.md
+    └── mood/moodboard.png
 ```
 
 Each level `README.md` should contain:

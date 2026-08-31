@@ -6,6 +6,7 @@
  */
 
 import { expect, test } from "bun:test";
+import { level as connectionsLevel } from "../../src/levels/connections.level";
 import { level as designTestLevel } from "../../src/levels/designTest.level";
 import { level as echoLevel } from "../../src/levels/echo.level";
 import type { LevelPreset } from "../../src/levels/level-runtime";
@@ -77,6 +78,14 @@ test("only the Test Level activates development diagnostics", () => {
   expect(echoLevel.magnetic).toBeUndefined();
   expect(motionLevel.magnetic).toBeUndefined();
   expect(thermalLevel.magnetic).toBeUndefined();
+  expect(testPreset.connections).toBeUndefined();
+  expect(whiteWorldPreset.connections).toBeUndefined();
+  expect(designTestLevel.connections).toBeUndefined();
+  expect(scentLevel.connections).toBeUndefined();
+  expect(echoLevel.connections).toBeUndefined();
+  expect(motionLevel.connections).toBeUndefined();
+  expect(thermalLevel.connections).toBeUndefined();
+  expect(magneticLevel.connections).toBeUndefined();
 });
 
 test("Echo Level renders depth through shared materials only", () => {
@@ -275,6 +284,63 @@ test("Magnetic Level layers the field onto the carried Thermal world", () => {
     expect(magneticPalette).toContain(color);
   }
   expect(magnetic.colors.skyGlowColor).toBe(magnetic.colors.lineColor);
+});
+
+test("Connections Level layers the web onto the carried Magnetic world", () => {
+  const connectionsPreset: LevelPreset = connectionsLevel;
+  // The documented level-07 moodboard palette.
+  const connectionsPalette = [
+    0xf2e3d3, 0x683b5a, 0x292e55, 0xa5bdc3, 0xd06780, 0xe39e54,
+  ];
+  const { connections } = connectionsPreset;
+  if (!connections) {
+    throw new Error("Connections Level must author the connections sense");
+  }
+
+  expect(connectionsPreset.testUi).toBe(true);
+  // Senses layer, never swap: every magnetic-world layer carries over unchanged.
+  expect(connectionsPreset.airParticles).toEqual(magneticLevel.airParticles);
+  expect(connectionsPreset.scentParticles).toEqual(
+    magneticLevel.scentParticles,
+  );
+  expect(connectionsPreset.echoDepth).toEqual(magneticLevel.echoDepth);
+  expect(connectionsPreset.terrain).toEqual(magneticLevel.terrain);
+  expect(connectionsPreset.vegetation).toEqual(magneticLevel.vegetation);
+  expect(connectionsPreset.rocks).toEqual(magneticLevel.rocks);
+  expect(connectionsPreset.animals).toEqual(magneticLevel.animals);
+  expect(connectionsPreset.motion).toEqual(magneticLevel.motion);
+  expect(connectionsPreset.thermal).toEqual(magneticLevel.thermal);
+  expect(connectionsPreset.magnetic).toEqual(magneticLevel.magnetic);
+  expect(connectionsPreset.backgroundColor).toBe(
+    magneticLevel.backgroundColor ?? -1,
+  );
+  expect(connectionsPreset.grass).toBeUndefined();
+  expect(connectionsPreset.invisibleGround).toBeUndefined();
+
+  expect(connections.intensity).toBe(1);
+  // The web reaches far past the thermal radius while staying inside the
+  // echo far distance, so strands never pop at the haze boundary.
+  expect(connections.webRadiusMeters).toBeGreaterThan(
+    connectionsPreset.thermal?.radiusMeters ?? Number.POSITIVE_INFINITY,
+  );
+  expect(connections.webRadiusMeters).toBeLessThan(
+    connectionsPreset.echoDepth?.farDistanceMeters ?? 0,
+  );
+  // Nutrient pulses travel slower than the carried magnetic signal pulses.
+  expect(connections.pulseSpeedMetersPerSecond).toBeLessThan(
+    connectionsPreset.magnetic?.flowSpeedMetersPerSecond ?? 0,
+  );
+  // All four world-element classes participate, each with a palette color.
+  const sources = Object.values(connections.sources);
+  expect(sources).toHaveLength(4);
+  for (const source of sources) {
+    expect(connectionsPalette).toContain(source.nodeColor);
+    expect(source.weight).toBeGreaterThan(0);
+    expect(source.weight).toBeLessThanOrEqual(1);
+  }
+  // The pulse stays a palette stop; the depth tone is a free tuning value
+  // (currently white, lightening the cord midpoints).
+  expect(connectionsPalette).toContain(connections.colors.pulseColor);
 });
 
 test("Design Test authors semantic colors without development diagnostics", () => {
