@@ -8,6 +8,7 @@
 import { Color, Vector3 } from "three";
 import type { UnlitMaterialEffect } from "../../utils/asset-loader/material-effect";
 import { applyShaderPatch } from "../../utils/asset-loader/material-shader-patch";
+import { isNormalized, isPositiveFinite } from "../../utils/number-ranges";
 import fragmentShader from "./echo-depth.frag.glsl?raw";
 import vertexShader from "./echo-depth.vert.glsl?raw";
 import {
@@ -78,12 +79,4 @@ function validateEchoDepthParameters(parameters: EchoDepthParameters): void {
       "Echo depth distances must be positive with near below far",
     );
   }
-}
-
-function isPositiveFinite(value: number): boolean {
-  return Number.isFinite(value) && value > 0;
-}
-
-function isNormalized(value: number): boolean {
-  return Number.isFinite(value) && value >= 0 && value <= 1;
 }

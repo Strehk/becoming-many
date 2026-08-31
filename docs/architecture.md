@@ -26,6 +26,11 @@ src/
 ├── main.ts
 ├── style.css
 ├── vite-env.d.ts
+├── benchmark/
+│   ├── benchmark-report.ts
+│   ├── benchmark-route.ts
+│   ├── benchmark-run.ts
+│   └── benchmark-settings.ts
 ├── control/
 │   └── desktop-controls.ts
 ├── world-surface/
@@ -36,8 +41,11 @@ src/
 │   └── zone-settings.ts
 ├── levels/
 │   ├── level-runtime.ts
+│   ├── connections.level.ts
 │   ├── designTest.level.ts
 │   ├── echo.level.ts
+│   ├── level-catalog.ts
+│   ├── magnetic.level.ts
 │   ├── motion.level.ts
 │   ├── scent.level.ts
 │   ├── test.level.ts
@@ -94,15 +102,20 @@ tests/
 ├── modules/
 │   ├── air-particles.test.ts
 │   ├── animals.test.ts
+│   ├── connection-nodes.test.ts
 │   ├── echo-depth.test.ts
 │   ├── grass.test.ts
 │   ├── magnetic-sense.test.ts
 │   ├── motion-sense.test.ts
+│   ├── mycelium.test.ts
 │   ├── scent-particles.test.ts
 │   ├── static-populations.test.ts
 │   ├── terrain.test.ts
 │   ├── thermal-perception.test.ts
 │   └── zone-visualizer.test.ts
+├── benchmark/
+│   ├── benchmark-report.test.ts
+│   └── benchmark-route.test.ts
 ├── test-ui/
 │   └── frame-metrics.test.ts
 ├── utils/
@@ -113,15 +126,17 @@ tests/
     └── volume-chunk-window.test.ts
 ```
 
-Air Particles, Animals, Grass, Rocks, Terrain, Vegetation, Magnetic Sense, and
-Zone Visualizer contain runtime implementations. Zone Visualizer supplies
-Terrain's optional base presentation; Magnetic Sense decorates that material.
-Their integration and the remaining landscape contracts are defined in
+Air Particles, Animals, Grass, Rocks, Terrain, Vegetation, Magnetic Sense,
+Mycelium, and Zone Visualizer contain runtime implementations. Zone Visualizer
+supplies Terrain's optional base presentation; Magnetic Sense decorates that
+material. Their integration and the remaining landscape
+contracts are defined in
 [Landscape Module Contracts](landscape-modules.md).
 
 ## Composition and Frame Flow
 
-`src/main.ts` is the minimal browser entry. It selects the Design Test preset and
+`src/main.ts` is the minimal browser entry. It selects the Connections
+preset by default and
 passes it to `level-runtime.ts`, the single composition root. The Level Runtime
 interprets the preset, preloads only configured GLTF assets, starts the
 permanent World Runtime, creates enabled modules, and connects controls.
@@ -139,7 +154,7 @@ level runtime
   → connect desktop controls
 
 each frame
-  → update desktop controls
+  → update desktop controls, or replay the benchmark route
   → update active modules
   → process bounded stream jobs
   → render once
@@ -148,6 +163,12 @@ each frame
 Three.js owns the loop through `renderer.setAnimationLoop()`, so desktop and
 WebXR rendering use the same frame path.
 
+`main.ts` also reads two runtime requests from the URL. `?level=<name>` opens
+any preset from `levels/level-catalog.ts`, and `?benchmark[=<profile>]` hands
+the World Runtime a `FrameControl` that replaces the wall clock, drives the
+camera along a fixed route, and records every finished frame. Both are runtime
+requests, not authored configuration.
+
 ## Ownership
 
 ### `world-runtime.ts`
@@ -155,6 +176,11 @@ WebXR rendering use the same frame path.
 Owns the permanent Three.js scene, perspective camera, WebGL renderer, timer,
 resize handling, module runtime, stream queue, WebXR entry, and animation loop.
 It knows neither the selected level nor concrete content modules.
+
+`FrameControl` is the optional measurement seam. When present it supplies the
+fixed timestep, a virtual clock for the stream queue, and a callback that runs
+after each render — the only point where `renderer.info` still describes the
+frame that just finished. Absent, the loop behaves exactly as before.
 
 ### `world-settings.ts`
 
@@ -208,6 +234,16 @@ Level files export a named `level` constant satisfying the sparse
 `LevelPreset` contract. They contain data only and create no runtime resources.
 `level-runtime.ts` is the separate composition root that interprets one preset
 and connects it to permanent and unloadable runtime parts.
+`level-catalog.ts` names every preset so a run can select one at startup; it is
+data only and holds the default the browser entry opens.
+
+### `benchmark/`
+
+Owns the replayed measurement mode and is inert unless the entry is opened
+with `?benchmark`. It authors one camera route, substitutes the wall clock and
+the stream-queue budget for frame-driven equivalents, and records
+`renderer.info` after each render. Counters from a run repeat exactly; frame
+times from it are measurements bound to one machine.
 
 ### `world-surface/`
 
@@ -236,7 +272,16 @@ and placement rules. They share only the small static-candidate math and compact
 multi-part GPU buffers.
 Animals own a small animated population and habitat-constrained movement. Zone
 Visualizer supplies diagnostic colors; Magnetic Sense overlays world-space
-stripes in the same material pass. Visible water remains a separate Rivers
+stripes in the same material pass and owns the camera-following sky-glow
+dome. Mycelium owns the Connections sense: two fixed-pool transparent web
+draw calls blended over the unchanged carried world, and the repository's
+first module-owned Web Worker,
+which computes the O(n²) web topology off the frame path (created on load,
+terminated on unload, stale replies discarded by generation). Its node
+anchors cross module boundaries only through the shared
+`ConnectionNodeSource` contracts in `connection-nodes.ts`, which the
+composition root wires from the enabled providers. Visible water remains a
+separate Rivers
 responsibility. Concrete sibling implementations do not import each other.
 
 ### `utils/asset-loader/`
@@ -259,11 +304,17 @@ is proven twice; zone and placement policy remain module-owned.
 | `TerrainMaterialEffect` | Effect that decorates and optionally updates the Terrain material, with an optional per-vertex warmth sampler |
 | `WORLD_WIND` | Shared immutable wind direction, strength, and speed |
 | `GrassPreset` | Level-authored density and blade height per supported grass zone |
-| `MagneticSenseParameters` | Magnetic direction, line, pulse, opacity, flow, and intensity values |
+| `MagneticSenseParameters` | Magnetic direction, line, pulse, opacity, flow, intensity, and palette values |
+| `MagneticSenseEffects` | Terrain stripe effect and sky-dome module sharing one field uniform set |
 | `ScentParticlesParameters` | Level-authored scent palette, per-chunk emitter density, pool size, and drift values |
 | `MotionSenseParameters` | Level-authored motion intensity, swarm pool, appearance, and trail values |
 | `MotionPointSource` | World-position stream a moving actor exposes for motion-trail printing |
 | `ThermalPerceptionParameters` | Level-authored thermal intensity, viewer radius, feather, palette, and warmth values |
+| `ConnectionsParameters` | Level-authored connections intensity, web radius, pulse motion, per-source records, and palette |
+| `ConnectionNodeSource` | Deterministic per-chunk anchors one module exposes to the Connections web |
+| `ConnectionActorSource` | Live world positions of a bounded moving population |
+| `ConnectionTopologyRequest` / `ConnectionTopologyResult` | Typed transferable messages between Mycelium and its topology worker |
+| `AnimalsModuleHandle` | The Animals world module plus its visible-actor position stream |
 | `StaticPopulationPreset` | Level-authored instances per hectare for enabled land zones |
 | `StaticPopulationDefinition` | Module-owned candidate grid, seed, assets, sizes, and zone variants |
 | `AnimalsDefinition` | Module-owned species assets, habitats, movement, radius, and visibility budget |

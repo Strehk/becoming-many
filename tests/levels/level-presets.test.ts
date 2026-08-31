@@ -6,9 +6,11 @@
  */
 
 import { expect, test } from "bun:test";
+import { level as connectionsLevel } from "../../src/levels/connections.level";
 import { level as designTestLevel } from "../../src/levels/designTest.level";
 import { level as echoLevel } from "../../src/levels/echo.level";
 import type { LevelPreset } from "../../src/levels/level-runtime";
+import { level as magneticLevel } from "../../src/levels/magnetic.level";
 import { level as motionLevel } from "../../src/levels/motion.level";
 import { level as scentLevel } from "../../src/levels/scent.level";
 import { level as testLevel } from "../../src/levels/test.level";
@@ -21,9 +23,9 @@ test("only the Test Level activates development diagnostics", () => {
 
   expect(testPreset.terrain?.opacity).toBe(1);
   expect(testPreset.terrain?.presentation).toBe("zones");
-  expect(testPreset.terrain?.magneticSense?.lineSpacingMeters).toBe(8);
-  expect(testPreset.terrain?.magneticSense?.pulseWidthMeters).toBe(0.1);
-  expect(testPreset.terrain?.magneticSense?.lineOpacity).toBe(0.2);
+  expect(testPreset.magnetic?.lineSpacingMeters).toBe(8);
+  expect(testPreset.magnetic?.pulseWidthMeters).toBe(0.1);
+  expect(testPreset.magnetic?.lineOpacity).toBe(0.2);
   expect(testPreset.grass?.zones.meadow).toEqual({
     tuftsPerSquareMeter: 1.5,
     bladeHeightMeters: 0.75,
@@ -70,6 +72,20 @@ test("only the Test Level activates development diagnostics", () => {
   expect(scentLevel.thermal).toBeUndefined();
   expect(echoLevel.thermal).toBeUndefined();
   expect(motionLevel.thermal).toBeUndefined();
+  expect(whiteWorldPreset.magnetic).toBeUndefined();
+  expect(designTestLevel.magnetic).toBeUndefined();
+  expect(scentLevel.magnetic).toBeUndefined();
+  expect(echoLevel.magnetic).toBeUndefined();
+  expect(motionLevel.magnetic).toBeUndefined();
+  expect(thermalLevel.magnetic).toBeUndefined();
+  expect(testPreset.connections).toBeUndefined();
+  expect(whiteWorldPreset.connections).toBeUndefined();
+  expect(designTestLevel.connections).toBeUndefined();
+  expect(scentLevel.connections).toBeUndefined();
+  expect(echoLevel.connections).toBeUndefined();
+  expect(motionLevel.connections).toBeUndefined();
+  expect(thermalLevel.connections).toBeUndefined();
+  expect(magneticLevel.connections).toBeUndefined();
 });
 
 test("Echo Level renders depth through shared materials only", () => {
@@ -86,7 +102,6 @@ test("Echo Level renders depth through shared materials only", () => {
   expect(echoPreset.testUi).toBe(true);
   expect(terrain.opacity).toBe(1);
   expect(terrain.presentation).toBeUndefined();
-  expect(terrain.magneticSense).toBeUndefined();
   expect(echoPreset.grass).toBeUndefined();
   expect(echoPreset.animals).toBeUndefined();
   // Senses layer, never swap: the air and scent layers carry over unchanged.
@@ -228,6 +243,104 @@ test("Thermal Level layers heat onto the carried Motion world", () => {
   for (const color of Object.values(animals.colors)) {
     expect(echoWorldPalette).toContain(color);
   }
+});
+
+test("Magnetic Level layers the field onto the carried Thermal world", () => {
+  const magneticPreset: LevelPreset = magneticLevel;
+  // The documented level-06 moodboard palette.
+  const magneticPalette = [
+    0x151935, 0x1140a4, 0x69bde1, 0xcddbe2, 0xa394c3, 0xf9b33c,
+  ];
+  const { magnetic } = magneticPreset;
+  if (!magnetic) {
+    throw new Error("Magnetic Level must author the magnetic sense");
+  }
+
+  expect(magneticPreset.testUi).toBe(true);
+  // Senses layer, never swap: every thermal-world layer carries over unchanged.
+  expect(magneticPreset.airParticles).toEqual(thermalLevel.airParticles);
+  expect(magneticPreset.scentParticles).toEqual(thermalLevel.scentParticles);
+  expect(magneticPreset.echoDepth).toEqual(thermalLevel.echoDepth);
+  expect(magneticPreset.terrain).toEqual(thermalLevel.terrain);
+  expect(magneticPreset.vegetation).toEqual(thermalLevel.vegetation);
+  expect(magneticPreset.rocks).toEqual(thermalLevel.rocks);
+  expect(magneticPreset.animals).toEqual(thermalLevel.animals);
+  expect(magneticPreset.motion).toEqual(thermalLevel.motion);
+  expect(magneticPreset.thermal).toEqual(thermalLevel.thermal);
+  expect(magneticPreset.backgroundColor).toBe(
+    thermalLevel.backgroundColor ?? -1,
+  );
+  expect(magneticPreset.grass).toBeUndefined();
+  expect(magneticPreset.invisibleGround).toBeUndefined();
+
+  expect(magnetic.intensity).toBe(1);
+  // The pulse travels strictly inside its line between separated lines.
+  expect(magnetic.pulseWidthMeters).toBeLessThan(magnetic.lineWidthMeters);
+  expect(magnetic.lineWidthMeters).toBeLessThan(magnetic.lineSpacingMeters);
+  expect(magnetic.lineOpacity).toBeGreaterThan(0);
+  expect(magnetic.lineOpacity).toBeLessThanOrEqual(1);
+  // Deep blue carries line and sky glow; the pale stop carries the pulse.
+  for (const color of Object.values(magnetic.colors)) {
+    expect(magneticPalette).toContain(color);
+  }
+  expect(magnetic.colors.skyGlowColor).toBe(magnetic.colors.lineColor);
+});
+
+test("Connections Level layers the web onto the carried Magnetic world", () => {
+  const connectionsPreset: LevelPreset = connectionsLevel;
+  // The documented level-07 moodboard palette.
+  const connectionsPalette = [
+    0xf2e3d3, 0x683b5a, 0x292e55, 0xa5bdc3, 0xd06780, 0xe39e54,
+  ];
+  const { connections } = connectionsPreset;
+  if (!connections) {
+    throw new Error("Connections Level must author the connections sense");
+  }
+
+  expect(connectionsPreset.testUi).toBe(true);
+  // Senses layer, never swap: every magnetic-world layer carries over unchanged.
+  expect(connectionsPreset.airParticles).toEqual(magneticLevel.airParticles);
+  expect(connectionsPreset.scentParticles).toEqual(
+    magneticLevel.scentParticles,
+  );
+  expect(connectionsPreset.echoDepth).toEqual(magneticLevel.echoDepth);
+  expect(connectionsPreset.terrain).toEqual(magneticLevel.terrain);
+  expect(connectionsPreset.vegetation).toEqual(magneticLevel.vegetation);
+  expect(connectionsPreset.rocks).toEqual(magneticLevel.rocks);
+  expect(connectionsPreset.animals).toEqual(magneticLevel.animals);
+  expect(connectionsPreset.motion).toEqual(magneticLevel.motion);
+  expect(connectionsPreset.thermal).toEqual(magneticLevel.thermal);
+  expect(connectionsPreset.magnetic).toEqual(magneticLevel.magnetic);
+  expect(connectionsPreset.backgroundColor).toBe(
+    magneticLevel.backgroundColor ?? -1,
+  );
+  expect(connectionsPreset.grass).toBeUndefined();
+  expect(connectionsPreset.invisibleGround).toBeUndefined();
+
+  expect(connections.intensity).toBe(1);
+  // The web reaches far past the thermal radius while staying inside the
+  // echo far distance, so strands never pop at the haze boundary.
+  expect(connections.webRadiusMeters).toBeGreaterThan(
+    connectionsPreset.thermal?.radiusMeters ?? Number.POSITIVE_INFINITY,
+  );
+  expect(connections.webRadiusMeters).toBeLessThan(
+    connectionsPreset.echoDepth?.farDistanceMeters ?? 0,
+  );
+  // Nutrient pulses travel slower than the carried magnetic signal pulses.
+  expect(connections.pulseSpeedMetersPerSecond).toBeLessThan(
+    connectionsPreset.magnetic?.flowSpeedMetersPerSecond ?? 0,
+  );
+  // All four world-element classes participate, each with a palette color.
+  const sources = Object.values(connections.sources);
+  expect(sources).toHaveLength(4);
+  for (const source of sources) {
+    expect(connectionsPalette).toContain(source.nodeColor);
+    expect(source.weight).toBeGreaterThan(0);
+    expect(source.weight).toBeLessThanOrEqual(1);
+  }
+  // The pulse stays a palette stop; the depth tone is a free tuning value
+  // (currently white, lightening the cord midpoints).
+  expect(connectionsPalette).toContain(connections.colors.pulseColor);
 });
 
 test("Design Test authors semantic colors without development diagnostics", () => {

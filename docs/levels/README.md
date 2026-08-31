@@ -4,7 +4,7 @@ The narrative levels in **Becoming Many** are continuous world states, not separ
 
 ## Current Source Preset
 
-Six sparse presets currently exist under `src/levels`:
+Nine sparse presets currently exist under `src/levels`:
 
 - `white-world.level.ts` defines the narrative White World without Terrain.
 - `scent.level.ts` is the Scent World base experiment: no rendered surface
@@ -17,6 +17,14 @@ Six sparse presets currently exist under `src/levels`:
 - `motion.level.ts` is the Motion Perception level: the carried Echo world
   plus persistent fly swarms whose movement prints fading motion trails
   through the Motion Sense module.
+- `thermal.level.ts` is the Thermal Perception level: the carried Motion world
+  plus warm animals and the radius-bounded false-color heat view of the
+  Thermal Perception effect family.
+- `magnetic.level.ts` is the Magnetic Field Perception level: the carried
+  Thermal world plus directional ground field lines and the northern sky glow
+  of the Magnetic Sense module.
+- `connections.level.ts` is the Connections level: the carried Magnetic world
+  plus the pulsing mycelium web of the Mycelium module blended over it.
 - `test.level.ts` is the diagnostic development preset and adds Terrain plus the
   Zone Visualizer for landscape work.
 - `designTest.level.ts` is the active visual-design preset and adds authored
@@ -94,6 +102,43 @@ The Motion preset additionally activates:
   stops, cyan bird traces from the reserved accent; three added draw calls
   in total
 - no grass or animals
+
+The Thermal preset additionally activates:
+
+- everything the Motion preset activates, carried over unchanged, because
+  senses layer instead of swapping
+- Animals with echo-palette fur colors so they sit inside the carried
+  grayscale outside the thermal radius
+- the shared Thermal Perception material-effect family: the six-stop
+  false-color heat view inside a 30-metre viewer radius with a 10-metre
+  feather, patched into the Terrain, Vegetation, Rock, and Animal materials
+
+The Magnetic preset additionally activates:
+
+- everything the Thermal preset activates, carried over unchanged, because
+  senses layer instead of swapping
+- the Magnetic Sense terrain effect: deep-blue field lines draped over the
+  ground with pale traveling pulses, printed over the carried echo ramp
+  outside the thermal radius
+- the Magnetic Sense sky cue: one opaque camera-following dome carrying the
+  level haze everywhere except a deep-blue glow at the horizon toward the
+  field direction
+
+The Connections preset additionally activates:
+
+- everything the Magnetic preset activates, carried over unchanged, because
+  senses layer instead of swapping
+- the streamed mycelium web alpha-blended over the unchanged carried
+  world inside an 88-metre viewer radius: every edge a bundle of three
+  fine meandering filaments with periodic knot junctions hallucinated in
+  the fragment shader, plus node glows, connecting the deterministic
+  positions of trees and bushes, scent emitters, rocks, and the visible
+  animals, colored per source class from the level-07 palette with cream
+  pulses traveling the cords; exactly two added transparent draw calls
+  from fixed pools
+- the repository's first Web Worker, module-owned, computing the kNN plus
+  minimum-spanning-tree topology off the frame path over the module's 7×7
+  window of 32-metre chunks
 
 The level does not contain asset URLs, model names, seeds, candidate spacing,
 or weighted variants. Those stable content definitions belong to the concrete
@@ -416,11 +461,28 @@ Thermal contrast fades while the ground field establishes global orientation. It
 
 Reuse Terrain's existing material pass. Keep lines analytical and opaque; avoid line geometry, transparent overlays, physical lights, bloom, and extra render passes.
 
+### Decided Art Direction
+
+The field is blue and always present (decided 2026-08-31), implemented in
+`src/modules/magnetic-sense/`: deep-blue ground lines (`#1140A4`) with pale
+gray-blue pulses (`#CDDBE2`) from the level-06 moodboard, authored in the
+preset like every other sense palette. The sky cue ships with the level as
+an opaque camera-following dome that carries the level haze everywhere
+except a deep-blue horizon glow toward the field direction — the same
+direction the ground pulses travel toward. The carried thermal view stays
+at full intensity ("senses layer, never swap"), so the stripes read outside
+its 30-metre radius; the guide's "thermal color reduces" cue waits for the
+dramaturgy driver. See
+[06 — Magnetic Field Perception](06-magnetic-field-perception/README.md)
+for the exact preset.
+
 ### Open Art Decisions
 
-- final line opacity, pulse width, and flow timing
-- optional sky form and its relationship to the ground field
-- color and brightness hierarchy
+- final line opacity, pulse width, and flow timing against real headset
+  contrast
+- sky glow strength, elevation span, and azimuthal width
+- when and how far the carried thermal intensity reduces once a dramaturgy
+  driver exists
 - relationship between flight direction and perceived orientation
 
 ## 07 — Connections
@@ -452,12 +514,31 @@ The magnetic field resolves into local relationships and network flow. At the en
 
 Use bounded, pooled network geometry tied to the active world window. Generate topology outside the frame hot path and avoid one scene object per connection.
 
+### Decided Art Direction
+
+The web overlays the carried world without changing it (decided
+2026-08-31, after a same-day soil-darkening variant was rejected),
+implemented in `src/modules/mycelium/`: alpha-blended strands inside an
+88-metre viewer radius; the terrain keeps its carried presentation. All
+four world-element classes participate — trees and bushes, the level-02
+scent emitters, rocks, and the visible animals — each configured as a
+per-source preset record with its own palette node color and weight;
+edges inherit their heavier hub's color. The network is pulses on a
+static web: kNN plus minimum-spanning-tree topology (principles extracted
+from the `../experiments/wurzeln` project, without its reinforcement
+simulation) computed in the repository's first module-owned Web Worker,
+with cream light pulses traveling the cords. The carried magnetic world
+stays at full intensity ("senses layer, never swap"); earlier languages
+return by remaining present, and any reduction waits for the dramaturgy
+driver. See [07 — Connections](07-connections/README.md) for the exact
+preset.
+
 ### Open Art Decisions
 
-- which world elements participate in the network
-- visible depth and terrain transparency
-- network growth, pulse, and reinforcement behavior
-- which earlier visual languages return in the final synthesis
+- web radius and fade band against real headset contrast and the
+  transparent fill-rate measurement
+- pulse density, speed, and glow widths
+- the warm background shift toward the palette's cream
 - final audio and offboarding transition
 
 ## Level Folders
@@ -480,8 +561,12 @@ docs/levels/
 ├── 05-thermal-perception/
 │   ├── README.md
 │   └── mood/moodboard.png
-├── 06-magnetic-field-perception/mood/moodboard.png
-└── 07-connections/mood/moodboard.png
+├── 06-magnetic-field-perception/
+│   ├── README.md
+│   └── mood/moodboard.png
+└── 07-connections/
+    ├── README.md
+    └── mood/moodboard.png
 ```
 
 Each level `README.md` should contain:

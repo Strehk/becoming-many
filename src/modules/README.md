@@ -58,6 +58,18 @@ All material effects patch through the shared
 root orders thermal first so it wins the final surface color. The module
 never imports a sibling.
 
+`mycelium` owns the level-07 Connections sense: a pulsing web of instanced
+cord ribbons and node glows (two fixed-pool transparent draw calls,
+motion-trail precedent) alpha-blended over the unchanged carried world,
+connecting deterministic world anchors inside a viewer-centred radius. Topology runs in the
+repository's first module-owned Web Worker, off the frame path. Anchors
+cross module boundaries only through the shared `ConnectionNodeSource` /
+`ConnectionActorSource` contracts in `connection-nodes.ts` — the static
+counterpart to motion-sense's `MotionPointSource` seam: vegetation, rocks,
+and scent particles replay their deterministic placements, animals expose
+live visible-actor positions, and the composition root wires the enabled
+providers. The module never imports a sibling.
+
 Landscape modules share only stable contracts: `WorldModule` for lifecycle,
 `WorldSurface` for read-only facts, `WORLD_WIND` for the immutable global wind,
 `ChunkAssignment` for finite spatial ownership, and `StreamJob` for bounded

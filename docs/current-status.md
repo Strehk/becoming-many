@@ -7,40 +7,43 @@ Boundary: Product vision and long-term design remain in the specialized document
 
 # Current Development Status
 
-Snapshot: 2026-08-28
+Snapshot: 2026-08-31
 
 The current `src/` and `public/` trees are the source of truth. This page is
 the concise entry point for the current implementation.
 
 ## Runnable Result
 
-`bun run dev` starts a Vite application that shows the Thermal Perception
-level:
+`bun run dev` starts a Vite application that shows the Connections level:
 
-- the complete Motion Perception world carried over unchanged: the warm
-  off-white haze background, the grayscale Echo Depth ramp on Terrain,
-  Vegetation, and Rocks, the earlier air and scent layers, and the fly
-  swarms, bird flocks, and printed motion trails, because senses layer
-  instead of swapping
-- a false-color heat view inside a 30-metre viewer radius that feathers
-  over 10 metres back into the grayscale world: water reads coldest and
-  colder with depth, dry ground warms with elevation, forest and slope
-  hold extra warmth, and every plant and rock keeps a stable hashed
-  temperature variation across restreaming
-- the bounded animal population joining the world as the strongest heat
-  signatures: warm bodies read in the hot magenta-to-yellow palette bands
-  inside the radius and sit in the echo grayscale outside it
+- the complete Magnetic Field Perception world carried over unchanged: the
+  warm off-white haze background, the grayscale Echo Depth ramp on Terrain,
+  Vegetation, and Rocks, the earlier air and scent layers, the fly swarms,
+  bird flocks, and printed motion trails, the 30-metre false-color heat
+  view with the warm animal population, and the deep-blue ground field
+  lines with the northern sky glow, because senses layer instead of
+  swapping
+- the mycelium web alpha-blended over the unchanged carried world inside
+  an 88-metre viewer radius: fine strand bundles and node glows
+  connecting the deterministic positions of trees, bushes, scent emitters,
+  rocks, and the visible animals, colored per source class, with cream
+  light pulses traveling the cords and bounded animal links following the
+  living actors
 - the diagnostic test overlay
 - pointer-lock mouse look
 - WASD and arrow-key flight along the mouse look direction
 - a user-triggered Three.js `immersive-vr` button
 
-The application currently selects `thermal.level.ts` in its minimal browser
-entry. It has one Level Runtime composition root and one render loop. The
-Motion Perception level remains available by selecting `motion.level.ts`
-instead, the Echolocation level by selecting `echo.level.ts`, the Scent
-World base experiment by selecting `scent.level.ts`, and the Design Test
-landscape by selecting `designTest.level.ts`.
+The application currently opens `connections.level.ts` by default. It has
+one Level Runtime composition root and one render loop. Every earlier
+preset from `white-world` through `magnetic` to the `test` and
+`design-test` diagnostics is named in `levels/level-catalog.ts` and opens
+with `?level=<name>`.
+
+`?benchmark[=<profile>]` replaces live controls with a replayed route and
+a fixed timestep, and `bun run benchmark` drives that mode in Chromium and
+writes a report artifact. Its `renderer.info` counters repeat exactly; its
+frame times are machine-local measurements.
 
 ## Implemented System
 
@@ -81,12 +84,21 @@ landscape by selecting `designTest.level.ts`.
   colors from the echo dark stops) and the `thermal` field that decorates
   Terrain, Vegetation, Rocks, and Animals with the radius-bounded
   false-color heat view.
+- `magnetic.level.ts` is the Magnetic Field Perception level: every Thermal
+  Perception value carried over unchanged plus the top-level `magnetic`
+  field that activates the terrain field lines and the northern sky glow
+  with the level-06 moodboard blues.
+- `connections.level.ts` is the Connections level and the current default:
+  every Magnetic Field Perception value carried over unchanged plus the
+  top-level `connections` field that activates the streamed mycelium web
+  with its per-source node records and palette.
 - The sparse `invisibleGround: true` flag clamps flight above the shared
   deterministic world surface without creating the Terrain module or any
   rendered geometry.
 - `test.level.ts` uses a 180-metre view distance, activates
   Terrain, Grass, Vegetation, Rocks, and Animals, selects Zone Visualizer as
-  the Terrain presentation, and adds Magnetic Sense as a material effect.
+  the Terrain presentation, and authors its own diagnostic magnetic block
+  (warm orange colors) under the shared top-level `magnetic` field.
 - Grass, Vegetation, and Rocks expose only level-relevant zone density and
   appearance values. Their seeds, candidate grids, assets, and variants remain
   in module-owned definitions.
@@ -246,14 +258,53 @@ landscape by selecting `designTest.level.ts`.
 
 ### Magnetic Sense
 
-- Magnetic Sense decorates Terrain's selected presentation material; it adds no
-  geometry, texture, light, transparent layer, or draw call.
+- Magnetic Sense is the level-06 sense with two consumers sharing one
+  field-direction and intensity uniform set: a terrain material effect and a
+  sky-dome world module, returned together by `createMagneticSense` as
+  `{ terrain, sky }`. Line, pulse, and sky glow colors are preset-authored
+  like every other sense palette; the composition root skips the sense
+  entirely at intensity zero.
+- The terrain effect decorates Terrain's selected presentation material; it
+  adds no geometry, texture, light, transparent layer, or draw call.
 - Absolute world positions feed one analytical stream coordinate. Height warp
   bends the lines with the existing terrain and `fwidth` stabilizes their edge.
 - Magnetic base lines blend at 20% opacity. Narrow bright pulses run strictly
   inside their boundaries in the same opaque fragment pass. Pixels outside the
   stripes retain their base ground color.
+- The sky cue is one opaque back-side dome (120 m radius, `depthWrite` off,
+  `renderOrder` −1, one added draw call) that follows the full camera
+  position each frame. Its fragment shader shows the level haze everywhere
+  except an analytic glow at the horizon toward the field direction — the
+  same direction the ground pulses travel toward; the shared intensity
+  uniform fades the glow back into the haze without transparency.
 - Grass remains visually and architecturally independent.
+
+### Mycelium (Connections)
+
+- Mycelium is the level-07 sense: one web world module returned by
+  `createConnectionsModule`, blending over the unchanged carried world
+  (no terrain material effect exists). Depth, pulse, and per-source node
+  colors are preset-authored; the composition root skips the sense
+  entirely at intensity zero.
+- The web adds exactly two draw calls from fixed pools: instanced
+  camera-facing cord envelopes (4096 rows, the first four reserved for
+  animal links with nearest-node hysteresis) and pixel-capped node glow
+  points (1280). Both are transparent with `depthWrite` off and
+  `depthTest` on (motion-trail precedent), masked in-shader to the
+  88-metre web radius and collapsed in the vertex stage beyond it. Each
+  envelope renders three fine meandering filaments with periodic knot
+  junctions procedurally in its fragment shader, so the web reads far
+  denser than its actual node and edge counts; sub-pixel strands dim by
+  coverage instead of widening.
+- Node anchors cross module boundaries only through the shared
+  `ConnectionNodeSource` / `ConnectionActorSource` contracts: vegetation
+  and rocks replay their deterministic placements, scent exposes its
+  emitter anchors, animals expose live visible-actor positions.
+- Topology (kNN plus minimum spanning tree) runs in the repository's
+  first Web Worker, owned by the module and reached through typed
+  transferable messages; gathering runs as bounded stream-queue steps
+  (one 32-metre chunk per step) and stale worker replies are discarded
+  by an aggregate window generation.
 
 ### Echo Depth
 
@@ -360,16 +411,19 @@ Manifests remain metadata rather than a parallel runtime configuration system.
 
 The last clean verification recorded:
 
-- `bun test`: 119 tests
+- `bun test`: 153 tests
 - `bun run check`: strict TypeScript
 - `bun run lint`: clean Biome run
-- `bun run build`: Vite production build
+- `bun run build`: Vite production build, including the emitted
+  `topology.worker` chunk
+- `bun run benchmark`: replays the fixed route and writes a report
+  artifact; its counters were confirmed identical across repeated runs
 
 Fallow reports no dead production exports or complexity violations, but
 does report known duplicated placement code in Vegetation and Rocks and
 the deliberate data duplication between the sparse level presets that
 carry earlier sense layers verbatim (`scent`, `echo`, `motion`,
-`thermal`). The formerly parallel shader-patch idiom of Magnetic Sense and
+`thermal`, `magnetic`, `connections`). The formerly parallel shader-patch idiom of Magnetic Sense and
 Echo Depth was extracted into the shared `material-shader-patch.ts` helper
 when Thermal Perception arrived as the third material effect.
 
