@@ -5,6 +5,7 @@
  * Boundary: Level files contain authored data; modules own content definitions and resources.
  */
 
+import type { BenchmarkRun } from "../benchmark/benchmark-run";
 import { createDesktopControls } from "../control/desktop-controls";
 import { keepFlightAboveGround } from "../control/flight-ground-clearance";
 import {
@@ -149,16 +150,27 @@ interface LevelSetup {
   readonly assets: LoadedLevelAssets;
 }
 
+/** Optional run modes the browser entry can request for any preset. */
+export interface LevelOptions {
+  /** Replay a fixed route with a fixed timestep instead of live controls. */
+  readonly benchmark?: BenchmarkRun;
+}
+
 export async function startLevel(
   container: Element | null,
   level: LevelPreset,
+  options: LevelOptions = {},
 ): Promise<void> {
   if (!(container instanceof HTMLElement)) {
     throw new Error("Missing application root: .app");
   }
 
   const assets = await loadLevelAssets(level);
-  startWorld(container, (world) => setupLevel(container, world, level, assets));
+  startWorld(
+    container,
+    (world) => setupLevel(container, world, level, assets, options),
+    options.benchmark,
+  );
 }
 
 function setupLevel(
@@ -166,6 +178,7 @@ function setupLevel(
   world: WorldContext,
   level: LevelPreset,
   assets: LoadedLevelAssets,
+  options: LevelOptions,
 ): WorldUpdate {
   applyLevelPresentation(world, level);
 
@@ -181,17 +194,22 @@ function setupLevel(
   });
   activateModules(world, modules);
 
-  const desktopControls = createDesktopControls(
-    world.camera,
-    world.renderer.domElement,
-  );
+  const benchmark = options.benchmark;
+  // A benchmark drives the camera itself; PointerLock controls cannot be
+  // driven reproducibly, and the overlay would add DOM writes to the samples.
+  const desktopControls = benchmark
+    ? undefined
+    : createDesktopControls(world.camera, world.renderer.domElement);
   const hasGround = level.invisibleGround === true || hasVisibleSurface(level);
-  const testOverlay = level.testUi
-    ? createTestOverlay(container, world.renderer)
-    : undefined;
+  const testOverlay =
+    level.testUi && !benchmark
+      ? createTestOverlay(container, world.renderer)
+      : undefined;
 
   return (deltaSeconds): void => {
-    desktopControls.update(deltaSeconds);
+    if (benchmark) benchmark.placeCamera(world.camera);
+    else desktopControls?.update(deltaSeconds);
+
     if (hasGround) {
       keepFlightAboveGround(world.camera.position, worldSurface.groundYAt);
     }

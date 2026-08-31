@@ -26,6 +26,11 @@ src/
 ├── main.ts
 ├── style.css
 ├── vite-env.d.ts
+├── benchmark/
+│   ├── benchmark-report.ts
+│   ├── benchmark-route.ts
+│   ├── benchmark-run.ts
+│   └── benchmark-settings.ts
 ├── control/
 │   └── desktop-controls.ts
 ├── world-surface/
@@ -39,6 +44,7 @@ src/
 │   ├── connections.level.ts
 │   ├── designTest.level.ts
 │   ├── echo.level.ts
+│   ├── level-catalog.ts
 │   ├── magnetic.level.ts
 │   ├── motion.level.ts
 │   ├── scent.level.ts
@@ -107,6 +113,9 @@ tests/
 │   ├── terrain.test.ts
 │   ├── thermal-perception.test.ts
 │   └── zone-visualizer.test.ts
+├── benchmark/
+│   ├── benchmark-report.test.ts
+│   └── benchmark-route.test.ts
 ├── test-ui/
 │   └── frame-metrics.test.ts
 ├── utils/
@@ -145,7 +154,7 @@ level runtime
   → connect desktop controls
 
 each frame
-  → update desktop controls
+  → update desktop controls, or replay the benchmark route
   → update active modules
   → process bounded stream jobs
   → render once
@@ -154,6 +163,12 @@ each frame
 Three.js owns the loop through `renderer.setAnimationLoop()`, so desktop and
 WebXR rendering use the same frame path.
 
+`main.ts` also reads two runtime requests from the URL. `?level=<name>` opens
+any preset from `levels/level-catalog.ts`, and `?benchmark[=<profile>]` hands
+the World Runtime a `FrameControl` that replaces the wall clock, drives the
+camera along a fixed route, and records every finished frame. Both are runtime
+requests, not authored configuration.
+
 ## Ownership
 
 ### `world-runtime.ts`
@@ -161,6 +176,11 @@ WebXR rendering use the same frame path.
 Owns the permanent Three.js scene, perspective camera, WebGL renderer, timer,
 resize handling, module runtime, stream queue, WebXR entry, and animation loop.
 It knows neither the selected level nor concrete content modules.
+
+`FrameControl` is the optional measurement seam. When present it supplies the
+fixed timestep, a virtual clock for the stream queue, and a callback that runs
+after each render — the only point where `renderer.info` still describes the
+frame that just finished. Absent, the loop behaves exactly as before.
 
 ### `world-settings.ts`
 
@@ -214,6 +234,16 @@ Level files export a named `level` constant satisfying the sparse
 `LevelPreset` contract. They contain data only and create no runtime resources.
 `level-runtime.ts` is the separate composition root that interprets one preset
 and connects it to permanent and unloadable runtime parts.
+`level-catalog.ts` names every preset so a run can select one at startup; it is
+data only and holds the default the browser entry opens.
+
+### `benchmark/`
+
+Owns the replayed measurement mode and is inert unless the entry is opened
+with `?benchmark`. It authors one camera route, substitutes the wall clock and
+the stream-queue budget for frame-driven equivalents, and records
+`renderer.info` after each render. Counters from a run repeat exactly; frame
+times from it are measurements bound to one machine.
 
 ### `world-surface/`
 

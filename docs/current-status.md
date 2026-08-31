@@ -34,10 +34,16 @@ the concise entry point for the current implementation.
 - WASD and arrow-key flight along the mouse look direction
 - a user-triggered Three.js `immersive-vr` button
 
-The application currently selects `connections.level.ts` in its browser
-entry. It has one Level Runtime composition root and one render loop.
-Every earlier preset from `white-world` through `magnetic` to the `test`
-and `design-test` diagnostics remains available by selecting it instead.
+The application currently opens `connections.level.ts` by default. It has
+one Level Runtime composition root and one render loop. Every earlier
+preset from `white-world` through `magnetic` to the `test` and
+`design-test` diagnostics is named in `levels/level-catalog.ts` and opens
+with `?level=<name>`.
+
+`?benchmark[=<profile>]` replaces live controls with a replayed route and
+a fixed timestep, and `bun run benchmark` drives that mode in Chromium and
+writes a report artifact. Its `renderer.info` counters repeat exactly; its
+frame times are machine-local measurements.
 
 ## Implemented System
 
@@ -385,11 +391,13 @@ Manifests remain metadata rather than a parallel runtime configuration system.
 
 The last clean verification recorded:
 
-- `bun test`: 140 tests
+- `bun test`: 153 tests
 - `bun run check`: strict TypeScript
 - `bun run lint`: clean Biome run
 - `bun run build`: Vite production build, including the emitted
   `topology.worker` chunk
+- `bun run benchmark`: replays the fixed route and writes a report
+  artifact; its counters were confirmed identical across repeated runs
 
 Fallow reports no dead production exports or complexity violations, but
 does report known duplicated placement code in Vegetation and Rocks and

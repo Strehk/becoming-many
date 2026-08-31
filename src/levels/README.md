@@ -58,6 +58,11 @@ optional module parameters. The view distance is also the hard visibility
 boundary used to size streamed module windows with an additional preparation
 margin. It is level data; the permanent runtime does not invent a world look.
 
+`level-catalog.ts` names every preset so a run can select one without editing
+the entry point. It holds the default the browser opens and resolves an
+unknown request back to that default rather than failing. `?level=<name>` in
+the URL is a runtime request, not authored configuration.
+
 Preset files do not create Three.js resources, start render loops, or import
 concrete module implementations. `main.ts` only selects one preset and passes
 it to `startLevel()`.

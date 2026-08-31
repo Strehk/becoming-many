@@ -47,6 +47,39 @@ replace repeatable browser profiling or physical PICO measurements. The current
 structure therefore supports performance testing but does not yet prove a
 frame-rate target.
 
+## Deterministic Benchmark
+
+`bun run benchmark` replays one authored camera route through any level and
+writes a report artifact. It exists so two measurements can be compared at
+all; the overlay cannot do that, because a free-running session never repeats
+the same workload.
+
+Four substitutions make a run repeatable, and each one is a deliberate
+departure from interactive behavior:
+
+- a fixed timestep replaces the wall clock, so world state follows the frame
+  index instead of machine speed
+- an authored route replaces desktop controls
+- a fixed frame count replaces a duration
+- a virtual clock replaces the stream queue's 0.5 ms wall-clock budget
+
+The last one matters when reading a report. Production streaming completes as
+much work as fits in a time budget, so a faster machine leaves more content
+resident. A benchmark instead advances a fixed number of stream steps per
+frame. Its counters therefore repeat exactly, but its streaming behavior is
+not the production one, and streaming spikes must still be judged from a
+normal session.
+
+Only `renderer.info` counters are treated as facts. They are exact integers,
+they repeat across machines, and `tests/benchmark/benchmark-baseline.ts`
+records the accepted values so `--check` fails on a real change in what the
+scene draws. Frame times from the same run are measurements: comparable to
+another run on the same machine and rendering path, and nothing else. Headless
+runs use SwiftShader and describe a software rasterizer, not a headset.
+
+The harness is documented in [src/benchmark](../src/benchmark/README.md) and
+[tests/benchmark](../tests/benchmark/README.md).
+
 ## Acceptance Targets
 
 - Primary target: stable 90 Hz with an 11.11 ms frame interval.
@@ -57,19 +90,15 @@ frame-rate target.
 
 ## Metrics to Add
 
-Measure at least:
+The benchmark already reports frame-time percentiles, missed-frame runs,
+`renderer.info` counters, peak queue depth, and the frame at which streaming
+drains. Still missing:
 
-- median, p95, and p99 frame time
-- missed-frame runs and visible spikes
-- draw calls, triangles, geometries, textures, and programs
 - module update, stream work, and GPU upload time
-- queue depth, stale jobs, and time until content is ready
-- memory growth during a deterministic long flight
+- stale stream jobs
+- memory growth during a long flight
 - module load, activation, deactivation, and unload cost
 - PC render, encode, transport, decode, and total latency if PCVR proceeds
-
-The first instrumentation should remain small: a deterministic route, frame
-percentiles, `renderer.info`, queue depth, and streaming duration.
 
 ## Current Scheduling Rules
 

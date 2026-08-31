@@ -57,6 +57,8 @@ language — a German chat still produces English artifacts.
   **Fallow** (export analysis, `.fallowrc.jsonc`).
 - `bun run dev` · `bun test` · `bun run check` (typecheck) · `bun run lint` ·
   `bun run build` (typecheck + production build).
+- `bun run benchmark` replays a fixed route in Chromium and writes a report
+  artifact. It needs a current `bun run build` and is not part of `bun test`.
 - Run all Bun, Vite, and Fallow checks before checkpoints and commits.
 
 ## Performance rules
