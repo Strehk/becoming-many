@@ -81,12 +81,17 @@ landscape by selecting `designTest.level.ts`.
   colors from the echo dark stops) and the `thermal` field that decorates
   Terrain, Vegetation, Rocks, and Animals with the radius-bounded
   false-color heat view.
+- `magnetic.level.ts` is the Magnetic Field Perception level and the current
+  `main.ts` selection: every Thermal Perception value carried over unchanged
+  plus the top-level `magnetic` field that activates the terrain field lines
+  and the northern sky glow with the level-06 moodboard blues.
 - The sparse `invisibleGround: true` flag clamps flight above the shared
   deterministic world surface without creating the Terrain module or any
   rendered geometry.
 - `test.level.ts` uses a 180-metre view distance, activates
   Terrain, Grass, Vegetation, Rocks, and Animals, selects Zone Visualizer as
-  the Terrain presentation, and adds Magnetic Sense as a material effect.
+  the Terrain presentation, and authors its own diagnostic magnetic block
+  (warm orange colors) under the shared top-level `magnetic` field.
 - Grass, Vegetation, and Rocks expose only level-relevant zone density and
   appearance values. Their seeds, candidate grids, assets, and variants remain
   in module-owned definitions.
@@ -246,13 +251,25 @@ landscape by selecting `designTest.level.ts`.
 
 ### Magnetic Sense
 
-- Magnetic Sense decorates Terrain's selected presentation material; it adds no
-  geometry, texture, light, transparent layer, or draw call.
+- Magnetic Sense is the level-06 sense with two consumers sharing one
+  field-direction and intensity uniform set: a terrain material effect and a
+  sky-dome world module, returned together by `createMagneticSense` as
+  `{ terrain, sky }`. Line, pulse, and sky glow colors are preset-authored
+  like every other sense palette; the composition root skips the sense
+  entirely at intensity zero.
+- The terrain effect decorates Terrain's selected presentation material; it
+  adds no geometry, texture, light, transparent layer, or draw call.
 - Absolute world positions feed one analytical stream coordinate. Height warp
   bends the lines with the existing terrain and `fwidth` stabilizes their edge.
 - Magnetic base lines blend at 20% opacity. Narrow bright pulses run strictly
   inside their boundaries in the same opaque fragment pass. Pixels outside the
   stripes retain their base ground color.
+- The sky cue is one opaque back-side dome (120 m radius, `depthWrite` off,
+  `renderOrder` −1, one added draw call) that follows the full camera
+  position each frame. Its fragment shader shows the level haze everywhere
+  except an analytic glow at the horizon toward the field direction — the
+  same direction the ground pulses travel toward; the shared intensity
+  uniform fades the glow back into the haze without transparency.
 - Grass remains visually and architecturally independent.
 
 ### Echo Depth
@@ -340,7 +357,7 @@ Manifests remain metadata rather than a parallel runtime configuration system.
 
 The last clean verification recorded:
 
-- `bun test`: 119 tests
+- `bun test`: 123 tests
 - `bun run check`: strict TypeScript
 - `bun run lint`: clean Biome run
 - `bun run build`: Vite production build
@@ -349,7 +366,7 @@ Fallow reports no dead production exports or complexity violations, but
 does report known duplicated placement code in Vegetation and Rocks and
 the deliberate data duplication between the sparse level presets that
 carry earlier sense layers verbatim (`scent`, `echo`, `motion`,
-`thermal`). The formerly parallel shader-patch idiom of Magnetic Sense and
+`thermal`, `magnetic`). The formerly parallel shader-patch idiom of Magnetic Sense and
 Echo Depth was extracted into the shared `material-shader-patch.ts` helper
 when Thermal Perception arrived as the third material effect.
 

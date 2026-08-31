@@ -91,6 +91,28 @@ This file records decisions that constrain current and upcoming work.
   inside those line boundaries in the same opaque material pass. Physical
   lights, transparent overlays, bloom, and additional terrain geometry remain
   outside the MVP.
+- Since level 06, line, pulse, and sky glow colors are preset-authored like
+  every other sense palette, and `magnetic` is a top-level `LevelPreset`
+  field beside `echoDepth`, `motion`, and `thermal`.
+
+### Magnetic Sky Cue and Contract Promotion (2026-08-31)
+
+- One `createMagneticSense` call returns both consumers as
+  `{ terrain, sky }`. The field-direction and intensity uniform objects are
+  created once and shared by identity, so a future dramaturgy driver steers
+  the whole sense through single values.
+- The sky cue is an analytic opaque dome instead of a transparent overlay or
+  bloom: a back-side sphere with `depthWrite` off and `renderOrder` −1 draws
+  first, every later opaque fragment paints over it, and the intensity fade
+  mixes the glow back into the level haze inside the fragment shader. One
+  added draw call, no extra render pass.
+- The dome follows the full camera position each frame; the world uses
+  absolute coordinates (no floating origin), so no shift compensation
+  exists or is needed.
+- The sky glow centres on the same `+fieldDirection` the ground pulses
+  travel toward, so the near field and the far cue always agree.
+- The composition root skips the sense entirely at intensity zero, matching
+  Echo Depth, Motion, and Thermal.
 
 ## Approved Navigation Boundary
 

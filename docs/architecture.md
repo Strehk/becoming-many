@@ -121,7 +121,8 @@ Their integration and the remaining landscape contracts are defined in
 
 ## Composition and Frame Flow
 
-`src/main.ts` is the minimal browser entry. It selects the Design Test preset and
+`src/main.ts` is the minimal browser entry. It selects the Magnetic Field
+Perception preset and
 passes it to `level-runtime.ts`, the single composition root. The Level Runtime
 interprets the preset, preloads only configured GLTF assets, starts the
 permanent World Runtime, creates enabled modules, and connects controls.
@@ -236,7 +237,8 @@ and placement rules. They share only the small static-candidate math and compact
 multi-part GPU buffers.
 Animals own a small animated population and habitat-constrained movement. Zone
 Visualizer supplies diagnostic colors; Magnetic Sense overlays world-space
-stripes in the same material pass. Visible water remains a separate Rivers
+stripes in the same material pass and owns the camera-following sky-glow
+dome. Visible water remains a separate Rivers
 responsibility. Concrete sibling implementations do not import each other.
 
 ### `utils/asset-loader/`
@@ -259,7 +261,8 @@ is proven twice; zone and placement policy remain module-owned.
 | `TerrainMaterialEffect` | Effect that decorates and optionally updates the Terrain material, with an optional per-vertex warmth sampler |
 | `WORLD_WIND` | Shared immutable wind direction, strength, and speed |
 | `GrassPreset` | Level-authored density and blade height per supported grass zone |
-| `MagneticSenseParameters` | Magnetic direction, line, pulse, opacity, flow, and intensity values |
+| `MagneticSenseParameters` | Magnetic direction, line, pulse, opacity, flow, intensity, and palette values |
+| `MagneticSenseEffects` | Terrain stripe effect and sky-dome module sharing one field uniform set |
 | `ScentParticlesParameters` | Level-authored scent palette, per-chunk emitter density, pool size, and drift values |
 | `MotionSenseParameters` | Level-authored motion intensity, swarm pool, appearance, and trail values |
 | `MotionPointSource` | World-position stream a moving actor exposes for motion-trail printing |

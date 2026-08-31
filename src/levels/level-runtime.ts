@@ -24,6 +24,7 @@ import {
 import { createGrassModule, type GrassPreset } from "../modules/grass/grass";
 import {
   createMagneticSense,
+  type MagneticSenseEffects,
   type MagneticSenseParameters,
 } from "../modules/magnetic-sense/magnetic-sense";
 import {
@@ -80,7 +81,6 @@ interface TerrainPreset {
   readonly opacity: number;
   readonly presentation?: "zones";
   readonly colors?: TerrainColors;
-  readonly magneticSense?: MagneticSenseParameters;
 }
 
 /** Sparse authored values accepted by the Level Runtime. */
@@ -111,6 +111,13 @@ export interface LevelPreset {
    * the carried echo ramp and feathers back into it at the radius edge.
    */
   readonly thermal?: ThermalPerceptionParameters;
+
+  /**
+   * Directional field lines decorating the Terrain material plus the sky
+   * dome glowing toward the field direction; the stripes read outside the
+   * thermal radius and the dome stays behind every other surface.
+   */
+  readonly magnetic?: MagneticSenseParameters;
 }
 
 interface LoadedLevelAssets {
@@ -193,8 +200,9 @@ function createConfiguredModules(setup: LevelSetup): WorldModule[] {
   const modules: WorldModule[] = [];
   const echoDepth = createEchoDepthEffect(setup.level);
   const thermal = createThermalEffects(setup);
+  const magnetic = createMagneticEffects(setup);
 
-  addModule(modules, createTerrain(setup, echoDepth, thermal));
+  addModule(modules, createTerrain(setup, echoDepth, thermal, magnetic));
   addModule(modules, createAirParticles(setup));
   addModule(modules, createScentParticles(setup));
   addModule(modules, createGrass(setup));
@@ -202,8 +210,23 @@ function createConfiguredModules(setup: LevelSetup): WorldModule[] {
   addModule(modules, createRocks(setup, echoDepth, thermal));
   addModule(modules, createAnimals(setup, thermal));
   addModule(modules, createMotionSense(setup));
+  addModule(modules, magnetic?.sky);
 
   return modules;
+}
+
+/** Skip the sense entirely at intensity zero so its GPU work never runs. */
+function createMagneticEffects(
+  setup: LevelSetup,
+): MagneticSenseEffects | undefined {
+  const parameters = setup.level.magnetic;
+  if (!parameters || parameters.intensity === 0) return undefined;
+
+  return createMagneticSense(parameters, {
+    scene: setup.world.scene,
+    camera: setup.world.camera,
+    skyHazeColor: setup.level.backgroundColor ?? 0xffffff,
+  });
 }
 
 /** Skip the sense entirely at intensity zero so its GPU work never runs. */
@@ -246,6 +269,7 @@ function createTerrain(
   setup: LevelSetup,
   echoDepth: EchoDepthEffect | undefined,
   thermal: ThermalPerceptionEffects | undefined,
+  magnetic: MagneticSenseEffects | undefined,
 ): WorldModule | undefined {
   const preset = setup.level.terrain;
   if (!preset) return undefined;
@@ -256,9 +280,7 @@ function createTerrain(
   // magnetic stripes print over the echo ramp outside it.
   const effects: TerrainMaterialEffect[] = [];
   if (thermal) effects.push(thermal.terrain);
-  if (preset.magneticSense) {
-    effects.push(createMagneticSense(preset.magneticSense));
-  }
+  if (magnetic) effects.push(magnetic.terrain);
   if (echoDepth) effects.push(echoDepth);
 
   return createTerrainModule({

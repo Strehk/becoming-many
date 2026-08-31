@@ -7,6 +7,6 @@
 
 import "./style.css";
 import { startLevel } from "./levels/level-runtime";
-import { level } from "./levels/thermal.level";
+import { level } from "./levels/magnetic.level";
 
 await startLevel(document.querySelector(".app"), level);

@@ -27,14 +27,21 @@ export const level: LevelPreset = {
   terrain: {
     opacity: 1,
     presentation: "zones",
-    magneticSense: {
-      fieldDirectionDegreesFromNorth: 0,
-      lineSpacingMeters: 8,
-      lineWidthMeters: 0.35,
-      pulseWidthMeters: 0.1,
-      lineOpacity: 0.2,
-      flowSpeedMetersPerSecond: 8,
-      intensity: 1,
+  },
+  magnetic: {
+    intensity: 1,
+    fieldDirectionDegreesFromNorth: 0,
+    lineSpacingMeters: 8,
+    lineWidthMeters: 0.35,
+    pulseWidthMeters: 0.1,
+    lineOpacity: 0.2,
+    flowSpeedMetersPerSecond: 8,
+    // The former module-constant diagnostic colors, now authored here so the
+    // diagnostic look survives the preset-authored palette contract.
+    colors: {
+      lineColor: 0xd97819,
+      pulseColor: 0xf9b33c,
+      skyGlowColor: 0xd97819,
     },
   },
   grass: {
