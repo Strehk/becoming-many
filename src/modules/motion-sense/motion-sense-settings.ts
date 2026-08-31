@@ -12,6 +12,9 @@ export const MOTION_SENSE_SETTINGS = {
   farRing: { minMeters: 35, maxMeters: 65 }, // Below the 128-metre view distance.
   reanchorDistanceMeters: 80, // Player travel that relocates every swarm anchor.
   groundClearanceMeters: 0.9, // Swarm centre height above the sampled ground.
+  // Central-difference step fitting the ground plane every fly is held above.
+  // Wide enough to read the hill a stray crosses, not the pebbles under it.
+  groundSlopeSampleMeters: 2,
   swarmRadiusMeters: 1.45, // Horizontal core scale of one fly cloud; density thins outward past it.
   swarmHeightMeters: 0.65, // Vertical core scale of one fly cloud.
   // Every swarm draws its own volume from these ranges, so no two clouds share

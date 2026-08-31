@@ -298,6 +298,15 @@ landscape by selecting `designTest.level.ts`.
   core, the loose few wander metres clear of it, alone or in twos and threes.
   No cloud has a straight edge or repeats another's silhouette, and the
   ground clamp is the only hard boundary left.
+- Because strays now reach several metres out, that ground clamp tilts: five
+  height-field samples per swarm per frame fit a plane under the anchor, and
+  every fly is held above that plane rather than above the anchor's own
+  height, so a stray over a hillside rides the slope. Measured against the
+  authored height field this holds flies clear of terrain within 0.12 m,
+  against 3.02 m of penetration when the floor was flat. The force curves
+  keep distances squared wherever a square root is not needed, which pays for
+  the extra sampling: the whole fly update measures ~110 µs per frame at the
+  authored 720 flies, unchanged from before the swarm volumes existed.
 - The trail ring holds `flyCount × lifetimeFrames` particles. The CPU writes
   only the newest ring slot per frame (immutable spawn position, outward
   direction, spawn intensity, and spawn frame) as one contiguous

@@ -117,9 +117,12 @@ function createSwarmLobe(
   const shape = MOTION_SENSE_SETTINGS.swarmShape;
   const lobeSeed = swarmIndex * SWARM_LOBE_STRIDE + lobeIndex;
   const spacing = lobeIndex / shape.lobesPerSwarm;
+  // The jitter is a fraction of the even spacing, not of a whole turn, so
+  // three lobes stay three lobes instead of two of them collapsing together.
   const jitter =
-    (getMotionRandom(lobeSeed, LOBE_RANDOM_ANGLE) - 0.5) *
-    shape.lobeAngleJitter;
+    ((getMotionRandom(lobeSeed, LOBE_RANDOM_ANGLE) - 0.5) *
+      shape.lobeAngleJitter) /
+    shape.lobesPerSwarm;
   const angle = (spacing + jitter) * TAU;
   const offset =
     shape.lobeOffsetFraction *
@@ -261,16 +264,14 @@ export function accumulateEnvelopePull(
   acceleration: LocalPoint,
 ): void {
   toShapeSpace(shape, positionX, positionY, positionZ, scratchNormalized);
-  const distance = Math.hypot(
-    scratchNormalized.x,
-    scratchNormalized.y,
-    scratchNormalized.z,
-  );
-  accumulateShapeSpring(
-    shape,
-    binding * getEnvelopeGain(distance),
-    acceleration,
-  );
+  // The core is the common path — the median fly never leaves it — and its
+  // gain is constant, so the square root is only paid by the strays.
+  const distanceSq = getSquaredLength(scratchNormalized);
+  const gain =
+    distanceSq <= 1
+      ? MOTION_SENSE_SETTINGS.swarmCorePull
+      : getEnvelopeGain(Math.sqrt(distanceSq));
+  accumulateShapeSpring(shape, scratchNormalized, binding * gain, acceleration);
 }
 
 /**
@@ -309,12 +310,14 @@ export function accumulateLobePull(
   acceleration: LocalPoint,
 ): void {
   toShapeSpace(shape, offsetX, offsetY, offsetZ, scratchNormalized);
-  const reach =
-    Math.hypot(scratchNormalized.x, scratchNormalized.y, scratchNormalized.z) /
-    MOTION_SENSE_SETTINGS.swarmLobeReachRadii;
+  // The reach only ever appears squared, so it never needs a square root.
+  const reachSq =
+    getSquaredLength(scratchNormalized) /
+    MOTION_SENSE_SETTINGS.swarmLobeReachRadii ** 2;
   accumulateShapeSpring(
     shape,
-    MOTION_SENSE_SETTINGS.swarmLobePull / (1 + reach * reach),
+    scratchNormalized,
+    MOTION_SENSE_SETTINGS.swarmLobePull / (1 + reachSq),
     acceleration,
   );
 }
@@ -334,6 +337,11 @@ export function getFlyBinding(flyIndex: number, channel: number): number {
 // One reusable normalized offset keeps the per-fly forces allocation-free.
 const scratchNormalized: LocalPoint = { x: 0, y: 0, z: 0 };
 
+/** Squared length, which is all the force curves ever need of a distance. */
+function getSquaredLength(point: LocalPoint): number {
+  return point.x * point.x + point.y * point.y + point.z * point.z;
+}
+
 /** Express a local-metre offset in the swarm's unrotated, unit-radius frame. */
 function toShapeSpace(
   shape: SwarmShape,
@@ -348,19 +356,20 @@ function toShapeSpace(
 }
 
 /**
- * Pull back along `scratchNormalized`, the gradient of a spring written in the
+ * Pull back along `normalized`, the gradient of a spring written in the
  * normalized frame. Dividing by the radius a second time is what makes a wide
  * axis genuinely slack and a shallow one genuinely tight — without it every
  * cloud relaxes into the same size whatever shape it was given.
  */
 function accumulateShapeSpring(
   shape: SwarmShape,
+  normalized: LocalPoint,
   gain: number,
   acceleration: LocalPoint,
 ): void {
-  const forceX = (scratchNormalized.x * gain) / shape.radiusX;
-  const forceY = (scratchNormalized.y * gain) / shape.radiusY;
-  const forceZ = (scratchNormalized.z * gain) / shape.radiusZ;
+  const forceX = (normalized.x * gain) / shape.radiusX;
+  const forceY = (normalized.y * gain) / shape.radiusY;
+  const forceZ = (normalized.z * gain) / shape.radiusZ;
   acceleration.x -= forceX * shape.yawCos - forceZ * shape.yawSin;
   acceleration.y -= forceY;
   acceleration.z -= forceX * shape.yawSin + forceZ * shape.yawCos;

@@ -22,8 +22,8 @@ and raw GLSL ES 3.00 files.
   exports the level contract. It never imports a sibling module.
 - `fly-swarms.ts` owns the fly boid simulation: deterministic hash placement
   on player-centred distance rings, stepped-noise buzz, strided flockmate
-  sampling, lobe cohesion, a hard ground-clearance clamp, epoch-based
-  re-anchoring, and the opaque fly point pool.
+  sampling, lobe cohesion, a hard clamp above the anchor's fitted ground
+  plane, epoch-based re-anchoring, and the opaque fly point pool.
 - `swarm-shape.ts` owns the volume a swarm buzzes inside: the per-swarm
   anisotropic axes and yaw, the drifting density lobes flies clump around,
   the Gaussian seeding, the per-fly binding, and the envelope spring whose
@@ -65,10 +65,12 @@ wing-vertex sampling is recorded in
 
 ## Known simplifications
 
-- Strays are held above their anchor's sampled ground, not their own: a fly
-  metres out over a rising slope can pass through terrain rather than over
-  it. Per-fly ground sampling is the known fix and costs a height-field
-  sample per fly per frame.
+- Flies are held above a plane fitted to the ground under their anchor, not
+  above their own sampled ground. The plane follows a slope but not a
+  curve, so a stray far out over a crest or a stream bank can still clear
+  the terrain by the wrong margin. Per-fly sampling is the exact fix and was
+  measured at 140 µs per frame at the authored density — more than the whole
+  fly update — so the plane stands until that budget exists.
 - Trail expansion directions point away from the global fly centroid
   (bm-base parity); a per-swarm centroid is the known refinement.
 - Trail length is authored in rendered frames for bm-base parity; a
