@@ -19,21 +19,37 @@ import {
   MOTION_SENSE_SETTINGS,
   type MotionSenseParameters,
 } from "./motion-sense-settings";
+import {
+  createSwarmAnchors,
+  placeSwarmAnchors,
+  type SwarmAnchor,
+  settleAnchorGround,
+} from "./swarm-anchors";
+import {
+  accumulateEnvelopePull,
+  accumulateLobePull,
+  createSwarmShapes,
+  getFlyBinding,
+  getFlyLobeIndex,
+  getLobeSlot,
+  getLobeSlotCount,
+  type LocalPoint,
+  type SwarmShape,
+  sampleSwarmPosition,
+  writeLobeCentres,
+} from "./swarm-shape";
 
 const COMPONENTS_PER_VALUE = 3;
 const TAU = Math.PI * 2;
 
 /** Fixed random channel indexes keeping every hash stream independent. */
-const FLY_RANDOM_SCATTER_ANGLE = 0;
-const FLY_RANDOM_SCATTER_RADIUS = 1;
-const FLY_RANDOM_SCATTER_HEIGHT = 2;
+const FLY_RANDOM_LOBE = 0;
+const FLY_RANDOM_BINDING = 1;
 const FLY_RANDOM_VELOCITY_ANGLE = 3;
 const FLY_RANDOM_SPEED = 4;
 const FLY_RANDOM_PHASE = 5;
 const FLY_RANDOM_FREQUENCY = 6;
 const FLY_RANDOM_STRENGTH = 7;
-const ANCHOR_RANDOM_ANGLE = 8;
-const ANCHOR_RANDOM_RADIUS = 9;
 
 /** Buzz character ranges ported from the proven bm-base swarm feel. */
 const MIN_BUZZ_FREQUENCY = 12;
@@ -50,12 +66,6 @@ interface FlySwarmsOptions {
   readonly zoneAt: WorldSurface["zoneAt"];
   readonly initialPlayerX: number;
   readonly initialPlayerZ: number;
-}
-
-interface SwarmAnchor {
-  x: number;
-  y: number;
-  z: number;
 }
 
 export interface FlySwarms {
@@ -82,23 +92,33 @@ export function createFlySwarms(options: FlySwarmsOptions): FlySwarms {
   const phases = new Float32Array(flyCount);
   const frequencies = new Float32Array(flyCount);
   const strengths = new Float32Array(flyCount);
-  const anchors: SwarmAnchor[] = Array.from({ length: swarmCount }, () => ({
-    x: 0,
-    y: 0,
-    z: 0,
-  }));
+  const lobeSlots = new Int32Array(flyCount);
+  const bindings = new Float32Array(flyCount);
+  const shapes = createSwarmShapes(swarmCount);
+  const lobeCentres = new Float32Array(
+    getLobeSlotCount(swarmCount) * COMPONENTS_PER_VALUE,
+  );
+  const anchors: readonly SwarmAnchor[] = createSwarmAnchors(swarmCount);
   const anchorOrigin = { x: options.initialPlayerX, z: options.initialPlayerZ };
   let anchorEpoch = 0;
   let elapsedSeconds = 0;
 
-  initializeFlies(options, {
+  initializeFlies(options, shapes, {
     localPositions,
     velocities,
     phases,
     frequencies,
     strengths,
+    lobeSlots,
+    bindings,
   });
-  placeAnchors(options, anchors, anchorEpoch, anchorOrigin.x, anchorOrigin.z);
+  placeSwarmAnchors(
+    anchors,
+    options,
+    anchorEpoch,
+    anchorOrigin.x,
+    anchorOrigin.z,
+  );
 
   const positionAttribute = new BufferAttribute(
     worldPositions,
@@ -116,13 +136,17 @@ export function createFlySwarms(options: FlySwarmsOptions): FlySwarms {
   // Skipping object-level culling keeps all swarms in one stable draw.
   points.frustumCulled = false;
 
-  const state = {
+  const state: SwarmState = {
     localPositions,
     velocities,
     worldPositions,
     phases,
     frequencies,
     strengths,
+    lobeSlots,
+    bindings,
+    lobeCentres,
+    shapes,
     anchors,
   };
   writeWorldPositions(options, state, positionAttribute);
@@ -138,7 +162,7 @@ export function createFlySwarms(options: FlySwarmsOptions): FlySwarms {
         anchorEpoch += 1;
         anchorOrigin.x = playerX;
         anchorOrigin.z = playerZ;
-        placeAnchors(options, anchors, anchorEpoch, playerX, playerZ);
+        placeSwarmAnchors(anchors, options, anchorEpoch, playerX, playerZ);
         writeWorldPositions(options, state, positionAttribute);
       }
       if (deltaSeconds <= 0) return;
@@ -160,36 +184,51 @@ interface FlyBuffers {
   readonly phases: Float32Array;
   readonly frequencies: Float32Array;
   readonly strengths: Float32Array;
+
+  /** The density lobe each fly clumps around, as a flat slot index. */
+  readonly lobeSlots: Int32Array;
+
+  /** How tightly the swarm holds each fly; the loose ones are the wanderers. */
+  readonly bindings: Float32Array;
 }
 
 interface SwarmState extends FlyBuffers {
   readonly worldPositions: Float32Array;
+
+  /** Local xyz of every lobe centre, rewritten once per integration pass. */
+  readonly lobeCentres: Float32Array;
+  readonly shapes: readonly SwarmShape[];
   readonly anchors: readonly SwarmAnchor[];
 }
 
 /** Seed every fly's scatter, velocity, and buzz character deterministically. */
 function initializeFlies(
   { parameters }: FlySwarmsOptions,
+  shapes: readonly SwarmShape[],
   buffers: FlyBuffers,
 ): void {
   const { swarmCount, fliesPerSwarm, flightSpeedMultiplier } =
     parameters.swarms;
   const speedScale = Math.max(0, flightSpeedMultiplier);
+  const seed: LocalPoint = { x: 0, y: 0, z: 0 };
 
   for (let flyIndex = 0; flyIndex < swarmCount * fliesPerSwarm; flyIndex += 1) {
     const valueOffset = flyIndex * COMPONENTS_PER_VALUE;
-    const scatterAngle =
-      getMotionRandom(flyIndex, FLY_RANDOM_SCATTER_ANGLE) * TAU;
-    const scatterRadius =
-      Math.sqrt(getMotionRandom(flyIndex, FLY_RANDOM_SCATTER_RADIUS)) *
-      MOTION_SENSE_SETTINGS.swarmRadiusMeters;
-    buffers.localPositions[valueOffset] =
-      Math.cos(scatterAngle) * scatterRadius;
-    buffers.localPositions[valueOffset + 1] =
-      (getMotionRandom(flyIndex, FLY_RANDOM_SCATTER_HEIGHT) * 2 - 1) *
-      MOTION_SENSE_SETTINGS.swarmHeightMeters;
-    buffers.localPositions[valueOffset + 2] =
-      Math.sin(scatterAngle) * scatterRadius;
+    const swarmIndex = Math.floor(flyIndex / fliesPerSwarm);
+    const shape = shapes[swarmIndex];
+    const lobeIndex = getFlyLobeIndex(flyIndex, FLY_RANDOM_LOBE);
+    const binding = getFlyBinding(flyIndex, FLY_RANDOM_BINDING);
+    buffers.lobeSlots[flyIndex] = getLobeSlot(swarmIndex, lobeIndex);
+    buffers.bindings[flyIndex] = binding;
+    seed.x = 0;
+    seed.y = 0;
+    seed.z = 0;
+    if (shape) {
+      sampleSwarmPosition(shape, lobeIndex, flyIndex, binding, seed);
+    }
+    buffers.localPositions[valueOffset] = seed.x;
+    buffers.localPositions[valueOffset + 1] = seed.y;
+    buffers.localPositions[valueOffset + 2] = seed.z;
 
     const velocityAngle =
       getMotionRandom(flyIndex, FLY_RANDOM_VELOCITY_ANGLE) * TAU;
@@ -212,61 +251,6 @@ function initializeFlies(
       MIN_BUZZ_STRENGTH +
       getMotionRandom(flyIndex, FLY_RANDOM_STRENGTH) * BUZZ_STRENGTH_RANGE;
   }
-}
-
-/**
- * Place every swarm anchor on its player-centred ring. A bounded candidate
- * search rejects water; when every candidate misses, the last one still
- * anchors the swarm so coverage never silently drops.
- */
-function placeAnchors(
-  options: FlySwarmsOptions,
-  anchors: readonly SwarmAnchor[],
-  epoch: number,
-  playerX: number,
-  playerZ: number,
-): void {
-  for (let swarmIndex = 0; swarmIndex < anchors.length; swarmIndex += 1) {
-    const anchor = anchors[swarmIndex];
-    if (!anchor) continue;
-
-    const ring = getSwarmRing(swarmIndex, anchors.length);
-    for (
-      let attempt = 0;
-      attempt < MOTION_SENSE_SETTINGS.placementAttemptsPerAnchor;
-      attempt += 1
-    ) {
-      const angle =
-        getMotionRandom(swarmIndex, ANCHOR_RANDOM_ANGLE, epoch, attempt) * TAU;
-      const radius =
-        ring.minMeters +
-        Math.sqrt(
-          getMotionRandom(swarmIndex, ANCHOR_RANDOM_RADIUS, epoch, attempt),
-        ) *
-          (ring.maxMeters - ring.minMeters);
-      anchor.x = playerX + Math.cos(angle) * radius;
-      anchor.z = playerZ + Math.sin(angle) * radius;
-      if (options.zoneAt(anchor.x, anchor.z) !== "water") break;
-    }
-    anchor.y =
-      options.groundYAt(anchor.x, anchor.z) +
-      MOTION_SENSE_SETTINGS.groundClearanceMeters;
-  }
-}
-
-/** The distance ring for one swarm, interpolated near to far across the pool. */
-function getSwarmRing(
-  swarmIndex: number,
-  swarmCount: number,
-): { readonly minMeters: number; readonly maxMeters: number } {
-  const { nearRing, farRing } = MOTION_SENSE_SETTINGS;
-  const mix = swarmCount <= 1 ? 0 : swarmIndex / (swarmCount - 1);
-  return {
-    minMeters:
-      nearRing.minMeters + (farRing.minMeters - nearRing.minMeters) * mix,
-    maxMeters:
-      nearRing.maxMeters + (farRing.maxMeters - nearRing.maxMeters) * mix,
-  };
 }
 
 /** Shared per-frame pacing values for one boid integration pass. */
@@ -306,10 +290,15 @@ function integrateBoids(
     elapsedSeconds,
   };
 
+  writeLobeCentres(state.shapes, elapsedSeconds, state.lobeCentres);
   for (let swarmIndex = 0; swarmIndex < state.anchors.length; swarmIndex += 1) {
+    const shape = state.shapes[swarmIndex];
+    const anchor = state.anchors[swarmIndex];
+    if (!shape || !anchor) continue;
+
     const swarmStart = swarmIndex * pace.fliesPerSwarm;
     for (let localIndex = 0; localIndex < pace.fliesPerSwarm; localIndex += 1) {
-      stepFly(state, pace, swarmStart, localIndex);
+      stepFly(state, pace, shape, anchor, swarmStart, localIndex);
     }
   }
 }
@@ -317,6 +306,8 @@ function integrateBoids(
 function stepFly(
   state: SwarmState,
   pace: BoidPace,
+  shape: SwarmShape,
+  anchor: SwarmAnchor,
   swarmStart: number,
   localIndex: number,
 ): void {
@@ -326,7 +317,7 @@ function stepFly(
   const positionY = state.localPositions[valueOffset + 1] ?? 0;
   const positionZ = state.localPositions[valueOffset + 2] ?? 0;
 
-  accumulateBuzzJitter(state, pace, flyIndex, positionY);
+  accumulateBuzzJitter(state, pace, flyIndex);
   accumulateFlockmateForces(
     state,
     pace,
@@ -336,11 +327,27 @@ function stepFly(
     positionY,
     positionZ,
   );
-  accumulateEnvelopePull(positionX, positionY, positionZ);
+  accumulateFlyLobePull(
+    state,
+    shape,
+    flyIndex,
+    positionX,
+    positionY,
+    positionZ,
+  );
+  accumulateEnvelopePull(
+    shape,
+    state.bindings[flyIndex] ?? 1,
+    positionX,
+    positionY,
+    positionZ,
+    scratchAcceleration,
+  );
   clampAccelerationForce();
   applyIntegrationStep(
     state,
     pace,
+    anchor,
     valueOffset,
     positionX,
     positionY,
@@ -356,7 +363,6 @@ function accumulateBuzzJitter(
   state: SwarmState,
   pace: BoidPace,
   flyIndex: number,
-  positionY: number,
 ): void {
   const buzzTime =
     pace.elapsedSeconds *
@@ -369,7 +375,7 @@ function accumulateBuzzJitter(
   scratchAcceleration.x =
     getSignedNoise(flyIndex, 0, noiseStep) * 4.5 * strength;
   scratchAcceleration.y =
-    getSignedNoise(flyIndex, 1, noiseStep) * 3.2 * strength - positionY * 0.8;
+    getSignedNoise(flyIndex, 1, noiseStep) * 3.2 * strength;
   scratchAcceleration.z =
     getSignedNoise(flyIndex, 2, noiseStep) * 4.5 * strength;
 }
@@ -416,32 +422,38 @@ function accumulateFlockmateForces(
   }
 }
 
-/** The soft envelope pulls far-strayed flies back toward the cloud. */
-function accumulateEnvelopePull(
+/**
+ * Weak cohesion toward the fly's own density lobe. It is what keeps the cloud
+ * clumpy and uneven as the lobes wander, without ever pinning a fly in place.
+ */
+function accumulateFlyLobePull(
+  state: SwarmState,
+  shape: SwarmShape,
+  flyIndex: number,
   positionX: number,
   positionY: number,
   positionZ: number,
 ): void {
-  if (
-    Math.hypot(positionX, positionZ) > MOTION_SENSE_SETTINGS.swarmRadiusMeters
-  ) {
-    scratchAcceleration.x -= positionX * 4;
-    scratchAcceleration.z -= positionZ * 4;
-  }
-  if (Math.abs(positionY) > MOTION_SENSE_SETTINGS.swarmHeightMeters) {
-    scratchAcceleration.y -= positionY * 5;
-  }
+  const lobeOffset = (state.lobeSlots[flyIndex] ?? 0) * COMPONENTS_PER_VALUE;
+  accumulateLobePull(
+    shape,
+    positionX - (state.lobeCentres[lobeOffset] ?? 0),
+    positionY - (state.lobeCentres[lobeOffset + 1] ?? 0),
+    positionZ - (state.lobeCentres[lobeOffset + 2] ?? 0),
+    scratchAcceleration,
+  );
 }
 
 function clampAccelerationForce(): void {
-  const force = Math.hypot(
-    scratchAcceleration.x,
-    scratchAcceleration.y,
-    scratchAcceleration.z,
-  );
-  if (force <= MOTION_SENSE_SETTINGS.maxForce) return;
+  // Comparing squares keeps the root off the common path; the clamp engages on
+  // a fraction of a percent of fly-steps, so nearly every fly skips it.
+  const forceSq =
+    scratchAcceleration.x * scratchAcceleration.x +
+    scratchAcceleration.y * scratchAcceleration.y +
+    scratchAcceleration.z * scratchAcceleration.z;
+  if (forceSq <= MOTION_SENSE_SETTINGS.maxForce ** 2) return;
 
-  const forceScale = MOTION_SENSE_SETTINGS.maxForce / force;
+  const forceScale = MOTION_SENSE_SETTINGS.maxForce / Math.sqrt(forceSq);
   scratchAcceleration.x *= forceScale;
   scratchAcceleration.y *= forceScale;
   scratchAcceleration.z *= forceScale;
@@ -451,6 +463,7 @@ function clampAccelerationForce(): void {
 function applyIntegrationStep(
   state: SwarmState,
   pace: BoidPace,
+  anchor: SwarmAnchor,
   valueOffset: number,
   positionX: number,
   positionY: number,
@@ -465,7 +478,11 @@ function applyIntegrationStep(
   let nextVelocityZ =
     (state.velocities[valueOffset + 2] ?? 0) +
     scratchAcceleration.z * pace.stepSeconds;
-  const speed = Math.hypot(nextVelocityX, nextVelocityY, nextVelocityZ);
+  const speed = Math.sqrt(
+    nextVelocityX * nextVelocityX +
+      nextVelocityY * nextVelocityY +
+      nextVelocityZ * nextVelocityZ,
+  );
   const targetSpeed = Math.min(pace.maxSpeed, Math.max(pace.minSpeed, speed));
   if (speed > 0.0001) {
     const velocityScale = targetSpeed / speed;
@@ -474,25 +491,28 @@ function applyIntegrationStep(
     nextVelocityZ *= velocityScale;
   }
 
-  // The soft envelope shapes the cloud; this hard clamp is what guarantees
-  // numerical overshoot never sends a fly below the ground.
-  const heightLimit = MOTION_SENSE_SETTINGS.swarmHeightMeters;
+  // The ground is the one real surface a fly can meet, so it is the only hard
+  // clamp left: it guarantees numerical overshoot never sinks a fly into the
+  // terrain. Upward there is nothing to hit, and the envelope alone decides how
+  // far a straggler gets before it drifts back. The floor tilts with the
+  // anchor's ground plane, so a stray metres out over a slope rides the hill
+  // instead of holding the height that was right back at the anchor.
+  const nextX = positionX + nextVelocityX * pace.stepSeconds;
+  const nextZ = positionZ + nextVelocityZ * pace.stepSeconds;
+  const localFloorY =
+    pace.minLocalY + anchor.groundSlopeX * nextX + anchor.groundSlopeZ * nextZ;
   const proposedY = positionY + nextVelocityY * pace.stepSeconds;
-  const nextY = Math.min(heightLimit, Math.max(pace.minLocalY, proposedY));
-  if (proposedY < pace.minLocalY) {
+  const nextY = Math.max(localFloorY, proposedY);
+  if (proposedY < localFloorY) {
     nextVelocityY = Math.abs(nextVelocityY) * GROUND_BOUNCE_DAMPING;
-  } else if (proposedY > heightLimit) {
-    nextVelocityY = -Math.abs(nextVelocityY) * GROUND_BOUNCE_DAMPING;
   }
 
   state.velocities[valueOffset] = nextVelocityX;
   state.velocities[valueOffset + 1] = nextVelocityY;
   state.velocities[valueOffset + 2] = nextVelocityZ;
-  state.localPositions[valueOffset] =
-    positionX + nextVelocityX * pace.stepSeconds;
+  state.localPositions[valueOffset] = nextX;
   state.localPositions[valueOffset + 1] = nextY;
-  state.localPositions[valueOffset + 2] =
-    positionZ + nextVelocityZ * pace.stepSeconds;
+  state.localPositions[valueOffset + 2] = nextZ;
 }
 
 /** Settle anchors onto the ground, compose world positions, and upload them. */
@@ -507,11 +527,7 @@ function writeWorldPositions(
     const anchor = state.anchors[swarmIndex];
     if (!anchor) continue;
 
-    const groundedY =
-      options.groundYAt(anchor.x, anchor.z) +
-      MOTION_SENSE_SETTINGS.groundClearanceMeters;
-    anchor.y +=
-      (groundedY - anchor.y) * MOTION_SENSE_SETTINGS.anchorGroundFollowRate;
+    settleAnchorGround(anchor, options.groundYAt);
 
     const swarmStart = swarmIndex * fliesPerSwarm;
     for (let localIndex = 0; localIndex < fliesPerSwarm; localIndex += 1) {

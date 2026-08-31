@@ -334,10 +334,30 @@ frame times are machine-local measurements.
   bird with a deterministic wing flap).
 - The fly simulation is a bounded boid integration: stepped hash noise for
   the insect jitter, eight strided flockmate samples per fly (never the full
-  pairing), soft cloud envelopes, and a hard clamp that guarantees no fly
-  sinks below its terrain clearance. All placement and per-fly character
-  values derive from stateless integer hashes; the module uses no
+  pairing), a boundary-free swarm envelope, and a hard clamp that guarantees
+  no fly sinks below its terrain clearance. All placement and per-fly
+  character values derive from stateless integer hashes; the module uses no
   `Math.random`.
+- Each swarm gets its own irregular volume: hashed anisotropic axes and a
+  yaw stretch and tilt the cloud, a few slowly drifting density lobes keep
+  its core lopsided, and flies are seeded Gaussian around those lobes. The
+  envelope is a spring written in that volume's normalized frame, and outside
+  the core its hold relaxes into a gentle constant drift instead of
+  stiffening, so the cloud dissolves outward over several core radii; a
+  quadratic term far out is all that stops anything leaving for good. Each
+  fly also carries a hashed binding — most sit near one and make the dense
+  core, the loose few wander metres clear of it, alone or in twos and threes.
+  No cloud has a straight edge or repeats another's silhouette, and the
+  ground clamp is the only hard boundary left.
+- Because strays now reach several metres out, that ground clamp tilts: five
+  height-field samples per swarm per frame fit a plane under the anchor, and
+  every fly is held above that plane rather than above the anchor's own
+  height, so a stray over a hillside rides the slope. Measured against the
+  authored height field this holds flies clear of terrain within 0.12 m,
+  against 3.02 m of penetration when the floor was flat. The force curves
+  keep distances squared wherever a square root is not needed, which pays for
+  the extra sampling: the whole fly update measures ~110 µs per frame at the
+  authored 720 flies, unchanged from before the swarm volumes existed.
 - The trail ring holds `flyCount × lifetimeFrames` particles. The CPU writes
   only the newest ring slot per frame (immutable spawn position, outward
   direction, spawn intensity, and spawn frame) as one contiguous
