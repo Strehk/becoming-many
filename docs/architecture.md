@@ -53,6 +53,13 @@ src/
 │   ├── piece-schedule.ts
 │   ├── schedule-layout.ts
 │   └── show-clock.ts
+├── flash/
+│   ├── flash-main.ts
+│   ├── flash-page.ts
+│   ├── flash.css
+│   └── serial-setup.ts
+├── m5/
+│   └── protocol.ts
 ├── world-surface/
 │   ├── height-field.ts
 │   ├── surface-settings.ts
@@ -115,9 +122,15 @@ src/
 station/
 └── station-server.ts
 
+firmware/
+└── m5/
+    ├── platformio.ini
+    └── src/
+
 public/
 ├── animals/
 ├── audio/
+├── firmware/
 ├── rocks/
 ├── textures/
 └── trees/

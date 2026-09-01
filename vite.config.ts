@@ -8,6 +8,7 @@ export default defineConfig({
       input: {
         main: "index.html",
         conductor: "conductor.html",
+        flash: "flash.html",
       },
     },
   },

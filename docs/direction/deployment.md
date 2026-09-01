@@ -5,8 +5,8 @@ see [Quality and Operations](quality-operations.md).
 
 **Two identical, fully independent stations.** Each station:
 
-- **ICAROS flight rig** with the **M5StickC Plus2** mounted on it (external
-  start button on GPIO26).
+- **ICAROS flight rig** with the **M5StickS3** mounted on it (built-in front
+  buttons only; no external wiring).
 - **Station PC** (Windows, VR-ready) with the **operator page on its second
   monitor**. Staff operate locally; no staff tablets, no remote operation.
 - **PICO 4 Enterprise** headset. The enterprise OS matters: it allows the
@@ -19,8 +19,9 @@ PC-VR streaming — is [Open Decision 1](open-decisions.md).
 
 On the PC-VR path, one property simplifies everything: the page is served from
 **`http://localhost`** on the station PC — a secure context (WebXR works) with
-no mixed-content blocking, so plain `ws://` to LAN devices is allowed. TLS on
-embedded devices, relay processes, and BLE all lose their reason to exist.
+no mixed-content blocking, so plain `http://` polling of LAN devices is
+allowed. TLS on embedded devices, relay processes, and BLE all lose their
+reason to exist.
 
 ## Open venue items
 

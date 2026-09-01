@@ -1,0 +1,127 @@
+/*
+ * Purpose: Style the M5 flash and setup page for a technician at a desk.
+ * Context: The page is used rarely, with a device in one hand; clarity over polish.
+ * Responsibility: Page layout, panels, form, and the device log.
+ * Boundary: The conductor and show pages are styled elsewhere.
+ */
+
+.flash {
+  --ground: #0d1311;
+  --panel: #151d1a;
+  --edge: rgb(255 255 255 / 8%);
+  --ink: #f4f7f5;
+  --muted: #8b968f;
+  --live: #6ee7a8;
+  --warn: #f2b45c;
+
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 720px;
+  min-height: 100vh;
+  padding: 24px 16px;
+  margin: 0 auto;
+  background: var(--ground);
+  color: var(--ink);
+  font-family:
+    ui-monospace, "SFMono-Regular", Menlo, Monaco, Consolas, monospace;
+}
+
+body:has(.flash) {
+  margin: 0;
+  background: #0d1311;
+}
+
+.flash__header h1 {
+  margin: 0 0 8px;
+  font-size: 20px;
+}
+
+.flash__hint {
+  margin: 0 0 8px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.flash__unsupported {
+  margin: 0;
+  color: var(--warn);
+  font-size: 13px;
+}
+
+.flash__panel {
+  padding: 16px;
+  background: var(--panel);
+  border: 1px solid var(--edge);
+  border-radius: 12px;
+}
+
+.flash__panel h2 {
+  margin: 0 0 12px;
+  font-size: 14px;
+  color: var(--live);
+}
+
+.flash__form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.flash__form label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.flash__form input {
+  padding: 8px 10px;
+  background: var(--ground);
+  border: 1px solid var(--edge);
+  border-radius: 8px;
+  color: var(--ink);
+  font: inherit;
+}
+
+.flash__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.flash__actions button {
+  padding: 8px 14px;
+  background: var(--ground);
+  border: 1px solid var(--edge);
+  border-radius: 8px;
+  color: var(--ink);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.flash__actions button:hover:not(:disabled) {
+  border-color: var(--live);
+}
+
+.flash__actions button:disabled {
+  color: var(--muted);
+  cursor: default;
+}
+
+.flash__log {
+  height: 260px;
+  margin: 0;
+  padding: 12px;
+  overflow-y: auto;
+  background: var(--ground);
+  border: 1px solid var(--edge);
+  border-radius: 8px;
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-all;
+}

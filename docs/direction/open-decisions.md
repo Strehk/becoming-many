@@ -55,8 +55,12 @@ Chromium runner that drives `src/benchmark`.
   beside it.
 - **Station localhost server** → `station/`, at the repository root, importing
   `src/station` and exporting nothing.
+- **M5 firmware** (PlatformIO) → `firmware/m5/`, at the repository root; its
+  wire contract lives in `src/m5/` and the flash/setup page in `src/flash/`,
+  entered from a third Vite page at `flash.html` (landed 2026-09-01,
+  [Controls and M5](controls-m5.md)).
 
 Still open:
 
-- M5 firmware (PlatformIO), the headset agent (Android), and a technician CLI.
-  The pre-import draft's proposed repository layout remains non-binding.
+- The headset agent (Android) and a technician CLI. The pre-import draft's
+  proposed repository layout remains non-binding.

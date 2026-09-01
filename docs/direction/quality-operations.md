@@ -24,8 +24,10 @@ Extends the current gates (`bun test`, `bun run check`, `bun run lint`,
 
 - **P1 — see-through path on real hardware** ([Headset](headset.md)). The
   highest-risk item in the project.
-- **H1 — esp-web-tools flash** of the M5StickC Plus2 with the corrected board
-  definition ([Controls and M5](controls-m5.md)).
+- **H1 — esp-web-tools flash** of the M5StickS3 through the landed
+  `/flash.html` page, on real hardware ([Controls and M5](controls-m5.md)).
+  The page, firmware, and merged binary exist; the spike is the physical
+  evidence that the flow works end to end.
 
 ## Evidence rules
 
