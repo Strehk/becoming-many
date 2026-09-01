@@ -113,8 +113,10 @@ itself. The broker relays only; with none running the show plays unchanged.
   top-level `connections` field that activates the streamed mycelium web
   with its per-source node records and palette.
 - The sparse `invisibleGround: true` flag clamps flight above the shared
-  deterministic world surface without creating the Terrain module or any
-  rendered geometry.
+  deterministic world surface and streams it as a depth-only occluder: the
+  Terrain module runs with a presentation that writes depth and no color, at
+  8 segments per side instead of 32. Nothing is drawn, but a ridge stops
+  showing the far side of itself through itself.
 - `test.level.ts` uses a 180-metre view distance, activates
   Terrain, Grass, Vegetation, Rocks, and Animals, selects Zone Visualizer as
   the Terrain presentation, and authors its own diagnostic magnetic block

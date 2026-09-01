@@ -53,8 +53,14 @@ the amber and coral carried down for the heavier and the smaller animal.
   World `airParticles` values, `invisibleGround: true`, and
   `invisibleVegetation` on `LevelPreset`.
 - The invisible ground clamps flight one metre above the continuous shared
-  world surface ("terrain remains invisible" while movement respects it); it
-  creates no module and renders nothing.
+  world surface and now also hides what stands behind it. It is streamed as a
+  depth-only occluder: the surface writes depth and no color, so "terrain
+  remains invisible" holds exactly while a ridge stops showing the far side
+  of itself through itself. Without it the scent read as one horizontal smear
+  out to the far plane rather than as a map of anything. The occluder is
+  coarse — 8 segments per side against the 32 a drawn surface uses — because
+  it only has to carry ridges and valley edges; a fine ripple may let a
+  single particle show through where a drawn surface would have hidden it.
 - The invisible vegetation does the same for the plants: the decided shared
   densities grow the population the scent radiates from, while no model is
   loaded and nothing is drawn. Scent is bound to those plants, so the level
@@ -106,8 +112,12 @@ the amber and coral carried down for the heavier and the smaller animal.
 - The dense values are therefore authored against the performance rule in
   AGENTS.md, deliberately and on request, to be looked at before they are
   decided. Switching a family to its moderate value is one number.
-- The Air Particles layer adds its one streamed draw call: two draw calls
-  total in this level, three from level 05 where the trail ring joins. The
+- The Air Particles layer adds its one streamed draw call, and the depth-only
+  ground occluder adds one per resident chunk slot: about 51 draw calls and
+  6,272 triangles once the window is fully resident, against the two draw
+  calls and no triangles this level drew before it had a floor. Measured on
+  one route frame, the occluder removes 17.7 per cent of the visible scent
+  pixels — that share was the far side of ridges showing through them. The
   measured counters confirm it: the trail adds exactly one draw call, one
   geometry, and one program to thermal, magnetic, and connections, and
   nothing changes anywhere else.
@@ -148,6 +158,8 @@ the amber and coral carried down for the heavier and the smaller animal.
 - Scent particles do not fade into the echo haze with distance. From level 03
   they stay fully saturated to the far plane and are then clipped, while
   every other surface has already dissolved into mist.
+- Air particles are still not clipped against the ground, but the occluder
+  now hides the ones below it, so the unrestricted volume no longer shows.
 - The runtime intensity driver is blocked on open-decisions §2.
 - Open art decisions: particle shape/scale/lifetime refinement, emission
   volume refinement per family, reaction to flight proximity.

@@ -165,7 +165,8 @@ function createTerrainStream(options: TerrainModuleOptions): TerrainStream {
     worldSurface: options.worldSurface,
     chunkSize,
     chunkSlotCount: chunkWindow.slotCount,
-    segmentsPerSide: TERRAIN_SEGMENTS_PER_SIDE,
+    segmentsPerSide:
+      options.presentation?.segmentsPerSide ?? TERRAIN_SEGMENTS_PER_SIDE,
     opacity: options.parameters.opacity,
     presentation: options.presentation,
     effects: options.effects,

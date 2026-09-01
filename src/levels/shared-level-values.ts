@@ -150,10 +150,10 @@ export const sharedScentParticles: SharedBlock<"scentParticles"> = {
     windResponseMeters: 6,
   },
   appearance: {
-    // Smaller than the four-cloud layer this replaced: the scent now comes
-    // from every plant, and the same point size would close the forest into
-    // a wall of color instead of showing what stands in it.
-    sizeMeters: 0.12,
+    // Twice the size the per-plant layer started at. The smaller point kept
+    // a wood from closing into a wall of color, but it also left a single
+    // plant's scent reading as dust rather than as something in the air.
+    sizeMeters: 0.24,
   },
   motion: {
     riseDurationSeconds: 10, // Must divide the 60-second loop evenly.

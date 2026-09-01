@@ -185,7 +185,7 @@ test("Scent Level layers scent onto the White World air baseline", () => {
     expect(signature.riseHeightMeters).toBeGreaterThan(0);
   }
 
-  expect(scent.appearance.sizeMeters).toBe(0.12);
+  expect(scent.appearance.sizeMeters).toBe(0.24);
   expect(scent.motion.riseDurationSeconds).toBe(10);
   expect(scent.motion.speedMultiplier).toBe(1);
   // The scent leans off its plant without being torn away from it.

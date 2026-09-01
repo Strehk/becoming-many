@@ -381,7 +381,7 @@ is proven twice; zone and placement policy remain module-owned.
 | --- | --- |
 | `LevelPreset` | Optional level presentation and module parameters |
 | `TerrainPresentationPreset` | Optional Zone Visualizer base presentation |
-| `TerrainPresentation` | Material plus optional sampled conditions and frame update |
+| `TerrainPresentation` | Material plus optional sampled conditions, drawn resolution, and frame update |
 | `TerrainMaterialEffect` | Effect that decorates and optionally updates the Terrain material, with an optional per-vertex warmth sampler |
 | `WORLD_WIND` | Shared authored wind mean direction, strength, speed, swing, and gust |
 | `WorldWindSample` | The unit direction and strength blowing at one sampled moment |

@@ -66,6 +66,7 @@ import {
   type ScentParticlesParameters,
 } from "../modules/scent-particles/scent-particles";
 import type { StaticPopulationPreset } from "../modules/static-population";
+import { createGroundOccluder } from "../modules/terrain/ground-occluder";
 import { createTerrainModule } from "../modules/terrain/terrain";
 import {
   createTerrainColors,
@@ -784,7 +785,22 @@ function createTerrain(
   worldFade: WorldFadeEffect | undefined,
 ): WorldModule | undefined {
   const preset = setup.level.terrain;
-  if (!preset) return undefined;
+  // A level that keeps its surface invisible still needs it to hide what
+  // stands behind a hill. The occluder writes depth and no color, carries no
+  // effects because it is never seen, and is coarse because it only has to
+  // hold ridges and valley edges.
+  if (!preset) {
+    return setup.level.invisibleGround
+      ? createTerrainModule({
+          scene: setup.world.scene,
+          camera: setup.world.camera,
+          worldSurface: setup.worldSurface,
+          streamQueue: setup.world.streamQueue,
+          parameters: { opacity: 1 },
+          presentation: createGroundOccluder(),
+        })
+      : undefined;
+  }
 
   const presentation = createTerrainPresentation(preset, setup.worldSurface);
   // The first-applied effect executes last and wins the final color (see
