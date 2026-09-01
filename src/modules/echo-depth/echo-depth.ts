@@ -20,6 +20,13 @@ export type { EchoDepthParameters } from "./echo-depth-settings";
 
 const ECHO_DEPTH_CACHE_KEY = "echo-depth-v2";
 
+/**
+ * Deliberately no runtime intensity driver: during a show the surfaces the
+ * ramp decorates already dissolve into the background through the World Fade,
+ * so the depth response materializes and vanishes with them at full strength.
+ * Fading the ramp as well would wash the world toward its base colors on top
+ * of that dissolve — a double fade reading as a different, muddier gesture.
+ */
 export type EchoDepthEffect = UnlitMaterialEffect;
 
 /** Create one shared depth ramp; apply it to every sensed material. */
@@ -27,8 +34,8 @@ export function createEchoDepth(
   parameters: EchoDepthParameters,
 ): EchoDepthEffect {
   validateEchoDepthParameters(parameters);
-  // One uniform object each, shared by every patched program, so a future
-  // runtime intensity driver reaches all consumers through a single value.
+  // One uniform object each, shared by every patched program, so every
+  // consumer answers to the same authored values.
   const uniforms = {
     echoIntensity: { value: parameters.intensity },
     echoNearDistance: { value: parameters.nearDistanceMeters },

@@ -45,8 +45,11 @@ a fixed timestep, and `bun run benchmark` drives that mode in Chromium and
 writes a report artifact. Its `renderer.info` counters repeat exactly; its
 frame times are machine-local measurements.
 
-`?show[&language=<de|en>]` plays the narration schedule against the preset and
-exposes the clock as `window.showClock`. Adding `?station` connects that show to
+`?show[&language=<de|en>]` plays the piece: the schedule is the world
+authority, standing the composed show world in each cue's level — senses,
+structure, and background all fade across cue boundaries, nothing cuts — and
+the clock is exposed as `window.showClock` (`?level` is ignored while a show
+runs). Adding `?station` connects that show to
 a localhost broker started with `bun run station`, so the conductor page at
 `/conductor.html` can drive it from a second window: one scrubbable timeline of
 the schedule, play and hold, time scale, jump to any cue, a next-cue countdown,

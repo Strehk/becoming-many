@@ -41,6 +41,8 @@ interface ScentParticleFieldOptions {
   readonly chunkSlotCount: number;
   readonly groundYAt: WorldSurface["groundYAt"];
   readonly zoneAt: WorldSurface["zoneAt"];
+  /** Shared with the module handle; a show fades the sense through it. */
+  readonly senseFadeUniform?: { readonly value: number };
 }
 
 /**
@@ -75,6 +77,7 @@ export function createScentParticleField({
   chunkSlotCount,
   groundYAt,
   zoneAt,
+  senseFadeUniform,
 }: ScentParticleFieldOptions): ScentParticleField {
   const particlesPerChunk =
     parameters.placement.emittersPerChunk *
@@ -109,6 +112,7 @@ export function createScentParticleField({
   const material = createScentParticleMaterial({
     appearance: parameters.appearance,
     motion: parameters.motion,
+    senseFadeUniform,
   });
   const points = new Points(geometry, material.pointsMaterial);
 

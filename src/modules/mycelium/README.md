@@ -5,8 +5,9 @@ alpha-blended over the unchanged carried world inside a viewer-centred
 radius, connecting the deterministic world positions of the other modules'
 content.
 
-`createConnectionsModule` returns one world module owning the fixed GPU
-pools (one instanced cord-envelope mesh whose fragment shader draws three
+`createConnectionsModule` returns a handle: one world module beside the
+`setIntensity` runtime driver a show fades the sense through. The module owns
+the fixed GPU pools (one instanced cord-envelope mesh whose fragment shader draws three
 fine meandering filaments plus knots per edge, and one node point cloud —
 exactly two transparent draw calls, motion-trail precedent), the 7×7
 window of 32-metre chunks, the anchor-gather stream jobs, and the topology

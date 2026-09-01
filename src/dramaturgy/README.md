@@ -27,6 +27,19 @@ makes that mismatch harmless.
 measured recording lengths, and builds the served URL. Cue *times* are shared
 between languages; only the files switch.
 
+`show-levels.ts` answers which world state and sense strengths hold at a show
+time. Each cue carries the level it speaks over, exactly as it carries its
+recording: the level holds until the next cue starts, and before the first cue
+the show already stands in that cue's world. Sense intensities are *derived*,
+not authored yet: each cue boundary sets a per-sense target of zero or one from
+the level ladder, and the strength ramps there over one shared fade constant,
+starting at the boundary. `levelTransitionAt` reports the crossing itself —
+which world the show is fading from, into which, and how far — for values
+that blend between levels rather than belonging to one sense, the background
+color above all. All lookups are pure functions of show time, so a seek or
+scrub lands inside a world state and mid-fade exactly where playing through
+would have.
+
 `schedule-layout.ts` measures a schedule in seconds: where each cue's slot
 starts and ends, how long its recording runs in a given language, and the
 headroom between the two. It is the one place slot arithmetic lives, so the
@@ -52,9 +65,11 @@ instant — it never retriggers a file.
 
 ## Not here yet
 
-Per-sense intensity envelopes, the session state machine, per-sense audio beds,
+Authored keyframed envelopes, the session state machine, per-sense audio beds,
 and module preloading around cues are planned and deliberately absent. The
-schedule contract grows to carry envelopes as a sibling field.
+derived ramp in `show-levels.ts` is the first form of the per-sense intensity
+signal; authored curves replace it as a sibling schedule field when the
+authoring loop exists (`docs/direction/dramaturgy-audio.md`).
 
 The conductor page (`src/conductor`) reads this folder to draw and scrub the
 schedule. It is a consumer, never an author: cue times change by editing the

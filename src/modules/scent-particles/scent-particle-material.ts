@@ -23,6 +23,8 @@ const MATERIAL_CACHE_KEY = "scent-particle-material-v1";
 interface ScentParticleMaterialOptions {
   readonly appearance: ScentParticlesParameters["appearance"];
   readonly motion: ScentParticlesParameters["motion"];
+  /** Shared with the module handle; a show fades the sense through it. */
+  readonly senseFadeUniform?: { readonly value: number };
 }
 
 export interface ScentParticleMaterial {
@@ -34,6 +36,7 @@ export interface ScentParticleMaterial {
 export function createScentParticleMaterial({
   appearance,
   motion,
+  senseFadeUniform,
 }: ScentParticleMaterialOptions): ScentParticleMaterial {
   const timeUniform = { value: 0 };
   const intensityUniform = {
@@ -51,6 +54,7 @@ export function createScentParticleMaterial({
   pointsMaterial.onBeforeCompile = (shader) => {
     shader.uniforms.scentTime = timeUniform;
     shader.uniforms.scentIntensity = intensityUniform;
+    shader.uniforms.scentSenseFade = senseFadeUniform ?? { value: 1 };
     shader.uniforms.scentRiseHeight = riseHeightUniform;
     shader.uniforms.scentRiseDuration = riseDurationUniform;
     shader.uniforms.scentDriftAmplitude = driftAmplitudeUniform;

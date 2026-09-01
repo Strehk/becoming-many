@@ -66,6 +66,8 @@ interface FlySwarmsOptions {
   readonly zoneAt: WorldSurface["zoneAt"];
   readonly initialPlayerX: number;
   readonly initialPlayerZ: number;
+  /** Shared with the module handle; a show fades the sense through it. */
+  readonly senseFadeUniform?: { readonly value: number };
 }
 
 export interface FlySwarms {
@@ -129,7 +131,7 @@ export function createFlySwarms(options: FlySwarmsOptions): FlySwarms {
   geometry.setAttribute("position", positionAttribute);
   const points = new Points(
     geometry,
-    createFlySwarmMaterial(parameters.appearance),
+    createFlySwarmMaterial(parameters.appearance, options.senseFadeUniform),
   );
 
   // The pool follows the traveling player, so its bounds change every frame.

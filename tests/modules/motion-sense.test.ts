@@ -482,7 +482,7 @@ describe("Motion Sense module", () => {
   test("keeps two fixed draws through the whole lifecycle", () => {
     const scene = new Scene();
     const camera = new PerspectiveCamera(50, 1, 0.1, 128);
-    const module = createMotionSenseModule({
+    const { module } = createMotionSenseModule({
       scene,
       camera,
       parameters: createMotionParameters(),
@@ -518,7 +518,7 @@ describe("Motion Sense module", () => {
   test("adds one invisible-actor trail draw when birds are authored", () => {
     const scene = new Scene();
     const camera = new PerspectiveCamera(50, 1, 0.1, 128);
-    const module = createMotionSenseModule({
+    const { module } = createMotionSenseModule({
       scene,
       camera,
       parameters: createMotionParameters({ birds: createBirdParameters() }),

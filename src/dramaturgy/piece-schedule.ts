@@ -22,6 +22,11 @@ import type { NarrationSchedule } from "./narration-schedule";
  * two languages so neither overruns, leaving at least three seconds of
  * headroom.
  *
+ * Each cue also carries the world state it speaks over. The senses ladder up
+ * with the narration — scent through magnetic one to one, the finale standing
+ * in the full Connections synthesis — and the return strips back to White
+ * World, so the piece closes where it opened.
+ *
  * The result is 8:41. `docs/direction/dramaturgy-audio.md` still calls the
  * piece "roughly five minutes", which the 7:41 of English narration alone
  * cannot fit; that conflict is open and is not resolved here.
@@ -31,13 +36,13 @@ export const PIECE_SCHEDULE: NarrationSchedule = {
   narration: [
     // Five seconds of lead-in before the first word; every later cue carries
     // that offset, so the slots below are unchanged by it.
-    { cueId: "prologue", atSeconds: 5 }, // Slot 77 s, longest recording 72.4.
-    { cueId: "scent", atSeconds: 82 }, // Slot 52 s, longest recording 47.0.
-    { cueId: "echo", atSeconds: 134 }, // Slot 33 s, longest recording 28.6.
-    { cueId: "motion", atSeconds: 167 }, // Slot 63 s, longest recording 58.4.
-    { cueId: "thermal", atSeconds: 230 }, // Slot 49 s, longest recording 44.6.
-    { cueId: "magnetic", atSeconds: 279 }, // Slot 56 s, longest recording 51.0.
-    { cueId: "finale", atSeconds: 335 }, // Slot 111 s, longest recording 106.9.
-    { cueId: "return", atSeconds: 446 }, // Slot 75 s, longest recording 73.8.
+    { cueId: "prologue", atSeconds: 5, level: "white-world" }, // Slot 77 s, longest recording 72.4.
+    { cueId: "scent", atSeconds: 82, level: "scent" }, // Slot 52 s, longest recording 47.0.
+    { cueId: "echo", atSeconds: 134, level: "echo" }, // Slot 33 s, longest recording 28.6.
+    { cueId: "motion", atSeconds: 167, level: "motion" }, // Slot 63 s, longest recording 58.4.
+    { cueId: "thermal", atSeconds: 230, level: "thermal" }, // Slot 49 s, longest recording 44.6.
+    { cueId: "magnetic", atSeconds: 279, level: "magnetic" }, // Slot 56 s, longest recording 51.0.
+    { cueId: "finale", atSeconds: 335, level: "connections" }, // Slot 111 s, longest recording 106.9.
+    { cueId: "return", atSeconds: 446, level: "white-world" }, // Slot 75 s, longest recording 73.8.
   ],
 };

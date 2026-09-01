@@ -11,7 +11,12 @@ import { isBenchmarkProfileName } from "./benchmark/benchmark-settings";
 import { resolveNarrationLanguage } from "./dramaturgy/narration-catalog";
 import { PIECE_SCHEDULE } from "./dramaturgy/piece-schedule";
 import type { ShowClock } from "./dramaturgy/show-clock";
-import { LEVEL_CATALOG, resolveLevelName } from "./levels/level-catalog";
+import {
+  LEVEL_CATALOG,
+  resolveLevelName,
+  SHOW_LEVEL,
+  SHOW_LEVEL_PRESETS,
+} from "./levels/level-catalog";
 import { startLevel } from "./levels/level-runtime";
 import { connectShowStation } from "./station/show-station";
 import { resolveStationUrl } from "./station/station-settings";
@@ -31,8 +36,9 @@ declare global {
 
 // Runtime request, not authored configuration: `?level=<name>` opens any
 // preset, `?benchmark[=<profile>]` replays the fixed measurement route,
-// `?show[&language=<de|en>]` plays the narration schedule against the preset,
-// and `?station[=<ws url>]` lets the conductor page command that show.
+// `?show[&language=<de|en>]` plays the piece — the schedule is the world
+// authority there, so `?level` is ignored — and `?station[=<ws url>]` lets
+// the conductor page command that show.
 const request = new URLSearchParams(window.location.search);
 const levelName = resolveLevelName(request.get("level"));
 const requestedProfile = request.get("benchmark");
@@ -44,16 +50,20 @@ const benchmark =
         isBenchmarkProfileName(requestedProfile) ? requestedProfile : "full",
       );
 
-const show = request.has("show")
-  ? {
-      schedule: PIECE_SCHEDULE,
-      language: resolveNarrationLanguage(request.get("language")),
-    }
-  : undefined;
+// A benchmark must stay deterministic, so it keeps the requested preset and
+// runs no show even when both are asked for.
+const show =
+  request.has("show") && !benchmark
+    ? {
+        schedule: PIECE_SCHEDULE,
+        language: resolveNarrationLanguage(request.get("language")),
+        levels: SHOW_LEVEL_PRESETS,
+      }
+    : undefined;
 
 const level = await startLevel(
   document.querySelector(".app"),
-  LEVEL_CATALOG[levelName],
+  show ? SHOW_LEVEL : LEVEL_CATALOG[levelName],
   { benchmark, show },
 );
 
@@ -64,7 +74,6 @@ if (level.show && request.has("station")) {
   connectShowStation({
     level,
     show: level.show,
-    levelName,
     stationUrl: resolveStationUrl(request.get("station")),
   });
 }

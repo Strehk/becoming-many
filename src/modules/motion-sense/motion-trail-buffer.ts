@@ -27,6 +27,8 @@ interface MotionTrailBufferOptions {
   readonly trail: MotionSenseParameters["trail"];
   readonly appearance: MotionTrailAppearance;
   readonly intensity: number;
+  /** Shared with the module handle; a show fades the sense through it. */
+  readonly senseFadeUniform?: { readonly value: number };
 }
 
 /**
@@ -46,6 +48,7 @@ export function createMotionTrailBuffer({
   trail,
   appearance,
   intensity,
+  senseFadeUniform,
 }: MotionTrailBufferOptions): MotionTrailBuffer {
   const capacity = pointCount * trail.lifetimeFrames;
   const printedPositions = new Float32Array(capacity * COMPONENTS_PER_VALUE);
@@ -68,7 +71,12 @@ export function createMotionTrailBuffer({
   geometry.setAttribute("motionExpansionDirection", directionAttribute);
   geometry.setAttribute("motionSpawnIntensity", intensityAttribute);
   geometry.setAttribute("motionSpawnFrame", frameAttribute);
-  const material = createMotionTrailMaterial({ appearance, trail, intensity });
+  const material = createMotionTrailMaterial({
+    appearance,
+    trail,
+    intensity,
+    senseFadeUniform,
+  });
   const points = new Points(geometry, material.pointsMaterial);
 
   // The ring follows the traveling swarms, so its bounds change every frame.

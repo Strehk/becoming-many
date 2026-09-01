@@ -58,7 +58,13 @@ vec3 applyMagneticLines(vec3 baseColor) {
       lineId * 0.381966
   );
   float flow = magneticBand(linePhase);
-  float lineStrength = clamp(line * magneticLineOpacity, 0.0, 1.0);
+  // The whole sense answers to one intensity: lines and pulses fade
+  // together when a dramaturgy driver takes the strength below one.
+  float lineStrength = clamp(
+    line * magneticLineOpacity * magneticIntensity,
+    0.0,
+    1.0
+  );
   float pulseStrength = clamp(
     line * pulseCrossSection * flow * magneticIntensity,
     0.0,

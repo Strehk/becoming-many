@@ -15,8 +15,6 @@ const MILLISECONDS_PER_SECOND = 1_000;
 export interface ShowStationOptions {
   readonly level: RunningLevel;
   readonly show: RunningShow;
-  /** Named in the status so the operator can see which preset is running. */
-  readonly levelName: string;
   readonly stationUrl: string;
 }
 
@@ -27,7 +25,6 @@ export interface ShowStationOptions {
 export function connectShowStation({
   level,
   show,
-  levelName,
   stationUrl,
 }: ShowStationOptions): StationLink {
   const link = createStationLink({
@@ -54,7 +51,9 @@ export function connectShowStation({
       isPlaying: showTime.isPlaying,
       timeScale: showTime.timeScale,
       language: show.readLanguage(),
-      levelName,
+      // The world state the timeline currently holds, not a startup preset:
+      // the operator watches it change as the show moves through its cues.
+      levelName: show.readActiveLevel(),
       audioState: show.readAudioState(),
       framesPerSecond: metrics?.framesPerSecond,
       p95Milliseconds: metrics?.p95Milliseconds,

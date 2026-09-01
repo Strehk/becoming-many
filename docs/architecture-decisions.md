@@ -272,6 +272,52 @@ machine stays open.
   A camera rig would fix both and belongs with the XR view-state contract,
   which stays undecided.
 
+### The Timeline Sets the World State (2026-09-01)
+
+During `?show`, the schedule is the world authority as well as the narration
+authority. `?level` keeps selecting presets for development, benchmarks, and
+review, and is ignored while a show runs.
+
+- **Each cue carries the level it speaks over.** `NarrationCue` gains a
+  `level: ShowLevelName` field; timing and world changes stay in the one typed
+  schedule file. The piece opens and closes in White World, the five sense
+  cues map one to one, and the finale stands in the full Connections
+  synthesis.
+- **One composition, gated.** The show world is composed once from
+  `SHOW_LEVEL` — the ladder's last preset, which "senses layer, never swap"
+  makes the union — minus the development overlay. Standing in an earlier
+  world state means closing module gates and dropping sense intensities, never
+  recomposing. `showLevelAt` and `senseIntensityAt` are pure show-time
+  lookups, so a seek lands inside a world state and mid-fade exactly where
+  playing through would have.
+- **Everything fades; nothing cuts** *(amended 2026-09-01; the first landing
+  cut structure hard)*. The senses ramp their runtime intensity drivers over
+  `SENSE_FADE_SECONDS` from each cue boundary — Thermal, Magnetic, and
+  Connections through their shared shader uniforms, Scent and Motion through
+  sense-fade uniforms that scale their particles away. Echo Depth alone keeps
+  no driver: the surfaces its ramp decorates are exactly what the World Fade
+  dissolves on the same echo strength, so the depth response materializes
+  with them at full contrast instead of fading twice into mud. Solid
+  structure dissolves into and out of the background through the World Fade
+  effect (`src/modules/world-fade`): an opaque final-color mix toward the
+  live background, applied first so it wins over every sense decoration, and
+  never a transparent material — the mobile GPU sees no transition-time
+  overdraw. Terrain, Vegetation, and Rocks ride the echo strength; Animals
+  ride thermal. The background lerps between the states' colors over the
+  same window (`levelTransitionAt`), the magnetic sky dome's haze chases it
+  through `setSkyBackground`, and a gated module stays active exactly while
+  its introducing sense carries any strength, so a dissolving world keeps
+  rendering to the end of its fade. World fades are composed only for shows;
+  a static run's materials stay bare. Authored keyframed envelopes
+  ([Dramaturgy and Audio](direction/dramaturgy-audio.md)) remain the planned
+  evolution of the shared ramp constant.
+- **Flight stays clamped above the surface for the whole show**, including the
+  White World phases whose standalone preset has no ground: terrain that will
+  arrive at the echo cue must not find the visitor beneath it.
+- **The status reports the live world state.** `ShowStatus.levelName` now
+  carries the level the timeline currently holds, read from the running show,
+  so the operator watches the world move through its cues.
+
 ## Approved Navigation Boundary
 
 ### Input and Navigation

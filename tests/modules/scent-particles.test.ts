@@ -247,7 +247,7 @@ describe("Scent Particles streaming", () => {
       { budgetMilliseconds: 1, capacity: 256 },
       () => 0,
     );
-    const module = createScentParticlesModule({
+    const { module } = createScentParticlesModule({
       scene,
       camera,
       streamQueue,

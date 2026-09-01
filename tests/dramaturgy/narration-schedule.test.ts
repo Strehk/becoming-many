@@ -14,9 +14,9 @@ import {
 const SCHEDULE: NarrationSchedule = {
   durationSeconds: 100,
   narration: [
-    { cueId: "prologue", atSeconds: 10 },
-    { cueId: "scent", atSeconds: 40 },
-    { cueId: "echo", atSeconds: 70 },
+    { cueId: "prologue", atSeconds: 10, level: "white-world" },
+    { cueId: "scent", atSeconds: 40, level: "scent" },
+    { cueId: "echo", atSeconds: 70, level: "echo" },
   ],
 };
 

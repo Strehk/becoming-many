@@ -50,27 +50,41 @@ interface ScentParticlesState {
   currentStream: ScentParticleStream | undefined;
 }
 
+/** The module beside its runtime sense driver. */
+export interface ScentParticlesModuleHandle {
+  readonly module: WorldModule;
+  /** Drive the sense strength at runtime; puffs scale away toward zero. */
+  readonly setIntensity: (intensity: number) => void;
+}
+
 export function createScentParticlesModule(
   options: ScentParticlesModuleOptions,
-): WorldModule {
+): ScentParticlesModuleHandle {
+  const senseFadeUniform = { value: 1 };
   const state: ScentParticlesState = { currentStream: undefined };
 
   return {
-    load: () => loadScentParticles(state, options),
-    activate: () => setScentParticlesVisible(state, true),
-    update: (deltaSeconds) =>
-      updateScentParticles(state, options, deltaSeconds),
-    deactivate: () => setScentParticlesVisible(state, false),
-    unload: () => unloadScentParticles(state, options.scene),
+    module: {
+      load: () => loadScentParticles(state, options, senseFadeUniform),
+      activate: () => setScentParticlesVisible(state, true),
+      update: (deltaSeconds) =>
+        updateScentParticles(state, options, deltaSeconds),
+      deactivate: () => setScentParticlesVisible(state, false),
+      unload: () => unloadScentParticles(state, options.scene),
+    },
+    setIntensity: (intensity) => {
+      senseFadeUniform.value = intensity;
+    },
   };
 }
 
 function loadScentParticles(
   state: ScentParticlesState,
   options: ScentParticlesModuleOptions,
+  senseFadeUniform: { readonly value: number },
 ): void {
   const { camera, scene } = options;
-  const stream = createScentParticleStream(options);
+  const stream = createScentParticleStream(options, senseFadeUniform);
   const initialAssignments = stream.chunkWindow.update(
     camera.position.x,
     camera.position.z,
@@ -158,12 +172,10 @@ function unloadScentParticles(state: ScentParticlesState, scene: Scene): void {
 }
 
 /** Allocate the fixed resident resources used throughout one loaded lifetime. */
-function createScentParticleStream({
-  camera,
-  parameters,
-  groundYAt,
-  zoneAt,
-}: ScentParticlesModuleOptions): ScentParticleStream {
+function createScentParticleStream(
+  { camera, parameters, groundYAt, zoneAt }: ScentParticlesModuleOptions,
+  senseFadeUniform: { readonly value: number },
+): ScentParticleStream {
   const chunkSize = getChunkSize(SCENT_PARTICLES_SETTINGS.chunkLevel);
   const visibleChunkRadius = Math.ceil(camera.far / chunkSize);
   const residentChunkRadius =
@@ -174,6 +186,7 @@ function createScentParticleStream({
   });
   const particleField = createScentParticleField({
     parameters,
+    senseFadeUniform,
     chunkSize,
     chunkSlotCount: chunkWindow.slotCount,
     groundYAt,

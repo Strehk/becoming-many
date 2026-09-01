@@ -7,6 +7,7 @@
 
 uniform float scentTime;
 uniform float scentIntensity;
+uniform float scentSenseFade;
 uniform float scentRiseHeight;
 uniform float scentRiseDuration;
 uniform float scentDriftAmplitude;
@@ -26,7 +27,7 @@ vec3 animateScentParticle(vec3 restingPosition) {
   float swayPhase = dot(restingPosition, vec3(0.083, 0.059, 0.101));
 
   // Particles of emitters without a source-zone anchor never rasterize.
-  scentSizeScale = scentVisible * scentIntensity
+  scentSizeScale = scentVisible * scentIntensity * scentSenseFade
     * smoothstep(0.0, SCENT_FADE_PORTION, age)
     * (1.0 - smoothstep(1.0 - SCENT_FADE_PORTION, 1.0, age));
 

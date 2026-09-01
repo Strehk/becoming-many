@@ -14,8 +14,8 @@ import { cueSlots, nextCueAt } from "../../src/dramaturgy/schedule-layout";
 const SCHEDULE: NarrationSchedule = {
   durationSeconds: 200,
   narration: [
-    { cueId: "prologue", atSeconds: 0 },
-    { cueId: "echo", atSeconds: 100 },
+    { cueId: "prologue", atSeconds: 0, level: "white-world" },
+    { cueId: "echo", atSeconds: 100, level: "echo" },
   ],
 };
 
@@ -51,8 +51,8 @@ describe("cueSlots", () => {
       durationSeconds: 40,
       // Prologue runs over a minute, so a twenty-second slot cannot hold it.
       narration: [
-        { cueId: "prologue", atSeconds: 0 },
-        { cueId: "echo", atSeconds: 20 },
+        { cueId: "prologue", atSeconds: 0, level: "white-world" },
+        { cueId: "echo", atSeconds: 20, level: "echo" },
       ],
     };
 
@@ -88,7 +88,7 @@ describe("nextCueAt", () => {
   test("counts the first cue before the show begins", () => {
     const late: NarrationSchedule = {
       durationSeconds: 60,
-      narration: [{ cueId: "prologue", atSeconds: 10 }],
+      narration: [{ cueId: "prologue", atSeconds: 10, level: "white-world" }],
     };
 
     expect(nextCueAt(late, 0)?.atSeconds).toBe(10);

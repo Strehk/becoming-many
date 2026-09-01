@@ -88,16 +88,24 @@ interface GatherWriter {
   droppedAnchorCount: number;
 }
 
+/** The module beside its runtime sense driver. */
+export interface ConnectionsModuleHandle {
+  readonly module: WorldModule;
+  /** Drive the sense strength at runtime; cords and nodes share the value. */
+  readonly setIntensity: (intensity: number) => void;
+}
+
 /** Create the Connections web world module. */
 export function createConnectionsModule(
   parameters: ConnectionsParameters,
   options: ConnectionsOptions,
-): WorldModule {
+): ConnectionsModuleHandle {
   validateConnectionsParameters(parameters);
   const timeUniform = { value: 0 };
+  const intensityUniform = { value: parameters.intensity };
   const uniforms = {
     connectionsTime: timeUniform,
-    connectionsIntensity: { value: parameters.intensity },
+    connectionsIntensity: intensityUniform,
     connectionsWebRadius: { value: parameters.webRadiusMeters },
     connectionsWebFadeBand: { value: MYCELIUM_SETTINGS.webFadeBandMeters },
     connectionsPulseSpeed: { value: parameters.pulseSpeedMetersPerSecond },
@@ -131,16 +139,21 @@ export function createConnectionsModule(
   };
 
   return {
-    load: () => loadWeb(state, staging, styles, uniforms, options),
-    activate: () => setWebVisible(state, true),
-    update: (deltaSeconds) => {
-      timeUniform.value =
-        (timeUniform.value + deltaSeconds) %
-        MYCELIUM_SETTINGS.animationLoopSeconds;
-      updateWeb(state, staging, styles, options);
+    module: {
+      load: () => loadWeb(state, staging, styles, uniforms, options),
+      activate: () => setWebVisible(state, true),
+      update: (deltaSeconds) => {
+        timeUniform.value =
+          (timeUniform.value + deltaSeconds) %
+          MYCELIUM_SETTINGS.animationLoopSeconds;
+        updateWeb(state, staging, styles, options);
+      },
+      deactivate: () => setWebVisible(state, false),
+      unload: () => unloadWeb(state, options.scene),
     },
-    deactivate: () => setWebVisible(state, false),
-    unload: () => unloadWeb(state, options.scene),
+    setIntensity: (intensity) => {
+      intensityUniform.value = intensity;
+    },
   };
 }
 

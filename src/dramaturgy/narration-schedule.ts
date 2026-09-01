@@ -7,17 +7,38 @@
 
 import type { NarrationCueId } from "./narration-catalog";
 
+/**
+ * The world states the show can stand in, in ladder order. Each names a level
+ * preset in `src/levels/level-catalog.ts`; the catalog proves the alignment
+ * by building its show preset map from these names.
+ */
+export type ShowLevelName =
+  | "white-world"
+  | "scent"
+  | "echo"
+  | "motion"
+  | "thermal"
+  | "magnetic"
+  | "connections";
+
 /** One narration recording placed on the show timeline. */
 export interface NarrationCue {
   /** Names the recording; the narration catalogue resolves it to a file. */
   readonly cueId: NarrationCueId;
   /** Show time this cue starts. Shared by both languages. */
   readonly atSeconds: number;
+  /**
+   * The world state this cue speaks over. Like the recording, it holds until
+   * the next cue starts; before the first cue the show already stands in that
+   * cue's level, so the lead-in opens the first world (`showLevelAt`).
+   */
+  readonly level: ShowLevelName;
 }
 
 /**
- * The narration facet of the one show schedule. Per-sense intensity envelopes
- * join this contract as a sibling field when they are built.
+ * The narration facet of the one show schedule. Sense strengths are derived
+ * from the cue levels for now (`show-levels.ts`); authored keyframed
+ * envelopes join this contract as a sibling field when they are built.
  */
 export interface NarrationSchedule {
   /** Show length; the clock clamps here and rehearsal scrubs within it. */

@@ -57,23 +57,37 @@ interface MotionSenseState {
   currentResources: MotionSenseResources | undefined;
 }
 
+/** The module beside its runtime sense driver. */
+export interface MotionSenseModuleHandle {
+  readonly module: WorldModule;
+  /** Drive the sense strength at runtime; flies and trails share the value. */
+  readonly setIntensity: (intensity: number) => void;
+}
+
 export function createMotionSenseModule(
   options: MotionSenseModuleOptions,
-): WorldModule {
+): MotionSenseModuleHandle {
+  const senseFadeUniform = { value: 1 };
   const state: MotionSenseState = { currentResources: undefined };
 
   return {
-    load: () => loadMotionSense(state, options),
-    activate: () => setMotionSenseVisible(state, true),
-    update: (deltaSeconds) => updateMotionSense(state, options, deltaSeconds),
-    deactivate: () => setMotionSenseVisible(state, false),
-    unload: () => unloadMotionSense(state, options.scene),
+    module: {
+      load: () => loadMotionSense(state, options, senseFadeUniform),
+      activate: () => setMotionSenseVisible(state, true),
+      update: (deltaSeconds) => updateMotionSense(state, options, deltaSeconds),
+      deactivate: () => setMotionSenseVisible(state, false),
+      unload: () => unloadMotionSense(state, options.scene),
+    },
+    setIntensity: (intensity) => {
+      senseFadeUniform.value = intensity;
+    },
   };
 }
 
 function loadMotionSense(
   state: MotionSenseState,
   options: MotionSenseModuleOptions,
+  senseFadeUniform: { readonly value: number },
 ): void {
   const { camera, scene, parameters } = options;
   const flySwarms = createFlySwarms({
@@ -82,6 +96,7 @@ function loadMotionSense(
     zoneAt: options.zoneAt,
     initialPlayerX: camera.position.x,
     initialPlayerZ: camera.position.z,
+    senseFadeUniform,
   });
   const printers: MotionTrailPrinter[] = [
     {
@@ -92,6 +107,7 @@ function loadMotionSense(
         trail: parameters.trail,
         appearance: parameters.appearance,
         intensity: parameters.intensity,
+        senseFadeUniform,
       }),
     },
   ];
@@ -114,6 +130,7 @@ function loadMotionSense(
         trail: parameters.trail,
         appearance: parameters.birds.appearance,
         intensity: parameters.intensity,
+        senseFadeUniform,
       }),
     });
   }

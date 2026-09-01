@@ -256,7 +256,7 @@ function createWebHarness(animalSource?: ConnectionActorSource) {
     () => 0,
   );
   const fakePort = createFakeTopologyPort();
-  const module = createConnectionsModule(PARAMETERS, {
+  const { module, setIntensity } = createConnectionsModule(PARAMETERS, {
     scene,
     camera,
     streamQueue,
@@ -286,6 +286,7 @@ function createWebHarness(animalSource?: ConnectionActorSource) {
     streamQueue,
     fakePort,
     module,
+    setIntensity,
     findEdges,
     findNodes,
   };
