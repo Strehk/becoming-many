@@ -44,7 +44,7 @@ day, so the guide's "layer opacity may reveal structures below the
 terrain" idea is settled as: no terrain change at all — the web alone
 carries the sense. The strands are alpha-blended over whatever the
 carried senses show beneath them (thermal colors near, echo grayscale
-and magnetic stripes farther out), visible inside an 88-metre viewer
+farther out, the magnetic shimmer overhead), visible inside an 88-metre viewer
 radius that dissolves across its last 12 metres.
 
 Each topology edge renders as a bundle of three fine meandering filaments

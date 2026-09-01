@@ -25,9 +25,8 @@ test("only the Test Level activates development diagnostics", () => {
 
   expect(testPreset.terrain?.opacity).toBe(1);
   expect(testPreset.terrain?.presentation).toBe("zones");
-  expect(testPreset.magnetic?.lineSpacingMeters).toBe(8);
-  expect(testPreset.magnetic?.pulseWidthMeters).toBe(0.1);
-  expect(testPreset.magnetic?.lineOpacity).toBe(0.2);
+  expect(testPreset.magnetic?.fieldElevationDegrees).toBe(7.5);
+  expect(testPreset.magnetic?.colors.northColor).toBe(0xd97819);
   expect(testPreset.grass?.zones.meadow).toEqual({
     tuftsPerSquareMeter: 1.5,
     bladeHeightMeters: 0.75,
@@ -319,10 +318,6 @@ test("Thermal Level layers heat onto the carried Motion world", () => {
 
 test("Magnetic Level layers the field onto the carried Thermal world", () => {
   const magneticPreset: LevelPreset = magneticLevel;
-  // The documented level-06 moodboard palette.
-  const magneticPalette = [
-    0x151935, 0x1140a4, 0x69bde1, 0xcddbe2, 0xa394c3, 0xf9b33c,
-  ];
   const { magnetic } = magneticPreset;
   if (!magnetic) {
     throw new Error("Magnetic Level must author the magnetic sense");
@@ -346,16 +341,17 @@ test("Magnetic Level layers the field onto the carried Thermal world", () => {
   expect(magneticPreset.invisibleGround).toBeUndefined();
 
   expect(magnetic.intensity).toBe(1);
-  // The pulse travels strictly inside its line between separated lines.
-  expect(magnetic.pulseWidthMeters).toBeLessThan(magnetic.lineWidthMeters);
-  expect(magnetic.lineWidthMeters).toBeLessThan(magnetic.lineSpacingMeters);
-  expect(magnetic.lineOpacity).toBeGreaterThan(0);
-  expect(magnetic.lineOpacity).toBeLessThanOrEqual(1);
-  // Deep blue carries line and sky glow; the pale stop carries the pulse.
-  for (const color of Object.values(magnetic.colors)) {
-    expect(magneticPalette).toContain(color);
-  }
-  expect(magnetic.colors.skyGlowColor).toBe(magnetic.colors.lineColor);
+  // The field axis: north as authored, tilted above the horizon so the
+  // shimmer patch sits in the sky rather than in the ground.
+  expect(magnetic.fieldDirectionDegreesFromNorth).toBe(0);
+  expect(magnetic.fieldElevationDegrees).toBeGreaterThan(0);
+  expect(magnetic.fieldElevationDegrees).toBeLessThan(90);
+  // The previous version's authored pole colors, ported verbatim: the northern
+  // patch reads dark against the pale sky, the southern one dissolves in it.
+  // They sit outside the level-06 moodboard by decision, not by oversight.
+  expect(magnetic.colors.northColor).toBe(0x000000);
+  expect(magnetic.colors.southColor).toBe(0xffffff);
+  expect(magnetic.colors.zenithColor).toBe(0xc4d7f6);
 });
 
 test("Connections Level layers the web onto the carried Magnetic world", () => {
@@ -398,10 +394,11 @@ test("Connections Level layers the web onto the carried Magnetic world", () => {
   expect(connections.webRadiusMeters).toBeLessThan(
     connectionsPreset.echoDepth?.farDistanceMeters ?? 0,
   );
-  // Nutrient pulses travel slower than the carried magnetic signal pulses.
-  expect(connections.pulseSpeedMetersPerSecond).toBeLessThan(
-    connectionsPreset.magnetic?.flowSpeedMetersPerSecond ?? 0,
-  );
+  // Nutrients crawl: one pulse needs well over ten seconds to cross the web,
+  // against the magnetic pulses sweeping the sky overhead.
+  expect(
+    connections.webRadiusMeters / connections.pulseSpeedMetersPerSecond,
+  ).toBeGreaterThan(10);
   // All four world-element classes participate, each with a palette color.
   const sources = Object.values(connections.sources);
   expect(sources).toHaveLength(4);

@@ -43,7 +43,7 @@ import {
 import { createGrassModule, type GrassPreset } from "../modules/grass/grass";
 import {
   createMagneticSense,
-  type MagneticSenseEffects,
+  type MagneticSenseModuleHandle,
   type MagneticSenseParameters,
 } from "../modules/magnetic-sense/magnetic-sense";
 import {
@@ -602,7 +602,7 @@ function createConfiguredModules(setup: LevelSetup): ComposedWorld {
 
   const echoDepth = createEchoDepthEffect(setup.level);
   const thermal = createThermalEffects(setup);
-  const magnetic = createMagneticEffects(setup);
+  const magnetic = createMagneticSky(setup);
   // Scent is created before Animals so the actors can report their bodies
   // into its trail ring, and it is added before them so it updates first and
   // the clock their prints are stamped with is already the current one.
@@ -616,10 +616,7 @@ function createConfiguredModules(setup: LevelSetup): ComposedWorld {
   const connections = createConnectionsWeb(setup, animals);
   const motion = createMotionSense(setup);
 
-  add(
-    "terrain",
-    createTerrain(setup, echoDepth, thermal, magnetic, structureFade),
-  );
+  add("terrain", createTerrain(setup, echoDepth, thermal, structureFade));
   add(undefined, createAirParticles(setup));
   add("scentParticles", scent?.module);
   add(undefined, createGrass(setup, echoDepth, thermal, structureFade));
@@ -627,7 +624,7 @@ function createConfiguredModules(setup: LevelSetup): ComposedWorld {
   add("rocks", createRocks(setup, echoDepth, thermal, structureFade));
   add("animals", animals?.module);
   add("motion", motion?.module);
-  add("magneticSky", magnetic?.sky);
+  add("magneticSky", magnetic?.module);
   add("connections", connections?.module);
 
   return {
@@ -654,7 +651,7 @@ interface ComposedSenseHandles {
   readonly scent: ScentParticlesModuleHandle | undefined;
   readonly motion: MotionSenseModuleHandle | undefined;
   readonly thermal: ThermalPerceptionEffects | undefined;
-  readonly magnetic: MagneticSenseEffects | undefined;
+  readonly magnetic: MagneticSenseModuleHandle | undefined;
   readonly connections: ConnectionsModuleHandle | undefined;
   readonly structureFade: WorldFadeEffect | undefined;
   readonly animalsFade: WorldFadeEffect | undefined;
@@ -726,9 +723,9 @@ function createConnectionsWeb(
 }
 
 /** Skip the sense entirely at intensity zero so its GPU work never runs. */
-function createMagneticEffects(
+function createMagneticSky(
   setup: LevelSetup,
-): MagneticSenseEffects | undefined {
+): MagneticSenseModuleHandle | undefined {
   const parameters = setup.level.magnetic;
   if (!parameters || parameters.intensity === 0) return undefined;
 
@@ -781,7 +778,6 @@ function createTerrain(
   setup: LevelSetup,
   echoDepth: EchoDepthEffect | undefined,
   thermal: ThermalPerceptionEffects | undefined,
-  magnetic: MagneticSenseEffects | undefined,
   worldFade: WorldFadeEffect | undefined,
 ): WorldModule | undefined {
   const preset = setup.level.terrain;
@@ -806,11 +802,11 @@ function createTerrain(
   // The first-applied effect executes last and wins the final color (see
   // material-shader-patch): the world fade dissolves the finished surface
   // into the background, thermal covers everything inside its radius, and
-  // magnetic stripes print over the echo ramp outside it.
+  // the echo ramp carries the ground outside it. The magnetic sense never
+  // touches the terrain; it lives on the sky dome.
   const effects: TerrainMaterialEffect[] = [];
   if (worldFade) effects.push(worldFade);
   if (thermal) effects.push(thermal.terrain);
-  if (magnetic) effects.push(magnetic.terrain);
   if (echoDepth) effects.push(echoDepth);
 
   return createTerrainModule({

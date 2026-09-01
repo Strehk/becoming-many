@@ -119,30 +119,29 @@ Decided 2026-08-30, applying the 2026-08-24 audit's P1 finding.
   Rocks still follow the level view distance; each further split needs its own
   measured need, as the audit records.
 
-### Independent Grass and Composable Magnetic Stripes
+### Independent Grass and a Self-Contained Magnetic Sense
 
 - Grass owns one fixed streamed instance field and consumes only World Surface
   height and hard-zone facts. Magnetic Sense never imports or recolors Grass,
   and Grass imports no sense module in return.
-- Magnetic Sense renders analytical ground lines through Terrain's existing
-  material pass. Terrain remains the geometry and material lifecycle owner.
-- Magnetic Sense is a material effect, not a ground presentation. It preserves
-  the selected Terrain base color outside its stripes, so Zone Visualizer and
-  future ground presentations remain independently selectable.
-- Magnetic base lines blend at 20% opacity. Narrow bright pulses remain clipped
-  inside those line boundaries in the same opaque material pass. Physical
-  lights, transparent overlays, bloom, and additional terrain geometry remain
-  outside the MVP.
+- Magnetic Sense owns its own dome and decorates no other module's material,
+  so Zone Visualizer, Thermal Perception, Echo Depth, and future ground
+  presentations remain independently selectable.
+- Physical lights, transparent overlays, bloom, and additional terrain
+  geometry remain outside the MVP.
 - Since level 06, line, pulse, and sky glow colors are preset-authored like
   every other sense palette, and `magnetic` is a top-level `LevelPreset`
   field beside `echoDepth`, `motion`, and `thermal`.
+- Until 2026-09-01 the field was a composable Terrain stripe effect; see
+  Magnetic Field on the Sky Only below.
 
 ### Magnetic Sky Cue and Contract Promotion (2026-08-31)
 
-- One `createMagneticSense` call returns both consumers as
-  `{ terrain, sky }`. The field-direction and intensity uniform objects are
-  created once and shared by identity, so a future dramaturgy driver steers
-  the whole sense through single values.
+- The field-direction, intensity, and time uniform objects are created once
+  in `magnetic-sense.ts` and reach the dome material by identity, so a future
+  dramaturgy driver steers the whole sense through single values. Until
+  2026-09-01 the same objects were shared with a second, terrain-side
+  consumer.
 - The sky cue is an analytic opaque dome instead of a transparent overlay or
   bloom: a back-side sphere with `depthWrite` off and `renderOrder` −1 draws
   first, every later opaque fragment paints over it, and the intensity fade
@@ -151,10 +150,54 @@ Decided 2026-08-30, applying the 2026-08-24 audit's P1 finding.
 - The dome follows the full camera position each frame; the world uses
   absolute coordinates (no floating origin), so no shift compensation
   exists or is needed.
-- The sky glow centres on the same `+fieldDirection` the ground pulses
-  travel toward, so the near field and the far cue always agree.
+- The sky glow centres on `+fieldDirection`, the direction the pulses travel
+  toward.
 - The composition root skips the sense entirely at intensity zero, matching
   Echo Depth, Motion, and Thermal.
+
+### Magnetic Sky Ported From the Previous Version (2026-09-01)
+
+- The field left the ground. Magnetic Sense no longer patches the Terrain
+  material and no longer appears in Terrain's effect list; a
+  camera-following dome carries the whole sense. `createMagneticSense`
+  returns one `WorldModule` instead of `{ terrain, sky }`, and
+  `magnetic-sense.frag.glsl` / `magnetic-sense.vert.glsl` are deleted.
+- The sky is ported from the previous version of the piece (`bm-base`,
+  `src/senses/magnetfeld/sky.ts`), which offered nine blendable sky modes
+  behind a dev console. Its saved state (`src/senses/state.json`, module
+  `magnetfeld`) had exactly one active — `birdspec`, the radical-pair
+  shimmer, at weight 1 — and those authored values are hardcoded in
+  `magnetic-sense-settings.ts`. The nine-mode machinery, its uniform
+  registry, its per-parameter bus commands, and its UI are not ported.
+- The previous version is TSL on `three/webgpu`. It is rewritten as GLSL ES
+  3.00 here, as the WebGL2 decision above requires. The noise, its four
+  octaves, the pole-zone exponent, the grain thresholds, and the iridescent
+  phase offsets carry over unchanged; the fbm loop is unrolled.
+- North is +Z here, where the previous version used −Z. Declination and
+  inclination are its own values (0° and 7.5°); `fieldElevationDegrees` is a
+  new preset field, validated to stay between horizon and zenith.
+- Preset surface: the level authors the field axis, the intensity, and three
+  colors (north pole, south pole, zenith). Every shape and motion value is
+  module-owned, which reverses part of the 2026-08-31 contract promotion —
+  deliberately, because the ported look is finished art, not a level knob.
+- The ported pole colors are black and white and the zenith is a pale blue.
+  They sit outside the level-06 moodboard palette; the preset test no longer
+  checks magnetic colors against it. This reverses the decided art direction
+  of 2026-08-31 (monochromatic blue, terrain-draped lines) on the author's
+  instruction.
+- Colors: the dome now ends with `#include <colorspace_fragment>`, so it
+  converts on output like every other material instead of writing linear
+  values straight to the framebuffer. Hex values that carry a ported linear
+  literal are the sRGB encoding of it, noted at each site.
+- Performance: no draw call is added or removed. The four-octave noise is
+  the most expensive fragment work in the frame, so the shader takes one
+  coherent early-out where the pole zone cannot reach a displayable value —
+  a deliberate exception to the no-dynamic-branch rule, justified because
+  the branch follows large contiguous screen regions. The PICO 4 gate is
+  unmeasured for this level, as before.
+- The clock wraps at one hour, far outside the length of a show: the noise
+  drift is linear, so any wrap is a visible step, and the only job of the
+  wrap is to keep the noise input inside float precision.
 
 ### Module-Owned Web Worker for Connection Topology (2026-08-31)
 

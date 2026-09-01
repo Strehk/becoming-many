@@ -1,31 +1,45 @@
 /**
- * Purpose: Show the magnetic field direction as a horizon glow on a sky dome.
- * Context: The long-distance orientation cue must stay readable at any flight altitude.
- * Responsibility: Own the dome mesh lifecycle and follow the camera each frame.
- * Boundary: Field direction and intensity uniforms arrive shared from Magnetic Sense.
+ * Purpose: Own the camera-following dome the magnetic sky is painted on.
+ * Context: The orientation cue must stay readable at any flight altitude and heading.
+ * Responsibility: Own the mesh and material lifecycle and follow the camera each frame.
+ * Boundary: Field axis, intensity, and time uniforms arrive shared from Magnetic Sense.
  */
 
-import type { Color, PerspectiveCamera, Scene, Vector2 } from "three";
+import type { Color, PerspectiveCamera, Scene, Vector3 } from "three";
 import { BackSide, Mesh, ShaderMaterial, SphereGeometry } from "three";
 import type { WorldModule } from "../../world/module-runtime";
 import { MAGNETIC_SENSE_SETTINGS } from "./magnetic-sense-settings";
 import fragmentShader from "./magnetic-sky.frag.glsl?raw";
 import vertexShader from "./magnetic-sky.vert.glsl?raw";
 
+/** The dome's four resolved colors; the horizon arrives as a shared uniform. */
+export interface MagneticSkyColors {
+  readonly zenith: Color;
+  readonly north: Color;
+  readonly south: Color;
+  /** Grain color on the ring between the poles, from the module settings. */
+  readonly neutral: Color;
+}
+
 export interface MagneticSkyOptions {
   readonly scene: Scene;
   readonly camera: PerspectiveCamera;
   /**
-   * The haze the dome shows everywhere outside the glow. Shared so a show
-   * can keep it on the live background while that background lerps between
-   * world states; a static run never writes it after creation.
+   * The haze the dome meets at the horizon. Shared so a show can keep it on
+   * the live background while that background lerps between world states; a
+   * static run never writes it after creation.
    */
   readonly hazeColorUniform: { readonly value: Color };
-  readonly glowColorUniform: { readonly value: Color };
-  /** Shared with the terrain stripes so both consumers agree on the field. */
-  readonly fieldDirectionUniform: { readonly value: Vector2 };
-  /** Shared with the terrain stripes; a future dramaturgy driver writes it. */
+  /** The resolved palette; Magnetic Sense owns the hex-to-color conversion. */
+  readonly colors: MagneticSkyColors;
+  /** Noise drift in units per second, derived from the module settings. */
+  readonly driftVelocity: Vector3;
+  /** Shared so a future dramaturgy driver steers the sense through one value. */
+  readonly fieldAxisUniform: { readonly value: Vector3 };
+  /** Shared for the same reason; fades the shimmer back into the plain sky. */
   readonly intensityUniform: { readonly value: number };
+  /** Shared and wrapped by Magnetic Sense, which owns the animation clock. */
+  readonly timeUniform: { readonly value: number };
 }
 
 interface MagneticSkyResources {
@@ -36,7 +50,7 @@ interface MagneticSkyState {
   currentResources: MagneticSkyResources | undefined;
 }
 
-/** Create the camera-following horizon-glow dome as a world module. */
+/** Create the camera-following shimmer dome as a world module. */
 export function createMagneticSkyModule(
   options: MagneticSkyOptions,
 ): WorldModule {
@@ -56,6 +70,7 @@ function loadMagneticSky(
   options: MagneticSkyOptions,
 ): void {
   const sky = MAGNETIC_SENSE_SETTINGS.sky;
+  const shimmer = MAGNETIC_SENSE_SETTINGS.shimmer;
   const geometry = new SphereGeometry(
     sky.domeRadiusMeters,
     sky.widthSegments,
@@ -69,17 +84,27 @@ function loadMagneticSky(
     // against an empty buffer and paints over it.
     depthWrite: false,
     uniforms: {
-      magneticFieldDirection: options.fieldDirectionUniform,
+      magneticFieldAxis: options.fieldAxisUniform,
       magneticIntensity: options.intensityUniform,
-      magneticSkyHazeColor: options.hazeColorUniform,
-      magneticSkyGlowColor: options.glowColorUniform,
-      magneticSkyGlowElevationSpan: { value: sky.glowElevationSpan },
-      magneticSkyBelowHorizonElevation: { value: sky.belowHorizonElevation },
-      magneticSkyAzimuthExponent: { value: sky.glowAzimuthExponent },
+      magneticTime: options.timeUniform,
+      magneticHorizonColor: options.hazeColorUniform,
+      magneticZenithColor: { value: options.colors.zenith },
+      magneticNorthColor: { value: options.colors.north },
+      magneticSouthColor: { value: options.colors.south },
+      magneticNeutralColor: { value: options.colors.neutral },
+      magneticDriftVelocity: { value: options.driftVelocity },
+      magneticGrainFrequency: { value: shimmer.grainFrequency },
+      magneticBaseAmount: { value: shimmer.baseAmount },
+      magneticPoleAmount: { value: shimmer.poleAmount },
+      magneticPoleWidth: { value: shimmer.poleWidthExponent },
+      magneticContrast: { value: shimmer.contrast },
+      magneticIridescence: { value: shimmer.iridescence },
+      magneticBreathe: { value: shimmer.breathe },
+      magneticStretch: { value: shimmer.stretch },
     },
   });
   const dome = new Mesh(geometry, material);
-  // Draw first in the opaque pass so everything else paints over the glow.
+  // Draw first in the opaque pass so everything else paints over the sky.
   dome.renderOrder = -1;
   dome.frustumCulled = false;
   // Loading happens before the first render. Keep every object hidden until

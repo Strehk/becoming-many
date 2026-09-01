@@ -20,7 +20,8 @@ fixed instancing, partial chunk updates, GPU animation, and disposal. Terrain
 covers height-only geometry generation, cooperative row streaming,
 shared-border equality, stale-job rejection, and GPU resource disposal. Zone
 Visualizer verifies its five diagnostic colors, continuous condition input,
-and shader wiring. Magnetic Sense verifies its world-space line shader, base
-color preservation, Zone Visualizer composition, field direction, flow time,
-and parameter validation. Visual quality and target-device performance still
+and shader wiring. Magnetic Sense verifies its sky-dome lifecycle, that the ported
+shimmer math and the previous version's saved values survive, the field axis
+and palette reaching the uniforms, the clock wrap, and parameter
+validation. Visual quality and target-device performance still
 require browser and physical PICO acceptance.
