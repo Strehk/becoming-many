@@ -192,8 +192,10 @@ The images were created for this project with OpenAI Image Gen on 2026-08-21. Tw
 
 The hexes above record what each moodboard image contains. Where an authored
 ramp departs from its moodboard, the level's own README carries the deviation
-and the reason: level 05 darkens the coldest anchor `#2E1386` to `#0E0628`
-along its own hue, so its thermal ramp has a black floor.
+and the reason: level 02 leaves its pale stop `#F6EEE0` unused and runs on
+white, so the only colour in the world arrives through the scent itself, and
+level 05 darkens the coldest anchor `#2E1386` to `#0E0628` along its own hue,
+so its thermal ramp has a black floor.
 
 ## Planned Level Specifications
 

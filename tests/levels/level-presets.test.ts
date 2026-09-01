@@ -140,6 +140,12 @@ test("Scent Level layers scent onto the White World air baseline", () => {
   ];
 
   expect(scentPreset.testUi).toBe(true);
+  // The level departs from its moodboard's pale first stop and runs on the
+  // white it is entered from, so the only colour in the world arrives
+  // through the scent. The deviation is argued in the level README; this
+  // pins it so restoring the stop has to read that first.
+  expect(scentPreset.backgroundColor).toBe(0xffffff);
+  expect(scentPreset.backgroundColor).toBe(whiteWorld.backgroundColor);
   expect(scentPreset.airParticles).toEqual(whiteWorld.airParticles);
   expect(scentPreset.invisibleGround).toBe(true);
   expect(scentPreset.terrain).toBeUndefined();

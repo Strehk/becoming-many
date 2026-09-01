@@ -30,6 +30,14 @@ invisible.
 Palette (see [moodboard](mood/moodboard.png)):
 `#F6EEE0` `#B8E0E1` `#9DD2C8` `#D1C1D7` `#FDA39D` `#FDBB54`
 
+The background departs from that first stop. The moodboard reserves the pale
+`#F6EEE0` for it and the level ran on it; it runs on white now. The Scent
+World is entered from the colour-less White World, which is white, and the
+level's whole premise is that colour arrives through the scent signatures
+alone — a warm base tone is itself a colour, and it quietly spent the one
+thing the level had to give. Every signature also reads a little harder
+against white. The moodboard stop is therefore recorded and unused.
+
 Scent reads as opaque, round, softly fading points that rise and sway above
 their invisible sources. Each source family keeps one clearly distinguishable
 signature color. No audio counterpart exists yet.

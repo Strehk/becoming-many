@@ -50,10 +50,12 @@ export const sharedAirParticles: SharedBlock<"airParticles"> = {
  * `#D1C1D7`) and two animal stops are (`#FDBB54`, `#FDA39D`). The remaining
  * five are deviations, and each is carried along the hue of the stop it
  * belongs to rather than introduced: undergrowth sits under the conifer
- * mint, blossom above the birch violet, dead wood is the pale background
+ * mint, blossom above the birch violet, dead wood is the moodboard's pale
  * stop drained of warmth because there is no living scent left in it, and
  * the stag and rat are the amber and coral carried down for the animal that
- * is heavier and the one that is smaller.
+ * is heavier and the one that is smaller. That pale stop was the background
+ * when these were authored; the background is white now, and dead wood keeps
+ * the tone as the quietest signature the palette has.
  *
  * The emission volume is authored in fractions of each plant's own height,
  * so one signature fits a knee-high bush and a ten-metre pine: a conifer
@@ -114,7 +116,9 @@ export const sharedScentParticles: SharedBlock<"scentParticles"> = {
       emissionRadiusFraction: 0.8,
       riseHeightMeters: 0.9,
     },
-    // Standing dead wood: bare branching, and almost nothing to smell.
+    // Standing dead wood: bare branching, and almost nothing to smell. The
+    // quietest signature in the set, and the only one that reads as a tone
+    // rather than as a colour.
     deadWood: {
       color: 0xc9c2b4,
       particlesPerPlant: 14, // moderate: 6
