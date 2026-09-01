@@ -1,5 +1,5 @@
 /*
- * Purpose: Apply Scent Particle rise, sway, and lifecycle fade in the vertex stage.
+ * Purpose: Apply Scent Particle rise, drift, wind, and lifecycle fade in the vertex stage.
  * Context: Scent clouds animate without CPU uploads from one looping time uniform.
  * Responsibility: Offset points along their life cycle and scale faded points to nothing.
  * Boundary: Emitter placement, colors, point shape, and lifecycle stay in TypeScript.
@@ -8,34 +8,89 @@
 uniform float scentTime;
 uniform float scentIntensity;
 uniform float scentSenseFade;
-uniform float scentRiseHeight;
 uniform float scentRiseDuration;
 uniform float scentDriftAmplitude;
+
+// Metres a particle is carried downwind across one whole life, already
+// scaled by the current wind strength on the CPU.
+uniform vec2 scentWind;
+
 attribute float scentPhase;
 attribute float scentVisible;
 
-// 7 * TAU / 60 keeps the sway seamless at the 60-second time-uniform wrap.
-const float SCENT_SWAY_RATE = 0.7330383;
-const float SCENT_SWAY_PHASE_SCALE = 1.7;
+// How far this particle's own plant lifts its scent. A bush that released
+// its scent as high as a pine would leave the plant it belongs to.
+attribute float scentRise;
+
+const float SCENT_TAU = 6.2831853;
+// 7 * TAU / 60 keeps the drift seamless at the 60-second time-uniform wrap.
+const float SCENT_DRIFT_RATE = 0.7330383;
+const float SCENT_DRIFT_PHASE_SCALE = 1.7;
 const float SCENT_FADE_PORTION = 0.25;
 const float SCENT_MINIMUM_VISIBLE_SCALE = 0.01;
+// Spread of the per-particle drift amplitude around the authored value.
+const float SCENT_AMPLITUDE_SPREAD = 0.55;
+/*
+ * The life phase also decides the age, so particles visible at one moment
+ * hold a narrow band of phases. Reusing it directly as a drift phase would
+ * hand every visible particle nearly the same drift again. Scrambling it
+ * spreads that band across the whole turn, which is what decorrelates the
+ * drift from the life cycle without paying for a second attribute.
+ */
+const float SCENT_PHASE_SCRAMBLE = 13.37;
+const float SCENT_PHASE_OFFSET = 0.37;
+// A second, faster turn per particle, so no two neighbours trace one circle.
+const float SCENT_DRIFT_DETAIL_RATE = 2.0;
+const float SCENT_DRIFT_DETAIL_SHARE = 0.45;
+/*
+ * The drift opens out with age rather than holding one amplitude for the
+ * whole life. A particle leaves its plant tight and loosens as it travels,
+ * which is the difference between a cloud that churns in place and one that
+ * disperses. Above one, the spread stays small for most of the life and then
+ * lets go near the end.
+ */
+const float SCENT_DRIFT_SPREAD_POWER = 1.3;
 
 float scentSizeScale = 0.0;
 
 vec3 animateScentParticle(vec3 restingPosition) {
   float age = fract(scentTime / scentRiseDuration + scentPhase);
-  float swayPhase = dot(restingPosition, vec3(0.083, 0.059, 0.101));
 
   // Particles of emitters without a source-zone anchor never rasterize.
   scentSizeScale = scentVisible * scentIntensity * scentSenseFade
     * smoothstep(0.0, SCENT_FADE_PORTION, age)
     * (1.0 - smoothstep(1.0 - SCENT_FADE_PORTION, 1.0, age));
 
+  // The drift phase is the particle's own, not its position's. Deriving it
+  // from the resting place alone gave every particle of one plant nearly the
+  // same phase, so the cloud slid about as a rigid block instead of churning.
+  float scrambled = fract(scentPhase * SCENT_PHASE_SCRAMBLE + SCENT_PHASE_OFFSET);
+  float ownPhase = scrambled * SCENT_TAU;
+  float placePhase = dot(restingPosition, vec3(0.083, 0.059, 0.101));
+  float driftPhase = ownPhase + placePhase;
+  float amplitude = scentDriftAmplitude
+    * (1.0 + (scrambled - 0.5) * SCENT_AMPLITUDE_SPREAD);
+
+  vec2 slowTurn = vec2(
+    cos(scentTime * SCENT_DRIFT_RATE + driftPhase),
+    sin(scentTime * SCENT_DRIFT_RATE + driftPhase * SCENT_DRIFT_PHASE_SCALE)
+  );
+  vec2 fastTurn = vec2(
+    cos(scentTime * SCENT_DRIFT_RATE * SCENT_DRIFT_DETAIL_RATE - ownPhase),
+    sin(scentTime * SCENT_DRIFT_RATE * SCENT_DRIFT_DETAIL_RATE + ownPhase)
+  );
+  vec2 drift = amplitude
+    * pow(age, SCENT_DRIFT_SPREAD_POWER)
+    * mix(slowTurn, fastTurn, SCENT_DRIFT_DETAIL_SHARE);
+
+  // Wind grows with age: the scent leaves its plant the longer it has been
+  // in the air, so a stand reads as plants with plumes rather than as fog.
+  vec2 carried = scentWind * age;
+
   vec3 lifeOffset = vec3(
-    cos(scentTime * SCENT_SWAY_RATE + swayPhase) * scentDriftAmplitude,
-    age * scentRiseHeight,
-    sin(scentTime * SCENT_SWAY_RATE + swayPhase * SCENT_SWAY_PHASE_SCALE)
-      * scentDriftAmplitude
+    drift.x + carried.x,
+    age * scentRise,
+    drift.y + carried.y
   );
 
   return restingPosition + lifeOffset;

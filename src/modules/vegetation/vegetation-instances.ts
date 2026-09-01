@@ -35,6 +35,7 @@ import type {
   StaticPopulationParameters,
 } from "../static-population";
 import {
+  getStaticPlacementHeight,
   selectStaticPlacement,
   validateStaticPopulation,
 } from "../static-population";
@@ -231,7 +232,11 @@ function writeVegetationTransform(
 ): void {
   const variant = instances.modelPool.variants.get(settings.id);
   if (!variant) return;
-  const height = getModelHeight(instances, settings, candidate);
+  const height = getStaticPlacementHeight(
+    instances.parameters.seed,
+    settings,
+    candidate,
+  );
   const heightScale = height / variant.model.height;
   const widthScale = getHorizontalScale(instances, candidate, 6);
   const depthScale = getHorizontalScale(instances, candidate, 7);
@@ -302,23 +307,6 @@ function getHorizontalScale(
       candidate.cellX,
       candidate.cellZ,
       randomValueIndex,
-    ),
-  );
-}
-
-function getModelHeight(
-  instances: VegetationInstances,
-  settings: StaticModelDefinition,
-  candidate: ChunkCandidate,
-): number {
-  return mix(
-    settings.minimumHeightMeters,
-    settings.maximumHeightMeters,
-    getCellRandom(
-      instances.parameters.seed,
-      candidate.cellX,
-      candidate.cellZ,
-      5,
     ),
   );
 }

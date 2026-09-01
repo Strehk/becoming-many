@@ -28,5 +28,12 @@ does not define stream-cell policy or the permanent world coordinate system.
 - Conifer and deciduous forests use the same weighted individual-tree contract.
   A model variant never contains several trunks sharing one terrain anchor.
 - The module owns its pool, unlit materials, source assets, and full disposal.
+- `vegetation-nodes.ts` and `vegetation-scent.ts` replay the same placement
+  walk for senses that decorate the plants without loading them: the web gets
+  positions, the scent sense also gets the model standing there and its
+  authored height, so a plant's scent belongs to that plant. Both cross the
+  boundary only through the shared source contracts, and both share the
+  documented 2.5-metre river-footprint stand-in, because the true footprint
+  radius needs the loaded asset.
 
 GPU wind, LOD, and larger species variation remain outside this measured MVP.

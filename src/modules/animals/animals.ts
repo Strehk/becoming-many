@@ -53,10 +53,15 @@ export interface AnimalBody {
   readonly z: number;
   readonly headingRadians: number;
   readonly heightMeters: number;
+
+  /** Which species stands here; senses that differ per species need it. */
+  readonly speciesId: string;
 }
 
 /** The writable form the module refills in place each frame. */
-export type MutableAnimalBody = { -readonly [Key in keyof AnimalBody]: number };
+export type MutableAnimalBody = {
+  -readonly [Key in keyof AnimalBody]: AnimalBody[Key];
+};
 
 /**
  * Report the visible animals after every update. The array is reused between

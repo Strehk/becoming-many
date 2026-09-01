@@ -28,6 +28,7 @@ import {
   createAirParticlesModule,
 } from "../modules/air-particles/air-particles";
 import {
+  type AnimalBodiesObserver,
   type AnimalsModuleHandle,
   type AnimalsPreset,
   createAnimalsModule,
@@ -64,6 +65,8 @@ import {
   type ScentParticlesModuleHandle,
   type ScentParticlesParameters,
 } from "../modules/scent-particles/scent-particles";
+import type { StaticPopulationPreset } from "../modules/static-population";
+import { createGroundOccluder } from "../modules/terrain/ground-occluder";
 import { createTerrainModule } from "../modules/terrain/terrain";
 import {
   createTerrainColors,
@@ -84,6 +87,7 @@ import {
 } from "../modules/vegetation/vegetation";
 import { VEGETATION_DEFINITION } from "../modules/vegetation/vegetation-definition";
 import { createVegetationConnectionSource } from "../modules/vegetation/vegetation-nodes";
+import { createVegetationScentSource } from "../modules/vegetation/vegetation-scent";
 import {
   createWorldFade,
   type WorldFadeEffect,
@@ -129,6 +133,13 @@ export interface LevelPreset {
 
   /** Clamp flight above the shared world surface without rendering Terrain. */
   readonly invisibleGround?: true;
+
+  /**
+   * Grow the shared plant population without rendering it, the way
+   * `invisibleGround` keeps the surface. The Scent World needs plants to
+   * smell of while its intent keeps every source object invisible.
+   */
+  readonly invisibleVegetation?: StaticPopulationPreset;
   readonly airParticles?: AirParticlesParameters;
   readonly scentParticles?: ScentParticlesParameters;
   readonly terrain?: TerrainPreset;
@@ -592,9 +603,17 @@ function createConfiguredModules(setup: LevelSetup): ComposedWorld {
   const echoDepth = createEchoDepthEffect(setup.level);
   const thermal = createThermalEffects(setup);
   const magnetic = createMagneticEffects(setup);
-  const animals = createAnimals(setup, thermal, animalsFade);
-  const connections = createConnectionsWeb(setup, animals);
+  // Scent is created before Animals so the actors can report their bodies
+  // into its trail ring, and it is added before them so it updates first and
+  // the clock their prints are stamped with is already the current one.
   const scent = createScentParticles(setup);
+  const animals = createAnimals(
+    setup,
+    thermal,
+    animalsFade,
+    scent?.observeActorBodies,
+  );
+  const connections = createConnectionsWeb(setup, animals);
   const motion = createMotionSense(setup);
 
   add(
@@ -683,11 +702,7 @@ function createConnectionsWeb(
   }
   if (level.scentParticles && parameters.sources.scentEmitters) {
     staticSources.push(
-      createScentConnectionSource(
-        level.scentParticles,
-        worldSurface.groundYAt,
-        worldSurface.zoneAt,
-      ),
+      createScentConnectionSource(worldSurface.groundYAt, worldSurface.zoneAt),
     );
   }
   if (level.rocks && parameters.sources.rocks) {
@@ -770,7 +785,22 @@ function createTerrain(
   worldFade: WorldFadeEffect | undefined,
 ): WorldModule | undefined {
   const preset = setup.level.terrain;
-  if (!preset) return undefined;
+  // A level that keeps its surface invisible still needs it to hide what
+  // stands behind a hill. The occluder writes depth and no color, carries no
+  // effects because it is never seen, and is coarse because it only has to
+  // hold ridges and valley edges.
+  if (!preset) {
+    return setup.level.invisibleGround
+      ? createTerrainModule({
+          scene: setup.world.scene,
+          camera: setup.world.camera,
+          worldSurface: setup.worldSurface,
+          streamQueue: setup.world.streamQueue,
+          parameters: { opacity: 1 },
+          presentation: createGroundOccluder(),
+        })
+      : undefined;
+  }
 
   const presentation = createTerrainPresentation(preset, setup.worldSurface);
   // The first-applied effect executes last and wins the final color (see
@@ -811,20 +841,43 @@ function createAirParticles(setup: LevelSetup): WorldModule | undefined {
   });
 }
 
+/**
+ * Scent has no positions of its own: it radiates from the plants the level
+ * grows, rendered or not, and from the animals it carries.
+ */
 function createScentParticles(
   setup: LevelSetup,
 ): ScentParticlesModuleHandle | undefined {
   const parameters = setup.level.scentParticles;
   if (!parameters) return undefined;
 
+  const { level, worldSurface } = setup;
+  const plantPreset = level.vegetation ?? level.invisibleVegetation;
+  const hasAnimals = Boolean(level.animals && parameters.animals);
+  if (hasAnimals) validateAnimalScentSignatures(parameters);
+
   return createScentParticlesModule({
     scene: setup.world.scene,
     camera: setup.world.camera,
     parameters,
     streamQueue: setup.world.streamQueue,
-    groundYAt: setup.worldSurface.groundYAt,
-    zoneAt: setup.worldSurface.zoneAt,
+    plantSource: plantPreset
+      ? createVegetationScentSource(plantPreset, worldSurface)
+      : undefined,
+    maxActorCount: hasAnimals ? ANIMALS_DEFINITION.maxVisible : 0,
   });
+}
+
+/** A species without a signature would walk through the world unscented. */
+function validateAnimalScentSignatures(
+  parameters: ScentParticlesParameters,
+): void {
+  const signatures = parameters.animals?.signatures ?? {};
+
+  for (const { id } of ANIMALS_DEFINITION.species) {
+    if (signatures[id]) continue;
+    throw new Error(`Animal species has no scent signature: ${id}`);
+  }
 }
 
 function createGrass(
@@ -907,6 +960,7 @@ function createAnimals(
   setup: LevelSetup,
   thermal: ThermalPerceptionEffects | undefined,
   worldFade: WorldFadeEffect | undefined,
+  scentActors: AnimalBodiesObserver | undefined,
 ): AnimalsModuleHandle | undefined {
   if (!setup.level.animals) return undefined;
 
@@ -929,10 +983,25 @@ function createAnimals(
     assets: setup.assets.animals,
     worldSurface: setup.worldSurface,
     effectsFor,
-    // Warm bodies radiate onto the ground, plants, and rocks around them, so
-    // the heat view needs to know where they stand each frame.
-    onBodiesUpdated: thermal?.setHeatSources,
+    // Warm bodies radiate onto the ground, plants, and rocks around them, and
+    // they leave scent where they walk, so both senses need to know where
+    // the actors stand each frame.
+    onBodiesUpdated: composeBodyObservers(thermal?.setHeatSources, scentActors),
   });
+}
+
+/** Report one reused body array to every sense that asked for it. */
+function composeBodyObservers(
+  ...observers: readonly (AnimalBodiesObserver | undefined)[]
+): AnimalBodiesObserver | undefined {
+  const configured = observers.filter(
+    (observer): observer is AnimalBodiesObserver => observer !== undefined,
+  );
+  if (configured.length === 0) return undefined;
+
+  return (bodies) => {
+    for (const observe of configured) observe(bodies);
+  };
 }
 
 function createTerrainPresentation(

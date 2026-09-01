@@ -38,7 +38,8 @@ imports stay data-only and do not break the module-boundary rule.
 activate Terrain. `scent.level.ts` is the Scent World base experiment and
 activates Scent Particles and the White World Air Particles layer beside the
 test overlay; its invisible ground flag clamps flight above the shared world
-surface without rendering Terrain. `echo.level.ts` is the Echolocation level
+surface without rendering Terrain, and its invisible vegetation grows the
+plant population the scent radiates from without drawing a single tree. `echo.level.ts` is the Echolocation level
 and decorates the rendered landscape materials with the shared Echo Depth
 distance ramp. `motion.level.ts` is the Motion Perception level and layers
 the Motion Sense fly swarms and their printed trails onto the carried Echo

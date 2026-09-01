@@ -50,6 +50,13 @@ export interface TerrainPresentation {
   readonly material: MeshBasicMaterial;
   readonly conditionsAt?: WorldSurface["zoneConditionsAt"];
   readonly update?: (deltaSeconds: number) => void;
+
+  /**
+   * Override the drawn resolution. A presentation that is never seen can
+   * carry the surface at a fraction of the triangles; omitting this keeps
+   * the resolution a drawn surface needs.
+   */
+  readonly segmentsPerSide?: number;
 }
 
 export interface TerrainMaterialEffect {

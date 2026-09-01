@@ -45,3 +45,12 @@ The height field combines signed rolling terrain, small detail, and ridged
 mountains controlled by a slowly changing region mask. This produces deep
 valleys, calm lowlands, and mountain regions without discrete landscape-type
 boundaries.
+
+## Ground occluder
+
+`ground-occluder.ts` presents the same streamed surface as a depth-only
+occluder: it writes depth and no color, and it overrides the drawn
+resolution down to 8 segments per side because it is never seen. A level
+that keeps its surface invisible uses it so that a ridge still hides what
+stands behind it. It is a `TerrainPresentation` like any other, so it needs
+no separate mode inside the module.

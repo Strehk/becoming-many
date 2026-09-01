@@ -17,6 +17,7 @@ import { level as testLevel } from "../../src/levels/test.level";
 import { level as thermalLevel } from "../../src/levels/thermal.level";
 import { level as whiteWorld } from "../../src/levels/white-world.level";
 import { THERMAL_PERCEPTION_SETTINGS } from "../../src/modules/thermal-perception/thermal-perception-settings";
+import { WORLD_WIND } from "../../src/world/wind";
 
 test("only the Test Level activates development diagnostics", () => {
   const testPreset: LevelPreset = testLevel;
@@ -140,35 +141,81 @@ test("Scent Level layers scent onto the White World air baseline", () => {
   ];
 
   expect(scentPreset.testUi).toBe(true);
+  // The level departs from its moodboard's pale first stop and runs on the
+  // white it is entered from, so the only colour in the world arrives
+  // through the scent. The deviation is argued in the level README; this
+  // pins it so restoring the stop has to read that first.
+  expect(scentPreset.backgroundColor).toBe(0xffffff);
+  expect(scentPreset.backgroundColor).toBe(whiteWorld.backgroundColor);
   expect(scentPreset.airParticles).toEqual(whiteWorld.airParticles);
   expect(scentPreset.invisibleGround).toBe(true);
   expect(scentPreset.terrain).toBeUndefined();
   expect(scentPreset.grass).toBeUndefined();
-  expect(scentPreset.vegetation).toBeUndefined();
   expect(scentPreset.rocks).toBeUndefined();
   expect(scentPreset.animals).toBeUndefined();
 
-  for (const color of scentPreset.scentParticles?.colors ?? []) {
-    expect(scentWorldPalette).toContain(color);
+  // Level 02 keeps every source object invisible, so its plants exist only
+  // as the population the scent radiates from.
+  expect(scentPreset.vegetation).toBeUndefined();
+  expect(scentPreset.invisibleVegetation?.instancesPerHectareByZone).toEqual({
+    meadow: 12,
+    coniferForest: 150,
+    deciduousForest: 150,
+    shrubSlope: 70,
+  });
+
+  const scent = scentPreset.scentParticles;
+  if (!scent) throw new Error("Scent Level must author the scent sense");
+
+  // Every plant family and every animal species carries one signature:
+  // plants take the cool half, animals the warm half. Only the two warm
+  // animal stops are still the moodboard verbatim — the plant signatures
+  // were deepened because the level's pale ones did not read as scent
+  // against white. The deviation is argued in the level README; this pins
+  // how far it has gone.
+  const plantColors = Object.values(scent.plants).map(({ color }) => color);
+  const animalColors = Object.values(scent.animals?.signatures ?? {}).map(
+    ({ color }) => color,
+  );
+  expect(plantColors).toHaveLength(6);
+  expect(animalColors).toHaveLength(4);
+  expect(new Set([...plantColors, ...animalColors]).size).toBe(10);
+  expect(
+    [...plantColors, ...animalColors].filter((color) =>
+      scentWorldPalette.includes(color),
+    ),
+  ).toHaveLength(2);
+
+  for (const signature of Object.values(scent.plants)) {
+    expect(signature.particlesPerPlant).toBeGreaterThan(0);
+    expect(signature.emissionBottomFraction).toBeLessThan(
+      signature.emissionTopFraction,
+    );
+    expect(signature.emissionTopFraction).toBeLessThanOrEqual(1);
+    expect(signature.riseHeightMeters).toBeGreaterThan(0);
   }
-  expect(scentPreset.scentParticles?.colors).toHaveLength(5);
-  expect(scentPreset.scentParticles?.placement).toEqual({
-    emittersPerChunk: 4,
-    minHeightMeters: 0.7,
-    maxHeightMeters: 1.3,
-  });
-  expect(scentPreset.scentParticles?.emission).toEqual({
-    particlesPerEmitter: 90,
-    cloudRadiusMeters: 2.8,
-    cloudHeightMeters: 1,
-  });
-  expect(scentPreset.scentParticles?.appearance.sizeMeters).toBe(0.15);
-  expect(scentPreset.scentParticles?.motion).toEqual({
-    riseHeightMeters: 1.5,
-    riseDurationSeconds: 10,
-    driftAmplitudeMeters: 0.9,
-    speedMultiplier: 1,
-  });
+
+  expect(scent.appearance.sizeMeters).toBe(0.24);
+  expect(scent.motion.riseDurationSeconds).toBe(10);
+  expect(scent.motion.speedMultiplier).toBe(1);
+  // The wind has to beat the rise, or the scent only ever goes up and reads
+  // as slow floating rather than as weather. This was authored the other way
+  // round once — a tree lifted its scent four times further than the wind
+  // carried it — so the relationship is pinned rather than the value.
+  const carriedMetres = scent.motion.windResponseMeters * WORLD_WIND.strength;
+  const tallestRise = Math.max(
+    ...Object.values(scent.plants).map(
+      ({ riseHeightMeters }) => riseHeightMeters,
+    ),
+  );
+  expect(carriedMetres).toBeGreaterThan(tallestRise);
+  // A route is carried much further still: nothing holds a print in place
+  // once the animal has walked on.
+  expect(scent.animals?.windResponseMeters ?? 0).toBeGreaterThan(
+    scent.motion.windResponseMeters,
+  );
+  // The trail must stay inside the 60-second animation loop it ages against.
+  expect(scent.animals?.lifetimeSeconds).toBeLessThanOrEqual(60);
 });
 
 test("Motion Level layers fly swarms onto the carried Echo world", () => {

@@ -8,9 +8,9 @@ Nine sparse presets currently exist under `src/levels`:
 
 - `white-world.level.ts` defines the narrative White World without Terrain.
 - `scent.level.ts` is the Scent World base experiment: no rendered surface
-  modules, the test overlay, the White World air layer, streamed deterministic
-  scent emitters, and the invisible ground flag that clamps flight above the
-  shared world surface.
+  modules, the test overlay, the White World air layer, scent streamed from
+  every plant of an invisible plant population, and the invisible ground flag
+  that clamps flight above the shared world surface.
 - `echo.level.ts` is the Echolocation level: rendered Terrain, Vegetation, and
   Rocks whose materials are decorated by the shared Echo Depth effect, showing
   the world through the level-03 distance ramp.
@@ -61,14 +61,23 @@ The Scent preset additionally activates:
 - the unchanged White World air-particle layer as the neutral depth baseline
 - the invisible ground: the continuous world terrain restricts flight without
   being rendered
-- up to four deterministic scent emitters per resident 64-metre chunk, only
-  where the invisible zone facts grow forest, one 02-palette signature color
-  each
-- flat clouds anchored 0.7–1.3 metres above the invisible ground with a
-  one-metre vertical extent and a gentle 1.5-metre rise, their particle
-  density peaking at the anchor and tapering to nothing at the boundary
-- one fixed streamed pool of 90 opaque round particles per emitter in one
-  draw call, recycled at chunk edges while traveling
+- the invisible vegetation: the decided shared plant densities grow the
+  population the scent radiates from, while no model loads and nothing draws
+- scent from every plant in the streamed world, its family setting the
+  signature color, the particle count, the emission volume in fractions of
+  the plant's own height, and how far its scent lifts
+- six plant families — conifer, deciduous, birch, bush, flowering bush, and
+  dead wood — plus four animal species, ten signatures in all: plants on the
+  cool half of the 02 palette, animals on the warm half
+- one fixed streamed pool in one opaque draw call, sized for the densest
+  chunk the vegetation grid can produce and recycled at chunk edges while
+  traveling
+- the shared turning wind: its direction swings 44 degrees either side of its
+  mean and its strength gusts, both on one seamless 240-second loop, and each
+  scent layer leans on it by its own authored reach
+- per-particle drift phases and amplitudes, so a plant's scent churns instead
+  of sliding as one block, and per-print bearings, so an animal's route frays
+  open at its old end
 
 The Echo preset additionally activates:
 
@@ -84,8 +93,9 @@ The Echo preset additionally activates:
   additional geometry, scene passes, or draw calls; every surface always
   shows only its depth-ramp color
 - the unchanged White World air-particle layer and the unchanged Scent World
-  layer carried over, because senses layer instead of swapping; scent clouds
-  now anchor above the rendered ground and keep their 02-palette signatures
+  layer carried over, because senses layer instead of swapping; the scent now
+  radiates from the very trees and bushes the level draws, keeping its
+  02-palette signatures against the grayscale depth ramp
 - no animals
 
 The Motion preset additionally activates:
@@ -136,7 +146,7 @@ The Connections preset additionally activates:
   world inside an 88-metre viewer radius: every edge a bundle of three
   fine meandering filaments with periodic knot junctions hallucinated in
   the fragment shader, plus node glows, connecting the deterministic
-  positions of trees and bushes, scent emitters, rocks, and the visible
+  positions of trees and bushes, forest clearings, rocks, and the visible
   animals, colored per source class from the level-07 palette with cream
   pulses traveling the cords; exactly two added transparent draw calls
   from fixed pools
@@ -182,8 +192,12 @@ The images were created for this project with OpenAI Image Gen on 2026-08-21. Tw
 
 The hexes above record what each moodboard image contains. Where an authored
 ramp departs from its moodboard, the level's own README carries the deviation
-and the reason: level 05 darkens the coldest anchor `#2E1386` to `#0E0628`
-along its own hue, so its thermal ramp has a black floor.
+and the reason: level 02 leaves its pale stop `#F6EEE0` unused and runs on
+white so the only colour in the world arrives through the scent itself, and
+deepens its cool plant stops on their own hues because the moodboard values
+read as dust against that white; and
+level 05 darkens the coldest anchor `#2E1386` to `#0E0628` along its own hue,
+so its thermal ramp has a black floor.
 
 ## Planned Level Specifications
 
@@ -267,8 +281,8 @@ Make scent spatially visible without revealing its sources. Distinct floating sc
 - Color enters the previously neutral world through scent signatures.
 - Only scent points and diffuse scent clouds are visible.
 - Plants, animals, terrain, and all other source objects remain invisible.
-- Clouds originate from deterministic spatial anchors and move through the shared wind field.
-- Source families use a coherent palette with clearly distinguishable signatures.
+- Scent originates from the plants and animals themselves, and moves through the shared wind field.
+- Source families use a coherent palette with clearly distinguishable signatures: plants take the cool half of the level palette, animals the warm half.
 
 ### Modules
 
@@ -286,10 +300,13 @@ Particles use fixed-capacity GPU buffers and as few draw calls as possible. Dens
 
 ### Open Art Decisions
 
-- scent palette and source-to-color mapping
 - particle shape, scale, lifetime, and flow
-- scent-cloud scale, density, and overlap
+- emission-volume refinement per plant family
 - whether scent reacts to flight proximity
+
+Decided: every plant and every animal emits, one signature per family rather
+than per model, and animal scent is a trail that stays where the animal
+walked. See [02-scent-world](02-scent-world/README.md).
 
 ## 03 — Echolocation
 

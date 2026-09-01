@@ -24,6 +24,10 @@ not create a separate render loop or import other concrete content modules.
 - Visible actors are selected from separate directions before vacant slots are
   filled by distance. Only those actors advance animation mixers; the current
   Test Level limit is four.
+- Visible actors are reported once per frame as reused `AnimalBody` records —
+  position, heading, height, and species — to every sense that asked for
+  them. The heat view warms the ground around them from it; the scent sense
+  prints their trail from it. Neither module is known here.
 - Unload stops mixers, releases cloned skeletons, removes actors, and disposes
   the shared source assets.
 

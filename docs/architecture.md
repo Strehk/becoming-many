@@ -91,6 +91,7 @@ src/
 │   ├── rivers/
 │   ├── rocks/
 │   ├── scent-particles/
+│   ├── scent-sources.ts
 │   ├── static-population.ts
 │   ├── terrain/
 │   ├── thermal-perception/
@@ -262,9 +263,13 @@ content jobs. The queue still knows nothing about chunks or rendering.
 
 ### `wind.ts`
 
-Defines the immutable `WORLD_WIND` direction, strength, and speed. Every
-wind-reactive component imports this shared configuration instead of defining
-component-local wind values. It creates no runtime resources or mutable state.
+Defines the authored `WORLD_WIND` mean direction, strength, and speed, the
+swing its direction wanders through, and the gust its strength breathes with.
+`getWorldWind(seconds)` samples the wind at one moment as a pure function of
+time, built from whole harmonics of one loop so the wrap is seamless. Every
+wind-reactive component reads this shared source instead of defining
+component-local wind values. It creates no runtime resources or mutable
+state: consumers own their own wind clock.
 
 ### `dramaturgy/`
 
@@ -364,8 +369,13 @@ which computes the O(n²) web topology off the frame path (created on load,
 terminated on unload, stale replies discarded by generation). Its node
 anchors cross module boundaries only through the shared
 `ConnectionNodeSource` contracts in `connection-nodes.ts`, which the
-composition root wires from the enabled providers. Visible water remains a
-separate Rivers
+composition root wires from the enabled providers. Scent Particles uses the
+same kind of seam for the opposite reason: scent belongs to the things that
+carry it, so `scent-sources.ts` names the plant-family vocabulary and the
+live-actor shape. Vegetation replays its placements as scent sources with
+the model and height at each position, Animals report their visible bodies
+with their species, and the composition root wires both. Visible water
+remains a separate Rivers
 responsibility. Concrete sibling implementations do not import each other.
 
 ### `utils/asset-loader/`
@@ -384,13 +394,16 @@ is proven twice; zone and placement policy remain module-owned.
 | --- | --- |
 | `LevelPreset` | Optional level presentation and module parameters |
 | `TerrainPresentationPreset` | Optional Zone Visualizer base presentation |
-| `TerrainPresentation` | Material plus optional sampled conditions and frame update |
+| `TerrainPresentation` | Material plus optional sampled conditions, drawn resolution, and frame update |
 | `TerrainMaterialEffect` | Effect that decorates and optionally updates the Terrain material, with an optional per-vertex warmth sampler |
-| `WORLD_WIND` | Shared immutable wind direction, strength, and speed |
+| `WORLD_WIND` | Shared authored wind mean direction, strength, speed, swing, and gust |
+| `WorldWindSample` | The unit direction and strength blowing at one sampled moment |
 | `GrassPreset` | Level-authored density and blade height per supported grass zone |
 | `MagneticSenseParameters` | Magnetic direction, line, pulse, opacity, flow, intensity, and palette values |
 | `MagneticSenseEffects` | Terrain stripe effect and sky-dome module sharing one field uniform set |
-| `ScentParticlesParameters` | Level-authored scent palette, per-chunk emitter density, pool size, and drift values |
+| `ScentParticlesParameters` | Level-authored scent signature, emission volume, and density per plant family and animal species, plus shared appearance and drift values |
+| `PlantScentSource` | Deterministic per-chunk plants one module exposes to the scent sense, with family and height |
+| `ScentActorBody` | Live position, height, and species of one scent-emitting actor |
 | `MotionSenseParameters` | Level-authored motion intensity, swarm pool, appearance, and trail values |
 | `MotionPointSource` | World-position stream a moving actor exposes for motion-trail printing |
 | `ThermalPerceptionParameters` | Level-authored thermal intensity, viewer radius, feather, palette, and warmth values |
