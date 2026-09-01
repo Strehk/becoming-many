@@ -29,6 +29,12 @@ derives from the audio clock, which keeps running when the window is unfocused
 or occluded and its animation frames stop, so a status on a beat stays true
 where a status per frame would simply stop arriving.
 
+`station-widget.ts` is the show window's corner widget: the socket state the
+link reports, and the way to the conductor page. It is an operator surface on
+the desktop window — DOM never enters the `immersive-vr` view — and exists
+because the link connects by itself on the default page: when no broker
+answers, the widget is what says so.
+
 `station-settings.ts` holds the port, the reporting rate, and the retry delay.
 
 The broker itself is not here. It runs under Bun rather than in a browser, so

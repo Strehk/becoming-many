@@ -217,14 +217,16 @@ the command bus stay open.
 - A benchmark never creates a show: audio decoding would add nondeterministic
   work to the samples, and a fixed timestep is not the real time the show is
   cut to.
-- **`?show` exposes the clock as `window.showClock`.** Nothing under `src`
+- **A show exposes the clock as `window.showClock`.** Nothing under `src`
   reads it back, so removing it changes no behavior — the same one-way handoff
-  the benchmark report already uses. It is gated on the URL rather than the
-  build mode because rehearsal happens in the headset, against a production
+  the benchmark report already uses. It is set at runtime rather than gated on
+  the build mode because rehearsal happens in the headset, against a production
   build, where a conductor page on another machine is not reachable.
   *Amended 2026-09-01:* `startLevel()` now returns the running level and
   `main.ts` sets the global from it, so the runtime no longer touches a global
-  at all.
+  at all. *Amended again the same day:* the show is now the default page, so
+  the global is set on every default run; only `?level` and `?benchmark` runs
+  go without it.
 
 ### Station Transport and the Conductor Page (2026-09-01)
 
@@ -255,6 +257,11 @@ machine stays open.
 - **The show never depends on the station.** With no broker running the link
   retries quietly and the piece plays exactly as it does without one, matching
   the degraded-state rule in [Headset](direction/headset.md).
+  *Amended 2026-09-01:* because the link fails soft, the show window now
+  connects it unconditionally — `?station` only overrides the broker address —
+  and a small corner widget (`src/station/station-widget.ts`) shows the
+  socket state and links to the conductor page. The widget is DOM, so it
+  never enters the `immersive-vr` view.
 - **The show reports on a timer, not per frame.** Show time derives from the
   audio clock, which keeps running when the show window is unfocused or
   occluded and its animation frames stop. The conductor projects the playhead
@@ -274,9 +281,11 @@ machine stays open.
 
 ### The Timeline Sets the World State (2026-09-01)
 
-During `?show`, the schedule is the world authority as well as the narration
+During a show, the schedule is the world authority as well as the narration
 authority. `?level` keeps selecting presets for development, benchmarks, and
-review, and is ignored while a show runs.
+review — showless runs by definition. *(Amended 2026-09-01: the show was first
+opted into with `?show`; it is now the default page, and requesting a level or
+a benchmark is what opts out.)*
 
 - **Each cue carries the level it speaks over.** `NarrationCue` gains a
   `level: ShowLevelName` field; timing and world changes stay in the one typed

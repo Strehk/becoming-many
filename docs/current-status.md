@@ -14,7 +14,8 @@ the concise entry point for the current implementation.
 
 ## Runnable Result
 
-`bun run dev` starts a Vite application that shows the Connections level:
+`bun run dev` starts a Vite application that plays the piece — the full show
+world composed from the sense ladder, following the narration timeline:
 
 - the complete Magnetic Field Perception world carried over unchanged: the
   warm off-white haze background, the grayscale Echo Depth ramp on Terrain,
@@ -34,24 +35,26 @@ the concise entry point for the current implementation.
 - WASD and arrow-key flight along the mouse look direction
 - a user-triggered Three.js `immersive-vr` button
 
-The application currently opens `connections.level.ts` by default. It has
-one Level Runtime composition root and one render loop. Every earlier
-preset from `white-world` through `magnetic` to the `test` and
-`design-test` diagnostics is named in `levels/level-catalog.ts` and opens
-with `?level=<name>`.
+The application opens the piece by default. It has one Level Runtime
+composition root and one render loop. Every preset from `white-world`
+through `connections` to the `test` and `design-test` diagnostics is named
+in `levels/level-catalog.ts` and opens as a showless development run with
+`?level=<name>`.
 
 `?benchmark[=<profile>]` replaces live controls with a replayed route and
 a fixed timestep, and `bun run benchmark` drives that mode in Chromium and
 writes a report artifact. Its `renderer.info` counters repeat exactly; its
 frame times are machine-local measurements.
 
-`?show[&language=<de|en>]` plays the piece: the schedule is the world
-authority, standing the composed show world in each cue's level — senses,
-structure, and background all fade across cue boundaries, nothing cuts — and
-the clock is exposed as `window.showClock` (`?level` is ignored while a show
-runs). Adding `?station` connects that show to
-a localhost broker started with `bun run station`, so the conductor page at
-`/conductor.html` can drive it from a second window: one scrubbable timeline of
+The default page plays the piece: the schedule is the world authority,
+standing the composed show world in each cue's level — senses, structure,
+and background all fade across cue boundaries, nothing cuts — the clock is
+exposed as `window.showClock`, and `?language=<de|en>` arms the narration
+language. The station link connects by itself and fails soft; a corner
+widget shows the socket state and links to the conductor. With a localhost
+broker started with `bun run station` (`?station=<ws url>` points somewhere
+else), the conductor page at
+`/conductor.html` can drive the show from a second window: one scrubbable timeline of
 the schedule, play and hold, time scale, jump to any cue, a next-cue countdown,
 a DE/EN re-arm, and resets for the show clock, the flight, and the show window
 itself. The broker relays only; with none running the show plays unchanged.
