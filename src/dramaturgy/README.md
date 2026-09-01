@@ -33,7 +33,10 @@ headroom between the two. It is the one place slot arithmetic lives, so the
 guarantee the tests enforce and the timeline the conductor draws are the same
 calculation.
 
-`piece-schedule.ts` is the authored data for the main show. A tutorial schedule
+`piece-schedule.ts` is the authored data for the main show. It opens on five
+seconds of silence before the first word, so the visitor is flying before a
+voice arrives. That lead-in needs no mechanism — `narrationCueAt` answers
+nothing before the first cue, so it is simply the gap in front of `prologue`. A tutorial schedule
 will sit beside it. Schedules are typed TypeScript data files, never JSON, per
 the repository's configuration rule, and there is **one schedule authority
 total**.

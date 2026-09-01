@@ -20,7 +20,7 @@ describe("formatShowTime", () => {
   });
 
   test("writes the length of the piece", () => {
-    expect(formatShowTime(516)).toBe("8:36");
+    expect(formatShowTime(521)).toBe("8:41");
   });
 
   test("truncates rather than rounding up to a second that has not come", () => {

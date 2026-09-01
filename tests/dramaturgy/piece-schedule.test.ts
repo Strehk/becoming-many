@@ -10,11 +10,16 @@ import {
   NARRATION_CUES,
   narrationUrl,
 } from "../../src/dramaturgy/narration-catalog";
+import { narrationCueAt } from "../../src/dramaturgy/narration-schedule";
 import { PIECE_SCHEDULE } from "../../src/dramaturgy/piece-schedule";
+import { cueSlots } from "../../src/dramaturgy/schedule-layout";
 
 // ffprobe and HTMLMediaElement can disagree by about one MP3 frame of encoder
 // padding, so a slot must clear its recording by more than a rounding error.
 const SLOT_MARGIN_SECONDS = 0.5;
+
+// The silence the piece opens on, before the first word.
+const LEAD_IN_SECONDS = 5;
 
 const CUES = PIECE_SCHEDULE.narration;
 
@@ -31,6 +36,24 @@ describe("the piece schedule", () => {
     expect(CUES[0]?.atSeconds).toBeGreaterThanOrEqual(0);
   });
 
+  test("opens on a lead-in before the first word", () => {
+    expect(CUES[0]?.atSeconds).toBe(LEAD_IN_SECONDS);
+  });
+
+  test("stays silent through the lead-in", () => {
+    expect(narrationCueAt(PIECE_SCHEDULE, 0)).toBeUndefined();
+    expect(
+      narrationCueAt(PIECE_SCHEDULE, LEAD_IN_SECONDS - 0.01),
+    ).toBeUndefined();
+  });
+
+  test("speaks the first word once the lead-in is over", () => {
+    expect(narrationCueAt(PIECE_SCHEDULE, LEAD_IN_SECONDS)).toEqual({
+      cueId: "prologue",
+      offsetSeconds: 0,
+    });
+  });
+
   test("orders cues strictly forward in time", () => {
     const times = CUES.map((cue) => cue.atSeconds);
 
@@ -39,16 +62,15 @@ describe("the piece schedule", () => {
   });
 
   test("gives every cue a slot long enough for the longer language", () => {
-    CUES.forEach((cue, index) => {
-      const slotEndSeconds =
-        CUES[index + 1]?.atSeconds ?? PIECE_SCHEDULE.durationSeconds;
-      const slotSeconds = slotEndSeconds - cue.atSeconds;
-      const { en, de } = NARRATION_CUES[cue.cueId].durationSeconds;
-
-      expect(slotSeconds).toBeGreaterThanOrEqual(
-        Math.max(en, de) + SLOT_MARGIN_SECONDS,
-      );
-    });
+    // cueSlots() is the one place slot arithmetic lives; deriving it a second
+    // time here would let the timeline and this guarantee drift apart.
+    for (const language of ["en", "de"] as const) {
+      for (const slot of cueSlots(PIECE_SCHEDULE, language)) {
+        expect(slot.headroomSeconds).toBeGreaterThanOrEqual(
+          SLOT_MARGIN_SECONDS,
+        );
+      }
+    }
   });
 
   test("ends after the last recording has finished", () => {
