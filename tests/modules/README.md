@@ -12,8 +12,10 @@ chunk assignments, stream queue, and Three.js resources.
 
 Tests focus on stable resource counts, bounded updates, and complete cleanup.
 Air Particles cover deterministic generated volumes, vertical recycling, and
-surface exclusion. Scent Particles cover shader patches, deterministic fixed
-pools, per-emitter colors, and the queue-free lifecycle. Grass covers deterministic roots, authored zone visibility,
+surface exclusion. Scent Particles cover both layers: shader patches and rejected
+timings, deterministic per-plant emission inside each plant's own volume,
+one signature color per family, the hidden capacity no plant needed, prints
+that stay where an animal left them, ring bounds, and stepped chunk writes. Grass covers deterministic roots, authored zone visibility,
 fixed instancing, partial chunk updates, GPU animation, and disposal. Terrain
 covers height-only geometry generation, cooperative row streaming,
 shared-border equality, stale-job rejection, and GPU resource disposal. Zone

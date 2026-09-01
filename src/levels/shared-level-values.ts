@@ -38,41 +38,134 @@ export const sharedAirParticles: SharedBlock<"airParticles"> = {
 };
 
 /**
- * The Scent World layer with the level-02 signature colors: forest chunks
- * spawn low, flat clouds anchored above the rendered ground. The pale base
- * tone stays reserved for the background.
+ * The Scent World layer: every plant and every animal carries its own scent.
  *
- * Every emitter renders the same box at the same particle count, so variety
- * comes from the placement instead: many small clouds per chunk land
- * independently, and where they overlap they read as one larger, denser
- * mass. The clouds are flat so they can sit close to the ground, which
- * leaves the sway alone to carry the box edges into an undulating
- * silhouette.
+ * Signatures are grouped by what a nose could plausibly tell apart, not by
+ * asset, and the split runs along one line: the rooted plants take the cool
+ * half of the level-02 palette, the moving bodies the warm half. That is the
+ * one distinction the sense has to carry before any species reads — what
+ * stands still and what walks.
  *
- * The anchor height is drawn uniformly between its two ends, so the range
- * stays low and narrow. Its top end is the only lever on how high a cloud
- * sits, and raising it lifts the whole layer instead of a few clouds in it.
+ * Three plant stops are the moodboard verbatim (`#9DD2C8`, `#B8E0E1`,
+ * `#D1C1D7`) and two animal stops are (`#FDBB54`, `#FDA39D`). The remaining
+ * five are deviations, and each is carried along the hue of the stop it
+ * belongs to rather than introduced: undergrowth sits under the conifer
+ * mint, blossom above the birch violet, dead wood is the pale background
+ * stop drained of warmth because there is no living scent left in it, and
+ * the stag and rat are the amber and coral carried down for the animal that
+ * is heavier and the one that is smaller.
+ *
+ * The emission volume is authored in fractions of each plant's own height,
+ * so one signature fits a knee-high bush and a ten-metre pine: a conifer
+ * releases from a narrow column up its whole trunk, a deciduous crown only
+ * from its round top half, and a bush from a wide, low blob. The rise is
+ * per family for the same reason — a bush lifting its scent as far as a pine
+ * would visibly leave the plant it belongs to.
+ *
+ * `particlesPerPlant` is the density and the frame cost. These are the dense
+ * trial values; the measured, moderate set is recorded beside each one.
  */
 export const sharedScentParticles: SharedBlock<"scentParticles"> = {
-  colors: [0xb8e0e1, 0x9dd2c8, 0xd1c1d7, 0xfda39d, 0xfdbb54],
-  placement: {
-    emittersPerChunk: 4,
-    minHeightMeters: 0.7,
-    maxHeightMeters: 1.3,
+  plants: {
+    // Resin, and the one plant that smells all the way down its trunk.
+    conifer: {
+      color: 0x9dd2c8,
+      particlesPerPlant: 70, // moderate: 24
+      emissionBottomFraction: 0.25,
+      emissionTopFraction: 1,
+      emissionRadiusFraction: 0.26,
+      riseHeightMeters: 2.2,
+    },
+    // Leaf, released from the round crown and not from the bare trunk.
+    deciduous: {
+      color: 0xb8e0e1,
+      particlesPerPlant: 70, // moderate: 24
+      emissionBottomFraction: 0.45,
+      emissionTopFraction: 1,
+      emissionRadiusFraction: 0.38,
+      riseHeightMeters: 2.2,
+    },
+    // The tall, narrow, open crown the level already treats as its own
+    // silhouette keeps its own signature here too.
+    birch: {
+      color: 0xd1c1d7,
+      particlesPerPlant: 60, // moderate: 20
+      emissionBottomFraction: 0.5,
+      emissionTopFraction: 1,
+      emissionRadiusFraction: 0.3,
+      riseHeightMeters: 2,
+    },
+    // Undergrowth: low, wide against its own small height, and quiet.
+    bush: {
+      color: 0x8fc2a6,
+      particlesPerPlant: 32, // moderate: 12
+      emissionBottomFraction: 0.1,
+      emissionTopFraction: 1,
+      emissionRadiusFraction: 0.72,
+      riseHeightMeters: 0.7,
+    },
+    // The one plant in the set with blossoms, and the only one that earns a
+    // stronger signature than its size would suggest.
+    floweringBush: {
+      color: 0xc3a7d0,
+      particlesPerPlant: 42, // moderate: 16
+      emissionBottomFraction: 0.1,
+      emissionTopFraction: 1,
+      emissionRadiusFraction: 0.8,
+      riseHeightMeters: 0.9,
+    },
+    // Standing dead wood: bare branching, and almost nothing to smell.
+    deadWood: {
+      color: 0xc9c2b4,
+      particlesPerPlant: 14, // moderate: 6
+      emissionBottomFraction: 0.2,
+      emissionTopFraction: 0.9,
+      emissionRadiusFraction: 0.2,
+      riseHeightMeters: 0.5,
+    },
   },
-  emission: {
-    particlesPerEmitter: 90,
-    cloudRadiusMeters: 2.8,
-    cloudHeightMeters: 1,
+  // The route an animal walked, printed where it walked it. Levels without
+  // animals carry these values unused; the trail ring is only allocated
+  // where the Animals module actually runs.
+  animals: {
+    signatures: {
+      deer: { color: 0xfdbb54 },
+      stag: { color: 0xef8f3c },
+      fox: { color: 0xfda39d },
+      rat: { color: 0xd8919c },
+    },
+    // Thirty prints a second put a print every few centimetres at walking
+    // pace, so the route reads as a line rather than as a dotted one.
+    printsPerSecond: 30,
+    // Long enough that a traveler arriving after the animal still finds
+    // where it went, and well inside the 60-second animation loop.
+    lifetimeSeconds: 25,
+    emissionBottomFraction: 0.15,
+    emissionTopFraction: 0.85,
+    emissionRadiusFraction: 0.35,
+    riseHeightMeters: 0.8,
+    // A route is carried much further than a plant's scent: nothing holds a
+    // print in place once the animal has walked on, and the old end of the
+    // trail has had the whole lifetime to travel.
+    windResponseMeters: 6,
   },
   appearance: {
-    sizeMeters: 0.15,
+    // Smaller than the four-cloud layer this replaced: the scent now comes
+    // from every plant, and the same point size would close the forest into
+    // a wall of color instead of showing what stands in it.
+    sizeMeters: 0.12,
   },
   motion: {
-    riseHeightMeters: 1.5,
-    riseDurationSeconds: 10,
-    driftAmplitudeMeters: 0.9,
+    riseDurationSeconds: 10, // Must divide the 60-second loop evenly.
+    // Each particle now drifts on its own phase and its own amplitude, so
+    // this is the middle of a spread rather than one shared circle. Raised
+    // with it: at the old value the churn was too tight to read as air.
+    driftAmplitudeMeters: 0.6,
     speedMultiplier: 1,
+    // The scent leans off its plant and trails away, but not so far that the
+    // plant stops being the thing you can smell your way back to. Raising
+    // this past roughly two metres starts to tear the plume off its source.
+    windResponseMeters: 1.4,
   },
 };
 

@@ -7,7 +7,7 @@ Boundary: Product vision and long-term design remain in the specialized document
 
 # Current Development Status
 
-Snapshot: 2026-08-31
+Snapshot: 2026-09-01
 
 The current `src/` and `public/` trees are the source of truth. This page is
 the concise entry point for the current implementation.
@@ -26,7 +26,7 @@ world composed from the sense ladder, following the narration timeline:
   swapping
 - the mycelium web alpha-blended over the unchanged carried world inside
   an 88-metre viewer radius: fine strand bundles and node glows
-  connecting the deterministic positions of trees, bushes, scent emitters,
+  connecting the deterministic positions of trees, bushes, forest clearings,
   rocks, and the visible animals, colored per source class, with cream
   light pulses traveling the cords and bounded animal links following the
   living actors
@@ -88,7 +88,8 @@ itself. The broker relays only; with none running the show plays unchanged.
   and Air Particles parameters without Terrain.
 - `scent.level.ts` is the Scent World base experiment: a pale warm background,
   a 128-metre view distance, the test overlay, Scent Particles, the unchanged
-  White World Air Particles layer, and the invisible ground flag.
+  White World Air Particles layer, the invisible ground flag, and the
+  invisible vegetation that grows the plants the scent radiates from.
 - `echo.level.ts` is the Echolocation level: a 128-metre view distance, the
   test overlay, Terrain with its plain material, dark-palette Vegetation and
   Rocks, the unchanged White World air layer and Scent World layer carried
@@ -179,26 +180,66 @@ itself. The broker relays only; with none running the show plays unchanged.
 
 ### Scent Particles
 
-- Every resident 64-metre chunk deterministically tries a bounded candidate
-  search for up to four emitters from its absolute coordinates and keeps only
-  candidates inside the module-owned source zones (conifer and deciduous
-  forest); misses stay hidden in their fixed particle range and never
-  rasterize.
-- Kept emitters anchor 0.7–1.3 metres above the sampled world ground as flat
-  clouds (one-metre vertical extent, gentle rise) whose particle density peaks
-  at the anchor and tapers to nothing at the cloud boundary, each with one
-  signature color from the level palette.
+- Scent has no positions of its own. Every resident 64-metre chunk replays the
+  deterministic Vegetation placement for its area through the shared
+  `PlantScentSource` contract, so every particle belongs to a plant that
+  really stands there — the same plant the Connections web links.
+- Six plant families carry one signature each (conifer, deciduous, birch,
+  bush, flowering bush, dead wood). The family sets the color, the particle
+  count, the emission volume in fractions of the plant's own height, and how
+  far its scent lifts, so one signature fits a knee-high bush and a
+  ten-metre pine.
+- The scent layer needs a plant population, not a rendered one: a level that
+  keeps its sources invisible authors `invisibleVegetation` instead of
+  `vegetation`, exactly as `invisibleGround` keeps the surface.
+- Slot capacity is the worst case the source can produce. The vegetation
+  candidate grid is 8 metres, so a 64-metre chunk holds at most 64 plants;
+  each slot is sized for that and packs the plants it actually holds into
+  the front of its range, leaving the tail hidden.
 - The Scent Level's 128-metre camera range plus one preload layer produces a
-  7 x 7 resident window with 49 reusable slots and 17,640 buffered points in
-  one `THREE.Points` object and one draw call.
-- Recycled chunk slots rewrite only their position, color, phase, and
+  7 x 7 resident window with 49 reusable slots in one `THREE.Points` object
+  and one draw call. At the current dense trial values that is 219,520
+  buffered points; `particlesPerPlant` per family is the one lever on it,
+  and each family carries a moderate alternative beside it in the preset.
+- A slot write is gathered once and then spent in bounded steps of 256
+  particles, and uploaded only when the last step finishes, so a chunk
+  crossing never spends thousands of particles in one frame slice and a slot
+  is never half new on the GPU.
+- Both layers drift on the shared turning wind of `src/world/wind.ts`,
+  sampled once per frame and scaled by each layer's own authored reach. The
+  wind clock runs separately from the 60-second animation clock, which would
+  otherwise turn the wind back onto the same bearing every minute.
+- Every particle now drifts on its own phase and amplitude instead of one
+  phase derived from its resting position, which had made a cloud slide as a
+  rigid block. Trail prints each walk away along their own bearing, faster
+  than they age, so a route frays at its old end.
+- Measured on one machine under software rendering (`bun run benchmark
+  --profile quick`), the isolated Scent Level moved from 5.90 ms median frame
+  time with the four-cloud layer to 7.20 ms at the moderate values, 14.10 ms
+  at 40 particles for the largest family, and 14.80 ms at the 70 authored
+  now. The cost is not linear in the particle count: the first jump cost
+  eight milliseconds and nearly doubling the points again cost less than one.
+  The dense values are a deliberate, recorded exception to the performance
+  rule, kept for review rather than decided.
+- Recycled chunk slots rewrite only their position, color, phase, rise, and
   visibility buffer ranges through the shared frame-budgeted stream queue;
-  revisiting a chunk recreates the same emitters.
+  revisiting a chunk recreates the same scent.
+- Live animals print their scent where they walk, at an authored rate per
+  second, into one fixed ring drawn in a second opaque call. A print stays
+  where it was left and ages against the same looping clock — lifting,
+  widening, and thinning out — so the route the animal took becomes visible
+  rather than a cloud that travels with it. One signature per species; the
+  ring is allocated only where the Animals module runs, from level 05 on.
 - One looping vertex-shader time uniform drives rise, sway, and a life-cycle
-  point-size fade; fully faded points leave clip space and rasterize nothing.
+  point-size fade in both layers; fully faded points leave clip space and
+  rasterize nothing. A rise duration that does not divide the 60-second loop
+  evenly, and a trail lifetime above it, are rejected rather than shipped.
 - A sense-intensity uniform (0..1) scales the fade; it is still authored
   through the preset. The Dramaturgy Runtime now supplies the show clock and
   schedule, but it drives narration only — per-sense envelopes are not built.
+- One show fade uniform scales both layers together through the module
+  handle's `setIntensity`, because the plant scent and the printed routes are
+  one sense and a show must not leave half of it standing.
 - Module unload removes the object and disposes geometry and material.
 
 ### Terrain
@@ -343,8 +384,9 @@ itself. The broker relays only; with none running the show plays unchanged.
   coverage instead of widening.
 - Node anchors cross module boundaries only through the shared
   `ConnectionNodeSource` / `ConnectionActorSource` contracts: vegetation
-  and rocks replay their deterministic placements, scent exposes its
-  emitter anchors, animals expose live visible-actor positions.
+  and rocks replay their deterministic placements, the scent module keeps
+  the forest clearing positions the finished web links, animals expose live
+  visible-actor positions.
 - Topology (kNN plus minimum spanning tree) runs in the repository's
   first Web Worker, owned by the module and reached through typed
   transferable messages; gathering runs as bounded stream-queue steps
@@ -554,8 +596,9 @@ loading or target-device evidence requires it.
 - asset prefetching, retries, progress UI, and distance-based stream priorities
 - visible water, other perception effects, mycelium, sky additions, and sound
   modules
-- wind-coupled scent drift, scent fields, emitters that move while placed,
-  scent for non-forest zones or animals, and a runtime scent-intensity driver
+- wind-coupled scent drift, scent fields, scent fading into the echo haze
+  with distance, scent for animals in the levels that carry no Animals
+  module, and a runtime scent-intensity driver
 
 ## Recommended Next Steps
 

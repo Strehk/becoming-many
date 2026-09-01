@@ -1,21 +1,61 @@
 # Scent Particles
 
 This module contains visible scent signatures as colored drifting particles.
+Scent has no positions of its own: it radiates from the plants and animals of
+the world, and every family carries one signature color.
 
-The current version streams deterministic scent sources with the traveler:
-every resident 64-metre chunk tries a bounded candidate search for its
-authored number of emitters and keeps only candidates inside the module-owned
-source zones (conifer and deciduous forest). Kept emitters anchor low above
-the sampled world ground as flat clouds, each with one signature color from
-the level palette; misses stay hidden in their fixed particle range. All resident chunks share one
-fixed pool drawn as a single opaque vertex-colored Points object in one draw
-call. Recycled chunk slots rewrite only their buffer range through the shared
-frame-budgeted stream queue. Particles rise, sway, and fade GPU-side from one
-looping time uniform; a sense-intensity uniform (0..1) is authored through the
-level preset. The module owns its particle lifecycle and disposes every
-resource on unload.
+## Plant layer
 
-Not part of this version: wind-field coupling, scent fields, emitters that
-move while placed, and a runtime intensity driver (blocked on the open
-runtime-coordination decision). It does not own the master audio clock or a
-separate render loop.
+The plant layer streams with the traveler. Every resident 64-metre chunk
+replays the deterministic Vegetation placement for its area through the
+`PlantScentSource` contract, so each particle belongs to a plant that really
+stands there — the same plant the Connections web links. A plant's particles
+scatter through an emission volume authored in fractions of its own height,
+so one signature fits a knee-high bush and a ten-metre pine, and its scent
+lifts by its own authored rise rather than by one height for the whole layer.
+
+Every particle drifts on its own phase, its own amplitude, and a second
+faster turn, so a plant's scent churns instead of sliding about as one rigid
+block. On top of that drift the shared wind carries the scent downwind in
+proportion to particle age, so a stand reads as plants with plumes rather
+than as fog.
+
+All resident chunks share one fixed pool drawn as a single opaque
+vertex-colored Points object in one draw call. Each slot is sized for the
+densest chunk the source can produce and packs the plants it actually holds
+into the front of that range; the unused tail stays hidden. Recycled chunk
+slots rewrite only their buffer range through the shared frame-budgeted
+stream queue. Particles rise, sway, and fade GPU-side from one looping time
+uniform.
+
+The plant layer needs a plant population, not a rendered one: levels that
+keep their sources invisible author `invisibleVegetation` instead of
+`vegetation`, and the scent then maps a wood nothing draws.
+
+## Trail layer
+
+Live animals print their scent where they walk, at an authored rate per
+second, into one fixed ring drawn in a second opaque call. A print stays
+where it was left and ages against the same looping clock. Each print walks
+away along its own bearing, and it walks faster than it ages, so the fresh
+end of a route stays a readable line while the old end opens out into a fan.
+The wind carries the whole route downwind and carries its old end furthest.
+What the traveler sees is the route the animal took, fraying behind it,
+rather than a cloud that travels with it. Colors come from one signature per
+species. The ring is only allocated where the Animals module actually runs.
+
+Both layers sample one shared wind, each scaled by its own authored reach, so
+plant scent and animal trails always lean the same way. The wind clock runs
+separately from the 60-second animation clock: a wind read from the animation
+clock would turn back onto the same bearing every minute.
+
+## Not part of this version
+
+Scent fields and a runtime intensity driver (blocked on the open
+runtime-coordination decision). Emitted particles do not fade into
+the echo haze with distance. The module owns neither the master audio clock
+nor a separate render loop.
+
+`scent-emitter-anchors.ts` no longer emits anything: it keeps the forest
+clearing positions the Connections web links, frozen at the values level 07
+was built on.

@@ -6,24 +6,20 @@
  */
 
 import { expect, test } from "bun:test";
-import { sharedScentParticles } from "../../src/levels/shared-level-values";
 import type { ConnectionNodeSource } from "../../src/modules/connection-nodes";
 import { createRockConnectionSource } from "../../src/modules/rocks/rock-nodes";
-import {
-  createScentConnectionSource,
-  findScentEmitterAnchor,
-} from "../../src/modules/scent-particles/scent-emitter-anchors";
-import {
-  createScentParticleField,
-  updateScentParticleSlot,
-} from "../../src/modules/scent-particles/scent-particle-field";
+import { createScentConnectionSource } from "../../src/modules/scent-particles/scent-emitter-anchors";
 import { createVegetationConnectionSource } from "../../src/modules/vegetation/vegetation-nodes";
+import { createVegetationScentSource } from "../../src/modules/vegetation/vegetation-scent";
 import { WORLD_SURFACE_SETTINGS } from "../../src/world-surface/surface-settings";
 import { createWorldSurface } from "../../src/world-surface/world-surface";
 import { ZONE_SETTINGS } from "../../src/world-surface/zone-settings";
 
 const WORLD_SURFACE = createWorldSurface(WORLD_SURFACE_SETTINGS, ZONE_SETTINGS);
 const REQUEST_CHUNK_SIZE = 32;
+/** The frozen clearing values level 07 links; they are module-owned now. */
+const CLEARING_MINIMUM_HEIGHT_METERS = 0.7;
+const CLEARING_MAXIMUM_HEIGHT_METERS = 1.3;
 const DENSITY_PRESET = {
   instancesPerHectareByZone: {
     meadow: 12,
@@ -129,9 +125,8 @@ test("Static anchor sub-chunks partition their whole placement chunk", () => {
   }
 });
 
-test("Scent anchor sub-chunks partition their emitters without duplication", () => {
+test("Scent clearing anchors stay in forest and partition their chunk", () => {
   const source = createScentConnectionSource(
-    sharedScentParticles,
     WORLD_SURFACE.groundYAt,
     WORLD_SURFACE.zoneAt,
   );
@@ -143,114 +138,61 @@ test("Scent anchor sub-chunks partition their emitters without duplication", () 
     expect(["coniferForest", "deciduousForest"]).toContain(zone);
     const height =
       anchor.worldY - WORLD_SURFACE.groundYAt(anchor.worldX, anchor.worldZ);
-    expect(height).toBeGreaterThanOrEqual(
-      sharedScentParticles.placement.minHeightMeters,
-    );
-    expect(height).toBeLessThanOrEqual(
-      sharedScentParticles.placement.maxHeightMeters,
-    );
+    expect(height).toBeGreaterThanOrEqual(CLEARING_MINIMUM_HEIGHT_METERS);
+    expect(height).toBeLessThanOrEqual(CLEARING_MAXIMUM_HEIGHT_METERS);
   }
 
-  // Splitting one 64-metre scent chunk into its four 32-metre requests must
-  // reproduce every direct anchor exactly once.
-  for (let scentChunk = -3; scentChunk <= 3; scentChunk += 1) {
-    const direct: Anchor[] = [];
-    for (
-      let emitterIndex = 0;
-      emitterIndex < sharedScentParticles.placement.emittersPerChunk;
-      emitterIndex += 1
-    ) {
-      const anchor = findScentEmitterAnchor(
-        {
-          chunkX: scentChunk,
-          chunkZ: scentChunk,
-          originX: scentChunk * 64,
-          originZ: scentChunk * 64,
-        },
-        64,
-        sharedScentParticles.placement,
-        WORLD_SURFACE.groundYAt,
-        WORLD_SURFACE.zoneAt,
-        emitterIndex,
-      );
-      if (anchor) direct.push(anchor);
-    }
+  // Splitting one 64-metre clearing chunk into its four 32-metre requests
+  // must reproduce every direct anchor exactly once.
+  for (let clearingChunk = -3; clearingChunk <= 3; clearingChunk += 1) {
+    const whole = collectAnchors(source, clearingChunk, clearingChunk, 64);
     const parts: Anchor[] = [];
     for (let subX = 0; subX < 2; subX += 1) {
       for (let subZ = 0; subZ < 2; subZ += 1) {
         parts.push(
           ...collectAnchors(
             source,
-            scentChunk * 2 + subX,
-            scentChunk * 2 + subZ,
+            clearingChunk * 2 + subX,
+            clearingChunk * 2 + subZ,
             REQUEST_CHUNK_SIZE,
           ),
         );
       }
     }
-    expect(anchorKeys(parts)).toEqual(anchorKeys(direct));
+    expect(anchorKeys(parts)).toEqual(anchorKeys(whole));
   }
 });
 
-test("Scent particle field scatters its clouds around the shared anchors", () => {
-  const field = createScentParticleField({
-    parameters: sharedScentParticles,
-    chunkSize: 64,
-    chunkSlotCount: 1,
-    groundYAt: WORLD_SURFACE.groundYAt,
-    zoneAt: WORLD_SURFACE.zoneAt,
-  });
-  const assignment = {
-    slotIndex: 0,
-    revision: 1,
-    chunkX: 2,
-    chunkZ: 2,
-    originX: 128,
-    originZ: 128,
-  };
-  updateScentParticleSlot(field, assignment);
+test("Scent sources are the very plants the web links, not a second world", () => {
+  const scentSource = createVegetationScentSource(
+    DENSITY_PRESET,
+    WORLD_SURFACE,
+  );
+  const webSource = createVegetationConnectionSource(
+    DENSITY_PRESET,
+    WORLD_SURFACE,
+  );
 
-  const { particlesPerEmitter, cloudRadiusMeters, cloudHeightMeters } =
-    sharedScentParticles.emission;
-  for (
-    let emitterIndex = 0;
-    emitterIndex < sharedScentParticles.placement.emittersPerChunk;
-    emitterIndex += 1
-  ) {
-    const anchor = findScentEmitterAnchor(
-      assignment,
-      64,
-      sharedScentParticles.placement,
-      WORLD_SURFACE.groundYAt,
-      WORLD_SURFACE.zoneAt,
-      emitterIndex,
-    );
-    for (
-      let particleIndex = 0;
-      particleIndex < particlesPerEmitter;
-      particleIndex += 1
-    ) {
-      const particleOffset = emitterIndex * particlesPerEmitter + particleIndex;
-      const visibility = field.renderedVisibility[particleOffset] ?? -1;
-      if (!anchor) {
-        expect(visibility).toBe(0);
-        continue;
-      }
-      expect(visibility).toBe(1);
-      const valueOffset = particleOffset * 3;
-      expect(
-        Math.abs((field.renderedPositions[valueOffset] ?? 0) - anchor.worldX),
-      ).toBeLessThanOrEqual(cloudRadiusMeters);
-      expect(
-        Math.abs(
-          (field.renderedPositions[valueOffset + 1] ?? 0) - anchor.worldY,
-        ),
-      ).toBeLessThanOrEqual(cloudHeightMeters / 2);
-      expect(
-        Math.abs(
-          (field.renderedPositions[valueOffset + 2] ?? 0) - anchor.worldZ,
-        ),
-      ).toBeLessThanOrEqual(cloudRadiusMeters);
+  for (let chunkX = -2; chunkX <= 2; chunkX += 1) {
+    for (let chunkZ = -2; chunkZ <= 2; chunkZ += 1) {
+      const plants: Anchor[] = [];
+      scentSource.appendChunkPlants(
+        chunkX,
+        chunkZ,
+        64,
+        (worldX, groundY, worldZ, heightMeters, groupIndex) => {
+          expect(heightMeters).toBeGreaterThan(0);
+          expect(scentSource.groupIds[groupIndex]).toBeDefined();
+          plants.push({ worldX, worldY: groundY, worldZ });
+        },
+      );
+
+      expect(plants.length).toBeLessThanOrEqual(
+        scentSource.maxPlantsPerChunk(64),
+      );
+      expect(anchorKeys(plants)).toEqual(
+        anchorKeys(collectAnchors(webSource, chunkX, chunkZ, 64)),
+      );
     }
   }
 });

@@ -18,6 +18,9 @@ import type { ZoneId } from "../world-surface/zone-settings";
 
 const HECTARE_SQUARE_METERS = 10_000;
 
+/** The cell random component that draws a placement's height from its model. */
+const HEIGHT_RANDOM_INDEX = 5;
+
 export type GroundZoneId = Exclude<ZoneId, "water">;
 
 /** The only static-population value authored by a level. */
@@ -57,6 +60,28 @@ export interface StaticPopulationParameters
 export interface StaticPlacement {
   readonly candidate: ChunkCandidate;
   readonly model: StaticModelDefinition;
+}
+
+/**
+ * Draw the world height of one placement from its model's authored range.
+ * Rendering scales the loaded model to this height, and senses that decorate
+ * a population without loading it read the same value, so both agree.
+ */
+export function getStaticPlacementHeight(
+  seed: number,
+  model: StaticModelDefinition,
+  candidate: ChunkCandidate,
+): number {
+  const heightRandom = getCellRandom(
+    seed,
+    candidate.cellX,
+    candidate.cellZ,
+    HEIGHT_RANDOM_INDEX,
+  );
+  return (
+    model.minimumHeightMeters +
+    (model.maximumHeightMeters - model.minimumHeightMeters) * heightRandom
+  );
 }
 
 export function resolveStaticPopulation(
@@ -148,6 +173,12 @@ export interface StaticAnchorRequest {
   readonly chunkSizeMeters: number;
 }
 
+/** Receive one replayed placement together with its sampled ground height. */
+export type PushStaticPlacement = (
+  placement: StaticPlacement,
+  groundY: number,
+) => void;
+
 /**
  * Replay the accepted candidates of one requested chunk and push their world
  * anchors. The request may cover a whole placement chunk or an aligned
@@ -164,6 +195,33 @@ export function appendStaticPlacementAnchors(
   request: StaticAnchorRequest,
   acceptCandidate: (candidate: ChunkCandidate) => boolean,
   pushAnchor: (worldX: number, worldY: number, worldZ: number) => void,
+): void {
+  appendStaticPlacements(
+    parameters,
+    candidateGrid,
+    worldSurface,
+    moduleChunkSizeMeters,
+    request,
+    acceptCandidate,
+    ({ candidate }, groundY) =>
+      pushAnchor(candidate.worldX, groundY, candidate.worldZ),
+  );
+}
+
+/**
+ * Replay the accepted candidates of one requested chunk and push the complete
+ * placement, so a consumer can also read which model stands there and how
+ * tall it is. `appendStaticPlacementAnchors` is the position-only form of
+ * this walk.
+ */
+export function appendStaticPlacements(
+  parameters: StaticPopulationParameters,
+  candidateGrid: ChunkCandidateGrid,
+  worldSurface: WorldSurface,
+  moduleChunkSizeMeters: number,
+  request: StaticAnchorRequest,
+  acceptCandidate: (candidate: ChunkCandidate) => boolean,
+  pushPlacement: PushStaticPlacement,
 ): void {
   const chunkRatio = moduleChunkSizeMeters / request.chunkSizeMeters;
   const cellsPerRequest = candidateGrid.cellsPerSide / chunkRatio;
@@ -202,13 +260,12 @@ export function appendStaticPlacementAnchors(
         row * candidateGrid.cellsPerSide + column,
       );
       if (!placement || !acceptCandidate(placement.candidate)) continue;
-      pushAnchor(
-        placement.candidate.worldX,
+      pushPlacement(
+        placement,
         worldSurface.groundYAt(
           placement.candidate.worldX,
           placement.candidate.worldZ,
         ),
-        placement.candidate.worldZ,
       );
     }
   }

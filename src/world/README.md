@@ -11,9 +11,19 @@ knowing whether a chunk contains particles, terrain, vegetation, or animals.
 The deterministic physical surface belongs in `../world-surface`; it has no runtime
 lifecycle and does not enter the World Engine.
 
-`wind.ts` is the single immutable source for global wind direction, strength,
-and speed. Every wind-reactive component imports `WORLD_WIND` from that file;
-the wind configuration has no runtime lifecycle or mutable state.
+`wind.ts` is the single source for the global wind: its mean direction,
+strength, and speed, plus how far the direction swings and how deeply the
+strength gusts. `getWorldWind(seconds)` samples the wind blowing at one
+moment. It is a pure function of time, so the world keeps no wind state and
+every consumer sampling the same second gets the same wind; consumers advance
+their own clock and wrap it with `wrapWindSeconds`, where the sample repeats
+exactly. Every wind-reactive component reads this file instead of defining
+component-local wind values.
+
+Grass still samples the mean direction once when its material is created, so
+it does not yet follow the turn. That is a gap rather than a second wind: no
+narrative level renders grass at present, and wiring its uniform to the turn
+is a change to the Grass module that should be measured with it.
 
 ## Runtime responsibilities
 

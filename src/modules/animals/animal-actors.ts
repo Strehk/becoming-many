@@ -181,7 +181,14 @@ export function readVisibleAnimalBodies(
 
     let body = bodies[count];
     if (!body) {
-      body = { x: 0, y: 0, z: 0, headingRadians: 0, heightMeters: 0 };
+      body = {
+        x: 0,
+        y: 0,
+        z: 0,
+        headingRadians: 0,
+        heightMeters: 0,
+        speciesId: "",
+      };
       bodies[count] = body;
     }
     body.x = actor.root.position.x;
@@ -189,6 +196,7 @@ export function readVisibleAnimalBodies(
     body.z = actor.root.position.z;
     body.headingRadians = actor.headingRadians;
     body.heightMeters = actor.species.heightMeters;
+    body.speciesId = actor.species.id;
     count++;
   }
   bodies.length = count;

@@ -65,13 +65,21 @@ connecting deterministic world anchors inside a viewer-centred radius. Topology 
 repository's first module-owned Web Worker, off the frame path. Anchors
 cross module boundaries only through the shared `ConnectionNodeSource` /
 `ConnectionActorSource` contracts in `connection-nodes.ts` — the static
-counterpart to motion-sense's `MotionPointSource` seam: vegetation, rocks,
-and scent particles replay their deterministic placements, animals expose
-live visible-actor positions, and the composition root wires the enabled
-providers. The module never imports a sibling.
+counterpart to motion-sense's `MotionPointSource` seam: vegetation and rocks
+replay their deterministic placements, the scent module keeps the forest
+clearing positions the finished web links, animals expose live visible-actor
+positions, and the composition root wires the enabled providers. The module
+never imports a sibling.
+
+`scent-particles` consumes the same kind of seam for the opposite reason.
+Scent belongs to the things that carry it, so `scent-sources.ts` names the
+plant-family vocabulary and the live-actor shape: Vegetation replays its
+placements as scent sources including which model stands where and how tall
+it is, Animals report their visible bodies with their species, and the
+composition root wires both. Neither module knows the other exists.
 
 Landscape modules share only stable contracts: `WorldModule` for lifecycle,
-`WorldSurface` for read-only facts, `WORLD_WIND` for the immutable global wind,
+`WorldSurface` for read-only facts, `WORLD_WIND` and `getWorldWind()` for the shared turning wind,
 `ChunkAssignment` for finite spatial ownership, and `StreamJob` for bounded
 preparation. Each concrete module keeps its own non-global parameters,
 deterministic placement, fixed resource pool, rendering, and disposal. Concrete

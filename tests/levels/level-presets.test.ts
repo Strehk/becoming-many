@@ -144,31 +144,59 @@ test("Scent Level layers scent onto the White World air baseline", () => {
   expect(scentPreset.invisibleGround).toBe(true);
   expect(scentPreset.terrain).toBeUndefined();
   expect(scentPreset.grass).toBeUndefined();
-  expect(scentPreset.vegetation).toBeUndefined();
   expect(scentPreset.rocks).toBeUndefined();
   expect(scentPreset.animals).toBeUndefined();
 
-  for (const color of scentPreset.scentParticles?.colors ?? []) {
-    expect(scentWorldPalette).toContain(color);
+  // Level 02 keeps every source object invisible, so its plants exist only
+  // as the population the scent radiates from.
+  expect(scentPreset.vegetation).toBeUndefined();
+  expect(scentPreset.invisibleVegetation?.instancesPerHectareByZone).toEqual({
+    meadow: 12,
+    coniferForest: 150,
+    deciduousForest: 150,
+    shrubSlope: 70,
+  });
+
+  const scent = scentPreset.scentParticles;
+  if (!scent) throw new Error("Scent Level must author the scent sense");
+
+  // Every plant family and every animal species carries one signature, and
+  // the moodboard stops it deviates from are documented where they are
+  // authored: plants take the cool half, animals the warm half.
+  const plantColors = Object.values(scent.plants).map(({ color }) => color);
+  const animalColors = Object.values(scent.animals?.signatures ?? {}).map(
+    ({ color }) => color,
+  );
+  expect(plantColors).toHaveLength(6);
+  expect(animalColors).toHaveLength(4);
+  expect(new Set([...plantColors, ...animalColors]).size).toBe(10);
+  expect(
+    [...plantColors, ...animalColors].filter((color) =>
+      scentWorldPalette.includes(color),
+    ),
+  ).toHaveLength(5);
+
+  for (const signature of Object.values(scent.plants)) {
+    expect(signature.particlesPerPlant).toBeGreaterThan(0);
+    expect(signature.emissionBottomFraction).toBeLessThan(
+      signature.emissionTopFraction,
+    );
+    expect(signature.emissionTopFraction).toBeLessThanOrEqual(1);
+    expect(signature.riseHeightMeters).toBeGreaterThan(0);
   }
-  expect(scentPreset.scentParticles?.colors).toHaveLength(5);
-  expect(scentPreset.scentParticles?.placement).toEqual({
-    emittersPerChunk: 4,
-    minHeightMeters: 0.7,
-    maxHeightMeters: 1.3,
-  });
-  expect(scentPreset.scentParticles?.emission).toEqual({
-    particlesPerEmitter: 90,
-    cloudRadiusMeters: 2.8,
-    cloudHeightMeters: 1,
-  });
-  expect(scentPreset.scentParticles?.appearance.sizeMeters).toBe(0.15);
-  expect(scentPreset.scentParticles?.motion).toEqual({
-    riseHeightMeters: 1.5,
-    riseDurationSeconds: 10,
-    driftAmplitudeMeters: 0.9,
-    speedMultiplier: 1,
-  });
+
+  expect(scent.appearance.sizeMeters).toBe(0.12);
+  expect(scent.motion.riseDurationSeconds).toBe(10);
+  expect(scent.motion.speedMultiplier).toBe(1);
+  // The scent leans off its plant without being torn away from it.
+  expect(scent.motion.windResponseMeters).toBeGreaterThan(0);
+  expect(scent.motion.windResponseMeters).toBeLessThan(2);
+  // A route is carried much further than a plant's scent.
+  expect(scent.animals?.windResponseMeters ?? 0).toBeGreaterThan(
+    scent.motion.windResponseMeters,
+  );
+  // The trail must stay inside the 60-second animation loop it ages against.
+  expect(scent.animals?.lifetimeSeconds).toBeLessThanOrEqual(60);
 });
 
 test("Motion Level layers fly swarms onto the carried Echo world", () => {
