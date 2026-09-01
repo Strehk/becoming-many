@@ -131,12 +131,13 @@ The Magnetic preset additionally activates:
 
 - everything the Thermal preset activates, carried over unchanged, because
   senses layer instead of swapping
-- the Magnetic Sense terrain effect: deep-blue field lines draped over the
-  ground with pale traveling pulses, printed over the carried echo ramp
-  outside the thermal radius
-- the Magnetic Sense sky cue: one opaque camera-following dome carrying the
-  level haze everywhere except a deep-blue glow at the horizon toward the
-  field direction
+- the Magnetic Sense sky dome: one opaque camera-following draw carrying the
+  whole sense — a sky graded from the carried haze at the horizon to a pale
+  blue zenith, with a grainy, iridescent radical-pair shimmer condensing into
+  a tight patch at the magnetic north point and a mirrored one at the
+  southern counter-pole, ported from the previous version of the piece. The
+  ground stays untouched; the carried thermal view and echo ramp keep it
+  verbatim
 
 The Connections preset additionally activates:
 
@@ -485,28 +486,28 @@ Thermal contrast fades while the ground field establishes global orientation. It
 
 ### Performance Direction
 
-Reuse Terrain's existing material pass. Keep lines analytical and opaque; avoid line geometry, transparent overlays, physical lights, bloom, and extra render passes.
+Keep the sky analytical and opaque on its single dome draw; avoid line geometry, transparent overlays, physical lights, bloom, and extra render passes. Keep the expensive noise off the sky it cannot reach.
 
 ### Decided Art Direction
 
-The field is blue and always present (decided 2026-08-31), implemented in
-`src/modules/magnetic-sense/`: deep-blue ground lines (`#1140A4`) with pale
-gray-blue pulses (`#CDDBE2`) from the level-06 moodboard, authored in the
-preset like every other sense palette. The sky cue ships with the level as
-an opaque camera-following dome that carries the level haze everywhere
-except a deep-blue horizon glow toward the field direction — the same
-direction the ground pulses travel toward. The carried thermal view stays
-at full intensity ("senses layer, never swap"), so the stripes read outside
-its 30-metre radius; the guide's "thermal color reduces" cue waits for the
-dramaturgy driver. See
+The field lives entirely in the sky (decided 2026-09-01, replacing the
+blue ground lines decided 2026-08-31), implemented in
+`src/modules/magnetic-sense/`: one opaque camera-following dome carrying
+the previous version's radical-pair shimmer, ported and hardcoded. It
+grades from the carried level haze at the horizon to a pale blue zenith,
+and a grainy, iridescent pattern condenses into a tight patch at the
+magnetic north point with a mirrored one at the southern counter-pole. The
+ground carries no magnetic paint at all, so the carried thermal view and
+echo ramp keep it verbatim; the guide's "thermal color reduces" cue waits
+for the dramaturgy driver. See
 [06 — Magnetic Field Perception](06-magnetic-field-perception/README.md)
 for the exact preset.
 
 ### Open Art Decisions
 
-- final line opacity, pulse width, and flow timing against real headset
-  contrast
-- sky glow strength, elevation span, and azimuthal width
+- how the ported sky sits against the carried haze and the pale world of
+  the earlier levels, against real headset contrast
+- whether the southern counter-pole should stay visible at all
 - when and how far the carried thermal intensity reduces once a dramaturgy
   driver exists
 - relationship between flight direction and perceived orientation

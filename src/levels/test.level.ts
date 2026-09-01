@@ -31,17 +31,13 @@ export const level: LevelPreset = {
   magnetic: {
     intensity: 1,
     fieldDirectionDegreesFromNorth: 0,
-    lineSpacingMeters: 8,
-    lineWidthMeters: 0.35,
-    pulseWidthMeters: 0.1,
-    lineOpacity: 0.2,
-    flowSpeedMetersPerSecond: 8,
-    // The former module-constant diagnostic colors, now authored here so the
-    // diagnostic look survives the preset-authored palette contract.
+    fieldElevationDegrees: 7.5,
+    // Diagnostic colors: warm orange at the magnetic north point against a
+    // white counter-pole, so which end of the axis is which reads at a glance.
     colors: {
-      lineColor: 0xd97819,
-      pulseColor: 0xf9b33c,
-      skyGlowColor: 0xd97819,
+      northColor: 0xd97819,
+      southColor: 0xffffff,
+      zenithColor: 0xc4d7f6,
     },
   },
   grass: {

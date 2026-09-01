@@ -23,7 +23,8 @@ export const level: LevelPreset = {
     // The web reaches far past the 30-metre thermal radius and stays
     // within the guaranteed topology-window coverage and the echo haze.
     webRadiusMeters: 88,
-    // Slower than the 8 m/s magnetic pulses: nutrients, not signals.
+    // Underground and slow, against the magnetic pulses crossing the sky:
+    // nutrients, not signals.
     pulseSpeedMetersPerSecond: 4,
     sources: {
       vegetation: { nodeColor: 0xa5bdc3, weight: 1 },

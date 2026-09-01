@@ -17,7 +17,10 @@ The current 180-metre landscape test structure is deliberately bounded:
   followed the 180-metre view distance
 - compact instanced Vegetation and Rock draws that exclude rejected capacity
 - ten animal actors with at most four visible animation mixers and slope samples
-- Magnetic Sense reuses the Terrain draws and adds no geometry or render pass
+- Magnetic Sense adds one opaque sky-dome draw call, no geometry and no
+  render pass, and since 2026-09-01 no Terrain fragment work at all. Its
+  four-octave noise runs only inside the two pole cones, behind one coherent
+  early-out; the open sky costs a gradient and a handful of scalar ops
 - fixed Terrain staging arrays and no geometry allocation during recycling
 - fixed chunk-window capacity
 - stream queue capacity of 256 jobs

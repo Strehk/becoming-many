@@ -1,157 +1,144 @@
 /**
- * Purpose: Create magnetic field perception for the terrain and the sky.
- * Context: Magnetic perception must combine with existing ground presentations.
- * Responsibility: Share field uniforms between the terrain stripes and the sky glow.
- * Boundary: Terrain owns geometry and material; base ground color and Grass remain independent.
+ * Purpose: Create magnetic field perception as the previous version's sky, hardcoded.
+ * Context: The field reads as a radical-pair shimmer condensing toward the magnetic north point.
+ * Responsibility: Validate the preset, derive the field axis and drift, and drive the sky clock.
+ * Boundary: The sky module owns the dome and its material; terrain stays untouched.
  */
 
-import type { MeshBasicMaterial, PerspectiveCamera, Scene } from "three";
-import { Color, MathUtils, Vector2 } from "three";
-import { applyShaderPatch } from "../../utils/asset-loader/material-shader-patch";
+import type { PerspectiveCamera, Scene } from "three";
+import { Color, MathUtils, Vector3 } from "three";
 import type { WorldModule } from "../../world/module-runtime";
-import fragmentShader from "./magnetic-sense.frag.glsl?raw";
-import vertexShader from "./magnetic-sense.vert.glsl?raw";
 import type { MagneticSenseParameters } from "./magnetic-sense-settings";
 import { MAGNETIC_SENSE_SETTINGS } from "./magnetic-sense-settings";
-import { createMagneticSkyModule } from "./magnetic-sky";
+import {
+  createMagneticSkyModule,
+  type MagneticSkyColors,
+} from "./magnetic-sky";
 
 export type { MagneticSenseParameters } from "./magnetic-sense-settings";
 
-const MAGNETIC_SENSE_CACHE_KEY = "magnetic-sense-v1";
-
-export interface MagneticSenseEffect {
-  readonly applyTo: (material: MeshBasicMaterial) => void;
-  readonly update: (deltaSeconds: number) => void;
+/** The module beside its runtime drivers, as every driven sense returns. */
+export interface MagneticSenseModuleHandle {
+  readonly module: WorldModule;
+  /** Drive the sense strength at runtime; shimmer and sky share the value. */
+  readonly setIntensity: (intensity: number) => void;
+  /**
+   * Keep the dome's horizon on the live background. The dome is an opaque
+   * backdrop, so while a show lerps the clear color between world states the
+   * horizon must move with it or the sky would split from the distance.
+   */
+  readonly setSkyBackground: (background: Color) => void;
 }
 
 export interface MagneticSenseOptions {
   readonly scene: Scene;
   readonly camera: PerspectiveCamera;
-  /** The carried haze the sky dome shows everywhere outside the glow. */
+  /** The carried level haze the dome meets at the horizon. */
   readonly skyHazeColor: number;
 }
 
-export interface MagneticSenseEffects {
-  /** Terrain material decoration; ordered by the composition root. */
-  readonly terrain: MagneticSenseEffect;
-  /** Camera-following horizon-glow dome; owns its scene resources. */
-  readonly sky: WorldModule;
-  /** Drive the sense strength at runtime; stripes and sky share the value. */
-  readonly setIntensity: (intensity: number) => void;
-  /**
-   * Keep the dome's haze on the live background. The dome is an opaque
-   * backdrop, so while a show lerps the clear color between world states the
-   * haze must move with it or the sky would split from the horizon.
-   */
-  readonly setSkyBackground: (background: Color) => void;
-}
-
-/** Create the stripe effect and sky cue sharing one field uniform set. */
+/** Create the shimmer dome and the shared uniforms that steer it. */
 export function createMagneticSense(
   parameters: MagneticSenseParameters,
   options: MagneticSenseOptions,
-): MagneticSenseEffects {
+): MagneticSenseModuleHandle {
   validateMagneticSenseParameters(parameters);
-  const timeUniform = { value: 0 };
-  // One direction and one intensity object reach both consumers, so a future
-  // dramaturgy driver steers the whole sense through single values.
-  const directionUniform = {
-    value: getFieldDirection(parameters.fieldDirectionDegreesFromNorth),
-  };
+  // One axis, one intensity, one horizon, and one time object, so the show
+  // drivers and the shader agree through single values.
+  const axisUniform = { value: getFieldAxis(parameters) };
   const intensityUniform = { value: parameters.intensity };
-  const skyHazeUniform = { value: new Color(options.skyHazeColor) };
-  const uniforms = {
-    magneticTime: timeUniform,
-    magneticLineSpacing: { value: parameters.lineSpacingMeters },
-    magneticLineWidth: { value: parameters.lineWidthMeters },
-    magneticPulseWidth: { value: parameters.pulseWidthMeters },
-    magneticLineOpacity: { value: parameters.lineOpacity },
-    magneticFlowSpeed: { value: parameters.flowSpeedMetersPerSecond },
-    magneticIntensity: intensityUniform,
-    magneticFieldDirection: directionUniform,
-    magneticLineColor: { value: new Color(parameters.colors.lineColor) },
-    magneticPulseColor: { value: new Color(parameters.colors.pulseColor) },
-  };
+  const hazeUniform = { value: new Color(options.skyHazeColor) };
+  const timeUniform = { value: 0 };
+  const loopSeconds = MAGNETIC_SENSE_SETTINGS.animationLoopSeconds;
+  const sky = createMagneticSkyModule({
+    scene: options.scene,
+    camera: options.camera,
+    hazeColorUniform: hazeUniform,
+    colors: getSkyColors(parameters),
+    driftVelocity: getDriftVelocity(),
+    fieldAxisUniform: axisUniform,
+    intensityUniform,
+    timeUniform,
+  });
+
   return {
+    module: {
+      ...sky,
+      update: (deltaSeconds) => {
+        timeUniform.value = (timeUniform.value + deltaSeconds) % loopSeconds;
+        sky.update?.(deltaSeconds);
+      },
+    },
     setIntensity: (intensity) => {
       intensityUniform.value = intensity;
     },
     setSkyBackground: (background) => {
-      skyHazeUniform.value.copy(background);
+      hazeUniform.value.copy(background);
     },
-    terrain: {
-      applyTo: (material) => {
-        applyShaderPatch(material, {
-          cacheKey: MAGNETIC_SENSE_CACHE_KEY,
-          uniforms,
-          vertexHeader: vertexShader,
-          vertexAnchor: "#include <begin_vertex>",
-          vertexCall: "passMagneticWorldPosition(transformed);",
-          fragmentHeader: fragmentShader,
-          colorFragmentCall:
-            "diffuseColor.rgb = applyMagneticLines(diffuseColor.rgb);",
-        });
-      },
-      update: (deltaSeconds) => {
-        timeUniform.value =
-          (timeUniform.value + deltaSeconds) %
-          MAGNETIC_SENSE_SETTINGS.animationLoopSeconds;
-      },
-    },
-    sky: createMagneticSkyModule({
-      scene: options.scene,
-      camera: options.camera,
-      hazeColorUniform: skyHazeUniform,
-      glowColorUniform: { value: new Color(parameters.colors.skyGlowColor) },
-      fieldDirectionUniform: directionUniform,
-      intensityUniform,
-    }),
   };
 }
 
-function getFieldDirection(degreesFromNorth: number): Vector2 {
-  const angle = MathUtils.degToRad(degreesFromNorth);
-  return new Vector2(Math.sin(angle), Math.cos(angle));
+/** Resolve the authored palette once; the dome only ever sees colors. */
+function getSkyColors(parameters: MagneticSenseParameters): MagneticSkyColors {
+  return {
+    zenith: new Color(parameters.colors.zenithColor),
+    north: new Color(parameters.colors.northColor),
+    south: new Color(parameters.colors.southColor),
+    neutral: new Color(MAGNETIC_SENSE_SETTINGS.shimmer.neutralColor),
+  };
+}
+
+/**
+ * The axis pointing at the magnetic north point. North is +Z here, where the
+ * previous version used −Z; declination and inclination are otherwise its own.
+ */
+function getFieldAxis(parameters: MagneticSenseParameters): Vector3 {
+  const declination = MathUtils.degToRad(
+    parameters.fieldDirectionDegreesFromNorth,
+  );
+  const elevation = MathUtils.degToRad(parameters.fieldElevationDegrees);
+  const horizontal = Math.cos(elevation);
+
+  return new Vector3(
+    Math.sin(declination) * horizontal,
+    Math.sin(elevation),
+    Math.cos(declination) * horizontal,
+  );
+}
+
+/** The noise drift, one heading with a vertical part, in units per second. */
+function getDriftVelocity(): Vector3 {
+  const shimmer = MAGNETIC_SENSE_SETTINGS.shimmer;
+  const heading = MathUtils.degToRad(shimmer.driftHeadingDegrees);
+
+  return new Vector3(
+    Math.sin(heading),
+    shimmer.driftVertical,
+    Math.cos(heading),
+  ).multiplyScalar(shimmer.driftSpeed);
 }
 
 function validateMagneticSenseParameters(
   parameters: MagneticSenseParameters,
 ): void {
-  const positiveValues = [
-    parameters.lineSpacingMeters,
-    parameters.lineWidthMeters,
-    parameters.pulseWidthMeters,
-  ];
   if (!Number.isFinite(parameters.fieldDirectionDegreesFromNorth)) {
     throw new RangeError("Magnetic field direction must be finite");
   }
-  if (!positiveValues.every(isPositiveFinite)) {
+  if (!isElevation(parameters.fieldElevationDegrees)) {
     throw new RangeError(
-      "Magnetic line dimensions must be positive and finite",
+      "Magnetic field elevation must lie between the horizon and the zenith",
     );
-  }
-  if (parameters.pulseWidthMeters > parameters.lineWidthMeters) {
-    throw new RangeError("Magnetic pulse must fit inside its line");
-  }
-  if (!isNormalized(parameters.lineOpacity)) {
-    throw new RangeError("Magnetic line opacity must be between zero and one");
-  }
-  if (!isNonNegativeFinite(parameters.flowSpeedMetersPerSecond)) {
-    throw new RangeError("Magnetic flow speed must be finite and non-negative");
   }
   if (!isNormalized(parameters.intensity)) {
     throw new RangeError("Magnetic intensity must be between zero and one");
   }
 }
 
-function isPositiveFinite(value: number): boolean {
-  return Number.isFinite(value) && value > 0;
-}
-
-function isNonNegativeFinite(value: number): boolean {
-  return Number.isFinite(value) && value >= 0;
+/** Below the horizon the shimmer would sit in the ground, above the zenith it wraps. */
+function isElevation(value: number): boolean {
+  return Number.isFinite(value) && value >= 0 && value <= 90;
 }
 
 function isNormalized(value: number): boolean {
-  return isNonNegativeFinite(value) && value <= 1;
+  return Number.isFinite(value) && value >= 0 && value <= 1;
 }

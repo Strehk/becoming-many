@@ -172,8 +172,8 @@ tests/
 
 Air Particles, Animals, Grass, Rocks, Terrain, Vegetation, Magnetic Sense,
 Mycelium, and Zone Visualizer contain runtime implementations. Zone Visualizer
-supplies Terrain's optional base presentation; Magnetic Sense decorates that
-material. Their integration and the remaining landscape
+supplies Terrain's optional base presentation; Magnetic Sense owns its own
+sky dome and decorates no other material. Their integration and the remaining landscape
 contracts are defined in
 [Landscape Module Contracts](landscape-modules.md).
 
@@ -360,9 +360,10 @@ combine level-authored zone densities with module-owned assets, variants, seeds,
 and placement rules. They share only the small static-candidate math and compact
 multi-part GPU buffers.
 Animals own a small animated population and habitat-constrained movement. Zone
-Visualizer supplies diagnostic colors; Magnetic Sense overlays world-space
-stripes in the same material pass and owns the camera-following sky-glow
-dome. Mycelium owns the Connections sense: two fixed-pool transparent web
+Visualizer supplies diagnostic colors; Magnetic Sense owns one
+camera-following dome that carries the whole field — a graded sky with a
+radical-pair shimmer condensing at the magnetic poles, in a single opaque
+draw, ported from the previous version of the piece. Mycelium owns the Connections sense: two fixed-pool transparent web
 draw calls blended over the unchanged carried world, and the repository's
 first module-owned Web Worker,
 which computes the O(n²) web topology off the frame path (created on load,
@@ -399,8 +400,8 @@ is proven twice; zone and placement policy remain module-owned.
 | `WORLD_WIND` | Shared authored wind mean direction, strength, speed, swing, and gust |
 | `WorldWindSample` | The unit direction and strength blowing at one sampled moment |
 | `GrassPreset` | Level-authored density and blade height per supported grass zone |
-| `MagneticSenseParameters` | Magnetic direction, line, pulse, opacity, flow, intensity, and palette values |
-| `MagneticSenseEffects` | Terrain stripe effect and sky-dome module sharing one field uniform set |
+| `MagneticSenseParameters` | Magnetic field axis (direction and inclination), intensity, and pole palette |
+| `MagneticSenseModuleHandle` | The Magnetic Sense sky module plus its strength and background drivers |
 | `ScentParticlesParameters` | Level-authored scent signature, emission volume, and density per plant family and animal species, plus shared appearance and drift values |
 | `PlantScentSource` | Deterministic per-chunk plants one module exposes to the scent sense, with family and height |
 | `ScentActorBody` | Live position, height, and species of one scent-emitting actor |

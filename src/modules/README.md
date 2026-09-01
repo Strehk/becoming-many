@@ -27,11 +27,13 @@ instancing mechanism. Animals own their cloned actors and bounded animation.
 interpolated continuous zone conditions in the fragment shader without
 creating a second mesh, draw call, texture, or runtime lifecycle.
 
-`magnetic-sense` is a composable Terrain material effect. It overlays
-world-space stripes and flowing light packets while preserving the selected
-base ground color outside those stripes. It does not import or recolor Grass.
+`magnetic-sense` is a self-contained world module. It owns one
+camera-following opaque dome whose fragment shader grades the sky and
+condenses a radical-pair shimmer at the magnetic poles — the previous
+version's sky mode, ported and hardcoded. It decorates no other module's
+material and does not import or recolor Grass.
 
-`echo-depth` is the second composable material effect and the first with
+`echo-depth` is a composable material effect and the first with
 several consumers: the composition root creates one instance and applies it
 to Terrain, Vegetation, and Rocks through the shared `UnlitMaterialEffect`
 contract in `src/utils/asset-loader/material-effect.ts`. It replaces surface

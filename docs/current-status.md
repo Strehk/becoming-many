@@ -128,9 +128,10 @@ itself. The broker relays only; with none running the show plays unchanged.
   `unload`.
 - Air Particles, Scent Particles, Grass, Terrain, Vegetation, Rocks,
   Animals, and Motion Sense are implemented content modules. Zone Visualizer
-  is the active test-only Terrain presentation; Magnetic Sense, Echo Depth,
-  and Thermal Perception are composable material effects patching through
-  the shared `material-shader-patch.ts` helper. Echo Depth was the first
+  is the active test-only Terrain presentation; Echo Depth and Thermal
+  Perception are composable material effects patching through
+  the shared `material-shader-patch.ts` helper, and Magnetic Sense is a
+  standalone sky module that patches nothing. Echo Depth was the first
   multi-consumer effect (Terrain, Vegetation, and Rocks through the shared
   `UnlitMaterialEffect` contract); Thermal Perception extends the pattern
   to Animals and to per-consumer warmth sources. Both can reach Grass as
@@ -349,28 +350,39 @@ itself. The broker relays only; with none running the show plays unchanged.
 
 ### Magnetic Sense
 
-- Magnetic Sense is the level-06 sense with two consumers sharing one
-  field-direction and intensity uniform set: a terrain material effect and a
-  sky-dome world module, returned together by `createMagneticSense` as
-  `{ terrain, sky }`. Line, pulse, and sky glow colors are preset-authored
-  like every other sense palette; the composition root skips the sense
+- Magnetic Sense is the level-06 sense and lives entirely on the sky.
+  `createMagneticSense` returns the dome module beside two runtime drivers:
+  `setIntensity` fades the whole sense, and `setSkyBackground` keeps the
+  opaque dome's horizon on the live background while a show lerps the clear
+  color. The level authors the field axis, the intensity, and three colors —
+  north pole, south pole, and zenith; the composition root skips the sense
   entirely at intensity zero.
-- The terrain effect decorates Terrain's selected presentation material; it
-  adds no geometry, texture, light, transparent layer, or draw call.
-- Absolute world positions feed one analytical stream coordinate. Height warp
-  bends the lines with the existing terrain and `fwidth` stabilizes their edge.
-- Magnetic base lines blend at 20% opacity. Narrow bright pulses run strictly
-  inside their boundaries in the same opaque fragment pass. Pixels outside the
-  stripes retain their base ground color.
-- The sky cue is one opaque back-side dome (120 m radius, `depthWrite` off,
-  `renderOrder` −1, one added draw call) that follows the full camera
-  position each frame. Its fragment shader shows the level haze everywhere
-  except an analytic glow at the horizon toward the field direction — the
-  same direction the ground pulses travel toward; the shared intensity
-  uniform fades the glow back into the haze without transparency.
-- Magnetic Sense never reaches Grass: the stripes stay a Terrain material
-  effect, and the composition root does not put them in the grass effect
-  list.
+- One opaque back-side dome (120 m radius, `depthWrite` off, `renderOrder`
+  −1, one added draw call) follows the full camera position each frame. It
+  adds no geometry beyond itself, no texture, light, transparent layer, or
+  render pass.
+- Its fragment shader is ported from the previous version of the piece
+  (`bm-base`, sky mode `birdspec` at weight 1 in its saved state): a sky
+  graded from the carried haze at the horizon to a pale blue zenith, and a
+  grainy radical-pair pattern condensing into a tight patch at the magnetic
+  north point with a mirrored one at the southern counter-pole. The grain
+  drifts on a fixed heading, breathes, and carries an iridescent overlay
+  inside the pole zones.
+- The ported values are hardcoded in `magnetic-sense-settings.ts`; the level
+  authors only the field axis, the intensity, and three colors. TSL became
+  GLSL ES 3.00 and the noise loop is unrolled.
+- Four octaves of value noise are the most expensive fragment work in the
+  frame, so the shader takes one coherent early-out wherever the pole zone
+  cannot reach a displayable value — a deliberate exception to the
+  no-dynamic-branch rule, because the branch follows large contiguous screen
+  regions. The shared intensity uniform fades the shimmer back into the plain
+  sky without transparency.
+- The dome ends with `#include <colorspace_fragment>`, so it converts on
+  output like every other material instead of writing linear values straight
+  to the framebuffer.
+- Magnetic Sense reaches no other module: it patches neither Terrain nor
+  Grass, and appears in no material-effect list. Until 2026-09-01 the same
+  field was a Terrain stripe effect.
 
 ### Mycelium (Connections)
 
@@ -594,9 +606,11 @@ Fallow reports no dead production exports or complexity violations, but
 does report known duplicated placement code in Vegetation and Rocks and
 the deliberate data duplication between the sparse level presets that
 carry earlier sense layers verbatim (`scent`, `echo`, `motion`,
-`thermal`, `magnetic`, `connections`). The formerly parallel shader-patch idiom of Magnetic Sense and
-Echo Depth was extracted into the shared `material-shader-patch.ts` helper
-when Thermal Perception arrived as the third material effect.
+`thermal`, `magnetic`, `connections`). The formerly parallel shader-patch
+idiom of Magnetic Sense and Echo Depth was extracted into the shared
+`material-shader-patch.ts` helper when Thermal Perception arrived as the
+third material effect; Magnetic Sense left that family again on 2026-09-01
+when its field moved to the sky.
 
 Vegetation and Rocks share deterministic density acceptance and weighted asset
 selection. Their transform and placement policies remain module-local.

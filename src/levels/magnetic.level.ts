@@ -10,27 +10,26 @@ import { level as thermalLevel } from "./thermal.level";
 
 export const level: LevelPreset = {
   // Senses layer, never swap: the world carries the Thermal Perception preset
-  // verbatim; the heat view keeps winning inside its 30 m radius while the
-  // magnetic ground lines print over the echo ramp outside it.
+  // verbatim; the heat view keeps winning on the ground while the magnetic
+  // field fills the sky above it, untouched by either.
   ...thermalLevel,
-  // New in level 06: the moodboard palette #151935 #1140A4 #69BDE1 #CDDBE2
-  // #A394C3 #F9B33C colors the field. Deep blue carries the ground lines and
-  // the northern sky glow; the pale gray-blue carries the traveling pulses.
-  // Line dimensions start from the proven Test Level diagnostic values and
-  // remain tunable against real headset contrast.
+  // New in level 06: the sky of the previous version, ported and hardcoded.
+  // The radical-pair shimmer condenses into a tight patch at the magnetic
+  // north point and a mirrored one at the southern counter-pole; the module
+  // owns every shape and motion value, the preset only the axis and palette.
   magnetic: {
     // Full sense strength until a dramaturgy driver exists.
     intensity: 1,
     fieldDirectionDegreesFromNorth: 0,
-    lineSpacingMeters: 8,
-    lineWidthMeters: 0.35,
-    pulseWidthMeters: 0.1,
-    lineOpacity: 0.2,
-    flowSpeedMetersPerSecond: 8,
+    // The inclination the previous version last had authored.
+    fieldElevationDegrees: 7.5,
     colors: {
-      lineColor: 0x1140a4,
-      pulseColor: 0xcddbe2,
-      skyGlowColor: 0x1140a4,
+      // The previous version's authored pole colors: the northern patch reads
+      // dark against the pale sky, the southern one nearly dissolves in it.
+      northColor: 0x000000,
+      southColor: 0xffffff,
+      // Its pale blue zenith, as the sRGB hex that converts to the same value.
+      zenithColor: 0xc4d7f6,
     },
   },
 };
