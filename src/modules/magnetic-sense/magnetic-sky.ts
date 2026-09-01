@@ -5,8 +5,8 @@
  * Boundary: Field direction and intensity uniforms arrive shared from Magnetic Sense.
  */
 
-import type { PerspectiveCamera, Scene, Vector2 } from "three";
-import { BackSide, Color, Mesh, ShaderMaterial, SphereGeometry } from "three";
+import type { Color, PerspectiveCamera, Scene, Vector2 } from "three";
+import { BackSide, Mesh, ShaderMaterial, SphereGeometry } from "three";
 import type { WorldModule } from "../../world/module-runtime";
 import { MAGNETIC_SENSE_SETTINGS } from "./magnetic-sense-settings";
 import fragmentShader from "./magnetic-sky.frag.glsl?raw";
@@ -15,9 +15,13 @@ import vertexShader from "./magnetic-sky.vert.glsl?raw";
 export interface MagneticSkyOptions {
   readonly scene: Scene;
   readonly camera: PerspectiveCamera;
-  /** The carried level haze the dome shows everywhere outside the glow. */
-  readonly hazeColor: number;
-  readonly glowColor: number;
+  /**
+   * The haze the dome shows everywhere outside the glow. Shared so a show
+   * can keep it on the live background while that background lerps between
+   * world states; a static run never writes it after creation.
+   */
+  readonly hazeColorUniform: { readonly value: Color };
+  readonly glowColorUniform: { readonly value: Color };
   /** Shared with the terrain stripes so both consumers agree on the field. */
   readonly fieldDirectionUniform: { readonly value: Vector2 };
   /** Shared with the terrain stripes; a future dramaturgy driver writes it. */
@@ -67,8 +71,8 @@ function loadMagneticSky(
     uniforms: {
       magneticFieldDirection: options.fieldDirectionUniform,
       magneticIntensity: options.intensityUniform,
-      magneticSkyHazeColor: { value: new Color(options.hazeColor) },
-      magneticSkyGlowColor: { value: new Color(options.glowColor) },
+      magneticSkyHazeColor: options.hazeColorUniform,
+      magneticSkyGlowColor: options.glowColorUniform,
       magneticSkyGlowElevationSpan: { value: sky.glowElevationSpan },
       magneticSkyBelowHorizonElevation: { value: sky.belowHorizonElevation },
       magneticSkyAzimuthExponent: { value: sky.glowAzimuthExponent },

@@ -181,6 +181,143 @@ Decided 2026-08-30, applying the 2026-08-24 audit's P1 finding.
   `src/modules/connection-nodes.ts`; providers replay their own
   deterministic placement math and never import Mycelium.
 
+### Show Clock and Schedule Authority (2026-09-01)
+
+Resolves the clock-and-schedule half of
+[open decision 2](direction/open-decisions.md); the session state machine and
+the command bus stay open.
+
+- **One virtual clock, one schedule authority.** `src/dramaturgy` owns show
+  time and baked schedule data; `src/sound` owns the audio context and the
+  media elements. Neither imports the other's concerns:
+  `narrationCueAt(schedule, showTime)` is the entire contract between them,
+  and `level-runtime.ts` is the only place that knows both.
+- **The audio hardware clock is the timebase; the show clock is the
+  authority.** Show time is derived from `AudioContext.currentTime` on every
+  read rather than accumulated from frame deltas, so a long frame or a paused
+  XR session cannot drift the show away from its narration. Pause, seek, and
+  time scale are commands on the clock, and the narration follows. A seek
+  therefore lands *inside* a recording instead of retriggering it, which is
+  what makes rehearsal scrubbing work.
+- A suspended audio context stalls the timebase and so freezes show time. That
+  is the intended behavior, not a fault: if the audio is not running, the show
+  is not advancing.
+- **Schedules are typed TypeScript data**, per the configuration rule. A cue
+  holds the timeline until the next cue, so no cue carries a duration — the
+  same section runs up to nine seconds longer in German while cue times stay
+  shared, and deriving the slot from neighbours makes that mismatch harmless.
+- **The show is a run mode, not level data.** It reaches the runtime through
+  `LevelOptions.show`, beside `benchmark`, because the nine presets are a sense
+  development ladder rather than the shipped piece, and because they spread
+  each other — a field on one would silently carry into every later preset.
+  Language is a session parameter, armed once per session. *Amended 2026-09-01:*
+  the operator page can re-arm it while the piece is loaded, which pauses the
+  show and re-seats the narration at the same instant; a visitor session still
+  fixes it at `arm` time.
+- A benchmark never creates a show: audio decoding would add nondeterministic
+  work to the samples, and a fixed timestep is not the real time the show is
+  cut to.
+- **`?show` exposes the clock as `window.showClock`.** Nothing under `src`
+  reads it back, so removing it changes no behavior — the same one-way handoff
+  the benchmark report already uses. It is gated on the URL rather than the
+  build mode because rehearsal happens in the headset, against a production
+  build, where a conductor page on another machine is not reachable.
+  *Amended 2026-09-01:* `startLevel()` now returns the running level and
+  `main.ts` sets the global from it, so the runtime no longer touches a global
+  at all.
+
+### Station Transport and the Conductor Page (2026-09-01)
+
+Extends [open decision 2](direction/open-decisions.md) and settles the first
+part of [open decision 3](direction/open-decisions.md). The session state
+machine stays open.
+
+- **The operator page is the conductor.** One page holds the show transport and
+  the station status, rather than a rehearsal timeline and a separate
+  performance surface that would have to be kept in step.
+  [Session and Operator](direction/session-operator.md) is amended accordingly:
+  the timeline is in scope.
+- **A running level is returned, not reported through a callback.** The World
+  Runtime invokes its setup synchronously, so `startLevel()` can hand back a
+  `RunningLevel` — the show's clock and language, a flight reset, and a frame
+  metrics reader. `ShowRequest.onClockReady` is gone. One value, returned once,
+  is a smaller contract than an optional callback, and it keeps the composition
+  root free of the global that `?show` sets.
+- **The wire is a transport, not an event bus.** The broker relays a closed
+  message union between two windows: commands one way, status the other, plus
+  peer presence. There are no topics, no registration, and no lookup, and each
+  side has exactly one owner. The in-process command bus the engineering
+  standards forbid remains forbidden.
+- **Split by runtime, not by feature.** The protocol and the browser client are
+  browser source under `src/station`; the Bun broker is a root-level `station/`
+  process that imports them and exports nothing, mirroring how
+  `tests/benchmark/` drives `src/benchmark`.
+- **The show never depends on the station.** With no broker running the link
+  retries quietly and the piece plays exactly as it does without one, matching
+  the degraded-state rule in [Headset](direction/headset.md).
+- **The show reports on a timer, not per frame.** Show time derives from the
+  audio clock, which keeps running when the show window is unfocused or
+  occluded and its animation frames stop. The conductor projects the playhead
+  forward between reports, so the readout stays smooth at ten messages a second.
+- **The conductor reads schedule data and never authors it.** It imports
+  `PIECE_SCHEDULE` and the slot arithmetic in `schedule-layout.ts`; the show
+  length is deliberately not on the wire, because sending it would make the show
+  a second schedule authority. Cue times change by editing the typed data file.
+- **The conductor page must not import `src/levels` or `src/world`.** A single
+  value import would pull Three.js into a bundle that is otherwise a few
+  kilobytes.
+- **A flight reset is desktop rehearsal only.** Inside an `immersive-vr`
+  session Three.js overwrites the camera pose from the headset every frame, so
+  the reset has no effect there — as, today, ground clearance does not either.
+  A camera rig would fix both and belongs with the XR view-state contract,
+  which stays undecided.
+
+### The Timeline Sets the World State (2026-09-01)
+
+During `?show`, the schedule is the world authority as well as the narration
+authority. `?level` keeps selecting presets for development, benchmarks, and
+review, and is ignored while a show runs.
+
+- **Each cue carries the level it speaks over.** `NarrationCue` gains a
+  `level: ShowLevelName` field; timing and world changes stay in the one typed
+  schedule file. The piece opens and closes in White World, the five sense
+  cues map one to one, and the finale stands in the full Connections
+  synthesis.
+- **One composition, gated.** The show world is composed once from
+  `SHOW_LEVEL` — the ladder's last preset, which "senses layer, never swap"
+  makes the union — minus the development overlay. Standing in an earlier
+  world state means closing module gates and dropping sense intensities, never
+  recomposing. `showLevelAt` and `senseIntensityAt` are pure show-time
+  lookups, so a seek lands inside a world state and mid-fade exactly where
+  playing through would have.
+- **Everything fades; nothing cuts** *(amended 2026-09-01; the first landing
+  cut structure hard)*. The senses ramp their runtime intensity drivers over
+  `SENSE_FADE_SECONDS` from each cue boundary — Thermal, Magnetic, and
+  Connections through their shared shader uniforms, Scent and Motion through
+  sense-fade uniforms that scale their particles away. Echo Depth alone keeps
+  no driver: the surfaces its ramp decorates are exactly what the World Fade
+  dissolves on the same echo strength, so the depth response materializes
+  with them at full contrast instead of fading twice into mud. Solid
+  structure dissolves into and out of the background through the World Fade
+  effect (`src/modules/world-fade`): an opaque final-color mix toward the
+  live background, applied first so it wins over every sense decoration, and
+  never a transparent material — the mobile GPU sees no transition-time
+  overdraw. Terrain, Vegetation, and Rocks ride the echo strength; Animals
+  ride thermal. The background lerps between the states' colors over the
+  same window (`levelTransitionAt`), the magnetic sky dome's haze chases it
+  through `setSkyBackground`, and a gated module stays active exactly while
+  its introducing sense carries any strength, so a dissolving world keeps
+  rendering to the end of its fade. World fades are composed only for shows;
+  a static run's materials stay bare. Authored keyframed envelopes
+  ([Dramaturgy and Audio](direction/dramaturgy-audio.md)) remain the planned
+  evolution of the shared ramp constant.
+- **Flight stays clamped above the surface for the whole show**, including the
+  White World phases whose standalone preset has no ground: terrain that will
+  arrive at the echo cue must not find the visitor beneath it.
+- **The status reports the live world state.** `ShowStatus.levelName` now
+  carries the level the timeline currently holds, read from the running show,
+  so the operator watches the world move through its cues.
+
 ## Approved Navigation Boundary
 
 ### Input and Navigation

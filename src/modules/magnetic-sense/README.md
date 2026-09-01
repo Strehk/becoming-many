@@ -3,8 +3,10 @@
 This module contains the magnetic-field perception (level 06) with two
 consumers sharing one field-direction and intensity uniform set: terrain
 ground stripes and a sky-dome horizon glow. `createMagneticSense` returns
-both as `{ terrain, sky }`; a future dramaturgy driver steers the whole
-sense through the single shared uniform objects.
+both as `{ terrain, sky }` beside two runtime drivers: `setIntensity` fades
+the whole sense — lines, pulses, and glow together — and `setSkyBackground`
+keeps the opaque dome's haze on the live background while a show lerps the
+clear color between world states.
 
 The terrain effect: an analytical world-space stream coordinate produces
 stable terrain-draped stripes. The base lines blend over the selected

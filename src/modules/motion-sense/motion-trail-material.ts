@@ -24,6 +24,8 @@ interface MotionTrailMaterialOptions {
   readonly appearance: MotionTrailAppearance;
   readonly trail: MotionSenseParameters["trail"];
   readonly intensity: number;
+  /** Shared with the module handle; a show fades the sense through it. */
+  readonly senseFadeUniform?: { readonly value: number };
 }
 
 export interface MotionTrailMaterial {
@@ -38,6 +40,7 @@ export function createMotionTrailMaterial({
   appearance,
   trail,
   intensity,
+  senseFadeUniform,
 }: MotionTrailMaterialOptions): MotionTrailMaterial {
   const frameUniform = { value: 0 };
   const intensityUniform = { value: intensity };
@@ -56,6 +59,7 @@ export function createMotionTrailMaterial({
   pointsMaterial.onBeforeCompile = (shader) => {
     shader.uniforms.motionFrame = frameUniform;
     shader.uniforms.motionIntensity = intensityUniform;
+    shader.uniforms.motionSenseFade = senseFadeUniform ?? { value: 1 };
     shader.uniforms.motionLifetimeFrames = lifetimeUniform;
     shader.uniforms.motionExpansionMeters = expansionUniform;
     shader.uniforms.motionFadePower = fadePowerUniform;

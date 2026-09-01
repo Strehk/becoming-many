@@ -75,6 +75,9 @@ export interface ThermalPerceptionEffects {
    */
   readonly setHeatSources: (sources: readonly ThermalHeatSource[]) => void;
 
+  /** Drive the sense strength at runtime; every sensed surface shares it. */
+  readonly setIntensity: (intensity: number) => void;
+
   /**
    * Actor variant; the caller supplies the matrix mapping one animated mesh's
    * local space onto its actor's normalized body space, so the core-to-limb
@@ -156,6 +159,9 @@ export function createThermalPerception(
 
   return {
     setHeatSources: heat.setSources,
+    setIntensity: (intensity) => {
+      sharedUniforms.thermalIntensity.value = intensity;
+    },
     terrain: {
       applyTo: createPatchApplier({
         cacheKey: THERMAL_TERRAIN_CACHE_KEY,

@@ -59,6 +59,9 @@ language — a German chat still produces English artifacts.
   `bun run build` (typecheck + production build).
 - `bun run benchmark` replays a fixed route in Chromium and writes a report
   artifact. It needs a current `bun run build` and is not part of `bun test`.
+- `bun run station` starts the localhost broker that joins a show window
+  (`?show&station`) to the conductor page (`/conductor.html`). It is a Bun
+  process, not part of the app bundle, and the show runs without it.
 - Run all Bun, Vite, and Fallow checks before checkpoints and commits.
 
 ## Performance rules

@@ -58,6 +58,23 @@ optional module parameters. The view distance is also the hard visibility
 boundary used to size streamed module windows with an additional preparation
 margin. It is level data; the permanent runtime does not invent a world look.
 
+During a show (`?show`) the timeline is the world authority: the world is
+composed once from `SHOW_LEVEL` — the ladder's last preset, which the
+layering rule makes the union, minus the development overlay — and the Level
+Runtime stands it in the state the schedule calls for. Nothing cuts: the
+senses fade through runtime intensity drivers, the background lerps between
+the states' colors, and solid structure dissolves into and out of that live
+background through the World Fade effect — Terrain, Vegetation, and Rocks
+riding the echo strength, Animals the thermal strength. Echo Depth alone has
+no driver of its own: the surfaces it decorates are what the World Fade
+dissolves, so the ramp appears and vanishes with them at full strength
+rather than fading twice. Each gated module
+stays active exactly while its introducing sense carries any strength, so a
+fading world keeps rendering until it has fully dissolved. `?level` is
+ignored while a show runs. Flight stays clamped above the world surface
+through the whole show, including White World phases, so terrain arriving at
+the echo cue cannot find the visitor beneath it.
+
 `level-catalog.ts` names every preset so a run can select one without editing
 the entry point. It holds the default the browser opens and resolves an
 unknown request back to that default rather than failing. `?level=<name>` in

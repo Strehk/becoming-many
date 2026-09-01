@@ -14,19 +14,27 @@ replays the fixed route in Chromium, and writes one report artifact.
 bun run build
 bun run benchmark                                   # every level, full profile
 bun run benchmark --profile quick --level magnetic  # one level, coarse replay
+bun run benchmark --skip-level test                 # every level but that one
 bun run benchmark --headed                          # measure on a real GPU
+bun run benchmark --help                            # the flags, without a run
 ```
 
 | Flag | Meaning |
 | --- | --- |
 | `--profile <full\|quick>` | Replay density. `full` is the 90 Hz replay; `quick` is coarser and faster. |
 | `--level <name>` | Repeatable. Defaults to every level in the catalog. |
+| `--skip-level <name>` | Repeatable. Leaves a level out, and wins over `--level`. |
 | `--headed` | Use this machine's GPU. Headless falls back to SwiftShader software rendering. |
 | `--out <dir>` | Artifact directory. Defaults to `benchmark-results/`. |
 | `--timeout <seconds>` | Per-level cap. Defaults to 600. |
 | `--check` | Fail when counters differ from the accepted baseline. |
 | `--update` | Accept the measured counters into `benchmark-baseline.ts`. |
 | `--base-url <url>` | Use an already running server instead of starting `vite preview`. |
+| `--help`, `-h` | Print the same flags on the terminal and measure nothing. |
+
+Skipping every level is refused rather than measured: an empty run would write
+an artifact that looks like a clean result. `benchmark-options.ts` owns the
+parsing and the help text, and is covered by `benchmark-options.test.ts`.
 
 ## While it runs
 
@@ -70,7 +78,8 @@ Without a GPU, Chromium falls back to SwiftShader, which is fill-rate bound.
 Dense geometry is survivable — the Connections level replays in about 100
 seconds at the `quick` profile — but the grass-carrying `test` and
 `design-test` presets exceed several minutes per run and time out. Measure
-those with `--headed` on a machine with a GPU.
+those with `--headed` on a machine with a GPU, or leave them out of a headless
+run with `--skip-level test --skip-level design-test`.
 
 ## Baseline
 

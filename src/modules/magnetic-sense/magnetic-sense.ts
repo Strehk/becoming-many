@@ -36,6 +36,14 @@ export interface MagneticSenseEffects {
   readonly terrain: MagneticSenseEffect;
   /** Camera-following horizon-glow dome; owns its scene resources. */
   readonly sky: WorldModule;
+  /** Drive the sense strength at runtime; stripes and sky share the value. */
+  readonly setIntensity: (intensity: number) => void;
+  /**
+   * Keep the dome's haze on the live background. The dome is an opaque
+   * backdrop, so while a show lerps the clear color between world states the
+   * haze must move with it or the sky would split from the horizon.
+   */
+  readonly setSkyBackground: (background: Color) => void;
 }
 
 /** Create the stripe effect and sky cue sharing one field uniform set. */
@@ -51,6 +59,7 @@ export function createMagneticSense(
     value: getFieldDirection(parameters.fieldDirectionDegreesFromNorth),
   };
   const intensityUniform = { value: parameters.intensity };
+  const skyHazeUniform = { value: new Color(options.skyHazeColor) };
   const uniforms = {
     magneticTime: timeUniform,
     magneticLineSpacing: { value: parameters.lineSpacingMeters },
@@ -64,6 +73,12 @@ export function createMagneticSense(
     magneticPulseColor: { value: new Color(parameters.colors.pulseColor) },
   };
   return {
+    setIntensity: (intensity) => {
+      intensityUniform.value = intensity;
+    },
+    setSkyBackground: (background) => {
+      skyHazeUniform.value.copy(background);
+    },
     terrain: {
       applyTo: (material) => {
         applyShaderPatch(material, {
@@ -86,8 +101,8 @@ export function createMagneticSense(
     sky: createMagneticSkyModule({
       scene: options.scene,
       camera: options.camera,
-      hazeColor: options.skyHazeColor,
-      glowColor: parameters.colors.skyGlowColor,
+      hazeColorUniform: skyHazeUniform,
+      glowColorUniform: { value: new Color(parameters.colors.skyGlowColor) },
       fieldDirectionUniform: directionUniform,
       intensityUniform,
     }),

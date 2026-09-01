@@ -45,11 +45,23 @@ a fixed timestep, and `bun run benchmark` drives that mode in Chromium and
 writes a report artifact. Its `renderer.info` counters repeat exactly; its
 frame times are machine-local measurements.
 
+`?show[&language=<de|en>]` plays the piece: the schedule is the world
+authority, standing the composed show world in each cue's level — senses,
+structure, and background all fade across cue boundaries, nothing cuts — and
+the clock is exposed as `window.showClock` (`?level` is ignored while a show
+runs). Adding `?station` connects that show to
+a localhost broker started with `bun run station`, so the conductor page at
+`/conductor.html` can drive it from a second window: one scrubbable timeline of
+the schedule, play and hold, time scale, jump to any cue, a next-cue countdown,
+a DE/EN re-arm, and resets for the show clock, the flight, and the show window
+itself. The broker relays only; with none running the show plays unchanged.
+
 ## Implemented System
 
 ### Runtime
 
-- `src/main.ts` only selects the active level and calls `startLevel()`.
+- `src/main.ts` only selects the active level, calls `startLevel()`, and hands
+  the returned `RunningLevel` to the station link when `?station` is present.
 - `level-runtime.ts` preloads fixed assets for enabled modules, applies the sparse preset,
   creates only enabled modules, and connects desktop controls.
 - `world-runtime.ts` owns the Three.js scene, perspective camera, WebGL
@@ -58,6 +70,10 @@ frame times are machine-local measurements.
   code.
 - `webxr-entry.ts` enables WebXR and adds Three.js `VRButton` for
   `immersive-vr` sessions.
+- `src/station` owns the wire between the show window and the conductor page;
+  the Bun broker at `station/station-server.ts` relays between them and holds no
+  show state. `src/conductor` owns the operator page and reads schedule data
+  without authoring it.
 - Every frame updates desktop movement, active modules, bounded stream work,
   and then renders once.
 
@@ -177,8 +193,9 @@ frame times are machine-local measurements.
   revisiting a chunk recreates the same emitters.
 - One looping vertex-shader time uniform drives rise, sway, and a life-cycle
   point-size fade; fully faded points leave clip space and rasterize nothing.
-- A sense-intensity uniform (0..1) scales the fade; it is authored through the
-  preset because the runtime schedule driver remains an open decision.
+- A sense-intensity uniform (0..1) scales the fade; it is still authored
+  through the preset. The Dramaturgy Runtime now supplies the show clock and
+  schedule, but it drives narration only — per-sense envelopes are not built.
 - Module unload removes the object and disposes geometry and material.
 
 ### Terrain
@@ -529,7 +546,7 @@ loading or target-device evidence requires it.
 
 - passthrough, `immersive-ar`, operator control, and presentation transitions
 - normalized device-independent navigation and ICAROS input
-- complete Test Level training flow, audio timeline, and narrative state transitions
+- complete Test Level training flow and narrative state transitions
 - floating origin, LOD, relevance fields, and spatial instance pools
 - asset prefetching, retries, progress UI, and distance-based stream priorities
 - visible water, other perception effects, mycelium, sky additions, and sound

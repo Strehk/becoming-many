@@ -6,7 +6,7 @@
  */
 
 import type { WebGLRenderer } from "three";
-import { FrameMetricsSampler } from "./frame-metrics";
+import type { FrameMetrics } from "./frame-metrics";
 import "./test-overlay.css";
 
 const DISPLAY_REFRESH_SECONDS = 0.25;
@@ -25,6 +25,7 @@ interface MetricOutput {
 export function createTestOverlay(
   container: HTMLElement,
   renderer: WebGLRenderer,
+  readFrameMetrics: () => FrameMetrics | undefined,
 ): TestOverlay {
   const root = document.createElement("aside");
   root.className = "test-overlay";
@@ -36,17 +37,15 @@ export function createTestOverlay(
   const triangles = createMetricOutput(root, "DREIECKE");
   container.append(root);
 
-  const frameMetrics = new FrameMetricsSampler();
   let elapsedSeconds = 0;
 
   return {
     update(deltaSeconds): void {
-      frameMetrics.add(deltaSeconds);
       elapsedSeconds += deltaSeconds;
       if (elapsedSeconds < DISPLAY_REFRESH_SECONDS) return;
 
       elapsedSeconds %= DISPLAY_REFRESH_SECONDS;
-      const snapshot = frameMetrics.read();
+      const snapshot = readFrameMetrics();
       if (!snapshot) return;
 
       fps.value.textContent = INTEGER_FORMAT.format(

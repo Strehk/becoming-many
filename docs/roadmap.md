@@ -86,10 +86,12 @@ advance.
 ## 7. Narrative Runtime
 
 - Test Level
-- audio master clock
+- audio master clock *(built: one virtual show clock on the audio timebase)*
+- operator transport and restart *(built: the conductor page scrubs the
+  schedule and resets the clock, the flight, and the show window)*
 - typed state transitions
 - module preloading and unloading around timeline cues
-- operator restart and recovery
+- per-sense intensity envelopes on the schedule
 
 ## 8. Perception Modules
 

@@ -31,8 +31,28 @@ src/
 │   ├── benchmark-route.ts
 │   ├── benchmark-run.ts
 │   └── benchmark-settings.ts
+├── conductor/
+│   ├── conductor-keys.ts
+│   ├── conductor-main.ts
+│   ├── conductor-page.ts
+│   ├── conductor-settings.ts
+│   ├── conductor-state.ts
+│   ├── cue-inspector.ts
+│   ├── playhead.ts
+│   ├── show-timeline.ts
+│   ├── status-strip.ts
+│   ├── time-format.ts
+│   └── transport-panel.ts
 ├── control/
-│   └── desktop-controls.ts
+│   ├── desktop-controls.ts
+│   ├── flight-ground-clearance.ts
+│   └── flight-reset.ts
+├── dramaturgy/
+│   ├── narration-catalog.ts
+│   ├── narration-schedule.ts
+│   ├── piece-schedule.ts
+│   ├── schedule-layout.ts
+│   └── show-clock.ts
 ├── world-surface/
 │   ├── height-field.ts
 │   ├── surface-settings.ts
@@ -70,6 +90,13 @@ src/
 │   ├── zone-visualizer/
 │   └── vegetation/
 ├── sound/
+│   ├── audio-timebase.ts
+│   └── narration-player.ts
+├── station/
+│   ├── show-station.ts
+│   ├── station-link.ts
+│   ├── station-protocol.ts
+│   └── station-settings.ts
 ├── utils/
 │   ├── asset-loader/
 │   ├── sound-loader/
@@ -84,6 +111,9 @@ src/
     ├── wind.ts
     ├── world-settings.ts
     └── world-runtime.ts
+
+station/
+└── station-server.ts
 
 public/
 ├── animals/
@@ -223,10 +253,51 @@ Defines the immutable `WORLD_WIND` direction, strength, and speed. Every
 wind-reactive component imports this shared configuration instead of defining
 component-local wind values. It creates no runtime resources or mutable state.
 
+### `dramaturgy/`
+
+Owns show time. `show-clock.ts` derives it from an injected monotonic timebase
+— never accumulated frame deltas — and provides play, pause, seek, and time
+scale. `narration-schedule.ts` holds the baked schedule contract and the pure
+`narrationCueAt` lookup; `piece-schedule.ts` is the authored data;
+`narration-catalog.ts` names the recordings and their measured lengths;
+`schedule-layout.ts` measures a schedule into cue slots, recording lengths, and
+headroom, and is the one place that arithmetic lives.
+No browser API, so all of it is under `bun test`.
+
+### `sound/`
+
+Owns how the piece is heard. `audio-timebase.ts` owns the one `AudioContext`
+and supplies its `currentTime` as the show clock's timebase, resuming on the
+first gesture. `narration-player.ts` holds one preloaded element per cue for
+the session's language and follows the clock. It never decides when a cue
+plays.
+
 ### `control/`
 
 Desktop controls own pointer lock, keyboard state, and direct camera movement.
-Input handling remains outside the World Engine.
+`flight-reset.ts` returns the flight to a level's start pose for the conductor;
+like ground clearance, it has no effect inside an XR session, where Three.js
+writes the camera pose from the headset every frame. Input handling remains
+outside the World Engine.
+
+### `station/` and `station/station-server.ts`
+
+Owns the wire between a station's two windows, and nothing else: no show state,
+no schedule. `station-protocol.ts` is the closed message union plus a parser
+that refuses anything malformed rather than throwing inside a socket handler;
+`station-link.ts` is the reconnecting browser client; `show-station.ts` applies
+commands to the running level and publishes status on a timer, which keeps
+reporting when the show window is unfocused and its animation frames stop.
+The broker is a Bun process at the repository root, run by `bun run station`;
+it exports nothing and nothing bundles it.
+
+### `conductor/`
+
+Owns the operator page at `conductor.html` — the show transport, the schedule
+timeline and its scrub, the status strip, and the resets. It reads schedule data
+and never authors it, holds no show time of its own, and must not import
+`levels/` or `world/`: one value import would pull Three.js into a bundle that
+is otherwise a few kilobytes.
 
 ### `levels/`
 
@@ -329,10 +400,15 @@ is proven twice; zone and placement policy remain module-owned.
 | `VolumeChunkAssignment` | Fixed slot, absolute X/Y/Z volume, origin, and revision |
 | `StreamJob` | Stable key, currentness check, and one bounded work step |
 | `DesktopControls` | One per-frame desktop movement update |
+| `RunningLevel` | A started level's flight reset and frame metrics, returned by `startLevel()` |
+| `RunningShow` | A running show's clock, language, and audio state |
+| `StationMessage` | The closed union carried between the show window and the conductor |
+| `CueSlot` | One cue's slot, recording length, and headroom in a chosen language |
 
 ## Architectural Boundaries
 
-- `main.ts` knows only the selected level and `startLevel()`.
+- `main.ts` knows only the selected level, `startLevel()`, and whether a station
+  was requested.
 - `level-runtime.ts` is the only file that composes concrete modules and controls.
 - The World Engine owns execution mechanisms, not experience content.
 - Levels provide values; modules own resources and behavior.
@@ -340,5 +416,11 @@ is proven twice; zone and placement policy remain module-owned.
   generation and presentation remain inside the module.
 - Chunk coordinates, work scheduling, and rendering remain separate concerns.
 - No module starts a private render loop.
-- No global event bus or generic service registry is present.
+- Dramaturgy owns show time, Sound owns playback, and they meet only in
+  `level-runtime.ts` through one cue-lookup contract.
+- No global event bus or generic service registry is present. The station link
+  is not one: it is a cross-process transport with a closed message union, one
+  owner per side, and no topics, registration, or lookup.
+- The conductor page reads the schedule and commands the clock; it never becomes
+  a second schedule authority, and the show length is not put on the wire.
 - Tests live outside `src/` and mirror the production ownership areas.

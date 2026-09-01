@@ -20,6 +20,9 @@
 ## Language
 
 - **Language is a session parameter (DE/EN)**, fixed when staff arm a session.
+  The operator page is where staff set it. It can be re-armed while the piece is
+  loaded, which pauses the show and re-seats the narration at the same instant;
+  that is a rehearsal affordance, not something done under a visitor.
 - `script/de.md` and `script/en.md` are both shippable content; narration
   assets are addressed as `narration/<lang>/<cueId>`. Cue *times* are shared —
   only audio files (and audience-facing copy) switch.

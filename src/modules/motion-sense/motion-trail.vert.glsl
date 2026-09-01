@@ -7,6 +7,7 @@
 
 uniform float motionFrame;
 uniform float motionIntensity;
+uniform float motionSenseFade;
 uniform float motionLifetimeFrames;
 uniform float motionExpansionMeters;
 uniform float motionFadePower;
@@ -28,7 +29,7 @@ vec3 expandMotionTrailParticle(vec3 printedPosition) {
 
   // Thinned particles carry zero spawn intensity and never rasterize.
   motionTrailFade = pow(1.0 - age, motionFadePower)
-    * motionSpawnIntensity * motionIntensity;
+    * motionSpawnIntensity * motionIntensity * motionSenseFade;
 
   return printedPosition
     + motionExpansionDirection * pow(age, MOTION_EXPANSION_EASE) * motionExpansionMeters;

@@ -19,6 +19,28 @@ Both files carry the same nine sections in the same order:
 | 8 | Overload | Überforderung | all layers, too much |
 | 9 | Return | Rückkehr | layers stripped away |
 
+## Recordings
+
+`public/audio/en/` and `public/audio/de/` hold eight recordings for these nine
+sections: **file 7 carries both Finale and Overload** as a single take, so
+nothing is unrecorded.
+
+| File | Sections |
+|---|---|
+| 1 | Prologue |
+| 2 | Chemical Sense — Scent |
+| 3 | Bat — Depth |
+| 4 | Insect — Motion |
+| 5 | Infrared |
+| 6 | Migratory Bird — The Magnetic Field |
+| 7 | Finale **and** Overload |
+| 8 | Return |
+
+The mapping was reconstructed from delivery rate — sections 1-6 run at 78-96
+words per minute in both languages, and only the merged reading of file 7 lands
+in that band, where Finale alone would need an implausible 32.5. **Confirm it
+by listening before the cue times are tuned.**
+
 ## Notes
 
 - The narration text itself is audience-facing experience content and therefore stays in its own
