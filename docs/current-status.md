@@ -45,11 +45,20 @@ a fixed timestep, and `bun run benchmark` drives that mode in Chromium and
 writes a report artifact. Its `renderer.info` counters repeat exactly; its
 frame times are machine-local measurements.
 
+`?show[&language=<de|en>]` plays the narration schedule against the preset and
+exposes the clock as `window.showClock`. Adding `?station` connects that show to
+a localhost broker started with `bun run station`, so the conductor page at
+`/conductor.html` can drive it from a second window: one scrubbable timeline of
+the schedule, play and hold, time scale, jump to any cue, a next-cue countdown,
+a DE/EN re-arm, and resets for the show clock, the flight, and the show window
+itself. The broker relays only; with none running the show plays unchanged.
+
 ## Implemented System
 
 ### Runtime
 
-- `src/main.ts` only selects the active level and calls `startLevel()`.
+- `src/main.ts` only selects the active level, calls `startLevel()`, and hands
+  the returned `RunningLevel` to the station link when `?station` is present.
 - `level-runtime.ts` preloads fixed assets for enabled modules, applies the sparse preset,
   creates only enabled modules, and connects desktop controls.
 - `world-runtime.ts` owns the Three.js scene, perspective camera, WebGL
@@ -58,6 +67,10 @@ frame times are machine-local measurements.
   code.
 - `webxr-entry.ts` enables WebXR and adds Three.js `VRButton` for
   `immersive-vr` sessions.
+- `src/station` owns the wire between the show window and the conductor page;
+  the Bun broker at `station/station-server.ts` relays between them and holds no
+  show state. `src/conductor` owns the operator page and reads schedule data
+  without authoring it.
 - Every frame updates desktop movement, active modules, bounded stream work,
   and then renders once.
 

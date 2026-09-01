@@ -23,19 +23,35 @@ idle ──staff: arm──► boarding ──staff: tutorial──► tutorial 
   confirmed state (headset / streaming / M5 as applicable); a stale connection
   or missing acknowledgement blocks the transition with an operator-visible
   reason. Staff can override explicitly — never silently.
-- Language (DE/EN) is fixed at `arm` time for the whole session.
+- Language (DE/EN) is fixed at `arm` time for the whole session. The operator
+  page holds that control; re-arming it mid-piece is a rehearsal affordance,
+  and it pauses the show rather than switching under a visitor.
 
 ## Operator page
 
-Runs on the second monitor of the station PC. Scope is deliberately narrow:
-**session control, status monitoring, live visitor view** — not a
-timeline or sense-override surface (that is a dev/rehearsal concern).
+Runs on the second monitor of the station PC at `/conductor.html`, beside a show
+window opened at `/?show&station`. Scope is **session control, show transport,
+status monitoring, live visitor view** — but not a sense-override surface, which
+stays a dev concern.
 
-- **Session control**: the state-machine buttons, language toggle, volume.
+The show transport was originally scoped out of this page as rehearsal-only.
+It is in: a person conducts the piece live, and holding, jumping to a section,
+and recovering a lost cue are exactly what conducting means. Building it once,
+here, avoids a second operator surface that would have to be kept in step.
+
+- **Show transport** *(built)*: one scrubbable timeline of the narration
+  schedule, play and hold, time scale, jump to any cue, a next-cue countdown,
+  and resets for the show clock and the flight. Each cue draws as its slot with
+  its recording inside it, so overrun and dead air are visible per language
+  while cue times are being tuned. See [`src/conductor`](../../src/conductor/README.md).
+- **Session control** *(not built)*: the state-machine buttons, volume.
 - **Monitoring**: M5 connected / last-frame age / calibration (+ wrong-device
   warning), app FPS summary, headset battery + worn state + streaming status
   ([Headset](headset.md)), audio state. One glance answers "is everything OK".
 - **Live visitor view**: the app mirrors its rendered frame — same machine, so
   a scaled-down copy at reduced rate is enough; no headset API involved.
-- Transport: a small localhost station server brokers messages; the experience
-  page and operator page each hold one WebSocket to it.
+- Transport *(built)*: a small localhost station server brokers messages; the
+  experience page and operator page each hold one WebSocket to it. Started with
+  `bun run station`; see [`station/`](../../station/README.md) and
+  [`src/station`](../../src/station/README.md). The broker relays only — it
+  holds no show state, and the show plays normally when it is not running.

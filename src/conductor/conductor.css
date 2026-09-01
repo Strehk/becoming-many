@@ -1,0 +1,296 @@
+/*
+ * Purpose: Style the conductor page for a lit room and a glance from a metre away.
+ * Context: The page runs on the station's second monitor while the show plays.
+ * Responsibility: Define the page grid, transport, timeline, and warning states.
+ * Boundary: The immersive world and the development overlay are styled elsewhere.
+ */
+
+.conductor {
+  --ground: #0d1311;
+  --panel: #151d1a;
+  --edge: rgb(255 255 255 / 8%);
+  --ink: #f4f7f5;
+  --muted: #8b968f;
+  --live: #6ee7a8;
+  --warn: #f2b45c;
+  --alarm: #f2735c;
+
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-height: 100vh;
+  padding: 16px;
+  background: var(--ground);
+  color: var(--ink);
+  font-family:
+    ui-monospace, "SFMono-Regular", Menlo, Monaco, Consolas, monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Status strip ---------------------------------------------------------- */
+
+.conductor__status {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 24px;
+  align-items: baseline;
+  padding: 12px 16px;
+  background: var(--panel);
+  border: 1px solid var(--edge);
+  border-radius: 12px;
+  font-size: 13px;
+}
+
+.conductor__reading {
+  color: var(--muted);
+}
+
+.conductor__reading[data-state="live"] {
+  color: var(--live);
+}
+
+.conductor__reading[data-state="warn"] {
+  color: var(--warn);
+}
+
+.conductor__reading[data-state="alarm"] {
+  color: var(--alarm);
+}
+
+.conductor__banner {
+  padding: 14px 16px;
+  color: var(--ground);
+  font-size: 15px;
+  font-weight: 700;
+  background: var(--warn);
+  border-radius: 12px;
+}
+
+/* Transport ------------------------------------------------------------- */
+
+.conductor__transport {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  align-items: center;
+  padding: 20px 24px;
+  background: var(--panel);
+  border: 1px solid var(--edge);
+  border-radius: 12px;
+}
+
+.conductor__clock {
+  font-size: 56px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.conductor__clock-total {
+  color: var(--muted);
+  font-size: 24px;
+}
+
+.conductor__cues {
+  display: grid;
+  gap: 4px;
+  font-size: 14px;
+}
+
+.conductor__cue-label {
+  color: var(--muted);
+}
+
+.conductor__cue-name {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.conductor__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-left: auto;
+}
+
+.conductor__group {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  padding: 4px;
+  background: var(--ground);
+  border-radius: 10px;
+}
+
+.conductor__group-label {
+  padding: 0 8px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.conductor button {
+  padding: 10px 16px;
+  color: var(--ink);
+  font: inherit;
+  font-size: 14px;
+  background: var(--ground);
+  border: 1px solid var(--edge);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.conductor__group button {
+  border-color: transparent;
+}
+
+.conductor button:hover:not(:disabled) {
+  border-color: rgb(255 255 255 / 24%);
+}
+
+.conductor button:disabled {
+  color: var(--muted);
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.conductor button[aria-pressed="true"] {
+  color: var(--ground);
+  font-weight: 700;
+  background: var(--live);
+}
+
+.conductor button[data-armed="true"] {
+  color: var(--ground);
+  font-weight: 700;
+  background: var(--alarm);
+}
+
+.conductor__transport-button {
+  min-width: 128px;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+/* Timeline -------------------------------------------------------------- */
+
+.conductor__timeline {
+  display: grid;
+  gap: 12px;
+  padding: 20px 24px;
+  background: var(--panel);
+  border: 1px solid var(--edge);
+  border-radius: 12px;
+}
+
+.timeline__ruler {
+  position: relative;
+  height: 16px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.timeline__tick {
+  position: absolute;
+  top: 0;
+  padding-left: 4px;
+  border-left: 1px solid var(--edge);
+}
+
+.timeline__track {
+  position: relative;
+  height: 72px;
+  overflow: hidden;
+  border: 1px solid var(--edge);
+  border-radius: 8px;
+  cursor: pointer;
+  touch-action: none;
+}
+
+/* Placed by cue time, so a gap in the schedule reads as empty track. */
+.timeline__slot {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  /* Percentage widths are show time; a border must not add to them. */
+  box-sizing: border-box;
+  padding: 6px 0 0 6px;
+  overflow: hidden;
+  font-size: 11px;
+  background: rgb(255 255 255 / 4%);
+  border-right: 1px solid var(--edge);
+}
+
+.timeline__slot:last-child {
+  border-right: 0;
+}
+
+.timeline__slot[aria-selected="true"] {
+  background: rgb(255 255 255 / 12%);
+}
+
+.timeline__slot-name {
+  position: relative;
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* The recording inside its slot: the gap to the right is the silence. */
+.timeline__recording {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 26px;
+  background: var(--live);
+  opacity: 0.55;
+}
+
+.timeline__recording[data-overrun="true"] {
+  background: var(--alarm);
+  opacity: 0.85;
+}
+
+.timeline__playhead {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--ink);
+  box-shadow: 0 0 8px rgb(0 0 0 / 60%);
+  pointer-events: none;
+}
+
+.conductor__jumps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.conductor__jumps button {
+  padding: 6px 10px;
+  font-size: 12px;
+}
+
+/* Inspector ------------------------------------------------------------- */
+
+.conductor__inspector {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 24px;
+  padding: 12px 16px;
+  color: var(--muted);
+  font-size: 13px;
+  background: var(--panel);
+  border: 1px solid var(--edge);
+  border-radius: 12px;
+}
+
+.conductor__inspector strong {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+/* A disconnected station must not look like a show sitting still. */
+.conductor[data-live="false"] .conductor__transport,
+.conductor[data-live="false"] .conductor__timeline {
+  opacity: 0.45;
+}

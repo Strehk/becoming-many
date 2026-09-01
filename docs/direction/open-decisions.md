@@ -24,19 +24,39 @@ owns show time and baked schedule data, `src/sound` owns audio playback, and
 they meet only through `level-runtime.ts` and one cue-lookup contract. No event
 bus, service locator, or singleton was needed.
 
+**Extended (2026-09-01).** The operator page now reaches the show clock, over a
+localhost WebSocket broker — see
+[Station Transport and the Conductor Page](../architecture-decisions.md). That is
+a cross-process wire with one closed message union and one owner on each side,
+not an in-process bus: no topics, no registration, no lookup.
+
 Still open:
 
-- The pre-import draft's **command bus** and **perf router**. Neither has a
-  concrete consumer yet, and the engineering standards forbid global event
-  buses, service locators, and hidden singletons.
+- The pre-import draft's in-process **command bus** and **perf router**. Neither
+  has a concrete consumer yet, and the engineering standards still forbid global
+  event buses, service locators, and hidden singletons. The station transport is
+  not a precedent for one.
 - The **session state machine** ([Session and Operator](session-operator.md)):
-  `idle → boarding → tutorial → piece → return`, which phase owns starting and
-  stopping the show clock, and how the operator page reaches it.
+  `idle → boarding → tutorial → piece → return`, and which phase owns starting
+  and stopping the show clock. *How* the operator page reaches the runtime is
+  now settled; *what* it should reach beyond the clock is not.
 
 ## 3. Repository additions for installation work
 
-- Coming areas: operator page, M5 firmware (PlatformIO), headset agent
-  (Android), a shared wire-protocol module, a station localhost server, and a
-  technician CLI.
-- Placement and naming are decided when the first of these lands; the
-  pre-import draft's proposed repository layout is not binding.
+**Partly decided (2026-09-01).** The first three landed, so their placement is
+now fixed and the rest follow the same rule: **split by runtime, not by
+feature.** Browser source lives under `src/`; a process that runs under Bun
+lives in its own root folder, the way `tests/benchmark/` already holds the
+Chromium runner that drives `src/benchmark`.
+
+- **Operator page** → `src/conductor/`, entered from a second Vite page at
+  `conductor.html`.
+- **Shared wire protocol** → `src/station/`, with the browser-side client
+  beside it.
+- **Station localhost server** → `station/`, at the repository root, importing
+  `src/station` and exporting nothing.
+
+Still open:
+
+- M5 firmware (PlatformIO), the headset agent (Android), and a technician CLI.
+  The pre-import draft's proposed repository layout remains non-binding.

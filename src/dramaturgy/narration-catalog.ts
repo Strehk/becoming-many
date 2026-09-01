@@ -5,8 +5,8 @@
  * Boundary: When a cue plays is schedule data, not catalogue knowledge.
  */
 
-/** Both languages ship; staff fix one for a whole session. */
-const NARRATION_LANGUAGES = ["en", "de"] as const;
+/** Both languages ship; staff fix one when they arm a session. */
+export const NARRATION_LANGUAGES = ["en", "de"] as const;
 
 export type NarrationLanguage = (typeof NARRATION_LANGUAGES)[number];
 

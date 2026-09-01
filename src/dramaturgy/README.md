@@ -27,6 +27,12 @@ makes that mismatch harmless.
 measured recording lengths, and builds the served URL. Cue *times* are shared
 between languages; only the files switch.
 
+`schedule-layout.ts` measures a schedule in seconds: where each cue's slot
+starts and ends, how long its recording runs in a given language, and the
+headroom between the two. It is the one place slot arithmetic lives, so the
+guarantee the tests enforce and the timeline the conductor draws are the same
+calculation.
+
 `piece-schedule.ts` is the authored data for the main show. A tutorial schedule
 will sit beside it. Schedules are typed TypeScript data files, never JSON, per
 the repository's configuration rule, and there is **one schedule authority
@@ -46,3 +52,7 @@ instant — it never retriggers a file.
 Per-sense intensity envelopes, the session state machine, per-sense audio beds,
 and module preloading around cues are planned and deliberately absent. The
 schedule contract grows to carry envelopes as a sibling field.
+
+The conductor page (`src/conductor`) reads this folder to draw and scrub the
+schedule. It is a consumer, never an author: cue times change by editing the
+typed data file here, and there is still one schedule authority total.

@@ -15,6 +15,14 @@ export interface AudioTimebase {
    * run away from the narration.
    */
   readonly readSeconds: () => number;
+
+  /**
+   * Whether the hardware clock is actually running. Only a gesture in this
+   * window can resume a suspended context, so an operator surface in another
+   * window can report the stall but never clear it.
+   */
+  readonly readState: () => AudioContextState;
+
   readonly unload: () => void;
 }
 
@@ -34,8 +42,10 @@ export function createAudioTimebase(): AudioTimebase {
   }
 
   function resume(): void {
-    void audioContext.resume();
-    release();
+    // Release only once the context is actually running. Dropping the
+    // listeners up front would leave a rejected resume — or a context the
+    // device suspends again later — with nothing left to bring it back.
+    void audioContext.resume().then(release, () => undefined);
   }
 
   for (const eventName of RESUME_GESTURE_EVENTS) {
@@ -44,6 +54,8 @@ export function createAudioTimebase(): AudioTimebase {
 
   return {
     readSeconds: () => audioContext.currentTime,
+
+    readState: () => audioContext.state,
 
     unload(): void {
       release();

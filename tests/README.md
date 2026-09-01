@@ -19,6 +19,11 @@ benchmark runner, which `bun test` ignores because it is not a test file.
 `dramaturgy/` verifies show time and cue lookup, both pure; the narration
 player is DOM-bound and is not tested here.
 
+`station/` verifies the wire contract between the show window and the conductor
+page; the socket client and the broker are connection-bound and are not tested
+here. `conductor/` verifies what the operator page decides before it touches the
+DOM — the playhead, the key map, and the readouts.
+
 `world-surface/` verifies deterministic surface facts. `control/` verifies
 input-independent navigation constraints. `levels/` verifies preset boundaries.
 `modules/` verifies concrete resource owners. `world/` verifies shared execution

@@ -8,6 +8,7 @@
 import type { BenchmarkRun } from "../benchmark/benchmark-run";
 import { createDesktopControls } from "../control/desktop-controls";
 import { keepFlightAboveGround } from "../control/flight-ground-clearance";
+import { resetFlightPose } from "../control/flight-reset";
 import type { NarrationLanguage } from "../dramaturgy/narration-catalog";
 import {
   type NarrationSchedule,
@@ -75,6 +76,10 @@ import { createVegetationConnectionSource } from "../modules/vegetation/vegetati
 import { createZoneVisualizer } from "../modules/zone-visualizer/zone-visualizer";
 import { createAudioTimebase } from "../sound/audio-timebase";
 import { createNarrationPlayer } from "../sound/narration-player";
+import {
+  type FrameMetrics,
+  FrameMetricsSampler,
+} from "../test-ui/frame-metrics";
 import { createTestOverlay } from "../test-ui/test-overlay";
 import {
   type GltfAssetRequest,
@@ -145,9 +150,47 @@ export interface LevelPreset {
   readonly connections?: ConnectionsParameters;
 }
 
-/** The per-frame half of a running show; the clock half goes to the caller. */
+/** The per-frame half of a running show; the commandable half goes to the caller. */
 interface ShowUpdate {
   readonly update: () => void;
+  readonly running: RunningShow;
+}
+
+/**
+ * The show half of a running level, present only when one was requested.
+ * Reported once so a rehearsal or operator surface can drive it; nothing under
+ * `src` reads it back, which is what keeps the show clock the sole authority.
+ */
+export interface RunningShow {
+  readonly clock: ShowClock;
+  readonly readLanguage: () => NarrationLanguage;
+
+  /**
+   * Re-seats the narration in the other language and pauses the show. Fresh
+   * elements carry no metadata yet, so a seek into them is ignored for a few
+   * frames and playback would otherwise start at the top of the recording.
+   * The caller presses play again once it is ready.
+   */
+  readonly setLanguage: (language: NarrationLanguage) => void;
+
+  /** Suspended freezes show time; only a gesture in this window resumes it. */
+  readonly readAudioState: () => AudioContextState;
+}
+
+/** One running level, returned so a second window can command it. */
+export interface RunningLevel {
+  readonly show: RunningShow | undefined;
+
+  /**
+   * Return the flight to the level's start pose. Desktop rehearsal only:
+   * inside an `immersive-vr` session Three.js overwrites the camera position
+   * and orientation from the headset pose every frame, so this has no effect
+   * there until the camera sits under a rig.
+   */
+  readonly resetFlight: () => void;
+
+  /** Undefined until frames have been measured. Allocates; not per frame. */
+  readonly readFrameMetrics: () => FrameMetrics | undefined;
 }
 
 interface LoadedLevelAssets {
@@ -179,26 +222,41 @@ export interface LevelOptions {
  */
 export interface ShowRequest {
   readonly schedule: NarrationSchedule;
+  /** The language staff arm the session with; the conductor can re-arm it. */
   readonly language: NarrationLanguage;
-  /** Reports the clock once, so the entry can hand it to rehearsal. */
-  readonly onClockReady?: (clock: ShowClock) => void;
 }
 
 export async function startLevel(
   container: Element | null,
   level: LevelPreset,
   options: LevelOptions = {},
-): Promise<void> {
+): Promise<RunningLevel> {
   if (!(container instanceof HTMLElement)) {
     throw new Error("Missing application root: .app");
   }
 
   const assets = await loadLevelAssets(level);
+  // The World Runtime calls its setup synchronously, before it returns, so the
+  // handle is always in hand by the time this function continues.
+  let running: RunningLevel | undefined;
   startWorld(
     container,
-    (world) => setupLevel(container, world, level, assets, options),
+    (world) => {
+      const setup = setupLevel(container, world, level, assets, options);
+      running = setup.running;
+      return setup.update;
+    },
     options.benchmark,
   );
+
+  if (!running) throw new Error("The world runtime skipped level setup");
+
+  return running;
+}
+
+interface LevelUpdate {
+  readonly update: WorldUpdate;
+  readonly running: RunningLevel;
 }
 
 function setupLevel(
@@ -207,7 +265,7 @@ function setupLevel(
   level: LevelPreset,
   assets: LoadedLevelAssets,
   options: LevelOptions,
-): WorldUpdate {
+): LevelUpdate {
   applyLevelPresentation(world, level);
 
   const worldSurface = createWorldSurface(
@@ -229,24 +287,39 @@ function setupLevel(
     ? undefined
     : createDesktopControls(world.camera, world.renderer.domElement);
   const hasGround = level.invisibleGround === true || hasVisibleSurface(level);
+  // One sampler for the whole level: the narrative presets never set `testUi`,
+  // so metrics read from the overlay would be missing exactly where an
+  // operator surface needs them.
+  const frameMetrics = new FrameMetricsSampler();
+  const readFrameMetrics = (): FrameMetrics | undefined => frameMetrics.read();
   const testOverlay =
     level.testUi && !benchmark
-      ? createTestOverlay(container, world.renderer)
+      ? createTestOverlay(container, world.renderer, readFrameMetrics)
       : undefined;
   // A benchmark must stay deterministic: an audio context and media elements
   // would add nondeterministic decode work to the samples, and a fixed
   // timestep is not the real time the show is cut to.
   const show = benchmark ? undefined : createShow(options.show);
 
-  return (deltaSeconds): void => {
-    if (benchmark) benchmark.placeCamera(world.camera);
-    else desktopControls?.update(deltaSeconds);
+  return {
+    update: (deltaSeconds): void => {
+      frameMetrics.add(deltaSeconds);
+      if (benchmark) benchmark.placeCamera(world.camera);
+      else desktopControls?.update(deltaSeconds);
 
-    if (hasGround) {
-      keepFlightAboveGround(world.camera.position, worldSurface.groundYAt);
-    }
-    testOverlay?.update(deltaSeconds);
-    show?.update();
+      if (hasGround) {
+        keepFlightAboveGround(world.camera.position, worldSurface.groundYAt);
+      }
+      testOverlay?.update(deltaSeconds);
+      show?.update();
+    },
+
+    running: {
+      show: show?.running,
+      resetFlight: (): void =>
+        resetFlightPose(world.camera.position, world.camera.quaternion),
+      readFrameMetrics,
+    },
   };
 }
 
@@ -263,11 +336,9 @@ function createShow(request: ShowRequest | undefined): ShowUpdate | undefined {
     request.schedule.durationSeconds,
     timebase.readSeconds,
   );
-  const narration = createNarrationPlayer({
-    language: request.language,
-    cueIds: request.schedule.narration.map((cue) => cue.cueId),
-  });
-  request.onClockReady?.(clock);
+  const cueIds = request.schedule.narration.map((cue) => cue.cueId);
+  let language = request.language;
+  let narration = createNarrationPlayer({ language, cueIds });
 
   return {
     update: (): void => {
@@ -279,6 +350,24 @@ function createShow(request: ShowRequest | undefined): ShowUpdate | undefined {
         isPlaying: showTime.isPlaying,
         timeScale: showTime.timeScale,
       });
+    },
+
+    running: {
+      clock,
+      readLanguage: () => language,
+      readAudioState: timebase.readState,
+
+      setLanguage: (next): void => {
+        if (next === language) return;
+
+        // Hold the show across the swap. The replacement elements have no
+        // metadata yet, so `follow()` cannot seek into them for a few frames
+        // and a playing show would blurt the top of the recording instead.
+        clock.pause();
+        narration.unload();
+        language = next;
+        narration = createNarrationPlayer({ language, cueIds });
+      },
     },
   };
 }

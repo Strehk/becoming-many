@@ -210,7 +210,10 @@ the command bus stay open.
   `LevelOptions.show`, beside `benchmark`, because the nine presets are a sense
   development ladder rather than the shipped piece, and because they spread
   each other — a field on one would silently carry into every later preset.
-  Language is a session parameter, fixed for a run.
+  Language is a session parameter, armed once per session. *Amended 2026-09-01:*
+  the operator page can re-arm it while the piece is loaded, which pauses the
+  show and re-seats the narration at the same instant; a visitor session still
+  fixes it at `arm` time.
 - A benchmark never creates a show: audio decoding would add nondeterministic
   work to the samples, and a fixed timestep is not the real time the show is
   cut to.
@@ -218,7 +221,56 @@ the command bus stay open.
   reads it back, so removing it changes no behavior — the same one-way handoff
   the benchmark report already uses. It is gated on the URL rather than the
   build mode because rehearsal happens in the headset, against a production
-  build.
+  build, where a conductor page on another machine is not reachable.
+  *Amended 2026-09-01:* `startLevel()` now returns the running level and
+  `main.ts` sets the global from it, so the runtime no longer touches a global
+  at all.
+
+### Station Transport and the Conductor Page (2026-09-01)
+
+Extends [open decision 2](direction/open-decisions.md) and settles the first
+part of [open decision 3](direction/open-decisions.md). The session state
+machine stays open.
+
+- **The operator page is the conductor.** One page holds the show transport and
+  the station status, rather than a rehearsal timeline and a separate
+  performance surface that would have to be kept in step.
+  [Session and Operator](direction/session-operator.md) is amended accordingly:
+  the timeline is in scope.
+- **A running level is returned, not reported through a callback.** The World
+  Runtime invokes its setup synchronously, so `startLevel()` can hand back a
+  `RunningLevel` — the show's clock and language, a flight reset, and a frame
+  metrics reader. `ShowRequest.onClockReady` is gone. One value, returned once,
+  is a smaller contract than an optional callback, and it keeps the composition
+  root free of the global that `?show` sets.
+- **The wire is a transport, not an event bus.** The broker relays a closed
+  message union between two windows: commands one way, status the other, plus
+  peer presence. There are no topics, no registration, and no lookup, and each
+  side has exactly one owner. The in-process command bus the engineering
+  standards forbid remains forbidden.
+- **Split by runtime, not by feature.** The protocol and the browser client are
+  browser source under `src/station`; the Bun broker is a root-level `station/`
+  process that imports them and exports nothing, mirroring how
+  `tests/benchmark/` drives `src/benchmark`.
+- **The show never depends on the station.** With no broker running the link
+  retries quietly and the piece plays exactly as it does without one, matching
+  the degraded-state rule in [Headset](direction/headset.md).
+- **The show reports on a timer, not per frame.** Show time derives from the
+  audio clock, which keeps running when the show window is unfocused or
+  occluded and its animation frames stop. The conductor projects the playhead
+  forward between reports, so the readout stays smooth at ten messages a second.
+- **The conductor reads schedule data and never authors it.** It imports
+  `PIECE_SCHEDULE` and the slot arithmetic in `schedule-layout.ts`; the show
+  length is deliberately not on the wire, because sending it would make the show
+  a second schedule authority. Cue times change by editing the typed data file.
+- **The conductor page must not import `src/levels` or `src/world`.** A single
+  value import would pull Three.js into a bundle that is otherwise a few
+  kilobytes.
+- **A flight reset is desktop rehearsal only.** Inside an `immersive-vr`
+  session Three.js overwrites the camera pose from the headset every frame, so
+  the reset has no effect there — as, today, ground clearance does not either.
+  A camera rig would fix both and belongs with the XR view-state contract,
+  which stays undecided.
 
 ## Approved Navigation Boundary
 

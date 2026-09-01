@@ -13,6 +13,8 @@ import { PIECE_SCHEDULE } from "./dramaturgy/piece-schedule";
 import type { ShowClock } from "./dramaturgy/show-clock";
 import { LEVEL_CATALOG, resolveLevelName } from "./levels/level-catalog";
 import { startLevel } from "./levels/level-runtime";
+import { connectShowStation } from "./station/show-station";
+import { resolveStationUrl } from "./station/station-settings";
 
 declare global {
   interface Window {
@@ -20,15 +22,17 @@ declare global {
      * Rehearsal transport. The console commands the show through it; nothing
      * under `src` reads it back, so removing it changes no behavior. It is
      * gated on `?show` rather than the build mode because rehearsal happens
-     * in the headset, against a production build.
+     * in the headset, against a production build, where the conductor page on
+     * another machine is not reachable.
      */
     showClock?: ShowClock;
   }
 }
 
 // Runtime request, not authored configuration: `?level=<name>` opens any
-// preset, `?benchmark[=<profile>]` replays the fixed measurement route, and
-// `?show[&language=<de|en>]` plays the narration schedule against the preset.
+// preset, `?benchmark[=<profile>]` replays the fixed measurement route,
+// `?show[&language=<de|en>]` plays the narration schedule against the preset,
+// and `?station[=<ws url>]` lets the conductor page command that show.
 const request = new URLSearchParams(window.location.search);
 const levelName = resolveLevelName(request.get("level"));
 const requestedProfile = request.get("benchmark");
@@ -44,13 +48,23 @@ const show = request.has("show")
   ? {
       schedule: PIECE_SCHEDULE,
       language: resolveNarrationLanguage(request.get("language")),
-      onClockReady: (clock: ShowClock): void => {
-        window.showClock = clock;
-      },
     }
   : undefined;
 
-await startLevel(document.querySelector(".app"), LEVEL_CATALOG[levelName], {
-  benchmark,
-  show,
-});
+const level = await startLevel(
+  document.querySelector(".app"),
+  LEVEL_CATALOG[levelName],
+  { benchmark, show },
+);
+
+window.showClock = level.show?.clock;
+
+// A station needs a show to conduct, and a benchmark must stay free of both.
+if (level.show && request.has("station")) {
+  connectShowStation({
+    level,
+    show: level.show,
+    levelName,
+    stationUrl: resolveStationUrl(request.get("station")),
+  });
+}

@@ -6,6 +6,7 @@
     "dev": "vite",
     "test": "bun test",
     "benchmark": "bun tests/benchmark/run-benchmark.ts",
+    "station": "bun station/station-server.ts",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "check": "tsc --noEmit",
