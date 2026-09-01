@@ -16,11 +16,16 @@
     "@biomejs/biome": "^2.5.9",
     "@types/bun": "latest",
     "@types/three": "^0.185.4",
+    "@types/w3c-web-serial": "^1.0.8",
     "playwright": "^1.62.1",
     "typescript": "^7.0.2",
     "vite": "^8.2.2"
   },
   "dependencies": {
+    "esp-web-tools": "^10.4.0",
     "three": "^0.185.1"
+  },
+  "overrides": {
+    "@material/web": "2.3.0"
   }
 }

@@ -7,7 +7,7 @@ Boundary: Product vision and long-term design remain in the specialized document
 
 # Current Development Status
 
-Snapshot: 2026-08-31
+Snapshot: 2026-09-01
 
 The current `src/` and `public/` trees are the source of truth. This page is
 the concise entry point for the current implementation.
@@ -498,6 +498,24 @@ itself. The broker relays only; with none running the show plays unchanged.
   entirely when the preset omits `thermal` or authors intensity zero, so
   an inactive sense costs no GPU work and no warmth attribute.
 
+### M5 Controller Firmware and Flash Page
+
+The ICAROS controller is an M5StickS3 running the in-repo PlatformIO firmware
+at `firmware/m5/`. The device is a polled HTTP server on the station network:
+it samples its IMU every 50 ms, runs the device-owned pipeline stages
+(`normalize → axis-map → calibrate`, calibration persisted in NVS), and serves
+the result on CORS-enabled `GET /state`, announced over mDNS. Button edges
+survive polling as monotonic press/release counters. The display shows a
+calibrated level pad, connection state, and a heartbeat dot that flickers with
+each handled poll. `src/m5/protocol.ts` is the shared wire contract (payload
+type, firmware version constant, and the tested untrusted-payload parser).
+
+`/flash.html` (`src/flash/`) flashes the committed merged binary from
+`public/firmware/` via esp-web-tools and configures the device over Web Serial
+newline-JSON (WiFi credentials, device id, axis map — remembered in
+localStorage). The in-app polling adapter that turns `/state` into
+ControlFrames does not exist yet.
+
 ## Runtime Assets
 
 `public/animals` contains four animated animal GLBs, `public/trees` contains
@@ -548,7 +566,8 @@ loading or target-device evidence requires it.
 ## Not Part of the Current Build
 
 - passthrough, `immersive-ar`, operator control, and presentation transitions
-- normalized device-independent navigation and ICAROS input
+- normalized device-independent navigation and the in-app ICAROS input adapter
+  (the M5 firmware and flash page exist; nothing consumes `/state` yet)
 - complete Test Level training flow and narrative state transitions
 - floating origin, LOD, relevance fields, and spatial instance pools
 - asset prefetching, retries, progress UI, and distance-based stream priorities
