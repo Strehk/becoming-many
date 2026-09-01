@@ -43,6 +43,21 @@ export interface BenchmarkRun {
   readonly afterFrame: (frame: WorldFrame) => boolean;
 }
 
+/**
+ * Total frames a profile replays, warmup included. A run reports progress
+ * against it, and a caller knows it before the browser opens the level.
+ */
+export function benchmarkFrameCount(profileName: BenchmarkProfileName): number {
+  const { fixedDeltaSeconds } = BENCHMARK_SETTINGS.profiles[profileName];
+  return BENCHMARK_SETTINGS.warmupFrames + sampleFrameCount(fixedDeltaSeconds);
+}
+
+function sampleFrameCount(fixedDeltaSeconds: number): number {
+  return Math.ceil(
+    routeDurationSeconds(BENCHMARK_SETTINGS.route) / fixedDeltaSeconds,
+  );
+}
+
 export function createBenchmarkRun(
   levelName: string,
   profileName: BenchmarkProfileName,
@@ -50,9 +65,7 @@ export function createBenchmarkRun(
   const { fixedDeltaSeconds } = BENCHMARK_SETTINGS.profiles[profileName];
   const { warmupFrames, route, frameBudgetMilliseconds, streamStepsPerFrame } =
     BENCHMARK_SETTINGS;
-  const sampleFrames = Math.ceil(
-    routeDurationSeconds(route) / fixedDeltaSeconds,
-  );
+  const sampleFrames = sampleFrameCount(fixedDeltaSeconds);
 
   const samples: BenchmarkFrameSample[] = [];
   let frameIndex = 0;

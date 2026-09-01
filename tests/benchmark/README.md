@@ -28,6 +28,30 @@ bun run benchmark --headed                          # measure on a real GPU
 | `--update` | Accept the measured counters into `benchmark-baseline.ts`. |
 | `--base-url <url>` | Use an already running server instead of starting `vite preview`. |
 
+## While it runs
+
+A full run takes minutes per level, so the command says what it is doing
+rather than going silent:
+
+```
+Benchmarking 9 level(s) at profile "full", 1500 frames each.
+Rendering: headless Chromium with SwiftShader software rendering.
+Per-level timeout 10m 00s, so the run ends after at most 1h 30m.
+[7/9] connections ...
+  frame 306/1500 (20%) · 50s elapsed · ~3m 15s left
+  1m 06s for this level · ~4m 30s left for 2 level(s)
+```
+
+The opening block bounds the run before it starts: frames per level, the
+rendering path, and the worst case if every level hits `--timeout`. A progress
+line follows every 10 seconds, estimating the rest of the level from the frame
+rate of the last interval. Each finished level projects its wall-clock cost
+onto the levels not started yet, which is a rough figure — levels differ widely
+in density — but enough to decide whether to wait.
+
+`benchmark-progress.ts` owns those lines and is covered by
+`benchmark-progress.test.ts`.
+
 ## Artifacts
 
 Each run writes `<profile>.md` — the readable report, with the run conditions
