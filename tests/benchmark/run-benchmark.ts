@@ -8,42 +8,30 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import type { BenchmarkReport } from "../../src/benchmark/benchmark-report";
 import {
-  BENCHMARK_PROFILE_NAMES,
-  type BenchmarkProfileName,
-  isBenchmarkProfileName,
-} from "../../src/benchmark/benchmark-settings";
-import {
-  isLevelName,
-  LEVEL_NAMES,
-  type LevelName,
-} from "../../src/levels/level-catalog";
-import {
   type BenchmarkConditions,
   type LevelFailure,
   renderBenchmarkArtifact,
 } from "./benchmark-artifact";
 import { checkBaseline, updateBaseline } from "./benchmark-baseline-check";
 import { runLevelsInBrowser } from "./benchmark-browser";
+import {
+  describeUsage,
+  type RunOptions,
+  readOptions,
+  wantsHelp,
+} from "./benchmark-options";
 import { PREVIEW_PORT, startPreviewServer } from "./benchmark-preview-server";
-
-const DEFAULT_RESULTS_DIRECTORY = "benchmark-results";
-const DEFAULT_LEVEL_TIMEOUT_SECONDS = 600;
-
-interface RunOptions {
-  readonly profileName: BenchmarkProfileName;
-  readonly levelNames: readonly LevelName[];
-  readonly baseUrl: string | undefined;
-  readonly outputDirectory: string;
-  readonly levelTimeoutMilliseconds: number;
-  readonly isHeaded: boolean;
-  readonly shouldCheck: boolean;
-  readonly shouldUpdate: boolean;
-}
 
 await main();
 
 async function main(): Promise<void> {
-  const options = readOptions(process.argv.slice(2));
+  const argv = process.argv.slice(2);
+  if (wantsHelp(argv)) {
+    console.log(describeUsage());
+    return;
+  }
+
+  const options = readOptions(argv);
   const stopServer = options.baseUrl ? undefined : await startPreviewServer();
 
   try {
@@ -68,48 +56,6 @@ async function main(): Promise<void> {
   } finally {
     stopServer?.();
   }
-}
-
-function readOptions(argv: readonly string[]): RunOptions {
-  const requestedProfile = readValue(argv, "--profile") ?? "full";
-  if (!isBenchmarkProfileName(requestedProfile)) {
-    throw new Error(
-      `Unknown profile "${requestedProfile}". Use one of: ${BENCHMARK_PROFILE_NAMES.join(", ")}`,
-    );
-  }
-
-  return {
-    profileName: requestedProfile,
-    levelNames: readLevelNames(argv),
-    baseUrl: readValue(argv, "--base-url"),
-    outputDirectory: readValue(argv, "--out") ?? DEFAULT_RESULTS_DIRECTORY,
-    levelTimeoutMilliseconds:
-      Number(readValue(argv, "--timeout") ?? DEFAULT_LEVEL_TIMEOUT_SECONDS) *
-      1000,
-    isHeaded: argv.includes("--headed"),
-    shouldCheck: argv.includes("--check"),
-    shouldUpdate: argv.includes("--update"),
-  };
-}
-
-/** Repeatable `--level`; every level runs when none is named. */
-function readLevelNames(argv: readonly string[]): readonly LevelName[] {
-  const requested = argv.flatMap((entry, index) =>
-    entry === "--level" ? [argv[index + 1] ?? ""] : [],
-  );
-  for (const name of requested) {
-    if (!isLevelName(name)) {
-      throw new Error(
-        `Unknown level "${name}". Use one of: ${LEVEL_NAMES.join(", ")}`,
-      );
-    }
-  }
-  return requested.length > 0 ? (requested as LevelName[]) : LEVEL_NAMES;
-}
-
-function readValue(argv: readonly string[], flag: string): string | undefined {
-  const index = argv.indexOf(flag);
-  return index >= 0 ? argv[index + 1] : undefined;
 }
 
 function printReports(reports: readonly BenchmarkReport[]): void {
