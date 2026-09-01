@@ -209,11 +209,16 @@ itself. The broker relays only; with none running the show plays unchanged.
   is never half new on the GPU.
 - Both layers drift on the shared turning wind of `src/world/wind.ts`,
   sampled once per frame and scaled by each layer's own authored reach. The
+  reach beats the rise: a plant is carried roughly two to four times further
+  downwind than its scent lifts, which is what makes a plume rather than a
+  slow float. It was authored the other way round first, and read as the
+  scent only ever going up. The
   wind clock runs separately from the 60-second animation clock, which would
   otherwise turn the wind back onto the same bearing every minute.
 - Every particle now drifts on its own phase and amplitude instead of one
   phase derived from its resting position, which had made a cloud slide as a
-  rigid block. Trail prints each walk away along their own bearing, faster
+  rigid block, and that drift opens out with age so a cloud disperses instead
+  of churning in place. Trail prints each walk away along their own bearing, faster
   than they age, so a route frays at its old end.
 - Measured on one machine under software rendering (`bun run benchmark
   --profile quick`), the isolated Scent Level moved from 5.90 ms median frame

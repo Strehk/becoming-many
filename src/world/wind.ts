@@ -7,7 +7,7 @@
 
 export const WORLD_WIND = {
   directionXZ: [0.8137, 0.5812], // Sets the mean normalized horizontal X/Z wind direction.
-  strength: 0.36, // Scales wind displacement in consuming components.
+  strength: 0.8, // Scales wind displacement in consuming components.
   speed: 1, // Advances wind animation phases in radians per second.
   swingDegrees: 44, // Widens how far the direction wanders either side of the mean.
   gustVariation: 0.45, // Deepens how much the strength breathes between lulls and gusts.

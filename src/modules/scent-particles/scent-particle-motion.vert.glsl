@@ -42,6 +42,14 @@ const float SCENT_PHASE_OFFSET = 0.37;
 // A second, faster turn per particle, so no two neighbours trace one circle.
 const float SCENT_DRIFT_DETAIL_RATE = 2.0;
 const float SCENT_DRIFT_DETAIL_SHARE = 0.45;
+/*
+ * The drift opens out with age rather than holding one amplitude for the
+ * whole life. A particle leaves its plant tight and loosens as it travels,
+ * which is the difference between a cloud that churns in place and one that
+ * disperses. Above one, the spread stays small for most of the life and then
+ * lets go near the end.
+ */
+const float SCENT_DRIFT_SPREAD_POWER = 1.3;
 
 float scentSizeScale = 0.0;
 
@@ -72,6 +80,7 @@ vec3 animateScentParticle(vec3 restingPosition) {
     sin(scentTime * SCENT_DRIFT_RATE * SCENT_DRIFT_DETAIL_RATE + ownPhase)
   );
   vec2 drift = amplitude
+    * pow(age, SCENT_DRIFT_SPREAD_POWER)
     * mix(slowTurn, fastTurn, SCENT_DRIFT_DETAIL_SHARE);
 
   // Wind grows with age: the scent leaves its plant the longer it has been

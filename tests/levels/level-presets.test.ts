@@ -17,6 +17,7 @@ import { level as testLevel } from "../../src/levels/test.level";
 import { level as thermalLevel } from "../../src/levels/thermal.level";
 import { level as whiteWorld } from "../../src/levels/white-world.level";
 import { THERMAL_PERCEPTION_SETTINGS } from "../../src/modules/thermal-perception/thermal-perception-settings";
+import { WORLD_WIND } from "../../src/world/wind";
 
 test("only the Test Level activates development diagnostics", () => {
   const testPreset: LevelPreset = testLevel;
@@ -166,9 +167,12 @@ test("Scent Level layers scent onto the White World air baseline", () => {
   const scent = scentPreset.scentParticles;
   if (!scent) throw new Error("Scent Level must author the scent sense");
 
-  // Every plant family and every animal species carries one signature, and
-  // the moodboard stops it deviates from are documented where they are
-  // authored: plants take the cool half, animals the warm half.
+  // Every plant family and every animal species carries one signature:
+  // plants take the cool half, animals the warm half. Only the two warm
+  // animal stops are still the moodboard verbatim — the plant signatures
+  // were deepened because the level's pale ones did not read as scent
+  // against white. The deviation is argued in the level README; this pins
+  // how far it has gone.
   const plantColors = Object.values(scent.plants).map(({ color }) => color);
   const animalColors = Object.values(scent.animals?.signatures ?? {}).map(
     ({ color }) => color,
@@ -180,7 +184,7 @@ test("Scent Level layers scent onto the White World air baseline", () => {
     [...plantColors, ...animalColors].filter((color) =>
       scentWorldPalette.includes(color),
     ),
-  ).toHaveLength(5);
+  ).toHaveLength(2);
 
   for (const signature of Object.values(scent.plants)) {
     expect(signature.particlesPerPlant).toBeGreaterThan(0);
@@ -194,10 +198,19 @@ test("Scent Level layers scent onto the White World air baseline", () => {
   expect(scent.appearance.sizeMeters).toBe(0.24);
   expect(scent.motion.riseDurationSeconds).toBe(10);
   expect(scent.motion.speedMultiplier).toBe(1);
-  // The scent leans off its plant without being torn away from it.
-  expect(scent.motion.windResponseMeters).toBeGreaterThan(0);
-  expect(scent.motion.windResponseMeters).toBeLessThan(2);
-  // A route is carried much further than a plant's scent.
+  // The wind has to beat the rise, or the scent only ever goes up and reads
+  // as slow floating rather than as weather. This was authored the other way
+  // round once — a tree lifted its scent four times further than the wind
+  // carried it — so the relationship is pinned rather than the value.
+  const carriedMetres = scent.motion.windResponseMeters * WORLD_WIND.strength;
+  const tallestRise = Math.max(
+    ...Object.values(scent.plants).map(
+      ({ riseHeightMeters }) => riseHeightMeters,
+    ),
+  );
+  expect(carriedMetres).toBeGreaterThan(tallestRise);
+  // A route is carried much further still: nothing holds a print in place
+  // once the animal has walked on.
   expect(scent.animals?.windResponseMeters ?? 0).toBeGreaterThan(
     scent.motion.windResponseMeters,
   );

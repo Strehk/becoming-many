@@ -46,10 +46,13 @@ export const sharedAirParticles: SharedBlock<"airParticles"> = {
  * one distinction the sense has to carry before any species reads — what
  * stands still and what walks.
  *
- * Three plant stops are the moodboard verbatim (`#9DD2C8`, `#B8E0E1`,
- * `#D1C1D7`) and two animal stops are (`#FDBB54`, `#FDA39D`). The remaining
- * five are deviations, and each is carried along the hue of the stop it
- * belongs to rather than introduced: undergrowth sits under the conifer
+ * Only the two warm animal stops are still the moodboard verbatim
+ * (`#FDBB54`, `#FDA39D`). The six plant signatures were derived from the
+ * moodboard's cool stops and then deepened — saturation up by half,
+ * lightness down a fifth — because the pale originals read as dust rather
+ * than as scent once the background went white. Each still sits on the hue
+ * of the stop it came from rather than being introduced: undergrowth sits
+ * under the conifer
  * mint, blossom above the birch violet, dead wood is the moodboard's pale
  * stop drained of warmth because there is no living scent left in it, and
  * the stag and rat are the amber and coral carried down for the animal that
@@ -71,7 +74,7 @@ export const sharedScentParticles: SharedBlock<"scentParticles"> = {
   plants: {
     // Resin, and the one plant that smells all the way down its trunk.
     conifer: {
-      color: 0x9dd2c8,
+      color: 0x55d1ba,
       particlesPerPlant: 70, // moderate: 24
       emissionBottomFraction: 0.25,
       emissionTopFraction: 1,
@@ -80,7 +83,7 @@ export const sharedScentParticles: SharedBlock<"scentParticles"> = {
     },
     // Leaf, released from the round crown and not from the bare trunk.
     deciduous: {
-      color: 0xb8e0e1,
+      color: 0x6adadd,
       particlesPerPlant: 70, // moderate: 24
       emissionBottomFraction: 0.45,
       emissionTopFraction: 1,
@@ -90,7 +93,7 @@ export const sharedScentParticles: SharedBlock<"scentParticles"> = {
     // The tall, narrow, open crown the level already treats as its own
     // silhouette keeps its own signature here too.
     birch: {
-      color: 0xd1c1d7,
+      color: 0xb185c2,
       particlesPerPlant: 60, // moderate: 20
       emissionBottomFraction: 0.5,
       emissionTopFraction: 1,
@@ -99,7 +102,7 @@ export const sharedScentParticles: SharedBlock<"scentParticles"> = {
     },
     // Undergrowth: low, wide against its own small height, and quiet.
     bush: {
-      color: 0x8fc2a6,
+      color: 0x50be81,
       particlesPerPlant: 32, // moderate: 12
       emissionBottomFraction: 0.1,
       emissionTopFraction: 1,
@@ -109,7 +112,7 @@ export const sharedScentParticles: SharedBlock<"scentParticles"> = {
     // The one plant in the set with blossoms, and the only one that earns a
     // stronger signature than its size would suggest.
     floweringBush: {
-      color: 0xc3a7d0,
+      color: 0xa865c7,
       particlesPerPlant: 42, // moderate: 16
       emissionBottomFraction: 0.1,
       emissionTopFraction: 1,
@@ -120,7 +123,7 @@ export const sharedScentParticles: SharedBlock<"scentParticles"> = {
     // quietest signature in the set, and the only one that reads as a tone
     // rather than as a colour.
     deadWood: {
-      color: 0xc9c2b4,
+      color: 0xb2a17f,
       particlesPerPlant: 14, // moderate: 6
       emissionBottomFraction: 0.2,
       emissionTopFraction: 0.9,
@@ -151,7 +154,7 @@ export const sharedScentParticles: SharedBlock<"scentParticles"> = {
     // A route is carried much further than a plant's scent: nothing holds a
     // print in place once the animal has walked on, and the old end of the
     // trail has had the whole lifetime to travel.
-    windResponseMeters: 6,
+    windResponseMeters: 14,
   },
   appearance: {
     // Twice the size the per-plant layer started at. The smaller point kept
@@ -161,15 +164,20 @@ export const sharedScentParticles: SharedBlock<"scentParticles"> = {
   },
   motion: {
     riseDurationSeconds: 10, // Must divide the 60-second loop evenly.
-    // Each particle now drifts on its own phase and its own amplitude, so
-    // this is the middle of a spread rather than one shared circle. Raised
-    // with it: at the old value the churn was too tight to read as air.
-    driftAmplitudeMeters: 0.6,
+    // Each particle drifts on its own phase and amplitude, and the drift now
+    // opens out with age, so this is the width reached late in a life rather
+    // than one held throughout. Raised with that: a spread that starts at
+    // nothing needs a wider end to read as dispersal at all.
+    driftAmplitudeMeters: 1.2,
     speedMultiplier: 1,
-    // The scent leans off its plant and trails away, but not so far that the
-    // plant stops being the thing you can smell your way back to. Raising
-    // this past roughly two metres starts to tear the plume off its source.
-    windResponseMeters: 1.4,
+    // The wind has to beat the rise, or the scent only ever goes up. At the
+    // first authored value a tree lifted its scent four times further than
+    // the wind carried it, which read as slow floating rather than as
+    // weather. Now the carry runs roughly two to four times the rise, so a
+    // plant streams a plume downwind. The plume still starts at the plant —
+    // carry scales with age, and age zero is no carry — so the source stays
+    // the thing you can smell your way back to.
+    windResponseMeters: 7,
   },
 };
 

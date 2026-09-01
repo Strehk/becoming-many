@@ -44,14 +44,21 @@ signature color. No audio counterpart exists yet.
 
 Ten signatures carry the world, and the split runs along one line before any
 species reads: the rooted plants take the cool half of the palette, the
-moving bodies the warm half. Five stops are the moodboard verbatim — the
-plant stops `#9DD2C8`, `#B8E0E1`, `#D1C1D7` and the animal stops `#FDBB54`,
-`#FDA39D`. The other five are deviations, each carried along the hue of the
-stop it belongs to rather than introduced: `#8FC2A6` is the conifer mint
-carried down for undergrowth, `#C3A7D0` the birch violet carried up for the
-one plant with blossoms, `#C9C2B4` the pale background stop drained of
-warmth because dead wood has no living scent left, and `#EF8F3C` / `#D8919C`
-the amber and coral carried down for the heavier and the smaller animal.
+moving bodies the warm half.
+
+Two stops are the moodboard verbatim, both warm: `#FDBB54` for the deer and
+`#FDA39D` for the fox. `#EF8F3C` and `#D8919C` are those two carried down
+for the heavier and the smaller animal.
+
+The six plant signatures have left the moodboard. They were first authored
+on its cool stops — `#9DD2C8`, `#B8E0E1`, `#D1C1D7` and three tones carried
+along their hues — and against the warm background of the time they held.
+Against white they read as dust rather than as scent, so each was deepened
+on its own hue: saturation up by half, lightness down a fifth. `#55D1BA`
+conifer, `#6ADADD` deciduous, `#B185C2` birch, `#50BE81` undergrowth,
+`#A865C7` blossom, `#B2A17F` dead wood. The direction the moodboard set —
+cool, related, one signature per family — survives; its exact values do
+not, and the moodboard stops for the plants are recorded and unused.
 
 ## Exact Typed Preset and Active Modules
 
