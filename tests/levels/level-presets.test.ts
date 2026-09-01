@@ -105,9 +105,15 @@ test("Echo Level renders depth through shared materials only", () => {
   expect(echoPreset.testUi).toBe(true);
   expect(terrain.opacity).toBe(1);
   expect(terrain.presentation).toBeUndefined();
-  // Grass is parked while the heat view's per-fragment cost is unmeasured,
-  // so no level from here down the narrative chain grows any.
+  // Grass grows from here down the narrative chain, through the clipmap
+  // field. The older `grass` module stays parked: it is the same question
+  // about cost under the heat view, and only one of the two can answer it.
   expect(echoPreset.grass).toBeUndefined();
+  expect(echoPreset.grassClipmap?.tuftsPerSquareMeter).toBeGreaterThan(0);
+  expect(echoPreset.grassClipmap?.bladeHeightMeters).toBeGreaterThan(0);
+  // The blades author no look of their own beyond a base gradient: the
+  // senses take their color, exactly as they take every other surface.
+  expect(echoPreset.grassClipmap?.colors.rootColor).toBeDefined();
   expect(echoPreset.animals).toBeUndefined();
   // Senses layer, never swap: the air and scent layers carry over unchanged.
   expect(echoPreset.airParticles).toEqual(whiteWorld.airParticles);
@@ -150,6 +156,8 @@ test("Scent Level layers scent onto the White World air baseline", () => {
   expect(scentPreset.invisibleGround).toBe(true);
   expect(scentPreset.terrain).toBeUndefined();
   expect(scentPreset.grass).toBeUndefined();
+  // Grass starts at echolocation, not before it.
+  expect(scentPreset.grassClipmap).toBeUndefined();
   expect(scentPreset.rocks).toBeUndefined();
   expect(scentPreset.animals).toBeUndefined();
 
@@ -234,6 +242,7 @@ test("Motion Level layers fly swarms onto the carried Echo world", () => {
   expect(motionPreset.rocks).toEqual(echoLevel.rocks);
   expect(motionPreset.backgroundColor).toBe(echoLevel.backgroundColor ?? -1);
   expect(motionPreset.grass).toBeUndefined();
+  expect(motionPreset.grassClipmap).toEqual(echoLevel.grassClipmap);
   expect(motionPreset.animals).toBeUndefined();
   expect(motionPreset.invisibleGround).toBeUndefined();
 
@@ -281,6 +290,7 @@ test("Thermal Level layers heat onto the carried Motion world", () => {
   expect(thermalPreset.motion).toEqual(motionLevel.motion);
   expect(thermalPreset.backgroundColor).toBe(motionLevel.backgroundColor ?? -1);
   expect(thermalPreset.grass).toBeUndefined();
+  expect(thermalPreset.grassClipmap).toEqual(echoLevel.grassClipmap);
   expect(thermalPreset.invisibleGround).toBeUndefined();
 
   expect(thermal.intensity).toBe(1);
@@ -308,6 +318,17 @@ test("Thermal Level layers heat onto the carried Motion world", () => {
     thermal.surfaces.vegetationWarmth,
   );
   expect(thermal.actorWarmth).toBeGreaterThan(thermal.surfaces.rockWarmth);
+  // Grass reads as the ground it grows out of, not as the bushes standing in
+  // it: carrying vegetation's values made a whole meadow one flat hot surface.
+  expect(thermal.surfaces.grassWarmth).toBeLessThan(
+    thermal.surfaces.vegetationWarmth,
+  );
+  expect(thermal.surfaces.grassWarmth).toBeLessThanOrEqual(
+    thermal.bands.terrain.ceilingWarmth,
+  );
+  expect(thermal.bands.grass.ceilingWarmth).toBeLessThan(
+    thermal.bands.vegetation.ceilingWarmth,
+  );
 
   // Animals outside the radius sit inside the carried echo grayscale.
   const echoWorldPalette = [0x101010, 0x171717, 0x494949];
@@ -338,6 +359,7 @@ test("Magnetic Level layers the field onto the carried Thermal world", () => {
     thermalLevel.backgroundColor ?? -1,
   );
   expect(magneticPreset.grass).toBeUndefined();
+  expect(magneticPreset.grassClipmap).toEqual(echoLevel.grassClipmap);
   expect(magneticPreset.invisibleGround).toBeUndefined();
 
   expect(magnetic.intensity).toBe(1);
@@ -383,6 +405,7 @@ test("Connections Level layers the web onto the carried Magnetic world", () => {
     magneticLevel.backgroundColor ?? -1,
   );
   expect(connectionsPreset.grass).toBeUndefined();
+  expect(connectionsPreset.grassClipmap).toEqual(echoLevel.grassClipmap);
   expect(connectionsPreset.invisibleGround).toBeUndefined();
 
   expect(connections.intensity).toBe(1);

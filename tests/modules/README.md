@@ -20,7 +20,10 @@ fixed instancing, partial chunk updates, GPU animation, and disposal. Terrain
 covers height-only geometry generation, cooperative row streaming,
 shared-border equality, stale-job rejection, and GPU resource disposal. Zone
 Visualizer verifies its five diagnostic colors, continuous condition input,
-and shader wiring. Magnetic Sense verifies its sky-dome lifecycle, that the ported
+and shader wiring. Grass Clipmap verifies the layout invariants that keep the
+field from ending on a straight line or popping at an allocation step, that
+its height texture reproduces the sampled world surface and leaves ungrassed
+zones bare, and that leaving the window refills it in cooperative steps. Magnetic Sense verifies its sky-dome lifecycle, that the ported
 shimmer math and the previous version's saved values survive, the field axis
 and palette reaching the uniforms, the clock wrap, and parameter
 validation. Visual quality and target-device performance still

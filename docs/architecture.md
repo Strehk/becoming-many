@@ -84,6 +84,7 @@ src/
 │   ├── atmosphere/
 │   ├── echo-depth/
 │   ├── grass/
+│   ├── grass-clipmap/
 │   ├── magnetic-sense/
 │   ├── motion-sense/
 │   ├── mycelium/
@@ -148,6 +149,7 @@ tests/
 │   ├── animals.test.ts
 │   ├── connection-nodes.test.ts
 │   ├── echo-depth.test.ts
+│   ├── grass-clipmap.test.ts
 │   ├── grass.test.ts
 │   ├── magnetic-sense.test.ts
 │   ├── motion-sense.test.ts
@@ -400,6 +402,8 @@ is proven twice; zone and placement policy remain module-owned.
 | `WORLD_WIND` | Shared authored wind mean direction, strength, speed, swing, and gust |
 | `WorldWindSample` | The unit direction and strength blowing at one sampled moment |
 | `GrassPreset` | Level-authored density and blade height per supported grass zone |
+| `GrassClipmapPreset` | Level-authored density, full-density radius, blade dimensions, and palette of the clipmap field |
+| `ThermalPerceptionEffects` | One heat response per consumer: terrain, vegetation, rocks, grass, and animals |
 | `MagneticSenseParameters` | Magnetic field axis (direction and inclination), intensity, and pole palette |
 | `MagneticSenseModuleHandle` | The Magnetic Sense sky module plus its strength and background drivers |
 | `ScentParticlesParameters` | Level-authored scent signature, emission volume, and density per plant family and animal species, plus shared appearance and drift values |

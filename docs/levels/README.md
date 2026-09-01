@@ -83,10 +83,11 @@ The Echo preset additionally activates:
 
 - generated Terrain with its plain material at full opacity
 - zone-driven Vegetation and Rocks with base colors authored from the dark
-  end of the 03 palette and Test Level densities. Grass is parked: the
-  module can take sense effects and holds its own 64-metre range, but no
-  narrative level authors a `grass` block while its cost under Thermal
-  Perception is unmeasured
+  end of the 03 palette and Test Level densities
+- the clipmap grass field, which grows from here down the whole narrative
+  chain and takes the same sense effects as every other surface. The older
+  `grass` module stays parked; its cost under Thermal Perception is still
+  unmeasured, and so is the field that replaced it here
 - the shared Echo Depth material effect: one camera-distance palette ramp
   from near-dark silhouettes into the warm off-white haze background,
   patched into the Terrain, Vegetation, and Rock materials without

@@ -42,6 +42,10 @@ import {
 } from "../modules/echo-depth/echo-depth";
 import { createGrassModule, type GrassPreset } from "../modules/grass/grass";
 import {
+  createGrassClipmapModule,
+  type GrassClipmapPreset,
+} from "../modules/grass-clipmap/grass-clipmap";
+import {
   createMagneticSense,
   type MagneticSenseModuleHandle,
   type MagneticSenseParameters,
@@ -144,6 +148,14 @@ export interface LevelPreset {
   readonly scentParticles?: ScentParticlesParameters;
   readonly terrain?: TerrainPreset;
   readonly grass?: GrassPreset;
+
+  /**
+   * The clipmap grass field, ported from the standalone grass demo. It is a
+   * separate module rather than a mode of `grass`: it places nothing on the
+   * CPU and carries its own ground sampling, so the two cannot share a
+   * preset. `echo.level.ts` authors it and every later preset carries it.
+   */
+  readonly grassClipmap?: GrassClipmapPreset;
   readonly vegetation?: VegetationPreset;
   readonly rocks?: RocksPreset;
   readonly animals?: AnimalsPreset;
@@ -620,6 +632,7 @@ function createConfiguredModules(setup: LevelSetup): ComposedWorld {
   add(undefined, createAirParticles(setup));
   add("scentParticles", scent?.module);
   add(undefined, createGrass(setup, echoDepth, thermal, structureFade));
+  add(undefined, createGrassClipmap(setup, echoDepth, thermal, structureFade));
   add("vegetation", createVegetation(setup, echoDepth, thermal, structureFade));
   add("rocks", createRocks(setup, echoDepth, thermal, structureFade));
   add("animals", animals?.module);
@@ -874,6 +887,32 @@ function validateAnimalScentSignatures(
     if (signatures[id]) continue;
     throw new Error(`Animal species has no scent signature: ${id}`);
   }
+}
+
+/** Skip the field entirely when a level authors no clipmap grass. */
+function createGrassClipmap(
+  setup: LevelSetup,
+  echoDepth: EchoDepthEffect | undefined,
+  thermal: ThermalPerceptionEffects | undefined,
+  worldFade: WorldFadeEffect | undefined,
+): WorldModule | undefined {
+  const preset = setup.level.grassClipmap;
+  if (!preset) return undefined;
+
+  return createGrassClipmapModule({
+    scene: setup.world.scene,
+    camera: setup.world.camera,
+    preset,
+    streamQueue: setup.world.streamQueue,
+    worldSurface: setup.worldSurface,
+    surfaceSettings: WORLD_SURFACE_SETTINGS,
+    // The field fades into the level haze wherever no sense covers it.
+    fogColor: setup.level.backgroundColor ?? 0xffffff,
+    // Grass takes its own heat response, not vegetation's. It grows out of
+    // the ground and holds the ground's temperature; carrying the bushes'
+    // values made a whole meadow read as one flat hot surface.
+    effects: buildSurfaceEffects(worldFade, thermal?.grass, echoDepth),
+  });
 }
 
 function createGrass(

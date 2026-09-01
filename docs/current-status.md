@@ -102,7 +102,7 @@ itself. The broker relays only; with none running the show plays unchanged.
 - `thermal.level.ts` is the Thermal Perception level: every Motion
   Perception value carried over unchanged plus the `animals` field (fur
   colors from the echo dark stops) and the `thermal` field that decorates
-  Terrain, Vegetation, Rocks, and Animals with the radius-bounded
+  Terrain, Vegetation, Rocks, Grass, and Animals with the radius-bounded
   false-color heat view.
 - `magnetic.level.ts` is the Magnetic Field Perception level: every Thermal
   Perception value carried over unchanged plus the top-level `magnetic`
@@ -306,6 +306,45 @@ itself. The broker relays only; with none running the show plays unchanged.
   sense module and its root-to-tip gradient stays its own base color below
   full sense intensity.
 - Grass owns and disposes its mesh, geometry, material, and typed buffer.
+
+### Grass Clipmap
+
+- Grass Clipmap is a second grass implementation, ported from the standalone
+  grass demo, and the grass of the narrative chain: `echo.level.ts` authors
+  it and every later preset carries it. The older `grass` module stays,
+  authored only by the test and design presets.
+- Concentric rings of chunks follow the camera; every level doubles the edge
+  length and encloses the previous one, so covered area grows exponentially
+  while the chunk count grows linearly. At the authored layout the chunks are
+  8, 16, 32, and 64 metres, the field reaches 256 metres, and grass is
+  guaranteed for 128 of them, which is exactly where the blades fade out.
+- One blade is one instance carrying a single `vec3`: its low-discrepancy cell
+  and its rank. Position, facing, height, bend, wind, colour, and lighting are
+  derived in the vertex shader. Every chunk of every level shares one
+  65,536-entry instance buffer, 786 KB for the whole field.
+- Density falls with the square of the distance. Levels allocate in quarter
+  steps for their inner edge; the shader thins the rest continuously by rank
+  and dissolves the transition over a band, so no level border carries a step.
+- Culling is per blade in the shader — rank, distance, and the four frustum
+  side planes — before any hash, sample, or sine, which makes the chunk size a
+  free parameter rather than the culling accuracy.
+- The ground arrives sampled. `getGroundY` is four Perlin lookups against a
+  permutation table, which cannot be ported to a vertex shader, so a
+  camera-following texture on Terrain's own two-metre vertex grid carries
+  ground height and zone cover in two channels. Its first fill takes a
+  measured 35.8 ms during `load`; re-centring runs through the shared stream
+  queue and publishes the new window only once it is complete.
+- The shaders carry the chunk anchors `<common>`, `<project_vertex>`, and
+  `<color_fragment>`, so Echo Depth and Thermal Perception patch them like
+  any built-in pass. The chunk matrix is a pure translation, so the vertex
+  stage hands `<project_vertex>` the local position. Where a sense is
+  patched in, `GRASS_LIT` compiles the demo's lighting model out and leaves
+  the root-to-tip gradient that shows below full sense intensity.
+- Open: nothing is measured on a PICO 4, and the field is running rather
+  than waiting — on the fixed benchmark route it takes the Echolocation
+  level from 32 draw calls and 2.21 M triangles to 130 and 2.64 M, rendered
+  at 0.4 ms median on an Apple-GPU Mac. The frustum comes from the base
+  camera, not per eye. Two grass modules now exist.
 
 ### Vegetation and Rocks
 

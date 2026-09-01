@@ -187,6 +187,14 @@ export const level: LevelPreset = {
       rockAxisWarmthPerMeter: -0.03,
       rockTextureWarmth: 0.24,
       rockContrast: 0.52,
+      // Grass is the ground, not the bushes standing in it. A meadow is a
+      // thin layer over the soil and holds the soil's temperature; a canopy
+      // holds its own. Authored just above the ground's own reading so the
+      // grazed slopes read as grown rather than as painted, and given the
+      // ground's texture depth and contrast so the two carry one register.
+      grassWarmth: 0.34,
+      grassTextureWarmth: 0.28,
+      grassContrast: 0.5,
     },
     // What each material's own substance may reach, whatever its elevation,
     // gradient, texture, and contrast add up to. Ground and rock fill the
@@ -225,6 +233,9 @@ export const level: LevelPreset = {
       terrain: { floorWarmth: 0, ceilingWarmth: 0.48 },
       vegetation: { floorWarmth: 0.16, ceilingWarmth: 0.86 },
       rocks: { floorWarmth: 0, ceilingWarmth: 0.48 },
+      // Barely wider than the ground's, and starting at the same floor: grass
+      // may read a shade warmer than the soil under it, never like a plant.
+      grass: { floorWarmth: 0, ceilingWarmth: 0.54 },
       animals: { floorWarmth: 0.72, ceilingWarmth: 1 },
     },
     // The organic texture over the ground: deep enough that no stretch of

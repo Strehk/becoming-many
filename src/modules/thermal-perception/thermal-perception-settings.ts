@@ -111,6 +111,7 @@ export const THERMAL_PERCEPTION_SETTINGS = {
   // differences that carry its structure and leaves both ends unclipped.
   definition: {
     terrainPivot: 0.28,
+    grassPivot: 0.3,
     // Plants cluster higher than the midpoint now that a crown climbs from a
     // cyan stem into exposed orange foliage, so the pivot follows them there:
     // the differences inside a canopy get the steepest part of the curve,
@@ -170,6 +171,7 @@ export interface ThermalSurfaceWarmth {
   /** How far each surface's contrast curve is applied, 0..1. */
   readonly vegetationContrast: number;
   readonly rockContrast: number;
+  readonly grassContrast: number;
   readonly vegetationWarmth: number;
   readonly vegetationWarmthSpread: number;
   readonly vegetationHeightWarmthPerMeter: number;
@@ -180,6 +182,16 @@ export interface ThermalSurfaceWarmth {
   readonly rockHeightWarmthPerMeter: number;
   readonly rockAxisWarmthPerMeter: number;
   readonly rockTextureWarmth: number;
+
+  /**
+   * Grass reads as the ground it grows out of, not as the bushes standing in
+   * it: a meadow is a thin layer over the soil and holds the soil's
+   * temperature, while a canopy holds its own. It carries no spread and no
+   * internal gradient — those come from an instance matrix, and a blade
+   * derived entirely in the vertex shader has none.
+   */
+  readonly grassWarmth: number;
+  readonly grassTextureWarmth: number;
 }
 
 /**
@@ -240,6 +252,7 @@ export interface ThermalPerceptionParameters {
     readonly terrain: ThermalWarmthBand;
     readonly vegetation: ThermalWarmthBand;
     readonly rocks: ThermalWarmthBand;
+    readonly grass: ThermalWarmthBand;
     readonly animals: ThermalWarmthBand;
   };
 
