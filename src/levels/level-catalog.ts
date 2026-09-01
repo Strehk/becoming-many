@@ -70,7 +70,16 @@ export function isLevelName(value: string): value is LevelName {
 
 /** Falls back to the default rather than failing on an unknown request. */
 export function resolveLevelName(requested: string | null): LevelName {
-  return requested !== null && isLevelName(requested)
-    ? requested
-    : DEFAULT_LEVEL_NAME;
+  if (requested === null) return DEFAULT_LEVEL_NAME;
+  if (isLevelName(requested)) return requested;
+
+  // A misspelled name used to open the default level without a word, and the
+  // default is the last level of the chain — so a typo silently answered with
+  // every sense at once. Falling back is still right, because a bad URL must
+  // not leave a black screen, but it has to say so.
+  console.warn(
+    `Unknown level "${requested}". Opening "${DEFAULT_LEVEL_NAME}" instead. ` +
+      `Known levels: ${LEVEL_NAMES.join(", ")}.`,
+  );
+  return DEFAULT_LEVEL_NAME;
 }
