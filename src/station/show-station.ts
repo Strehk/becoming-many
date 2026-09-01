@@ -16,6 +16,8 @@ export interface ShowStationOptions {
   readonly level: RunningLevel;
   readonly show: RunningShow;
   readonly stationUrl: string;
+  /** Reports this window's own socket; the corner widget displays it. */
+  readonly onConnectionChange?: (isConnected: boolean) => void;
 }
 
 /**
@@ -26,10 +28,12 @@ export function connectShowStation({
   level,
   show,
   stationUrl,
+  onConnectionChange,
 }: ShowStationOptions): StationLink {
   const link = createStationLink({
     role: "show",
     stationUrl,
+    onConnectionChange,
     onMessage: (message) => {
       // Status and presence describe the show; they are never sent to it.
       if (message.kind === "status" || message.kind === "presence") return;

@@ -10,7 +10,8 @@ Boundary: Show time lives in src/dramaturgy; the wire lives in src/station.
 This folder owns the **operator page**: the surface a person runs the piece
 from. It is the page [Session and Operator](../../docs/direction/session-operator.md)
 describes, opened at `/conductor.html` on the station's second monitor while the
-show runs at `/?show&station` in the other window.
+show runs at `/` in the other window — the default page, whose station link
+connects by itself and links back here from its corner widget.
 
 `conductor-page.ts` is the page's composition root. It holds the station link
 and the last status the show sent, and redraws every panel from one instant each

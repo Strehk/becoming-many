@@ -58,7 +58,7 @@ optional module parameters. The view distance is also the hard visibility
 boundary used to size streamed module windows with an additional preparation
 margin. It is level data; the permanent runtime does not invent a world look.
 
-During a show (`?show`) the timeline is the world authority: the world is
+During a show (the default page) the timeline is the world authority: the world is
 composed once from `SHOW_LEVEL` — the ladder's last preset, which the
 layering rule makes the union, minus the development overlay — and the Level
 Runtime stands it in the state the schedule calls for. Nothing cuts: the

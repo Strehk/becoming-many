@@ -30,7 +30,7 @@ idle ──staff: arm──► boarding ──staff: tutorial──► tutorial 
 ## Operator page
 
 Runs on the second monitor of the station PC at `/conductor.html`, beside a show
-window opened at `/?show&station`. Scope is **session control, show transport,
+window opened at `/` (the default page; its station link connects by itself). Scope is **session control, show transport,
 status monitoring, live visitor view** — but not a sense-override surface, which
 stays a dev concern.
 
