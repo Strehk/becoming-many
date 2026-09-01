@@ -29,8 +29,11 @@ const COMPONENTS_PER_VALUE = 3;
 
 /** Fixed random component indexes; emitter and candidate ones live with the anchors. */
 const EMITTER_RANDOM_COLOR = 3;
+// Scatter spends two component ranges: the three axes at 4..6 and their
+// second draw one axis count later at 7..9. Everything after starts at 10.
 const PARTICLE_RANDOM_FIRST_AXIS = 4;
-const PARTICLE_RANDOM_PHASE = 7;
+const SCATTER_AXIS_COUNT = 3;
+const PARTICLE_RANDOM_PHASE = 10;
 
 interface ScentParticleFieldOptions {
   readonly parameters: ScentParticlesParameters;
@@ -276,7 +279,16 @@ function writeEmitterParticles(
   }
 }
 
-/** Return one symmetric scatter offset within the given half extent. */
+/**
+ * Return one symmetric scatter offset within the given half extent, drawn so
+ * the cloud thins out toward its boundary instead of ending at a wall.
+ *
+ * Averaging two independent draws makes the offset triangular: density peaks
+ * at the anchor and falls linearly to nothing at the half extent, so the
+ * cloud keeps a defined core and dissolves at its edge. One draw alone
+ * spreads particles evenly and leaves the outermost as solid as the centre.
+ * The half extent stays the hard bound, so authored cloud sizes still hold.
+ */
 function getScatter(
   assignment: ChunkAssignment,
   emitterIndex: number,
@@ -284,12 +296,20 @@ function getScatter(
   componentIndex: number,
   halfExtent: number,
 ): number {
-  return (
-    (getScentRandom(assignment, emitterIndex, particleIndex, componentIndex) *
-      2 -
-      1) *
-    halfExtent
+  const firstDraw = getScentRandom(
+    assignment,
+    emitterIndex,
+    particleIndex,
+    componentIndex,
   );
+  const secondDraw = getScentRandom(
+    assignment,
+    emitterIndex,
+    particleIndex,
+    componentIndex + SCATTER_AXIS_COUNT,
+  );
+
+  return (firstDraw + secondDraw - 1) * halfExtent;
 }
 
 /** Convert the authored palette once into working-color-space triples. */

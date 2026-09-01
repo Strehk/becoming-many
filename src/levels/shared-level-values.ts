@@ -11,9 +11,12 @@ type SharedBlock<Key extends keyof LevelPreset> = NonNullable<LevelPreset[Key]>;
 
 /**
  * The echo ramp haze stop. Levels that carry the echo world use it as the
- * background color, so far geometry dissolves into it.
+ * background color, so far geometry dissolves into it. It sits a little
+ * above the luminance of the moodboard stop it was derived from: the haze is
+ * what the world ends in, and lifting it nearer white thins the horizon
+ * rather than closing it with a wall of grey.
  */
-export const sharedEchoHazeColor = 0xf1f1f1;
+export const sharedEchoHazeColor = 0xf7f7f7;
 
 /**
  * The White World air layer: dark motes reading against a pale background.
@@ -21,7 +24,7 @@ export const sharedEchoHazeColor = 0xf1f1f1;
  */
 export const sharedAirParticles: SharedBlock<"airParticles"> = {
   density: {
-    particlesPerChunk: 192,
+    particlesPerChunk: 270,
   },
   appearance: {
     color: 0x202126,
@@ -38,17 +41,28 @@ export const sharedAirParticles: SharedBlock<"airParticles"> = {
  * The Scent World layer with the level-02 signature colors: forest chunks
  * spawn low, flat clouds anchored above the rendered ground. The pale base
  * tone stays reserved for the background.
+ *
+ * Every emitter renders the same box at the same particle count, so variety
+ * comes from the placement instead: many small clouds per chunk land
+ * independently, and where they overlap they read as one larger, denser
+ * mass. The clouds are flat so they can sit close to the ground, which
+ * leaves the sway alone to carry the box edges into an undulating
+ * silhouette.
+ *
+ * The anchor height is drawn uniformly between its two ends, so the range
+ * stays low and narrow. Its top end is the only lever on how high a cloud
+ * sits, and raising it lifts the whole layer instead of a few clouds in it.
  */
 export const sharedScentParticles: SharedBlock<"scentParticles"> = {
   colors: [0xb8e0e1, 0x9dd2c8, 0xd1c1d7, 0xfda39d, 0xfdbb54],
   placement: {
-    emittersPerChunk: 2,
-    minHeightMeters: 1,
-    maxHeightMeters: 2,
+    emittersPerChunk: 4,
+    minHeightMeters: 0.7,
+    maxHeightMeters: 1.3,
   },
   emission: {
-    particlesPerEmitter: 192,
-    cloudRadiusMeters: 3,
+    particlesPerEmitter: 90,
+    cloudRadiusMeters: 2.8,
     cloudHeightMeters: 1,
   },
   appearance: {
@@ -57,7 +71,7 @@ export const sharedScentParticles: SharedBlock<"scentParticles"> = {
   motion: {
     riseHeightMeters: 1.5,
     riseDurationSeconds: 10,
-    driftAmplitudeMeters: 0.4,
+    driftAmplitudeMeters: 0.9,
     speedMultiplier: 1,
   },
 };
@@ -114,16 +128,22 @@ export const sharedEchoDepth: SharedBlock<"echoDepth"> = {
   intensity: 1,
   // The nearest band stays one solid silhouette tone during fast flight.
   nearDistanceMeters: 6,
-  // Below the view distance, so chunk streaming happens inside the haze.
-  farDistanceMeters: 120,
-  // Grayscale ramp, near to far, keeping the luminance steps of the
-  // moodboard palette; every surface shows only its depth-ramp color
-  // regardless of proximity.
+  // Well below the view distance: the landscape reaches full haze at 96 m and
+  // the last 32 m before the far plane hold nothing but haze, so the world
+  // dissolves into mist instead of ending at a visible cut.
+  farDistanceMeters: 96,
+  // Grayscale ramp, near to far, walking every luminance step of the
+  // moodboard palette in order so the mist thickens evenly with distance
+  // instead of holding a dark mass out to mid range; every surface shows
+  // only its depth-ramp color regardless of proximity.
   colors: {
     nearColor: 0x101010,
-    nearShadeColor: 0x171717,
-    midColor: 0x494949,
-    farColor: 0xd7d7d7,
+    nearShadeColor: 0x494949,
+    midColor: 0x959595,
+    // Lifted with the haze stop above it, so the two stay a pair: lightening
+    // only the end the world dissolves into would have left the band before
+    // it as a visible grey step short of the horizon.
+    farColor: 0xe2e2e2,
     hazeColor: sharedEchoHazeColor,
   },
 };
@@ -176,7 +196,7 @@ export const sharedMotionSense: SharedBlock<"motion"> = {
   },
 };
 
-/** The decided grass distribution, shared by the diagnostic and design test levels. */
+/** The decided grass distribution, shared by every level that grows grass. */
 export const sharedGrassZones: SharedBlock<"grass">["zones"] = {
   meadow: {
     tuftsPerSquareMeter: 1.5,
@@ -186,4 +206,22 @@ export const sharedGrassZones: SharedBlock<"grass">["zones"] = {
     tuftsPerSquareMeter: 0.4,
     bladeHeightMeters: 0.22,
   },
+};
+
+/**
+ * Grass in the carried echo world. Like Vegetation, its own colors show only
+ * below full echo intensity, so root and tip are authored from the same
+ * level-03 dark stops the plants around it use: a future intensity ramp then
+ * fades between related tones instead of clashing ones.
+ *
+ * No narrative level selects this block at present. Grass is the densest
+ * near-camera surface in the world, and Thermal Perception samples a
+ * four-octave noise field per fragment on every surface it decorates, so the
+ * two together were parked until that cost is measured. The block stays
+ * authored so restoring grass is one line in `echo.level.ts`.
+ */
+export const sharedEchoGrass: SharedBlock<"grass"> = {
+  rootColor: 0x101010,
+  tipColor: 0x494949,
+  zones: sharedGrassZones,
 };

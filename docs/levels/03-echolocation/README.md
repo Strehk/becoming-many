@@ -34,8 +34,9 @@ Palette (see [moodboard](mood/moodboard.png)):
 
 Decided art direction (2026-08-25): aerial-perspective depth mapping in the
 spirit of the moodboard, authored as a grayscale ramp that keeps the
-moodboard palette's luminance steps:
-`#101010` `#171717` `#494949` `#959595` `#D7D7D7` `#F1F1F1`
+moodboard palette's luminance steps, the two far stops since lifted above
+theirs (see the 2026-08-30 decision below):
+`#101010` `#171717` `#494949` `#959595` `#E2E2E2` `#F7F7F7`
 
 Near geometry reads as near-black silhouettes and recedes through gray into
 an off-white haze that equals the background color, so distant geometry
@@ -47,24 +48,32 @@ ripples are excluded by the level intent. No audio counterpart exists yet.
 ## Exact Typed Preset and Active Modules
 
 - Preset: `src/levels/echo.level.ts` (`testUi: true`, 128-metre view
-  distance, background `0xF6F0E9` equal to the ramp haze stop).
-- Fields: `terrain` (plain material, full opacity), `vegetation` and `rocks`
-  (dark-palette base colors, Test Level densities), the unchanged White
-  World `airParticles` values, the unchanged Scent World `scentParticles`
-  values, and `echoDepth: EchoDepthParameters` (intensity 1, ramp from 6 to
-  120 metres, the fixed level palette).
-- Active modules: Terrain, Vegetation, and Rocks, plus Air Particles and
-  Scent Particles carried over as accumulated earlier senses ("senses layer,
-  never swap"), and the test overlay. Scent clouds keep their 02-palette
+  distance, background `0xF7F7F7` equal to the ramp haze stop).
+- Fields: `terrain` (plain material, full opacity), `vegetation`, and
+  `rocks` (dark-palette base colors, Test Level densities), the
+  unchanged White World `airParticles` values, the unchanged Scent World
+  `scentParticles` values, and `echoDepth: EchoDepthParameters` (intensity
+  1, ramp from 6 to 120 metres, the fixed level palette).
+- Active modules: Terrain, Vegetation, and Rocks, plus Air Particles
+  and Scent Particles carried over as accumulated earlier senses ("senses
+  layer, never swap"), and the test overlay. Scent clouds keep their 02-palette
   signature colors and now anchor above the rendered ground; the composition
   root never applies Echo Depth to them, so the sense does not recolor a
   sibling. The root creates one `EchoDepthEffect` (`src/modules/echo-depth/`)
   and applies the same instance to Terrain (through `TerrainMaterialEffect`)
   and to every Vegetation and Rock part material (through the shared
   `UnlitMaterialEffect` contract).
-- Excluded by intent: Grass (its raw shader has no material-effect hook and
-  blades do not read as silhouettes) and Animals (motion belongs to
-  level 04).
+- Decided 2026-08-30, reversed 2026-08-31: Grass gained the three.js chunk
+  anchors (`<common>`, `<project_vertex>`, and `<color_fragment>`) so the
+  same patch that decorates a built-in material pass reaches it unchanged,
+  and it took its own 64-metre range at the same time. The anchors and the
+  range stay in the module, but no narrative level authors a `grass` block
+  at present: grass is the densest near-camera surface in the world, and
+  Thermal Perception samples a four-octave noise field per fragment on
+  every surface it decorates. The pair is parked until that cost is
+  measured; see [performance.md](../../performance.md). Restoring it is one
+  line in `echo.level.ts`.
+- Excluded by intent: Animals (motion belongs to level 04).
 
 ## Asset and Shader Requirements
 
@@ -121,6 +130,18 @@ ripples are excluded by the level intent. No audio counterpart exists yet.
 - The ramp is authored grayscale (decided 2026-08-25); the indigo moodboard
   palette remains the documented reference and can return by editing only
   the preset colors.
+- Lighter horizon (decided 2026-08-30): the two far stops rose from `#D7D7D7`
+  and `#F1F1F1` to `#E2E2E2` and `#F7F7F7`, so they now sit above the
+  luminance of the moodboard stops they were derived from. The haze is what
+  the world ends in, and at its old value the horizon read as a grey wall
+  closing the distance rather than as the world thinning out of sight. They
+  moved as a pair on purpose: lightening only the stop the world dissolves
+  into would have left the band before it as a visible step short of the
+  horizon. Every stop below them is untouched, so near geometry still reads
+  as near-black silhouette and the ramp still walks the palette's luminance
+  order. This reaches levels 04 and 05 as well — the echo ramp is carried
+  verbatim by both, there is no per-level override, and `sharedEchoHazeColor`
+  is also each of those levels' background color.
 - Open art decisions: ramp stop tuning against real headset contrast;
   whether the carried-over dark air motes should adopt a pale gray tone for
   legibility against dark near forms; whether scent intensity should be

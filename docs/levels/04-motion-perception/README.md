@@ -50,8 +50,8 @@ cyan accent `#10BEDB` that the palette reserved for them. The orange
 ## Exact Typed Preset and Active Modules
 
 - Preset: `src/levels/motion.level.ts` (`testUi: true`, 128-metre view
-  distance, background `0xF1F1F1` equal to the carried ramp haze stop).
-- Fields: `terrain`, `vegetation`, `rocks`, `airParticles`,
+  distance, background `0xF7F7F7` equal to the carried ramp haze stop).
+- Fields: `terrain`, `grass`, `vegetation`, `rocks`, `airParticles`,
   `scentParticles`, and `echoDepth` copied unchanged from `echo.level.ts`,
   plus `motion: MotionSenseParameters` (intensity 1, twelve swarms of sixty
   flies, ink-dark appearance, fourteen-frame trails with motion gain 26,
@@ -65,7 +65,8 @@ cyan accent `#10BEDB` that the palette reserved for them. The orange
   position stream feeds a trail ring through the `MotionPointSource` seam.
   The composition root skips the module entirely at intensity zero, and
   the sense never imports or recolors a sibling.
-- Excluded by intent: Grass and Animals (unchanged from Echo).
+- Excluded by intent: Animals (unchanged from Echo). Grass carries over from
+  Echo with its depth ramp, like every other surface.
 
 ## Asset and Shader Requirements
 

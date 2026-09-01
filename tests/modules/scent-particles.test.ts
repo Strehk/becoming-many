@@ -111,6 +111,54 @@ describe("Scent Particles streaming", () => {
     disposeScentParticleField(field);
   });
 
+  test("thins the cloud out toward its edge instead of ending at a wall", () => {
+    const parameters: ScentParticlesParameters = {
+      ...createScentParameters(),
+      placement: {
+        emittersPerChunk: 1,
+        minHeightMeters: 2,
+        maxHeightMeters: 6,
+      },
+      emission: {
+        particlesPerEmitter: 4000,
+        cloudRadiusMeters: 1,
+        cloudHeightMeters: 0.5,
+      },
+    };
+    const field = createScentParticleField({
+      parameters,
+      chunkSize: 64,
+      chunkSlotCount: 1,
+      groundYAt: () => 50,
+      zoneAt: () => "coniferForest",
+    });
+
+    initializeScentParticleSlots(field, [createChunkAssignment(0, 0, 0)]);
+
+    const restXValues: number[] = [];
+    for (
+      let particleIndex = 0;
+      particleIndex < field.particlesPerChunk;
+      particleIndex += 1
+    ) {
+      restXValues.push(
+        field.renderedPositions[particleIndex * 3] ?? Number.NaN,
+      );
+    }
+    const anchorX =
+      restXValues.reduce((sum, restX) => sum + restX, 0) / restXValues.length;
+    const innerHalfShare =
+      restXValues.filter(
+        (restX) =>
+          Math.abs(restX - anchorX) < parameters.emission.cloudRadiusMeters / 2,
+      ).length / restXValues.length;
+
+    // An even spread leaves half the particles in the inner half of the cloud.
+    // A cloud that tapers to nothing at its boundary leaves three quarters.
+    expect(innerHalfShare).toBeGreaterThan(0.65);
+    disposeScentParticleField(field);
+  });
+
   test("gives every emitter one uniform color from the authored palette", () => {
     const parameters = createScentParameters();
     const field = createScentParticleField({

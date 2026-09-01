@@ -78,10 +78,52 @@ This file records decisions that constrain current and upcoming work.
 - Shared placement infrastructure is introduced only after at least two
   implemented consumers demonstrate the same operation and contract.
 
+### Any Module Shader May Be a Material-Effect Target
+
+Decided 2026-08-30, when Grass gained the anchors.
+
+- A sense effect targets the three.js chunk anchors `<common>`,
+  `<project_vertex>`, and `<color_fragment>` — not a material class. A module
+  that writes its own `ShaderMaterial` opts into every sense by carrying those
+  anchors in its GLSL and handing `<project_vertex>` a `transformed` position;
+  `applyShaderPatch` then decorates it exactly as it decorates a built-in
+  pass, including the shared uniform objects that a future intensity driver
+  will reach every consumer through.
+- The alternative was rejected: a module must not import a sibling sense's
+  GLSL and paste the response into its own shader. The composition root stays
+  the only place that knows which sense decorates which surface.
+- A module with no per-instance transform reuses the nearest existing
+  consumer variant rather than gaining its own. Grass takes the Vegetation
+  heat variant — same band, same warmth, same uniforms — because it is the
+  same living plant matter as the bushes it grows between. A new variant needs
+  a measured visual reason, not a structural difference.
+- Modules keep their own base color. It is what shows below full sense
+  intensity, so it is authored from the same palette the sense ramps through.
+- The decision stands without a live consumer. Grass was parked out of the
+  narrative levels on 2026-08-31 on cost grounds, so the anchors it carries
+  are currently exercised by tests only. What was decided here is where the
+  seam sits, not which module happens to sit on it.
+
+### Grass Carries Its Own Range
+
+Decided 2026-08-30, applying the 2026-08-24 audit's P1 finding.
+
+- Grass sets its visible range as a module constant (64 metres) instead of
+  deriving it from the level view distance, bounded by `camera.far` so a
+  nearer-seeing level still wins. The resident window is 5 x 5 chunks and
+  304,200 triangles instead of 9 x 9 and 985,608.
+- Range and preload are the first lever, density the last: the authored zone
+  densities are unchanged, and the preload ring stays so recycled chunks fill
+  in before they are seen.
+- A per-module range is not yet a general contract. Terrain, Vegetation, and
+  Rocks still follow the level view distance; each further split needs its own
+  measured need, as the audit records.
+
 ### Independent Grass and Composable Magnetic Stripes
 
 - Grass owns one fixed streamed instance field and consumes only World Surface
-  height and hard-zone facts. Magnetic Sense never imports or recolors Grass.
+  height and hard-zone facts. Magnetic Sense never imports or recolors Grass,
+  and Grass imports no sense module in return.
 - Magnetic Sense renders analytical ground lines through Terrain's existing
   material pass. Terrain remains the geometry and material lifecycle owner.
 - Magnetic Sense is a material effect, not a ground presentation. It preserves

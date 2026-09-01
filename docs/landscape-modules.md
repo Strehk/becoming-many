@@ -125,6 +125,11 @@ animation costs are fundamentally different from trees and bushes.
   direction, strength, or speed values.
 - One fixed instanced representation replaces individual Three.js objects.
 - Slot changes rewrite instance data; normal frames update only wind time.
+- Its range is a module constant, so the level view distance sets the reach of
+  Terrain, Vegetation, and Rocks but not of Grass.
+- Its shaders carry the three.js chunk anchors, so senses decorate the grass
+  material through the shared patch contract. Grass imports no sense module;
+  the composition root chooses its effects.
 
 ### Rocks
 

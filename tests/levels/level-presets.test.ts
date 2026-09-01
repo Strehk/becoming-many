@@ -16,6 +16,7 @@ import { level as scentLevel } from "../../src/levels/scent.level";
 import { level as testLevel } from "../../src/levels/test.level";
 import { level as thermalLevel } from "../../src/levels/thermal.level";
 import { level as whiteWorld } from "../../src/levels/white-world.level";
+import { THERMAL_PERCEPTION_SETTINGS } from "../../src/modules/thermal-perception/thermal-perception-settings";
 
 test("only the Test Level activates development diagnostics", () => {
   const testPreset: LevelPreset = testLevel;
@@ -90,9 +91,11 @@ test("only the Test Level activates development diagnostics", () => {
 
 test("Echo Level renders depth through shared materials only", () => {
   const echoPreset: LevelPreset = echoLevel;
-  // Grayscale versions of the level-03 palette luminance steps.
+  // Grayscale versions of the level-03 palette luminance steps, with the two
+  // far stops lifted above theirs so the horizon thins instead of ending in a
+  // grey wall.
   const echoWorldPalette = [
-    0x101010, 0x171717, 0x494949, 0x959595, 0xd7d7d7, 0xf1f1f1,
+    0x101010, 0x171717, 0x494949, 0x959595, 0xe2e2e2, 0xf7f7f7,
   ];
   const { echoDepth, terrain, vegetation, rocks } = echoPreset;
   if (!echoDepth || !terrain || !vegetation || !rocks) {
@@ -102,6 +105,8 @@ test("Echo Level renders depth through shared materials only", () => {
   expect(echoPreset.testUi).toBe(true);
   expect(terrain.opacity).toBe(1);
   expect(terrain.presentation).toBeUndefined();
+  // Grass is parked while the heat view's per-fragment cost is unmeasured,
+  // so no level from here down the narrative chain grows any.
   expect(echoPreset.grass).toBeUndefined();
   expect(echoPreset.animals).toBeUndefined();
   // Senses layer, never swap: the air and scent layers carry over unchanged.
@@ -148,20 +153,20 @@ test("Scent Level layers scent onto the White World air baseline", () => {
   }
   expect(scentPreset.scentParticles?.colors).toHaveLength(5);
   expect(scentPreset.scentParticles?.placement).toEqual({
-    emittersPerChunk: 2,
-    minHeightMeters: 1,
-    maxHeightMeters: 2,
+    emittersPerChunk: 4,
+    minHeightMeters: 0.7,
+    maxHeightMeters: 1.3,
   });
   expect(scentPreset.scentParticles?.emission).toEqual({
-    particlesPerEmitter: 192,
-    cloudRadiusMeters: 3,
+    particlesPerEmitter: 90,
+    cloudRadiusMeters: 2.8,
     cloudHeightMeters: 1,
   });
   expect(scentPreset.scentParticles?.appearance.sizeMeters).toBe(0.15);
   expect(scentPreset.scentParticles?.motion).toEqual({
     riseHeightMeters: 1.5,
     riseDurationSeconds: 10,
-    driftAmplitudeMeters: 0.4,
+    driftAmplitudeMeters: 0.9,
     speedMultiplier: 1,
   });
 });
@@ -204,9 +209,16 @@ test("Motion Level layers fly swarms onto the carried Echo world", () => {
 
 test("Thermal Level layers heat onto the carried Motion world", () => {
   const thermalPreset: LevelPreset = thermalLevel;
-  // The documented level-05 false-color palette, cold to hot.
+  // The documented level-05 false-color palette, cold to hot. The warm three
+  // are the moodboard colors verbatim. The cold three are carried down their
+  // own hues and deviate in value only: the coldest reaches near-black so the
+  // ramp has a dark floor for shadowed crown depths, cold hollows, and deep
+  // water, and the two above it are deepened so the landscape they cover
+  // reads dark rather than lit from within. Hue is what is pinned here — a
+  // change that drains the cold end toward grey is the reverted experiment
+  // and must fail this test.
   const thermalPalette = [
-    0x2e1386, 0x0c47d1, 0x2eb4e8, 0xd5198a, 0xfb5f16, 0xfcce43,
+    0x0e0628, 0x072b7d, 0x1c6c8b, 0xd5198a, 0xfb5f16, 0xfcce43,
   ];
   const { thermal, animals } = thermalPreset;
   if (!thermal) throw new Error("Thermal Level must author the thermal sense");
@@ -227,6 +239,19 @@ test("Thermal Level layers heat onto the carried Motion world", () => {
 
   expect(thermal.intensity).toBe(1);
   expect(Object.values(thermal.colors)).toEqual(thermalPalette);
+  // The ground is held in violet, blue, and cyan by where the ramp's warm
+  // stop sits, not by draining its colors: no matter how a ground reading
+  // adds up, its own substance stops below the warmth at which magenta is
+  // reached. Rock shares that range, so it is checked with the ground.
+  for (const coldBand of [thermal.bands.terrain, thermal.bands.rocks]) {
+    expect(coldBand.ceilingWarmth).toBeLessThan(
+      THERMAL_PERCEPTION_SETTINGS.warmStopFraction,
+    );
+  }
+  // Only a living body reaches the top of the ramp.
+  expect(thermal.bands.animals.floorWarmth).toBeGreaterThan(
+    thermal.bands.terrain.ceilingWarmth,
+  );
   // Heat is a near sense: it feathers out well inside the echo far distance.
   expect(thermal.edgeFeatherMeters).toBeLessThan(thermal.radiusMeters);
   expect(thermal.radiusMeters + thermal.edgeFeatherMeters).toBeLessThan(

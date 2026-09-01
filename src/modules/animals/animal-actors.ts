@@ -10,6 +10,7 @@ import {
   Box3,
   Group,
   type Material,
+  Matrix4,
   Mesh,
   type PerspectiveCamera,
   SkinnedMesh,
@@ -17,10 +18,7 @@ import {
 import type { GLTF } from "three/addons/loaders/GLTFLoader.js";
 import { clone } from "three/addons/utils/SkeletonUtils.js";
 import type { GltfAssets } from "../../utils/asset-loader/gltf-assets";
-import {
-  applyMaterialEffects,
-  type UnlitMaterialEffect,
-} from "../../utils/asset-loader/material-effect";
+import { applyMaterialEffects } from "../../utils/asset-loader/material-effect";
 import { createUnlitMaterial } from "../../utils/asset-loader/unlit-material";
 import { getCellRandom } from "../../world/chunk-candidates";
 import type { WorldSurface } from "../../world-surface/world-surface";
@@ -28,7 +26,11 @@ import {
   type AlignAnimalToSurface,
   createAnimalSurfaceAlignment,
 } from "./animal-surface-orientation";
-import type { AnimalColors } from "./animals";
+import type {
+  AnimalColors,
+  AnimalMaterialEffectsFor,
+  MutableAnimalBody,
+} from "./animals";
 import type {
   AnimalSpeciesDefinition,
   AnimalsDefinition,
@@ -67,7 +69,7 @@ interface CreateAnimalActorsOptions {
   readonly assets: GltfAssets;
   readonly parameters: AnimalsDefinition;
   readonly colors: AnimalColors;
-  readonly effects?: readonly UnlitMaterialEffect[];
+  readonly effectsFor?: AnimalMaterialEffectsFor;
   readonly worldSurface: WorldSurface;
   readonly startX: number;
   readonly startZ: number;
@@ -118,7 +120,7 @@ function createConfiguredActors(
     const actor = createAnimalActor(
       options.assets,
       options.colors,
-      options.effects ?? [],
+      options.effectsFor,
       plan,
       actorIndex,
     );
@@ -166,6 +168,33 @@ export function updateAnimalActors(
 }
 
 /**
+ * Fill `bodies` with the visible actors, reusing its entries so the per-frame
+ * report allocates nothing once the visible count settles.
+ */
+export function readVisibleAnimalBodies(
+  population: AnimalActors,
+  bodies: MutableAnimalBody[],
+): void {
+  let count = 0;
+  for (const actor of population.actors) {
+    if (!actor.root.visible) continue;
+
+    let body = bodies[count];
+    if (!body) {
+      body = { x: 0, y: 0, z: 0, headingRadians: 0, heightMeters: 0 };
+      bodies[count] = body;
+    }
+    body.x = actor.root.position.x;
+    body.y = actor.root.position.y;
+    body.z = actor.root.position.z;
+    body.headingRadians = actor.headingRadians;
+    body.heightMeters = actor.species.heightMeters;
+    count++;
+  }
+  bodies.length = count;
+}
+
+/**
  * Pack the world positions of the currently visible actors into the given
  * buffer and return how many actors were written. The visible set is bounded
  * by the definition's visibility budget.
@@ -201,16 +230,38 @@ export function disposeAnimalActors(population: AnimalActors): void {
   population.group.clear();
 }
 
+/**
+ * Map model space onto normalized body space: y runs 0..1 from the lowest
+ * point to the crown, and x and z stay in the same units around the body's
+ * own vertical axis, so a measurement means the same thing on every species.
+ */
+function createBodySpaceMatrix(bounds: Box3, sourceHeight: number): Matrix4 {
+  const centerX = (bounds.min.x + bounds.max.x) / 2;
+  const centerZ = (bounds.min.z + bounds.max.z) / 2;
+  return new Matrix4()
+    .makeScale(1 / sourceHeight, 1 / sourceHeight, 1 / sourceHeight)
+    .multiply(new Matrix4().makeTranslation(-centerX, -bounds.min.y, -centerZ));
+}
+
 function createAnimalActor(
   assets: GltfAssets,
   colors: AnimalColors,
-  effects: readonly UnlitMaterialEffect[],
+  effectsFor: AnimalMaterialEffectsFor | undefined,
   plan: AnimalPlan,
   actorIndex: number,
 ): AnimalActor {
   const { species } = plan;
   const asset = getAnimalAsset(assets, species.id);
   const model = clone(asset.scene);
+  // Measure before decorating: an effect may need the body the material
+  // belongs to, and the bounds also fix the scale that follows.
+  model.updateMatrixWorld(true);
+  const bounds = new Box3().setFromObject(model);
+  const sourceHeight = bounds.max.y - bounds.min.y;
+  if (!Number.isFinite(sourceHeight) || sourceHeight <= 0) {
+    throw new Error(`Animal has no measurable height: ${species.id}`);
+  }
+  const toBodySpace = createBodySpaceMatrix(bounds, sourceHeight);
   const materials: Material[] = [];
   model.traverse((object) => {
     if (object instanceof Mesh) {
@@ -220,7 +271,12 @@ function createAnimalActor(
       const replacements = sources.map((source) =>
         createUnlitMaterial(source, getAnimalColor(colors, source.name)),
       );
-      applyMaterialEffects(effects, replacements);
+      if (effectsFor) {
+        // Every mesh sits under its own rig transform, so each one carries
+        // its own route from mesh space into the shared body space.
+        const bodyMatrix = toBodySpace.clone().multiply(object.matrixWorld);
+        applyMaterialEffects(effectsFor(bodyMatrix), replacements);
+      }
       object.material = Array.isArray(object.material)
         ? replacements
         : (replacements[0] ?? object.material);
@@ -232,12 +288,6 @@ function createAnimalActor(
       object.frustumCulled = false;
     }
   });
-  model.updateMatrixWorld(true);
-  const bounds = new Box3().setFromObject(model);
-  const sourceHeight = bounds.max.y - bounds.min.y;
-  if (!Number.isFinite(sourceHeight) || sourceHeight <= 0) {
-    throw new Error(`Animal has no measurable height: ${species.id}`);
-  }
   model.position.y -= bounds.min.y;
   const root = new Group();
   root.name = `Animal:${species.id}:${actorIndex}`;

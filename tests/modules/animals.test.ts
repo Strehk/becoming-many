@@ -10,6 +10,7 @@ import {
   AnimationClip,
   BoxGeometry,
   Group,
+  Matrix4,
   Mesh,
   MeshBasicMaterial,
   PerspectiveCamera,
@@ -21,6 +22,7 @@ import { createAnimalSurfaceAlignment } from "../../src/modules/animals/animal-s
 import { createAnimalsModule } from "../../src/modules/animals/animals";
 import type { AnimalsDefinition } from "../../src/modules/animals/animals-definition";
 import type { GltfAssets } from "../../src/utils/asset-loader/gltf-assets";
+import type { SensedMaterial } from "../../src/utils/asset-loader/material-effect";
 import type { WorldSurface } from "../../src/world-surface/world-surface";
 import type { ZoneId } from "../../src/world-surface/zone-settings";
 
@@ -77,7 +79,8 @@ test("Animals animate only the nearest bounded population", () => {
 test("Animals decorate every actor material with supplied effects", () => {
   const scene = new Scene();
   const camera = new PerspectiveCamera();
-  const decoratedMaterials: MeshBasicMaterial[] = [];
+  const decoratedMaterials: SensedMaterial[] = [];
+  const bodyMatrices: Matrix4[] = [];
   const { module } = createAnimalsModule({
     scene,
     camera,
@@ -85,13 +88,25 @@ test("Animals decorate every actor material with supplied effects", () => {
     preset: PRESET,
     assets: createAnimalAssets(),
     worldSurface: createFlatSurface(),
-    effects: [{ applyTo: (material) => decoratedMaterials.push(material) }],
+    effectsFor: (bodyMatrix) => {
+      bodyMatrices.push(bodyMatrix);
+      return [
+        {
+          applyTo: (material: SensedMaterial) => {
+            decoratedMaterials.push(material);
+          },
+        },
+      ];
+    },
   });
 
   module.load();
 
   // Two species with two actors each and one material per cloned model.
   expect(decoratedMaterials).toHaveLength(4);
+  // Every decorated mesh is handed the route into its own body space.
+  expect(bodyMatrices).toHaveLength(4);
+  expect(bodyMatrices.every((matrix) => matrix instanceof Matrix4)).toBe(true);
   expect(
     decoratedMaterials.every(
       (material) => material instanceof MeshBasicMaterial,

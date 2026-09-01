@@ -240,7 +240,7 @@ function createConfiguredModules(setup: LevelSetup): WorldModule[] {
   addModule(modules, createTerrain(setup, echoDepth, thermal, magnetic));
   addModule(modules, createAirParticles(setup));
   addModule(modules, createScentParticles(setup));
-  addModule(modules, createGrass(setup));
+  addModule(modules, createGrass(setup, echoDepth, thermal));
   addModule(modules, createVegetation(setup, echoDepth, thermal));
   addModule(modules, createRocks(setup, echoDepth, thermal));
   addModule(modules, animals?.module);
@@ -409,7 +409,11 @@ function createScentParticles(setup: LevelSetup): WorldModule | undefined {
   });
 }
 
-function createGrass(setup: LevelSetup): WorldModule | undefined {
+function createGrass(
+  setup: LevelSetup,
+  echoDepth: EchoDepthEffect | undefined,
+  thermal: ThermalPerceptionEffects | undefined,
+): WorldModule | undefined {
   const preset = setup.level.grass;
   if (!preset) return undefined;
 
@@ -419,6 +423,11 @@ function createGrass(setup: LevelSetup): WorldModule | undefined {
     preset,
     streamQueue: setup.world.streamQueue,
     worldSurface: setup.worldSurface,
+    // Grass takes the vegetation heat response: it is the same living plant
+    // matter, growing between the bushes that carry those values, and a
+    // meadow that ran cooler than the shrubs standing in it would read as a
+    // different substance.
+    effects: buildSurfaceEffects(thermal?.vegetation, echoDepth),
   });
 }
 
@@ -484,7 +493,14 @@ function createAnimals(
     preset: setup.level.animals,
     assets: setup.assets.animals,
     worldSurface: setup.worldSurface,
-    effects: thermal ? [thermal.animals] : undefined,
+    // One effect per animated mesh: the body matrix lets the heat view fall
+    // off from each actor's own core instead of coloring it uniformly.
+    effectsFor: thermal
+      ? (bodyMatrix) => [thermal.animals(bodyMatrix)]
+      : undefined,
+    // Warm bodies radiate onto the ground, plants, and rocks around them, so
+    // the heat view needs to know where they stand each frame.
+    onBodiesUpdated: thermal?.setHeatSources,
   });
 }
 

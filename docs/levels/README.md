@@ -61,19 +61,23 @@ The Scent preset additionally activates:
 - the unchanged White World air-particle layer as the neutral depth baseline
 - the invisible ground: the continuous world terrain restricts flight without
   being rendered
-- up to two deterministic scent emitters per resident 64-metre chunk, only
+- up to four deterministic scent emitters per resident 64-metre chunk, only
   where the invisible zone facts grow forest, one 02-palette signature color
   each
-- flat clouds anchored 1–2 metres above the invisible ground with a one-metre
-  vertical extent and a gentle 1.5-metre rise
-- one fixed streamed pool of 192 opaque round particles per emitter in one
+- flat clouds anchored 0.7–1.3 metres above the invisible ground with a
+  one-metre vertical extent and a gentle 1.5-metre rise, their particle
+  density peaking at the anchor and tapering to nothing at the boundary
+- one fixed streamed pool of 90 opaque round particles per emitter in one
   draw call, recycled at chunk edges while traveling
 
 The Echo preset additionally activates:
 
 - generated Terrain with its plain material at full opacity
 - zone-driven Vegetation and Rocks with base colors authored from the dark
-  end of the 03 palette and Test Level densities
+  end of the 03 palette and Test Level densities. Grass is parked: the
+  module can take sense effects and holds its own 64-metre range, but no
+  narrative level authors a `grass` block while its cost under Thermal
+  Perception is unmeasured
 - the shared Echo Depth material effect: one camera-distance palette ramp
   from near-dark silhouettes into the warm off-white haze background,
   patched into the Terrain, Vegetation, and Rock materials without
@@ -82,7 +86,7 @@ The Echo preset additionally activates:
 - the unchanged White World air-particle layer and the unchanged Scent World
   layer carried over, because senses layer instead of swapping; scent clouds
   now anchor above the rendered ground and keep their 02-palette signatures
-- no grass or animals
+- no animals
 
 The Motion preset additionally activates:
 
@@ -101,7 +105,7 @@ The Motion preset additionally activates:
 - ink-dark specks and indigo fly trails from the level-04 dark palette
   stops, cyan bird traces from the reserved accent; three added draw calls
   in total
-- no grass or animals
+- no animals
 
 The Thermal preset additionally activates:
 
@@ -175,6 +179,11 @@ The images were created for this project with OpenAI Image Gen on 2026-08-21. Tw
 | 05 — Thermal Perception | [View](05-thermal-perception/mood/moodboard.png) | `#2E1386` `#0C47D1` `#2EB4E8` `#D5198A` `#FB5F16` `#FCCE43` |
 | 06 — Magnetic Field Perception | [View](06-magnetic-field-perception/mood/moodboard.png) | `#151935` `#1140A4` `#69BDE1` `#CDDBE2` `#A394C3` `#F9B33C` |
 | 07 — Connections | [View](07-connections/mood/moodboard.png) | `#F2E3D3` `#683B5A` `#292E55` `#A5BDC3` `#D06780` `#E39E54` |
+
+The hexes above record what each moodboard image contains. Where an authored
+ramp departs from its moodboard, the level's own README carries the deviation
+and the reason: level 05 darkens the coldest anchor `#2E1386` to `#0E0628`
+along its own hue, so its thermal ramp has a black floor.
 
 ## Planned Level Specifications
 
@@ -315,8 +324,8 @@ Prefer material changes over duplicate geometry or additional scene passes. A po
 Aerial-perspective depth mapping, decided 2026-08-25 and implemented in
 `src/modules/echo-depth/`: near geometry reads as near-black silhouettes
 and recedes into an off-white haze that equals the background color. The
-ramp is currently authored grayscale (`#101010` to `#F1F1F1`), keeping the
-moodboard palette's luminance steps; the indigo moodboard tones remain the
+ramp is currently authored grayscale (`#101010` to `#F7F7F7`), keeping the
+moodboard palette's luminance steps below its two lightened far stops; the indigo moodboard tones remain the
 documented reference. Every surface always shows only its depth-ramp
 color; a cyan rim accent on near forms was tried and removed the same day
 because approaching geometry must darken, not light up. See

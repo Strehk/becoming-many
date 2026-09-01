@@ -111,7 +111,10 @@ frame times are machine-local measurements.
   the shared `material-shader-patch.ts` helper. Echo Depth was the first
   multi-consumer effect (Terrain, Vegetation, and Rocks through the shared
   `UnlitMaterialEffect` contract); Thermal Perception extends the pattern
-  to Animals and to per-consumer warmth sources.
+  to Animals and to per-consumer warmth sources. Both can reach Grass as
+  well — a module's own `ShaderMaterial` is a patch target like any built-in
+  pass as long as its GLSL carries the chunk anchors — but no level pairs
+  them with grass at present, so that path is covered by tests only.
 
 ### World Surface
 
@@ -158,15 +161,16 @@ frame times are machine-local measurements.
 ### Scent Particles
 
 - Every resident 64-metre chunk deterministically tries a bounded candidate
-  search for up to two emitters from its absolute coordinates and keeps only
+  search for up to four emitters from its absolute coordinates and keeps only
   candidates inside the module-owned source zones (conifer and deciduous
   forest); misses stay hidden in their fixed particle range and never
   rasterize.
-- Kept emitters anchor 1–2 metres above the sampled world ground as flat
-  clouds (one-metre vertical extent, gentle rise), each with one signature
-  color from the level palette.
+- Kept emitters anchor 0.7–1.3 metres above the sampled world ground as flat
+  clouds (one-metre vertical extent, gentle rise) whose particle density peaks
+  at the anchor and tapers to nothing at the cloud boundary, each with one
+  signature color from the level palette.
 - The Scent Level's 128-metre camera range plus one preload layer produces a
-  7 x 7 resident window with 49 reusable slots and 18,816 buffered points in
+  7 x 7 resident window with 49 reusable slots and 17,640 buffered points in
   one `THREE.Points` object and one draw call.
 - Recycled chunk slots rewrite only their position, color, phase, and
   visibility buffer ranges through the shared frame-budgeted stream queue;
@@ -192,17 +196,28 @@ frame times are machine-local measurements.
   Terrain stores four continuous conditions in one optional `vec4` attribute;
   the fragment shader classifies after interpolation. Visualization adds no
   meshes, textures, draw calls, or duplicate geometry.
-- The height field combines rolling terrain, small detail, and mountain ridges
-  behind a continuous region mask. The current authored seed contains calm
-  lowlands, deep valleys, and mountain areas without discrete seams.
+- The height field combines rolling terrain, small detail, and broad hill
+  swells behind a continuous region mask. The current authored seed contains
+  calm lowlands, deep valleys, and densely undulating hill areas without
+  discrete seams. The broad swells carry most of the height range while the
+  rolling layer sets how often hills recur, so relief grows without the
+  ground becoming steep.
 - Terrain unload removes its group and disposes every geometry and its shared
   material.
 
 ### Grass
 
-- Grass uses one fixed `InstancedBufferGeometry` with 81 reusable 64-metre
-  slots, including one preload ring around the 180-metre view distance.
-- The current maximum meadow density produces 492,804 fixed candidates. Each
+- Only the `test` and `design-test` diagnostic presets author a `grass`
+  block. No narrative level does at present: grass is the densest
+  near-camera surface in the world and Thermal Perception samples a
+  four-octave noise field per fragment on every surface it decorates, so the
+  pair is parked until that cost is measured. Everything below still
+  describes the module, which is unchanged.
+- Grass uses one fixed `InstancedBufferGeometry` with 25 reusable 64-metre
+  slots: its own 64-metre range plus one preload ring. The range is a module
+  constant, not the level view distance, so a level that sees 180 metres no
+  longer drags the grass window out behind it.
+- The current maximum meadow density produces 152,100 fixed candidates. Each
   candidate is one compact `vec4` and two crossed triangles.
 - Absolute integer cells recreate stable roots. The level independently sets
   meadow and shrub-slope density and height. Candidates rejected by that zone
@@ -213,6 +228,14 @@ frame times are machine-local measurements.
 - Wind direction, strength, and speed come from the immutable `WORLD_WIND`
   configuration in `src/world/wind.ts`, the shared source for all wind-reactive
   components.
+- Grass carries the three.js chunk anchors (`<common>`, `<project_vertex>`,
+  and `<color_fragment>`) in its own GLSL, so the shared `UnlitMaterialEffect`
+  patch decorates it exactly as it decorates a built-in material pass. The
+  composition root decides which effects reach the grass material — Echo
+  Depth and the Vegetation thermal variant, when a level authoring grass
+  also authors those senses, which none currently does. Grass imports no
+  sense module and its root-to-tip gradient stays its own base color below
+  full sense intensity.
 - Grass owns and disposes its mesh, geometry, material, and typed buffer.
 
 ### Vegetation and Rocks
@@ -277,7 +300,9 @@ frame times are machine-local measurements.
   except an analytic glow at the horizon toward the field direction — the
   same direction the ground pulses travel toward; the shared intensity
   uniform fades the glow back into the haze without transparency.
-- Grass remains visually and architecturally independent.
+- Magnetic Sense never reaches Grass: the stripes stay a Terrain material
+  effect, and the composition root does not put them in the grass effect
+  list.
 
 ### Mycelium (Connections)
 
@@ -373,19 +398,78 @@ frame times are machine-local measurements.
 ### Thermal Perception
 
 - Thermal Perception is the level-05 material-effect family: one shared
-  radius-and-palette uniform set (intensity, 30-metre viewer radius,
-  10-metre feather, six-stop false-color ramp) with a per-consumer warmth
-  source. The radius is the camera-space view distance already used by
-  Echo Depth, so the effect needs no camera uniform and no per-frame
-  update; the field is fully static.
-- Terrain declares an optional `warmthAt` sampler on its material-effect
+  radius-and-palette uniform set (intensity, 60-metre viewer radius,
+  20-metre feather, six-stop false-color ramp) with a per-consumer warmth
+  source, and an authored share of the carried echo color stays visible on
+  every sensed surface so the false color sits inside the grey world instead
+  of replacing it. The radius is the camera-space view distance already used by
+  Echo Depth, so the radius itself needs no camera uniform. The one
+  per-frame input is the set of warm bodies (see local heat emission
+  below); nothing else about the field changes over time.
+- Warmth varies across every sensed surface, not only between surfaces.
+  Terrain declares an optional `warmthAt` sampler on its material-effect
   contract: during row-bounded chunk streaming it samples elevation plus
   zone conditions per vertex (water coldest and colder with depth, dry
   ground warmer with elevation, forest and slope boosts) into one streamed
   float attribute. Vegetation and Rocks hash their quantized instance
   world position into a stable warmth variation around authored base
-  values; Animals gained the shared `effects` option and carry one
-  constant near-hot warmth.
+  values, then shade each object internally from its own base and axis in
+  metres, so one authored gradient reads alike on a shrub and a tall tree.
+- Animals take a per-mesh effect through the Animals module's `effectsFor`
+  option: the module measures each cloned actor once and hands the effect
+  the matrix mapping that mesh's local space onto normalized body space.
+  The actor shader reads the posed vertex through that matrix and falls off
+  from an authored body core, so a torso holds the hottest reading while
+  legs, snouts, tails, and antlers cool with how far they reach away from
+  it. The falloff is authored in fractions of each actor's own height, so
+  one core fits every species without per-species values.
+- One organic texture then varies the warmth of every sensed surface. The
+  fragment stage sums several octaves of value noise, spanning roughly nine
+  metres down to a third of one so a wide surface varies at its own size and
+  still breaks into fine grain close to, each turned by an
+  orthonormal rotation and stepped by a non-integer factor so no grid,
+  checkerboard, or repeat can form; sampling per fragment keeps the detail
+  independent of mesh density. Ground, plants, and rocks sample it in world
+  space; animals sample it in body space at a feature size expressed as a
+  share of body height, so it travels with the animal and reads alike on
+  every species. Each consumer authors its own texture depth, and the shader
+  eases the texture off above an authored quiet warmth so body cores keep a
+  defined shape. Fragments outside the radius return the carried color before
+  the texture or the ramp is evaluated.
+- Living bodies warm what stands around them. The Animals module reports its
+  visible actors after every update through an optional `onBodiesUpdated`
+  observer — position, heading, and body height, in an array it refills in
+  place so a settled population allocates nothing — and the composition root
+  hands that straight to Thermal Perception's `setHeatSources`. Animals still
+  knows nothing about the heat view; it reports animal facts. The effect
+  packs each body as an oriented segment on its own axis and every sensed
+  surface adds the radiated warmth on top of its own reading, so ground
+  inside a pool keeps its variation, the pool lies along the animal and turns
+  with it rather than ringing it, its shape is pulled out of symmetry by the
+  texture field, and its gaussian tail spreads over several times the
+  animal's own height without ever reaching a distance where it stops, so no
+  boundary can read as a ring. A
+  living body does not radiate onto itself. The source count is bounded by
+  the module and injected into the shared fragment stage as a compile-time
+  array size.
+- Every reading a surface computes for itself is folded into the warmth band
+  its material belongs to, with both ends approached asymptotically inside a
+  soft knee, so no surface leaves the range its substance would occupy and
+  none piles into a plateau at the edge of it. The bands carry the material
+  hierarchy: ground and rock stay in the violet-to-cyan end, plants reach
+  magenta and orange where they are exposed, and only living bodies own the
+  hottest colors. Terrain's own elevation, forest, and slope mapping is scaled
+  to that end rather than left to the band to catch, and warmth radiated by a
+  nearby body is added after the band, the one thing that may carry a surface
+  past its own range.
+- A per-consumer contrast curve then gives each surface its definition. It is
+  monotone and smooth, fixing cold, an authored pivot, and full heat in place
+  while steepening in between, so readings that differ separate further and
+  neither end clips; there is no plateau anywhere that could posterize into a
+  band and no edge detection that could draw an outline. Each pivot sits on
+  the warmth that consumer's own readings cluster around, and the curve acts
+  on the finished reading, so body cores, radiated pools, and surface texture
+  all sharpen from the same temperature difference.
 - The composition root orders thermal first in every effect list because
   the first-applied patch executes last and wins the final surface color
   (documented in the shared `material-shader-patch.ts` helper, which all

@@ -1,12 +1,19 @@
 /**
  * Purpose: Verify Grass against the shared streaming and world-surface contracts.
  * Context: The first vegetation consumer combines fixed instancing with generated placement.
- * Responsibility: Cover deterministic roots, authored zone rules, recycling, animation, and disposal.
+ * Responsibility: Cover deterministic roots, zone rules, the sense hook, recycling, and disposal.
  * Boundary: Visual density and physical PICO frame timing require runtime acceptance.
  */
 
 import { expect, test } from "bun:test";
-import { Mesh, PerspectiveCamera, Scene, Vector2 } from "three";
+import {
+  Mesh,
+  PerspectiveCamera,
+  Scene,
+  type ShaderMaterial,
+  Vector2,
+} from "three";
+import { createEchoDepth } from "../../src/modules/echo-depth/echo-depth";
 import { createGrassModule } from "../../src/modules/grass/grass";
 import {
   createGrassField,
@@ -18,6 +25,19 @@ import { StreamQueue } from "../../src/world/stream-queue";
 import { WORLD_WIND } from "../../src/world/wind";
 import type { WorldSurface } from "../../src/world-surface/world-surface";
 import type { ZoneId } from "../../src/world-surface/zone-settings";
+
+const ECHO_DEPTH = {
+  intensity: 1,
+  nearDistanceMeters: 6,
+  farDistanceMeters: 120,
+  colors: {
+    nearColor: 0x101010,
+    nearShadeColor: 0x171717,
+    midColor: 0x494949,
+    farColor: 0x959595,
+    hazeColor: 0xf1f1f1,
+  },
+} as const;
 
 const TEST_PRESET: GrassPreset = {
   rootColor: 0x112233,
@@ -150,6 +170,49 @@ test("Grass rejects shrub-slope blades taller than meadow blades", () => {
   ).toThrow("Shrub-slope grass must be no taller than meadow grass");
 });
 
+test("Grass opens its own material-effect hook to a sense", () => {
+  const field = createGrassField({
+    parameters: TEST_PRESET,
+    chunkSize: 16,
+    chunkSlotCount: 1,
+    worldSurface: createFlatSurface(() => "meadow"),
+    effects: [createEchoDepth(ECHO_DEPTH)],
+  });
+  const material = field.mesh.material;
+  const shader = createGrassShaderSource(material);
+
+  material.onBeforeCompile(shader, undefined as never);
+
+  // The three.js chunk anchors live in the module's own GLSL, so a sense
+  // patches grass exactly as it patches a built-in material pass.
+  expect(shader.vertexShader).toContain("passEchoDepth(mvPosition)");
+  expect(shader.fragmentShader).toContain("applyEchoDepth(diffuseColor.rgb)");
+  // The ramp measures the projected position and recolors the module's own
+  // root-to-tip gradient, never the other way round.
+  expect(
+    shader.vertexShader.indexOf("passEchoDepth(mvPosition)"),
+  ).toBeGreaterThan(shader.vertexShader.indexOf("#include <project_vertex>"));
+  expect(
+    shader.fragmentShader.indexOf("applyEchoDepth(diffuseColor.rgb)"),
+  ).toBeGreaterThan(
+    shader.fragmentShader.indexOf("mix(grassRootColor, grassTipColor"),
+  );
+  // One shared uniform set, so a future intensity driver reaches grass too.
+  expect(shader.uniforms.echoIntensity?.value).toBe(1);
+  expect(shader.uniforms.grassTipColor).toBeDefined();
+  disposeGrassField(field);
+});
+
+test("Grass holds its own range instead of following the view distance", () => {
+  const nearSlots = countGrassSlots(24);
+  const farSlots = countGrassSlots(180);
+
+  // The 2026-08-24 audit fix: a level that sees 180 m no longer drags the
+  // grass window out to 9 x 9 chunks behind it.
+  expect(farSlots).toBe(25);
+  expect(farSlots).toBe(nearSlots);
+});
+
 test("Grass keeps one fixed draw while recycling chunk ranges", () => {
   const scene = new Scene();
   const camera = new PerspectiveCamera(50, 1, 0.1, 24);
@@ -212,6 +275,40 @@ test("Grass keeps one fixed draw while recycling chunk ranges", () => {
   expect(geometryDisposals).toBe(1);
   expect(materialDisposals).toBe(1);
 });
+
+function countGrassSlots(viewDistanceMeters: number): number {
+  const scene = new Scene();
+  const module = createGrassModule({
+    scene,
+    camera: new PerspectiveCamera(50, 1, 0.1, viewDistanceMeters),
+    streamQueue: new StreamQueue(
+      { budgetMilliseconds: 1, capacity: 256 },
+      () => 0,
+    ),
+    worldSurface: createFlatSurface(() => "meadow"),
+    // One tuft per chunk, so the instance count is the resident slot count.
+    preset: createGrassPreset(1 / 4_096),
+  });
+
+  module.load();
+  const mesh = scene.children[0];
+  if (!(mesh instanceof Mesh)) throw new Error("Expected Grass Mesh");
+  const slotCount = mesh.geometry.instanceCount;
+  module.unload();
+
+  return slotCount;
+}
+
+/** Three.js hands a ShaderMaterial its own source and uniform object. */
+function createGrassShaderSource(
+  material: ShaderMaterial,
+): Parameters<ShaderMaterial["onBeforeCompile"]>[0] {
+  return {
+    uniforms: material.uniforms,
+    vertexShader: material.vertexShader,
+    fragmentShader: material.fragmentShader,
+  } as Parameters<ShaderMaterial["onBeforeCompile"]>[0];
+}
 
 function createTwoChunkInstances(): number[] {
   const field = createGrassField({
