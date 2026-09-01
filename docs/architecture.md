@@ -33,6 +33,11 @@ src/
 │   └── benchmark-settings.ts
 ├── control/
 │   └── desktop-controls.ts
+├── dramaturgy/
+│   ├── narration-catalog.ts
+│   ├── narration-schedule.ts
+│   ├── piece-schedule.ts
+│   └── show-clock.ts
 ├── world-surface/
 │   ├── height-field.ts
 │   ├── surface-settings.ts
@@ -70,6 +75,8 @@ src/
 │   ├── zone-visualizer/
 │   └── vegetation/
 ├── sound/
+│   ├── audio-timebase.ts
+│   └── narration-player.ts
 ├── utils/
 │   ├── asset-loader/
 │   ├── sound-loader/
@@ -223,6 +230,23 @@ Defines the immutable `WORLD_WIND` direction, strength, and speed. Every
 wind-reactive component imports this shared configuration instead of defining
 component-local wind values. It creates no runtime resources or mutable state.
 
+### `dramaturgy/`
+
+Owns show time. `show-clock.ts` derives it from an injected monotonic timebase
+— never accumulated frame deltas — and provides play, pause, seek, and time
+scale. `narration-schedule.ts` holds the baked schedule contract and the pure
+`narrationCueAt` lookup; `piece-schedule.ts` is the authored data;
+`narration-catalog.ts` names the recordings and their measured lengths.
+No browser API, so all of it is under `bun test`.
+
+### `sound/`
+
+Owns how the piece is heard. `audio-timebase.ts` owns the one `AudioContext`
+and supplies its `currentTime` as the show clock's timebase, resuming on the
+first gesture. `narration-player.ts` holds one preloaded element per cue for
+the session's language and follows the clock. It never decides when a cue
+plays.
+
 ### `control/`
 
 Desktop controls own pointer lock, keyboard state, and direct camera movement.
@@ -340,5 +364,7 @@ is proven twice; zone and placement policy remain module-owned.
   generation and presentation remain inside the module.
 - Chunk coordinates, work scheduling, and rendering remain separate concerns.
 - No module starts a private render loop.
+- Dramaturgy owns show time, Sound owns playback, and they meet only in
+  `level-runtime.ts` through one cue-lookup contract.
 - No global event bus or generic service registry is present.
 - Tests live outside `src/` and mirror the production ownership areas.

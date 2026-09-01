@@ -17,15 +17,21 @@ preempt them in code — ask. Until a decision falls, the current
 
 ## 2. Runtime coordination layer
 
-- The pre-import draft planned a bm-base-style core: named signals, a command
-  bus, a virtual clock, a schedule player, and a perf router.
-- The engineering standards forbid global event buses, service locators, and
-  hidden singletons; the composition root is `level-runtime.ts`.
-- Still needed eventually: one virtual clock plus a single schedule authority
-  for dramaturgy ([Dramaturgy and Audio](dramaturgy-audio.md)) and a session
-  state machine ([Session and Operator](session-operator.md)). How they
-  integrate with the Level Runtime without violating the standards is
-  undecided.
+**Partly decided (2026-09-01).** The virtual clock and the schedule authority
+are settled and built — see
+[Show Clock and Schedule Authority](../architecture-decisions.md). `src/dramaturgy`
+owns show time and baked schedule data, `src/sound` owns audio playback, and
+they meet only through `level-runtime.ts` and one cue-lookup contract. No event
+bus, service locator, or singleton was needed.
+
+Still open:
+
+- The pre-import draft's **command bus** and **perf router**. Neither has a
+  concrete consumer yet, and the engineering standards forbid global event
+  buses, service locators, and hidden singletons.
+- The **session state machine** ([Session and Operator](session-operator.md)):
+  `idle → boarding → tutorial → piece → return`, which phase owns starting and
+  stopping the show clock, and how the operator page reaches it.
 
 ## 3. Repository additions for installation work
 

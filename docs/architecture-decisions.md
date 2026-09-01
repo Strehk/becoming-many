@@ -181,6 +181,45 @@ Decided 2026-08-30, applying the 2026-08-24 audit's P1 finding.
   `src/modules/connection-nodes.ts`; providers replay their own
   deterministic placement math and never import Mycelium.
 
+### Show Clock and Schedule Authority (2026-09-01)
+
+Resolves the clock-and-schedule half of
+[open decision 2](direction/open-decisions.md); the session state machine and
+the command bus stay open.
+
+- **One virtual clock, one schedule authority.** `src/dramaturgy` owns show
+  time and baked schedule data; `src/sound` owns the audio context and the
+  media elements. Neither imports the other's concerns:
+  `narrationCueAt(schedule, showTime)` is the entire contract between them,
+  and `level-runtime.ts` is the only place that knows both.
+- **The audio hardware clock is the timebase; the show clock is the
+  authority.** Show time is derived from `AudioContext.currentTime` on every
+  read rather than accumulated from frame deltas, so a long frame or a paused
+  XR session cannot drift the show away from its narration. Pause, seek, and
+  time scale are commands on the clock, and the narration follows. A seek
+  therefore lands *inside* a recording instead of retriggering it, which is
+  what makes rehearsal scrubbing work.
+- A suspended audio context stalls the timebase and so freezes show time. That
+  is the intended behavior, not a fault: if the audio is not running, the show
+  is not advancing.
+- **Schedules are typed TypeScript data**, per the configuration rule. A cue
+  holds the timeline until the next cue, so no cue carries a duration — the
+  same section runs up to nine seconds longer in German while cue times stay
+  shared, and deriving the slot from neighbours makes that mismatch harmless.
+- **The show is a run mode, not level data.** It reaches the runtime through
+  `LevelOptions.show`, beside `benchmark`, because the nine presets are a sense
+  development ladder rather than the shipped piece, and because they spread
+  each other — a field on one would silently carry into every later preset.
+  Language is a session parameter, fixed for a run.
+- A benchmark never creates a show: audio decoding would add nondeterministic
+  work to the samples, and a fixed timestep is not the real time the show is
+  cut to.
+- **`?show` exposes the clock as `window.showClock`.** Nothing under `src`
+  reads it back, so removing it changes no behavior — the same one-way handoff
+  the benchmark report already uses. It is gated on the URL rather than the
+  build mode because rehearsal happens in the headset, against a production
+  build.
+
 ## Approved Navigation Boundary
 
 ### Input and Navigation

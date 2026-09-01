@@ -16,6 +16,9 @@ from `../src`; do not duplicate production helpers inside tests.
 `benchmark/` verifies the pure route and report logic and holds the browser
 benchmark runner, which `bun test` ignores because it is not a test file.
 
+`dramaturgy/` verifies show time and cue lookup, both pure; the narration
+player is DOM-bound and is not tested here.
+
 `world-surface/` verifies deterministic surface facts. `control/` verifies
 input-independent navigation constraints. `levels/` verifies preset boundaries.
 `modules/` verifies concrete resource owners. `world/` verifies shared execution

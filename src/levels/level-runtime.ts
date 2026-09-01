@@ -8,6 +8,12 @@
 import type { BenchmarkRun } from "../benchmark/benchmark-run";
 import { createDesktopControls } from "../control/desktop-controls";
 import { keepFlightAboveGround } from "../control/flight-ground-clearance";
+import type { NarrationLanguage } from "../dramaturgy/narration-catalog";
+import {
+  type NarrationSchedule,
+  narrationCueAt,
+} from "../dramaturgy/narration-schedule";
+import { createShowClock, type ShowClock } from "../dramaturgy/show-clock";
 import {
   type AirParticlesParameters,
   createAirParticlesModule,
@@ -67,6 +73,8 @@ import {
 import { VEGETATION_DEFINITION } from "../modules/vegetation/vegetation-definition";
 import { createVegetationConnectionSource } from "../modules/vegetation/vegetation-nodes";
 import { createZoneVisualizer } from "../modules/zone-visualizer/zone-visualizer";
+import { createAudioTimebase } from "../sound/audio-timebase";
+import { createNarrationPlayer } from "../sound/narration-player";
 import { createTestOverlay } from "../test-ui/test-overlay";
 import {
   type GltfAssetRequest,
@@ -137,6 +145,11 @@ export interface LevelPreset {
   readonly connections?: ConnectionsParameters;
 }
 
+/** The per-frame half of a running show; the clock half goes to the caller. */
+interface ShowUpdate {
+  readonly update: () => void;
+}
+
 interface LoadedLevelAssets {
   readonly vegetation: GltfAssets;
   readonly rocks: GltfAssets;
@@ -154,6 +167,21 @@ interface LevelSetup {
 export interface LevelOptions {
   /** Replay a fixed route with a fixed timestep instead of live controls. */
   readonly benchmark?: BenchmarkRun;
+
+  /** Play a narration show against this preset. */
+  readonly show?: ShowRequest;
+}
+
+/**
+ * One narration show run against any preset. It is a run mode rather than
+ * level data: the nine presets are a sense development ladder, not the shipped
+ * piece, and the language is session state fixed when staff arm a session.
+ */
+export interface ShowRequest {
+  readonly schedule: NarrationSchedule;
+  readonly language: NarrationLanguage;
+  /** Reports the clock once, so the entry can hand it to rehearsal. */
+  readonly onClockReady?: (clock: ShowClock) => void;
 }
 
 export async function startLevel(
@@ -205,6 +233,10 @@ function setupLevel(
     level.testUi && !benchmark
       ? createTestOverlay(container, world.renderer)
       : undefined;
+  // A benchmark must stay deterministic: an audio context and media elements
+  // would add nondeterministic decode work to the samples, and a fixed
+  // timestep is not the real time the show is cut to.
+  const show = benchmark ? undefined : createShow(options.show);
 
   return (deltaSeconds): void => {
     if (benchmark) benchmark.placeCamera(world.camera);
@@ -214,6 +246,40 @@ function setupLevel(
       keepFlightAboveGround(world.camera.position, worldSurface.groundYAt);
     }
     testOverlay?.update(deltaSeconds);
+    show?.update();
+  };
+}
+
+/**
+ * Wire the show clock to the narration that follows it. The clock reads the
+ * audio hardware timebase and the narration reads the clock; that direction is
+ * what makes a seek land inside a recording instead of retriggering it.
+ */
+function createShow(request: ShowRequest | undefined): ShowUpdate | undefined {
+  if (!request) return undefined;
+
+  const timebase = createAudioTimebase();
+  const clock = createShowClock(
+    request.schedule.durationSeconds,
+    timebase.readSeconds,
+  );
+  const narration = createNarrationPlayer({
+    language: request.language,
+    cueIds: request.schedule.narration.map((cue) => cue.cueId),
+  });
+  request.onClockReady?.(clock);
+
+  return {
+    update: (): void => {
+      // Sample once: every read of the clock re-derives from a live timebase,
+      // so two reads in one frame would answer with two different instants.
+      const showTime = clock.sample();
+      narration.follow({
+        position: narrationCueAt(request.schedule, showTime.timeSeconds),
+        isPlaying: showTime.isPlaying,
+        timeScale: showTime.timeScale,
+      });
+    },
   };
 }
 

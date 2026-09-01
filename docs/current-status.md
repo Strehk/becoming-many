@@ -177,8 +177,9 @@ frame times are machine-local measurements.
   revisiting a chunk recreates the same emitters.
 - One looping vertex-shader time uniform drives rise, sway, and a life-cycle
   point-size fade; fully faded points leave clip space and rasterize nothing.
-- A sense-intensity uniform (0..1) scales the fade; it is authored through the
-  preset because the runtime schedule driver remains an open decision.
+- A sense-intensity uniform (0..1) scales the fade; it is still authored
+  through the preset. The Dramaturgy Runtime now supplies the show clock and
+  schedule, but it drives narration only — per-sense envelopes are not built.
 - Module unload removes the object and disposes geometry and material.
 
 ### Terrain
@@ -529,7 +530,7 @@ loading or target-device evidence requires it.
 
 - passthrough, `immersive-ar`, operator control, and presentation transitions
 - normalized device-independent navigation and ICAROS input
-- complete Test Level training flow, audio timeline, and narrative state transitions
+- complete Test Level training flow and narrative state transitions
 - floating origin, LOD, relevance fields, and spatial instance pools
 - asset prefetching, retries, progress UI, and distance-based stream priorities
 - visible water, other perception effects, mycelium, sky additions, and sound
