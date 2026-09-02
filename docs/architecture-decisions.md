@@ -273,6 +273,11 @@ the command bus stay open.
 
 ### Station Transport and the Conductor Page (2026-09-01)
 
+*Superseded 2026-09-02 by [One Station Window](#one-station-window-2026-09-02):
+the conductor page now hosts the show in-process and the wire is gone. The
+non-transport decisions here — the returned `RunningLevel`, the conductor as
+the one operator surface, schedule authority, the flight-reset caveat — stand.*
+
 Extends [open decision 2](direction/open-decisions.md) and settles the first
 part of [open decision 3](direction/open-decisions.md). The session state
 machine stays open.
@@ -372,6 +377,10 @@ a benchmark is what opts out.)*
 
 ### One Station Container (2026-09-02)
 
+*Amended the same day by [One Station Window](#one-station-window-2026-09-02):
+the broker is gone. The container, the one process, the env-var facts, and
+`/health` liveness stand; the server now serves pages and `/config` only.*
+
 A deployed station is one Docker container running one Bun process: the
 station server serves the built pages from `dist/` and is the WebSocket
 broker, on one port and one origin.
@@ -395,6 +404,67 @@ broker, on one port and one origin.
   counts, never the show or the M5: an unreachable controller is an
   operator-visible warning in the conductor, not a reason for Docker to
   restart a station mid-visit.
+
+### One Station Window (2026-09-02)
+
+Supersedes the transport half of
+[Station Transport and the Conductor Page](#station-transport-and-the-conductor-page-2026-09-01)
+and amends [One Station Container](#one-station-container-2026-09-02). The
+conductor page now hosts the show **in-process**: one window owns the world,
+the operator UI, and the WebXR session. The show window, the WebSocket broker,
+and the whole wire (`station-protocol.ts`, `station-link.ts`,
+`show-station.ts`, `station-widget.ts`) are deleted.
+
+- **The wire existed only to join two windows.** Once the world and the
+  operator UI share a document, commands are function calls and status is a
+  per-frame read (`ShowSnapshot`), so the broker, the reconnect logic, the
+  presence messages, and the playhead projection between 10 Hz reports all
+  disappear rather than move. The operator surface commands the show through
+  one typed actions contract (`src/conductor/show-actions.ts`) — still not an
+  event bus: no topics, no registration, no lookup.
+- **One window removes the worst operational hazard.** An audio context that
+  never received a gesture froze show time while looking exactly like a
+  pause, and only a click in the *show* window could clear it. Now any click
+  or key press on the one page — the restart button included — resumes it.
+- **`src/world` owns the XR session behind a contract.**
+  `src/world/xr-session.ts` replaces the Three.js `VRButton`:
+  `XrSessionControl` (`start`/`stop`/`subscribe`, availability re-checked on
+  `devicechange`) travels on `RunningLevel.xr`, the same path as `show` and
+  `m5`. The conductor renders it as the Start/Stop Stream button
+  (`stream-button.ts` decides the one label); `/` renders it as a plain
+  entry button. Stream and transport are independent: rehearsal on the flat
+  screen needs no headset.
+- **The stage view freezes during a session, deliberately.** Three.js moves
+  rendering to the session loop, so the small preview holds its last frame
+  under a "streaming — paused" overlay. A live mirror would cost a second
+  mono render pass per session frame against the 90 FPS budget; staff who
+  need the visitor's view use the headset's own casting. The page's DOM loop
+  keeps running throughout, so every readout stays live.
+- **The world renders into its container, not the window.** The world runtime
+  sizes the renderer from its container (a `ResizeObserver`), so the same
+  `startWorld` serves the full-window rehearsal page and the conductor's
+  320-px stage view; while a session presents, Three.js manages the drawing
+  buffer itself.
+- **Restart Experience is the between-visitors reset.** Rewind, flight reset,
+  play — a soft reset; the built world keeps running. The clock still starts
+  held at 0:00 on load, so nothing plays before an operator acts.
+- **The conductor page now imports the level-runtime contract.** The rule
+  "the conductor must not import `src/levels` or `src/world`" protected a
+  few-kilobyte bundle that no longer exists; the boundary is now *which*
+  imports: the `startLevel`/`RunningLevel` contract, the level catalog, and
+  the XR session contract — never `src/world` internals or concrete
+  `src/modules`.
+- **`/` stays the bare rehearsal and development page** — held clock,
+  `window.showClock`, `?level`, `?benchmark`, `?m5` — minus the deleted
+  widget and link. The kiosk opens one window (`/conductor.html`).
+- **The station server keeps serving.** Pages from `dist/`, deployment facts
+  at `/config`, liveness at `/health` (socket counts gone). The M5 host is
+  applied by the one page: deployment config when set (read-only), else the
+  browser-remembered host.
+- **A server socket will return, but not this one.** The headset agent
+  ([Headset](direction/headset.md)) is an Android-to-server connection for
+  telemetry and see-through switching — a different wire with a different
+  peer, to be designed against that need rather than revived from this one.
 
 ## Approved Navigation Boundary
 

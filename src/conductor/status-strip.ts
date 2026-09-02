@@ -1,11 +1,11 @@
 /**
  * Purpose: Answer "is everything all right" from across the room.
  * Context: A suspended audio context freezes show time and looks like a pause.
- * Responsibility: Render connection, audio, frame rate, level, and language.
+ * Responsibility: Render audio, frame rate, M5, level, and language readings.
  * Boundary: The page decides what the readings mean; this only shows them.
  */
 
-import type { ShowAudioState, ShowStatus } from "../station/station-protocol";
+import type { M5OperatorStatus } from "../m5/m5-adapter";
 import type { ConductorPanel, ConductorState } from "./conductor-state";
 
 type ReadingState = "idle" | "live" | "warn" | "alarm";
@@ -20,87 +20,63 @@ export function createStatusStrip(parent: HTMLElement): ConductorPanel {
   root.className = "conductor__status";
   root.setAttribute("aria-label", "Station status");
 
-  const station = createReading(root, "station");
-  const show = createReading(root, "show");
   const audio = createReading(root, "audio");
   const frames = createReading(root, "frames");
   const m5 = createReading(root, "m5");
   const level = createReading(root, "level");
   const language = createReading(root, "language");
 
-  // Show time derives from the audio clock, so a context that never received a
-  // gesture freezes the piece while looking exactly like a pause. Only a click
-  // in the show window can clear it — this page cannot.
+  // Show time derives from the audio clock, so a context that never received
+  // a gesture freezes the piece while looking exactly like a pause. Any click
+  // or key press on this page clears it — the restart button counts.
   const banner = document.createElement("p");
   banner.className = "conductor__banner";
   banner.hidden = true;
   parent.append(root, banner);
 
   banner.textContent =
-    "Show time is frozen: click once in the show window to start its audio clock. Re-entering VR needs that click too.";
+    "Show time is frozen: click anywhere or press any key to start the audio clock.";
 
   return {
     update(state): void {
-      const audioState = state.status?.audioState;
+      const { snapshot } = state;
 
-      station.write(...stationReading(state));
-      show.write(...showReading(state));
-      audio.write(audioState ?? "unknown", audioReadingState(audioState));
+      audio.write(
+        snapshot.audioState,
+        snapshot.audioState === "running" ? "live" : "warn",
+      );
       frames.write(...frameReading(state));
-      m5.write(...m5Reading(state.status));
-      level.write(state.status?.levelName ?? "—", "idle");
-      language.write(state.language.toUpperCase(), "idle");
+      m5.write(...m5Reading(snapshot.m5));
+      level.write(snapshot.levelName, "idle");
+      language.write(snapshot.language.toUpperCase(), "idle");
 
-      // Undefined means nothing has reported yet, which the show reading
-      // already covers; only a context that answered and is not running here.
-      banner.hidden = audioState === undefined || audioState === "running";
+      banner.hidden = snapshot.audioState === "running";
     },
   };
 }
 
 type ReadingText = readonly [text: string, state: ReadingState];
 
-function stationReading(state: ConductorState): ReadingText {
-  return state.isStationConnected
-    ? ["connected", "live"]
-    : ["no broker", "alarm"];
-}
-
-function showReading(state: ConductorState): ReadingText {
-  if (!state.isShowConnected) return ["window closed", "alarm"];
-
-  return state.isLive ? ["reporting", "live"] : ["not answering", "warn"];
-}
-
-function audioReadingState(
-  audioState: ShowAudioState | undefined,
-): ReadingState {
-  if (audioState === undefined) return "idle";
-
-  return audioState === "running" ? "live" : "warn";
-}
-
 /**
- * Absent fields mean a show build without the M5 adapter, or no host set —
+ * An absent adapter means a benchmark build; `off` means no host is set —
  * both read as "no device", which is a normal state, not a fault. A firmware
  * mismatch is appended so a drifted flash never hides behind a green "live".
  */
-function m5Reading(status: ShowStatus | undefined): ReadingText {
-  const m5State = status?.m5State;
-  if (m5State === undefined || m5State === "off") return ["—", "idle"];
+function m5Reading(status: M5OperatorStatus | undefined): ReadingText {
+  if (status === undefined || status.state === "off") return ["—", "idle"];
 
-  const mismatchSuffix = status?.hasM5FirmwareMismatch ? " · fw!" : "";
-  if (m5State === "wrong-device") {
+  const mismatchSuffix = status.hasFirmwareMismatch ? " · fw!" : "";
+  if (status.state === "wrong-device") {
     return [`wrong device${mismatchSuffix}`, "alarm"];
   }
-  if (m5State === "connecting") {
+  if (status.state === "connecting") {
     return [`connecting${mismatchSuffix}`, "warn"];
   }
 
-  const quality = status?.m5Quality?.toFixed(2) ?? "?";
+  const quality = status.quality?.toFixed(2) ?? "?";
   return [
     `live · q${quality}${mismatchSuffix}`,
-    status?.hasM5FirmwareMismatch ? "warn" : "live",
+    status.hasFirmwareMismatch ? "warn" : "live",
   ];
 }
 
@@ -108,13 +84,12 @@ function m5Reading(status: ShowStatus | undefined): ReadingText {
 const FRAME_RATE_FLOOR = 85;
 
 function frameReading(state: ConductorState): ReadingText {
-  const { framesPerSecond, p95Milliseconds } = state.status ?? {};
+  const { framesPerSecond, p95Milliseconds } = state.snapshot;
   if (framesPerSecond === undefined || p95Milliseconds === undefined) {
     return ["—", "idle"];
   }
 
   const text = `${Math.round(framesPerSecond)} fps · ${p95Milliseconds.toFixed(1)} ms p95`;
-  if (!state.isLive) return [text, "idle"];
 
   return [text, framesPerSecond >= FRAME_RATE_FLOOR ? "live" : "warn"];
 }

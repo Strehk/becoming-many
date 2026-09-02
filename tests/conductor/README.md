@@ -10,11 +10,14 @@ Boundary: The implementation lives in ../../src/conductor.
 The page itself is imperative DOM and is not tested here. Everything it decides
 before touching the DOM is:
 
-`playhead.test.ts` covers carrying the playhead between the statuses that anchor
-it — holding when paused, advancing at the show's own rate, and clamping at both
-ends of the piece. `conductor-keys.test.ts` covers the key map, including the
-presses the page must leave alone: browser shortcuts and anything typed into a
-field. `time-format.test.ts` covers the readouts an operator scans mid-show.
+`conductor-keys.test.ts` covers the key map, including the presses the page
+must leave alone: browser shortcuts and anything typed into a field.
+`show-actions.test.ts` covers the operator's command surface over the show it
+hosts — above all that the composite resets fire in the right order: restart
+is rewind, flight reset, then play; reset is rewind, then hold.
+`stream-button.test.ts` covers the whole availability × session matrix behind
+the stream button's one label. `time-format.test.ts` covers the readouts an
+operator scans mid-show.
 
 Slot and headroom arithmetic is not here either — it belongs to the schedule it
 measures, and is verified in `tests/dramaturgy/schedule-layout.test.ts`.

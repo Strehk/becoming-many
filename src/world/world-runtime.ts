@@ -8,8 +8,8 @@
 import { PerspectiveCamera, Scene, Timer, WebGLRenderer } from "three";
 import { ModuleRuntime } from "./module-runtime";
 import { StreamQueue } from "./stream-queue";
-import { enableWebXR } from "./webxr-entry";
 import { WORLD_RUNTIME_SETTINGS } from "./world-settings";
+import { createXrSessionControl, type XrSessionControl } from "./xr-session";
 
 export interface WorldContext {
   readonly scene: Scene;
@@ -17,6 +17,7 @@ export interface WorldContext {
   readonly renderer: WebGLRenderer;
   readonly modules: ModuleRuntime;
   readonly streamQueue: StreamQueue;
+  readonly xr: XrSessionControl;
 }
 
 /** One finished frame, reported after its render call completed. */
@@ -65,7 +66,7 @@ export function startWorld(
   );
 
   container.replaceChildren(renderer.domElement);
-  enableWebXR(renderer);
+  const xr = createXrSessionControl(renderer);
   timer.connect(document);
 
   const updateWorld = setupWorld?.({
@@ -74,11 +75,18 @@ export function startWorld(
     renderer,
     modules,
     streamQueue,
+    xr,
   });
 
+  // The canvas fills its container, so the show page's full-window root and
+  // the conductor page's small stage view share one sizing rule. While an XR
+  // session presents, Three.js manages the drawing buffer itself.
   function resizeRenderer(): void {
-    const width = window.innerWidth;
-    const height = window.innerHeight;
+    if (renderer.xr.isPresenting) return;
+
+    const width = container.clientWidth;
+    const height = container.clientHeight;
+    if (width === 0 || height === 0) return;
 
     renderer.setSize(width, height, false);
     camera.aspect = width / height;
@@ -86,7 +94,7 @@ export function startWorld(
   }
 
   resizeRenderer();
-  window.addEventListener("resize", resizeRenderer);
+  new ResizeObserver(resizeRenderer).observe(container);
 
   let frameIndex = 0;
 

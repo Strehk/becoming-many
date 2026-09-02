@@ -2,7 +2,7 @@
  * Purpose: Define how the conductor page paces and responds under the operator.
  * Context: The page is driven live, mostly by keyboard, during a performance.
  * Responsibility: Keep nudge sizes, rate choices, and timings in one editable place.
- * Boundary: The wire's own timings live in the station settings.
+ * Boundary: The station server's own facts live in the station settings.
  */
 
 export const CONDUCTOR_SETTINGS = {
@@ -17,9 +17,15 @@ export const CONDUCTOR_SETTINGS = {
   // rehearsal can crawl through a cue or skim to the next one.
   timeScales: [0.25, 0.5, 1, 2] as const,
 
-  // How long a reload button stays armed after the first press. Long enough to
-  // confirm deliberately, short enough that a stray click expires on its own.
-  reloadConfirmMilliseconds: 3_000,
+  // How long a destructive button (reload, restart) stays armed after the
+  // first press. Long enough to confirm deliberately, short enough that a
+  // stray click expires on its own.
+  confirmMilliseconds: 3_000,
+
+  // How many seeks per second a timeline drag lands on the show clock. Every
+  // seek makes the narration player re-seek its audio element, so scrubbing
+  // is paced rather than sent per pointer event.
+  scrubHertz: 20,
 
   // How often the M5 preview polls the device. A glanceable crosshair, not
   // steering — much slower than the show's own 50ms poll.
@@ -28,10 +34,7 @@ export const CONDUCTOR_SETTINGS = {
   // A preview sample older than this reads as "no signal" and parks the dot.
   m5PreviewStaleMilliseconds: 1_000,
 
-  // A status older than this means the show window stopped reporting, even if
-  // the socket is still open. It has to clear two things that are not faults:
-  // a browser throttling timers in an unfocused window down to one per second,
-  // and a frame hitch while modules stream. The playhead is projected from the
-  // last status in the meantime, so a quiet gap costs no accuracy.
-  staleStatusMilliseconds: 2_500,
+  // How often the frame metrics are re-read for the status strip. Reading
+  // them sorts a ring buffer, which is documented as not-per-frame work.
+  metricsIntervalMilliseconds: 500,
 } as const;

@@ -9,30 +9,31 @@ import type {
   NarrationCueId,
   NarrationLanguage,
 } from "../dramaturgy/narration-catalog";
-import type { ShowStatus } from "../station/station-protocol";
+import type { ShowLevelName } from "../dramaturgy/narration-schedule";
+import type { M5OperatorStatus } from "../m5/m5-adapter";
+
+/** One reading of the show this page hosts, taken fresh every frame. */
+export interface ShowSnapshot {
+  readonly showTimeSeconds: number;
+  readonly isPlaying: boolean;
+  readonly timeScale: number;
+  readonly language: NarrationLanguage;
+  /** The world state the timeline currently holds, not a startup preset. */
+  readonly levelName: ShowLevelName;
+  /** Anything but "running" freezes show time while looking like a pause. */
+  readonly audioState: AudioContextState;
+  /** Undefined until frames have been measured. */
+  readonly framesPerSecond?: number;
+  readonly p95Milliseconds?: number;
+  /** Undefined under a benchmark build; `state: "off"` while no host is set. */
+  readonly m5: M5OperatorStatus | undefined;
+}
 
 export interface ConductorState {
-  /** The last status the show sent, or undefined if none has arrived. */
-  readonly status: ShowStatus | undefined;
+  readonly snapshot: ShowSnapshot;
 
-  /** This page's own socket to the broker. */
-  readonly isStationConnected: boolean;
-
-  /** The broker's word on whether the show window is there at all. */
-  readonly isShowConnected: boolean;
-
-  /**
-   * The show is connected and still reporting. A stale status means the show
-   * window stopped answering even though the socket is open, and the page must
-   * not keep drawing a playhead as though the piece were still running.
-   */
-  readonly isLive: boolean;
-
-  /** Projected between statuses, or the operator's own position while scrubbing. */
+  /** The snapshot's clock, or the operator's own position while scrubbing. */
   readonly showTimeSeconds: number;
-
-  /** The language the timeline is measured against. */
-  readonly language: NarrationLanguage;
 
   /** The cue the operator has opened in the inspector. */
   readonly selectedCueId: NarrationCueId | undefined;

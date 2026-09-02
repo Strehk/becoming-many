@@ -31,7 +31,7 @@ export function createCueInspector(
         return;
       }
 
-      const slot = cueSlots(schedule, state.language).find(
+      const slot = cueSlots(schedule, state.snapshot.language).find(
         (candidate) => candidate.cueId === state.selectedCueId,
       );
       if (!slot) return;
@@ -45,7 +45,7 @@ export function createCueInspector(
           ["en", formatDurationSeconds(en)],
           ["de", formatDurationSeconds(de)],
           ["headroom", formatHeadroomSeconds(slot.headroomSeconds)],
-          ["file", narrationUrl(slot.cueId, state.language)],
+          ["file", narrationUrl(slot.cueId, state.snapshot.language)],
         ].map(([label, value]) => createField(label ?? "", value ?? "")),
       );
     },

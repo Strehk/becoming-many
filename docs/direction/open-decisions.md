@@ -24,11 +24,11 @@ owns show time and baked schedule data, `src/sound` owns audio playback, and
 they meet only through `level-runtime.ts` and one cue-lookup contract. No event
 bus, service locator, or singleton was needed.
 
-**Extended (2026-09-01).** The operator page now reaches the show clock, over a
-localhost WebSocket broker — see
-[Station Transport and the Conductor Page](../architecture-decisions.md). That is
-a cross-process wire with one closed message union and one owner on each side,
-not an in-process bus: no topics, no registration, no lookup.
+**Extended (2026-09-01, revised 2026-09-02).** The operator page now hosts the
+show in-process and commands it through one typed actions contract — see
+[One Station Window](../architecture-decisions.md), which replaced the interim
+localhost WebSocket broker. That is a direct-call surface with one owner on
+each side, not an in-process bus: no topics, no registration, no lookup.
 
 Still open:
 
@@ -50,9 +50,9 @@ lives in its own root folder, the way `tests/benchmark/` already holds the
 Chromium runner that drives `src/benchmark`.
 
 - **Operator page** → `src/conductor/`, entered from a second Vite page at
-  `conductor.html`.
-- **Shared wire protocol** → `src/station/`, with the browser-side client
-  beside it.
+  `conductor.html` (since 2026-09-02 it hosts the show in-process — the wire
+  that briefly lived in `src/station` is gone, and that folder now holds the
+  deployment-config contract).
 - **Station localhost server** → `station/`, at the repository root, importing
   `src/station` and exporting nothing.
 - **M5 firmware** (PlatformIO) → `firmware/m5/`, at the repository root; its

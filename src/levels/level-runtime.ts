@@ -114,6 +114,7 @@ import {
   type WorldContext,
   type WorldUpdate,
 } from "../world/world-runtime";
+import type { XrSessionControl } from "../world/xr-session";
 import { WORLD_SURFACE_SETTINGS } from "../world-surface/surface-settings";
 import {
   createWorldSurface,
@@ -208,7 +209,7 @@ export interface RunningShow {
   readonly readAudioState: () => AudioContextState;
 }
 
-/** One running level, returned so a second window can command it. */
+/** One running level, returned so the page that started it can command it. */
 export interface RunningLevel {
   readonly show: RunningShow | undefined;
 
@@ -224,10 +225,13 @@ export interface RunningLevel {
   readonly readFrameMetrics: () => FrameMetrics | undefined;
 
   /**
-   * The M5 tilt controller, idle until a host is set (by the conductor over
-   * the station link, or a `?m5=` request). Undefined under a benchmark.
+   * The M5 tilt controller, idle until a host is set (by the conductor page,
+   * a deployment config, or a `?m5=` request). Undefined under a benchmark.
    */
   readonly m5: M5Adapter | undefined;
+
+  /** The renderer's WebXR session, for the page that owns the entry button. */
+  readonly xr: XrSessionControl;
 }
 
 interface LoadedLevelAssets {
@@ -280,7 +284,7 @@ export async function startLevel(
   options: LevelOptions = {},
 ): Promise<RunningLevel> {
   if (!(container instanceof HTMLElement)) {
-    throw new Error("Missing application root: .app");
+    throw new Error("Missing level container element");
   }
 
   const assets = await loadLevelAssets(level);
@@ -389,6 +393,7 @@ function setupLevel(
         resetFlightPose(world.camera.position, world.camera.quaternion),
       readFrameMetrics,
       m5,
+      xr: world.xr,
     },
   };
 }

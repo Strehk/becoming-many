@@ -50,33 +50,35 @@ The default page plays the piece: the schedule is the world authority,
 standing the composed show world in each cue's level — senses, structure,
 and background all fade across cue boundaries, nothing cuts — the clock is
 exposed as `window.showClock`, and `?language=<de|en>` arms the narration
-language. The station link connects by itself and fails soft; a corner
-widget shows the socket state and links to the conductor. With a localhost
-broker started with `bun run station` (`?station=<ws url>` points somewhere
-else), the conductor page at
-`/conductor.html` can drive the show from a second window: one scrubbable timeline of
-the schedule, play and hold, time scale, jump to any cue, a next-cue countdown,
-a DE/EN re-arm, and resets for the show clock, the flight, and the show window
-itself. The broker relays only; with none running the show plays unchanged.
+language. The station window is the conductor page at `/conductor.html`: it
+hosts the same show in-process behind a small stage view and drives it
+directly — one scrubbable timeline of the schedule, play and hold, time
+scale, jump to any cue, a next-cue countdown, a DE/EN re-arm, resets for the
+show clock, the flight, and the page itself, a Start/Stop Stream button for
+the WebXR session, and a Restart Experience soft reset (rewind, flight
+reset, play). The clock loads held at 0:00 on both pages; nothing plays
+before someone acts.
 
 ## Implemented System
 
 ### Runtime
 
-- `src/main.ts` only selects the active level, calls `startLevel()`, and hands
-  the returned `RunningLevel` to the station link when `?station` is present.
+- `src/main.ts` only selects the active level, calls `startLevel()`, and
+  mounts the VR entry button from the returned `RunningLevel`.
 - `level-runtime.ts` preloads fixed assets for enabled modules, applies the sparse preset,
   creates only enabled modules, and connects desktop controls.
 - `world-runtime.ts` owns the Three.js scene, perspective camera, WebGL
   renderer, timer, resize handling, module runtime, stream queue, and one
   `renderer.setAnimationLoop()`. It does not import level or concrete module
   code.
-- `webxr-entry.ts` enables WebXR and adds Three.js `VRButton` for
-  `immersive-vr` sessions.
-- `src/station` owns the wire between the show window and the conductor page;
-  the Bun broker at `station/station-server.ts` relays between them and holds no
-  show state. `src/conductor` owns the operator page and reads schedule data
-  without authoring it.
+- `xr-session.ts` owns WebXR availability and the `immersive-vr` session
+  lifecycle behind `XrSessionControl`, surfaced on `RunningLevel.xr`; the
+  rehearsal page mounts a plain entry button on it and the conductor page its
+  Start/Stop Stream button.
+- `src/station` owns the deployment-config contract; the Bun server at
+  `station/station-server.ts` serves `dist/`, `/config`, and `/health` and
+  holds no show state. `src/conductor` owns the station window: it hosts the
+  show in-process and reads schedule data without authoring it.
 - Every frame updates desktop movement, active modules, bounded stream work,
   and then renders once.
 

@@ -299,6 +299,65 @@
   font-weight: 700;
 }
 
+/* Stage ------------------------------------------------------------------ */
+
+.conductor__stage {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: center;
+  padding: 12px 16px;
+  background: var(--panel);
+  border: 1px solid var(--edge);
+  border-radius: 12px;
+}
+
+/* The world's home: small enough to glance at, never the way to watch it. */
+.conductor__stage-view {
+  position: relative;
+  width: 320px;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  background: var(--ground);
+  border: 1px solid var(--edge);
+  border-radius: 8px;
+}
+
+.conductor__stage-mount,
+.conductor__stage-mount canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* While a session streams, the canvas holds its last frame; say so. */
+.conductor__stage-overlay {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  background: rgb(13 19 17 / 60%);
+}
+
+/* `display: grid` above outranks the UA's [hidden] rule; restore it. */
+.conductor__stage-overlay[hidden] {
+  display: none;
+}
+
+.conductor__stage-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.conductor__stream-button {
+  min-width: 160px;
+}
+
 /* M5 controller ---------------------------------------------------------- */
 
 .conductor__m5 {
@@ -383,10 +442,4 @@
   color: var(--muted);
   font-size: 12px;
   font-variant-numeric: tabular-nums;
-}
-
-/* A disconnected station must not look like a show sitting still. */
-.conductor[data-live="false"] .conductor__transport,
-.conductor[data-live="false"] .conductor__timeline {
-  opacity: 0.45;
 }

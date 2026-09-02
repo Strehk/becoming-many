@@ -29,10 +29,11 @@ idle ──staff: arm──► boarding ──staff: tutorial──► tutorial 
 
 ## Operator page
 
-Runs on the second monitor of the station PC at `/conductor.html`, beside a show
-window opened at `/` (the default page; its station link connects by itself). Scope is **session control, show transport,
-status monitoring, live visitor view** — but not a sense-override surface, which
-stays a dev concern.
+Runs as the station PC's one window at `/conductor.html` and hosts the show
+itself in-process — see
+[One Station Window](../architecture-decisions.md). Scope is **session
+control, show transport, status monitoring** — but not a sense-override
+surface, which stays a dev concern.
 
 The show transport was originally scoped out of this page as rehearsal-only.
 It is in: a person conducts the piece live, and holding, jumping to a section,
@@ -48,10 +49,13 @@ here, avoids a second operator surface that would have to be kept in step.
 - **Monitoring**: M5 connected / last-frame age / calibration (+ wrong-device
   warning), app FPS summary, headset battery + worn state + streaming status
   ([Headset](headset.md)), audio state. One glance answers "is everything OK".
-- **Live visitor view**: the app mirrors its rendered frame — same machine, so
-  a scaled-down copy at reduced rate is enough; no headset API involved.
-- Transport *(built)*: a small localhost station server brokers messages; the
-  experience page and operator page each hold one WebSocket to it. Started with
-  `bun run station`; see [`station/`](../../station/README.md) and
-  [`src/station`](../../src/station/README.md). The broker relays only — it
-  holds no show state, and the show plays normally when it is not running.
+- **Live visitor view** *(dropped 2026-09-02)*: while a WebXR session
+  streams, Three.js renders into the headset and a live mirror would cost a
+  second mono render pass per session frame against the 90 FPS budget. The
+  page's stage view shows the world while idle and freezes under a
+  "streaming — paused" label during a session; staff who need the visitor's
+  view use the headset's own casting.
+- Transport *(built)*: the page hosts the show in-process, so transport is
+  direct function calls through one typed actions contract
+  (`src/conductor/show-actions.ts`) — no wire. The former WebSocket broker is
+  recorded in [One Station Window](../architecture-decisions.md).

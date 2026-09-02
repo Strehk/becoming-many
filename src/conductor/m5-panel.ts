@@ -1,19 +1,19 @@
 /**
  * Purpose: Let the operator point the show at the station's M5 controller.
- * Context: The device is an HTTP server on the station network; only the
- *   conductor knows which host belongs to this station.
- * Responsibility: Edit and send the M5 host, remember it across page loads,
- *   re-arm a reloaded show window, and preview the device's orientation on a
- *   crosshair with the page's own slow poll.
+ * Context: The device is an HTTP server on the station network; only this
+ *   page knows which host belongs to this station.
+ * Responsibility: Edit and apply the M5 host, remember it across page loads,
+ *   and preview the device's orientation on a crosshair with the page's own
+ *   slow poll.
  * Boundary: Steering and warnings live in the show; the status strip renders
  *   the show-side device state. The preview never feeds the pipeline.
  */
 
 import type { M5State } from "../m5/protocol";
 import { createStatePoller } from "../m5/state-polling";
-import type { ShowCommand } from "../station/station-protocol";
 import { CONDUCTOR_SETTINGS } from "./conductor-settings";
 import type { ConductorPanel } from "./conductor-state";
+import type { ShowActions } from "./show-actions";
 
 // The station's host is a technician convenience remembered per browser, like
 // the flash page's credentials — not authored configuration.
@@ -21,18 +21,17 @@ const STORAGE_KEY = "bm-conductor-m5-host";
 
 export interface M5PanelOptions {
   readonly parent: HTMLElement;
-  readonly send: (command: ShowCommand) => void;
+  readonly actions: ShowActions;
   /**
-   * Host named by the deployment config. Set, the field renders it read-only
-   * and this panel sends nothing: the show applies the same config itself,
-   * and the station drops setM5Host commands while locked.
+   * Host named by the deployment config. Set, it is the authority: the field
+   * renders it read-only and the stored convenience is ignored.
    */
   readonly lockedHost?: string;
 }
 
 export function createM5Panel({
   parent,
-  send,
+  actions,
   lockedHost,
 }: M5PanelOptions): ConductorPanel {
   const root = document.createElement("section");
@@ -55,10 +54,18 @@ export function createM5Panel({
 
   const preview = createPreview();
 
+  // The panel is the host authority end to end: it applies the initial host
+  // to the show it shares a page with, and every later edit the same way.
+  const applyHost = (nextHost: string): void => {
+    if (lockedHost === undefined) saveStoredHost(nextHost);
+    actions.setM5Host(nextHost);
+    preview.watch(nextHost);
+  };
+
   if (lockedHost !== undefined) {
     root.append(label, preview.element);
     parent.append(root);
-    preview.watch(lockedHost);
+    applyHost(lockedHost);
 
     return {
       update(): void {
@@ -78,40 +85,23 @@ export function createM5Panel({
   root.append(label, apply, clear, preview.element);
   parent.append(root);
 
-  const sendHost = (nextHost: string): void => {
-    saveStoredHost(nextHost);
-    send({ kind: "setM5Host", host: nextHost });
-    preview.watch(nextHost);
-  };
-
-  apply.addEventListener("click", () => sendHost(host.value.trim()));
+  apply.addEventListener("click", () => applyHost(host.value.trim()));
   clear.addEventListener("click", () => {
     host.value = "";
-    sendHost("");
+    applyHost("");
   });
   host.addEventListener("keydown", (event) => {
-    if (event.key === "Enter") sendHost(host.value.trim());
+    if (event.key === "Enter") applyHost(host.value.trim());
   });
 
-  // The preview is this page's own poll: it starts from the stored host right
-  // away, before (and regardless of) any show window being connected.
-  preview.watch(host.value.trim());
-
-  // The show's presence last frame, so a reloaded show window gets the stored
-  // host re-sent exactly once per connection — a show remembers nothing across
-  // reloads by design.
-  let wasShowConnected = false;
+  // The stored host arms the show right away; an empty one applies nothing
+  // but still leaves the preview hidden.
+  const storedHost = host.value.trim();
+  if (storedHost.length > 0) applyHost(storedHost);
+  else preview.watch("");
 
   return {
-    update(state): void {
-      if (state.isShowConnected && !wasShowConnected) {
-        const storedHost = loadStoredHost();
-        if (storedHost.length > 0) sendHost(storedHost);
-      }
-      wasShowConnected = state.isShowConnected;
-
-      apply.disabled = !state.isShowConnected;
-      clear.disabled = !state.isShowConnected;
+    update(): void {
       preview.render();
     },
   };

@@ -43,24 +43,25 @@ Background, concept, storyboard and script:
 
 ## Running a station
 
-The whole deployed station is one Docker container — pages, WebSocket broker,
-health endpoint:
+The whole deployed station is one Docker container — pages, deployment
+config, health endpoint:
 
 ```sh
 cp .env.example .env        # optional: M5 host, device id, station name
 docker compose up -d        # pulls the released image from GHCR
 ```
 
-Show page at [http://localhost](http://localhost), operator page at
-[http://localhost/conductor.html](http://localhost/conductor.html).
+The station window — the operator page hosting the show — is at
+[http://localhost/conductor.html](http://localhost/conductor.html); the bare
+rehearsal page stays at [http://localhost](http://localhost).
 `docker compose pull` updates to the newest release; building from the
 checkout instead is `docker compose -f docker-compose.yml -f
 docker-compose.build.yml up -d --build`. Details, endpoints, and the env
-vars: [station/README.md](station/README.md); opening both pages without
-browser UI around them: [KIOSK.md](KIOSK.md).
+vars: [station/README.md](station/README.md); opening the station window
+without browser UI around it: [KIOSK.md](KIOSK.md).
 
-For development: `bun install`, then `bun run dev` (pages) beside
-`bun run station` (broker) — see [AGENTS.md](AGENTS.md) for the full toolchain.
+For development: `bun install`, then `bun run dev` — see
+[AGENTS.md](AGENTS.md) for the full toolchain.
 
 ## Performance Map — `terrain-finetuning` (PR #2)
 

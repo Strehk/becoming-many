@@ -19,10 +19,10 @@ benchmark runner, which `bun test` ignores because it is not a test file.
 `dramaturgy/` verifies show time and cue lookup, both pure; the narration
 player is DOM-bound and is not tested here.
 
-`station/` verifies the wire contract between the show window and the conductor
-page; the socket client and the broker are connection-bound and are not tested
-here. `conductor/` verifies what the operator page decides before it touches the
-DOM — the playhead, the key map, and the readouts.
+`station/` verifies the deployment-config contract; the server is
+connection-bound and is not tested here. `conductor/` verifies what the
+operator page decides before it touches the DOM — the key map, the operator
+actions, the stream button's label, and the readouts.
 
 `world-surface/` verifies deterministic surface facts. `control/` verifies
 input-independent navigation constraints. `levels/` verifies preset boundaries.
