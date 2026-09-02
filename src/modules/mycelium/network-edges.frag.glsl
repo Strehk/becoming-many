@@ -23,6 +23,7 @@ varying float connectionsEdgeLength;
 varying float connectionsEdgePhase;
 varying float connectionsEdgeWeight;
 varying float connectionsEdgeViewDistance;
+varying float connectionsEdgeGrowth;
 varying vec3 connectionsEdgeColor;
 
 const float TAU = 6.28318530718;
@@ -46,6 +47,9 @@ void main() {
   float resolvedHalfWidth =
     max(connectionsFilamentWidth, fwidth(connectionsEdgeSide) * 0.75);
   float coverage = connectionsFilamentWidth / resolvedHalfWidth;
+  // Every present cord carries its full bundle: proximity decides how many
+  // cords are out, not how detailed each one is, so a cord that is there is
+  // there at full strength.
   float strand = 0.0;
   for (int filament = 0; filament < FILAMENTS_PER_CORD; filament += 1) {
     float offset = float(filament);
@@ -66,13 +70,14 @@ void main() {
     );
   }
   strand *= coverage;
-  float alpha = strand * webMask * connectionsIntensity;
+  float alpha = strand * webMask * connectionsEdgeGrowth * connectionsIntensity;
   if (alpha <= 0.02) discard;
 
-  // Cords sag toward the deep underground tone at their midpoint, selling
-  // depth through color alone; the geometry stays draped on the ground.
+  // Cords sag toward the deep underground tone at their midpoint. Against the
+  // carried world's pale haze this is what makes a strand legible at all, so
+  // it dips harder than the sparse web's tint did.
   float depthDip = 4.0 * connectionsEdgeT * (1.0 - connectionsEdgeT);
-  vec3 cord = mix(connectionsEdgeColor, connectionsDepthColor, depthDip * 0.35);
+  vec3 cord = mix(connectionsEdgeColor, connectionsDepthColor, depthDip * 0.55);
 
   float travel = fract(
     connectionsEdgeT -

@@ -102,6 +102,16 @@ export class ChunkWindow {
   }
 
   /**
+   * Resolve which slot currently represents one absolute world chunk.
+   * Callers that generate content per chunk from a neighbourhood — a seam, a
+   * halo, a blend across a boundary — need to read the slots around one chunk
+   * without keeping their own copy of the mapping.
+   */
+  slotIndexFor(chunkX: number, chunkZ: number): number {
+    return getSlotIndex(chunkX, chunkZ, this.chunksPerSide);
+  }
+
+  /**
    * Check whether delayed work still belongs to its slot.
    * A false result means the player moved far enough for that slot to receive
    * a newer assignment, so the obsolete result must not be published.

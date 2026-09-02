@@ -15,11 +15,16 @@ attribute vec3 edgeEnd;
 attribute vec3 edgeColor;
 attribute float edgeWeight;
 attribute float edgePhase;
+attribute float edgeUpload;
 
 uniform float connectionsWebRadius;
 uniform float connectionsEdgeBaseWidth;
 uniform float connectionsEdgeWidthSpan;
 uniform float connectionsWobbleAmplitude;
+uniform float connectionsGrowthNearDistance;
+uniform float connectionsGrowthFarFraction;
+uniform float connectionsClock;
+uniform float connectionsEdgeFade;
 
 varying float connectionsEdgeT;
 varying float connectionsEdgeSide;
@@ -27,9 +32,13 @@ varying float connectionsEdgeLength;
 varying float connectionsEdgePhase;
 varying float connectionsEdgeWeight;
 varying float connectionsEdgeViewDistance;
+varying float connectionsEdgeGrowth;
 varying vec3 connectionsEdgeColor;
 
 const float TAU = 6.28318530718;
+
+/** Density band a cord fades in across, so approaching grows rather than pops. */
+const float APPEAR_BAND = 0.18;
 
 void main() {
   float progress = position.x;
@@ -51,10 +60,32 @@ void main() {
     (0.6 * sin(TAU * (progress * 1.7 + edgePhase)) +
       0.4 * sin(TAU * (progress * 3.9 + edgePhase * 2.63)));
 
-  // Collapse the ribbon beyond the web radius and for degenerate pool rows,
-  // so unused capacity and far cords cost no fragments.
+  // Proximity growth, the grass field's density rejection read backwards: the
+  // topology is seeded once at full density, and what changes as the visitor
+  // closes in is how large a share of it is present. Every cord carries a
+  // stable threshold and comes out once the local density reaches it, so the
+  // mat genuinely thickens with more roots rather than with fatter ones.
+  float density = mix(
+    connectionsGrowthFarFraction,
+    1.0,
+    1.0 - smoothstep(connectionsGrowthNearDistance, connectionsWebRadius, viewDistance)
+  );
+  // Decorrelated from the phase driving the wobble, so a cord's appearance and
+  // its meander are not visibly the same draw.
+  float appearance = fract(edgePhase * 13.71 + 0.37);
+  float growth = smoothstep(appearance - APPEAR_BAND, appearance, density);
+
+  // Ground entering the window grows in rather than appearing. Resident chunks
+  // are never rewritten, so nothing already on screen ever runs this ramp.
+  float sinceUpload = max(0.0, connectionsClock - edgeUpload);
+  growth *= smoothstep(0.0, connectionsEdgeFade, sinceUpload);
+
+  // Collapse the ribbon beyond the web radius, for cords the density has not
+  // reached yet, and for degenerate pool rows, so everything unseen costs no
+  // fragments.
   float alive = step(0.0001, cordLength) *
-    (1.0 - step(connectionsWebRadius, viewDistance));
+    (1.0 - step(connectionsWebRadius, viewDistance)) *
+    step(0.0001, growth);
   float halfWidth = alive *
     (connectionsEdgeBaseWidth + edgeWeight * connectionsEdgeWidthSpan) * 0.5;
 
@@ -64,6 +95,7 @@ void main() {
   connectionsEdgePhase = edgePhase;
   connectionsEdgeWeight = edgeWeight;
   connectionsEdgeViewDistance = viewDistance;
+  connectionsEdgeGrowth = growth;
   connectionsEdgeColor = edgeColor;
 
   vec3 worldPosition = along +

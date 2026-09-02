@@ -47,6 +47,7 @@ import {
   createGrassClipmapModule,
   type GrassClipmapPreset,
 } from "../modules/grass-clipmap/grass-clipmap";
+import { getGrassZoneCoverage } from "../modules/grass-clipmap/grass-height-field";
 import {
   createMagneticSense,
   type MagneticSenseModuleHandle,
@@ -666,7 +667,16 @@ function createConfiguredModules(setup: LevelSetup): ComposedWorld {
   const connections = createConnectionsWeb(setup, animals);
   const motion = createMotionSense(setup);
 
-  add("terrain", createTerrain(setup, echoDepth, thermal, structureFade));
+  add(
+    "terrain",
+    createTerrain(
+      setup,
+      echoDepth,
+      thermal,
+      structureFade,
+      connections?.terrain,
+    ),
+  );
   add(undefined, createAirParticles(setup));
   add("scentParticles", scent?.module);
   add(undefined, createGrass(setup, echoDepth, thermal, structureFade));
@@ -764,12 +774,21 @@ function createConnectionsWeb(
         }
       : undefined;
 
+  // What already covers this level's ground, straight from the module that
+  // grows it: bare surface everywhere the level authors no grass at all.
+  const groundCoverAt = setup.level.grassClipmap
+    ? (worldX: number, worldZ: number) =>
+        getGrassZoneCoverage(worldSurface, worldX, worldZ)
+    : () => 0;
+
   return createConnectionsModule(parameters, {
     scene: setup.world.scene,
     camera: setup.world.camera,
     streamQueue: setup.world.streamQueue,
+    worldSurface,
     staticSources,
     animalSource,
+    groundCoverAt,
   });
 }
 
@@ -830,6 +849,7 @@ function createTerrain(
   echoDepth: EchoDepthEffect | undefined,
   thermal: ThermalPerceptionEffects | undefined,
   worldFade: WorldFadeEffect | undefined,
+  soilOpening: TerrainMaterialEffect | undefined,
 ): WorldModule | undefined {
   const preset = setup.level.terrain;
   // A level that keeps its surface invisible still needs it to hide what
@@ -859,6 +879,9 @@ function createTerrain(
   if (worldFade) effects.push(worldFade);
   if (thermal) effects.push(thermal.terrain);
   if (echoDepth) effects.push(echoDepth);
+  // Pushed last so it executes first: it only scales the alpha the carried
+  // ramps then paint into, and it wins nothing by running after them.
+  if (soilOpening) effects.push(soilOpening);
 
   return createTerrainModule({
     scene: setup.world.scene,

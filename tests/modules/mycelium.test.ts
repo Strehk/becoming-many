@@ -1,8 +1,8 @@
 /**
- * Purpose: Verify the Connections web topology math behind the Mycelium module.
- * Context: The worker only relays this pure function; correctness is provable in Bun.
- * Responsibility: Cover determinism, connectivity, dedup, the capacity cap, and weight bias.
- * Boundary: Worker messaging, GPU pools, and lifecycle are covered by their own tests.
+ * Purpose: Verify the per-chunk Connections topology and the module that streams it.
+ * Context: Chunks are built once from deterministic data so resident cords never move.
+ * Responsibility: Cover the topology contract, seam ownership, and the streaming lifecycle.
+ * Boundary: Soil placement has its own test; worker messaging is exercised through a fake port.
  */
 
 import { expect, test } from "bun:test";
@@ -24,8 +24,9 @@ import {
 } from "../../src/modules/mycelium/mycelium";
 import { MYCELIUM_SETTINGS } from "../../src/modules/mycelium/mycelium-settings";
 import {
-  buildConnectionTopology,
-  type ConnectionTopology,
+  buildChunkTopology,
+  type ChunkTopology,
+  type TopologyNodes,
 } from "../../src/modules/mycelium/network-topology";
 import type {
   ConnectionTopologyRequest,
@@ -33,163 +34,175 @@ import type {
   TopologyPort,
 } from "../../src/modules/mycelium/topology-messages";
 import { StreamQueue } from "../../src/world/stream-queue";
+import { WORLD_SURFACE_SETTINGS } from "../../src/world-surface/surface-settings";
+import { createWorldSurface } from "../../src/world-surface/world-surface";
+import { ZONE_SETTINGS } from "../../src/world-surface/zone-settings";
 
 const OPTIONS = { neighborsPerNode: 2, edgeCapacity: 1792 };
 
-function createScatteredNodes(count: number): {
-  positions: Float32Array;
-  weights: Float32Array;
-} {
-  const positions = new Float32Array(count * 3);
-  const weights = new Float32Array(count);
-  let state = 1_337;
-  const next = () => {
-    state = (state * 48_271) % 2_147_483_647;
-    return state / 2_147_483_647;
+const NO_NODES: TopologyNodes = {
+  positions: new Float32Array(0),
+  weights: new Float32Array(0),
+  classIndices: new Uint8Array(0),
+  nodeCount: 0,
+};
+
+function createNodes(
+  positions: readonly number[],
+  weights?: readonly number[],
+  classIndices?: readonly number[],
+): TopologyNodes {
+  const nodeCount = positions.length / 3;
+  return {
+    positions: Float32Array.from(positions),
+    weights: Float32Array.from(weights ?? new Array(nodeCount).fill(1)),
+    classIndices: Uint8Array.from(classIndices ?? new Array(nodeCount).fill(0)),
+    nodeCount,
   };
-  for (let node = 0; node < count; node += 1) {
-    positions[node * 3] = next() * 96 - 48;
-    positions[node * 3 + 1] = next() * 4;
-    positions[node * 3 + 2] = next() * 96 - 48;
-    weights[node] = 0.25 + next() * 0.75;
-  }
-  return { positions, weights };
 }
 
-function countComponents(nodeCount: number, edgePairs: Uint32Array): number {
-  const parents = Array.from({ length: nodeCount }, (_, node) => node);
-  const find = (node: number): number => {
-    let root = node;
-    while (parents[root] !== root) root = parents[root] ?? root;
-    return root;
-  };
-  for (let edge = 0; edge < edgePairs.length / 2; edge += 1) {
-    const first = find(edgePairs[edge * 2] ?? 0);
-    const second = find(edgePairs[edge * 2 + 1] ?? 0);
-    parents[first] = second;
+/** A deterministic scatter, so every test works on the same non-trivial web. */
+function createScatter(nodeCount: number, offsetX = 0): TopologyNodes {
+  const positions: number[] = [];
+  for (let node = 0; node < nodeCount; node += 1) {
+    positions.push(
+      offsetX + ((node * 7) % 11),
+      ((node * 3) % 5) * 0.25,
+      (node * 5) % 13,
+    );
   }
-  return new Set(Array.from({ length: nodeCount }, (_, node) => find(node)))
-    .size;
+  return createNodes(positions);
 }
 
-function edgeKeys(topology: ConnectionTopology): string[] {
-  const keys: string[] = [];
+function collectEdgeKeys(topology: ChunkTopology): Set<string> {
+  const keys = new Set<string>();
   for (let edge = 0; edge < topology.edgeCount; edge += 1) {
-    const first = topology.edgePairs[edge * 2] ?? 0;
-    const second = topology.edgePairs[edge * 2 + 1] ?? 0;
-    keys.push(first < second ? `${first}:${second}` : `${second}:${first}`);
+    const offset = edge * 3;
+    const start = [0, 1, 2]
+      .map((component) => topology.edgeStarts[offset + component])
+      .join(",");
+    const end = [0, 1, 2]
+      .map((component) => topology.edgeEnds[offset + component])
+      .join(",");
+    keys.add(start < end ? `${start}|${end}` : `${end}|${start}`);
   }
   return keys;
 }
 
-test("Connection topology is deterministic for identical inputs", () => {
-  const { positions, weights } = createScatteredNodes(120);
-  const first = buildConnectionTopology(positions, weights, OPTIONS);
-  const second = buildConnectionTopology(positions, weights, OPTIONS);
+test("Chunk topology is deterministic for identical inputs", () => {
+  const own = createScatter(24);
+  const halo = createScatter(16, 20);
+  const first = buildChunkTopology(own, halo, OPTIONS);
+  const second = buildChunkTopology(own, halo, OPTIONS);
 
+  expect(Array.from(second.edgeStarts)).toEqual(Array.from(first.edgeStarts));
+  expect(Array.from(second.edgeEnds)).toEqual(Array.from(first.edgeEnds));
   expect(second.edgeCount).toBe(first.edgeCount);
-  expect(Array.from(second.edgePairs)).toEqual(Array.from(first.edgePairs));
-  expect(Array.from(second.edgeWeights)).toEqual(Array.from(first.edgeWeights));
 });
 
-test("Connection topology forms one connected web with no isolated node", () => {
-  const { positions, weights } = createScatteredNodes(120);
-  const topology = buildConnectionTopology(positions, weights, OPTIONS);
+test("Chunk topology leaves none of its own nodes isolated", () => {
+  const own = createScatter(24);
+  const topology = buildChunkTopology(own, NO_NODES, OPTIONS);
 
-  expect(countComponents(120, topology.edgePairs)).toBe(1);
-  const degrees = new Uint32Array(120);
-  for (const node of topology.edgePairs) {
-    degrees[node] = (degrees[node] ?? 0) + 1;
-  }
-  for (const degree of degrees) expect(degree).toBeGreaterThanOrEqual(1);
-});
-
-test("Connection topology never duplicates an undirected edge", () => {
-  const { positions, weights } = createScatteredNodes(80);
-  const topology = buildConnectionTopology(positions, weights, OPTIONS);
-  const keys = edgeKeys(topology);
-
-  expect(new Set(keys).size).toBe(keys.length);
-});
-
-test("Connection topology reports edge weights as mean endpoint weight", () => {
-  const { positions, weights } = createScatteredNodes(40);
-  const topology = buildConnectionTopology(positions, weights, OPTIONS);
-
+  const connected = new Set<string>();
   for (let edge = 0; edge < topology.edgeCount; edge += 1) {
-    const first = topology.edgePairs[edge * 2] ?? 0;
-    const second = topology.edgePairs[edge * 2 + 1] ?? 0;
-    const expected = ((weights[first] ?? 0) + (weights[second] ?? 0)) / 2;
-    expect(topology.edgeWeights[edge] ?? 0).toBeCloseTo(expected, 5);
-  }
-});
-
-test("Connection topology capacity keeps the spanning web and reports drops", () => {
-  const { positions, weights } = createScatteredNodes(120);
-  const unbounded = buildConnectionTopology(positions, weights, OPTIONS);
-  const capacity = 140; // Above the 119 spanning edges, below the full web.
-  const capped = buildConnectionTopology(positions, weights, {
-    ...OPTIONS,
-    edgeCapacity: capacity,
-  });
-
-  expect(capped.edgeCount).toBe(capacity);
-  expect(capped.droppedEdgeCount).toBe(unbounded.edgeCount - capacity);
-  expect(countComponents(120, capped.edgePairs)).toBe(1);
-
-  // The capped extras are the heaviest ones: every surviving non-spanning
-  // edge must weigh at least as much as every dropped edge.
-  const cappedKeys = new Set(edgeKeys(capped));
-  let lightestKept = Number.POSITIVE_INFINITY;
-  for (let edge = 119; edge < capped.edgeCount; edge += 1) {
-    lightestKept = Math.min(lightestKept, capped.edgeWeights[edge] ?? 0);
-  }
-  const unboundedKeys = edgeKeys(unbounded);
-  for (let edge = 0; edge < unbounded.edgeCount; edge += 1) {
-    if (cappedKeys.has(unboundedKeys[edge] ?? "")) continue;
-    expect(unbounded.edgeWeights[edge] ?? 0).toBeLessThanOrEqual(
-      lightestKept + 1e-6,
+    const offset = edge * 3;
+    connected.add(
+      [0, 1, 2].map((c) => topology.edgeStarts[offset + c]).join(","),
+    );
+    connected.add(
+      [0, 1, 2].map((c) => topology.edgeEnds[offset + c]).join(","),
     );
   }
+  for (let node = 0; node < own.nodeCount; node += 1) {
+    const offset = node * 3;
+    expect(
+      connected.has([0, 1, 2].map((c) => own.positions[offset + c]).join(",")),
+    ).toBe(true);
+  }
 });
 
-test("Connection topology pulls extra links toward heavy hubs", () => {
-  const { positions } = createScatteredNodes(120);
-  const uniform = new Float32Array(120).fill(0.5);
-  const biased = Float32Array.from(uniform);
-  biased[7] = 1;
-
-  const uniformTopology = buildConnectionTopology(positions, uniform, OPTIONS);
-  const biasedTopology = buildConnectionTopology(positions, biased, OPTIONS);
-  const degreeOf = (topology: ConnectionTopology): number => {
-    let degree = 0;
-    for (const node of topology.edgePairs) {
-      if (node === 7) degree += 1;
-    }
-    return degree;
-  };
-
-  expect(degreeOf(biasedTopology)).toBeGreaterThanOrEqual(
-    degreeOf(uniformTopology),
-  );
-});
-
-test("Connection topology returns an empty web below two nodes", () => {
-  const single = buildConnectionTopology(
-    new Float32Array([1, 2, 3]),
-    new Float32Array([1]),
+test("Chunk topology never duplicates an undirected edge", () => {
+  const topology = buildChunkTopology(
+    createScatter(24),
+    createScatter(16, 20),
     OPTIONS,
   );
 
-  expect(single.edgeCount).toBe(0);
-  expect(single.droppedEdgeCount).toBe(0);
-  expect(single.edgePairs).toHaveLength(0);
+  expect(collectEdgeKeys(topology).size).toBe(topology.edgeCount);
 });
+
+test("Chunk topology reports edge weights as mean endpoint weight", () => {
+  const own = createNodes([0, 0, 0, 3, 0, 0, 6, 0, 0], [1, 0.5, 0.25]);
+  const topology = buildChunkTopology(own, NO_NODES, {
+    neighborsPerNode: 1,
+    edgeCapacity: 16,
+  });
+
+  for (let edge = 0; edge < topology.edgeCount; edge += 1) {
+    const weight = topology.edgeWeights[edge] ?? 0;
+    expect([0.75, 0.625, 0.375]).toContain(weight);
+  }
+});
+
+test("Chunk topology capacity keeps the spanning web and reports drops", () => {
+  const own = createScatter(20);
+  const capacity = 12;
+  const topology = buildChunkTopology(own, createScatter(12, 20), {
+    neighborsPerNode: 3,
+    edgeCapacity: capacity,
+  });
+
+  expect(topology.edgeCount).toBeLessThanOrEqual(capacity);
+  expect(topology.droppedEdgeCount).toBeGreaterThan(0);
+  // The spanning backbone is 19 edges for 20 nodes, so a 12-edge budget keeps
+  // spanning edges only and every extra is dropped.
+  expect(topology.edgeCount).toBe(capacity);
+});
+
+test("Chunk topology pulls extra links toward heavy hubs", () => {
+  const own = createNodes(
+    [0, 0, 0, 4, 0, 0, 8, 0, 0, 4, 0, 6],
+    [1, 1, 1, 0.05],
+  );
+  const topology = buildChunkTopology(own, NO_NODES, {
+    neighborsPerNode: 1,
+    edgeCapacity: 16,
+  });
+
+  // The light node sits off the line; the heavy row still attracts links, so
+  // the heavy pair (0,0,0)-(4,0,0) is connected.
+  expect(collectEdgeKeys(topology).has("0,0,0|4,0,0")).toBe(true);
+});
+
+test("Chunk topology returns an empty web without own nodes", () => {
+  const topology = buildChunkTopology(NO_NODES, createScatter(8), OPTIONS);
+
+  expect(topology.edgeCount).toBe(0);
+  expect(topology.edgeStarts).toHaveLength(0);
+});
+
+test("A seam between two chunks is claimed by exactly one of them", () => {
+  // The same two node sets, each once as the owner and once as the halo: the
+  // pair must be drawn by one side only, or seams double in brightness.
+  const west = createNodes([0, 0, 0, 1, 0, 0]);
+  const east = createNodes([2, 0, 0, 3, 0, 0]);
+  const options = { neighborsPerNode: 2, edgeCapacity: 64 };
+
+  const fromWest = collectEdgeKeys(buildChunkTopology(west, east, options));
+  const fromEast = collectEdgeKeys(buildChunkTopology(east, west, options));
+
+  const seam = "1,0,0|2,0,0";
+  expect(fromWest.has(seam) !== fromEast.has(seam)).toBe(true);
+  for (const key of fromWest) expect(fromEast.has(key)).toBe(false);
+});
+
+const WORLD_SURFACE = createWorldSurface(WORLD_SURFACE_SETTINGS, ZONE_SETTINGS);
 
 const PARAMETERS: ConnectionsParameters = {
   intensity: 1,
-  webRadiusMeters: 88,
-  pulseSpeedMetersPerSecond: 4,
+  webRadiusMeters: 30,
+  pulseSpeedMetersPerSecond: 1.5,
   sources: {
     vegetation: { nodeColor: 0xa5bdc3, weight: 1 },
     animals: { nodeColor: 0xe39e54, weight: 0.5 },
@@ -228,15 +241,15 @@ function createFakeTopologyPort(): FakeTopologyPort {
   };
 }
 
-/** One deterministic anchor per chunk at a stable in-chunk offset. */
+/** One deterministic anchor per chunk, at that chunk's centre. */
 function createFakeVegetationSource(): ConnectionNodeSource {
   return {
     sourceClass: "vegetation",
     appendChunkAnchors: (chunkX, chunkZ, chunkSizeMeters, pushAnchor) =>
       pushAnchor(
-        chunkX * chunkSizeMeters + 16,
+        chunkX * chunkSizeMeters + chunkSizeMeters / 2,
         5,
-        chunkZ * chunkSizeMeters + 16,
+        chunkZ * chunkSizeMeters + chunkSizeMeters / 2,
       ),
   };
 }
@@ -248,22 +261,45 @@ function createFakeAnimalSource(positions: number[]): ConnectionActorSource {
   };
 }
 
+function createEdgeResult(
+  buildSlotIndex: number,
+  revision: number,
+  start: readonly number[],
+  end: readonly number[],
+): ConnectionTopologyResult {
+  return {
+    buildSlotIndex,
+    revision,
+    edgeCount: 1,
+    droppedEdgeCount: 0,
+    edgeStarts: Float32Array.from(start),
+    edgeEnds: Float32Array.from(end),
+    edgeWeights: Float32Array.from([1]),
+    edgeHubClasses: Uint8Array.from([0]),
+  };
+}
+
 function createWebHarness(animalSource?: ConnectionActorSource) {
   const scene = new Scene();
   const camera = new PerspectiveCamera();
   const streamQueue = new StreamQueue(
-    { budgetMilliseconds: 1000, capacity: 8 },
+    { budgetMilliseconds: 1000, capacity: 64 },
     () => 0,
   );
   const fakePort = createFakeTopologyPort();
-  const { module, setIntensity } = createConnectionsModule(PARAMETERS, {
-    scene,
-    camera,
-    streamQueue,
-    staticSources: [createFakeVegetationSource()],
-    animalSource,
-    createTopologyPort: () => fakePort.port,
-  });
+  const { module, setIntensity, terrain } = createConnectionsModule(
+    PARAMETERS,
+    {
+      scene,
+      camera,
+      streamQueue,
+      worldSurface: WORLD_SURFACE,
+      staticSources: [createFakeVegetationSource()],
+      animalSource,
+      groundCoverAt: () => 0,
+      createTopologyPort: () => fakePort.port,
+    },
+  );
 
   const findEdges = () => {
     const edges = scene.children.find(
@@ -287,10 +323,14 @@ function createWebHarness(animalSource?: ConnectionActorSource) {
     fakePort,
     module,
     setIntensity,
+    terrain,
     findEdges,
     findNodes,
   };
 }
+
+const BUILD_SLOT_COUNT = (MYCELIUM_SETTINGS.buildChunkRadius * 2 + 1) ** 2;
+const GATHER_SLOT_COUNT = (MYCELIUM_SETTINGS.gatherChunkRadius * 2 + 1) ** 2;
 
 test("Connections reject an invalid preset", () => {
   expect(createWebHarness().module).toBeDefined(); // Valid baseline.
@@ -298,7 +338,7 @@ test("Connections reject an invalid preset", () => {
   const failing: readonly [Partial<ConnectionsParameters>, string][] = [
     [{ intensity: 1.5 }, "Connections intensity"],
     [{ webRadiusMeters: 0 }, "positive and finite"],
-    [{ webRadiusMeters: 120 }, "window coverage"],
+    [{ webRadiusMeters: 40 }, "window coverage"],
     [{ pulseSpeedMetersPerSecond: -1 }, "pulse speed"],
     [{ sources: {} }, "at least one source"],
     [
@@ -317,14 +357,16 @@ test("Connections reject an invalid preset", () => {
             { budgetMilliseconds: 1, capacity: 1 },
             () => 0,
           ),
+          worldSurface: WORLD_SURFACE,
           staticSources: [],
+          groundCoverAt: () => 0,
         },
       ),
     ).toThrow(message);
   }
 });
 
-test("Connections web follows the lifecycle and publishes one topology", () => {
+test("Connections build every resident chunk on its own request", () => {
   const harness = createWebHarness();
   const { module, scene, fakePort } = harness;
 
@@ -333,42 +375,40 @@ test("Connections web follows the lifecycle and publishes one topology", () => {
   const edges = harness.findEdges();
   const nodes = harness.findNodes();
   expect(edges.visible).toBe(false);
-  expect(nodes.visible).toBe(false);
   expect(edges.material.depthWrite).toBe(false);
   expect(edges.material.transparent).toBe(true);
   expect(edges.frustumCulled).toBe(false);
 
-  // The synchronous startup gather covers the whole resident window with
-  // one fake anchor per chunk.
-  const windowChunkCount = (MYCELIUM_SETTINGS.windowChunkRadius * 2 + 1) ** 2;
-  expect(fakePort.requests).toHaveLength(1);
-  const request = fakePort.requests[0];
-  expect(request?.generation).toBe(0);
-  expect(request?.nodeCount).toBe(windowChunkCount);
-  expect(request?.weights[0]).toBe(1);
+  // One request per built chunk, each carrying its own single fake anchor and
+  // the eight neighbouring anchors it draws its seams against.
+  expect(fakePort.requests).toHaveLength(BUILD_SLOT_COUNT);
+  expect(fakePort.requests[0]?.own.nodeCount).toBe(1);
+  expect(fakePort.requests[0]?.halo.nodeCount).toBe(8);
+  expect(fakePort.requests[0]?.own.weights[0]).toBe(1);
+  expect(nodes.geometry.drawRange.count).toBe(
+    GATHER_SLOT_COUNT * MYCELIUM_SETTINGS.nodeSlotCapacity,
+  );
 
   module.activate();
   expect(edges.visible).toBe(true);
   expect(nodes.visible).toBe(true);
 
-  fakePort.respond({
-    generation: 0,
-    edgeCount: 1,
-    droppedEdgeCount: 0,
-    edgePairs: Uint32Array.from([0, 1]),
-    edgeWeights: Float32Array.from([1]),
-  });
-  expect(edges.geometry.instanceCount).toBe(
-    MYCELIUM_SETTINGS.animalLinkCapacity + 1,
+  const request = fakePort.requests[0];
+  if (!request) throw new Error("Expected a topology request");
+  fakePort.respond(
+    createEdgeResult(
+      request.buildSlotIndex,
+      request.revision,
+      [1, 2, 3],
+      [4, 5, 6],
+    ),
   );
-  expect(nodes.geometry.drawRange.count).toBe(windowChunkCount);
-  const staticRow = MYCELIUM_SETTINGS.animalLinkCapacity;
+  const firstRow =
+    MYCELIUM_SETTINGS.animalLinkCapacity +
+    request.buildSlotIndex * MYCELIUM_SETTINGS.edgeSlotCapacity;
   const startArray = edges.geometry.getAttribute("edgeStart")
     .array as Float32Array;
-  expect(startArray[staticRow * 3 + 1] ?? 0).toBeCloseTo(
-    5 + MYCELIUM_SETTINGS.edgeLiftMeters,
-    5,
-  );
+  expect(startArray[firstRow * 3] ?? 0).toBeCloseTo(1, 5);
 
   module.deactivate();
   expect(edges.visible).toBe(false);
@@ -377,54 +417,100 @@ test("Connections web follows the lifecycle and publishes one topology", () => {
   expect(fakePort.isTerminated()).toBe(true);
 });
 
-test("Connections regather on window changes and ignore stale results", () => {
+test("Connections hang world anchors just under their own object", () => {
+  const harness = createWebHarness();
+  harness.module.load();
+
+  const request = harness.fakePort.requests[0];
+  expect(request?.own.positions[1] ?? 0).toBeCloseTo(
+    5 - MYCELIUM_SETTINGS.surfaceRootDepthMeters,
+    5,
+  );
+});
+
+test("Connections draw the web ahead of the ground that opens over it", () => {
+  const harness = createWebHarness();
+  harness.module.load();
+  const edges = harness.findEdges();
+
+  // Load-bearing for the whole look: the ground joins the transparent pass at
+  // the default order, so a web drawn after it would be blended away by the
+  // soil instead of showing through from underneath. Depth testing stays on,
+  // which is what lets trees, rocks, and grass blades occlude the mat.
+  expect(edges.material.depthTest).toBe(true);
+  expect(edges.material.depthWrite).toBe(false);
+  expect(edges.renderOrder).toBeLessThan(0);
+  expect(harness.findNodes().renderOrder).toBeLessThan(0);
+});
+
+test("Connections open bare ground far more than ground under grass", () => {
+  const harness = createWebHarness();
+  const { terrain } = harness;
+
+  // The sampler is what Terrain streams per vertex; declaring it is what makes
+  // the opening able to tell a lawn from open soil at all.
+  expect(terrain.coverAt).toBeDefined();
+  expect(MYCELIUM_SETTINGS.soilBareOpacity).toBeLessThan(
+    MYCELIUM_SETTINGS.soilCoveredOpacity,
+  );
+});
+
+test("Connections rebuild only the chunks that entered the window", () => {
   const harness = createWebHarness();
   const { module, camera, streamQueue, fakePort } = harness;
 
   module.load();
   module.activate();
+  expect(fakePort.requests).toHaveLength(BUILD_SLOT_COUNT);
+  fakePort.requests.length = 0;
+
+  // One 16-metre boundary crossing. This is the whole point of building per
+  // chunk: the mat the visitor is standing on is not recomputed, so cords
+  // already on screen cannot reroute.
+  const chunkSize = 16;
+  camera.position.set(chunkSize + 1, 0, 0);
+  module.update?.(0.016);
+  for (let step = 0; step < GATHER_SLOT_COUNT + 4; step += 1) {
+    streamQueue.update();
+  }
+  module.update?.(0.016);
+
+  const chunksPerSide = MYCELIUM_SETTINGS.buildChunkRadius * 2 + 1;
+  expect(fakePort.requests).toHaveLength(chunksPerSide);
+  module.unload();
+});
+
+test("Connections discard a reply for ground the visitor already left", () => {
+  const harness = createWebHarness();
+  const { module, fakePort } = harness;
+
+  module.load();
   const edges = harness.findEdges();
-  expect(fakePort.requests).toHaveLength(1);
+  const request = fakePort.requests[0];
+  if (!request) throw new Error("Expected a topology request");
 
-  // Crossing one 32-metre boundary advances the generation and enqueues one
-  // replacing gather job.
-  camera.position.set(40, 0, 0);
-  module.update?.(0.016);
-  module.update?.(0.016);
-  const gatherSteps = (MYCELIUM_SETTINGS.windowChunkRadius * 2 + 1) ** 2 + 4;
-  for (let step = 0; step < gatherSteps; step += 1) streamQueue.update();
-
-  expect(fakePort.requests).toHaveLength(2);
-  expect(fakePort.requests[1]?.generation).toBe(1);
-
-  // The stale generation-zero reply must not publish anything.
-  fakePort.respond({
-    generation: 0,
-    edgeCount: 3,
-    droppedEdgeCount: 0,
-    edgePairs: Uint32Array.from([0, 1, 1, 2, 2, 3]),
-    edgeWeights: Float32Array.from([1, 1, 1]),
-  });
-  expect(edges.geometry.instanceCount).toBe(
-    MYCELIUM_SETTINGS.animalLinkCapacity,
+  // A slot reassigned while its topology was in flight must not publish the
+  // ground it no longer represents.
+  fakePort.respond(
+    createEdgeResult(
+      request.buildSlotIndex,
+      request.revision + 1,
+      [9, 9, 9],
+      [8, 8, 8],
+    ),
   );
-
-  fakePort.respond({
-    generation: 1,
-    edgeCount: 2,
-    droppedEdgeCount: 0,
-    edgePairs: Uint32Array.from([0, 1, 1, 2]),
-    edgeWeights: Float32Array.from([1, 1]),
-  });
-  expect(edges.geometry.instanceCount).toBe(
-    MYCELIUM_SETTINGS.animalLinkCapacity + 2,
-  );
+  const firstRow =
+    MYCELIUM_SETTINGS.animalLinkCapacity +
+    request.buildSlotIndex * MYCELIUM_SETTINGS.edgeSlotCapacity;
+  const startArray = edges.geometry.getAttribute("edgeStart")
+    .array as Float32Array;
+  expect(startArray[firstRow * 3] ?? 0).toBe(0);
   module.unload();
 });
 
 test("Connections link visible animals to their nearest web node", () => {
-  const actorX = 18;
-  const actorZ = 14;
+  const actorX = 9;
+  const actorZ = 7;
   const harness = createWebHarness(createFakeAnimalSource([actorX, 5, actorZ]));
   const { module } = harness;
 
@@ -438,9 +524,9 @@ test("Connections link visible animals to their nearest web node", () => {
   const colorArray = edges.geometry.getAttribute("edgeColor")
     .array as Float32Array;
 
-  // The nearest fake anchor to the actor is the chunk (0,0) node at (16,5,16).
-  expect(startArray[0] ?? 0).toBeCloseTo(16, 5);
-  expect(startArray[2] ?? 0).toBeCloseTo(16, 5);
+  // The nearest fake anchor to the actor is the chunk (0,0) node at (8,·,8).
+  expect(startArray[0] ?? 0).toBeCloseTo(8, 5);
+  expect(startArray[2] ?? 0).toBeCloseTo(8, 5);
   expect(endArray[0] ?? 0).toBeCloseTo(actorX, 5);
   expect(endArray[2] ?? 0).toBeCloseTo(actorZ, 5);
   expect(colorArray[0] ?? 0).toBeGreaterThan(0);

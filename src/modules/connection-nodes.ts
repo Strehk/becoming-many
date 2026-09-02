@@ -10,7 +10,8 @@ export type ConnectionSourceClass =
   | "vegetation"
   | "scentEmitters"
   | "animals"
-  | "rocks";
+  | "rocks"
+  | "soil";
 
 export type PushConnectionAnchor = (
   worldX: number,

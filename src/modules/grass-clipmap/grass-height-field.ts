@@ -164,13 +164,17 @@ function fillRow(
     const index = (row * size + column) * 2;
     data[index] = DataUtils.toHalfFloat(normalizedHeight);
     data[index + 1] = DataUtils.toHalfFloat(
-      getZoneCoverage(options.worldSurface, worldX, worldZ),
+      getGrassZoneCoverage(options.worldSurface, worldX, worldZ),
     );
   }
 }
 
-/** Zones the world does not grow grass in stay bare, water and forest first. */
-function getZoneCoverage(
+/**
+ * Zones the world does not grow grass in stay bare, water and forest first.
+ * Published because other modules have to know where the ground is covered —
+ * deriving it from the zone thresholds a second time would fork the answer.
+ */
+export function getGrassZoneCoverage(
   worldSurface: WorldSurface,
   worldX: number,
   worldZ: number,
