@@ -225,11 +225,14 @@ test("Scent Level layers scent onto the White World air baseline", () => {
     ),
   );
   expect(carriedMetres).toBeGreaterThan(tallestRise);
-  // A route is carried much further still: nothing holds a print in place
-  // once the animal has walked on.
-  expect(scent.animals?.windResponseMeters ?? 0).toBeGreaterThan(
-    scent.motion.windResponseMeters,
-  );
+  // A route is carried less far than airborne plant scent, and never nothing:
+  // a print clings to the ground it was left on, so the weather leans a trail
+  // instead of moving it off the ground the animal actually walked. Carried
+  // further than the plants, as it was authored once, the trail stopped being
+  // something a traveler could follow at all.
+  const trailCarriedMetres = scent.animals?.windResponseMeters ?? 0;
+  expect(trailCarriedMetres).toBeGreaterThan(0);
+  expect(trailCarriedMetres).toBeLessThan(scent.motion.windResponseMeters);
   // The trail must stay inside the 60-second animation loop it ages against.
   expect(scent.animals?.lifetimeSeconds).toBeLessThanOrEqual(60);
 });

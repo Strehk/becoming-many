@@ -69,54 +69,60 @@ export const sharedAirParticles: SharedBlock<"airParticles"> = {
  *
  * `particlesPerPlant` is the density and the frame cost. These are the dense
  * trial values; the measured, moderate set is recorded beside each one.
+ *
+ * The radii are wider than the plants' own crowns suggest, and the counts sit
+ * a fifth above the first dense set, because both are what surrounds a plant
+ * with its scent: the particles start on a ring around it rather than on its
+ * axis, so a wider radius and more of them is what a traveler walking up on
+ * the upwind side smells instead of clear air.
  */
 export const sharedScentParticles: SharedBlock<"scentParticles"> = {
   plants: {
     // Resin, and the one plant that smells all the way down its trunk.
     conifer: {
       color: 0x55d1ba,
-      particlesPerPlant: 70, // moderate: 24
+      particlesPerPlant: 84, // moderate: 24
       emissionBottomFraction: 0.25,
       emissionTopFraction: 1,
-      emissionRadiusFraction: 0.26,
+      emissionRadiusFraction: 0.34,
       riseHeightMeters: 2.2,
     },
     // Leaf, released from the round crown and not from the bare trunk.
     deciduous: {
       color: 0x6adadd,
-      particlesPerPlant: 70, // moderate: 24
+      particlesPerPlant: 84, // moderate: 24
       emissionBottomFraction: 0.45,
       emissionTopFraction: 1,
-      emissionRadiusFraction: 0.38,
+      emissionRadiusFraction: 0.46,
       riseHeightMeters: 2.2,
     },
     // The tall, narrow, open crown the level already treats as its own
     // silhouette keeps its own signature here too.
     birch: {
       color: 0xb185c2,
-      particlesPerPlant: 60, // moderate: 20
+      particlesPerPlant: 72, // moderate: 20
       emissionBottomFraction: 0.5,
       emissionTopFraction: 1,
-      emissionRadiusFraction: 0.3,
+      emissionRadiusFraction: 0.38,
       riseHeightMeters: 2,
     },
     // Undergrowth: low, wide against its own small height, and quiet.
     bush: {
       color: 0x50be81,
-      particlesPerPlant: 32, // moderate: 12
+      particlesPerPlant: 40, // moderate: 12
       emissionBottomFraction: 0.1,
       emissionTopFraction: 1,
-      emissionRadiusFraction: 0.72,
+      emissionRadiusFraction: 0.85,
       riseHeightMeters: 0.7,
     },
     // The one plant in the set with blossoms, and the only one that earns a
     // stronger signature than its size would suggest.
     floweringBush: {
       color: 0xa865c7,
-      particlesPerPlant: 42, // moderate: 16
+      particlesPerPlant: 52, // moderate: 16
       emissionBottomFraction: 0.1,
       emissionTopFraction: 1,
-      emissionRadiusFraction: 0.8,
+      emissionRadiusFraction: 0.95,
       riseHeightMeters: 0.9,
     },
     // Standing dead wood: bare branching, and almost nothing to smell. The
@@ -124,10 +130,10 @@ export const sharedScentParticles: SharedBlock<"scentParticles"> = {
     // rather than as a colour.
     deadWood: {
       color: 0xb2a17f,
-      particlesPerPlant: 14, // moderate: 6
+      particlesPerPlant: 18, // moderate: 6
       emissionBottomFraction: 0.2,
       emissionTopFraction: 0.9,
-      emissionRadiusFraction: 0.2,
+      emissionRadiusFraction: 0.28,
       riseHeightMeters: 0.5,
     },
   },
@@ -141,9 +147,10 @@ export const sharedScentParticles: SharedBlock<"scentParticles"> = {
       fox: { color: 0xfda39d },
       rat: { color: 0xd8919c },
     },
-    // Thirty prints a second put a print every few centimetres at walking
-    // pace, so the route reads as a line rather than as a dotted one.
-    printsPerSecond: 30,
+    // Twenty prints a second still put a print every few centimetres at
+    // walking pace, so the route reads as a line rather than as a dotted one,
+    // and the ring holds a third fewer particles than at thirty.
+    printsPerSecond: 20,
     // Long enough that a traveler arriving after the animal still finds
     // where it went, and well inside the 60-second animation loop.
     lifetimeSeconds: 25,
@@ -151,10 +158,12 @@ export const sharedScentParticles: SharedBlock<"scentParticles"> = {
     emissionTopFraction: 0.85,
     emissionRadiusFraction: 0.35,
     riseHeightMeters: 0.8,
-    // A route is carried much further than a plant's scent: nothing holds a
-    // print in place once the animal has walked on, and the old end of the
-    // trail has had the whole lifetime to travel.
-    windResponseMeters: 14,
+    // A route is carried a little further than a plant's scent, but not much:
+    // at fourteen metres the weather moved the whole route off the ground the
+    // animal actually walked, and the trail stopped being something to follow.
+    // A print is heavier than airborne scent — it clings to what it was left
+    // on — so the wind now only leans it.
+    windResponseMeters: 4,
   },
   appearance: {
     // A third smaller than the value that first made a single plant's scent
@@ -167,10 +176,12 @@ export const sharedScentParticles: SharedBlock<"scentParticles"> = {
     riseDurationSeconds: 10, // Must divide the 60-second loop evenly.
     // Each particle drifts on its own phase and amplitude, and the drift
     // opens out with age, so this is the width reached late in a life rather
-    // than one held throughout. Raised again now that the wind pushes less:
-    // what the weather no longer carries away has to disperse on its own, or
-    // a plume stands still instead of thinning out.
-    driftAmplitudeMeters: 1.8,
+    // than one held throughout. Nearly two metres read as visible swirling
+    // weather of its own rather than as scent hanging in the air, and it
+    // fought the plume the wind draws. What the width lost, the shader took
+    // back as rate: the drift now runs mostly on its faster turn, so this is
+    // the reach of a churn rather than of a slow circle.
+    driftAmplitudeMeters: 1.3,
     speedMultiplier: 1,
     // The wind has to beat the rise, or the scent only ever goes up. At the
     // first authored value a tree lifted its scent four times further than

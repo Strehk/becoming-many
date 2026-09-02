@@ -215,7 +215,7 @@ gesture in the window.
   the front of its range, leaving the tail hidden.
 - The Scent Level's 128-metre camera range plus one preload layer produces a
   7 x 7 resident window with 49 reusable slots in one `THREE.Points` object
-  and one draw call. At the current dense trial values that is 219,520
+  and one draw call. At the current dense trial values that is 263,424
   buffered points; `particlesPerPlant` per family is the one lever on it,
   and each family carries a moderate alternative beside it in the preset.
 - A slot write is gathered once and then spent in bounded steps of 256
@@ -230,24 +230,52 @@ gesture in the window.
   scent only ever going up. The
   wind clock runs separately from the 60-second animation clock, which would
   otherwise turn the wind back onto the same bearing every minute.
+- The shared wind loop was shortened from 240 to 120 seconds and the gust
+  given a second, faster harmonic on top of its slow one (normalized back into
+  [-1, 1], so `gustVariation`, now 0.6, stays the true bound and a lull never
+  blows backwards). At four minutes the turn and the gusts existed but ran
+  slower than anyone stands still, so the wind read as constant; the fast gust
+  term now runs at twenty-four seconds. Every wind-reactive module reads this
+  one source, so the change reaches scent, trails, and the grass clipmap at
+  once.
 - Every particle now drifts on its own phase and amplitude instead of one
   phase derived from its resting position, which had made a cloud slide as a
   rigid block, and that drift opens out with age so a cloud disperses instead
-  of churning in place. Trail prints each walk away along their own bearing, faster
-  than they age, so a route frays at its old end.
+  of churning in place. The drift amplitude was lowered from 1.8 to 1.3 metres
+  once the churn read as visible swirling weather of its own rather than as
+  scent hanging in the air, and most of that drift now runs on the faster of
+  the two turns (share 0.62, rate 3x the base, still a whole multiple of it so
+  the loop closes), which reads as turbulence rather than as one wide swirl.
+  The base drift rate itself came down from seven turns per wrap to five, for
+  the same reason at the other end: churning that quickly read as weather
+  blowing through the air rather than as scent hanging in it. Only whole turns
+  per wrap keep the loop seamless, so the rate moves in those steps. Trail prints each walk away along their own
+  bearing, faster than they age, so a route frays at its old end.
+- A plant emits from a ring around itself, drawn evenly by area with the
+  innermost fifth of the radius left clear, and fades in over the first eight
+  percent of a life rather than the first quarter. Emitting from one centre
+  and fading in slowly meant a particle was only ever seen once the wind had
+  already carried it, so a tree smelled of nothing on its upwind side. The
+  authored radii and counts were raised with it: wider than the crowns
+  suggest, and a fifth above the first dense set.
 - Measured on one machine under software rendering (`bun run benchmark
   --profile quick`), the isolated Scent Level moved from 5.90 ms median frame
   time with the four-cloud layer to 7.20 ms at the moderate values, 14.10 ms
-  at 40 particles for the largest family, and 14.80 ms at the 70 authored
-  now. The cost is not linear in the particle count: the first jump cost
-  eight milliseconds and nearly doubling the points again cost less than one.
+  at 40 particles for the largest family, and 14.80 ms at 70 for the largest
+  family. The largest family now carries 84, which is not separately measured.
+  The cost is not linear in the particle count: the first jump cost eight
+  milliseconds and nearly doubling the points again cost less than one.
   The dense values are a deliberate, recorded exception to the performance
   rule, kept for review rather than decided.
 - Recycled chunk slots rewrite only their position, color, phase, rise, and
   visibility buffer ranges through the shared frame-budgeted stream queue;
   revisiting a chunk recreates the same scent.
 - Live animals print their scent where they walk, at an authored rate per
-  second, into one fixed ring drawn in a second opaque call. A print stays
+  second — twenty, down from thirty, which is a third fewer points in the ring
+  for a route that still reads as a line. The wind reach of a trail was cut
+  from 14 to 4 metres, below the plant layer's 7: a print clings to the ground
+  it was left on, and carried further than airborne scent the route stopped
+  being something to follow. A print stays
   where it was left and ages against the same looping clock — lifting,
   widening, and thinning out — so the route the animal took becomes visible
   rather than a cloud that travels with it. One signature per species; the

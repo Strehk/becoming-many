@@ -23,10 +23,19 @@ attribute float scentVisible;
 attribute float scentRise;
 
 const float SCENT_TAU = 6.2831853;
-// 7 * TAU / 60 keeps the drift seamless at the 60-second time-uniform wrap.
-const float SCENT_DRIFT_RATE = 0.7330383;
+// 5 * TAU / 60 keeps the drift seamless at the 60-second time-uniform wrap;
+// only whole turns per wrap do. Down from seven: the churn was reading as
+// weather blowing through the air rather than as scent hanging in it.
+const float SCENT_DRIFT_RATE = 0.5235988;
 const float SCENT_DRIFT_PHASE_SCALE = 1.7;
-const float SCENT_FADE_PORTION = 0.25;
+/*
+ * A particle is carried and drifts by its age, so a long fade-in only ever
+ * shows the scent once it has already left the plant, and the plant's upwind
+ * side stayed empty. Fading in fast and out slow keeps the near air around
+ * the plant occupied while the far end of the plume still thins out.
+ */
+const float SCENT_FADE_IN_PORTION = 0.08;
+const float SCENT_FADE_OUT_PORTION = 0.3;
 const float SCENT_MINIMUM_VISIBLE_SCALE = 0.01;
 // Spread of the per-particle drift amplitude around the authored value.
 const float SCENT_AMPLITUDE_SPREAD = 0.55;
@@ -39,17 +48,24 @@ const float SCENT_AMPLITUDE_SPREAD = 0.55;
  */
 const float SCENT_PHASE_SCRAMBLE = 13.37;
 const float SCENT_PHASE_OFFSET = 0.37;
-// A second, faster turn per particle, so no two neighbours trace one circle.
-const float SCENT_DRIFT_DETAIL_RATE = 2.0;
-const float SCENT_DRIFT_DETAIL_SHARE = 0.45;
+/*
+ * A second, faster turn per particle, so no two neighbours trace one circle.
+ * The rate has to stay a whole multiple of the drift rate, or the drift no
+ * longer closes at the 60-second wrap. Carrying most of the drift on the fast
+ * turn is what reads as turbulence rather than as one wide swirl: the same
+ * travel, taken in smaller and quicker steps.
+ */
+const float SCENT_DRIFT_DETAIL_RATE = 3.0;
+const float SCENT_DRIFT_DETAIL_SHARE = 0.62;
 /*
  * The drift opens out with age rather than holding one amplitude for the
  * whole life. A particle leaves its plant tight and loosens as it travels,
  * which is the difference between a cloud that churns in place and one that
- * disperses. Above one, the spread stays small for most of the life and then
- * lets go near the end.
+ * disperses. Near one the opening is even across the life; higher, the drift
+ * stays small for most of it and only lets go near the end, which held the
+ * air around the plant too still.
  */
-const float SCENT_DRIFT_SPREAD_POWER = 1.3;
+const float SCENT_DRIFT_SPREAD_POWER = 1.05;
 
 float scentSizeScale = 0.0;
 
@@ -58,8 +74,8 @@ vec3 animateScentParticle(vec3 restingPosition) {
 
   // Particles of emitters without a source-zone anchor never rasterize.
   scentSizeScale = scentVisible * scentIntensity * scentSenseFade
-    * smoothstep(0.0, SCENT_FADE_PORTION, age)
-    * (1.0 - smoothstep(1.0 - SCENT_FADE_PORTION, 1.0, age));
+    * smoothstep(0.0, SCENT_FADE_IN_PORTION, age)
+    * (1.0 - smoothstep(1.0 - SCENT_FADE_OUT_PORTION, 1.0, age));
 
   // The drift phase is the particle's own, not its position's. Deriving it
   // from the resting place alone gave every particle of one plant nearly the
