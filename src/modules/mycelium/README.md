@@ -97,8 +97,11 @@ a cord vanish for the rest of the loop.
 
 Node anchors enter through the shared `ConnectionNodeSource` /
 `ConnectionActorSource` contracts in `src/modules/connection-nodes.ts`.
-Providers (vegetation, rocks, scent particles, animals) replay their own
-deterministic placement math; this module never imports a sibling. The soil
+Providers (vegetation, rocks, scent particles) replay their own
+deterministic placement math; this module never imports a sibling. The
+live-actor contract stays in place for a level that wants moving bodies in
+the web, but level 07 authors no animal source: a root system is what
+stands still and grows. The soil
 mat in `soil-nodes.ts` is the module's own content and satisfies the same
 contract, so it joins the gather through the one path every anchor takes.
 

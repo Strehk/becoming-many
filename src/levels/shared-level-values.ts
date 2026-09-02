@@ -157,18 +157,20 @@ export const sharedScentParticles: SharedBlock<"scentParticles"> = {
     windResponseMeters: 14,
   },
   appearance: {
-    // Twice the size the per-plant layer started at. The smaller point kept
-    // a wood from closing into a wall of color, but it also left a single
-    // plant's scent reading as dust rather than as something in the air.
-    sizeMeters: 0.24,
+    // A third smaller than the value that first made a single plant's scent
+    // read as something in the air rather than as dust. At that size a wood
+    // closed toward a wall of colour once the drift below opened out; the
+    // finer point keeps the individual particles readable inside the plume.
+    sizeMeters: 0.16,
   },
   motion: {
     riseDurationSeconds: 10, // Must divide the 60-second loop evenly.
-    // Each particle drifts on its own phase and amplitude, and the drift now
+    // Each particle drifts on its own phase and amplitude, and the drift
     // opens out with age, so this is the width reached late in a life rather
-    // than one held throughout. Raised with that: a spread that starts at
-    // nothing needs a wider end to read as dispersal at all.
-    driftAmplitudeMeters: 1.2,
+    // than one held throughout. Raised again now that the wind pushes less:
+    // what the weather no longer carries away has to disperse on its own, or
+    // a plume stands still instead of thinning out.
+    driftAmplitudeMeters: 1.8,
     speedMultiplier: 1,
     // The wind has to beat the rise, or the scent only ever goes up. At the
     // first authored value a tree lifted its scent four times further than

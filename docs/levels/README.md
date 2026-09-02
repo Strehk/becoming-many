@@ -144,14 +144,14 @@ The Connections preset additionally activates:
 
 - everything the Magnetic preset activates, carried over unchanged, because
   senses layer instead of swapping
-- the streamed mycelium web alpha-blended over the unchanged carried
-  world inside an 88-metre viewer radius: every edge a bundle of three
-  fine meandering filaments with periodic knot junctions hallucinated in
-  the fragment shader, plus node glows, connecting the deterministic
-  positions of trees and bushes, forest clearings, rocks, and the visible
-  animals, colored per source class from the level-07 palette with cream
-  pulses traveling the cords; exactly two added transparent draw calls
-  from fixed pools
+- the streamed root mat buried inside a 30-metre viewer radius, read
+  through a ground that opens where no grass covers it: every edge a
+  bundle of three fine meandering filaments with periodic knot junctions
+  hallucinated in the fragment shader, plus node glows, connecting the
+  deterministic positions of trees and bushes, forest clearings, and
+  rocks to the module's own seeded soil points, colored per source class
+  from the level-07 palette with amber pulses traveling the cords;
+  exactly two added transparent draw calls from fixed pools
 - the repository's first Web Worker, module-owned, computing the kNN plus
   minimum-spanning-tree topology off the frame path over the module's 7×7
   window of 32-metre chunks
@@ -570,12 +570,13 @@ Implemented in `src/modules/mycelium/`:
   walks inside, not a web seen across the valley.
 - **The module seeds its own soil mat.** The world's anchors are far too
   sparse for that density, so deterministic per-chunk soil points carry
-  it, hashed per chunk exactly as grass hashes its cells. The four
+  it, hashed per chunk exactly as grass hashes its cells. The standing
   world-element classes still participate — trees and bushes, the
-  level-02 scent emitters, rocks, and the visible animals — and now hang
-  just under their own objects, so a tree meets its roots. Soil is the
-  lightest-weighted class of the five, so hubs stay on the world's real
-  elements.
+  level-02 scent emitters, and rocks — and now hang just under their own
+  objects, so a tree meets its roots. Animals are deliberately absent: a
+  root system is what stands still and grows, and a body walking over it
+  is not part of it. Soil is the lightest-weighted class of the four, so
+  hubs stay on the world's real elements.
 - **Bone, sinking to plum.** Real mycelium is white, and against
   thermal's cold half (`#0E0628` through `#1C6C8B`), echo's grey, and
   green grass it is the strongest contrast the palette has. Cord

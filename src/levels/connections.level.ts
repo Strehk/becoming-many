@@ -13,6 +13,9 @@ export const level: LevelPreset = {
   // every earlier sense stays at full strength while the underground web
   // reveals the relationships between the elements they already show.
   ...magneticLevel,
+  // Animals are deliberately absent from the sources: a root system is what
+  // stands still and grows, and a body walking over it is not part of it. The
+  // module's live actor links stay unauthored here.
   // New in level 07: no further biological sense. The moodboard palette
   // #F2E3D3 #683B5A #292E55 #A5BDC3 #D06780 #E39E54 colors the web. A
   // pulsing root system lies in the opened soil under the unchanged carried
@@ -35,7 +38,6 @@ export const level: LevelPreset = {
     sources: {
       vegetation: { nodeColor: 0xa5bdc3, weight: 1 },
       scentEmitters: { nodeColor: 0xd06780, weight: 1 },
-      animals: { nodeColor: 0xe39e54, weight: 0.5 },
       rocks: { nodeColor: 0x292e55, weight: 0.25 },
       // The mat itself: dense, and deliberately the lightest pull of all, so
       // hubs stay on the world's real elements and the soil stays connective

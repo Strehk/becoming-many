@@ -15,9 +15,10 @@ connected system (see `script/en.md`, "Finale": "you begin to see
 connections that were invisible before... For a moment — you become many").
 A pulsing root system lies in the opened soil beneath the carried world,
 connecting the same deterministic world positions the earlier senses
-established — trees and bushes, the level-02 scent sources, rocks, and the
-living animals — through a mat of seeded soil points dense enough to read
-as a real root system.
+established — trees and bushes, the level-02 scent sources, and rocks —
+through a mat of seeded soil points dense enough to read as a real root
+system. The living animals do not join it: a root system is what stands
+still and grows, and a body walking over it is not part of it.
 
 ## Entry, Exit, and Timeline Cues
 
@@ -82,7 +83,7 @@ widening. Amber (`#E39E54`) light pulses travel along them at
 signals. The speed dropped with the reach so that one crossing still takes
 the twenty seconds that make it read as a crawl.
 Node glows mark the sources: gray-blue (`#A5BDC3`) for vegetation, rose
-(`#D06780`) for scent emitters, amber (`#E39E54`) for animals, navy
+(`#D06780`) for scent emitters, navy
 (`#292E55`) for rocks, and bone (`#F2E3D3`) for the seeded soil mat.
 Real mycelium is white, and against thermal's cold half (`#0E0628`
 through `#1C6C8B`), echo's grey, and the green grass above it, bone is
@@ -101,9 +102,9 @@ exists yet.
   vegetation, rocks, animals, air, scent, echo depth, motion, thermal,
   magnetic), plus `connections: ConnectionsParameters` (intensity 1,
   30-metre web radius, 1.5 m/s pulse speed, per-source records with the
-  palette node colors and weights 1 / 1 / 0.5 / 0.25 / 0.2 for vegetation
-  / scent emitters / animals / rocks / soil, depth plum `#683B5A`, pulse
-  amber `#E39E54`).
+  palette node colors and weights 1 / 1 / 0.25 / 0.2 for vegetation
+  / rocks / soil (animals omitted), depth plum `#683B5A`, pulse amber
+  `#E39E54`).
 - Active modules: everything the Magnetic level activates, plus the
   Connections web world module (`src/modules/mycelium/`): the streamed
   cord and node pools, the seeded soil mat, and the module-owned topology
@@ -117,9 +118,9 @@ exists yet.
   `ConnectionNodeSource` / `ConnectionActorSource` contracts in
   `src/modules/connection-nodes.ts`: vegetation and rocks replay their
   deterministic placements (`vegetation-nodes.ts`, `rock-nodes.ts`),
-  scent exposes its emitter anchors (`scent-emitter-anchors.ts`), and
-  animals expose live visible-actor positions through
-  `AnimalsModuleHandle`.
+  scent exposes its emitter anchors (`scent-emitter-anchors.ts`). The
+  live actor contract stays in place but this level authors no animal
+  source, so no cord ever reaches a moving body.
 
 ## Asset and Shader Requirements
 

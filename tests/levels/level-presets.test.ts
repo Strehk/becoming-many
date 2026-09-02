@@ -204,7 +204,7 @@ test("Scent Level layers scent onto the White World air baseline", () => {
     expect(signature.riseHeightMeters).toBeGreaterThan(0);
   }
 
-  expect(scent.appearance.sizeMeters).toBe(0.24);
+  expect(scent.appearance.sizeMeters).toBe(0.16);
   expect(scent.motion.riseDurationSeconds).toBe(10);
   expect(scent.motion.speedMultiplier).toBe(1);
   // The wind has to beat the rise, or the scent only ever goes up and reads
@@ -426,10 +426,13 @@ test("Connections Level layers the web onto the carried Magnetic world", () => {
   expect(
     connections.webRadiusMeters / connections.pulseSpeedMetersPerSecond,
   ).toBeGreaterThan(10);
-  // All four world-element classes participate beside the seeded soil mat,
-  // each with a palette color.
+  // Three standing world-element classes participate beside the seeded soil
+  // mat, each with a palette color. Animals are deliberately absent: a root
+  // system is what stands still and grows, and a body walking over it is not
+  // part of it.
   const sources = Object.values(connections.sources);
-  expect(sources).toHaveLength(5);
+  expect(sources).toHaveLength(4);
+  expect(connections.sources.animals).toBeUndefined();
   for (const source of sources) {
     expect(connectionsPalette).toContain(source.nodeColor);
     expect(source.weight).toBeGreaterThan(0);
