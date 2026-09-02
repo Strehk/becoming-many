@@ -1,7 +1,8 @@
 /**
- * Purpose: Write show time the way an operator reads it under pressure.
- * Context: Every readout on the conductor page shows the same kind of number.
- * Responsibility: Turn seconds into minute-and-second text, and into cue lengths.
+ * Purpose: Write show readouts the way an operator reads them under pressure.
+ * Context: Every readout on the conductor page shows the same kind of text.
+ * Responsibility: Turn seconds into minute-and-second text, and cue ids into
+ *   chapter names.
  * Boundary: Where a number comes from is decided by the caller.
  */
 
@@ -19,14 +20,7 @@ export function formatShowTime(seconds: number): string {
   return `${minutes}:${remainder.toString().padStart(2, "0")}`;
 }
 
-/** A cue length, where a tenth of a second is the difference that matters. */
-export function formatDurationSeconds(seconds: number): string {
-  return `${seconds.toFixed(1)} s`;
-}
-
-/** Headroom reads as a signed number: the sign is the whole point. */
-export function formatHeadroomSeconds(seconds: number): string {
-  const sign = seconds < 0 ? "−" : "+";
-
-  return `${sign}${Math.abs(seconds).toFixed(1)} s`;
+/** A cue id reads as a chapter name: "prologue" is the chapter "Prologue". */
+export function cueDisplayName(cueId: string): string {
+  return cueId.charAt(0).toUpperCase() + cueId.slice(1);
 }

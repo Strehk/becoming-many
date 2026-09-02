@@ -1,14 +1,23 @@
 /*
- * Purpose: Style the conductor page for a lit room and a glance from a metre away.
- * Context: The page runs on the station's second monitor while the show plays.
- * Responsibility: Define the page grid, transport, timeline, and warning states.
- * Boundary: The immersive world and the development overlay are styled elsewhere.
+ * Purpose: Style the conductor page for a lit room, a glance from a metre
+ *   away, and a finger instead of a pointer.
+ * Context: The page runs on the station's touch monitor while the show plays.
+ * Responsibility: Define the masthead, transport, timeline, session bar,
+ *   technician drawer, and the wake overlay, with every target thumb-sized.
+ * Boundary: The immersive world and the development overlay are styled
+ *   elsewhere.
  */
+
+/* The page owns the station's one window: no default margin, no scrollbar. */
+body {
+  margin: 0;
+}
 
 .conductor {
   --ground: #0d1311;
   --panel: #151d1a;
   --edge: rgb(255 255 255 / 8%);
+  --edge-strong: rgb(255 255 255 / 16%);
   --ink: #f4f7f5;
   --muted: #8b968f;
   --live: #6ee7a8;
@@ -17,144 +26,37 @@
 
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  min-height: 100vh;
-  padding: 16px;
+  gap: 20px;
+  box-sizing: border-box;
+  /* Exactly the window, never taller: the session bar's `margin-top: auto`
+   * then rests it on the bottom edge whenever the content fits. */
+  height: 100dvh;
+  overflow: hidden;
+  padding: 28px;
   background: var(--ground);
   color: var(--ink);
   font-family:
     ui-monospace, "SFMono-Regular", Menlo, Monaco, Consolas, monospace;
   font-variant-numeric: tabular-nums;
+  touch-action: manipulation;
 }
 
-/* Station name ----------------------------------------------------------- */
-
-/* Which of the identical stations this window commands; deployment-set. */
-.conductor__station-name {
-  color: var(--muted);
-  font-size: 13px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-/* Status strip ---------------------------------------------------------- */
-
-.conductor__status {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px 24px;
-  align-items: baseline;
-  padding: 12px 16px;
-  background: var(--panel);
-  border: 1px solid var(--edge);
-  border-radius: 12px;
-  font-size: 13px;
-}
-
-.conductor__reading {
-  color: var(--muted);
-}
-
-.conductor__reading[data-state="live"] {
-  color: var(--live);
-}
-
-.conductor__reading[data-state="warn"] {
-  color: var(--warn);
-}
-
-.conductor__reading[data-state="alarm"] {
-  color: var(--alarm);
-}
-
-.conductor__banner {
-  padding: 14px 16px;
-  color: var(--ground);
-  font-size: 15px;
-  font-weight: 700;
-  background: var(--warn);
-  border-radius: 12px;
-}
-
-/* Transport ------------------------------------------------------------- */
-
-.conductor__transport {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 24px;
-  align-items: center;
-  padding: 20px 24px;
-  background: var(--panel);
-  border: 1px solid var(--edge);
-  border-radius: 12px;
-}
-
-.conductor__clock {
-  font-size: 56px;
-  font-weight: 700;
-  line-height: 1;
-}
-
-.conductor__clock-total {
-  color: var(--muted);
-  font-size: 24px;
-}
-
-.conductor__cues {
-  display: grid;
-  gap: 4px;
-  font-size: 14px;
-}
-
-.conductor__cue-label {
-  color: var(--muted);
-}
-
-.conductor__cue-name {
-  font-size: 18px;
-  font-weight: 700;
-}
-
-.conductor__actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  align-items: center;
-  margin-left: auto;
-}
-
-.conductor__group {
-  display: flex;
-  gap: 4px;
-  align-items: center;
-  padding: 4px;
-  background: var(--ground);
-  border-radius: 10px;
-}
-
-.conductor__group-label {
-  padding: 0 8px;
-  color: var(--muted);
-  font-size: 12px;
-}
+/* Buttons ---------------------------------------------------------------- */
 
 .conductor button {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
   padding: 10px 16px;
   color: var(--ink);
   font: inherit;
-  font-size: 14px;
+  font-size: 15px;
   background: var(--ground);
-  border: 1px solid var(--edge);
-  border-radius: 8px;
+  border: 1px solid var(--edge-strong);
+  border-radius: 10px;
   cursor: pointer;
-}
-
-.conductor__group button {
-  border-color: transparent;
-}
-
-.conductor button:hover:not(:disabled) {
-  border-color: rgb(255 255 255 / 24%);
+  -webkit-tap-highlight-color: transparent;
 }
 
 .conductor button:disabled {
@@ -167,51 +69,242 @@
   color: var(--ground);
   font-weight: 700;
   background: var(--live);
+  border-color: var(--live);
 }
 
+/* An armed destructive button says what the second tap does, in alarm. */
 .conductor button[data-armed="true"] {
   color: var(--ground);
   font-weight: 700;
   background: var(--alarm);
+  border-color: var(--alarm);
 }
 
-.conductor__transport-button {
-  min-width: 128px;
-  font-size: 16px;
+/* Masthead --------------------------------------------------------------- */
+
+.conductor__masthead {
+  display: flex;
+  gap: 24px;
+  align-items: center;
+}
+
+.conductor__identity {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.conductor__identity-piece {
+  color: var(--muted);
+  font-size: 30px;
   font-weight: 700;
 }
 
-/* Timeline -------------------------------------------------------------- */
+.conductor__identity-station {
+  font-size: 30px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
 
-.conductor__timeline {
-  display: grid;
+.conductor__tiles {
+  display: flex;
+  flex-wrap: wrap;
   gap: 12px;
-  padding: 20px 24px;
+  margin-left: auto;
+}
+
+.conductor__tile {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  box-sizing: border-box;
+  min-width: 150px;
+  padding: 12px 16px;
   background: var(--panel);
   border: 1px solid var(--edge);
   border-radius: 12px;
 }
 
-.timeline__ruler {
-  position: relative;
-  height: 16px;
-  color: var(--muted);
-  font-size: 11px;
+.conductor__tile-dot {
+  width: 12px;
+  height: 12px;
+  background: var(--muted);
+  border-radius: 50%;
 }
 
-.timeline__tick {
-  position: absolute;
-  top: 0;
-  padding-left: 4px;
-  border-left: 1px solid var(--edge);
+.conductor__tile-body {
+  display: grid;
+  gap: 2px;
+}
+
+.conductor__tile-label {
+  color: var(--muted);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.conductor__tile-value {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.conductor__tile[data-state="live"] .conductor__tile-dot {
+  background: var(--live);
+}
+
+.conductor__tile[data-state="warn"] .conductor__tile-dot {
+  background: var(--warn);
+}
+
+.conductor__tile[data-state="warn"] .conductor__tile-value {
+  color: var(--warn);
+}
+
+.conductor__tile[data-state="alarm"] .conductor__tile-dot {
+  background: var(--alarm);
+}
+
+.conductor__tile[data-state="alarm"] .conductor__tile-value {
+  color: var(--alarm);
+}
+
+.conductor__tile[data-state="idle"] .conductor__tile-value {
+  color: var(--muted);
+}
+
+.conductor__banner {
+  margin: 0;
+  padding: 16px 20px;
+  color: var(--ground);
+  font-size: 17px;
+  font-weight: 700;
+  background: var(--warn);
+  border-radius: 12px;
+}
+
+/* Transport -------------------------------------------------------------- */
+
+.conductor__transport {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 32px;
+  align-items: center;
+  padding: 28px 32px;
+  background: var(--panel);
+  border: 1px solid var(--edge);
+  border-radius: 12px;
+}
+
+.conductor__clock-block {
+  display: grid;
+  gap: 10px;
+}
+
+.conductor__clock {
+  font-size: 92px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.conductor__clock-total {
+  color: var(--muted);
+  font-size: 30px;
+}
+
+.conductor__status-line {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.conductor__status-pill {
+  padding: 6px 14px;
+  color: var(--ground);
+  font-size: 15px;
+  font-weight: 700;
+  background: var(--warn);
+  border-radius: 999px;
+}
+
+.conductor__status-pill[data-state="running"] {
+  background: var(--live);
+}
+
+.conductor__remaining {
+  color: var(--muted);
+  font-size: 15px;
+}
+
+.conductor__cues {
+  display: grid;
+  gap: 8px;
+  font-size: 17px;
+}
+
+.conductor__cue-label {
+  color: var(--muted);
+}
+
+.conductor__cue-name {
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.conductor__transport-controls {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  margin-left: auto;
+}
+
+.conductor__nudge-button {
+  flex-direction: column;
+  gap: 4px;
+  width: 96px;
+  height: 96px;
+  font-weight: 700;
+  border-radius: 16px;
+}
+
+.conductor__transport-button {
+  gap: 16px;
+  width: 280px;
+  height: 132px;
+  color: var(--ground);
+  font-size: 28px;
+  font-weight: 700;
+  background: var(--live);
+  border: 0;
+  border-radius: 20px;
+}
+
+.conductor__transport-button[data-playing="true"] {
+  background: var(--warn);
+}
+
+.conductor__transport-icon {
+  display: flex;
+}
+
+/* Timeline --------------------------------------------------------------- */
+
+.conductor__timeline {
+  display: grid;
+  gap: 14px;
+  padding: 24px 28px;
+  background: var(--panel);
+  border: 1px solid var(--edge);
+  border-radius: 12px;
 }
 
 .timeline__track {
   position: relative;
-  height: 72px;
+  height: 84px;
   overflow: hidden;
+  background: var(--ground);
   border: 1px solid var(--edge);
-  border-radius: 8px;
+  border-radius: 10px;
   cursor: pointer;
   touch-action: none;
 }
@@ -223,99 +316,241 @@
   bottom: 0;
   /* Percentage widths are show time; a border must not add to them. */
   box-sizing: border-box;
-  padding: 6px 0 0 6px;
+  padding: 8px 0 0 10px;
   overflow: hidden;
-  font-size: 11px;
+  color: var(--muted);
+  font-size: 13px;
   background: rgb(255 255 255 / 4%);
   border-right: 1px solid var(--edge);
+  pointer-events: none;
 }
 
 .timeline__slot:last-child {
   border-right: 0;
 }
 
-.timeline__slot[aria-selected="true"] {
-  background: rgb(255 255 255 / 12%);
+.timeline__slot[data-current="true"] {
+  color: var(--live);
+  background: rgb(110 231 168 / 16%);
 }
 
 .timeline__slot-name {
   position: relative;
   z-index: 1;
-  pointer-events: none;
 }
 
-/* The recording inside its slot: the gap to the right is the silence. */
-.timeline__recording {
+/* How much of the chapter has played; the playhead confirms it. */
+.timeline__progress {
   position: absolute;
   bottom: 0;
   left: 0;
-  height: 26px;
+  height: 24px;
   background: var(--live);
-  opacity: 0.55;
-}
-
-.timeline__recording[data-overrun="true"] {
-  background: var(--alarm);
-  opacity: 0.85;
+  opacity: 0.5;
 }
 
 .timeline__playhead {
   position: absolute;
   top: 0;
   bottom: 0;
-  width: 2px;
+  width: 3px;
   background: var(--ink);
   box-shadow: 0 0 8px rgb(0 0 0 / 60%);
   pointer-events: none;
 }
 
-.conductor__jumps {
+.conductor__chapters {
   display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
+  gap: 10px;
 }
 
-.conductor__jumps button {
-  padding: 6px 10px;
-  font-size: 12px;
-}
-
-/* Inspector ------------------------------------------------------------- */
-
-.conductor__inspector {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px 24px;
-  padding: 12px 16px;
-  color: var(--muted);
-  font-size: 13px;
-  background: var(--panel);
-  border: 1px solid var(--edge);
+.conductor__chapter-button {
+  flex: 1;
+  flex-direction: column;
+  gap: 3px;
+  height: 76px;
+  font-size: 17px;
+  font-weight: 700;
   border-radius: 12px;
 }
 
-.conductor__inspector strong {
-  color: var(--ink);
+.conductor__chapter-time {
+  font-size: 12px;
+  font-weight: 400;
+  opacity: 0.7;
+}
+
+/* Session bar ------------------------------------------------------------ */
+
+.conductor__session-bar {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+  margin-top: auto;
+}
+
+.conductor__language {
+  display: flex;
+  flex: 1;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+  box-sizing: border-box;
+  padding: 8px;
+  background: var(--panel);
+  border: 1px solid var(--edge);
+  border-radius: 14px;
+}
+
+.conductor__language-label {
+  padding: 0 12px;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.conductor__language button {
+  flex: 1;
+  height: 60px;
+  color: var(--muted);
+  font-size: 20px;
+  font-weight: 700;
+  background: transparent;
+  border: 0;
+}
+
+.conductor__language button[aria-pressed="true"] {
+  color: var(--ground);
+  background: var(--live);
+}
+
+.conductor__restart-button,
+.conductor__stream-button {
+  flex: 1;
+  height: 76px;
+  font-size: 18px;
+  font-weight: 700;
+  border-radius: 14px;
+}
+
+.conductor__stream-button[data-streaming="true"] {
+  color: var(--ground);
+  background: var(--live);
+  border-color: var(--live);
+}
+
+.conductor__tech-button {
+  width: 100px;
+  height: 76px;
+  color: var(--muted);
+  background: transparent;
+  border-color: var(--edge);
+  border-radius: 14px;
+}
+
+.conductor__button-icon {
+  display: flex;
+}
+
+/* Technician drawer ------------------------------------------------------ */
+
+.conductor__drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  box-sizing: border-box;
+  width: 440px;
+  padding: 28px;
+  overflow-y: auto;
+  background: var(--panel);
+  border-left: 1px solid var(--edge-strong);
+  box-shadow: -24px 0 48px rgb(0 0 0 / 50%);
+  transition: transform 0.2s ease;
+}
+
+/* Slid away rather than unmounted, so the stage canvas keeps its size. */
+.conductor__drawer[data-open="false"] {
+  transform: translateX(calc(100% + 48px));
+}
+
+.conductor__drawer-header {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  font-size: 20px;
   font-weight: 700;
 }
 
-/* Stage ------------------------------------------------------------------ */
-
-.conductor__stage {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 16px;
-  align-items: center;
-  padding: 12px 16px;
-  background: var(--panel);
-  border: 1px solid var(--edge);
+.conductor__drawer-close {
+  width: 56px;
+  height: 56px;
+  margin-left: auto;
+  padding: 0;
   border-radius: 12px;
 }
+
+.conductor__drawer-caution {
+  margin: 12px 0 0;
+  color: var(--warn);
+  font-size: 14px;
+}
+
+.conductor__drawer-group {
+  display: grid;
+  gap: 8px;
+}
+
+.conductor__drawer-heading {
+  color: var(--muted);
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.conductor__speeds {
+  display: flex;
+  gap: 8px;
+}
+
+.conductor__speeds button {
+  flex: 1;
+  height: 56px;
+  font-weight: 700;
+}
+
+.conductor__resets {
+  display: grid;
+  gap: 8px;
+}
+
+.conductor__resets button {
+  height: 56px;
+}
+
+.conductor__reload-button {
+  color: var(--alarm);
+  font-weight: 700;
+  border-color: var(--alarm);
+}
+
+.conductor__readouts {
+  display: grid;
+  gap: 4px;
+  margin-top: auto;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+/* Stage view (in the drawer) --------------------------------------------- */
 
 /* The world's home: small enough to glance at, never the way to watch it. */
 .conductor__stage-view {
   position: relative;
-  width: 320px;
+  width: 100%;
   aspect-ratio: 16 / 9;
   overflow: hidden;
   background: var(--ground);
@@ -348,48 +583,35 @@
   display: none;
 }
 
-.conductor__stage-controls {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.conductor__stream-button {
-  min-width: 160px;
-}
-
-/* M5 controller ---------------------------------------------------------- */
+/* M5 controller (in the drawer) ------------------------------------------ */
 
 .conductor__m5 {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
   align-items: center;
-  padding: 12px 16px;
-  background: var(--panel);
-  border: 1px solid var(--edge);
-  border-radius: 12px;
 }
 
 .conductor__m5-label {
   display: flex;
-  flex: 1;
+  flex-basis: 100%;
   gap: 8px;
   align-items: center;
-  min-width: 220px;
   color: var(--muted);
   font-size: 13px;
 }
 
 .conductor__m5 input {
   flex: 1;
-  padding: 8px 10px;
+  box-sizing: border-box;
+  height: 52px;
+  padding: 0 14px;
   color: var(--ink);
   font: inherit;
-  font-size: 13px;
+  font-size: 15px;
   background: var(--ground);
-  border: 1px solid var(--edge);
-  border-radius: 8px;
+  border: 1px solid var(--edge-strong);
+  border-radius: 10px;
 }
 
 /* A deployment-locked host reads as a fact, not a field. */
@@ -398,8 +620,14 @@
   border-style: dashed;
 }
 
+.conductor__m5 button {
+  flex: 1;
+  height: 48px;
+}
+
 .conductor__m5-preview {
   display: flex;
+  flex-basis: 100%;
   gap: 12px;
   align-items: center;
 }
@@ -442,4 +670,86 @@
   color: var(--muted);
   font-size: 12px;
   font-variant-numeric: tabular-nums;
+}
+
+/* Wake overlay ----------------------------------------------------------- */
+
+/* Show time derives from the audio clock; until a gesture reaches the page,
+ * the piece is frozen while looking exactly like a pause. This overlay is
+ * that fact, said as the only thing on screen. It never handles the tap
+ * itself — the show's own gesture listener does. */
+.conductor__wake {
+  position: fixed;
+  inset: 0;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  gap: 36px;
+  align-items: center;
+  justify-content: center;
+  background: var(--ground);
+  text-align: center;
+}
+
+.conductor__wake-station {
+  color: var(--muted);
+  font-size: 80px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.conductor__wake-title {
+  margin-top: -26px;
+  font-size: 80px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.conductor__wake-icon {
+  display: grid;
+  place-items: center;
+  width: 160px;
+  height: 160px;
+  color: var(--live);
+  background: var(--panel);
+  border: 1px solid var(--edge-strong);
+  border-radius: 50%;
+  animation: conductor-wake-pulse 2.4s ease-in-out infinite;
+}
+
+.conductor__wake-headline {
+  font-size: 52px;
+  font-weight: 700;
+}
+
+.conductor__wake-hint {
+  color: var(--muted);
+  font-size: 22px;
+}
+
+.conductor__wake-pill {
+  padding: 14px 28px;
+  color: var(--ground);
+  font-size: 20px;
+  font-weight: 700;
+  background: var(--live);
+  border-radius: 999px;
+}
+
+/* `display: flex` above outranks the UA's [hidden] rule; restore it. */
+.conductor__wake[hidden] {
+  display: none;
+}
+
+@keyframes conductor-wake-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+
+  50% {
+    transform: scale(1.06);
+    opacity: 0.85;
+  }
 }

@@ -1,11 +1,13 @@
 /**
- * Purpose: Give the operator the show's position and the controls to move it.
+ * Purpose: Give the operator the show's position and the one control that
+ *   starts and holds it, sized for a finger and a glance.
  * Context: A conductor holds, jumps, and re-arms the piece while it is running.
- * Responsibility: Render the clock and cue readouts, and apply transport actions.
+ * Responsibility: Render the clock, the status pill, the cue readouts, and the
+ *   hold/play and ten-second-nudge buttons.
  * Boundary: The show clock stays the authority; nothing here tracks show time.
+ *   Rehearsal speeds and resets live in the technician drawer.
  */
 
-import { NARRATION_LANGUAGES } from "../dramaturgy/narration-catalog";
 import {
   type NarrationSchedule,
   narrationCueAt,
@@ -13,9 +15,8 @@ import {
 import { nextCueAt } from "../dramaturgy/schedule-layout";
 import { CONDUCTOR_SETTINGS } from "./conductor-settings";
 import type { ConductorPanel } from "./conductor-state";
-import { createButton, createConfirmButton } from "./panel-buttons";
 import type { ShowActions } from "./show-actions";
-import { formatShowTime } from "./time-format";
+import { cueDisplayName, formatShowTime } from "./time-format";
 
 export interface TransportPanelOptions {
   readonly parent: HTMLElement;
@@ -32,6 +33,9 @@ export function createTransportPanel({
   root.className = "conductor__transport";
   root.setAttribute("aria-label", "Transport");
 
+  const clockBlock = document.createElement("div");
+  clockBlock.className = "conductor__clock-block";
+
   const clock = document.createElement("div");
   clock.className = "conductor__clock";
   const elapsed = document.createElement("output");
@@ -40,39 +44,42 @@ export function createTransportPanel({
   total.textContent = ` / ${formatShowTime(schedule.durationSeconds)}`;
   clock.append(elapsed, total);
 
+  const statusLine = document.createElement("div");
+  statusLine.className = "conductor__status-line";
+  const statusPill = document.createElement("span");
+  statusPill.className = "conductor__status-pill";
+  const remaining = document.createElement("span");
+  remaining.className = "conductor__remaining";
+  statusLine.append(statusPill, remaining);
+
+  clockBlock.append(clock, statusLine);
+
   const cues = document.createElement("div");
   cues.className = "conductor__cues";
   const nowLine = createCueLine(cues, "now");
   const nextLine = createCueLine(cues, "next");
-  const remaining = document.createElement("div");
-  remaining.className = "conductor__cue-label";
-  cues.append(remaining);
 
   const controls = document.createElement("div");
-  controls.className = "conductor__actions";
+  controls.className = "conductor__transport-controls";
+
+  createNudgeButton(controls, "back", () =>
+    actions.seekBy(-CONDUCTOR_SETTINGS.touchNudgeSeconds),
+  );
 
   const transportButton = document.createElement("button");
   transportButton.type = "button";
   transportButton.className = "conductor__transport-button";
-
-  const rates = createGroup(controls, "rate");
-  const rateButtons = CONDUCTOR_SETTINGS.timeScales.map((timeScale) =>
-    createButton(rates, `${timeScale}×`, () => actions.setTimeScale(timeScale)),
-  );
-
-  const languages = createGroup(controls, "language");
-  const languageButtons = NARRATION_LANGUAGES.map((language) =>
-    createButton(languages, language.toUpperCase(), () =>
-      actions.setLanguage(language),
-    ),
-  );
-
+  const transportIcon = document.createElement("span");
+  transportIcon.className = "conductor__transport-icon";
+  const transportLabel = document.createElement("span");
+  transportButton.append(transportIcon, transportLabel);
   controls.append(transportButton);
-  createButton(controls, "↺ clock", () => actions.resetShow());
-  createButton(controls, "↺ flight", () => actions.resetFlight());
-  createConfirmButton(controls, "⟳ reload", () => actions.reloadShow());
 
-  root.append(clock, cues, controls);
+  createNudgeButton(controls, "forward", () =>
+    actions.seekBy(CONDUCTOR_SETTINGS.touchNudgeSeconds),
+  );
+
+  root.append(clockBlock, cues, controls);
   parent.append(root);
 
   // Mirrors the last drawn state so one button both starts and holds.
@@ -82,54 +89,65 @@ export function createTransportPanel({
     else actions.play();
   });
 
+  // The icon is parsed markup, so it only redraws when the answer changes.
+  let renderedPlaying: boolean | undefined;
+
   return {
     update(state): void {
       isShowPlaying = state.snapshot.isPlaying;
-      transportButton.textContent = isShowPlaying ? "⏸ hold" : "▶ play";
+
+      if (renderedPlaying !== isShowPlaying) {
+        renderedPlaying = isShowPlaying;
+        transportButton.dataset.playing = String(isShowPlaying);
+        transportIcon.innerHTML = isShowPlaying
+          ? PAUSE_ICON_SVG
+          : PLAY_ICON_SVG;
+        transportLabel.textContent = isShowPlaying ? "Hold" : "Play";
+        statusPill.dataset.state = isShowPlaying ? "running" : "held";
+      }
+
+      statusPill.textContent = statusText(
+        isShowPlaying,
+        state.showTimeSeconds >= schedule.durationSeconds,
+      );
 
       writeClock(state.showTimeSeconds);
       writeCues(state.showTimeSeconds);
-      markPressed(
-        rateButtons,
-        CONDUCTOR_SETTINGS.timeScales,
-        state.snapshot.timeScale,
-      );
-      markPressed(
-        languageButtons,
-        NARRATION_LANGUAGES,
-        state.snapshot.language,
-      );
     },
   };
 
   function writeClock(showTimeSeconds: number): void {
     elapsed.textContent = formatShowTime(showTimeSeconds);
-    remaining.textContent = `remaining ${formatShowTime(
+    remaining.textContent = `${formatShowTime(
       schedule.durationSeconds - showTimeSeconds,
-    )}`;
+    )} left`;
   }
 
   function writeCues(showTimeSeconds: number): void {
-    const now = narrationCueAt(schedule, showTimeSeconds);
-    nowLine.write(now?.cueId ?? "—", "");
+    // Before the first word the first chapter is already underway: the
+    // pre-roll belongs to it as far as an operator is concerned.
+    const now =
+      narrationCueAt(schedule, showTimeSeconds) ?? schedule.narration[0];
+    nowLine.write(now ? cueDisplayName(now.cueId) : "—", "");
 
     const next = nextCueAt(schedule, showTimeSeconds);
+    if (!next) {
+      nextLine.write("—", "");
+      return;
+    }
+
     nextLine.write(
-      next?.cueId ?? "—",
-      next ? `in ${formatShowTime(next.atSeconds - showTimeSeconds)}` : "",
+      cueDisplayName(next.cueId),
+      `in ${formatShowTime(next.atSeconds - showTimeSeconds)}`,
     );
   }
 }
 
-/** Marks whichever button in a group carries the show's current value. */
-function markPressed<T>(
-  buttons: readonly HTMLButtonElement[],
-  values: readonly T[],
-  active: T | undefined,
-): void {
-  buttons.forEach((button, index) => {
-    button.setAttribute("aria-pressed", String(values[index] === active));
-  });
+/** The pill in one sentence: playing wins, then a run-out reads as done. */
+function statusText(isPlaying: boolean, isAtEnd: boolean): string {
+  if (isPlaying) return "Running";
+
+  return isAtEnd ? "Finished" : "On hold";
 }
 
 interface CueLine {
@@ -160,15 +178,28 @@ function createCueLine(parent: HTMLElement, labelText: string): CueLine {
   };
 }
 
-function createGroup(parent: HTMLElement, labelText: string): HTMLElement {
-  const group = document.createElement("div");
-  group.className = "conductor__group";
+function createNudgeButton(
+  parent: HTMLElement,
+  direction: "back" | "forward",
+  onClick: () => void,
+): HTMLButtonElement {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "conductor__nudge-button";
+  button.addEventListener("click", onClick);
+
+  const icon = document.createElement("span");
+  icon.innerHTML = direction === "back" ? BACK_ICON_SVG : FORWARD_ICON_SVG;
 
   const label = document.createElement("span");
-  label.className = "conductor__group-label";
-  label.textContent = labelText;
+  label.textContent = `${CONDUCTOR_SETTINGS.touchNudgeSeconds} s`;
 
-  group.append(label);
-  parent.append(group);
-  return group;
+  button.append(icon, label);
+  parent.append(button);
+  return button;
 }
+
+const PLAY_ICON_SVG = `<svg width="34" height="34" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4.5 L20 12 L7 19.5 Z"></path></svg>`;
+const PAUSE_ICON_SVG = `<svg width="34" height="34" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="5" y="4" width="5" height="16" rx="1"></rect><rect x="14" y="4" width="5" height="16" rx="1"></rect></svg>`;
+const BACK_ICON_SVG = `<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="11 17 6 12 11 7"></polyline><polyline points="18 17 13 12 18 7"></polyline></svg>`;
+const FORWARD_ICON_SVG = `<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="13 17 18 12 13 7"></polyline><polyline points="6 17 11 12 6 7"></polyline></svg>`;
