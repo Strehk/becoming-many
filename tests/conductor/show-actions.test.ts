@@ -95,4 +95,10 @@ describe("createShowActions", () => {
       createShowActions(level, show).setM5Host("m5.local"),
     ).not.toThrow();
   });
+
+  test("readM5State reports no sample without the adapter", () => {
+    const { level, show } = createRecorder();
+
+    expect(createShowActions(level, show).readM5State()).toBeUndefined();
+  });
 });

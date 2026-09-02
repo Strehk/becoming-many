@@ -1,7 +1,8 @@
 /**
  * Purpose: Poll one M5 host's /state on an interval and hand over parsed states.
- * Context: Two consumers poll the same endpoint at different rates: the show's
- *   adapter (steering) and the conductor's preview (glanceable).
+ * Context: The show's adapter owns the one poll of a station's device, which
+ *   serves a single client at a time; other views read its samples rather
+ *   than opening a poll of their own.
  * Responsibility: Normalize the host into the state URL, guard against
  *   overlapping fetches, and deliver only payloads the parser accepts.
  * Boundary: What a state means — steering, preview, staleness — is the

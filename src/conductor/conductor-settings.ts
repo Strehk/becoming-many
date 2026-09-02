@@ -27,13 +27,6 @@ export const CONDUCTOR_SETTINGS = {
   // is paced rather than sent per pointer event.
   scrubHertz: 20,
 
-  // How often the M5 preview polls the device. A glanceable crosshair, not
-  // steering — much slower than the show's own 50ms poll.
-  m5PreviewIntervalMilliseconds: 200,
-
-  // A preview sample older than this reads as "no signal" and parks the dot.
-  m5PreviewStaleMilliseconds: 1_000,
-
   // How often the frame metrics are re-read for the status strip. Reading
   // them sorts a ring buffer, which is documented as not-per-frame work.
   metricsIntervalMilliseconds: 500,

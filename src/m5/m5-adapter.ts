@@ -11,6 +11,7 @@
 import type { ControlFrame } from "./control-frame";
 import { createControlSource, type M5DeviceState } from "./control-source";
 import { M5_SETTINGS } from "./m5-settings";
+import type { M5State } from "./protocol";
 import { createStatePoller } from "./state-polling";
 
 export interface M5OperatorStatus {
@@ -32,6 +33,13 @@ export interface M5Adapter {
    */
   readonly readFrame: () => ControlFrame | undefined;
   readonly readOperatorStatus: () => M5OperatorStatus;
+  /**
+   * The newest device sample, for views that only glance at it — the
+   * conductor's crosshair preview. Reading it consumes nothing, so a second
+   * view costs no second poll of the device, which serves one client at a
+   * time. Undefined without a host, or while the device is stale or wrong.
+   */
+  readonly readLatestState: () => M5State | undefined;
   readonly unload: () => void;
 }
 
@@ -53,6 +61,11 @@ export function createM5Adapter(expectedDeviceId?: string): M5Adapter {
     readFrame() {
       if (!hasHost) return undefined;
       return source.readFrame(Date.now());
+    },
+
+    readLatestState() {
+      if (!hasHost) return undefined;
+      return source.readLatestState(Date.now());
     },
 
     readOperatorStatus() {

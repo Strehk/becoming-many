@@ -3,15 +3,14 @@
  * Context: The device is an HTTP server on the station network; only this
  *   page knows which host belongs to this station.
  * Responsibility: Edit and apply the M5 host, remember it across page loads,
- *   and preview the device's orientation on a crosshair with the page's own
- *   slow poll.
+ *   and preview the device's orientation on a crosshair.
  * Boundary: Steering and warnings live in the show; the status strip renders
- *   the show-side device state. The preview never feeds the pipeline.
+ *   the show-side device state. The preview reads the show's own samples —
+ *   the device serves one client at a time, so this page polls it once — and
+ *   never feeds the pipeline.
  */
 
 import type { M5State } from "../m5/protocol";
-import { createStatePoller } from "../m5/state-polling";
-import { CONDUCTOR_SETTINGS } from "./conductor-settings";
 import type { ConductorPanel } from "./conductor-state";
 import type { ShowActions } from "./show-actions";
 
@@ -52,14 +51,14 @@ export function createM5Panel({
   }
   label.append(host);
 
-  const preview = createPreview();
+  const preview = createPreview(actions.readM5State);
 
   // The panel is the host authority end to end: it applies the initial host
   // to the show it shares a page with, and every later edit the same way.
   const applyHost = (nextHost: string): void => {
     if (lockedHost === undefined) saveStoredHost(nextHost);
     actions.setM5Host(nextHost);
-    preview.watch(nextHost);
+    preview.setHost(nextHost);
   };
 
   if (lockedHost !== undefined) {
@@ -98,7 +97,7 @@ export function createM5Panel({
   // but still leaves the preview hidden.
   const storedHost = host.value.trim();
   if (storedHost.length > 0) applyHost(storedHost);
-  else preview.watch("");
+  else preview.setHost("");
 
   return {
     update(): void {
@@ -109,18 +108,19 @@ export function createM5Panel({
 
 interface M5Preview {
   readonly element: HTMLElement;
-  /** Poll `host` at the preview rate; an empty host stops and hides the pad. */
-  readonly watch: (host: string) => void;
+  /** An empty host hides the pad; the samples come from the show either way. */
+  readonly setHost: (host: string) => void;
   /** Called from the page's redraw; positions the dot from the last sample. */
   readonly render: () => void;
 }
 
 /**
  * A crosshair pad with one dot: roll deflects it sideways, pitch deflects it
- * up (positive pitch climbs, so the dot rises). Stale or missing samples park
- * the dot at center and dim the pad.
+ * up (positive pitch climbs, so the dot rises). `readState` is the show's
+ * newest sample; it yields nothing while the device is stale, missing, or the
+ * wrong one, which parks the dot at center and dims the pad.
  */
-function createPreview(): M5Preview {
+function createPreview(readState: () => M5State | undefined): M5Preview {
   const element = document.createElement("div");
   element.className = "conductor__m5-preview";
   element.hidden = true;
@@ -136,34 +136,18 @@ function createPreview(): M5Preview {
 
   element.append(pad, readout);
 
-  let lastState: M5State | null = null;
-  let lastSampleAtMilliseconds = 0;
-
-  const poller = createStatePoller(
-    CONDUCTOR_SETTINGS.m5PreviewIntervalMilliseconds,
-    (state) => {
-      lastState = state;
-      lastSampleAtMilliseconds = performance.now();
-    },
-  );
-
   return {
     element,
 
-    watch(host) {
-      lastState = null;
+    setHost(host) {
       element.hidden = host.length === 0;
-      poller.watch(host);
     },
 
     render() {
-      const isFresh =
-        lastState !== null &&
-        performance.now() - lastSampleAtMilliseconds <
-          CONDUCTOR_SETTINGS.m5PreviewStaleMilliseconds;
-      element.dataset.live = String(isFresh);
+      const state = readState();
+      element.dataset.live = String(state !== undefined);
 
-      if (!isFresh || lastState === null) {
+      if (state === undefined) {
         dot.style.left = "50%";
         dot.style.top = "50%";
         readout.textContent = "no signal";
@@ -171,11 +155,11 @@ function createPreview(): M5Preview {
       }
 
       // Half the pad minus a margin keeps full deflection inside the ring.
-      const roll = clamp(lastState.roll, -1, 1);
-      const pitch = clamp(lastState.pitch, -1, 1);
+      const roll = clamp(state.roll, -1, 1);
+      const pitch = clamp(state.pitch, -1, 1);
       dot.style.left = `${50 + roll * 42}%`;
       dot.style.top = `${50 - pitch * 42}%`;
-      readout.textContent = `P ${pitch.toFixed(2)} · R ${roll.toFixed(2)} · q${lastState.quality.toFixed(1)}`;
+      readout.textContent = `P ${pitch.toFixed(2)} · R ${roll.toFixed(2)} · q${state.quality.toFixed(1)}`;
     },
   };
 }

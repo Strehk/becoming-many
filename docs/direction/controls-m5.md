@@ -36,8 +36,9 @@ limitation `flight-reset.ts` documents.
 The conductor owns enablement: an **M5 host** panel points the show it hosts
 at the device, the show polls that host, and the status strip shows the device
 state (`off / connecting / live / wrong-device`, quality, firmware mismatch).
-The panel also previews the orientation on a crosshair with its own slower
-poll (5 Hz), never fed into steering.
+The panel also previews the orientation on a crosshair, read from the show's
+own samples so the device — which serves one client at a time — sees a single
+poll from the station window; never fed into steering.
 `?m5=<host>` polls directly for development, and `station/m5-sim.ts`
 (`bun run m5-sim`) stands in for hardware.
 

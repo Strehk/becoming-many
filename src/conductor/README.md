@@ -41,8 +41,9 @@ guards, made visible while cue times are being tuned by ear.
 controls. `m5-panel.ts` points the show at the station's M5 tilt controller
 (applied directly to the level's adapter, remembered in this browser's
 localStorage unless the deployment config locks it) and previews the device on
-a crosshair — the page's own slow poll of `/state`, glanceable and never fed
-into steering. `status-strip.ts` answers "is everything all right", including
+a crosshair — the show's own samples, read without consuming button edges, so
+the device sees one poll from this page; glanceable and never fed into
+steering. `status-strip.ts` answers "is everything all right", including
 the audio state: a context that never received a gesture freezes show time
 while looking exactly like a pause, and any click or key press on this page
 clears it. `cue-inspector.ts` reads out the authored numbers behind a selected

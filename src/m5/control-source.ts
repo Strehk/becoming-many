@@ -8,7 +8,8 @@
  *   operator-facing device state.
  * Boundary: Network IO lives in m5-adapter.ts. `readFrame` has exactly one
  *   caller — the level-runtime frame body — which is what makes consume-on-read
- *   edges safe; a second reader would steal edges.
+ *   edges safe; a second reader would steal edges. Other views read
+ *   `readLatestState` instead.
  */
 
 import { createAutoNeutralizer } from "./auto-neutralize";
@@ -34,6 +35,12 @@ export interface ControlSource {
   /** Read the frame for this render frame. Consumes pending button edges. */
   readonly readFrame: (nowMilliseconds: number) => ControlFrame;
   readonly readDeviceReport: (nowMilliseconds: number) => M5DeviceReport;
+  /**
+   * The newest accepted poll, for a glanceable second reader. Undefined while
+   * stale or wrong-device. It consumes no edges, which is what lets a view
+   * other than the frame body read the device without stealing a press.
+   */
+  readonly readLatestState: (nowMilliseconds: number) => M5State | undefined;
 }
 
 export function createControlSource(
@@ -99,6 +106,11 @@ export function createControlSource(
       pendingButtonDown = false;
       pendingButtonUp = false;
       return frame;
+    },
+
+    readLatestState(nowMilliseconds) {
+      if (isWrongDevice || isStale(nowMilliseconds)) return undefined;
+      return previousState;
     },
 
     readDeviceReport(nowMilliseconds) {

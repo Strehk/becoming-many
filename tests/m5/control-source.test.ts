@@ -3,7 +3,8 @@
  * Context: Polls arrive at ~20Hz and the render loop reads at up to 90Hz;
  *   the source bridges the rates and guards against the neighbour rig.
  * Responsibility: Cover edge diffing and latching, staleness, wrong-device
- *   rejection, and the firmware-mismatch report.
+ *   rejection, the firmware-mismatch report, and the non-consuming read a
+ *   second view uses.
  * Boundary: The individual pipeline stages have their own tests.
  */
 
@@ -96,6 +97,30 @@ describe("control source", () => {
     expect(frame.quality).toBe(0);
     expect(frame.pitch).toBe(0);
     expect(source.readDeviceReport(10).state).toBe("wrong-device");
+  });
+
+  it("hands a glanceable reader the newest poll without eating an edge", () => {
+    const source = createControlSource();
+    source.pushState(state(), 0);
+    source.pushState(state({ pitch: 0.4, buttonPressCount: 1 }), 50);
+
+    expect(source.readLatestState(60)?.pitch).toBe(0.4);
+    // The raw poll, not the smoothed frame — and the press still arrives.
+    expect(source.readFrame(60).buttonDown).toBe(true);
+  });
+
+  it("offers no state to a glanceable reader once polls go stale", () => {
+    const source = createControlSource();
+    source.pushState(state({ pitch: 0.4 }), 0);
+
+    expect(source.readLatestState(1_001)).toBeUndefined();
+  });
+
+  it("offers no state to a glanceable reader from a wrong device", () => {
+    const source = createControlSource("bm-station-a-m5");
+    source.pushState(state({ deviceId: "bm-station-b-m5", pitch: 0.5 }), 0);
+
+    expect(source.readLatestState(10)).toBeUndefined();
   });
 
   it("flags a firmware mismatch while continuing to steer", () => {

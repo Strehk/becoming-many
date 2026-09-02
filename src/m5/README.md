@@ -13,9 +13,12 @@ polling adapter that turns `GET /state` into ControlFrames.
   the per-station rig profile in `m5-settings.ts`.
 - `control-source.ts` — composes the stages, latches button edges
   consume-on-read for the frame body's single reader, and goes neutral when
-  polls stop.
+  polls stop. `readLatestState` is the non-consuming read for a second,
+  glanceable view.
 - `m5-adapter.ts` — the only network code: the poll timer and fetch, idle
-  until the conductor (or `?m5=`) sets a host.
+  until the conductor (or `?m5=`) sets a host. It is the station's one poll of
+  the device, which serves a single client at a time; the conductor's preview
+  reads `readLatestState` rather than opening a second one.
 
 The device runs `normalize → axis-map → calibrate` itself; what steers from a
 frame lives in `src/control/m5-flight.ts`.

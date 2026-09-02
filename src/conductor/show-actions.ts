@@ -7,6 +7,7 @@
 
 import type { NarrationLanguage } from "../dramaturgy/narration-catalog";
 import type { RunningLevel, RunningShow } from "../levels/level-runtime";
+import type { M5State } from "../m5/protocol";
 
 export interface ShowActions {
   readonly play: () => void;
@@ -25,6 +26,11 @@ export interface ShowActions {
   readonly restartExperience: () => void;
   /** Point the show at an M5 controller; an empty host stops polling. */
   readonly setM5Host: (host: string) => void;
+  /**
+   * The show's newest device sample, so a preview costs the device no poll of
+   * its own. Undefined without a host, or while the device is stale or wrong.
+   */
+  readonly readM5State: () => M5State | undefined;
   readonly reloadShow: () => void;
 }
 
@@ -54,6 +60,7 @@ export function createShowActions(
     },
 
     setM5Host: (host) => level.m5?.setHost(host),
+    readM5State: () => level.m5?.readLatestState(),
 
     reloadShow: () => window.location.reload(),
   };
