@@ -519,6 +519,28 @@ gesture in the window.
   module's `MotionPointSource` seam and prints into its own trail ring;
   bird bodies render nothing (perception-only actors, three points per
   bird with a deterministic wing flap).
+- Everything that moves runs seven percent slower than first authored: the
+  four walking species, the fly speed multiplier, and the bird orbit speed.
+- Only the nearest few actors are drawn, and which few that is changes as the
+  traveler moves and turns. An actor taking one of those slots used to arrive
+  complete between two frames, which read as an animal popping into the
+  distance; it now fades in over 0.8 seconds, and one losing its slot fades
+  out and keeps walking until it is invisible. An actor that is relocated
+  starts its fade over, so it never crosses the world in one frame. Actor
+  materials are transparent for the whole loaded lifetime and carry the fade
+  as opacity — toggling the flag would recompile the patched shader twice per
+  appearance, and a handful of actors in the transparent pass costs less than
+  that. They still write depth.
+- A walking animal turns on an arc rather than on the spot. The turning
+  radius is authored in body heights (2.5 of them, so a stag sweeps and a rat
+  turns tight) and the angular rate follows from it and the species' own
+  speed. It reads the way ahead one and a half turning radii plus a step of
+  margin in front of itself, so it leans away from a zone edge while still
+  walking instead of meeting the edge and pivoting there. It aims one turn and
+  walks it out; aiming afresh every blocked frame would spin it. The immediate
+  step is still checked, which is what holds an animal inside a habitat
+  narrower than its own turning circle, at the cost of standing while it
+  turns.
 - The fly simulation is a bounded boid integration: stepped hash noise for
   the insect jitter, eight strided flockmate samples per fly (never the full
   pairing), a boundary-free swarm envelope, and a hard clamp that guarantees
