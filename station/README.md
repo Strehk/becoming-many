@@ -77,8 +77,9 @@ simulator on port 5183 for a station without hardware — point the station at
 it with `M5_HOST=localhost:5183`.
 
 Both pages are opened in a Chromium browser with no UI to navigate away from
-them — the flags, and what they do and do not lock down, are in
-[KIOSK.md](../KIOSK.md).
+them: [start-kiosk.bat](start-kiosk.bat) opens both windows on the Windows
+station PC, and [KIOSK.md](../KIOSK.md) explains the flags and what they do
+and do not lock down.
 
 ## What the broker does
 

@@ -27,8 +27,15 @@ M5 over plain HTTP.
 
 ## Station PC (Windows)
 
-Two commands, one per window. Sizes and positions suit a 2048-wide monitor;
-adjust them to the station's screen.
+[station/start-kiosk.bat](station/start-kiosk.bat) runs both commands from one
+double-click: it finds an installed Chromium browser, waits for the station
+server to answer `/health` so the windows never open on an error page, and
+opens the two windows. The per-station values — URL, window positions and
+sizes — are the `set` lines at the top of the file; `BM_BROWSER` forces a
+specific browser executable.
+
+The commands it runs, for a station that wants them by hand. Sizes and
+positions suit a 2048-wide monitor; adjust them to the station's screen.
 
 ```bat
 "C:\Program Files\Google\Chrome\Application\chrome.exe" ^
