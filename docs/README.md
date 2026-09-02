@@ -13,6 +13,7 @@ separate from verified technical status.
 - [Landscape Module Contracts](landscape-modules.md) — current boundaries for Rivers, Vegetation, Grass, Rocks, and Animals.
 - [Performance](performance.md) — current evidence, target metrics, and acceptance gates.
 - [Browser Performance Audit — 2026-08-24](performance-audit-2026-08-24.md) — measured browser bottlenecks, diagnostic A/B runs, and prioritized fixes.
+- [Performance Review — grass-clipmap (PR #8) — 2026-09-02](performance-review-grass-clipmap-2026-09-02.md) — verified review findings held as an improvement backlog; reconcile against the parallel performance rewrite before acting.
 
 ## Product and Delivery Direction
 
