@@ -267,6 +267,40 @@ export const sharedEchoDepth: SharedBlock<"echoDepth"> = {
 };
 
 /**
+ * The bird flocks, kept as a value of their own because level 05 carries the
+ * whole Motion preset and repaints only these traces: in a heat view a flock
+ * is a warm body, not the cold accent the pale world reads it as.
+ */
+export const sharedMotionSenseBirds: NonNullable<
+  SharedBlock<"motion">["birds"]
+> = {
+  // Five invisible flocks circle the traveler on 30-90 metre air rings; only
+  // their traces are real ("swarm traces in the air"). Three left the sky
+  // empty in most directions, and the rings interpolate near to far across
+  // the count, so more flocks also means more depths carrying one.
+  flockCount: 5,
+  // The average flock, not every flock: each draws its own size around this
+  // and the draws are normalized back onto the pool, so the sky holds a few
+  // large flocks and a few small ones instead of one size repeated.
+  birdsPerFlock: 12,
+  // Seven percent below the first authored speed, with everything else that
+  // moves.
+  flightSpeedMetersPerSecond: 7.44,
+  // Far longer than the flies' fourteen: a bird crosses the sky, and at the
+  // fly ring's depth its trace was a short dash that said nothing about where
+  // it had come from. This is the line the flock drew getting here.
+  trailLifetimeFrames: 40,
+  flightHeightMeters: 14,
+  appearance: {
+    // The cyan accent reserved for the bird traces; larger prints than the
+    // fly trails so distant swarms stay readable against the haze.
+    trailColor: 0x10bedb,
+    trailSizeMeters: 0.18,
+    trailOpacity: 1,
+  },
+};
+
+/**
  * The Motion Perception response, carried unchanged after level 04: fly
  * swarms and invisible bird flocks printing trails onto the carried world.
  */
@@ -277,15 +311,22 @@ export const sharedMotionSense: SharedBlock<"motion"> = {
     // Twelve clouds spread the near-to-far rings; 720 flies total.
     swarmCount: 12,
     fliesPerSwarm: 60,
-    flightSpeedMultiplier: 1,
+    // Seven percent below the speed the swarms were first tuned at, with the
+    // walking animals, which were all reading a shade hurried.
+    flightSpeedMultiplier: 0.93,
   },
   appearance: {
     // Ink-dark specks and indigo trails from the level-04 dark stops; the
     // proven bm-base contrast read against the pale haze.
     flyColor: 0x212133,
-    flySizeMeters: 0.07,
+    // Well above the speck the flies were: at seven centimetres a single
+    // insect only registered once its trail had drawn it, and the swarm read
+    // as a smudge rather than as bodies in the air.
+    flySizeMeters: 0.12,
     trailColor: 0x312758,
-    trailSizeMeters: 0.055,
+    // Carried up with the flies, so a trail still reads as the thinner mark
+    // behind a body rather than as a second body.
+    trailSizeMeters: 0.085,
     trailOpacity: 1,
   },
   trail: {
@@ -297,21 +338,7 @@ export const sharedMotionSense: SharedBlock<"motion"> = {
     fadePower: 1.6,
     density: 1,
   },
-  birds: {
-    // Three invisible flocks circle the traveler on 30-90 metre air rings;
-    // only their traces are real ("swarm traces in the air").
-    flockCount: 3,
-    birdsPerFlock: 12,
-    flightSpeedMetersPerSecond: 8,
-    flightHeightMeters: 14,
-    appearance: {
-      // The cyan accent reserved for the bird traces; larger prints than
-      // the fly trails so distant swarms stay readable against the haze.
-      trailColor: 0x10bedb,
-      trailSizeMeters: 0.18,
-      trailOpacity: 1,
-    },
-  },
+  birds: sharedMotionSenseBirds,
 };
 
 /** The decided grass distribution, shared by every level that grows grass. */

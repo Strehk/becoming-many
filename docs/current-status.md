@@ -519,8 +519,26 @@ gesture in the window.
   module's `MotionPointSource` seam and prints into its own trail ring;
   bird bodies render nothing (perception-only actors, three points per
   bird with a deterministic wing flap).
+- Five flocks now circle instead of three, and each draws its own size around
+  the authored average rather than holding it exactly: the drawn sizes are
+  normalized back onto `flockCount x birdsPerFlock`, so the pool, its buffers,
+  and the trail ring stay exactly the size `getBirdPointCount` reports while
+  the sky holds large flocks and small ones. At the authored five by twelve
+  the sizes come out 14, 8, 12, 7, 19. The flies were also nearly doubled in
+  point size, from 0.07 to 0.12 metres, with their trails carried up from
+  0.055 to 0.085: at the smaller size a single insect only registered once
+  its trail had drawn it.
 - Everything that moves runs seven percent slower than first authored: the
   four walking species, the fly speed multiplier, and the bird orbit speed.
+- Fly swarms no longer relocate where the traveler can see it. Crossing the
+  eighty-metre travel threshold now only asks each swarm to leave: a swarm
+  shrinks its specks away over a per-fly `flyArrival` attribute, makes its
+  placement in the frame that reaches zero, and swells back at its new ring,
+  and the swarms take their turns a stagger apart instead of all moving in one
+  frame. The attribute is written only on frames where an arrival changed, so
+  a settled layer costs nothing extra. `placeSwarmAnchor` places one swarm;
+  `placeSwarmAnchors` still places the whole pool for the first frame, where
+  there is nothing to see.
 - Only the nearest few actors are drawn, and which few that is changes as the
   traveler moves and turns. An actor taking one of those slots used to arrive
   complete between two frames, which read as an animal popping into the
