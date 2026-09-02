@@ -25,10 +25,16 @@ export const STATION_SETTINGS = {
 } as const;
 
 /**
- * Falls back to the station on this machine rather than failing on a missing
- * address. A bare `?station` reads as an empty string, not as absent, so an
- * empty request has to mean the same thing as no request at all.
+ * Falls back to the page's own origin rather than failing on a missing
+ * address: the station server serves the pages and the broker from one
+ * process, and in development Vite proxies /station to the broker, so the
+ * same rule holds everywhere. A bare `?station` reads as an empty string,
+ * not as absent, so an empty request has to mean the same thing as no
+ * request at all.
  */
 export function resolveStationUrl(requested: string | null): string {
-  return requested || `ws://localhost:${STATION_SETTINGS.port}`;
+  if (requested) return requested;
+
+  const protocol = window.location.protocol === "https:" ? "wss" : "ws";
+  return `${protocol}://${window.location.host}/station`;
 }

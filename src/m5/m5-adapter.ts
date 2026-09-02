@@ -35,8 +35,9 @@ export interface M5Adapter {
   readonly unload: () => void;
 }
 
-export function createM5Adapter(): M5Adapter {
-  const source = createControlSource();
+/** `expectedDeviceId` overrides the authored default when the deployment names one. */
+export function createM5Adapter(expectedDeviceId?: string): M5Adapter {
+  const source = createControlSource(expectedDeviceId);
   const poller = createStatePoller(
     M5_SETTINGS.pollIntervalMilliseconds,
     (state) => source.pushState(state, Date.now()),

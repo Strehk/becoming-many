@@ -18,6 +18,7 @@ import {
   SHOW_LEVEL_PRESETS,
 } from "./levels/level-catalog";
 import { startLevel } from "./levels/level-runtime";
+import { loadDeploymentConfig } from "./station/deployment-config";
 import { connectShowStation } from "./station/show-station";
 import { resolveStationUrl } from "./station/station-settings";
 import { createStationWidget } from "./station/station-widget";
@@ -66,19 +67,25 @@ const show =
         levels: SHOW_LEVEL_PRESETS,
       };
 
+// Deployment facts the station server was started with; empty when nothing
+// answers /config. A set fact is deployment authority: it is applied here and
+// the matching conductor control turns read-only.
+const deployment = await loadDeploymentConfig();
+
 const level = await startLevel(
   document.querySelector(".app"),
   show ? SHOW_LEVEL : LEVEL_CATALOG[levelName],
-  { benchmark, show },
+  { benchmark, show, m5ExpectedDeviceId: deployment.m5DeviceId },
 );
 
 window.showClock = level.show?.clock;
 
 // `?m5=<host>` starts polling a tilt controller without broker or conductor —
-// a development convenience; in the installation the conductor sets the host.
-const requestedM5Host = request.get("m5");
-if (requestedM5Host) {
-  level.m5?.setHost(requestedM5Host);
+// a development convenience, so the explicit request outranks the deployment
+// host; in an installation without either env the conductor sets the host.
+const m5Host = request.get("m5") ?? deployment.m5Host;
+if (m5Host) {
+  level.m5?.setHost(m5Host);
 }
 
 // The station link always accompanies a show and fails soft: with no broker
@@ -90,6 +97,7 @@ if (level.show) {
     level,
     show: level.show,
     stationUrl: resolveStationUrl(request.get("station")),
+    isM5HostLocked: deployment.m5Host !== undefined,
     onConnectionChange: widget.setConnected,
   });
 }

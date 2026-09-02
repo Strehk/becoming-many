@@ -1,0 +1,10 @@
+# Keep the build context to sources: the image builds dist/ itself, and
+# nothing environment-specific may leak into it.
+.git
+.fallow
+node_modules
+dist
+benchmark-results
+.env
+.env.*
+!.env.example

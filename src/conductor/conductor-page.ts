@@ -11,6 +11,7 @@ import {
   type NarrationLanguage,
 } from "../dramaturgy/narration-catalog";
 import type { NarrationSchedule } from "../dramaturgy/narration-schedule";
+import type { DeploymentConfig } from "../station/deployment-config";
 import { createStationLink } from "../station/station-link";
 import type { ShowCommand, ShowStatus } from "../station/station-protocol";
 import { type ConductorAction, resolveConductorKey } from "./conductor-keys";
@@ -33,6 +34,8 @@ export interface ConductorPageOptions {
   /** The language shown until the show reports its own. */
   readonly language: NarrationLanguage;
   readonly stationUrl: string;
+  /** Facts the station server was deployed with; set fields render read-only. */
+  readonly deployment: DeploymentConfig;
 }
 
 export function startConductorPage({
@@ -40,9 +43,20 @@ export function startConductorPage({
   schedule,
   language,
   stationUrl,
+  deployment,
 }: ConductorPageOptions): void {
   if (!(container instanceof HTMLElement)) {
     throw new Error("Missing conductor root: .conductor");
+  }
+
+  // The station's name tells a technician which of the identical stations
+  // this window commands — in the tab bar and on the page itself.
+  if (deployment.stationName) {
+    document.title = `${deployment.stationName} — Becoming Many`;
+    const stationBadge = document.createElement("div");
+    stationBadge.className = "conductor__station-name";
+    stationBadge.textContent = deployment.stationName;
+    container.append(stationBadge);
   }
 
   // A parameter cannot stay narrowed inside the closures below.
@@ -97,7 +111,7 @@ export function startConductorPage({
       },
     }),
     createCueInspector(page, schedule),
-    createM5Panel({ parent: page, send }),
+    createM5Panel({ parent: page, send, lockedHost: deployment.m5Host }),
   ];
 
   window.addEventListener("keydown", (event) => {

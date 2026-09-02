@@ -1,4 +1,19 @@
 import { defineConfig } from "vite";
+import { STATION_SETTINGS } from "./src/station/station-settings";
+
+// The pages reach the station server through their own origin (/station,
+// /config); in development that server is the separate `bun run station`
+// process, so Vite forwards the paths. With no broker running the proxy
+// errors and the pages fail soft, exactly as they do in production.
+const stationProxy = {
+  "/station": {
+    target: `http://localhost:${STATION_SETTINGS.port}`,
+    ws: true,
+  },
+  "/config": {
+    target: `http://localhost:${STATION_SETTINGS.port}`,
+  },
+} as const;
 
 export default defineConfig({
   build: {
@@ -15,9 +30,11 @@ export default defineConfig({
   server: {
     host: true,
     allowedHosts: ["dev.strehk.eu", "dev.e.strehk.eu"],
+    proxy: stationProxy,
   },
   preview: {
     host: true,
     allowedHosts: ["dev.strehk.eu", "dev.e.strehk.eu"],
+    proxy: stationProxy,
   },
 });
