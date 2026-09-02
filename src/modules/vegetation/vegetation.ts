@@ -5,7 +5,7 @@
  * Boundary: Candidate placement and GPU ranges live in vegetation-instances.
  */
 
-import type { PerspectiveCamera, Scene } from "three";
+import type { Scene } from "three";
 import type { GltfAssets } from "../../utils/asset-loader/gltf-assets";
 import { disposeGltfAssets } from "../../utils/asset-loader/gltf-assets";
 import type { UnlitMaterialEffect } from "../../utils/asset-loader/material-effect";
@@ -16,6 +16,7 @@ import {
 } from "../../world/chunk-system";
 import type { WorldModule } from "../../world/module-runtime";
 import type { StreamJob, StreamQueue } from "../../world/stream-queue";
+import type { Viewpoint } from "../../world/viewer-rig";
 import type { WorldSurface } from "../../world-surface/world-surface";
 import {
   resolveStaticPopulation,
@@ -49,7 +50,7 @@ const VEGETATION_CHUNK_LEVEL = 2;
 
 export interface VegetationModuleOptions {
   readonly scene: Scene;
-  readonly camera: PerspectiveCamera;
+  readonly viewpoint: Viewpoint;
   readonly preset: VegetationPreset;
   readonly assets: GltfAssets;
   readonly streamQueue: StreamQueue;
@@ -59,7 +60,7 @@ export interface VegetationModuleOptions {
 
 interface VegetationRuntimeOptions {
   readonly scene: Scene;
-  readonly camera: PerspectiveCamera;
+  readonly viewpoint: Viewpoint;
   readonly parameters: StaticPopulationParameters;
   readonly colors: VegetationColors;
   readonly assets: GltfAssets;
@@ -104,8 +105,8 @@ function loadVegetation(
 ): void {
   const stream = createVegetationStream(options);
   const assignments = stream.chunkWindow.update(
-    options.camera.position.x,
-    options.camera.position.z,
+    options.viewpoint.worldPosition.x,
+    options.viewpoint.worldPosition.z,
   );
 
   initializeVegetationChunks(stream.instances, assignments);
@@ -115,15 +116,15 @@ function loadVegetation(
 
 function updateVegetation(
   state: VegetationState,
-  { camera, streamQueue }: VegetationRuntimeOptions,
+  { viewpoint, streamQueue }: VegetationRuntimeOptions,
 ): void {
   const stream = state.currentStream;
   if (!stream) return;
   uploadVegetationChanges(stream.instances);
 
   const assignments = stream.chunkWindow.update(
-    camera.position.x,
-    camera.position.z,
+    viewpoint.worldPosition.x,
+    viewpoint.worldPosition.z,
   );
   discardVegetationChunks(stream.instances, assignments);
   uploadVegetationChanges(stream.instances);
@@ -155,7 +156,10 @@ function createVegetationStream(
   options: VegetationRuntimeOptions,
 ): VegetationStream {
   const chunkSize = getChunkSize(VEGETATION_CHUNK_LEVEL);
-  const radius = Math.max(1, Math.ceil(options.camera.far / chunkSize));
+  const radius = Math.max(
+    1,
+    Math.ceil(options.viewpoint.viewDistanceMeters / chunkSize),
+  );
   const chunkWindow = new ChunkWindow({
     level: VEGETATION_CHUNK_LEVEL,
     radius,

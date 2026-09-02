@@ -13,7 +13,6 @@ import {
   Matrix4,
   Mesh,
   MeshBasicMaterial,
-  PerspectiveCamera,
   Scene,
   Vector3,
 } from "three";
@@ -23,8 +22,13 @@ import { createAnimalsModule } from "../../src/modules/animals/animals";
 import type { AnimalsDefinition } from "../../src/modules/animals/animals-definition";
 import type { GltfAssets } from "../../src/utils/asset-loader/gltf-assets";
 import type { SensedMaterial } from "../../src/utils/asset-loader/material-effect";
+import type { Viewpoint } from "../../src/world/viewer-rig";
 import type { WorldSurface } from "../../src/world-surface/world-surface";
 import type { ZoneId } from "../../src/world-surface/zone-settings";
+
+// These modules never read the view distance; the value only completes the
+// contract. It matches the Three.js default far plane.
+const DEFAULT_VIEW_DISTANCE_METERS = 2_000;
 
 const LAND_ZONES: readonly ZoneId[] = [
   "meadow",
@@ -51,10 +55,14 @@ const PRESET = {
 
 test("Animals animate only the nearest bounded population", () => {
   const scene = new Scene();
-  const camera = new PerspectiveCamera();
+  const viewerPosition = new Vector3();
+  const viewpoint: Viewpoint = {
+    worldPosition: viewerPosition,
+    viewDistanceMeters: DEFAULT_VIEW_DISTANCE_METERS,
+  };
   const { module } = createAnimalsModule({
     scene,
-    camera,
+    viewpoint,
     definition: DEFINITION,
     preset: PRESET,
     assets: createAnimalAssets(),
@@ -78,12 +86,16 @@ test("Animals animate only the nearest bounded population", () => {
 
 test("Animals decorate every actor material with supplied effects", () => {
   const scene = new Scene();
-  const camera = new PerspectiveCamera();
+  const viewerPosition = new Vector3();
+  const viewpoint: Viewpoint = {
+    worldPosition: viewerPosition,
+    viewDistanceMeters: DEFAULT_VIEW_DISTANCE_METERS,
+  };
   const decoratedMaterials: SensedMaterial[] = [];
   const bodyMatrices: Matrix4[] = [];
   const { module } = createAnimalsModule({
     scene,
-    camera,
+    viewpoint,
     definition: DEFINITION,
     preset: PRESET,
     assets: createAnimalAssets(),
@@ -119,7 +131,10 @@ test("Animals reject an impossible visibility budget", () => {
   expect(() =>
     createAnimalsModule({
       scene: new Scene(),
-      camera: new PerspectiveCamera(),
+      viewpoint: {
+        worldPosition: new Vector3(),
+        viewDistanceMeters: DEFAULT_VIEW_DISTANCE_METERS,
+      },
       definition: { ...DEFINITION, maxVisible: 5 },
       preset: PRESET,
       assets: createAnimalAssets(),
@@ -130,10 +145,14 @@ test("Animals reject an impossible visibility budget", () => {
 
 test("Animals occupy separate territories around the player", () => {
   const scene = new Scene();
-  const camera = new PerspectiveCamera();
+  const viewerPosition = new Vector3();
+  const viewpoint: Viewpoint = {
+    worldPosition: viewerPosition,
+    viewDistanceMeters: DEFAULT_VIEW_DISTANCE_METERS,
+  };
   const { module } = createAnimalsModule({
     scene,
-    camera,
+    viewpoint,
     definition: {
       ...DEFINITION,
       maxVisible: 4,
@@ -171,10 +190,14 @@ test("Animals occupy separate territories around the player", () => {
 
 test("Animals expose the visible actor positions within their budget", () => {
   const scene = new Scene();
-  const camera = new PerspectiveCamera();
+  const viewerPosition = new Vector3();
+  const viewpoint: Viewpoint = {
+    worldPosition: viewerPosition,
+    viewDistanceMeters: DEFAULT_VIEW_DISTANCE_METERS,
+  };
   const handle = createAnimalsModule({
     scene,
-    camera,
+    viewpoint,
     definition: DEFINITION,
     preset: PRESET,
     assets: createAnimalAssets(),

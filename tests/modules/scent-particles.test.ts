@@ -8,11 +8,11 @@
 import { describe, expect, test } from "bun:test";
 import {
   Color,
-  PerspectiveCamera,
   Points,
   type PointsMaterial,
   Scene,
   Vector2,
+  Vector3,
 } from "three";
 import {
   createScentParticleField,
@@ -37,6 +37,7 @@ import type {
   ScentActorBody,
 } from "../../src/modules/scent-sources";
 import { StreamQueue } from "../../src/world/stream-queue";
+import type { Viewpoint } from "../../src/world/viewer-rig";
 
 const TEST_CHUNK_SIZE = 64;
 const PLANTS_PER_TEST_CHUNK = 3;
@@ -317,14 +318,18 @@ describe("Scent Particles trail layer", () => {
 
 test("one show fade dims both layers of the sense at once", () => {
   const scene = new Scene();
-  const camera = new PerspectiveCamera(50, 1, 0.1, 24);
+  const viewerPosition = new Vector3();
+  const viewpoint: Viewpoint = {
+    worldPosition: viewerPosition,
+    viewDistanceMeters: 24,
+  };
   const streamQueue = new StreamQueue(
     { budgetMilliseconds: 1, capacity: 256 },
     () => 0,
   );
   const handle = createScentParticlesModule({
     scene,
-    camera,
+    viewpoint,
     streamQueue,
     parameters: createScentParameters(),
     plantSource: createTestPlantSource(),
@@ -350,14 +355,18 @@ test("one show fade dims both layers of the sense at once", () => {
 describe("Scent Particles streaming", () => {
   test("keeps one fixed draw while recycling chunk edges", () => {
     const scene = new Scene();
-    const camera = new PerspectiveCamera(50, 1, 0.1, 24);
+    const viewerPosition = new Vector3();
+    const viewpoint: Viewpoint = {
+      worldPosition: viewerPosition,
+      viewDistanceMeters: 24,
+    };
     const streamQueue = new StreamQueue(
       { budgetMilliseconds: 1, capacity: 256 },
       () => 0,
     );
     const handle = createScentParticlesModule({
       scene,
-      camera,
+      viewpoint,
       streamQueue,
       parameters: createScentParameters(),
       plantSource: createTestPlantSource(),
@@ -386,7 +395,7 @@ describe("Scent Particles streaming", () => {
     expect(positionArray.some((value: number) => value !== 0)).toBe(true);
     expect(positionAttribute.updateRanges).toHaveLength(0);
 
-    camera.position.x = 64;
+    viewerPosition.x = 64;
     module.update?.(1 / 90);
 
     expect(streamQueue.size).toBe(5);
@@ -414,14 +423,18 @@ describe("Scent Particles streaming", () => {
 
   test("adds the trail layer only where actors actually run", () => {
     const scene = new Scene();
-    const camera = new PerspectiveCamera(50, 1, 0.1, 24);
+    const viewerPosition = new Vector3();
+    const viewpoint: Viewpoint = {
+      worldPosition: viewerPosition,
+      viewDistanceMeters: 24,
+    };
     const streamQueue = new StreamQueue(
       { budgetMilliseconds: 1, capacity: 256 },
       () => 0,
     );
     const handle = createScentParticlesModule({
       scene,
-      camera,
+      viewpoint,
       streamQueue,
       parameters: createScentParameters(),
       plantSource: createTestPlantSource(),
@@ -454,7 +467,11 @@ describe("Scent Particles streaming", () => {
 describe("Scent Particles wind", () => {
   test("carries both layers along one wind, each by its own reach", () => {
     const scene = new Scene();
-    const camera = new PerspectiveCamera(50, 1, 0.1, 24);
+    const viewerPosition = new Vector3();
+    const viewpoint: Viewpoint = {
+      worldPosition: viewerPosition,
+      viewDistanceMeters: 24,
+    };
     const streamQueue = new StreamQueue(
       { budgetMilliseconds: 1, capacity: 256 },
       () => 0,
@@ -462,7 +479,7 @@ describe("Scent Particles wind", () => {
     const parameters = createScentParameters();
     const handle = createScentParticlesModule({
       scene,
-      camera,
+      viewpoint,
       streamQueue,
       parameters,
       plantSource: createTestPlantSource(),

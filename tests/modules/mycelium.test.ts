@@ -9,10 +9,10 @@ import { expect, test } from "bun:test";
 import {
   InstancedBufferGeometry,
   Mesh,
-  PerspectiveCamera,
   Points,
   Scene,
   type ShaderMaterial,
+  Vector3,
 } from "three";
 import type {
   ConnectionActorSource,
@@ -33,6 +33,11 @@ import type {
   TopologyPort,
 } from "../../src/modules/mycelium/topology-messages";
 import { StreamQueue } from "../../src/world/stream-queue";
+import type { Viewpoint } from "../../src/world/viewer-rig";
+
+// These modules never read the view distance; the value only completes the
+// contract. It matches the Three.js default far plane.
+const DEFAULT_VIEW_DISTANCE_METERS = 2_000;
 
 const OPTIONS = { neighborsPerNode: 2, edgeCapacity: 1792 };
 
@@ -250,7 +255,11 @@ function createFakeAnimalSource(positions: number[]): ConnectionActorSource {
 
 function createWebHarness(animalSource?: ConnectionActorSource) {
   const scene = new Scene();
-  const camera = new PerspectiveCamera();
+  const viewerPosition = new Vector3();
+  const viewpoint: Viewpoint = {
+    worldPosition: viewerPosition,
+    viewDistanceMeters: DEFAULT_VIEW_DISTANCE_METERS,
+  };
   const streamQueue = new StreamQueue(
     { budgetMilliseconds: 1000, capacity: 8 },
     () => 0,
@@ -258,7 +267,7 @@ function createWebHarness(animalSource?: ConnectionActorSource) {
   const fakePort = createFakeTopologyPort();
   const { module, setIntensity } = createConnectionsModule(PARAMETERS, {
     scene,
-    camera,
+    viewpoint,
     streamQueue,
     staticSources: [createFakeVegetationSource()],
     animalSource,
@@ -282,7 +291,7 @@ function createWebHarness(animalSource?: ConnectionActorSource) {
 
   return {
     scene,
-    camera,
+    viewerPosition,
     streamQueue,
     fakePort,
     module,
@@ -312,7 +321,10 @@ test("Connections reject an invalid preset", () => {
         { ...PARAMETERS, ...override },
         {
           scene: new Scene(),
-          camera: new PerspectiveCamera(),
+          viewpoint: {
+            worldPosition: new Vector3(),
+            viewDistanceMeters: DEFAULT_VIEW_DISTANCE_METERS,
+          },
           streamQueue: new StreamQueue(
             { budgetMilliseconds: 1, capacity: 1 },
             () => 0,
@@ -379,7 +391,7 @@ test("Connections web follows the lifecycle and publishes one topology", () => {
 
 test("Connections regather on window changes and ignore stale results", () => {
   const harness = createWebHarness();
-  const { module, camera, streamQueue, fakePort } = harness;
+  const { module, viewerPosition, streamQueue, fakePort } = harness;
 
   module.load();
   module.activate();
@@ -388,7 +400,7 @@ test("Connections regather on window changes and ignore stale results", () => {
 
   // Crossing one 32-metre boundary advances the generation and enqueues one
   // replacing gather job.
-  camera.position.set(40, 0, 0);
+  viewerPosition.set(40, 0, 0);
   module.update?.(0.016);
   module.update?.(0.016);
   const gatherSteps = (MYCELIUM_SETTINGS.windowChunkRadius * 2 + 1) ** 2 + 4;

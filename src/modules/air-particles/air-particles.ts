@@ -5,7 +5,7 @@
  * Boundary: Buffer data and animation live beside this file; frame budgets live in World.
  */
 
-import type { PerspectiveCamera, Scene } from "three";
+import type { Scene } from "three";
 import { getChunkSize } from "../../world/chunk-system";
 import type { WorldModule } from "../../world/module-runtime";
 import type { StreamJob, StreamQueue } from "../../world/stream-queue";
@@ -31,9 +31,11 @@ export type {
   AirParticlesParameters,
 } from "./air-particles-settings";
 
+import type { Viewpoint } from "../../world/viewer-rig";
+
 export interface AirParticlesModuleOptions {
   readonly scene: Scene;
-  readonly camera: PerspectiveCamera;
+  readonly viewpoint: Viewpoint;
   readonly parameters: AirParticlesParameters;
   readonly streamQueue: StreamQueue;
   readonly surfaceYAt?: WorldSurface["surfaceYAt"];
@@ -70,12 +72,12 @@ function loadAirParticles(
   state: AirParticlesState,
   options: AirParticlesModuleOptions,
 ): void {
-  const { camera, scene } = options;
+  const { viewpoint, scene } = options;
   const stream = createAirParticleStream(options);
   const initialAssignments = stream.volumeWindow.update(
-    camera.position.x,
-    camera.position.y,
-    camera.position.z,
+    viewpoint.worldPosition.x,
+    viewpoint.worldPosition.y,
+    viewpoint.worldPosition.z,
   );
 
   // Loading happens before the first render. Fill every fixed slot now, then
@@ -88,7 +90,7 @@ function loadAirParticles(
 
 function updateAirParticles(
   state: AirParticlesState,
-  { camera, streamQueue }: AirParticlesModuleOptions,
+  { viewpoint, streamQueue }: AirParticlesModuleOptions,
   deltaSeconds: number,
 ): void {
   const stream = state.currentStream;
@@ -98,9 +100,9 @@ function updateAirParticles(
   stream.particleCloud.material.update(deltaSeconds);
 
   const changedAssignments = stream.volumeWindow.update(
-    camera.position.x,
-    camera.position.y,
-    camera.position.z,
+    viewpoint.worldPosition.x,
+    viewpoint.worldPosition.y,
+    viewpoint.worldPosition.z,
   );
 
   // Most frames return no assignments. After a boundary crossing, only the
@@ -162,12 +164,14 @@ function unloadAirParticles(state: AirParticlesState, scene: Scene): void {
 
 /** Allocate the fixed resident resources used throughout one loaded lifetime. */
 function createAirParticleStream({
-  camera,
+  viewpoint,
   parameters,
   surfaceYAt,
 }: AirParticlesModuleOptions): AirParticleStream {
   const chunkSize = getChunkSize(AIR_PARTICLES_SETTINGS.volumeChunkLevel);
-  const visibleVolumeRadius = Math.ceil(camera.far / chunkSize);
+  const visibleVolumeRadius = Math.ceil(
+    viewpoint.viewDistanceMeters / chunkSize,
+  );
   const residentVolumeRadius =
     visibleVolumeRadius + AIR_PARTICLES_SETTINGS.preloadLayerCount;
   const volumeWindow = new VolumeChunkWindow({

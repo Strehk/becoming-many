@@ -5,11 +5,12 @@
  * Boundary: Anchor providers stay in their modules; topology math stays worker-side and pure.
  */
 
-import { Color, type PerspectiveCamera, type Scene } from "three";
+import { Color, type Scene } from "three";
 import { isNormalized, isPositiveFinite } from "../../utils/number-ranges";
 import { ChunkWindow, getChunkSize } from "../../world/chunk-system";
 import type { WorldModule } from "../../world/module-runtime";
 import type { StreamJob, StreamQueue } from "../../world/stream-queue";
+import type { Viewpoint } from "../../world/viewer-rig";
 import type {
   ConnectionActorSource,
   ConnectionNodeSource,
@@ -47,7 +48,7 @@ const SOURCE_CLASS_ORDER: readonly ConnectionSourceClass[] = [
 
 export interface ConnectionsOptions {
   readonly scene: Scene;
-  readonly camera: PerspectiveCamera;
+  readonly viewpoint: Viewpoint;
   readonly streamQueue: StreamQueue;
   /** Wired by the composition root for every enabled static source class. */
   readonly staticSources: readonly ConnectionNodeSource[];
@@ -192,10 +193,10 @@ function loadWeb(
   // The initial window fills synchronously like the other streamed modules;
   // the first topology appears when the worker replies a few frames later.
   stream.chunkWindow.update(
-    options.camera.position.x,
-    options.camera.position.z,
+    options.viewpoint.worldPosition.x,
+    options.viewpoint.worldPosition.z,
   );
-  const writer = createGatherWriter(options.camera);
+  const writer = createGatherWriter(options.viewpoint);
   while (!gatherNextChunk(writer, staging, styles, options)) {
     // Startup gathers all resident chunks in one pass.
   }
@@ -212,8 +213,8 @@ function updateWeb(
   if (!stream) return;
 
   const changedAssignments = stream.chunkWindow.update(
-    options.camera.position.x,
-    options.camera.position.z,
+    options.viewpoint.worldPosition.x,
+    options.viewpoint.worldPosition.z,
   );
   if (changedAssignments.length > 0) {
     state.generation += 1;
@@ -244,7 +245,7 @@ function createGatherJob(
   stream: WebStream,
 ): StreamJob {
   const jobGeneration = state.generation;
-  const writer = createGatherWriter(options.camera);
+  const writer = createGatherWriter(options.viewpoint);
 
   return {
     key: stream.gatherJobKey,
@@ -258,11 +259,11 @@ function createGatherJob(
   };
 }
 
-function createGatherWriter(camera: PerspectiveCamera): GatherWriter {
+function createGatherWriter(viewpoint: Viewpoint): GatherWriter {
   const chunkSize = getChunkSize(MYCELIUM_SETTINGS.chunkLevel);
   return {
-    centerChunkX: Math.floor(camera.position.x / chunkSize),
-    centerChunkZ: Math.floor(camera.position.z / chunkSize),
+    centerChunkX: Math.floor(viewpoint.worldPosition.x / chunkSize),
+    centerChunkZ: Math.floor(viewpoint.worldPosition.z / chunkSize),
     nextChunkIndex: 0,
     nodeCount: 0,
     droppedAnchorCount: 0,

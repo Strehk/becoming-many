@@ -10,9 +10,9 @@ import {
   BackSide,
   Color,
   type Mesh,
-  PerspectiveCamera,
   Scene,
   type ShaderMaterial,
+  Vector3,
 } from "three";
 import {
   createMagneticSense,
@@ -20,6 +20,10 @@ import {
   type MagneticSenseParameters,
 } from "../../src/modules/magnetic-sense/magnetic-sense";
 import { MAGNETIC_SENSE_SETTINGS } from "../../src/modules/magnetic-sense/magnetic-sense-settings";
+
+// These modules never read the view distance; the value only completes the
+// contract. It matches the Three.js default far plane.
+const DEFAULT_VIEW_DISTANCE_METERS = 2_000;
 
 const PARAMETERS: MagneticSenseParameters = {
   intensity: 1,
@@ -35,7 +39,10 @@ const PARAMETERS: MagneticSenseParameters = {
 function createOptions(): MagneticSenseOptions {
   return {
     scene: new Scene(),
-    camera: new PerspectiveCamera(),
+    viewpoint: {
+      worldPosition: new Vector3(),
+      viewDistanceMeters: DEFAULT_VIEW_DISTANCE_METERS,
+    },
     skyHazeColor: 0xf1f1f1,
   };
 }
@@ -178,7 +185,7 @@ test("Magnetic sky dome follows the world module lifecycle", () => {
   handle.module.activate();
   expect(dome.visible).toBe(true);
 
-  options.camera.position.set(12, 34, -56);
+  options.viewpoint.worldPosition.set(12, 34, -56);
   handle.module.update?.(0.016);
   expect(dome.position.toArray()).toEqual([12, 34, -56]);
 

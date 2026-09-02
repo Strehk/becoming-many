@@ -9,6 +9,7 @@ import type { PerspectiveCamera, Scene } from "three";
 import type { UnlitMaterialEffect } from "../../utils/asset-loader/material-effect";
 import type { WorldModule } from "../../world/module-runtime";
 import type { StreamJob, StreamQueue } from "../../world/stream-queue";
+import type { Viewpoint } from "../../world/viewer-rig";
 import type { WorldSurfaceSettings } from "../../world-surface/surface-settings";
 import type { WorldSurface } from "../../world-surface/world-surface";
 import {
@@ -25,7 +26,12 @@ export type { GrassClipmapPreset } from "./grass-clipmap-settings";
 
 export interface GrassClipmapModuleOptions {
   readonly scene: Scene;
-  readonly camera: PerspectiveCamera;
+  readonly viewpoint: Viewpoint;
+  /**
+   * Projection and view matrices for frustum culling — never its position.
+   * The visitor's world position is the viewpoint's to publish.
+   */
+  readonly frustumCamera: PerspectiveCamera;
   readonly preset: GrassClipmapPreset;
   readonly streamQueue: StreamQueue;
   readonly worldSurface: WorldSurface;
@@ -69,8 +75,8 @@ function loadGrassClipmap(
   const heightField = createGrassHeightField({
     worldSurface: options.worldSurface,
     surfaceSettings: options.surfaceSettings,
-    cameraX: options.camera.position.x,
-    cameraZ: options.camera.position.z,
+    cameraX: options.viewpoint.worldPosition.x,
+    cameraZ: options.viewpoint.worldPosition.z,
   });
   const field = createGrassClipmapField({
     preset: options.preset,
@@ -80,8 +86,9 @@ function loadGrassClipmap(
   });
 
   field.publishHeightWindow();
-  field.followCamera(options.camera.position.x, options.camera.position.z);
-  field.selectDetail(options.camera.position.x, options.camera.position.z);
+  const { worldPosition } = options.viewpoint;
+  field.followCamera(worldPosition.x, worldPosition.z);
+  field.selectDetail(worldPosition.x, worldPosition.z);
   // Loading happens before the first render. Keep every object hidden until
   // the module lifecycle activates it.
   field.group.visible = false;
@@ -103,12 +110,12 @@ function updateGrassClipmap(
   const resources = state.currentResources;
   if (!resources) return;
 
-  const { camera, streamQueue } = options;
-  const cameraX = camera.position.x;
-  const cameraZ = camera.position.z;
+  const { viewpoint, frustumCamera, streamQueue } = options;
+  const cameraX = viewpoint.worldPosition.x;
+  const cameraZ = viewpoint.worldPosition.z;
 
   resources.field.advanceWind(deltaSeconds);
-  resources.field.updateFrustum(camera);
+  resources.field.updateFrustum(frustumCamera);
   resources.field.followCamera(cameraX, cameraZ);
   // Detail and allocation follow the distance every frame, not only when the
   // grid snaps: walking across a chunk changes both without moving the layout.

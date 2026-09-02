@@ -6,7 +6,7 @@
  */
 
 import { describe, expect, test } from "bun:test";
-import { PerspectiveCamera, Points, type PointsMaterial, Scene } from "three";
+import { Points, type PointsMaterial, Scene, Vector3 } from "three";
 import {
   createAirParticleCloud,
   disposeAirParticleCloud,
@@ -19,6 +19,7 @@ import {
   createAirParticlesModule,
 } from "../../src/modules/air-particles/air-particles";
 import { StreamQueue } from "../../src/world/stream-queue";
+import type { Viewpoint } from "../../src/world/viewer-rig";
 
 describe("Air Particles material", () => {
   test("keeps the square default free of circle fragment work", () => {
@@ -111,14 +112,18 @@ describe("Air Particles streaming", () => {
 
   test("keeps one fixed draw while recycling buffered volume faces", () => {
     const scene = new Scene();
-    const camera = new PerspectiveCamera(50, 1, 0.1, 24);
+    const viewerPosition = new Vector3();
+    const viewpoint: Viewpoint = {
+      worldPosition: viewerPosition,
+      viewDistanceMeters: 24,
+    };
     const streamQueue = new StreamQueue(
       { budgetMilliseconds: 1, capacity: 256 },
       () => 0,
     );
     const module = createAirParticlesModule({
       scene,
-      camera,
+      viewpoint,
       streamQueue,
       parameters: createAirParticlesParameters(2),
     });
@@ -140,7 +145,7 @@ describe("Air Particles streaming", () => {
     expect(positionArray.some((value: number) => value !== 0)).toBe(true);
     expect(positionAttribute.updateRanges).toHaveLength(0);
 
-    camera.position.x = 64;
+    viewerPosition.x = 64;
     module.update?.(1 / 90);
 
     expect(streamQueue.size).toBe(25);
@@ -151,7 +156,7 @@ describe("Air Particles streaming", () => {
     expect(points.geometry.attributes.position?.array).toBe(positionArray);
     expect(positionAttribute.updateRanges.length).toBeGreaterThan(0);
 
-    camera.position.y = 64;
+    viewerPosition.y = 64;
     module.update?.(1 / 90);
 
     expect(streamQueue.size).toBe(25);

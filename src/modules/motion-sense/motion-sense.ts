@@ -5,8 +5,9 @@
  * Boundary: Simulation, buffers, and materials live beside this file; siblings stay untouched.
  */
 
-import type { PerspectiveCamera, Scene } from "three";
+import type { Scene } from "three";
 import type { WorldModule } from "../../world/module-runtime";
+import type { Viewpoint } from "../../world/viewer-rig";
 import type { WorldSurface } from "../../world-surface/world-surface";
 import {
   type BirdFlocks,
@@ -35,7 +36,7 @@ export interface MotionPointSource {
 
 export interface MotionSenseModuleOptions {
   readonly scene: Scene;
-  readonly camera: PerspectiveCamera;
+  readonly viewpoint: Viewpoint;
   readonly parameters: MotionSenseParameters;
   readonly groundYAt: WorldSurface["groundYAt"];
   readonly zoneAt: WorldSurface["zoneAt"];
@@ -89,13 +90,13 @@ function loadMotionSense(
   options: MotionSenseModuleOptions,
   senseFadeUniform: { readonly value: number },
 ): void {
-  const { camera, scene, parameters } = options;
+  const { viewpoint, scene, parameters } = options;
   const flySwarms = createFlySwarms({
     parameters,
     groundYAt: options.groundYAt,
     zoneAt: options.zoneAt,
-    initialPlayerX: camera.position.x,
-    initialPlayerZ: camera.position.z,
+    initialPlayerX: viewpoint.worldPosition.x,
+    initialPlayerZ: viewpoint.worldPosition.z,
     senseFadeUniform,
   });
   const printers: MotionTrailPrinter[] = [
@@ -118,8 +119,8 @@ function loadMotionSense(
     ? createBirdFlocks({
         birds: parameters.birds,
         groundYAt: options.groundYAt,
-        initialPlayerX: camera.position.x,
-        initialPlayerZ: camera.position.z,
+        initialPlayerX: viewpoint.worldPosition.x,
+        initialPlayerZ: viewpoint.worldPosition.z,
       })
     : undefined;
   if (birdFlocks && parameters.birds) {
@@ -148,22 +149,23 @@ function loadMotionSense(
 
 function updateMotionSense(
   state: MotionSenseState,
-  { camera }: MotionSenseModuleOptions,
+  { viewpoint }: MotionSenseModuleOptions,
   deltaSeconds: number,
 ): void {
   const resources = state.currentResources;
   if (!resources) return;
 
-  // Reading the camera position is WebXR-safe; only writes bypass the rig.
+  // The viewpoint, never the camera: under the rig the camera's own
+  // position is the head's offset within it, not a world position.
   resources.flySwarms.update(
     deltaSeconds,
-    camera.position.x,
-    camera.position.z,
+    viewpoint.worldPosition.x,
+    viewpoint.worldPosition.z,
   );
   resources.birdFlocks?.update(
     deltaSeconds,
-    camera.position.x,
-    camera.position.z,
+    viewpoint.worldPosition.x,
+    viewpoint.worldPosition.z,
   );
   for (const printer of resources.printers) {
     printer.trail.spawnFromWorldPoints(printer.source.getWorldPositions());

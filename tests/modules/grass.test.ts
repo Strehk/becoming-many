@@ -6,13 +6,7 @@
  */
 
 import { expect, test } from "bun:test";
-import {
-  Mesh,
-  PerspectiveCamera,
-  Scene,
-  type ShaderMaterial,
-  Vector2,
-} from "three";
+import { Mesh, Scene, type ShaderMaterial, Vector2, Vector3 } from "three";
 import { createEchoDepth } from "../../src/modules/echo-depth/echo-depth";
 import { createGrassModule } from "../../src/modules/grass/grass";
 import {
@@ -22,6 +16,7 @@ import {
   initializeGrassChunks,
 } from "../../src/modules/grass/grass-field";
 import { StreamQueue } from "../../src/world/stream-queue";
+import type { Viewpoint } from "../../src/world/viewer-rig";
 import { WORLD_WIND } from "../../src/world/wind";
 import type { WorldSurface } from "../../src/world-surface/world-surface";
 import type { ZoneId } from "../../src/world-surface/zone-settings";
@@ -215,14 +210,18 @@ test("Grass holds its own range instead of following the view distance", () => {
 
 test("Grass keeps one fixed draw while recycling chunk ranges", () => {
   const scene = new Scene();
-  const camera = new PerspectiveCamera(50, 1, 0.1, 24);
+  const viewerPosition = new Vector3();
+  const viewpoint: Viewpoint = {
+    worldPosition: viewerPosition,
+    viewDistanceMeters: 24,
+  };
   const streamQueue = new StreamQueue(
     { budgetMilliseconds: 1, capacity: 256 },
     () => 0,
   );
   const module = createGrassModule({
     scene,
-    camera,
+    viewpoint,
     streamQueue,
     worldSurface: createFlatSurface(() => "meadow"),
     preset: createGrassPreset(1 / 4_096),
@@ -246,7 +245,7 @@ test("Grass keeps one fixed draw while recycling chunk ranges", () => {
   expect(geometry.instanceCount).toBe(25);
   expect(instanceAttribute.updateRanges).toHaveLength(0);
 
-  camera.position.x = 64;
+  viewerPosition.x = 64;
   module.update?.(0.5);
   expect(streamQueue.size).toBe(5);
   streamQueue.update();
@@ -280,7 +279,10 @@ function countGrassSlots(viewDistanceMeters: number): number {
   const scene = new Scene();
   const module = createGrassModule({
     scene,
-    camera: new PerspectiveCamera(50, 1, 0.1, viewDistanceMeters),
+    viewpoint: {
+      worldPosition: new Vector3(),
+      viewDistanceMeters: viewDistanceMeters,
+    },
     streamQueue: new StreamQueue(
       { budgetMilliseconds: 1, capacity: 256 },
       () => 0,

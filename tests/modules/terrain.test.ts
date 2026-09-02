@@ -11,8 +11,8 @@ import {
   Group,
   Mesh,
   MeshBasicMaterial,
-  PerspectiveCamera,
   Scene,
+  Vector3,
 } from "three";
 import {
   createTerrainModule,
@@ -24,6 +24,7 @@ import type {
 } from "../../src/modules/terrain/terrain-geometry";
 import { createZoneVisualizer } from "../../src/modules/zone-visualizer/zone-visualizer";
 import { StreamQueue } from "../../src/world/stream-queue";
+import type { Viewpoint } from "../../src/world/viewer-rig";
 import { WORLD_SURFACE_SETTINGS } from "../../src/world-surface/surface-settings";
 import {
   createWorldSurface,
@@ -41,7 +42,7 @@ test("Terrain recycles a fixed mesh pool through cooperative row jobs", () => {
   const meshes = getTerrainMeshes(loadedTerrain.terrainGroup);
   const initialResources = captureMeshResources(meshes);
 
-  loadedTerrain.camera.position.x = 64;
+  loadedTerrain.viewerPosition.x = 64;
   loadedTerrain.module.update?.(1 / 90);
 
   expect(loadedTerrain.streamQueue.size).toBe(3);
@@ -243,13 +244,14 @@ test("Terrain writes optional thermal warmth into its existing mesh pool", () =>
 });
 
 test("Terrain replaces obsolete partially generated work", () => {
-  const { camera, module, streamQueue, terrainGroup } = createLoadedTerrain();
+  const { viewerPosition, module, streamQueue, terrainGroup } =
+    createLoadedTerrain();
 
-  camera.position.x = 64;
+  viewerPosition.x = 64;
   module.update?.(1 / 90);
   streamQueue.update();
 
-  camera.position.x = 256;
+  viewerPosition.x = 256;
   module.update?.(1 / 90);
   streamQueue.update();
 
@@ -276,7 +278,7 @@ interface DisposalCount {
 
 interface LoadedTerrain {
   readonly scene: Scene;
-  readonly camera: PerspectiveCamera;
+  readonly viewerPosition: Vector3;
   readonly streamQueue: StreamQueue;
   readonly module: ReturnType<typeof createTerrainModule>;
   readonly terrainGroup: Group;
@@ -301,14 +303,18 @@ function createLoadedTerrain(
   effects?: readonly TerrainMaterialEffect[],
 ): LoadedTerrain {
   const scene = new Scene();
-  const camera = new PerspectiveCamera(50, 1, 0.1, 24);
+  const viewerPosition = new Vector3();
+  const viewpoint: Viewpoint = {
+    worldPosition: viewerPosition,
+    viewDistanceMeters: 24,
+  };
   const streamQueue = new StreamQueue(
     { budgetMilliseconds: 1, capacity: 256 },
     () => 0,
   );
   const module = createTerrainModule({
     scene,
-    camera,
+    viewpoint,
     worldSurface,
     streamQueue,
     parameters,
@@ -322,7 +328,7 @@ function createLoadedTerrain(
   const terrainGroup = scene.children[0];
   if (!(terrainGroup instanceof Group)) throw new Error("Expected Group");
 
-  return { scene, camera, streamQueue, module, terrainGroup };
+  return { scene, viewerPosition, streamQueue, module, terrainGroup };
 }
 
 function createTestWorldSurface(): WorldSurface {

@@ -5,9 +5,10 @@
  * Boundary: Field axis, intensity, and time uniforms arrive shared from Magnetic Sense.
  */
 
-import type { Color, PerspectiveCamera, Scene, Vector3 } from "three";
+import type { Color, Scene, Vector3 } from "three";
 import { BackSide, Mesh, ShaderMaterial, SphereGeometry } from "three";
 import type { WorldModule } from "../../world/module-runtime";
+import type { Viewpoint } from "../../world/viewer-rig";
 import { MAGNETIC_SENSE_SETTINGS } from "./magnetic-sense-settings";
 import fragmentShader from "./magnetic-sky.frag.glsl?raw";
 import vertexShader from "./magnetic-sky.vert.glsl?raw";
@@ -23,7 +24,7 @@ export interface MagneticSkyColors {
 
 export interface MagneticSkyOptions {
   readonly scene: Scene;
-  readonly camera: PerspectiveCamera;
+  readonly viewpoint: Viewpoint;
   /**
    * The haze the dome meets at the horizon. Shared so a show can keep it on
    * the live background while that background lerps between world states; a
@@ -59,7 +60,7 @@ export function createMagneticSkyModule(
   return {
     load: () => loadMagneticSky(state, options),
     activate: () => setMagneticSkyVisible(state, true),
-    update: () => followCamera(state, options.camera),
+    update: () => followCamera(state, options.viewpoint),
     deactivate: () => setMagneticSkyVisible(state, false),
     unload: () => unloadMagneticSky(state, options.scene),
   };
@@ -110,18 +111,16 @@ function loadMagneticSky(
   // Loading happens before the first render. Keep every object hidden until
   // the module lifecycle activates it.
   dome.visible = false;
-  dome.position.copy(options.camera.position);
+  dome.position.copy(options.viewpoint.worldPosition);
   options.scene.add(dome);
   state.currentResources = { dome };
 }
 
-function followCamera(
-  state: MagneticSkyState,
-  camera: PerspectiveCamera,
-): void {
-  // Reading the camera position is WebXR-safe; only writes bypass the rig.
+function followCamera(state: MagneticSkyState, viewpoint: Viewpoint): void {
+  // The viewpoint, never the camera: under the rig the camera's own
+  // position is the head's offset within it, not a world position.
   // Following the full position keeps the horizon band at eye level.
-  state.currentResources?.dome.position.copy(camera.position);
+  state.currentResources?.dome.position.copy(viewpoint.worldPosition);
 }
 
 function setMagneticSkyVisible(

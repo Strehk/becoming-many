@@ -5,7 +5,7 @@
  * Boundary: Buffer data and animation live beside this file; frame budgets live in World.
  */
 
-import type { PerspectiveCamera, Scene } from "three";
+import type { Scene } from "three";
 import {
   type ChunkAssignment,
   ChunkWindow,
@@ -13,6 +13,7 @@ import {
 } from "../../world/chunk-system";
 import type { WorldModule } from "../../world/module-runtime";
 import type { StreamJob, StreamQueue } from "../../world/stream-queue";
+import type { Viewpoint } from "../../world/viewer-rig";
 import {
   getWorldWind,
   type WorldWindSample,
@@ -48,7 +49,7 @@ export type { ScentParticlesParameters } from "./scent-particles-settings";
 
 export interface ScentParticlesModuleOptions {
   readonly scene: Scene;
-  readonly camera: PerspectiveCamera;
+  readonly viewpoint: Viewpoint;
   readonly parameters: ScentParticlesParameters;
   readonly streamQueue: StreamQueue;
 
@@ -134,7 +135,7 @@ function loadScentParticles(
   options: ScentParticlesModuleOptions,
   senseFadeUniform: { readonly value: number },
 ): void {
-  const { camera, scene, parameters, plantSource, maxActorCount } = options;
+  const { viewpoint, scene, parameters, plantSource, maxActorCount } = options;
 
   if (plantSource) {
     const stream = createScentParticleStream(
@@ -143,8 +144,8 @@ function loadScentParticles(
       senseFadeUniform,
     );
     const initialAssignments = stream.chunkWindow.update(
-      camera.position.x,
-      camera.position.z,
+      viewpoint.worldPosition.x,
+      viewpoint.worldPosition.z,
     );
 
     // Loading happens before the first render. Fill every fixed slot now, then
@@ -170,7 +171,7 @@ function loadScentParticles(
 
 function updateScentParticles(
   state: ScentParticlesState,
-  { camera, streamQueue, parameters }: ScentParticlesModuleOptions,
+  { viewpoint, streamQueue, parameters }: ScentParticlesModuleOptions,
   deltaSeconds: number,
 ): void {
   // Animation changes two uniforms per layer. Particle buffers stay untouched.
@@ -198,8 +199,8 @@ function updateScentParticles(
   if (!stream) return;
 
   const changedAssignments = stream.chunkWindow.update(
-    camera.position.x,
-    camera.position.z,
+    viewpoint.worldPosition.x,
+    viewpoint.worldPosition.z,
   );
 
   // Most frames return no assignments. After a boundary crossing, only the
@@ -320,12 +321,14 @@ function unloadScentParticles(state: ScentParticlesState, scene: Scene): void {
 
 /** Allocate the fixed resident resources used throughout one loaded lifetime. */
 function createScentParticleStream(
-  { camera, parameters }: ScentParticlesModuleOptions,
+  { viewpoint, parameters }: ScentParticlesModuleOptions,
   plantSource: PlantScentSource,
   senseFadeUniform: { readonly value: number },
 ): ScentParticleStream {
   const chunkSize = getChunkSize(SCENT_PARTICLES_SETTINGS.chunkLevel);
-  const visibleChunkRadius = Math.ceil(camera.far / chunkSize);
+  const visibleChunkRadius = Math.ceil(
+    viewpoint.viewDistanceMeters / chunkSize,
+  );
   const residentChunkRadius =
     visibleChunkRadius + SCENT_PARTICLES_SETTINGS.preloadLayerCount;
   const chunkWindow = new ChunkWindow({
