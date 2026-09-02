@@ -252,6 +252,12 @@ export interface LevelOptions {
 
   /** Play a narration show against this preset. */
   readonly show?: ShowRequest;
+
+  /**
+   * DeviceId the M5 adapter expects, from the deployment config. Absent, the
+   * authored default in m5-settings.ts holds (accept any device).
+   */
+  readonly m5ExpectedDeviceId?: string;
 }
 
 /**
@@ -331,7 +337,9 @@ function setupLevel(
     : createDesktopControls(world.camera, world.renderer.domElement);
   // Created idle: with no host set it owns no timer and touches no network,
   // so a show without a conductor behaves exactly as before.
-  const m5 = benchmark ? undefined : createM5Adapter();
+  const m5 = benchmark
+    ? undefined
+    : createM5Adapter(options.m5ExpectedDeviceId);
   const hasGround = level.invisibleGround === true || hasVisibleSurface(level);
   // One sampler for the whole level: the narrative presets never set `testUi`,
   // so metrics read from the overlay would be missing exactly where an

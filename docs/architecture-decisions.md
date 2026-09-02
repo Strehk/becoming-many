@@ -370,6 +370,32 @@ a benchmark is what opts out.)*
   carries the level the timeline currently holds, read from the running show,
   so the operator watches the world move through its cues.
 
+### One Station Container (2026-09-02)
+
+A deployed station is one Docker container running one Bun process: the
+station server serves the built pages from `dist/` and is the WebSocket
+broker, on one port and one origin.
+
+- **One process, not two.** The broker is a stateless relay of ~150 lines;
+  process isolation between it and a static file server buys nothing, while
+  one origin removes cross-origin socket configuration entirely: both pages
+  derive the broker address from `location.host` (`/station`), and Vite
+  proxies the same paths in development so one URL rule holds everywhere.
+  `?station=<url>` stays the escape hatch for conducting another machine.
+- **Deployment env vars are network identity, not configuration.** `M5_HOST`,
+  `M5_DEVICE_ID`, and `STATION_NAME` name which physical devices a station is
+  wired to — facts of the room, not authored tunables, so the
+  TypeScript-only configuration rule does not extend to them. They reach the
+  pages through the server's `/config` endpoint
+  (`src/station/deployment-config.ts`); a set fact is deployment authority:
+  the show applies it on load, the matching conductor control renders
+  read-only, and the station drops commands that would overwrite it. Absent
+  vars change nothing — the UI decides, as before.
+- **Health is liveness.** `/health` reports the process and its socket
+  counts, never the show or the M5: an unreachable controller is an
+  operator-visible warning in the conductor, not a reason for Docker to
+  restart a station mid-visit.
+
 ## Approved Navigation Boundary
 
 ### Input and Navigation

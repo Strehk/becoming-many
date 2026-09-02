@@ -22,11 +22,18 @@ const STORAGE_KEY = "bm-conductor-m5-host";
 export interface M5PanelOptions {
   readonly parent: HTMLElement;
   readonly send: (command: ShowCommand) => void;
+  /**
+   * Host named by the deployment config. Set, the field renders it read-only
+   * and this panel sends nothing: the show applies the same config itself,
+   * and the station drops setM5Host commands while locked.
+   */
+  readonly lockedHost?: string;
 }
 
 export function createM5Panel({
   parent,
   send,
+  lockedHost,
 }: M5PanelOptions): ConductorPanel {
   const root = document.createElement("section");
   root.className = "conductor__m5";
@@ -39,8 +46,26 @@ export function createM5Panel({
   const host = document.createElement("input");
   host.type = "text";
   host.placeholder = "bm-station-a-m5.local";
-  host.value = loadStoredHost();
+  host.value = lockedHost ?? loadStoredHost();
+  host.readOnly = lockedHost !== undefined;
+  if (lockedHost !== undefined) {
+    host.title = "Set by the station's deployment config";
+  }
   label.append(host);
+
+  const preview = createPreview();
+
+  if (lockedHost !== undefined) {
+    root.append(label, preview.element);
+    parent.append(root);
+    preview.watch(lockedHost);
+
+    return {
+      update(): void {
+        preview.render();
+      },
+    };
+  }
 
   const apply = document.createElement("button");
   apply.type = "button";
@@ -50,7 +75,6 @@ export function createM5Panel({
   clear.type = "button";
   clear.textContent = "Clear";
 
-  const preview = createPreview();
   root.append(label, apply, clear, preview.element);
   parent.append(root);
 

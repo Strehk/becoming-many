@@ -41,6 +41,25 @@ documentation index: current status, architecture, standards, roadmap, and the
 Background, concept, storyboard and script:
 [Notion — Becoming Many](https://futurerealiteslab.notion.site/Becoming-Many-34b29d8a9fe280ceb963f133aa2689ee)
 
+## Running a station
+
+The whole deployed station is one Docker container — pages, WebSocket broker,
+health endpoint:
+
+```sh
+cp .env.example .env        # optional: M5 host, device id, station name
+docker compose up -d --build
+```
+
+Show page at [http://localhost](http://localhost), operator page at
+[http://localhost/conductor.html](http://localhost/conductor.html). Published
+releases land on `ghcr.io/strehk/becoming-many`, so a machine without the
+toolchain uses `docker compose pull && docker compose up -d` instead of
+`--build`. Details, endpoints, and the env vars: [station/README.md](station/README.md).
+
+For development: `bun install`, then `bun run dev` (pages) beside
+`bun run station` (broker) — see [AGENTS.md](AGENTS.md) for the full toolchain.
+
 ## Performance Map — `terrain-finetuning` (PR #2)
 
 The project is measured at 16.1 ms mean / 26.4 ms p95 against an 11.11 ms

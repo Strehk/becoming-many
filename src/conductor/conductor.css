@@ -27,6 +27,16 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* Station name ----------------------------------------------------------- */
+
+/* Which of the identical stations this window commands; deployment-set. */
+.conductor__station-name {
+  color: var(--muted);
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
 /* Status strip ---------------------------------------------------------- */
 
 .conductor__status {
@@ -321,6 +331,12 @@
   background: var(--ground);
   border: 1px solid var(--edge);
   border-radius: 8px;
+}
+
+/* A deployment-locked host reads as a fact, not a field. */
+.conductor__m5 input:read-only {
+  color: var(--muted);
+  border-style: dashed;
 }
 
 .conductor__m5-preview {
