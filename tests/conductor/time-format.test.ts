@@ -1,14 +1,15 @@
 /**
  * Purpose: Verify the readouts an operator scans during a performance.
- * Context: The same seconds appear as a clock, a cue length, and headroom.
- * Responsibility: Cover padding, rounding, and how a negative value reads.
+ * Context: The same seconds appear as a clock everywhere on the page, and
+ *   every cue id appears as a chapter name.
+ * Responsibility: Cover padding, rounding, how a negative value reads, and
+ *   the chapter naming.
  * Boundary: Layout and typography belong to the page.
  */
 
 import { describe, expect, test } from "bun:test";
 import {
-  formatDurationSeconds,
-  formatHeadroomSeconds,
+  cueDisplayName,
   formatShowTime,
 } from "../../src/conductor/time-format";
 
@@ -32,18 +33,9 @@ describe("formatShowTime", () => {
   });
 });
 
-describe("formatDurationSeconds", () => {
-  test("keeps the tenth that distinguishes two takes", () => {
-    expect(formatDurationSeconds(72.37)).toBe("72.4 s");
-  });
-});
-
-describe("formatHeadroomSeconds", () => {
-  test("marks silence before the next cue as a surplus", () => {
-    expect(formatHeadroomSeconds(4.63)).toBe("+4.6 s");
-  });
-
-  test("marks a recording that outlasts its slot as a shortfall", () => {
-    expect(formatHeadroomSeconds(-3.1)).toBe("−3.1 s");
+describe("cueDisplayName", () => {
+  test("reads a cue id as a chapter name", () => {
+    expect(cueDisplayName("prologue")).toBe("Prologue");
+    expect(cueDisplayName("return")).toBe("Return");
   });
 });

@@ -5,12 +5,10 @@
  * Boundary: How the state is gathered belongs to the page composition root.
  */
 
-import type {
-  NarrationCueId,
-  NarrationLanguage,
-} from "../dramaturgy/narration-catalog";
+import type { NarrationLanguage } from "../dramaturgy/narration-catalog";
 import type { ShowLevelName } from "../dramaturgy/narration-schedule";
 import type { M5OperatorStatus } from "../m5/m5-adapter";
+import type { XrSessionState } from "../world/xr-session";
 
 /** One reading of the show this page hosts, taken fresh every frame. */
 export interface ShowSnapshot {
@@ -27,6 +25,8 @@ export interface ShowSnapshot {
   readonly p95Milliseconds?: number;
   /** Undefined under a benchmark build; `state: "off"` while no host is set. */
   readonly m5: M5OperatorStatus | undefined;
+  /** The headset session, so every panel reads the same instant of it. */
+  readonly xr: XrSessionState;
 }
 
 export interface ConductorState {
@@ -34,9 +34,6 @@ export interface ConductorState {
 
   /** The snapshot's clock, or the operator's own position while scrubbing. */
   readonly showTimeSeconds: number;
-
-  /** The cue the operator has opened in the inspector. */
-  readonly selectedCueId: NarrationCueId | undefined;
 
   readonly isScrubbing: boolean;
 }

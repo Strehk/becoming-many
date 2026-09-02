@@ -12,7 +12,6 @@ import {
   type Material,
   Matrix4,
   Mesh,
-  type PerspectiveCamera,
   SkinnedMesh,
 } from "three";
 import type { GLTF } from "three/addons/loaders/GLTFLoader.js";
@@ -21,6 +20,7 @@ import type { GltfAssets } from "../../utils/asset-loader/gltf-assets";
 import { applyMaterialEffects } from "../../utils/asset-loader/material-effect";
 import { createUnlitMaterial } from "../../utils/asset-loader/unlit-material";
 import { getCellRandom } from "../../world/chunk-candidates";
+import type { Viewpoint } from "../../world/viewer-rig";
 import type { WorldSurface } from "../../world-surface/world-surface";
 import {
   type AlignAnimalToSurface,
@@ -151,15 +151,15 @@ function createAnimalPlans(
 
 export function updateAnimalActors(
   population: AnimalActors,
-  camera: PerspectiveCamera,
+  viewpoint: Viewpoint,
   deltaSeconds: number,
 ): void {
   for (const [actorIndex, actor] of population.actors.entries()) {
-    keepActorNearPlayer(population, actor, actorIndex, camera);
+    keepActorNearPlayer(population, actor, actorIndex, viewpoint);
     moveActor(population, actor, deltaSeconds);
   }
 
-  showNearestActors(population, camera);
+  showNearestActors(population, viewpoint);
   for (const actor of population.actors) {
     if (!actor.root.visible) continue;
     population.alignToSurface(actor.root, actor.headingRadians);
@@ -466,13 +466,13 @@ function keepActorNearPlayer(
   population: AnimalActors,
   actor: AnimalActor,
   actorIndex: number,
-  camera: PerspectiveCamera,
+  viewpoint: Viewpoint,
 ): void {
   const distance = horizontalDistance(
     actor.root.position.x,
     actor.root.position.z,
-    camera.position.x,
-    camera.position.z,
+    viewpoint.worldPosition.x,
+    viewpoint.worldPosition.z,
   );
   if (
     actor.hasHabitat &&
@@ -486,8 +486,8 @@ function keepActorNearPlayer(
     {
       parameters: population.parameters,
       worldSurface: population.worldSurface,
-      startX: camera.position.x,
-      startZ: camera.position.z,
+      startX: viewpoint.worldPosition.x,
+      startZ: viewpoint.worldPosition.z,
     },
     actorIndex,
     population.actors.length,
@@ -523,19 +523,19 @@ function moveActor(
 
 function showNearestActors(
   population: AnimalActors,
-  camera: PerspectiveCamera,
+  viewpoint: Viewpoint,
 ): void {
   for (const actor of population.actors) actor.root.visible = false;
   if (!population.group.visible) return;
 
-  showNearestActorPerDirection(population, camera);
-  fillRemainingVisibleSlots(population, camera);
+  showNearestActorPerDirection(population, viewpoint);
+  fillRemainingVisibleSlots(population, viewpoint);
 }
 
 /** Prefer one nearby actor in each direction before filling empty slots. */
 function showNearestActorPerDirection(
   population: AnimalActors,
-  camera: PerspectiveCamera,
+  viewpoint: Viewpoint,
 ): void {
   for (
     let directionIndex = 0;
@@ -544,7 +544,7 @@ function showNearestActorPerDirection(
   ) {
     const nearest = findNearestHiddenActor(
       population.actors,
-      camera,
+      viewpoint,
       directionIndex,
       population.parameters.maxVisible,
     );
@@ -554,14 +554,14 @@ function showNearestActorPerDirection(
 
 function fillRemainingVisibleSlots(
   population: AnimalActors,
-  camera: PerspectiveCamera,
+  viewpoint: Viewpoint,
 ): void {
   let visibleCount = population.actors.filter(
     ({ root }) => root.visible,
   ).length;
 
   while (visibleCount < population.parameters.maxVisible) {
-    const nearest = findNearestHiddenActor(population.actors, camera);
+    const nearest = findNearestHiddenActor(population.actors, viewpoint);
     if (!nearest) return;
     nearest.root.visible = true;
     visibleCount += 1;
@@ -570,7 +570,7 @@ function fillRemainingVisibleSlots(
 
 function findNearestHiddenActor(
   actors: readonly AnimalActor[],
-  camera: PerspectiveCamera,
+  viewpoint: Viewpoint,
   directionIndex?: number,
   directionCount?: number,
 ): AnimalActor | undefined {
@@ -579,8 +579,11 @@ function findNearestHiddenActor(
 
   for (const actor of actors) {
     if (!actor.hasHabitat || actor.root.visible) continue;
-    if (!isInDirection(actor, camera, directionIndex, directionCount)) continue;
-    const distance = actor.root.position.distanceToSquared(camera.position);
+    if (!isInDirection(actor, viewpoint, directionIndex, directionCount))
+      continue;
+    const distance = actor.root.position.distanceToSquared(
+      viewpoint.worldPosition,
+    );
     if (distance >= nearestDistance) continue;
     nearest = actor;
     nearestDistance = distance;
@@ -590,15 +593,15 @@ function findNearestHiddenActor(
 
 function isInDirection(
   actor: AnimalActor,
-  camera: PerspectiveCamera,
+  viewpoint: Viewpoint,
   directionIndex: number | undefined,
   directionCount: number | undefined,
 ): boolean {
   if (directionIndex === undefined || directionCount === undefined) return true;
 
   const angle = Math.atan2(
-    actor.root.position.x - camera.position.x,
-    actor.root.position.z - camera.position.z,
+    actor.root.position.x - viewpoint.worldPosition.x,
+    actor.root.position.z - viewpoint.worldPosition.z,
   );
   const positiveAngle = (angle + FULL_CIRCLE_RADIANS) % FULL_CIRCLE_RADIANS;
   const actorDirection = Math.floor(

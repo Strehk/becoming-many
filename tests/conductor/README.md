@@ -16,8 +16,8 @@ must leave alone: browser shortcuts and anything typed into a field.
 hosts — above all that the composite resets fire in the right order: restart
 is rewind, flight reset, then play; reset is rewind, then hold.
 `stream-button.test.ts` covers the whole availability × session matrix behind
-the stream button's one label. `time-format.test.ts` covers the readouts an
-operator scans mid-show.
+the headset button's one label. `time-format.test.ts` covers the readouts an
+operator scans mid-show, chapter names included.
 
 Slot and headroom arithmetic is not here either — it belongs to the schedule it
 measures, and is verified in `tests/dramaturgy/schedule-layout.test.ts`.

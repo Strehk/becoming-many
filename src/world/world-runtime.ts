@@ -5,15 +5,30 @@
  * Boundary: Level interpretation, controls, and concrete modules stay separate.
  */
 
-import { PerspectiveCamera, Scene, Timer, WebGLRenderer } from "three";
+import {
+  type Group,
+  type PerspectiveCamera,
+  Scene,
+  Timer,
+  WebGLRenderer,
+} from "three";
 import { ModuleRuntime } from "./module-runtime";
 import { StreamQueue } from "./stream-queue";
+import { createViewerRig, type Viewpoint } from "./viewer-rig";
 import { WORLD_RUNTIME_SETTINGS } from "./world-settings";
 import { createXrSessionControl, type XrSessionControl } from "./xr-session";
 
 export interface WorldContext {
   readonly scene: Scene;
+  /**
+   * The rendering camera. Its transform belongs to the head — projection and
+   * frustum are the only things outside `viewer-rig.ts` may touch.
+   */
   readonly camera: PerspectiveCamera;
+  /** The transform locomotion moves. The camera under it belongs to the head. */
+  readonly viewerRig: Group;
+  /** Where the visitor is, in world space. Modules read this, never the camera. */
+  readonly viewpoint: Viewpoint;
   readonly renderer: WebGLRenderer;
   readonly modules: ModuleRuntime;
   readonly streamQueue: StreamQueue;
@@ -85,7 +100,12 @@ export function startWorld(
   frameControl?: FrameControl,
 ): void {
   const scene = new Scene();
-  const camera = new PerspectiveCamera();
+  const viewer = createViewerRig();
+  // One indivisible act: `WebGLRenderer.render` skips its own camera matrix
+  // update once the camera has a parent, so a rig that never reaches the scene
+  // graph freezes the view with nothing raised and every test still green.
+  scene.add(viewer.group);
+  const camera = viewer.camera;
   const renderer = createWorldRenderer();
   const timer = new Timer();
   const modules = new ModuleRuntime();
@@ -101,6 +121,8 @@ export function startWorld(
   const updateWorld = setupWorld?.({
     scene,
     camera,
+    viewerRig: viewer.group,
+    viewpoint: viewer.viewpoint,
     renderer,
     modules,
     streamQueue,
@@ -135,6 +157,13 @@ export function startWorld(
       : timer.getDelta();
 
     updateWorld?.(deltaSeconds);
+    // Navigation has moved the rig and nothing refreshes world matrices until
+    // the render call. Publishing here, once, is what lets every module in
+    // this frame window its content around where the visitor actually is.
+    // The eye carries the head pose from the previous frame, because the
+    // session writes it inside `render` — centimetres against chunks tens of
+    // metres wide, and the price of having exactly one update point.
+    viewer.publish();
     modules.update(deltaSeconds);
     streamQueue.update();
     renderer.render(scene, camera);

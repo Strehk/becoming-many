@@ -1,6 +1,6 @@
 /**
  * Purpose: Provide the shared button constructors for conductor panels.
- * Context: Transport and stage panels build the same kinds of controls.
+ * Context: Session bar and drawer panels build the same kinds of controls.
  * Responsibility: Create plain and press-twice-to-confirm buttons.
  * Boundary: What a button does belongs to the panel that creates it.
  */
@@ -22,12 +22,14 @@ export function createButton(
 }
 
 /**
- * A destructive action asks twice. A blocking `window.confirm` is the wrong
- * tool: it would freeze this page's own clock — and with it the show.
+ * A destructive action asks twice, in words that say what the second tap
+ * does. A blocking `window.confirm` is the wrong tool: it would freeze this
+ * page's own clock — and with it the show.
  */
 export function createConfirmButton(
   parent: HTMLElement,
   labelText: string,
+  armedLabelText: string,
   onConfirm: () => void,
 ): HTMLButtonElement {
   let disarmTimer: ReturnType<typeof setTimeout> | undefined;
@@ -46,7 +48,7 @@ export function createConfirmButton(
     }
 
     button.dataset.armed = "true";
-    button.textContent = "confirm?";
+    button.textContent = armedLabelText;
     disarmTimer = setTimeout(
       () => disarm(button),
       CONDUCTOR_SETTINGS.confirmMilliseconds,

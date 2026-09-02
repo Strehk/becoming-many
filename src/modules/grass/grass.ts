@@ -5,7 +5,7 @@
  * Boundary: Placement buffers and shaders live beside this file; frame budgets live in World.
  */
 
-import type { PerspectiveCamera, Scene } from "three";
+import type { Scene } from "three";
 import type { UnlitMaterialEffect } from "../../utils/asset-loader/material-effect";
 import {
   type ChunkAssignment,
@@ -14,6 +14,7 @@ import {
 } from "../../world/chunk-system";
 import type { WorldModule } from "../../world/module-runtime";
 import type { StreamJob, StreamQueue } from "../../world/stream-queue";
+import type { Viewpoint } from "../../world/viewer-rig";
 import type { WorldSurface } from "../../world-surface/world-surface";
 import {
   createGrassChunkWriter,
@@ -44,7 +45,7 @@ const GRASS_VISIBLE_DISTANCE_METERS = 64;
 
 export interface GrassModuleOptions {
   readonly scene: Scene;
-  readonly camera: PerspectiveCamera;
+  readonly viewpoint: Viewpoint;
   readonly preset: GrassPreset;
   readonly streamQueue: StreamQueue;
   readonly worldSurface: WorldSurface;
@@ -78,8 +79,8 @@ export function createGrassModule(options: GrassModuleOptions): WorldModule {
 function loadGrass(state: GrassState, options: GrassModuleOptions): void {
   const stream = createGrassStream(options);
   const initialAssignments = stream.chunkWindow.update(
-    options.camera.position.x,
-    options.camera.position.z,
+    options.viewpoint.worldPosition.x,
+    options.viewpoint.worldPosition.z,
   );
 
   initializeGrassChunks(stream.field, initialAssignments);
@@ -90,7 +91,7 @@ function loadGrass(state: GrassState, options: GrassModuleOptions): void {
 
 function updateGrass(
   state: GrassState,
-  { camera, streamQueue }: GrassModuleOptions,
+  { viewpoint, streamQueue }: GrassModuleOptions,
   deltaSeconds: number,
 ): void {
   const stream = state.currentStream;
@@ -98,8 +99,8 @@ function updateGrass(
 
   stream.field.updateAnimation(deltaSeconds);
   const assignments = stream.chunkWindow.update(
-    camera.position.x,
-    camera.position.z,
+    viewpoint.worldPosition.x,
+    viewpoint.worldPosition.z,
   );
 
   for (const assignment of assignments) {
@@ -144,7 +145,7 @@ function createGrassStream(options: GrassModuleOptions): GrassStream {
   const chunkSize = getChunkSize(GRASS_CHUNK_LEVEL);
   // A level that sees less far than grass reaches still bounds it.
   const visibleDistance = Math.min(
-    options.camera.far,
+    options.viewpoint.viewDistanceMeters,
     GRASS_VISIBLE_DISTANCE_METERS,
   );
   const visibleRadius = Math.max(1, Math.ceil(visibleDistance / chunkSize));

@@ -5,7 +5,7 @@
  * Boundary: Surface generation, zones, navigation, and frame budgets stay elsewhere.
  */
 
-import type { PerspectiveCamera, Scene } from "three";
+import type { Scene } from "three";
 import {
   type ChunkAssignment,
   ChunkWindow,
@@ -17,6 +17,7 @@ import {
   type StreamQueue,
   SURFACE_STREAM_PRIORITY,
 } from "../../world/stream-queue";
+import type { Viewpoint } from "../../world/viewer-rig";
 import type { WorldSurface } from "../../world-surface/world-surface";
 import {
   createTerrainChunkWriter,
@@ -41,7 +42,7 @@ export interface TerrainParameters {
 
 export interface TerrainModuleOptions {
   readonly scene: Scene;
-  readonly camera: PerspectiveCamera;
+  readonly viewpoint: Viewpoint;
   readonly worldSurface: WorldSurface;
   readonly streamQueue: StreamQueue;
   readonly parameters: TerrainParameters;
@@ -76,8 +77,8 @@ export function createTerrainModule(
 function loadTerrain(state: TerrainState, options: TerrainModuleOptions): void {
   const stream = createTerrainStream(options);
   const initialAssignments = stream.chunkWindow.update(
-    options.camera.position.x,
-    options.camera.position.z,
+    options.viewpoint.worldPosition.x,
+    options.viewpoint.worldPosition.z,
   );
 
   initializeTerrainChunks(stream.geometry, initialAssignments);
@@ -88,7 +89,7 @@ function loadTerrain(state: TerrainState, options: TerrainModuleOptions): void {
 
 function updateTerrain(
   state: TerrainState,
-  { camera, streamQueue }: TerrainModuleOptions,
+  { viewpoint, streamQueue }: TerrainModuleOptions,
   deltaSeconds: number,
 ): void {
   const stream = state.currentStream;
@@ -97,8 +98,8 @@ function updateTerrain(
   stream.geometry.presentation?.update?.(deltaSeconds);
   for (const effect of stream.geometry.effects) effect.update?.(deltaSeconds);
   const changedAssignments = stream.chunkWindow.update(
-    camera.position.x,
-    camera.position.z,
+    viewpoint.worldPosition.x,
+    viewpoint.worldPosition.z,
   );
 
   enqueueChangedChunks(state, stream, changedAssignments, streamQueue);
@@ -156,7 +157,10 @@ function unloadTerrain(state: TerrainState, scene: Scene): void {
 
 function createTerrainStream(options: TerrainModuleOptions): TerrainStream {
   const chunkSize = getChunkSize(TERRAIN_CHUNK_LEVEL);
-  const residentRadius = Math.max(1, Math.ceil(options.camera.far / chunkSize));
+  const residentRadius = Math.max(
+    1,
+    Math.ceil(options.viewpoint.viewDistanceMeters / chunkSize),
+  );
   const chunkWindow = new ChunkWindow({
     level: TERRAIN_CHUNK_LEVEL,
     radius: residentRadius,
