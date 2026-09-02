@@ -8,7 +8,7 @@
  */
 
 import { describe, expect, test } from "bun:test";
-import { Matrix4, type Object3D, Scene } from "three";
+import { MathUtils, Matrix4, type Object3D, Scene, Vector3 } from "three";
 import { createViewerRig } from "../../src/world/viewer-rig";
 
 /**
@@ -104,5 +104,19 @@ describe("viewer rig", () => {
 
     // A show retunes the far plane mid-run, so a snapshot would go stale.
     expect(viewer.viewpoint.viewDistanceMeters).toBe(240);
+  });
+
+  test("raises the view through a parent transform WebXR cannot overwrite", () => {
+    const viewer = createViewerRig(30);
+    viewer.publish();
+    writeHeadsetPose(
+      viewer.camera,
+      headPoseOver(viewer.camera.parent?.matrixWorld ?? new Matrix4()),
+    );
+
+    const forward = viewer.camera.getWorldDirection(new Vector3());
+    expect(forward.y).toBeCloseTo(Math.sin(MathUtils.degToRad(30)));
+    // Comfort assistance never pitches the locomotion transform itself.
+    expect(viewer.group.rotation.x).toBe(0);
   });
 });

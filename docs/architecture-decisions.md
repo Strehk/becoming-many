@@ -558,6 +558,19 @@ Amends [One Station Window](#one-station-window-2026-09-02).
   constant glide follows the rig's local −Z. Looking aside in the headset or
   with the mouse does not steer the ICAROS flight; pitch changes only the rig's
   altitude.
+- **ICAROS flight has one typed base tuning.** `flight-settings.ts` authors a
+  5 m/s forward glide, 10 m/s full-deflection climb rate, 0.8 rad/s yaw rate,
+  1 m/s neutral descent, 30-degree upward view assistance, and 1 m minimum
+  ground clearance. These are installation comfort values, not device-adapter
+  calibration.
+- **View assistance is a camera-parent transform.** A 30-degree pitch between
+  the locomotion rig and camera raises the rendered view while leaving the
+  rig's heading level. Three.js composes the WebXR eye cameras with that parent,
+  so the headset's per-frame local-pose update cannot erase the assistance.
+- **Flight ceilings are level data and terrain-relative.** Each current preset
+  authors a 50 m maximum clearance above the sampled local surface. During a
+  show the runtime follows the active preset, so future levels may tune their
+  ceiling independently without changing the flight model.
 - **Modules consume a published viewpoint.** The rig composes its transform
   with the child camera and publishes the resulting world-space eye once after
   navigation and before module updates. Content streaming follows the visitor,

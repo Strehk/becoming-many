@@ -13,6 +13,7 @@ export const level: LevelPreset = {
   // verbatim; the heat view keeps winning on the ground while the magnetic
   // field fills the sky above it, untouched by either.
   ...thermalLevel,
+  maximumGroundClearanceMeters: 50,
   // New in level 06: the sky of the previous version, ported and hardcoded.
   // The radical-pair shimmer condenses into a tight patch at the magnetic
   // north point and a mirrored one at the southern counter-pole; the module

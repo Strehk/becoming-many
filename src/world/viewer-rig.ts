@@ -10,7 +10,7 @@
  *   lives in `../modules`. Neither may write the camera's own transform.
  */
 
-import { Group, PerspectiveCamera, Vector3 } from "three";
+import { Group, MathUtils, PerspectiveCamera, Vector3 } from "three";
 
 /** World-space viewer facts, refreshed once per frame before modules update. */
 export interface Viewpoint {
@@ -45,11 +45,18 @@ export interface ViewerRig {
   readonly publish: () => void;
 }
 
-export function createViewerRig(): ViewerRig {
+export function createViewerRig(viewPitchAssistDegrees = 0): ViewerRig {
   const group = new Group();
   group.name = "ViewerRig";
+  // WebXR composes the headset pose with the camera's parent. Keeping the
+  // comfort pitch on that parent makes it survive every headset pose update,
+  // while the outer rig remains yaw-only locomotion.
+  const viewAssist = new Group();
+  viewAssist.name = "ViewPitchAssist";
+  viewAssist.rotation.x = MathUtils.degToRad(viewPitchAssistDegrees);
   const camera = new PerspectiveCamera();
-  group.add(camera);
+  viewAssist.add(camera);
+  group.add(viewAssist);
 
   const worldPosition = new Vector3();
 

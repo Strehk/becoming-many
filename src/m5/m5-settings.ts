@@ -5,8 +5,7 @@
  *   rig — changing one changes the flight behavior.
  * Responsibility: Own the transport, safety, auto-neutralize, and smoothing
  *   numbers in one typed place.
- * Boundary: Flight-model constants (speed, yaw and climb rates) belong to the
- *   flight layer in src/control/m5-flight.ts.
+ * Boundary: Flight-model tuning belongs to src/control/flight-settings.ts.
  */
 
 export const M5_SETTINGS = {

@@ -51,6 +51,7 @@ src/
 │   ├── desktop-controls.ts
 │   ├── flight-ground-clearance.ts
 │   ├── flight-reset.ts
+│   ├── flight-settings.ts
 │   └── m5-flight.ts
 ├── dramaturgy/
 │   ├── narration-catalog.ts
@@ -237,11 +238,13 @@ WebGL renderer, timer, resize handling, module runtime, stream queue, WebXR
 entry, and animation loop. It knows neither the selected level nor concrete
 content modules.
 
-`viewer-rig.ts` parents the rendering camera under the locomotion transform.
-Benchmark placement, desktop translation, M5 flight, reset, and ground
-clearance write the rig; pointer look and WebXR write only the child camera's
-local pose. Its `Viewpoint` publishes the resulting world-space eye position
-once per frame before modules update.
+`viewer-rig.ts` parents an upward comfort-pitch transform and the rendering
+camera under the locomotion transform. Benchmark placement, desktop
+translation, M5 flight, reset, and height limits write the outer rig; pointer
+look and WebXR write only the child camera's local pose. The intermediate
+transform raises the view without pitching the flight heading, and its
+`Viewpoint` publishes the resulting world-space eye position once per frame
+before modules update.
 
 `FrameControl` is the optional measurement seam. When present it supplies the
 fixed timestep, a virtual clock for the stream queue, and a callback that runs
@@ -320,9 +323,11 @@ plays.
 
 Desktop controls own pointer lock and keyboard state. Pointer lock rotates the
 child camera while keyboard translation moves its parent viewer rig. M5 flight,
-`flight-reset.ts`, and ground clearance write that same locomotion transform,
-so they remain effective while Three.js writes the headset pose onto the child
-camera every XR frame. Input handling remains outside the World Engine.
+`flight-reset.ts`, and terrain-relative height limits write that same
+locomotion transform, so they remain effective while Three.js writes the
+headset pose onto the child camera every XR frame. `flight-settings.ts` owns
+the shared ICAROS tuning; the per-level ceiling stays in `LevelPreset`. Input
+handling remains outside the World Engine.
 
 ### `station/` and `station/station-server.ts`
 
@@ -457,6 +462,7 @@ is proven twice; zone and placement policy remain module-owned.
 | `StreamJob` | Stable key, currentness check, and one bounded work step |
 | `DesktopControls` | One per-frame desktop movement update |
 | `FlightTransform` | Position and orientation owned by flight navigation |
+| `FlightHeightLimits` | Optional minimum and maximum clearance above local terrain |
 | `Viewpoint` | Published world-space eye position and live view distance |
 | `RunningLevel` | A started level's show, flight reset, frame metrics, and XR session, returned by `startLevel()` |
 | `RunningShow` | A running show's clock, language, and audio state |

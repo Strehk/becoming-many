@@ -11,5 +11,6 @@ import { sharedAirParticles } from "./shared-level-values";
 export const level: LevelPreset = {
   backgroundColor: 0xffffff,
   viewDistance: 128,
+  maximumGroundClearanceMeters: 50,
   airParticles: sharedAirParticles,
 };

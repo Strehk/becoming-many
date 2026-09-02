@@ -55,10 +55,11 @@ diagnostic development preset and activates Terrain and Grass, uses Zone
 Visualizer as the base presentation, and authors its own diagnostic magnetic
 block.
 
-Presentation values can include the background, the camera view distance, and
-optional module parameters. The view distance is also the hard visibility
-boundary used to size streamed module windows with an additional preparation
-margin. It is level data; the permanent runtime does not invent a world look.
+Presentation values can include the background, the camera view distance, the
+maximum flight clearance above local terrain, and optional module parameters.
+The view distance is also the hard visibility boundary used to size streamed
+module windows with an additional preparation margin. These are level data;
+the permanent runtime does not invent a world look or flight ceiling.
 
 During a show (the default page) the timeline is the world authority: the world is
 composed once from `SHOW_LEVEL` — the ladder's last preset, which the
@@ -73,9 +74,9 @@ dissolves, so the ramp appears and vanishes with them at full strength
 rather than fading twice. Each gated module
 stays active exactly while its introducing sense carries any strength, so a
 fading world keeps rendering until it has fully dissolved. `?level` is
-ignored while a show runs. Flight stays clamped above the world surface
-through the whole show, including White World phases, so terrain arriving at
-the echo cue cannot find the visitor beneath it.
+ignored while a show runs. Flight stays clamped above the world surface and
+below the active level's ceiling through the whole show, including White World
+phases, so terrain arriving at the echo cue cannot find the visitor beneath it.
 
 `level-catalog.ts` names every preset so a run can select one without editing
 the entry point. It holds the default the browser opens and resolves an

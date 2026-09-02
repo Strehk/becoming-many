@@ -14,6 +14,7 @@ export const level: LevelPreset = {
   // verbatim, and the decided art direction keeps the pale haze as the
   // ground the ink-dark motion language prints against.
   ...echoLevel,
+  maximumGroundClearanceMeters: 50,
   // New in level 04: the moodboard palette #212133 #312758 #45577A #10BEDB
   // #E3DFDD #F3952D colors the flies, trails, and bird traces; the orange
   // accent stays reserved for later motion actors (exit cues).

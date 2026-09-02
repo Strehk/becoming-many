@@ -8,8 +8,12 @@
 import { Color, type Matrix4 } from "three";
 import type { BenchmarkRun } from "../benchmark/benchmark-run";
 import { createDesktopControls } from "../control/desktop-controls";
-import { keepFlightAboveGround } from "../control/flight-ground-clearance";
+import {
+  BASE_MINIMUM_GROUND_CLEARANCE_METERS,
+  keepFlightWithinHeightLimits,
+} from "../control/flight-ground-clearance";
 import { resetFlightPose } from "../control/flight-reset";
+import { FLIGHT_SETTINGS } from "../control/flight-settings";
 import { applyM5Flight } from "../control/m5-flight";
 import type { NarrationLanguage } from "../dramaturgy/narration-catalog";
 import {
@@ -139,6 +143,9 @@ export interface LevelPreset {
   readonly viewDistance?: number;
   readonly testUi?: true;
 
+  /** Highest allowed rig altitude in metres above the local world surface. */
+  readonly maximumGroundClearanceMeters?: number;
+
   /** Clamp flight above the shared world surface without rendering Terrain. */
   readonly invisibleGround?: true;
 
@@ -195,6 +202,7 @@ export interface LevelPreset {
 /** The per-frame half of a running show; the commandable half goes to the caller. */
 interface ShowUpdate {
   readonly update: () => void;
+  readonly readActiveLevelPreset: () => LevelPreset;
   readonly running: RunningShow;
 }
 
@@ -302,15 +310,15 @@ export async function startLevel(
   // The World Runtime calls its setup synchronously, before it returns, so the
   // handle is always in hand by the time this function continues.
   let running: RunningLevel | undefined;
-  startWorld(
-    container,
-    (world) => {
+  startWorld(container, {
+    setupWorld: (world) => {
       const setup = setupLevel(container, world, level, assets, options);
       running = setup.running;
       return setup.update;
     },
-    options.benchmark,
-  );
+    frameControl: options.benchmark,
+    viewPitchAssistDegrees: FLIGHT_SETTINGS.viewPitchAssistDegrees,
+  });
 
   if (!running) throw new Error("The world runtime skipped level setup");
 
@@ -375,6 +383,12 @@ function setupLevel(
   const show = benchmark
     ? undefined
     : createShow(options.show, world, composed.reach);
+  const heightLimits = {
+    minimumGroundClearanceMeters: hasGround
+      ? BASE_MINIMUM_GROUND_CLEARANCE_METERS
+      : undefined,
+    maximumGroundClearanceMeters: level.maximumGroundClearanceMeters,
+  };
 
   return {
     update: (deltaSeconds): void => {
@@ -395,11 +409,21 @@ function setupLevel(
         }
       }
 
-      if (hasGround) {
-        keepFlightAboveGround(world.viewerRig.position, worldSurface.groundYAt);
+      show?.update();
+      heightLimits.maximumGroundClearanceMeters = show
+        ? show.readActiveLevelPreset().maximumGroundClearanceMeters
+        : level.maximumGroundClearanceMeters;
+      if (
+        heightLimits.minimumGroundClearanceMeters !== undefined ||
+        heightLimits.maximumGroundClearanceMeters !== undefined
+      ) {
+        keepFlightWithinHeightLimits(
+          world.viewerRig.position,
+          worldSurface.groundYAt,
+          heightLimits,
+        );
       }
       testOverlay?.update(deltaSeconds);
-      show?.update();
     },
 
     running: {
@@ -539,6 +563,9 @@ function createShow(
       });
       followWorld(showTime.timeSeconds);
     },
+
+    readActiveLevelPreset: (): LevelPreset =>
+      levels[activeLevel ?? openingLevel],
 
     running: {
       clock,

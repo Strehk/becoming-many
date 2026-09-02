@@ -13,6 +13,7 @@ export const level: LevelPreset = {
   // every earlier sense stays at full strength while the underground web
   // reveals the relationships between the elements they already show.
   ...magneticLevel,
+  maximumGroundClearanceMeters: 50,
   // Animals are deliberately absent from the sources: a root system is what
   // stands still and grows, and a body walking over it is not part of it. The
   // module's live actor links stay unauthored here.

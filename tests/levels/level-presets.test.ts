@@ -9,6 +9,7 @@ import { expect, test } from "bun:test";
 import { level as connectionsLevel } from "../../src/levels/connections.level";
 import { level as designTestLevel } from "../../src/levels/designTest.level";
 import { level as echoLevel } from "../../src/levels/echo.level";
+import { LEVEL_CATALOG } from "../../src/levels/level-catalog";
 import type { LevelPreset } from "../../src/levels/level-runtime";
 import { level as magneticLevel } from "../../src/levels/magnetic.level";
 import { level as motionLevel } from "../../src/levels/motion.level";
@@ -20,6 +21,12 @@ import { MYCELIUM_SETTINGS } from "../../src/modules/mycelium/mycelium-settings"
 import { THERMAL_PERCEPTION_SETTINGS } from "../../src/modules/thermal-perception/thermal-perception-settings";
 import { BASE_CHUNK_SIZE } from "../../src/world/chunk-system";
 import { WORLD_WIND } from "../../src/world/wind";
+
+test("every level authors the current terrain-relative flight ceiling", () => {
+  for (const preset of Object.values(LEVEL_CATALOG)) {
+    expect(preset.maximumGroundClearanceMeters).toBe(50);
+  }
+});
 
 test("only the Test Level activates development diagnostics", () => {
   const testPreset: LevelPreset = testLevel;

@@ -65,6 +65,12 @@ export interface FrameControl {
 export type WorldUpdate = (deltaSeconds: number) => void;
 type SetupWorld = (context: WorldContext) => WorldUpdate | undefined;
 
+export interface WorldStartOptions {
+  readonly setupWorld?: SetupWorld;
+  readonly frameControl?: FrameControl;
+  readonly viewPitchAssistDegrees?: number;
+}
+
 /**
  * One WebGL2 context, XR-compatible from creation so that starting a headset
  * session never has to migrate adapters underneath the running renderer.
@@ -96,11 +102,11 @@ function createWorldRenderer(): WebGLRenderer {
 
 export function startWorld(
   container: HTMLElement,
-  setupWorld?: SetupWorld,
-  frameControl?: FrameControl,
+  options: WorldStartOptions = {},
 ): void {
+  const { setupWorld, frameControl, viewPitchAssistDegrees = 0 } = options;
   const scene = new Scene();
-  const viewer = createViewerRig();
+  const viewer = createViewerRig(viewPitchAssistDegrees);
   // One indivisible act: `WebGLRenderer.render` skips its own camera matrix
   // update once the camera has a parent, so a rig that never reaches the scene
   // graph freezes the view with nothing raised and every test still green.

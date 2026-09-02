@@ -16,6 +16,7 @@ import {
 export const level: LevelPreset = {
   backgroundColor: 0xffffff,
   viewDistance: 180,
+  maximumGroundClearanceMeters: 50,
   testUi: true,
   airParticles: {
     ...sharedAirParticles,

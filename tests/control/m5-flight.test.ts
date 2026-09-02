@@ -8,6 +8,7 @@
 
 import { describe, expect, test } from "bun:test";
 import { Group, Vector3 } from "three";
+import { FLIGHT_SETTINGS } from "../../src/control/flight-settings";
 import { applyM5Flight } from "../../src/control/m5-flight";
 import {
   type ControlFrame,
@@ -19,16 +20,24 @@ function liveFrame(overrides: Partial<ControlFrame> = {}): ControlFrame {
 }
 
 describe("m5 flight", () => {
-  test("glides level along the rig heading at neutral tilt", () => {
+  test("uses the confirmed shared flight tuning", () => {
+    expect(FLIGHT_SETTINGS.glideSpeedMetersPerSecond).toBe(5);
+    expect(FLIGHT_SETTINGS.neutralDescentMetersPerSecond).toBe(1);
+    expect(FLIGHT_SETTINGS.viewPitchAssistDegrees).toBe(30);
+  });
+
+  test("glides at the configured speed with the neutral descent bias", () => {
     const rig = new Group();
 
     applyM5Flight(rig, liveFrame(), 1);
 
-    // The rig heads down -Z from the origin; one second of glide moves
-    // one GLIDE_SPEED along it and nothing else.
     expect(rig.position.x).toBeCloseTo(0);
-    expect(rig.position.y).toBeCloseTo(0);
-    expect(rig.position.z).toBeLessThan(0);
+    expect(rig.position.y).toBeCloseTo(
+      -FLIGHT_SETTINGS.neutralDescentMetersPerSecond,
+    );
+    expect(rig.position.z).toBeCloseTo(
+      -FLIGHT_SETTINGS.glideSpeedMetersPerSecond,
+    );
   });
 
   test("roll yaws the heading without banking or pitching the view", () => {
@@ -56,6 +65,17 @@ describe("m5 flight", () => {
     expect(rig.position.y).toBeGreaterThan(0);
     const forward = flightForward(rig);
     expect(forward.y).toBeCloseTo(0);
+  });
+
+  test("push-forward adds to the configured descent bias", () => {
+    const rig = new Group();
+
+    applyM5Flight(rig, liveFrame({ pitch: 0.5 }), 1);
+
+    expect(rig.position.y).toBeCloseTo(
+      -FLIGHT_SETTINGS.climbRateMetersPerSecond * 0.5 -
+        FLIGHT_SETTINGS.neutralDescentMetersPerSecond,
+    );
   });
 
   test("heading persists after the roll returns to zero", () => {

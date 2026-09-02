@@ -18,6 +18,7 @@ import {
 export const level: LevelPreset = {
   backgroundColor: sharedEchoHazeColor,
   viewDistance: 128,
+  maximumGroundClearanceMeters: 50,
   testUi: true,
   terrain: {
     opacity: 1,

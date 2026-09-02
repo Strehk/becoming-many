@@ -81,13 +81,17 @@ before someone acts.
   holds no show state. `src/conductor` owns the station window: it hosts the
   show in-process and reads schedule data without authoring it.
 - Every frame updates benchmark, desktop, or M5 movement on the viewer rig,
-  publishes the child camera's world-space viewpoint, updates active modules
-  and bounded stream work, and then renders once.
+  applies terrain-relative height limits, publishes the child camera's
+  world-space viewpoint, updates active modules and bounded stream work, and
+  then renders once.
 
 ### Levels and Modules
 
 - `LevelPreset` is sparse: a level defines only the values and optional module
   parameters it needs.
+- Every current preset sets `maximumGroundClearanceMeters: 50`; the ceiling is
+  measured from the deterministic local surface and follows the active preset
+  during a show.
 - `white-world.level.ts` defines a white background, a 128-metre view distance,
   and Air Particles parameters without Terrain.
 - `scent.level.ts` is the Scent World base experiment: a pale warm background,
@@ -627,16 +631,19 @@ again. `src/m5/control-source.ts` runs the client-owned pipeline
 derives one-frame button edges from the payload's counters with consume-on-read
 latching, and goes neutral within one second of silence.
 While an M5 host is configured the ICAROS glider flies every frame
-(`src/control/m5-flight.ts`: constant glide, roll yaws about world-up, pitch
-climbs — the horizon never banks); a stale or failed poll only straightens
-the steering, never stops the flight. Mouse look stays live, and keyboard
-movement returns when the host is cleared. The conductor sets the polled
+(`src/control/m5-flight.ts`: 5 m/s constant glide, roll yaws about world-up,
+pitch climbs around a 1 m/s downward bias — the horizon never banks); a stale
+or failed poll only straightens the steering, never stops the flight. The
+camera's parent adds 30 degrees of upward view assistance for the ICAROS body
+position, and WebXR cannot overwrite it with the local head pose. Mouse look
+stays live, and keyboard movement returns when the host is cleared. The
+conductor sets the polled
 host through `setM5Host` and its status strip shows the device state;
 `?m5=<host>` polls directly for development and `bun run m5-sim` simulates a
-device. The glider, keyboard translation, ground clearance, flight reset, and
-benchmark route all move the parent viewer rig. The child camera keeps only
-the mouse or headset pose, so Three.js can replace that local pose every XR
-frame without discarding locomotion.
+device. The glider, keyboard translation, terrain-relative height limits,
+flight reset, and benchmark route all move the parent viewer rig. The child
+camera keeps only the mouse or headset pose, so Three.js can replace that local
+pose every XR frame without discarding locomotion.
 
 ## Runtime Assets
 

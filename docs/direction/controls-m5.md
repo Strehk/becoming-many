@@ -23,16 +23,19 @@ more device adapter beside desktop.
 **consume-on-read**: a press between two polls is latched and delivered by the
 frame body's single `readFrame` call, so an edge between two polls is visible
 exactly one render frame and cannot be missed. While an M5 host is configured the glider
-**flies every frame**: a stale or failed poll carries neutral steering —
-straight and level — because `quality: 0` means "nothing is steering", never
-"stop". Keyboard movement returns when the host is cleared; mouse look stays
-live throughout. The flight model is the proven ICAROS
-glider (`src/control/m5-flight.ts`): constant forward glide, roll → yaw rate
-about world-up (heading persists, horizon never banks), pitch → climb rate
-(altitude persists, view never pitches). The glider moves the parent viewer
-rig in desktop and `immersive-vr` runs alike; the child camera remains free for
-mouse look or the headset pose. Flight reset and ground clearance target the
-same rig, so the headset's per-frame local pose write cannot erase them.
+**flies every frame**: a stale or failed poll carries neutral steering — a
+steady forward glide with the configured gentle descent — because `quality: 0`
+means "nothing is steering", never "stop". Keyboard movement returns when the
+host is cleared; mouse look stays live throughout. The flight model is the
+proven ICAROS glider (`src/control/m5-flight.ts`): constant forward glide, roll
+→ yaw rate about world-up (heading persists, horizon never banks), pitch →
+climb rate around a downward bias. `src/control/flight-settings.ts` authors the
+shared 5 m/s glide, 1 m/s neutral descent, and 30-degree upward view assistance.
+The glider moves the parent viewer rig in desktop and `immersive-vr` runs alike;
+the child camera remains free for mouse look or the headset pose. The comfort
+pitch sits between them, so WebXR composes it with the head pose instead of
+overwriting it. Flight reset and terrain-relative height limits target the same
+rig; each level may author its own maximum clearance.
 
 The conductor owns enablement: an **M5 host** panel points the show it hosts
 at the device, the show polls that host, and the status strip shows the device

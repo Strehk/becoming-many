@@ -21,6 +21,7 @@ export const level: LevelPreset = {
   // to give. Every signature also reads slightly harder against it.
   backgroundColor: 0xffffff,
   viewDistance: 128,
+  maximumGroundClearanceMeters: 50,
   testUi: true,
   // The continuous world terrain stays invisible but bounds flight from below.
   invisibleGround: true,

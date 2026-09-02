@@ -7,6 +7,7 @@
 
 import { describe, expect, test } from "bun:test";
 import { Matrix4, type Object3D, Scene } from "three";
+import { FLIGHT_SETTINGS } from "../../src/control/flight-settings";
 import { applyM5Flight } from "../../src/control/m5-flight";
 import { createNeutralControl } from "../../src/m5/control-frame";
 import { createViewerRig } from "../../src/world/viewer-rig";
@@ -16,32 +17,43 @@ const STANDING_HEIGHT_METERS = 1.6;
 describe("VR flight", () => {
   test("keeps a steady M5 glide while WebXR replaces the head pose", () => {
     const scene = new Scene();
-    const viewer = createViewerRig();
+    const viewer = createViewerRig(FLIGHT_SETTINGS.viewPitchAssistDegrees);
     scene.add(viewer.group);
 
     for (let frame = 0; frame < 10; frame += 1) {
       applyM5Flight(viewer.group, createNeutralControl(), 1);
       viewer.publish();
-      writeHeadsetPose(viewer.camera, headPoseOver(viewer.group.matrixWorld));
+      writeHeadsetPose(
+        viewer.camera,
+        headPoseOver(viewer.camera.parent?.matrixWorld ?? new Matrix4()),
+      );
     }
 
     viewer.publish();
-    expect(viewer.viewpoint.worldPosition.z).toBeCloseTo(-100);
-    expect(viewer.viewpoint.worldPosition.y).toBeCloseTo(
-      STANDING_HEIGHT_METERS,
+    expect(viewer.group.position.z).toBeCloseTo(
+      -10 * FLIGHT_SETTINGS.glideSpeedMetersPerSecond,
+    );
+    expect(viewer.group.position.y).toBeCloseTo(
+      -10 * FLIGHT_SETTINGS.neutralDescentMetersPerSecond,
+    );
+    expect(viewer.viewpoint.worldPosition.z).toBeGreaterThan(
+      viewer.group.position.z,
     );
   });
 
   test("keeps M5 steering on the rig instead of the headset camera", () => {
     const scene = new Scene();
-    const viewer = createViewerRig();
+    const viewer = createViewerRig(FLIGHT_SETTINGS.viewPitchAssistDegrees);
     scene.add(viewer.group);
 
     applyM5Flight(viewer.group, { ...createNeutralControl(), roll: 0.5 }, 1);
     viewer.publish();
     const steeredQuaternion = viewer.group.quaternion.clone();
 
-    writeHeadsetPose(viewer.camera, headPoseOver(viewer.group.matrixWorld));
+    writeHeadsetPose(
+      viewer.camera,
+      headPoseOver(viewer.camera.parent?.matrixWorld ?? new Matrix4()),
+    );
 
     expect(viewer.group.quaternion.equals(steeredQuaternion)).toBe(true);
     expect(Math.abs(viewer.group.position.x)).toBeGreaterThan(0.01);

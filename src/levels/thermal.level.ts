@@ -13,6 +13,7 @@ export const level: LevelPreset = {
   // verbatim; the heat view exists only inside a viewer-centred radius, and
   // outside it the carried Motion world shows unchanged.
   ...motionLevel,
+  maximumGroundClearanceMeters: 50,
   // New in level 05: warm bodies against the carried grayscale world. Fur
   // colors come from the level-03 dark stops so animals outside the thermal
   // radius sit inside the echo palette like vegetation does.
