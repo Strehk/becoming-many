@@ -38,6 +38,7 @@ src/
 │   ├── conductor-settings.ts
 │   ├── conductor-state.ts
 │   ├── cue-inspector.ts
+│   ├── m5-panel.ts
 │   ├── playhead.ts
 │   ├── show-timeline.ts
 │   ├── status-strip.ts
@@ -46,7 +47,8 @@ src/
 ├── control/
 │   ├── desktop-controls.ts
 │   ├── flight-ground-clearance.ts
-│   └── flight-reset.ts
+│   ├── flight-reset.ts
+│   └── m5-flight.ts
 ├── dramaturgy/
 │   ├── narration-catalog.ts
 │   ├── narration-schedule.ts
@@ -59,7 +61,15 @@ src/
 │   ├── flash.css
 │   └── serial-setup.ts
 ├── m5/
-│   └── protocol.ts
+│   ├── auto-neutralize.ts
+│   ├── control-frame.ts
+│   ├── control-safety.ts
+│   ├── control-smoothing.ts
+│   ├── control-source.ts
+│   ├── m5-adapter.ts
+│   ├── m5-settings.ts
+│   ├── protocol.ts
+│   └── state-frames.ts
 ├── world-surface/
 │   ├── height-field.ts
 │   ├── surface-settings.ts
@@ -121,6 +131,7 @@ src/
     └── world-runtime.ts
 
 station/
+├── m5-sim.ts
 └── station-server.ts
 
 firmware/

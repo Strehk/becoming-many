@@ -24,7 +24,9 @@ queued, because a transport command that arrives late is worse than one that
 never arrives.
 
 `show-station.ts` is the show window's end: it applies arriving commands to the
-running level and publishes status on a timer. The timer matters — show time
+running level (including `setM5Host`, which points the level's M5 adapter at a
+device) and publishes status on a timer — with the M5 device state folded in,
+so the conductor's strip can warn about a wrong or drifted controller. The timer matters — show time
 derives from the audio clock, which keeps running when the window is unfocused
 or occluded and its animation frames stop, so a status on a beat stays true
 where a status per frame would simply stop arriving.

@@ -10,7 +10,8 @@
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "check": "tsc --noEmit",
-    "lint": "biome check ."
+    "lint": "biome check .",
+    "m5-sim": "bun station/m5-sim.ts"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.9",

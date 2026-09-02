@@ -48,6 +48,7 @@ export function connectShowStation({
   function publish(): void {
     const showTime = show.clock.sample();
     const metrics = level.readFrameMetrics();
+    const m5Status = level.m5?.readOperatorStatus();
 
     link.send({
       kind: "status",
@@ -61,6 +62,9 @@ export function connectShowStation({
       audioState: show.readAudioState(),
       framesPerSecond: metrics?.framesPerSecond,
       p95Milliseconds: metrics?.p95Milliseconds,
+      m5State: m5Status?.state,
+      m5Quality: m5Status?.quality,
+      hasM5FirmwareMismatch: m5Status?.hasFirmwareMismatch,
     });
   }
 
@@ -120,6 +124,9 @@ function applyCommand(
       return;
     case "resetFlight":
       level.resetFlight();
+      return;
+    case "setM5Host":
+      level.m5?.setHost(command.host);
       return;
     case "reloadShow":
       window.location.reload();

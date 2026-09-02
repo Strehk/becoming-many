@@ -32,7 +32,9 @@ export type ShowCommand =
   /** Rewind to the top and hold there. */
   | { readonly kind: "resetShow" }
   | { readonly kind: "resetFlight" }
-  | { readonly kind: "reloadShow" };
+  | { readonly kind: "reloadShow" }
+  /** Point the show at an M5 tilt controller; an empty host stops polling. */
+  | { readonly kind: "setM5Host"; readonly host: string };
 
 /** Show to conductor, at `STATION_SETTINGS.statusHertz`. */
 export interface ShowStatus {
@@ -46,7 +48,18 @@ export interface ShowStatus {
   /** Both absent until frames have been measured. */
   readonly framesPerSecond?: number;
   readonly p95Milliseconds?: number;
+  /** All three absent from a show build that predates the M5 adapter. */
+  readonly m5State?: M5LinkState;
+  readonly m5Quality?: number;
+  readonly hasM5FirmwareMismatch?: boolean;
 }
+
+/**
+ * The M5 device as the show sees it. Mirrors the adapter's operator status:
+ * `off` = no host configured, `connecting` = host set but nothing fresh,
+ * `wrong-device` = a payload from a different deviceId — warned, never steering.
+ */
+export type M5LinkState = "off" | "connecting" | "live" | "wrong-device";
 
 /**
  * The show length is deliberately not on the wire. Both pages import
@@ -74,6 +87,12 @@ const SHOW_AUDIO_STATES: readonly ShowAudioState[] = [
   "interrupted",
 ];
 const STATION_ROLES: readonly StationRole[] = ["show", "conductor"];
+const M5_LINK_STATES: readonly M5LinkState[] = [
+  "off",
+  "connecting",
+  "live",
+  "wrong-device",
+];
 const NARRATION_LANGUAGES: readonly NarrationLanguage[] = ["en", "de"];
 
 export function serializeStationMessage(message: StationMessage): string {
@@ -114,6 +133,10 @@ export function parseStationMessage(raw: string): StationMessage | undefined {
       return isOneOf(value.language, NARRATION_LANGUAGES)
         ? { kind: "setLanguage", language: value.language }
         : undefined;
+    case "setM5Host":
+      return typeof value.host === "string"
+        ? { kind: "setM5Host", host: value.host }
+        : undefined;
     case "status":
       return parseStatus(value);
     case "presence":
@@ -136,6 +159,9 @@ function parseStatus(value: Record<string, unknown>): ShowStatus | undefined {
     audioState,
     framesPerSecond,
     p95Milliseconds,
+    m5State,
+    m5Quality,
+    hasM5FirmwareMismatch,
   } = value;
 
   if (
@@ -146,7 +172,10 @@ function parseStatus(value: Record<string, unknown>): ShowStatus | undefined {
     typeof levelName !== "string" ||
     !isOneOf(audioState, SHOW_AUDIO_STATES) ||
     !isOptionalFiniteNumber(framesPerSecond) ||
-    !isOptionalFiniteNumber(p95Milliseconds)
+    !isOptionalFiniteNumber(p95Milliseconds) ||
+    !isOptionalOneOf(m5State, M5_LINK_STATES) ||
+    !isOptionalFiniteNumber(m5Quality) ||
+    !isOptionalBoolean(hasM5FirmwareMismatch)
   ) {
     return undefined;
   }
@@ -161,6 +190,9 @@ function parseStatus(value: Record<string, unknown>): ShowStatus | undefined {
     audioState,
     framesPerSecond,
     p95Milliseconds,
+    m5State,
+    m5Quality,
+    hasM5FirmwareMismatch,
   };
 }
 
@@ -190,4 +222,15 @@ function isOneOf<T extends string>(
   allowed: readonly T[],
 ): value is T {
   return typeof value === "string" && allowed.includes(value as T);
+}
+
+function isOptionalOneOf<T extends string>(
+  value: unknown,
+  allowed: readonly T[],
+): value is T | undefined {
+  return value === undefined || isOneOf(value, allowed);
+}
+
+function isOptionalBoolean(value: unknown): value is boolean | undefined {
+  return value === undefined || typeof value === "boolean";
 }

@@ -574,8 +574,21 @@ type, firmware version constant, and the tested untrusted-payload parser).
 `/flash.html` (`src/flash/`) flashes the committed merged binary from
 `public/firmware/` via esp-web-tools and configures the device over Web Serial
 newline-JSON (WiFi credentials, device id, axis map — remembered in
-localStorage). The in-app polling adapter that turns `/state` into
-ControlFrames does not exist yet.
+localStorage).
+
+The in-app adapter consumes `/state`: `src/m5/control-source.ts` runs the
+client-owned pipeline (`safety → auto-neutralize → smooth`, rig profile in
+`m5-settings.ts`), derives one-frame button edges from the payload's counters
+with consume-on-read latching, and goes neutral within one second of silence.
+While an M5 host is configured the ICAROS glider flies every frame
+(`src/control/m5-flight.ts`: constant glide, roll yaws about world-up, pitch
+climbs — the horizon never banks); a stale or failed poll only straightens
+the steering, never stops the flight. Mouse look stays live, and keyboard
+movement returns when the host is cleared. The conductor sets the polled
+host over the station link (`setM5Host`) and its status strip shows the device
+state; `?m5=<host>` polls directly for development and `bun run m5-sim`
+simulates a device. Desktop path only: in `immersive-vr` the headset
+overwrites the camera pose every frame (no camera rig exists yet).
 
 ## Runtime Assets
 
@@ -629,8 +642,8 @@ loading or target-device evidence requires it.
 ## Not Part of the Current Build
 
 - passthrough, `immersive-ar`, operator control, and presentation transitions
-- normalized device-independent navigation and the in-app ICAROS input adapter
-  (the M5 firmware and flash page exist; nothing consumes `/state` yet)
+- ICAROS input inside `immersive-vr` (desktop steering landed; the headset
+  overwrites the camera pose every frame until a camera rig exists)
 - complete Test Level training flow and narrative state transitions
 - floating origin, LOD, relevance fields, and spatial instance pools
 - asset prefetching, retries, progress UI, and distance-based stream priorities

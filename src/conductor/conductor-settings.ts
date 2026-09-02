@@ -21,6 +21,13 @@ export const CONDUCTOR_SETTINGS = {
   // confirm deliberately, short enough that a stray click expires on its own.
   reloadConfirmMilliseconds: 3_000,
 
+  // How often the M5 preview polls the device. A glanceable crosshair, not
+  // steering — much slower than the show's own 50ms poll.
+  m5PreviewIntervalMilliseconds: 200,
+
+  // A preview sample older than this reads as "no signal" and parks the dot.
+  m5PreviewStaleMilliseconds: 1_000,
+
   // A status older than this means the show window stopped reporting, even if
   // the socket is still open. It has to clear two things that are not faults:
   // a browser throttling timers in an unfocused window down to one per second,

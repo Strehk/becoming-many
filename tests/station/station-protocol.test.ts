@@ -24,6 +24,13 @@ const STATUS: StationMessage = {
   p95Milliseconds: 12.7,
 };
 
+const STATUS_WITH_M5: StationMessage = {
+  ...STATUS,
+  m5State: "live",
+  m5Quality: 0.85,
+  hasM5FirmwareMismatch: false,
+};
+
 const MESSAGES: readonly StationMessage[] = [
   { kind: "play" },
   { kind: "pause" },
@@ -36,7 +43,10 @@ const MESSAGES: readonly StationMessage[] = [
   { kind: "setTimeScale", timeScale: 0.5 },
   { kind: "setLanguage", language: "en" },
   { kind: "setLanguage", language: "de" },
+  { kind: "setM5Host", host: "bm-station-a-m5.local" },
+  { kind: "setM5Host", host: "" },
   STATUS,
+  STATUS_WITH_M5,
   { kind: "presence", role: "show", isConnected: false },
   { kind: "presence", role: "conductor", isConnected: true },
 ];
@@ -127,6 +137,18 @@ describe("parseStationMessage refuses", () => {
 
   test("a status carrying an unusable number", () => {
     const raw = JSON.stringify({ ...STATUS, showTimeSeconds: "192.5" });
+    expect(parseStationMessage(raw)).toBeUndefined();
+  });
+
+  test("an m5 host that is missing or not a string", () => {
+    expect(parseStationMessage('{"kind":"setM5Host"}')).toBeUndefined();
+    expect(
+      parseStationMessage('{"kind":"setM5Host","host":42}'),
+    ).toBeUndefined();
+  });
+
+  test("a status carrying an unknown m5 state", () => {
+    const raw = JSON.stringify({ ...STATUS, m5State: "sleeping" });
     expect(parseStationMessage(raw)).toBeUndefined();
   });
 
