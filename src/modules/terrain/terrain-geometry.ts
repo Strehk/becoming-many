@@ -35,6 +35,7 @@ interface TerrainSlot {
   readonly positionAttribute: BufferAttribute;
   readonly zoneConditionsAttribute: Float32BufferAttribute | undefined;
   readonly thermalWarmthAttribute: Float32BufferAttribute | undefined;
+  readonly groundCoverAttribute: Float32BufferAttribute | undefined;
   readonly stagedGroundHeights: Float32Array;
 }
 
@@ -44,6 +45,7 @@ interface TerrainSlotOptions {
   readonly material: MeshBasicMaterial;
   readonly storesZoneConditions: boolean;
   readonly storesThermalWarmth: boolean;
+  readonly storesGroundCover: boolean;
 }
 
 export interface TerrainPresentation {
@@ -69,6 +71,14 @@ export interface TerrainMaterialEffect {
     worldZ: number,
     groundYMeters: number,
   ) => number;
+
+  /**
+   * Declaring a sampler makes Terrain stream a per-vertex ground-cover
+   * attribute: how much of this surface something else already grows on. An
+   * effect that treats covered and bare ground differently reads it instead of
+   * deriving zones in GLSL, which would duplicate the zone thresholds.
+   */
+  readonly coverAt?: (worldX: number, worldZ: number) => number;
 }
 
 export interface TerrainGeometry {
@@ -110,6 +120,9 @@ export function createTerrainGeometry({
   const storesThermalWarmth = effects.some(
     (effect) => effect.warmthAt !== undefined,
   );
+  const storesGroundCover = effects.some(
+    (effect) => effect.coverAt !== undefined,
+  );
   const group = new Group();
   const slots = Array.from({ length: chunkSlotCount }, () =>
     createTerrainSlot({
@@ -118,6 +131,7 @@ export function createTerrainGeometry({
       material,
       storesZoneConditions,
       storesThermalWarmth,
+      storesGroundCover,
     }),
   );
 
@@ -190,6 +204,7 @@ function createTerrainSlot({
   material,
   storesZoneConditions,
   storesThermalWarmth,
+  storesGroundCover,
 }: TerrainSlotOptions): TerrainSlot {
   const geometry = new PlaneGeometry(
     chunkSize,
@@ -228,6 +243,14 @@ function createTerrainSlot({
   if (thermalWarmthAttribute) {
     geometry.setAttribute("thermalWarmth", thermalWarmthAttribute);
   }
+  const groundCoverAttribute = createStreamedAttribute(
+    vertexCount,
+    1,
+    storesGroundCover,
+  );
+  if (groundCoverAttribute) {
+    geometry.setAttribute("groundCover", groundCoverAttribute);
+  }
 
   const mesh = new Mesh(geometry, material);
   mesh.visible = false;
@@ -237,6 +260,7 @@ function createTerrainSlot({
     positionAttribute,
     zoneConditionsAttribute,
     thermalWarmthAttribute,
+    groundCoverAttribute,
     stagedGroundHeights: new Float32Array(vertexCount),
   };
 }
@@ -274,6 +298,7 @@ function writeTerrainRow(
     slot.stagedGroundHeights[vertexIndex] = groundY;
     writeZoneConditions(terrain, slot, vertexIndex, worldX, worldZ);
     writeThermalWarmth(terrain, slot, vertexIndex, worldX, worldZ, groundY);
+    writeGroundCover(terrain, slot, vertexIndex, worldX, worldZ);
   }
 }
 
@@ -292,6 +317,22 @@ function writeThermalWarmth(
   if (!warmthAt || !attribute) return;
 
   attribute.setX(vertexIndex, warmthAt(worldX, worldZ, groundYMeters));
+}
+
+function writeGroundCover(
+  terrain: TerrainGeometry,
+  slot: TerrainSlot,
+  vertexIndex: number,
+  worldX: number,
+  worldZ: number,
+): void {
+  const coverAt = terrain.effects.find(
+    (effect) => effect.coverAt !== undefined,
+  )?.coverAt;
+  const attribute = slot.groundCoverAttribute;
+  if (!coverAt || !attribute) return;
+
+  attribute.setX(vertexIndex, coverAt(worldX, worldZ));
 }
 
 function writeZoneConditions(
@@ -338,6 +379,9 @@ function publishTerrainChunk(
   }
   if (slot.thermalWarmthAttribute) {
     slot.thermalWarmthAttribute.needsUpdate = true;
+  }
+  if (slot.groundCoverAttribute) {
+    slot.groundCoverAttribute.needsUpdate = true;
   }
 
   // PlaneGeometry is centered locally, while assignments describe its corner.

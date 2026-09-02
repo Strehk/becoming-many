@@ -144,14 +144,14 @@ The Connections preset additionally activates:
 
 - everything the Magnetic preset activates, carried over unchanged, because
   senses layer instead of swapping
-- the streamed mycelium web alpha-blended over the unchanged carried
-  world inside an 88-metre viewer radius: every edge a bundle of three
-  fine meandering filaments with periodic knot junctions hallucinated in
-  the fragment shader, plus node glows, connecting the deterministic
-  positions of trees and bushes, forest clearings, rocks, and the visible
-  animals, colored per source class from the level-07 palette with cream
-  pulses traveling the cords; exactly two added transparent draw calls
-  from fixed pools
+- the streamed root mat buried inside a 30-metre viewer radius, read
+  through a ground that opens where no grass covers it: every edge a
+  bundle of three fine meandering filaments with periodic knot junctions
+  hallucinated in the fragment shader, plus node glows, connecting the
+  deterministic positions of trees and bushes, forest clearings, and
+  rocks to the module's own seeded soil points, colored per source class
+  from the level-07 palette with amber pulses traveling the cords;
+  exactly two added transparent draw calls from fixed pools
 - the repository's first Web Worker, module-owned, computing the kNN plus
   minimum-spanning-tree topology off the frame path over the module's 7×7
   window of 32-metre chunks
@@ -544,27 +544,88 @@ Use bounded, pooled network geometry tied to the active world window. Generate t
 
 ### Decided Art Direction
 
-The web overlays the carried world without changing it (decided
-2026-08-31, after a same-day soil-darkening variant was rejected),
-implemented in `src/modules/mycelium/`: alpha-blended strands inside an
-88-metre viewer radius; the terrain keeps its carried presentation. All
-four world-element classes participate — trees and bushes, the level-02
-scent emitters, rocks, and the visible animals — each configured as a
-per-source preset record with its own palette node color and weight;
-edges inherit their heavier hub's color. The network is pulses on a
-static web: kNN plus minimum-spanning-tree topology (principles extracted
-from the `../experiments/wurzeln` project, without its reinforcement
-simulation) computed in the repository's first module-owned Web Worker,
-with cream light pulses traveling the cords. The carried magnetic world
-stays at full intensity ("senses layer, never swap"); earlier languages
-return by remaining present, and any reduction waits for the dramaturgy
-driver. See [07 — Connections](07-connections/README.md) for the exact
-preset.
+**A buried root system read through a ground that opens where nothing
+grows on it (decided 2026-09-02).** This supersedes the 2026-08-31
+decision that the web must not change the carried world, and it is the
+third answer tried: an evenly translucent soil washed the whole surface
+out, a dithered soil read as a pixel screen, and compositing the mat over
+an untouched world let cords paint over tree trunks. What is kept splits
+the difference the surface itself already makes.
+
+The ground carries **two opacities**. Bare earth opens far enough to read
+the mat through it. Ground the grass field covers stays nearly solid — a
+lawn has to keep looking like a lawn — and the opaque blades standing on
+it hide most of what is below, so the cords show only between them. That
+weakened reading costs nothing; it falls out of the blades' own depth.
+Which is which comes from the grass module's own coverage table, streamed
+per terrain vertex, not from a second guess at its zones.
+
+Implemented in `src/modules/mycelium/`:
+
+- **Reach before density**, the rule the grass module recorded. A mat at
+  the experiment's density cannot also span the horizon — the same
+  density across the old 88-metre radius would be roughly 25,000 nodes
+  against a per-chunk pool, on O(n²) topology — so the sense keeps a
+  **30-metre radius** and fills it properly. It is a zone the visitor
+  walks inside, not a web seen across the valley.
+- **The module seeds its own soil mat.** The world's anchors are far too
+  sparse for that density, so deterministic per-chunk soil points carry
+  it, hashed per chunk exactly as grass hashes its cells. The standing
+  world-element classes still participate — trees and bushes, the
+  level-02 scent emitters, and rocks — and now hang just under their own
+  objects, so a tree meets its roots. Animals are deliberately absent: a
+  root system is what stands still and grows, and a body walking over it
+  is not part of it. Soil is the lightest-weighted class of the four, so
+  hubs stay on the world's real elements.
+- **Bone, sinking to plum.** Real mycelium is white, and against
+  thermal's cold half (`#0E0628` through `#1C6C8B`), echo's grey, and
+  green grass it is the strongest contrast the palette has. Cord
+  midpoints sink toward plum, which is the shading that makes a flat
+  ribbon read as a round root going down. The pulses moved to amber:
+  cream pulses on cream strands would be no pulses at all.
+- **Growth is proximity, and growth means more roots.** Every cord and
+  node carries a stable threshold and comes out once the density its own
+  camera distance allows reaches it, so the mat fills in around whoever
+  walks into it and thins to about a third of itself at the rim. The
+  experiment's traffic-reinforcement simulation and its growth-over-time
+  animation both remain out.
+- **Built per chunk, so nothing reroutes underfoot.** A chunk's cords are
+  a pure function of its own nodes and its eight neighbours', so a chunk
+  built once is built the same way forever and crossing a boundary only
+  adds ground at the rim. A second, wider gather window guarantees no
+  chunk is ever built with a partial neighbourhood. New ground fades in
+  over 0.6 seconds. This replaced a whole-window rebuild that recomputed
+  every cord on every crossing, arrived late because the stream queue
+  starved it behind Terrain, and popped.
+- Unchanged: kNN plus minimum-spanning-tree topology in a module-owned
+  Web Worker, cream light pulses traveling the cords (slowed to 1.5 m/s
+  so the crossing still reads as a crawl at the smaller reach), edges
+  inheriting their heavier hub's color, and the carried magnetic world at
+  full intensity ("senses layer, never swap"). Earlier languages return
+  by remaining present, and any reduction waits for the dramaturgy
+  driver.
+
+**The known cost:** the ground no longer hides the web behind a hill,
+because the terrain's depth arrives after the web is drawn. Trees, rocks,
+animals, and grass blades do still occlude it. Bare ground also blends
+toward the carried background wherever no cord covers it, which is what
+keeps `soilBareOpacity` from going lower. Unverified on the headset.
+
+See [07 — Connections](07-connections/README.md) for the exact preset.
 
 ### Open Art Decisions
 
 - web radius and fade band against real headset contrast and the
   transparent fill-rate measurement
+- the two ground opacities against real headset contrast: how far bare
+  soil can open before it reads as a hole rather than as earth, and how
+  solid a lawn has to stay. With strand width, `growthFarFraction`, and
+  the depth tint, these are the knobs to judge on device first
+- strand width, depth-tint strength, and the rim density fraction against
+  real headset contrast — tuned so far against the desktop preview only
+- the dense mat's measured cost on the headset. The experiment ran at
+  18 ms p95 on a desktop against this project's 11.11 ms budget at 90 Hz,
+  so the node and edge pools are sized from argument, not measurement
 - pulse density, speed, and glow widths
 - the warm background shift toward the palette's cream
 - final audio and offboarding transition

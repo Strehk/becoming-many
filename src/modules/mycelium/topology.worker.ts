@@ -1,14 +1,11 @@
 /**
- * Purpose: Run the O(n^2) Connections topology off the render thread.
- * Context: The Mycelium module posts gathered anchors and uploads the reply.
+ * Purpose: Run one chunk's O(n^2) Connections topology off the render thread.
+ * Context: The Mycelium module posts one chunk's nodes and uploads the reply into its slot.
  * Responsibility: Relay one typed request through the pure topology function.
- * Boundary: No Three.js, no chunk knowledge; staleness is judged by the module.
+ * Boundary: No Three.js, no window knowledge; staleness is judged by the module.
  */
 
-import {
-  buildConnectionTopology,
-  type ConnectionTopology,
-} from "./network-topology";
+import { buildChunkTopology, type ChunkTopology } from "./network-topology";
 import type {
   ConnectionTopologyRequest,
   ConnectionTopologyResult,
@@ -30,9 +27,9 @@ const workerScope = self as unknown as TopologyWorkerScope;
 
 workerScope.onmessage = (event) => {
   const request = event.data;
-  const topology: ConnectionTopology = buildConnectionTopology(
-    request.positions.subarray(0, request.nodeCount * 3),
-    request.weights.subarray(0, request.nodeCount),
+  const topology: ChunkTopology = buildChunkTopology(
+    request.own,
+    request.halo,
     {
       neighborsPerNode: request.neighborsPerNode,
       edgeCapacity: request.edgeCapacity,
@@ -41,12 +38,20 @@ workerScope.onmessage = (event) => {
 
   workerScope.postMessage(
     {
-      generation: request.generation,
+      buildSlotIndex: request.buildSlotIndex,
+      revision: request.revision,
       edgeCount: topology.edgeCount,
       droppedEdgeCount: topology.droppedEdgeCount,
-      edgePairs: topology.edgePairs,
+      edgeStarts: topology.edgeStarts,
+      edgeEnds: topology.edgeEnds,
       edgeWeights: topology.edgeWeights,
+      edgeHubClasses: topology.edgeHubClasses,
     },
-    [topology.edgePairs.buffer, topology.edgeWeights.buffer],
+    [
+      topology.edgeStarts.buffer,
+      topology.edgeEnds.buffer,
+      topology.edgeWeights.buffer,
+      topology.edgeHubClasses.buffer,
+    ],
   );
 };

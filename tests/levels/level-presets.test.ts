@@ -16,7 +16,9 @@ import { level as scentLevel } from "../../src/levels/scent.level";
 import { level as testLevel } from "../../src/levels/test.level";
 import { level as thermalLevel } from "../../src/levels/thermal.level";
 import { level as whiteWorld } from "../../src/levels/white-world.level";
+import { MYCELIUM_SETTINGS } from "../../src/modules/mycelium/mycelium-settings";
 import { THERMAL_PERCEPTION_SETTINGS } from "../../src/modules/thermal-perception/thermal-perception-settings";
+import { BASE_CHUNK_SIZE } from "../../src/world/chunk-system";
 import { WORLD_WIND } from "../../src/world/wind";
 
 test("only the Test Level activates development diagnostics", () => {
@@ -202,7 +204,7 @@ test("Scent Level layers scent onto the White World air baseline", () => {
     expect(signature.riseHeightMeters).toBeGreaterThan(0);
   }
 
-  expect(scent.appearance.sizeMeters).toBe(0.24);
+  expect(scent.appearance.sizeMeters).toBe(0.16);
   expect(scent.motion.riseDurationSeconds).toBe(10);
   expect(scent.motion.speedMultiplier).toBe(1);
   // The wind has to beat the rise, or the scent only ever goes up and reads
@@ -409,10 +411,12 @@ test("Connections Level layers the web onto the carried Magnetic world", () => {
   expect(connectionsPreset.invisibleGround).toBeUndefined();
 
   expect(connections.intensity).toBe(1);
-  // The web reaches far past the thermal radius while staying inside the
-  // echo far distance, so strands never pop at the haze boundary.
-  expect(connections.webRadiusMeters).toBeGreaterThan(
-    connectionsPreset.thermal?.radiusMeters ?? Number.POSITIVE_INFINITY,
+  // Reach before density: the root mat is carried at the experiment's density,
+  // which a horizon-wide web cannot afford, so it stays an intimate zone the
+  // visitor walks inside. It still ends well inside the echo haze, so strands
+  // never pop at the haze boundary.
+  expect(connections.webRadiusMeters).toBeLessThanOrEqual(
+    MYCELIUM_SETTINGS.buildChunkRadius * BASE_CHUNK_SIZE,
   );
   expect(connections.webRadiusMeters).toBeLessThan(
     connectionsPreset.echoDepth?.farDistanceMeters ?? 0,
@@ -422,9 +426,13 @@ test("Connections Level layers the web onto the carried Magnetic world", () => {
   expect(
     connections.webRadiusMeters / connections.pulseSpeedMetersPerSecond,
   ).toBeGreaterThan(10);
-  // All four world-element classes participate, each with a palette color.
+  // Three standing world-element classes participate beside the seeded soil
+  // mat, each with a palette color. Animals are deliberately absent: a root
+  // system is what stands still and grows, and a body walking over it is not
+  // part of it.
   const sources = Object.values(connections.sources);
   expect(sources).toHaveLength(4);
+  expect(connections.sources.animals).toBeUndefined();
   for (const source of sources) {
     expect(connectionsPalette).toContain(source.nodeColor);
     expect(source.weight).toBeGreaterThan(0);

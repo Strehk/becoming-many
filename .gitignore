@@ -42,3 +42,6 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 # benchmark artifacts
 benchmark-results
 .certs
+
+# vendored reference projects (separate repositories, read-only here)
+reference

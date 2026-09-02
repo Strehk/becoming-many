@@ -1,76 +1,100 @@
 /**
- * Purpose: Build one bounded, connected mycelium web from gathered anchor points.
+ * Purpose: Build one chunk's share of the mycelium web from its own and its neighbours' nodes.
  * Context: The wurzeln experiment proved MST + nearest-neighbor topology; the worker runs this math.
- * Responsibility: Produce weighted edge pairs deterministically within a fixed edge capacity.
- * Boundary: No Three.js, no worker globals, no chunk knowledge — numeric arrays in and out.
+ * Responsibility: Produce deterministic, position-carrying edges a chunk owns, within a fixed budget.
+ * Boundary: No Three.js, no worker globals, no window knowledge — numeric arrays in and out.
+ *
+ * A chunk's result is a pure function of its own nodes and its eight
+ * neighbours', and both of those are pure functions of world coordinates. So a
+ * chunk built once is built the same way forever: recentring the window can
+ * never reroute a cord that is already on screen, which is what keeps the mat
+ * from flickering as the visitor walks. Cross-chunk cords are claimed by the
+ * chunk holding their lexicographically first endpoint, so exactly one side of
+ * a seam draws each of them.
  */
 
 /** Nodes with (near-)zero weight still attract links at this residual pull. */
 const MINIMUM_ATTRACTION_WEIGHT = 0.05;
 
-export interface ConnectionTopologyOptions {
-  /** Nearest-neighbor edges added per node on top of the spanning backbone. */
+const COMPONENTS_PER_POSITION = 3;
+
+/** One chunk's nodes, or the pooled nodes of its eight neighbours. */
+export interface TopologyNodes {
+  /** Packed xyz triples. */
+  readonly positions: Float32Array;
+  /** Per-node class weight from the preset. */
+  readonly weights: Float32Array;
+  /** Per-node packed source-class index, carried onto the edges. */
+  readonly classIndices: Uint8Array;
+  readonly nodeCount: number;
+}
+
+export interface ChunkTopologyOptions {
+  /** Nearest-neighbor edges sought per node on top of the spanning backbone. */
   readonly neighborsPerNode: number;
-  /** Hard edge budget; spanning edges always survive, extras drop lowest weight first. */
+  /** Hard edge budget for this chunk; spanning edges always survive. */
   readonly edgeCapacity: number;
 }
 
-export interface ConnectionTopology {
-  /** Node index pairs [a, b] per edge, packed. */
-  readonly edgePairs: Uint32Array;
+export interface ChunkTopology {
+  /** Packed xyz per edge start; the buffer is transferred to the main thread. */
+  readonly edgeStarts: Float32Array;
+  readonly edgeEnds: Float32Array;
   /** Mean endpoint weight per edge; drives cord width and brightness. */
   readonly edgeWeights: Float32Array;
+  /** Class index of the heavier endpoint; the cord takes its color. */
+  readonly edgeHubClasses: Uint8Array;
   readonly edgeCount: number;
   /** Edges removed by the capacity cap, lowest combined weight first. */
   readonly droppedEdgeCount: number;
 }
 
-/**
- * Connect every node through a minimum spanning backbone plus per-node nearest
- * neighbors. Distances shrink with endpoint weight, so heavier hubs attract
- * links. Deterministic for identical inputs.
- */
-export function buildConnectionTopology(
-  positions: Float32Array,
-  weights: Float32Array,
-  options: ConnectionTopologyOptions,
-): ConnectionTopology {
-  const nodeCount = Math.floor(positions.length / 3);
-  if (nodeCount < 2) {
-    return {
-      edgePairs: new Uint32Array(0),
-      edgeWeights: new Float32Array(0),
-      edgeCount: 0,
-      droppedEdgeCount: 0,
-    };
-  }
-
-  const spanningEdges = createMinimumSpanningEdges(
-    positions,
-    weights,
-    nodeCount,
-  );
-  const spanningKeys = createEdgeKeySet(spanningEdges);
-  const extraEdges = collectNearestNeighborEdges(
-    positions,
-    weights,
-    nodeCount,
-    options.neighborsPerNode,
-    spanningKeys,
-  );
-  return capEdges(spanningEdges, extraEdges, weights, options.edgeCapacity);
-}
-
 interface CandidateEdge {
-  readonly firstNode: number;
-  readonly secondNode: number;
+  /** Index into the own node set. */
+  readonly ownNode: number;
+  /** Index into the own set when below its count, else into the halo set. */
+  readonly otherNode: number;
+  readonly isOtherOwn: boolean;
 }
 
-function createMinimumSpanningEdges(
-  positions: Float32Array,
-  weights: Float32Array,
-  nodeCount: number,
-): CandidateEdge[] {
+/**
+ * Connect one chunk's nodes through a spanning backbone over its own nodes
+ * plus nearest neighbors reaching into the halo. Distances shrink with
+ * endpoint weight, so heavier hubs attract links.
+ */
+export function buildChunkTopology(
+  own: TopologyNodes,
+  halo: TopologyNodes,
+  options: ChunkTopologyOptions,
+): ChunkTopology {
+  if (own.nodeCount === 0) return createEmptyTopology();
+
+  const spanningEdges = createSpanningEdges(own);
+  const claimedKeys = createEdgeKeySet(spanningEdges);
+  const neighborEdges = collectNeighborEdges(
+    own,
+    halo,
+    options.neighborsPerNode,
+    claimedKeys,
+  );
+  return capEdges(
+    spanningEdges,
+    neighborEdges,
+    own,
+    halo,
+    options.edgeCapacity,
+  );
+}
+
+/**
+ * A spanning tree over the chunk's own nodes only. It guarantees no node of
+ * this chunk is left isolated; the seams to the neighbouring chunks are the
+ * nearest-neighbor edges' job.
+ */
+function createSpanningEdges(own: TopologyNodes): CandidateEdge[] {
+  const { nodeCount } = own;
+  if (nodeCount < 2) return [];
+
   const visited = new Uint8Array(nodeCount);
   const distances = new Float64Array(nodeCount);
   const parents = new Int32Array(nodeCount);
@@ -84,8 +108,10 @@ function createMinimumSpanningEdges(
     if (current < 0) break;
     visited[current] = 1;
     const parent = parents[current] ?? -1;
-    if (parent >= 0) edges.push({ firstNode: parent, secondNode: current });
-    relaxUnvisited(positions, weights, current, distances, parents, visited);
+    if (parent >= 0) {
+      edges.push({ ownNode: parent, otherNode: current, isOtherOwn: true });
+    }
+    relaxUnvisited(own, current, distances, parents, visited);
   }
   return edges;
 }
@@ -106,16 +132,15 @@ function findNearestUnvisited(
 }
 
 function relaxUnvisited(
-  positions: Float32Array,
-  weights: Float32Array,
+  own: TopologyNodes,
   current: number,
   distances: Float64Array,
   parents: Int32Array,
   visited: Uint8Array,
 ): void {
-  for (let candidate = 0; candidate < distances.length; candidate += 1) {
+  for (let candidate = 0; candidate < own.nodeCount; candidate += 1) {
     if (visited[candidate] === 1) continue;
-    const distance = attractedDistance(positions, weights, current, candidate);
+    const distance = attractedDistance(own, current, own, candidate);
     if (distance >= (distances[candidate] ?? Number.POSITIVE_INFINITY)) {
       continue;
     }
@@ -124,38 +149,76 @@ function relaxUnvisited(
   }
 }
 
-function collectNearestNeighborEdges(
-  positions: Float32Array,
-  weights: Float32Array,
-  nodeCount: number,
+/**
+ * Nearest neighbors of every own node across its own chunk and the halo. A
+ * link into the halo is claimed only when this chunk holds the first endpoint,
+ * so the neighbour chunk deriving the same pair leaves it to us.
+ */
+function collectNeighborEdges(
+  own: TopologyNodes,
+  halo: TopologyNodes,
   neighborsPerNode: number,
-  existingKeys: Set<number>,
+  claimedKeys: Set<number>,
 ): CandidateEdge[] {
   const edges: CandidateEdge[] = [];
   const nearestNodes = new Int32Array(neighborsPerNode);
   const nearestDistances = new Float64Array(neighborsPerNode);
+  const totalCount = own.nodeCount + halo.nodeCount;
 
-  for (let node = 0; node < nodeCount; node += 1) {
+  for (let node = 0; node < own.nodeCount; node += 1) {
     nearestNodes.fill(-1);
     nearestDistances.fill(Number.POSITIVE_INFINITY);
-    for (let candidate = 0; candidate < nodeCount; candidate += 1) {
+    for (let candidate = 0; candidate < totalCount; candidate += 1) {
       if (candidate === node) continue;
+      const isCandidateOwn = candidate < own.nodeCount;
+      const candidateSet = isCandidateOwn ? own : halo;
+      const candidateIndex = isCandidateOwn
+        ? candidate
+        : candidate - own.nodeCount;
       insertNeighbor(
         candidate,
-        attractedDistance(positions, weights, node, candidate),
+        attractedDistance(own, node, candidateSet, candidateIndex),
         nearestNodes,
         nearestDistances,
       );
     }
+
     for (const neighbor of nearestNodes) {
       if (neighbor < 0) continue;
-      const key = edgeKey(node, neighbor);
-      if (existingKeys.has(key)) continue;
-      existingKeys.add(key);
-      edges.push({ firstNode: node, secondNode: neighbor });
+      if (neighbor < own.nodeCount) {
+        const key = edgeKey(node, neighbor);
+        if (claimedKeys.has(key)) continue;
+        claimedKeys.add(key);
+        edges.push({ ownNode: node, otherNode: neighbor, isOtherOwn: true });
+        continue;
+      }
+      const haloIndex = neighbor - own.nodeCount;
+      if (!claimsSeam(own, node, halo, haloIndex)) continue;
+      edges.push({ ownNode: node, otherNode: haloIndex, isOtherOwn: false });
     }
   }
   return edges;
+}
+
+/**
+ * Lexicographic order on the endpoint positions decides which side of a seam
+ * draws the cord. Both chunks see the same two nodes and reach the same
+ * verdict, so a seam is never drawn twice and never doubled in brightness.
+ */
+function claimsSeam(
+  own: TopologyNodes,
+  ownNode: number,
+  halo: TopologyNodes,
+  haloNode: number,
+): boolean {
+  const ownOffset = ownNode * COMPONENTS_PER_POSITION;
+  const haloOffset = haloNode * COMPONENTS_PER_POSITION;
+  for (let component = 0; component < COMPONENTS_PER_POSITION; component += 1) {
+    const ownValue = own.positions[ownOffset + component] ?? 0;
+    const haloValue = halo.positions[haloOffset + component] ?? 0;
+    if (ownValue !== haloValue) return ownValue < haloValue;
+  }
+  return false;
 }
 
 function insertNeighbor(
@@ -181,66 +244,117 @@ function insertNeighbor(
 
 function capEdges(
   spanningEdges: readonly CandidateEdge[],
-  extraEdges: CandidateEdge[],
-  weights: Float32Array,
+  neighborEdges: CandidateEdge[],
+  own: TopologyNodes,
+  halo: TopologyNodes,
   edgeCapacity: number,
-): ConnectionTopology {
+): ChunkTopology {
   const spanningKept = Math.min(spanningEdges.length, edgeCapacity);
   const extraBudget = Math.max(0, edgeCapacity - spanningEdges.length);
-  if (extraEdges.length > extraBudget) {
-    extraEdges.sort(
+  if (neighborEdges.length > extraBudget) {
+    neighborEdges.sort(
       (first, second) =>
-        meanEdgeWeight(second, weights) - meanEdgeWeight(first, weights),
+        meanEdgeWeight(second, own, halo) - meanEdgeWeight(first, own, halo),
     );
   }
-  const extraKept = Math.min(extraEdges.length, extraBudget);
+  const extraKept = Math.min(neighborEdges.length, extraBudget);
   const droppedEdgeCount =
-    spanningEdges.length - spanningKept + (extraEdges.length - extraKept);
+    spanningEdges.length - spanningKept + (neighborEdges.length - extraKept);
 
   const edgeCount = spanningKept + extraKept;
-  const edgePairs = new Uint32Array(edgeCount * 2);
-  const edgeWeights = new Float32Array(edgeCount);
+  const topology = createEmptyTopology(edgeCount, droppedEdgeCount);
   for (let index = 0; index < edgeCount; index += 1) {
     const edge =
       index < spanningKept
         ? spanningEdges[index]
-        : extraEdges[index - spanningKept];
+        : neighborEdges[index - spanningKept];
     if (!edge) continue;
-    edgePairs[index * 2] = edge.firstNode;
-    edgePairs[index * 2 + 1] = edge.secondNode;
-    edgeWeights[index] = meanEdgeWeight(edge, weights);
+    writeEdge(topology, index, edge, own, halo);
   }
-  return { edgePairs, edgeWeights, edgeCount, droppedEdgeCount };
+  return topology;
 }
 
-function meanEdgeWeight(edge: CandidateEdge, weights: Float32Array): number {
-  return ((weights[edge.firstNode] ?? 0) + (weights[edge.secondNode] ?? 0)) / 2;
+function writeEdge(
+  topology: ChunkTopology,
+  index: number,
+  edge: CandidateEdge,
+  own: TopologyNodes,
+  halo: TopologyNodes,
+): void {
+  const otherSet = edge.isOtherOwn ? own : halo;
+  const startOffset = edge.ownNode * COMPONENTS_PER_POSITION;
+  const endOffset = edge.otherNode * COMPONENTS_PER_POSITION;
+  for (let component = 0; component < COMPONENTS_PER_POSITION; component += 1) {
+    topology.edgeStarts[index * COMPONENTS_PER_POSITION + component] =
+      own.positions[startOffset + component] ?? 0;
+    topology.edgeEnds[index * COMPONENTS_PER_POSITION + component] =
+      otherSet.positions[endOffset + component] ?? 0;
+  }
+
+  const ownWeight = own.weights[edge.ownNode] ?? 0;
+  const otherWeight = otherSet.weights[edge.otherNode] ?? 0;
+  topology.edgeWeights[index] = (ownWeight + otherWeight) / 2;
+  topology.edgeHubClasses[index] =
+    ownWeight >= otherWeight
+      ? (own.classIndices[edge.ownNode] ?? 0)
+      : (otherSet.classIndices[edge.otherNode] ?? 0);
+}
+
+function createEmptyTopology(
+  edgeCount = 0,
+  droppedEdgeCount = 0,
+): ChunkTopology {
+  return {
+    edgeStarts: new Float32Array(edgeCount * COMPONENTS_PER_POSITION),
+    edgeEnds: new Float32Array(edgeCount * COMPONENTS_PER_POSITION),
+    edgeWeights: new Float32Array(edgeCount),
+    edgeHubClasses: new Uint8Array(edgeCount),
+    edgeCount,
+    droppedEdgeCount,
+  };
+}
+
+function meanEdgeWeight(
+  edge: CandidateEdge,
+  own: TopologyNodes,
+  halo: TopologyNodes,
+): number {
+  const otherSet = edge.isOtherOwn ? own : halo;
+  return (
+    ((own.weights[edge.ownNode] ?? 0) +
+      (otherSet.weights[edge.otherNode] ?? 0)) /
+    2
+  );
 }
 
 /** Squared distance shrunk by endpoint weight, so heavier hubs attract links. */
 function attractedDistance(
-  positions: Float32Array,
-  weights: Float32Array,
+  firstSet: TopologyNodes,
   first: number,
+  secondSet: TopologyNodes,
   second: number,
 ): number {
-  const firstOffset = first * 3;
-  const secondOffset = second * 3;
-  const x = (positions[firstOffset] ?? 0) - (positions[secondOffset] ?? 0);
+  const firstOffset = first * COMPONENTS_PER_POSITION;
+  const secondOffset = second * COMPONENTS_PER_POSITION;
+  const x =
+    (firstSet.positions[firstOffset] ?? 0) -
+    (secondSet.positions[secondOffset] ?? 0);
   const y =
-    (positions[firstOffset + 1] ?? 0) - (positions[secondOffset + 1] ?? 0);
+    (firstSet.positions[firstOffset + 1] ?? 0) -
+    (secondSet.positions[secondOffset + 1] ?? 0);
   const z =
-    (positions[firstOffset + 2] ?? 0) - (positions[secondOffset + 2] ?? 0);
+    (firstSet.positions[firstOffset + 2] ?? 0) -
+    (secondSet.positions[secondOffset + 2] ?? 0);
   const attraction = Math.max(
     MINIMUM_ATTRACTION_WEIGHT,
-    ((weights[first] ?? 0) + (weights[second] ?? 0)) / 2,
+    ((firstSet.weights[first] ?? 0) + (secondSet.weights[second] ?? 0)) / 2,
   );
   return (x * x + y * y + z * z) / attraction;
 }
 
 function createEdgeKeySet(edges: readonly CandidateEdge[]): Set<number> {
   const keys = new Set<number>();
-  for (const edge of edges) keys.add(edgeKey(edge.firstNode, edge.secondNode));
+  for (const edge of edges) keys.add(edgeKey(edge.ownNode, edge.otherNode));
   return keys;
 }
 
