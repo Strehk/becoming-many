@@ -56,7 +56,8 @@ Show page at [http://localhost](http://localhost), operator page at
 `docker compose pull` updates to the newest release; building from the
 checkout instead is `docker compose -f docker-compose.yml -f
 docker-compose.build.yml up -d --build`. Details, endpoints, and the env
-vars: [station/README.md](station/README.md).
+vars: [station/README.md](station/README.md); opening both pages without
+browser UI around them: [KIOSK.md](KIOSK.md).
 
 For development: `bun install`, then `bun run dev` (pages) beside
 `bun run station` (broker) — see [AGENTS.md](AGENTS.md) for the full toolchain.
