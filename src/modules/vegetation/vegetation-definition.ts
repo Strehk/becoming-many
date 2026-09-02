@@ -197,7 +197,12 @@ export const VEGETATION_DEFINITION: StaticPopulationDefinition = {
       { assetId: "pine-4", weight: 1 },
       { assetId: "pine-5", weight: 1 },
       { assetId: "pine-6", weight: 1 },
-      { assetId: "pine-7", weight: 1 },
+      // PineTree_4 is the one model in the pack that is not an upright cone:
+      // its trunk drifts more than two units sideways over its own height and
+      // carries a nearly horizontal limb, so a full share of it put visibly
+      // crooked trees through the whole wood. Kept at a fifteenth of a share,
+      // it is the rare leaning tree a forest has rather than a defect.
+      { assetId: "pine-7", weight: 0.15 },
       { assetId: "dead-tree-1", weight: 0.5 },
     ],
     // Five round crowns against three birches: roughly a third of the wood

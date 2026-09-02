@@ -13,6 +13,15 @@ URLs are loaded only once, so the four added conifers and the two added
 deciduous crowns come out of `pine-trees-01.glb` and `trees.glb`, which were
 already being fetched, and cost no additional transfer.
 
+One of those seven conifers, `pine-7` (`PineTree_4` inside
+`pine-trees-01.glb`), is not an upright cone: its trunk drifts more than two
+units sideways over its own height and carries a nearly horizontal limb. At a
+full share it put visibly crooked trees through the whole conifer forest, so
+it is weighted at 0.15 against the other conifers' 1 — the rare leaning tree a
+wood has, rather than a defect. Nothing in the placement path tilts a plant:
+instances are rotated around the vertical axis only, so a visibly leaning tree
+is always the model.
+
 `birch-trees.glb` and `dead-trees.glb` are the only newly fetched files. They
 were brought in for silhouette variety: the source crowns are low-poly solids
 drawn with an unlit material, so a stand built from few variants reads as one
