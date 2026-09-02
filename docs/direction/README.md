@@ -30,10 +30,10 @@ Each document is self-contained so a task can load only the module it needs.
   firmware, and setup tooling.
 - [Session and Operator](session-operator.md) — session state machine and
   operator page.
-- [Headset](headset.md) — PICO integration: see-through switching, headset
-  agent, provisioning, rejected alternatives.
+- [Headset](headset.md) — PICO streaming integration, see-through switching,
+  provisioning, and rejected alternatives.
 - [Rendering Constraints](rendering-constraints.md) — hard-won GPU/WebXR
-  constraints that hold regardless of the open stack decisions.
+  constraints for the confirmed PCVR stack.
 - [Quality and Operations](quality-operations.md) — spikes, evidence rules, CI
   and station-acceptance direction.
 - [Architecture Review — 2026-08-22](architecture-review-2026-08-22.md) — dated
@@ -43,7 +43,7 @@ Each document is self-contained so a task can load only the module it needs.
 
 Near-term implementation follows the [roadmap](../roadmap.md). The installation
 work phases in after the landscape and performance milestones, roughly: senses
-and dramaturgy → session/operator → hardware (M5 firmware, headset agent,
+and dramaturgy → session/operator → hardware (M5 firmware, PICO streaming,
 provisioning) → station acceptance. The spikes in
 [Quality and Operations](quality-operations.md) run before the work that
 depends on them.

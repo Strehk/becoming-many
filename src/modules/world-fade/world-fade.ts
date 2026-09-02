@@ -17,7 +17,7 @@ const WORLD_FADE_CACHE_KEY = "world-fade-v1";
  * one presence and one background, so a group condenses out of the haze — and
  * dissolves back into it — as a whole. Materials stay opaque: the mix moves
  * color toward the background rather than alpha toward zero, which keeps the
- * mobile GPU free of transition-time overdraw and sorting.
+ * XR render path free of transition-time overdraw and sorting.
  */
 export interface WorldFadeEffect extends UnlitMaterialEffect {
   /** 0 is fully dissolved into the background, 1 is fully present. */

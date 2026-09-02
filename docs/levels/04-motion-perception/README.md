@@ -24,10 +24,9 @@ material effect that dims static geometry.
   the fly swarms and their trails fade in on top of it.
 - Exits toward Thermal Perception: thermal values can appear first on moving
   actors before spreading to terrain and vegetation.
-- The timeline driver (audio clock / schedule) is unresolved — see
-  `docs/direction/open-decisions.md` §2. Until then the sense intensity is
-  authored statically in the preset and this level runs standalone from
-  `src/main.ts`; no cross-level transition machinery exists yet.
+- The default show uses the implemented audio-clock schedule and shared fades.
+  The complete preset remains available as a showless `?level=motion`
+  development run with statically authored full intensity.
 
 ## Visual and Audio Direction
 
@@ -95,7 +94,7 @@ cyan accent `#10BEDB` that the palette reserved for them. The orange
   pixels each with a one-discard, one-pow fragment.
 - Memory: trail rings ≈ 371 KB of attributes, fly and bird buffers ≈ 30 KB.
 - No hardware desktop measurement has been recorded for this level yet.
-- The standalone PICO 4 / 90 FPS gate is not yet measured; no 72 Hz or 90 Hz
+- The Windows-to-PICO PCVR 90 Hz gate is not yet measured; no 72 Hz or 90 Hz
   headset claim is approved.
 
 ## Decisions, Risks, and Open Questions

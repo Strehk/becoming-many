@@ -1,8 +1,7 @@
 # Rendering Constraints
 
-Hard-won constraints that hold regardless of how the open platform decision
-falls ([Open Decision 1](open-decisions.md)). The rendering stack itself is
-decided: WebGL2 with raw GLSL ES 3.00 files
+Hard-won constraints for the confirmed Windows-to-PICO PCVR path. The rendering
+stack is WebGL2 with raw GLSL ES 3.00 files
 ([architecture decisions](../architecture-decisions.md)). Several constraints
 are already the idiom of the current modules; they are recorded here so they
 survive refactors.

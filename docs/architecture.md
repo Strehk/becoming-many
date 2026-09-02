@@ -240,7 +240,7 @@ frame that just finished. Absent, the loop behaves exactly as before.
 ### `world-settings.ts`
 
 Owns the permanent renderer and stream-queue tuning values used by the World
-Runtime. Global MSAA is explicit here and remains disabled until physical PICO
+Runtime. Global MSAA is explicit here and remains disabled until physical PCVR
 measurement justifies enabling it.
 
 ### `webxr-entry.ts`

@@ -7,7 +7,7 @@ Boundary: Product vision and long-term design remain in the specialized document
 
 # Current Development Status
 
-Snapshot: 2026-09-01
+Snapshot: 2026-09-02
 
 The current `src/` and `public/` trees are the source of truth. This page is
 the concise entry point for the current implementation.
@@ -21,9 +21,8 @@ world composed from the sense ladder, following the narration timeline:
   warm off-white haze background, the grayscale Echo Depth ramp on Terrain,
   Vegetation, and Rocks, the earlier air and scent layers, the fly swarms,
   bird flocks, and printed motion trails, the 30-metre false-color heat
-  view with the warm animal population, and the deep-blue ground field
-  lines with the northern sky glow, because senses layer instead of
-  swapping
+  view with the warm animal population, and the northern magnetic sky glow,
+  because senses layer instead of swapping
 - the mycelium web alpha-blended over the unchanged carried world inside
   an 88-metre viewer radius: fine strand bundles and node glows
   connecting the deterministic positions of trees, bushes, forest clearings,
@@ -63,8 +62,8 @@ itself. The broker relays only; with none running the show plays unchanged.
 
 ### Runtime
 
-- `src/main.ts` only selects the active level, calls `startLevel()`, and hands
-  the returned `RunningLevel` to the station link when `?station` is present.
+- `src/main.ts` selects the active level, calls `startLevel()`, and attaches the
+  station link for every show run. `?station` only overrides the broker URL.
 - `level-runtime.ts` preloads fixed assets for enabled modules, applies the sparse preset,
   creates only enabled modules, and connects desktop controls.
 - `world-runtime.ts` owns the Three.js scene, perspective camera, WebGL
@@ -105,13 +104,15 @@ itself. The broker relays only; with none running the show plays unchanged.
   Terrain, Vegetation, Rocks, and Animals with the radius-bounded
   false-color heat view.
 - `magnetic.level.ts` is the Magnetic Field Perception level: every Thermal
-  Perception value carried over unchanged plus the top-level `magnetic`
-  field that activates the terrain field lines and the northern sky glow
-  with the level-06 moodboard blues.
-- `connections.level.ts` is the Connections level and the current default:
+  Perception value carried over unchanged plus the top-level `magnetic` field
+  that activates the black-and-white pole shimmer in the northern and southern
+  sky. Magnetic Sense does not touch Terrain.
+- `connections.level.ts` is the complete Connections development preset:
   every Magnetic Field Perception value carried over unchanged plus the
   top-level `connections` field that activates the streamed mycelium web
-  with its per-source node records and palette.
+  with its per-source node records and palette. The default run is the show,
+  whose timeline selects the current world state from one preloaded
+  composition.
 - The sparse `invisibleGround: true` flag clamps flight above the shared
   deterministic world surface and streams it as a depth-only occluder: the
   Terrain module runs with a presentation that writes depth and no color, at
@@ -573,8 +574,9 @@ type, firmware version constant, and the tested untrusted-payload parser).
 
 `/flash.html` (`src/flash/`) flashes the committed merged binary from
 `public/firmware/` via esp-web-tools and configures the device over Web Serial
-newline-JSON (WiFi credentials, device id, axis map — remembered in
-localStorage).
+newline-JSON. The current page persists the complete last-used configuration,
+including the Wi-Fi password, and includes the password in its visible command
+log. Removing both password exposures is an open security task.
 
 The in-app adapter consumes `/state`: `src/m5/control-source.ts` runs the
 client-owned pipeline (`safety → auto-neutralize → smooth`, rig profile in
@@ -607,16 +609,17 @@ Manifests remain metadata rather than a parallel runtime configuration system.
 
 The last clean verification recorded:
 
-- `bun test`: 153 tests
+- `bun test`: 348 tests
 - `bun run check`: strict TypeScript
 - `bun run lint`: clean Biome run
 - `bun run build`: Vite production build, including the emitted
   `topology.worker` chunk
-- `bun run benchmark`: replays the fixed route and writes a report
-  artifact; its counters were confirmed identical across repeated runs
+- benchmark unit coverage passes, but the current production build has not yet
+  refreshed the historical browser baseline or the planned cold-transition
+  profile
 
-Fallow reports no dead production exports or complexity violations, but
-does report known duplicated placement code in Vegetation and Rocks and
+Fallow reports one known unused `sharedEchoGrass` export, tracked for removal,
+and known duplicated placement code in Vegetation and Rocks, plus
 the deliberate data duplication between the sparse level presets that
 carry earlier sense layers verbatim (`scent`, `echo`, `motion`,
 `thermal`, `magnetic`, `connections`). The formerly parallel shader-patch
@@ -628,10 +631,10 @@ when its field moved to the sky.
 Vegetation and Rocks share deterministic density acceptance and weighted asset
 selection. Their transform and placement policies remain module-local.
 
-The 2026-08-24 short desktop Chromium settling smoke loaded every configured GLB with
+The historical 2026-08-24 short desktop Chromium settling smoke loaded every configured GLB with
 HTTP 200 and produced no console errors or warnings. The initial settling view
 reported 89–93 FPS, 16.8–17.1 ms p95, 61 draw calls, and 5.90 million rendered
-triangles. This is diagnostic evidence, not a physical PICO acceptance result;
+triangles. This is diagnostic evidence, not a physical PCVR acceptance result;
 the separate performance audit contains the more demanding repeated browser
 measurements. No 72 Hz or 90 Hz headset claim is approved.
 
@@ -641,25 +644,27 @@ loading or target-device evidence requires it.
 
 ## Not Part of the Current Build
 
-- passthrough, `immersive-ar`, operator control, and presentation transitions
+- passthrough, `immersive-ar`, and automated headset presentation transitions
 - ICAROS input inside `immersive-vr` (desktop steering landed; the headset
   overwrites the camera pose every frame until a camera rig exists)
-- complete Test Level training flow and narrative state transitions
+- complete Test Level training flow
 - floating origin, LOD, relevance fields, and spatial instance pools
 - asset prefetching, retries, progress UI, and distance-based stream priorities
-- visible water, other perception effects, mycelium, sky additions, and sound
-  modules
-- wind-coupled scent drift, scent fields, scent fading into the echo haze
-  with distance, scent for animals in the levels that carry no Animals
-  module, and a runtime scent-intensity driver
+- visible water and additional sound modules beyond narration
+- scent for animals in levels that carry no Animals module
+- production deployment, restart, and recovery automation for the confirmed
+  Windows PCVR, USB-C, SteamVR, and PICO path
 
 ## Recommended Next Steps
 
 Current and remaining landscape boundaries are recorded in
 [Landscape Module Contracts](landscape-modules.md).
 
-1. Render visible water from the existing river and surface facts.
-2. Add terrain textures without replacing the current fixed mesh pool.
-3. Add a deterministic benchmark route and validate the expanded landscape on
-   desktop and physical PICO hardware.
-4. Add LOD or offline asset optimization only if PICO evidence requires it.
+1. Isolate the VR, Test, and Conductor entries and replace the same-PC browser
+   broker with the confirmed same-origin control channel.
+2. Add the minimal XR flight rig so ICAROS navigation, reset, ground clearance,
+   streaming, and content queries share one world-space visitor pose.
+3. Add the cold-transition benchmark, remove measured first-use renderer stalls,
+   and record a fresh headed production-browser baseline.
+4. Validate the complete USB-C and SteamVR PCVR path on the physical PICO, then
+   add LOD or asset optimization only where that evidence identifies a need.

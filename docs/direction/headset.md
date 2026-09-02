@@ -1,75 +1,94 @@
 # PICO Headset Integration
 
-Research result: **PICO exposes no PC-side API** for passthrough or telemetry.
-The enterprise capabilities are **on-device APIs** (PICO enterprise/ToB SDK:
-`EnableSeeThroughManual`, `OpenVSTCamera`, `SwitchSystemFunction`, kiosk and
-app control) — available because the stations use PICO 4 Enterprise hardware.
+## Decided Runtime Topology
 
-## XR model: switching, not blending
+The PICO headset is the wired display and tracking endpoint for the Windows PC
+VR installation. The application does not run on the headset:
 
-In `idle`/`boarding` and on `safety-exit`/`return`, the visitor sees the real
-room via **native see-through**; on `tutorial`/`piece` start the headset
-switches to VR (streamed or standalone per
-[Open Decision 1](open-decisions.md)), fading in from white. Passthrough is
-never blended *under* PC-streamed content — see rejected alternatives below.
+```text
+Windows browser / WebXR → SteamVR → PICO Business Streaming → USB → PICO
+```
 
-## Headset agent (streaming path)
+PICO Business Streaming owns both ends of the streaming transport. This
+repository therefore does not need an Android headset agent, an on-headset web
+runtime, or a second application protocol. A later standalone PICO edition is
+implemented in a separate reduced fork.
 
-A small on-device Android app connected to the station server:
+## Product Capabilities and Boundaries
 
-- **See-through switching** commanded by the session state machine, handing
-  the foreground between the streaming client and see-through.
-- **Telemetry backstream**: battery, proximity/worn state, streaming-client
-  foreground/connection state → station server → operator page.
-- **Protocol discipline** (proven in `pico-remote-control`): every command is
-  correlated and distinguishes **requested → pending → headset-confirmed** —
-  a successful socket `send()` is never proof the headset applied anything.
-  The operator page renders confirmed state only.
-- **The agent is optional.** If unreachable, staff guide the visitor manually
-  and the operator page shows the degraded state; the piece is unaffected.
+PICO's Business Streaming 2.1/2.2 documentation confirms:
 
-## SPIKE P1 (highest-risk item)
+- SteamVR streaming on a VR-ready Windows PC;
+- wired USB streaming, with USB 3.0 or faster as the documented baseline;
+- PICO Business Streaming 2.2 see-through during streaming for its supported
+  device and software matrix;
+- a native Windows SDK that can query connection state, headset and controller
+  battery, proximity state, and streaming performance data.
 
-On real hardware, in this order:
+These are vendor capabilities, not evidence that this installation has passed.
+The exact model, PICO OS, Business Streaming, SteamVR, browser, cable, host
+port, and driver versions must be recorded for every acceptance result.
 
-1. **Business Streaming seethrough first.** PICO Business Streaming 2.2 lists
-   "Seethrough during streaming" for specific Enterprise device/software
-   combinations. If it works on our exact matrix, boarding/safety see-through
-   comes from the streaming client and the agent shrinks to telemetry-only.
-2. **Agent-driven handover as the in-spike fallback**: foreground handover in
-   both directions (including clean streaming-client reconnect after being
-   backgrounded), see-through control, telemetry access.
+The browser's same-origin control channel connects only the VR and Conductor
+pages on the station PC. It does not control PICO Business Streaming. The
+native streaming SDK is also not directly callable from browser TypeScript.
+Only add a small Windows adapter if a concrete operator requirement cannot be
+met by Business Streaming's built-in UI and configuration. Do not preserve the
+old station broker or add a generic transport layer for this possible adapter.
 
-Record the outcome with its full hardware/software matrix
-([Quality and Operations](quality-operations.md)).
+## Smallest Installation Spike
 
-## Provisioning and diagnostics
+Validate the selected path on one complete station before adding integration:
 
-A maintenance plane, never part of runtime control:
+1. Pin the full hardware and software matrix.
+2. Make SteamVR the active XR runtime, confirm that the selected Windows
+   browser exposes `immersive-vr`, and start the local experience through PICO
+   Business Streaming in wired SteamVR mode.
+3. Verify tracking, controllers, audio, forward direction, session start and
+   exit, cable reconnect, application restart, and power-cycle recovery.
+4. Verify Business Streaming 2.2 see-through during streaming on the exact
+   headset matrix and document whether staff can operate it reliably.
+5. Record application frame timing together with Business Streaming render,
+   encode, transmit, decode, latency, and interpolation data.
 
-- A tethered technician CLI over USB-C ADB (pattern proven by `picoctl`):
-  inspect versions, install the agent APK and streaming client, launch
-  intents, reboot, screenshot, and a bounded read-only scrcpy mirror
-  (≤640 px, ≤15 fps, failure-isolated). scrcpy answers "what is the visitor
-  actually seeing" during boarding and failures — diagnostics, not operations.
-- **Kiosk/boot configuration** via PICO Business Device Manager: the boot
-  foreground app is pinned, so a power-cycled headset returns to a known state
-  without touching headset menus.
+If manual or built-in operation satisfies boarding and recovery, stop there.
+If not, define the missing operator action first and then evaluate the smallest
+Windows-side SDK adapter. An on-device agent remains out of scope.
 
-## Rejected alternatives (recorded so they are not re-litigated)
+## Provisioning and Diagnostics
 
-- **Blended passthrough under PC-streamed content** — architecturally
-  impossible: headset cameras never reach the PC, and streaming clients cannot
-  composite passthrough under a streamed frame. `immersive-ar` does not help —
-  desktop Chrome has no AR runtime. "Seethrough during streaming" *switches*
-  to the camera view; it does not blend.
-- **On-headset browser as the primary platform** — sacrifices the desktop GPU
-  and the streaming pipeline, but is a runnable, evidenced escape hatch:
-  `pico-remote-control` proved a persistent `immersive-ar` session with remote
-  passthrough ↔ opaque switching over plain WebSocket on real hardware. This
-  overlaps with [Open Decision 1](open-decisions.md); note the evidence
-  hardware was a PICO 4 **Ultra** Enterprise — results bind to the tested
-  matrix.
-- **BLE / Web Bluetooth for the M5**, **TLS on the ESP32, relays, pairing
-  tokens** — pointless once the page is a localhost secure context on a
-  controlled station network.
+- Use PICO Business Streaming's wired mode and built-in log export as the first
+  operational tools.
+- Use its PC SDK queries only for operator facts that have an active consumer;
+  do not mirror every available metric into the application.
+- Keep ADB, screenshots, and a bounded scrcpy mirror in a technician-only
+  maintenance path. They are diagnostics, not runtime control.
+- Keep the USB data path dedicated and tested. Any simultaneous charging,
+  extension, hub, or diagnostic use must be validated with the actual cable and
+  station port.
+
+## Rejected Alternatives
+
+- Running this repository standalone on the headset. That belongs in the later
+  reduced fork.
+- Wireless streaming as an installation fallback. It changes the performance
+  and recovery path and is outside the accepted baseline.
+- A custom Android headset agent before a demonstrated gap in the selected
+  streaming product.
+- A transport abstraction spanning BroadcastChannel, WebSocket, and a possible
+  native SDK adapter.
+
+## Primary Sources
+
+- [PICO Business Streaming 2.1/2.2 documentation](https://business.picoxr.com/us/doc/43j3qcoq)
+  documents Windows, SteamVR and USB streaming, supported matrices, built-in
+  diagnostics, and the 2.2 see-through feature.
+- [PICO Business Streaming 2.1 SDK guide](https://business.picoxr.com/doc/BusinessStreamingv2SDK)
+  documents the native Windows queries for connection, battery, proximity, and
+  performance data.
+- [PICO Business Streaming product page](https://business.picoxr.com/us/software/streaming-assistant)
+  confirms the Windows/SteamVR requirement and wired enterprise-headset
+  support.
+- [Chromium VR platform documentation](https://chromium.googlesource.com/chromium/src/+/main/device/vr/README.md)
+  documents Chrome's Windows WebXR path through OpenXR; browser-to-SteamVR
+  compatibility must still be verified on the pinned station matrix.

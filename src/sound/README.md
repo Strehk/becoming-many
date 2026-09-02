@@ -37,4 +37,4 @@ Per-sense audio beds faded by each sense's intensity signal, the drone-organ
 synth as a sound engine without its UI, spatial audio, and operator volume are
 all planned and deliberately absent. The `AudioContext` is the connection point
 they will share; a master gain node arrives with the first of them, measured on
-the PICO rather than assumed.
+the physical PCVR path rather than assumed.

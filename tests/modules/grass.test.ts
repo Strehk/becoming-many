@@ -2,7 +2,7 @@
  * Purpose: Verify Grass against the shared streaming and world-surface contracts.
  * Context: The first vegetation consumer combines fixed instancing with generated placement.
  * Responsibility: Cover deterministic roots, zone rules, the sense hook, recycling, and disposal.
- * Boundary: Visual density and physical PICO frame timing require runtime acceptance.
+ * Boundary: Visual density and physical PCVR frame timing require runtime acceptance.
  */
 
 import { expect, test } from "bun:test";

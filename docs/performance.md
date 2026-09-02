@@ -1,7 +1,9 @@
 # Performance
 
-Performance is the primary product requirement. The physical PICO headset is
-the final authority; desktop checks only detect regressions.
+Performance is the primary product requirement. The final authority is the
+physical installation path: the Windows station renders PCVR and streams it
+over USB-C through SteamVR to the PICO headset. Desktop browser checks detect
+regressions but do not prove that end-to-end path.
 
 ## Current Evidence
 
@@ -28,16 +30,16 @@ The current 180-metre landscape test structure is deliberately bounded:
 - no geometry or material allocation during particle, grass, vegetation, or
   rock recycling
 
-The 2026-08-24 short desktop Chromium settling smoke reported 89–93 FPS,
+The historical 2026-08-24 short desktop Chromium settling smoke reported 89–93 FPS,
 16.8–17.1 ms p95, 61 draw calls, and 5.90 million triangles after every
 configured GLB loaded successfully. The current expanded view and dense
-landscape still miss the 90-Hz browser budget and require physical PICO
-validation.
+landscape still miss the 90-Hz browser budget. These numbers are retained only
+as historical evidence; the current build requires a fresh baseline and a
+physical PCVR measurement before the next rendering change is accepted.
 Before compaction, zero-scaled static capacity produced about 26 million
-triangles and 35 FPS; that path remains removed.
-A separate ten-minute browser soak is recorded in the
-[2026-08-24 performance audit](performance-audit-2026-08-24.md); there is still
-no physical PICO measurement.
+triangles and 35 FPS; that path remains removed. There is still no current
+long-flight production soak and no physical PCVR measurement through the
+confirmed USB-C and SteamVR path.
 
 The 2026-08-23 World Surface refactor removed hard zone classification and
 vertex colors from Terrain generation. Neutral Terrain samples only ground
@@ -47,10 +49,10 @@ initialization benchmark predates this final visualizer path and is therefore
 not retained as current evidence.
 
 The overlay provides quick development feedback from recent frame intervals
-and `renderer.info`. It is not visible inside immersive WebXR and does not
-replace repeatable browser profiling or physical PICO measurements. The current
-structure therefore supports performance testing but does not yet prove a
-frame-rate target.
+and `renderer.info`. It is not visible inside immersive WebXR, is not
+repeatable evidence, and is scheduled for removal. The deterministic benchmark
+remains the owner of comparable browser evidence; physical PCVR measurement is
+the acceptance path.
 
 ## Deterministic Benchmark
 
@@ -83,7 +85,17 @@ another run on the same machine and rendering path, and nothing else. Headless
 runs use SwiftShader and describe a software rasterizer, not a headset.
 
 The harness is documented in [src/benchmark](../src/benchmark/README.md) and
-[tests/benchmark](../tests/benchmark/README.md).
+[tests/benchmark](../tests/benchmark/README.md). Its accepted counter baseline
+is a guard against unintended scene-cost changes, not a current performance
+approval. Regenerate a baseline only from a reviewed production build and keep
+the previous artifact beside the new result so the change remains explainable.
+
+The next benchmark extension is a separate cold-transition profile. It starts
+with a fresh WebGL context, runs the default show, and crosses every authored
+cue once. It must record first-use shader, buffer, and texture work without
+changing the deterministic static-level route. A later PCVR acceptance run
+uses the real show clock and production streaming path; it must not reuse the
+benchmark's fixed timestep or virtual stream queue.
 
 ## Acceptance Targets
 
@@ -91,7 +103,8 @@ The harness is documented in [src/benchmark](../src/benchmark/README.md) and
 - Candidate fallback: stable 72 Hz with a 13.89 ms frame interval.
 - The application must leave time for the browser, XR compositor, audio, and
   streaming instead of consuming the complete frame interval.
-- A profile becomes accepted only after repeatable physical-headset testing.
+- A profile becomes accepted only after repeatable testing on the complete
+  Windows PC, USB-C, SteamVR, streaming-client, and PICO headset path.
 
 ## Metrics to Add
 
@@ -103,7 +116,8 @@ drains. Still missing:
 - stale stream jobs
 - memory growth during a long flight
 - module load, activation, deactivation, and unload cost
-- PC render, encode, transport, decode, and total latency if PCVR proceeds
+- PC render, encode, USB transport, headset decode, compositor timing, and
+  end-to-end latency
 
 ## Current Scheduling Rules
 
@@ -145,7 +159,7 @@ before this experiment demonstrates a need.
 
 ```text
 build one element → verify correctness → measure in browser
-→ measure on PICO → simplify → measure again → checkpoint
+→ measure through PCVR on PICO → simplify → measure again → checkpoint
 ```
 
 A performance regression blocks completion until it is removed or explicitly

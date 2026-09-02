@@ -1,129 +1,89 @@
+<!--
+Purpose: Define the execution order for the remaining Becoming Many work.
+Context: Current behavior, architecture, and product direction have separate authoritative documents.
+Responsibility: Group open tasks into five forward-looking, dependency-aware milestones.
+Boundary: This file does not record completed features, current implementation details, historical evidence, or long-term ideas.
+-->
+
 # MVP Roadmap
 
-The roadmap starts from the [current working system](current-status.md). Each
-milestone should produce one measurable result before broader infrastructure is
-added. Section numbers group implementation areas; the current feature track is
-the landscape-module sequence in section 5.
+This roadmap contains only the order of open work. See
+[Current Status](current-status.md) for verified behavior,
+[Architecture](architecture.md) for the implemented system, and
+[Installation Direction](direction/README.md) for product direction.
 
-## Completed Foundation
+## 1. Security and Acceptance Gates
 
-- strict TypeScript, Vite, Three.js, and one render loop
-- user-triggered `immersive-vr` entry
-- pointer-lock desktop movement
-- sparse White World level preset
-- synchronous module lifecycle
-- aligned fixed-capacity chunk windows
-- bounded cooperative stream queue
-- one-draw deterministic Air Particles consumer with GPU animation
-- deterministic World Surface with separate height and zone queries
-- fixed-capacity generated Terrain consumer
-- fixed-capacity one-draw Grass consumer with GPU wind
-- composable single-pass Magnetic Sense stripe effect
-- explicit GLTF preloading and complete multi-part model extraction
-- compact zone-driven Vegetation and Rocks streaming
-- bounded four-species Animals MVP
-- top-level Bun tests for world infrastructure and module integration
+**Goal:** Security and acceptance rules apply before further runtime work is
+integrated.
 
-This foundation is code-complete for its current scope. It is not yet approved
-for physical PICO performance.
+1. [Stop Persisting and Logging Wi-Fi Passwords](todo/flash-page-password-handling.md)
+2. [Enforce the Performance Merge Gate](todo/performance-merge-gate.md)
 
-## 1. Navigation Boundary — Planned
+## 2. Isolate Applications and Evidence Paths
 
-- normalize desktop input before applying movement
-- expose position, orientation, and velocity as the navigation state
-- pass navigation state explicitly into world updates
-- add listener and pointer-lock cleanup
-- keep terrain, collision, streaming, and XR view logic outside navigation
+**Goal:** `/vr/`, `/test/`, and `/conductor/` are separate applications, and
+performance evidence has one explicit owner.
 
-## 2. Performance Harness
+1. [Isolate VR, Test, and Conductor Browser Entries](todo/isolate-vr-test-conductor-entries.md)
+2. [Eliminate Cold-Start CPU Spikes](todo/level-transition-cpu-spikes.md),
+   including the fresh-context cold-transition profile
+3. [Remove the Redundant Test UI](todo/remove-redundant-test-ui.md)
 
-- deterministic benchmark flight route
-- frame-time median, p95, and p99
-- `renderer.info` counts
-- queue depth and streaming duration
-- browser baseline
-- first physical PICO run at 90 Hz, with 72 Hz retained as a candidate fallback
+This order is required: the entry split establishes the Test application, the
+transition work establishes its durable evidence path, and only then can the
+temporary overlay and frame-metrics path be deleted.
 
-## 3. Terrain Measurement
+## 3. Simplify Runtime and Operator Boundaries
 
-- measure the implemented recycled chunk terrain on desktop and PICO
-- record streaming spikes, draw calls, triangles, and long-flight memory
-- compare a GPU clipmap only if measurements show the chunk candidate is not viable
+**Goal:** Show, level, operator, and application lifecycle responsibilities are
+explicit without introducing another framework.
 
-## 4. Generated Landscape Foundation — Implemented MVP
+1. [Separate Authored Level States From Show Composition](todo/level-state-and-show-composition.md)
+2. [Reduce Level Runtime Responsibilities](todo/level-runtime-responsibilities.md)
+3. [Replace the Station Broker With BroadcastChannel](todo/replace-station-broker-with-broadcast-channel.md)
+4. [Simplify the Conductor Application](todo/simplify-conductor.md)
+5. [Complete the Application Lifecycle](todo/application-lifecycle.md)
+6. [Standardize Runtime Boundary Names](todo/runtime-naming-consistency.md)
+7. [Configure Fallow Architecture Boundaries](todo/fallow-boundary-rules.md)
 
-- deterministic ground and visible-surface sampling from absolute coordinates
-- one continuous carved river represented through the water zone
-- generated-chunk consumer using `ChunkWindow` and `StreamQueue`
-- fixed mesh and staging-buffer capacity
-- stable memory over a long flight remains to be measured
-- floating origin only when world-coordinate range requires it
+Coordinate the Test-preset move and preset-contract extraction with milestone
+2 so the same files are not reorganized twice.
 
-## 5. World Fields and Landscape Modules — In Progress
+## 4. Make the Physical PCVR Path Safe and Viable
 
-Follow the boundaries in
-[Landscape Module Contracts](landscape-modules.md), one measurable module at a
-time:
+**Goal:** The complete Windows, SteamVR, USB-C, and PICO path is controllable
+and meets the performance gates.
 
-1. high-capacity instanced grass — implemented MVP, browser measurement recorded, PICO pending
-2. instanced trees and bushes — implemented MVP, browser measurement recorded, PICO pending
-3. instanced rocks — implemented MVP, browser measurement recorded, PICO pending
-4. visible rivers consuming the existing surface facts — next
+1. [Reset M5 State on Host Change](todo/m5-host-switch-state-reset.md)
+2. [Enforce M5 Liveness and Device Validation](todo/m5-liveness-and-device-validation.md)
+3. [Simplify the M5 Control Contract](todo/m5-control-contract-cleanup.md)
+4. [Add an XR Flight Rig](todo/xr-flight-rig.md)
+5. [Bring Scent Within the Frame Budget](todo/scent-performance-budget.md)
+6. [Reduce Thermal Fragment Cost](todo/thermal-fragment-budget.md)
+7. [Validate Every Consumer of Shared Wind Changes](todo/shared-wind-consumer-validation.md)
 
-Each module owns its placement and resources, retains fixed capacity, hides
-chunk boundaries, unloads cleanly, and passes target-device measurement before
-the next module starts. Do not add a generic ecology or placement framework in
-advance.
+This milestone ends with a complete show run on the physical installation.
+The run must pass at 90 Hz; 72 Hz is acceptable only as an explicitly measured
+product decision.
 
-## 6. Animals — Implemented MVP
+## 5. Contract and Cleanup Backlog
 
-- manifest runtime paths align with `public/animals`
-- authored actor counts per species consume World Surface without sibling imports
-- simple bounded movement and deterministic habitat search are active
-- only the nearest configured actors render and animate
-- spatial audio and complex behavior remain deferred
+**Goal:** Remove bounded contract and maintenance debt after the blockers.
+Take a task earlier only when it directly overlaps the active change.
 
-## 7. Narrative Runtime
+- [Tighten the Material Shader Patch Contract](todo/material-shader-patch-contract.md)
+  and [Tighten Scent Source Types](todo/scent-source-type-safety.md)
+- [Smooth Animal Boundary Turns](todo/smooth-animal-boundary-turns.md)
+- [Deduplicate Positive Modulo Inside the World Domain](todo/deduplicate-world-positive-modulo.md)
+  and [Reuse the World Cell Random Function in Grass](todo/reuse-world-cell-random-in-grass.md)
+- [Reduce Rocks and Vegetation Runtime Duplication](todo/static-population-runtime-duplication.md)
+- [Remove the Unused `sharedEchoGrass` Export](todo/remove-unused-shared-echo-grass-export.md)
 
-- Test Level
-- audio master clock *(built: one virtual show clock on the audio timebase)*
-- operator transport and restart *(built: the conductor page scrubs the
-  schedule and resets the clock, the flight, and the show window)*
-- typed state transitions
-- module preloading and unloading around timeline cues
-- per-sense intensity envelopes on the schedule
+### Conditional Branch Work
 
-## 8. Perception Modules
+Activate these tasks only if `origin/grass-clipmap` is being considered for
+integration:
 
-Develop and measure scent, depth, motion, and thermal perception independently.
-Magnetic Sense has an implemented terrain-line MVP and a browser diagnostic
-measurement; physical PICO measurement remains open. Reuse existing landscape
-geometry and fixed pools.
-
-## 9. Connections
-
-- bounded local mycelium and root networks
-- relationships derived from streamed world positions
-- controlled integration of earlier perception languages
-
-## 10. Platform Integration
-
-- passthrough onboarding and offboarding
-- standalone PICO presentation profile
-- Windows PCVR research and wired profile
-- operator controls with confirmed headset state
-- ICAROS input adapter
-
-## 11. Full Integration
-
-- complete continuous narrative timeline
-- long-flight memory stability
-- no shader, loading, upload, or disposal spikes
-- standalone and PCVR acceptance runs
-
-## Completion Gate
-
-```text
-brainstorm → implement MVP → test and type-check → measure
-→ remove bloat → measure again → checkpoint
-```
+- [Choose One Grass Owner Before Merging Grass Clipmap](todo/grass-clipmap-single-owner.md)
+- [Bound Headset Diagnostics Before Merge](todo/headset-diagnostics-lifecycle-config.md)

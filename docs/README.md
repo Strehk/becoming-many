@@ -1,8 +1,9 @@
 # Project Documentation
 
 The current `src/` and `public/` trees define the running system. These
-documents explain that implementation and keep future product direction
-separate from verified technical status.
+documents explain that implementation, collect authoritative experience
+content, and keep future product direction separate from verified technical
+status.
 
 ## Current System
 
@@ -12,16 +13,20 @@ separate from verified technical status.
 - [World Streaming](world-streaming.md) — current chunk window, stream queue, Air Particles consumer, and extension rules.
 - [Landscape Module Contracts](landscape-modules.md) — current boundaries for Rivers, Vegetation, Grass, Rocks, and Animals.
 - [Performance](performance.md) — current evidence, target metrics, and acceptance gates.
-- [Browser Performance Audit — 2026-08-24](performance-audit-2026-08-24.md) — measured browser bottlenecks, diagnostic A/B runs, and prioritized fixes.
 
 ## Product and Delivery Direction
 
 - [Experience](experience.md) — continuous flight, world states, audio, and AR/VR transitions.
 - [Levels](levels/README.md) — detailed intent, behavior, transitions, and future art-direction structure for every world state.
-- [Platforms](platforms.md) — current WebXR entry plus standalone PICO and wired PCVR direction.
-- [Roadmap](roadmap.md) — implementation status and the next measurable milestones.
+- [Platforms](platforms.md) — current WebXR entry and the confirmed wired
+  Windows-to-PICO PCVR direction.
+- [Roadmap](roadmap.md) — dependency-aware execution order for the remaining work.
 - [Architecture Decisions](architecture-decisions.md) — confirmed decisions that constrain future implementation.
 - [Installation Direction](direction/README.md) — where the piece is headed at the Futurium: deployment, senses, dramaturgy, controls, operator, headset. Subordinate to the current-system documents; conflicts are tracked in [Open Decisions](direction/open-decisions.md).
+
+## Experience Content
+
+- [Narration Script](narration/README.md) — authoritative English and German voiceover wording and its recording map.
 
 ## Assets and Visual References
 

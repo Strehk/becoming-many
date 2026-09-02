@@ -14,7 +14,7 @@ import {
 import type { NarrationCuePosition } from "../dramaturgy/narration-schedule";
 
 // How far playback may sit from the show before it is pulled back. A re-seek
-// is audible, so raise this before lowering it. Unmeasured on the PICO.
+// is audible, so raise this before lowering it. Unmeasured on the PCVR path.
 const SYNC_TOLERANCE_SECONDS = 0.25;
 
 /** One sampled show instant, as the narration needs to see it. */

@@ -2,7 +2,7 @@
  * Purpose: Verify the shared material decoration produced by Echo Depth.
  * Context: One depth ramp must decorate Terrain, Vegetation, and Rocks passes alike.
  * Responsibility: Cover parameter wiring, shader injection, chaining, and validation.
- * Boundary: Visual ramp quality and physical PICO performance require runtime acceptance.
+ * Boundary: Visual ramp quality and physical PCVR performance require runtime acceptance.
  */
 
 import { expect, test } from "bun:test";

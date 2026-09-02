@@ -19,11 +19,11 @@ invisible.
 
 - Enters from the color-less White World baseline; the world position and
   flight state continue unchanged.
-- Exits toward Echolocation: scent particles fade and unload while world
-  position remains stable.
-- The timeline driver (audio clock / schedule) is unresolved — see
-  `docs/direction/open-decisions.md` §2. Until then the sense intensity is
-  authored statically in the preset.
+- Exits toward Echolocation: scent particles fade and their runtime gate closes
+  while the one preloaded composition and world position remain stable.
+- The default show uses the implemented audio-clock schedule to drive the
+  transition. The complete preset remains available as a showless
+  `?level=scent` development run with statically authored full intensity.
 
 ## Visual and Audio Direction
 
@@ -140,7 +140,7 @@ not, and the moodboard stops for the plants are recorded and unused.
   rewrites only the recycled edge slots through the shared stream queue.
 - Opaque points avoid the transparent-overdraw limit named in the Level Guide.
   Fill rate, not point count, is the risk at these densities.
-- The standalone PICO 4 / 90 FPS gate is not yet measured.
+- The Windows-to-PICO PCVR 90 Hz gate is not yet measured.
 
 ## Decisions, Risks, and Open Questions
 

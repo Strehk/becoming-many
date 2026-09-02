@@ -2,7 +2,7 @@
  * Purpose: Verify deterministic physical facts exposed by WorldSurface.
  * Context: Render modules need stable heights and zone identities at absolute coordinates.
  * Responsibility: Cover repeatability, river geometry, zones, and authored relief.
- * Boundary: Chunk recycling, materials, and physical PICO timing are tested elsewhere.
+ * Boundary: Chunk recycling, materials, and physical PCVR timing are tested elsewhere.
  */
 
 import { describe, expect, test } from "bun:test";

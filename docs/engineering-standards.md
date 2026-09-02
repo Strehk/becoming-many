@@ -18,8 +18,9 @@ should extend it. They are defaults, not reasons to add infrastructure.
   a dependency or custom framework.
 - Add an abstraction only for a concrete current need. A possible future use is
   not sufficient.
-- Keep performance work measurable. Desktop behavior is useful evidence, but
-  physical PICO validation is required for headset performance claims.
+- Keep performance work measurable. Desktop browser behavior is useful
+  regression evidence, but headset claims require a physical Windows PCVR run
+  on the USB-C-connected PICO through the installation's SteamVR stack.
 
 ## Naming and Types
 
@@ -71,9 +72,10 @@ should extend it. They are defaults, not reasons to add infrastructure.
 
 ## Architecture
 
-- `src/main.ts` remains a minimal browser entry that selects one level.
-  `src/levels/level-runtime.ts` is the single composition root that connects
-  the preset to concrete systems without absorbing their implementation.
+- Keep every browser entry minimal. The current `src/main.ts` is replaced by
+  isolated VR and Test entries in the approved entry split; neither entry
+  absorbs composition logic. `src/levels/level-runtime.ts` remains the single
+  Experience composition root that connects typed data to concrete systems.
 - `src/world` owns permanent execution mechanisms. `src/modules` owns
   unloadable content, `src/control` owns input and navigation, and `src/levels`
   contains data-only presets.
@@ -116,9 +118,10 @@ should extend it. They are defaults, not reasons to add infrastructure.
 - Reuse geometries, materials, buffers, and render objects. Dispose owned
   geometries, materials, textures, render targets, controls, and listeners when
   their lifecycle ends.
-- Keep shaders and rendering mobile-first. Reduce draw calls, allocations,
-  material variants, transparency, overdraw, texture work, and per-frame CPU
-  work before adding more complex optimization systems.
+- Keep shaders and rendering lean enough to preserve the PCVR frame and
+  streaming budget. Reduce draw calls, allocations, material variants,
+  transparency, overdraw, texture work, and per-frame CPU work before adding
+  more complex optimization systems.
 
 ## Documentation
 
@@ -127,7 +130,9 @@ should extend it. They are defaults, not reasons to add infrastructure.
   behavior and assets.
 - Separate verified current behavior from planned product direction. Never
   describe a proposal, folder placeholder, or reference project as implemented.
-- Record physical PICO results separately from desktop or browser results.
+- Record desktop browser results separately from physical PCVR results. Every
+  physical result names the station PC, PICO model, USB connection, SteamVR,
+  streaming software, refresh rate, and relevant version numbers.
 - Use folder READMEs to explain ownership and boundaries, not to duplicate
   implementation walkthroughs.
 - Keep `current-status.md` factual, `architecture.md` implementation-based,

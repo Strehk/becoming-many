@@ -2,7 +2,7 @@
 Purpose: Document automated verification for browser development diagnostics.
 Context: Test UI code is separate from world modules and level presets.
 Responsibility: Keep pure performance-metric tests independent from DOM rendering.
-Boundary: Browser layout and physical PICO performance require manual acceptance.
+Boundary: Browser layout and physical PCVR performance require manual acceptance.
 -->
 
 # Test UI Tests

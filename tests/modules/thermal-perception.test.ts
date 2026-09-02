@@ -2,7 +2,7 @@
  * Purpose: Verify the shared material decoration produced by Thermal Perception.
  * Context: One heat view must decorate Terrain, Vegetation, Rocks, and Animals passes alike.
  * Responsibility: Cover parameter wiring, shader injection, effect ordering, warmth sampling, and validation.
- * Boundary: Visual ramp quality and physical PICO performance require runtime acceptance.
+ * Boundary: Visual ramp quality and physical PCVR performance require runtime acceptance.
  */
 
 import { expect, test } from "bun:test";

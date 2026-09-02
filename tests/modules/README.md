@@ -24,4 +24,4 @@ and shader wiring. Magnetic Sense verifies its sky-dome lifecycle, that the port
 shimmer math and the previous version's saved values survive, the field axis
 and palette reaching the uniforms, the clock wrap, and parameter
 validation. Visual quality and target-device performance still
-require browser and physical PICO acceptance.
+require browser and physical PCVR acceptance.

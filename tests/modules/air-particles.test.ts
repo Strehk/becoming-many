@@ -2,7 +2,7 @@
  * Purpose: Verify the Air Particles module against the shared streaming contracts.
  * Context: The first volumetric consumer combines a fixed slot window into one GPU draw.
  * Responsibility: Cover fixed capacity, queued edge updates, visibility, and cleanup.
- * Boundary: Visual density and physical PICO performance require separate acceptance.
+ * Boundary: Visual density and physical PCVR performance require separate acceptance.
  */
 
 import { describe, expect, test } from "bun:test";

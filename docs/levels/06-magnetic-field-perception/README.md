@@ -14,7 +14,7 @@ flight path ("Migratory Bird"). Migratory birds fly thousands of
 kilometres without a map, in part because they sense the magnetic field of
 the Earth — some researchers think certain birds can almost see it, as a
 shimmer laid over everything, showing them where north is (see
-`script/en.md`, "The Magnetic Field"). Here that global orientation
+`docs/narration/en.md`, "The Magnetic Field"). Here that global orientation
 becomes exactly that: a grainy, iridescent shimmer standing in the sky
 where north is, condensing the closer the gaze comes to the magnetic axis
 and dissolving into quiet sky away from it.
@@ -26,14 +26,11 @@ and dissolving into quiet sky away from it.
   sky itself changes and the northern shimmer joins the world above them.
 - Exits toward Connections: the magnetic field later resolves into local
   relationships and network flow.
-- The timeline driver (audio clock / schedule) is unresolved — see
-  `docs/direction/open-decisions.md` §2. Until then the sense intensity is
-  authored statically in the preset and this level runs standalone from
-  `src/main.ts`; no cross-level transition machinery exists yet. The
-  guide's "thermal color reduces so the magnetic signal remains legible"
-  cue is deferred to that driver: this preset carries thermal verbatim at
-  full intensity ("senses layer, never swap"). Since the field moved to the
-  sky it never competes with the heat view for the same pixels anyway.
+- The default show uses the implemented audio-clock schedule and shared fades.
+  The complete preset remains available as a showless `?level=magnetic`
+  development run with statically authored full intensity. This preset carries
+  thermal verbatim ("senses layer, never swap"); since the field moved to the
+  sky it does not compete with the heat view for the same pixels.
 
 ## Visual and Audio Direction
 
@@ -117,7 +114,7 @@ counterpart exists yet.
   rejection available.
 - No draw call was added or removed by the move from ground to sky.
 - No hardware desktop measurement has been recorded for this level yet.
-- The standalone PICO 4 / 90 FPS gate is not yet measured; no 72 Hz or
+- The Windows-to-PICO PCVR 90 Hz gate is not yet measured; no 72 Hz or
   90 Hz headset claim is approved.
 
 ## Decisions, Risks, and Open Questions

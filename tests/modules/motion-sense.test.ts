@@ -2,7 +2,7 @@
  * Purpose: Verify the Motion Sense module against its bounded-upload and determinism contracts.
  * Context: Fly swarms and the trail ring must stay deterministic, grounded, and cheap per frame.
  * Responsibility: Cover shader patches, ring slot math, thinning, placement, and lifecycle.
- * Boundary: Visual feel and physical PICO performance require separate acceptance.
+ * Boundary: Visual feel and physical PCVR performance require separate acceptance.
  */
 
 import { describe, expect, test } from "bun:test";

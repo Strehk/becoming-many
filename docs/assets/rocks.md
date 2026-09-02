@@ -21,4 +21,4 @@ their source pages, direct downloads, and checksums are recorded in
 The named object may be a Mesh or a multi-part Group. Rocks preserves every
 mesh part, applies an authored target height in metres, and compacts accepted
 zone placements into fixed instanced buffers. Runtime mesh simplification and
-LOD remain deferred until physical PICO measurement requires them.
+LOD remain deferred until physical PCVR measurement requires them.

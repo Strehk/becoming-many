@@ -21,8 +21,8 @@ Nine sparse presets currently exist under `src/levels`:
   plus warm animals and the radius-bounded false-color heat view of the
   Thermal Perception effect family.
 - `magnetic.level.ts` is the Magnetic Field Perception level: the carried
-  Thermal world plus directional ground field lines and the northern sky glow
-  of the Magnetic Sense module.
+  Thermal world plus the northern and southern sky-pole shimmer of the
+  Magnetic Sense module. It does not touch the ground.
 - `connections.level.ts` is the Connections level: the carried Magnetic world
   plus the pulsing mycelium web of the Mycelium module blended over it.
 - `test.level.ts` is the diagnostic development preset and adds Terrain plus the
@@ -169,10 +169,12 @@ they remain absent from White World.
 - The terrain and world coordinates remain continuous.
 - Each level is a typed preset that changes base parameters and module configurations.
 - Compatible states may overlap during transitions.
-- Upcoming modules prefetch and load before they become visible.
-- Finished modules deactivate, unload, and release all owned resources.
+- The show loads and constructs its fixed module union once before playback;
+  cue transitions change intensity and activation gates without rebuilding it.
+- Every module releases its owned resources when the application unloads.
 - The audio clock drives narrative cues; the operator controls entry into and exit from VR.
-- Every level must pass its standalone PICO performance gate before integration.
+- Every level must pass its Windows-to-PICO PCVR performance gate before
+  integration.
 
 ## Moodboards and Palettes
 
@@ -335,7 +337,9 @@ Color and scent recede while depth response becomes dominant. Motion cues may be
 
 ### Performance Direction
 
-Prefer material changes over duplicate geometry or additional scene passes. A post-processing solution is allowed only if measurement proves it affordable on PICO.
+Prefer material changes over duplicate geometry or additional scene passes. A
+post-processing solution is allowed only if physical PCVR measurement proves it
+affordable.
 
 ### Decided Art Direction
 

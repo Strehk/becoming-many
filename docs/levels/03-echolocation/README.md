@@ -18,14 +18,13 @@ distance to the viewer.
 
 ## Entry, Exit, and Timeline Cues
 
-- Enters from Scent World: scent particles fade and unload while world
-  position and flight state remain stable.
+- Enters from Scent World: the landscape fades in while world position and
+  flight state remain stable.
 - Exits toward Motion Perception: motion cues may begin during the exit so
   moving plants and animals lead naturally into the next state.
-- The timeline driver (audio clock / schedule) is unresolved — see
-  `docs/direction/open-decisions.md` §2. Until then the sense intensity is
-  authored statically in the preset and this level runs standalone from
-  `src/main.ts`; no cross-level transition machinery exists yet.
+- The default show uses the implemented audio-clock schedule and shared fades.
+  The complete preset remains available as a showless `?level=echo`
+  development run with statically authored full intensity.
 
 ## Visual and Audio Direction
 
@@ -106,7 +105,7 @@ ripples are excluded by the level intent. No audio counterpart exists yet.
   triangles in settled and post-flight views. Frame rates under software
   rasterization are not meaningful and are deliberately not recorded.
 - No hardware desktop measurement has been recorded for this level yet.
-- The standalone PICO 4 / 90 FPS gate is not yet measured; no 72 Hz or 90 Hz
+- The Windows-to-PICO PCVR 90 Hz gate is not yet measured; no 72 Hz or 90 Hz
   headset claim is approved.
 
 ## Decisions, Risks, and Open Questions

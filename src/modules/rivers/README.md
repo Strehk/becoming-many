@@ -7,4 +7,4 @@ level's `waterColor` directly to the river bed. There is no Rivers runtime,
 additional geometry, transparency, reflection, texture, or animation.
 
 A separate Rivers module is deferred until the design actually requires a
-water surface above the ground and its PICO cost has been validated.
+water surface above the ground and its physical PCVR cost has been validated.

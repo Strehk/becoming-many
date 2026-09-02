@@ -117,4 +117,4 @@ surroundings only where it stands now, and leaves nothing behind when it
 moves on), any surface texture or material map beyond the procedural warmth
 texture described above, and any additional thermal camera or duplicate
 render pass. The per-fragment texture costs four noise octaves inside the
-sensed radius; its headroom on PICO needs runtime acceptance.
+sensed radius; its headroom on the physical PCVR path needs runtime acceptance.

@@ -13,7 +13,7 @@ Reveal the world through temperature differences ("Snake"). Some snakes
 have pit organs whose heat signal merges with vision; here that merged view
 becomes a false-color heat image, and living animals stand out like prey
 because being alive means giving off heat, and heat cannot keep a secret
-(see `script/en.md`, "Infrared"). Heat is a near sense: the false-color
+(see `docs/narration/en.md`, "Infrared"). Heat is a near sense: the false-color
 view exists only inside a bounded radius around the traveler and feathers
 back into the carried grayscale world beyond it.
 
@@ -24,10 +24,9 @@ back into the carried grayscale world beyond it.
   the traveler, and warm animal bodies join the world for the first time.
 - Exits toward Magnetic Field Perception: thermal values later fade as
   large-scale directional magnetic patterns become visible.
-- The timeline driver (audio clock / schedule) is unresolved — see
-  `docs/direction/open-decisions.md` §2. Until then the sense intensity is
-  authored statically in the preset and this level runs standalone from
-  `src/main.ts`; no cross-level transition machinery exists yet.
+- The default show uses the implemented audio-clock schedule and shared fades.
+  The complete preset remains available as a showless `?level=thermal`
+  development run with statically authored full intensity.
 
 ## Visual and Audio Direction
 
@@ -115,7 +114,7 @@ palette outside the radius. No audio counterpart exists yet.
 - Animals add their bounded population cost (at most four visible actors,
   unchanged from the Test Level budget).
 - No hardware desktop measurement has been recorded for this level yet.
-- The standalone PICO 4 / 90 FPS gate is not yet measured; no 72 Hz or
+- The Windows-to-PICO PCVR 90 Hz gate is not yet measured; no 72 Hz or
   90 Hz headset claim is approved.
 
 ## Decisions, Risks, and Open Questions

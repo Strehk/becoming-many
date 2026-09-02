@@ -1,8 +1,8 @@
 /**
- * Purpose: Record the accepted deterministic counters for gated levels.
+ * Purpose: Record reviewed deterministic counters for gated levels.
  * Context: Draw calls and triangles repeat exactly, so they can fail a change.
- * Responsibility: Hold one accepted counter set per replay profile and level.
- * Boundary: Frame times are measurements and never appear here.
+ * Responsibility: Hold one counter guardrail per replay profile and level.
+ * Boundary: This file does not approve frame time or physical PCVR performance.
  */
 
 import type { BenchmarkCounters } from "../../src/benchmark/benchmark-report";
@@ -14,8 +14,8 @@ export type BenchmarkBaseline = Readonly<
 >;
 
 /**
- * Regenerate with `bun run benchmark --profile <name> --update`. Only levels
- * listed here are checked, so a level is gated by adding it deliberately.
+ * Regenerate from a reviewed production-build artifact with
+ * `bun run benchmark --profile <name> --update`. Only listed levels are gated.
  */
 export const BENCHMARK_BASELINE: BenchmarkBaseline = {
   full: {},

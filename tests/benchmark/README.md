@@ -83,14 +83,23 @@ run with `--skip-level test --skip-level design-test`.
 
 ## Baseline
 
-`benchmark-baseline.ts` records accepted counters per profile and level. Only
+`benchmark-baseline.ts` records reviewed counters per profile and level. Only
 listed levels are checked, so a level becomes gated by adding it deliberately.
 Counters are exact integers, so the comparison uses no tolerance: a difference
-is a real change in what the scene draws, and is accepted with `--update`.
+is a real change in what the scene draws. `--update` changes the guardrail; it
+does not approve the performance of that change. Review the production-build
+artifact before committing a regenerated baseline.
 
 Frame times never enter the baseline. Headless numbers describe the software
 rasterizer, and even on a GPU they are only comparable to another run on the
-same machine.
+same machine. Physical acceptance uses the Windows station and
+USB-C-connected PICO through SteamVR and is recorded outside this counter
+baseline.
+
+The next harness addition is a separate cold-transition run of the default
+show from a fresh WebGL context. It crosses each cue once and records first-use
+renderer work. It must not replace or silently change the static-level route,
+whose counter history remains useful for scene-cost regressions.
 
 `benchmark-route.test.ts` and `benchmark-report.test.ts` cover the pure route
 and summary logic under `bun test` and need no browser.

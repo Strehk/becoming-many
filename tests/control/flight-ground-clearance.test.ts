@@ -2,7 +2,7 @@
  * Purpose: Verify the minimum ground clearance applied to flight navigation.
  * Context: Camera movement may cross uneven terrain within a single frame.
  * Responsibility: Cover ground sampling, vertical clamping, and unrestricted ascent.
- * Boundary: Browser input, terrain rendering, and physical PICO behavior stay elsewhere.
+ * Boundary: Browser input, terrain rendering, and physical PCVR behavior stay elsewhere.
  */
 
 import { describe, expect, test } from "bun:test";

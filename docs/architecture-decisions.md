@@ -10,6 +10,33 @@ Boundary: The running architecture is documented in architecture.md.
 The [current architecture](architecture.md) describes what is implemented.
 This file records decisions that constrain current and upcoming work.
 
+## Confirmed Target Decisions
+
+### Windows PCVR Delivery (2026-09-02)
+
+- This repository targets one installation path: a Windows station renders the
+  WebXR experience, SteamVR provides the PC XR runtime, and PICO Business
+  Streaming carries the session over USB-C to the PICO headset.
+- Wireless streaming and a standalone headset runtime are outside this
+  repository. A later standalone PICO edition starts from a deliberately
+  reduced fork instead of adding a second platform composition here.
+- Performance acceptance covers the complete render, encode, USB transport,
+  decode, and compositor path. A desktop browser benchmark remains regression
+  evidence, not headset acceptance.
+
+### Same-PC Browser Coordination (2026-09-02)
+
+- The production VR page and Conductor are separate same-origin applications
+  on the same Windows PC. Their closed command/status protocol uses one
+  same-origin `BroadcastChannel`; no cross-device browser transport is needed.
+- The current Bun/WebSocket broker remains documented below as the applied
+  runtime until the entry and channel migrations land. It is not the target
+  architecture. The replacement is tracked in
+  [Replace the Station Broker With BroadcastChannel](todo/replace-station-broker-with-broadcast-channel.md).
+- Do not add a headset agent, a generic event bus, or a transport abstraction.
+  A native PICO streaming adapter is justified only by a demonstrated gap in
+  the confirmed SteamVR path.
+
 ## Applied Decisions
 
 ### WebGL2 and GLSL Rendering Stack
@@ -316,11 +343,11 @@ machine stays open.
 - **The conductor page must not import `src/levels` or `src/world`.** A single
   value import would pull Three.js into a bundle that is otherwise a few
   kilobytes.
-- **A flight reset is desktop rehearsal only.** Inside an `immersive-vr`
+- **A flight reset is currently desktop rehearsal only.** Inside an `immersive-vr`
   session Three.js overwrites the camera pose from the headset every frame, so
   the reset has no effect there — as, today, ground clearance does not either.
-  A camera rig would fix both and belongs with the XR view-state contract,
-  which stays undecided.
+  The approved navigation root below will fix both; implementation is tracked
+  in [Add an XR Flight Rig](todo/xr-flight-rig.md).
 
 ### The Timeline Sets the World State (2026-09-01)
 
@@ -353,7 +380,7 @@ a benchmark is what opts out.)*
   structure dissolves into and out of the background through the World Fade
   effect (`src/modules/world-fade`): an opaque final-color mix toward the
   live background, applied first so it wins over every sense decoration, and
-  never a transparent material — the mobile GPU sees no transition-time
+  never a transparent material — the XR render path sees no transition-time
   overdraw. Terrain, Vegetation, and Rocks ride the echo strength; Animals
   ride thermal. The background lerps between the states' colors over the
   same window (`levelTransitionAt`), the magnetic sky dome's haze chases it
@@ -386,5 +413,20 @@ device adapter → normalized input → navigation state → world update
   navigation.
 - Runtime and world modules do not branch on the active input device.
 
-A separate XR view-state contract remains undecided and should not be added as
-part of this refactor.
+### XR Navigation Root and Viewer Position (2026-09-02)
+
+- One Three.js `Group` is the application navigation root. It owns flight
+  position and heading; the child camera owns only desktop look or the local
+  headset pose supplied by WebXR.
+- The runtime derives one shared, allocation-free world-space viewer position
+  after navigation and before module updates. Consumers receive only its narrow
+  read-only `{ x, y, z }` contract. Camera-centred streaming, placement,
+  distance, and sky logic reads that value instead of treating the child
+  camera's local `position` as a world position.
+- Ground clearance adjusts the navigation root by the missing vertical delta.
+  Desktop translation, M5 flight, and flight reset target the same root, while
+  input adapters and the existing `ControlFrame` remain unchanged.
+- This is the complete XR view boundary needed now. Keep Three.js's automatic
+  XR camera lifecycle; do not add a generic view-state contract, custom XR
+  reference-space management, movement-mode framework, or per-consumer world
+  matrix queries until a concrete second requirement exists.

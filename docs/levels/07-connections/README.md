@@ -11,7 +11,7 @@ Boundary: The Level Guide owns the cross-level sequence; modules own their imple
 
 Add no further biological sense. Instead, reveal relationships within the
 already perceived world so individual elements become parts of a larger
-connected system (see `script/en.md`, "Finale": "you begin to see
+connected system (see `docs/narration/en.md`, "Finale": "you begin to see
 connections that were invisible before... For a moment — you become many").
 A pulsing mycelium web blends over the unchanged carried world, connecting
 the same deterministic world positions the earlier senses established —
@@ -20,17 +20,13 @@ animals.
 
 ## Entry, Exit, and Timeline Cues
 
-- Enters from Magnetic Field Perception: the field lines, sky glow, heat
-  view, motion trails, and depth ramp stay exactly as they were; the web
-  joins the world.
-- Exits toward the Overload and Return script beats: modules fade and
-  unload in a controlled sequence before the operator returns the
-  presentation to passthrough.
-- The timeline driver (audio clock / schedule) is unresolved — see
-  `docs/direction/open-decisions.md` §2. Until then the sense intensity is
-  authored statically in the preset and this level runs standalone as the
-  browser entry's default preset; no cross-level transition machinery
-  exists yet.
+- Enters from Magnetic Field Perception: the sky glow, heat view, motion
+  trails, and depth ramp stay exactly as they were; the web joins the world.
+- Exits toward the Overload and Return script beats: senses fade and their
+  runtime gates close while the one preloaded composition remains resident.
+- The default show uses the implemented audio-clock schedule and shared fades.
+  The complete preset remains available as a showless `?level=connections`
+  development run with statically authored full intensity.
 
 ## Visual and Audio Direction
 
@@ -125,7 +121,7 @@ exists yet.
 - Overflow beyond the fixed pools drops lowest-weight edges (spanning
   edges always survive) and logs one warning per generation.
 - No hardware desktop measurement has been recorded for this level yet.
-- The standalone PICO 4 / 90 FPS gate is not yet measured; no 72 Hz or
+- The Windows-to-PICO PCVR 90 Hz gate is not yet measured; no 72 Hz or
   90 Hz headset claim is approved.
 
 ## Decisions, Risks, and Open Questions

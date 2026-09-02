@@ -1,96 +1,97 @@
 # AGENTS.md
 
-Guidance for AI coding agents working in this repository. Humans are welcome to
-read it too.
+Guidance for AI coding agents working in this repository.
 
-## Orientation
+## Authority
 
-- **Becoming Many** is a speculative VR experience about layered, non-human
-  perception — see [README.md](README.md) for the concept.
-- The code in `src/` and `public/` is the source of truth. The as-built
-  documentation — [docs/architecture.md](docs/architecture.md),
-  [docs/engineering-standards.md](docs/engineering-standards.md),
-  [docs/architecture-decisions.md](docs/architecture-decisions.md),
-  [docs/current-status.md](docs/current-status.md),
-  [docs/roadmap.md](docs/roadmap.md) — describes and governs it, and
-  **takes priority**.
-- [docs/direction/](docs/direction/README.md) describes where the piece is
-  headed as a Futurium installation. Conflicts between direction and current
-  code are tracked in
-  [docs/direction/open-decisions.md](docs/direction/open-decisions.md) —
-  never resolve one silently in code; ask.
+- `src/` and `public/` are the source of truth for implemented behavior and
+  assets.
+- Follow [Engineering Standards](docs/engineering-standards.md),
+  [Architecture](docs/architecture.md),
+  [Architecture Decisions](docs/architecture-decisions.md), and
+  [Performance](docs/performance.md). Keep
+  [Current Status](docs/current-status.md) factual and
+  [Roadmap](docs/roadmap.md) forward-looking.
+- [Todo](docs/todo/) defines the scoped cleanup and stabilization work. Read the
+  relevant task before editing, but verify its claims against the current code.
+- Future installation direction lives in [docs/direction](docs/direction/).
+  Never resolve an [open decision](docs/direction/open-decisions.md) silently.
 
-## Language rule
+## Language
 
-**Everything committed to this repository is written in English**: code,
-identifiers, file names, comments, commit messages, documentation, and log
-output. German exists only as experience content (`script/de.md`, narration
-assets, audience-facing copy). This holds regardless of the conversation
-language — a German chat still produces English artifacts.
+Everything committed to this repository is written in English: code,
+identifiers, file names, comments, logs, documentation, and commit messages.
+German is limited to audience-facing content such as
+`docs/narration/de.md`.
 
-## How to work
+## Current Phase: Stabilize and Simplify
 
-- Follow [docs/engineering-standards.md](docs/engineering-standards.md) for
-  coding, architecture, Three.js, documentation, and validation conventions.
-- **Contracts and modularity are of utmost importance.** Small,
-  self-contained modules own their resources and complete lifecycle; data
-  crosses an ownership boundary only through a small, strict TypeScript
-  contract; concrete modules never import sibling modules. Extending a
-  contract cleanly always beats reaching around one.
-- **All configuration is TypeScript.** Settings, presets, definitions, and
-  tunables live in typed `.ts` files (`*-settings.ts`, `*.level.ts`, module
-  definitions) — never in JSON, YAML, or environment formats. JSON under
-  `public/` records asset provenance only.
-- Build the smallest viable step. Follow KISS and YAGNI. Plan every change
-  before implementing; work one step at a time.
-- **Ask before assuming.** If a task depends on an unwritten or open decision,
-  ask rather than inventing one and burying it in code.
-- **Finish what you start.** Leave the repo with the gates passing, or say
-  explicitly what is unfinished.
-- **Write down decisions** in `docs/`, not only in commit messages.
-- Keep `main` clean: develop on feature branches and merge only verified work.
-  **Do not commit or push unless asked.**
+- Work on one open todo at a time. Prioritize security, control safety,
+  installation, performance, reliability, and contract defects before cosmetic
+  cleanup.
+- Reproduce or prove the problem before changing code. Preserve behavior unless
+  the task explicitly changes it, and add a regression test for a bug fix.
+- Make the smallest testable change. Prefer deletion, consolidation, and an
+  existing owner over a new abstraction, dependency, framework, or parallel
+  runtime.
+- Remove superseded code, tests, configuration, and documentation completely.
+  Do not retain compatibility layers, no-op hooks, or speculative extension
+  points without a current consumer.
+- Keep ownership boundaries strict: one composition root, one render loop,
+  small explicit TypeScript contracts, no concrete sibling-module imports, and
+  no global mutable state, event bus, service locator, or hidden singleton.
+- Resource creators own complete, idempotent teardown. Runtime work and memory
+  stay bounded; hot paths remain allocation-free where practical.
+- Validate every consumer when changing a shared contract, setting, shader,
+  world fact, lifecycle, or control path.
+- Keep authored configuration in typed TypeScript. JSON under `public/` records
+  asset provenance only.
 
-## Toolchain
+## Delivery Platform
 
-- **Bun** (packages, tests), **Vite** (build), **Biome** (lint + format),
-  **Fallow** (export analysis, `.fallowrc.jsonc`).
-- `bun run dev` · `bun test` · `bun run check` (typecheck) · `bun run lint` ·
-  `bun run build` (typecheck + production build).
-- `bun run benchmark` replays a fixed route in Chromium and writes a report
-  artifact. It needs a current `bun run build` and is not part of `bun test`.
-- `bun run station` starts the localhost broker that joins the show window
-  (the default page at `/`; its link connects by itself) to the conductor page
-  (`/conductor.html`). It is a Bun
-  process, not part of the app bundle, and the show runs without it.
-- Run all Bun, Vite, and Fallow checks before checkpoints and commits.
+- This repository targets only the Windows PC VR installation.
+- The Three.js/WebXR application runs and renders on the station PC. SteamVR is
+  the selected PC VR runtime, and PICO Business Streaming carries the session
+  to a PICO headset over a wired USB connection.
+- The headset is a streamed display and tracking endpoint, not the application
+  runtime. Do not add standalone Android/PICO builds, mobile platform profiles,
+  or on-headset application code here.
+- A later standalone PICO edition will be implemented in a separate, reduced
+  fork. Keep shared Experience code independent from PC-only operator and
+  diagnostic composition so that fork can remove those concerns cleanly.
 
-## Performance rules
+## Performance Gate
 
-The delivery platform question is open
-([open decision 1](docs/direction/open-decisions.md)); until it is decided,
-these rules stand unchanged:
+- Performance regressions block completion. Use the targets, evidence rules,
+  and current limitations in [Performance](docs/performance.md).
+- For performance-sensitive work, record comparable before-and-after evidence
+  on the same route and rendering path. Run the deterministic benchmark and
+  require a `passed` physical PCVR result before merge. `not yet tested` is a
+  draft state only, or a final state for work whose diff cannot affect the
+  runtime path; it is never performance acceptance.
+- Desktop and headless results are diagnostic evidence, not physical-headset
+  acceptance. Do not claim a target frame rate without a complete wired PC VR
+  run that includes rendering, encoding, USB transport, decoding, and headset
+  presentation.
+- Reduce work, content, draw calls, shader cost, allocations, and overdraw
+  before adding LOD systems, workers, adaptive quality, extra passes, or new
+  rendering architecture.
 
-- Target PICO 4. Performance is the highest priority; target stable 90 FPS.
-  Any performance regression blocks completion.
-- Always choose the simplest, most GPU-friendly solution.
-- Keep shaders mobile-first and minimal: prefer opaque, unlit, or baked
-  lighting; minimize fragment work, texture samples, variants, and overdraw;
-  avoid dynamic branches and loops. Store shaders only in dedicated GLSL ES
-  3.00 files (`*.vert.glsl`, `*.frag.glsl`); never inline them.
-- Minimize draw calls. Use `InstancedMesh` for repeated geometry and
-  materials, `BatchedMesh` for varied geometry sharing a material. Reuse
-  geometry, materials, and buffers.
-- Stream procedural content in bounded, distance-based chunks. Pool and
-  recycle instances, use LOD and frustum culling, prefer KTX2 textures, and
-  always dispose unused GPU resources.
+## Workflow and Completion
 
-## Repository conventions
+1. Inspect the relevant todo, owning modules, contracts, tests, and current
+   documentation. Check installed library versions and official documentation
+   before relying on an API.
+2. Plan and implement the smallest complete patch. Do not mix unrelated todos
+   or broad cleanup into it.
+3. Run focused tests during development. Before a checkpoint, run `bun test`,
+   `bun run check`, `bun run lint`, `bun run build`, and `fallow`.
+4. For browser, XR, control, lifecycle, visual, or performance behavior, also
+   verify the real runtime path required by the task. Passing static gates alone
+   is insufficient.
+5. Update only affected as-built documentation and measured evidence. Remove
+   stale statements instead of documenting contradictions.
 
-- Documentation lives in `docs/` ([docs/README.md](docs/README.md) is the
-  index); this file stays short and points there.
-- `README.md` describes the piece for a reader who has never seen it. Keep the
-  vision text and implementation notes separate.
-- `script/` holds the narration (`en.md`, `de.md`). It is the authoritative
-  voiceover wording — content, not a draft; do not reword it while working on
-  code.
+Keep `main` clean and merge only verified work. Do not commit or push unless the
+user asks. `docs/narration/` is authoritative voiceover content; do not reword
+it during code or cleanup work.

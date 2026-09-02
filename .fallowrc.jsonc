@@ -1,9 +1,15 @@
-// Purpose: Model intentional project export conventions for Fallow.
-// Context: Every level preset exposes the same named `level` contract.
-// Responsibility: Exclude that deliberate namespace pattern from duplicate-export findings.
+// Purpose: Model intentional project conventions that static analysis cannot infer.
+// Context: Level presets share one export name, and one Bun override pins a transitive compatibility boundary.
+// Responsibility: Exclude only those verified conventions from false-positive Fallow findings.
 // Boundary: Production code and architecture rules remain outside analyzer configuration.
 {
   "$schema": "https://raw.githubusercontent.com/fallow-rs/fallow/main/schema.json",
+  "ignoreDependencyOverrides": [
+    {
+      "package": "@material/web",
+      "source": "package.json"
+    }
+  ],
   "ignoreExports": [
     {
       "file": "src/levels/*.level.ts",

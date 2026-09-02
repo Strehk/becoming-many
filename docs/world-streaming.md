@@ -247,4 +247,4 @@ The current tests verify:
 - visibility lifecycle, scene cleanup, and GPU resource disposal
 
 Visual seam review, browser frame timing, long-flight memory stability, and
-physical PICO performance remain runtime acceptance work.
+physical Windows-to-PICO PCVR performance remain runtime acceptance work.

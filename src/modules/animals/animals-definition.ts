@@ -26,7 +26,7 @@ export interface AnimalsDefinition {
 
 export const ANIMALS_DEFINITION: AnimalsDefinition = {
   seed: 953, // Keeps animal homes stable across level loads.
-  maxVisible: 4, // Bounds animated models and their draw calls on PICO.
+  maxVisible: 4, // Bounds animated models and their draw calls on the PCVR path.
   activeRadiusMeters: 96, // Repositions animals that fall well behind the player.
   species: [
     {

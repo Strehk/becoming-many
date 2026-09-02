@@ -166,8 +166,9 @@ uses an authored count per configured species and a nearest-visible budget.
 1. **Rivers:** complete the existing physical surface with visible water.
 2. **Terrain textures:** consume zone conditions without replacing World
    Surface or the fixed Terrain mesh pool.
-3. **PICO validation:** measure the combined landscape before adding LOD, wind,
-   more actors, or denser assets.
+3. **PCVR validation:** measure the combined landscape through the Windows,
+   SteamVR, USB-C, and PICO path before adding LOD, wind, more actors, or denser
+   assets.
 
 ## Acceptance for Every Module
 
@@ -180,4 +181,4 @@ Before starting the next module, verify that the current one:
 - creates no private render loop and performs no unbounded per-frame allocation
 - unloads without retained scene objects or undisposed GPU resources
 - passes focused contract tests, strict TypeScript, Biome, build, and Fallow
-- records browser evidence and a physical PICO result before performance approval
+- records browser evidence and a physical PCVR result before performance approval

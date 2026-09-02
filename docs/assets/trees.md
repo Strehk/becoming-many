@@ -13,17 +13,13 @@ URLs are loaded only once, so the four added conifers and the two added
 deciduous crowns come out of `pine-trees-01.glb` and `trees.glb`, which were
 already being fetched, and cost no additional transfer.
 
-`birch-trees.glb` and `dead-trees.glb` are the only newly fetched files. They
-were brought in for silhouette variety: the source crowns are low-poly solids
-drawn with an unlit material, so a stand built from few variants reads as one
-constructed shape repeated. Both carry fewer triangles per instance than the
-deciduous trees whose share they take, so the mix does not raise the visible
-triangle count that
-[the 2026-08-24 performance audit](../performance-audit-2026-08-24.md) records
-as the dominant bottleneck. It does raise the startup transfer by about 6.9 MB
-against the roughly 19.4 MB that audit measured, which lands on the same
-document's P2 finding that startup waits for all enabled assets. Dropping
-either file from `variantsByZone` reverses that cost on its own.
+`birch-trees.glb` and `dead-trees.glb` are the only additionally fetched files.
+They were brought in for silhouette variety: the source crowns are low-poly
+solids drawn with an unlit material, so a stand built from few variants reads
+as one constructed shape repeated. Both carry fewer triangles per instance
+than the deciduous trees whose share they take, but they increase startup
+transfer. A fresh production-build benchmark and PCVR run must accept that cost;
+dropping either file from `variantsByZone` reverses it independently.
 
 ## Inventory
 
@@ -38,7 +34,8 @@ either file from `variantsByZone` reverses that cost on its own.
 | Bush | [Poly Pizza](https://poly.pizza/m/EoTERLq3z2) | `bush.glb` | 1 | 900 | 1 | 1 |
 | Bush with Flowers | [Poly Pizza](https://poly.pizza/m/U1ymDy8tbY) | `bush-with-flowers.glb` | 1 | 1,368 | 2 | 2 |
 
-All models are by Quaternius and published under CC0. The GLBs are stored as source files and are not yet PICO-optimized.
+All models are by Quaternius and published under CC0. The GLBs are stored as
+source files and have not yet been accepted on the physical PCVR path.
 
 ## Runtime Rules
 
@@ -48,7 +45,8 @@ All models are by Quaternius and published under CC0. The GLBs are stored as sou
 - Preserve every Mesh below a named Group and instance each model part.
 - Normalize native model units through authored target heights in metres.
 - Compact accepted placements so unused pool capacity produces no vertex work.
-- Convert embedded textures to the selected runtime format only after PICO measurement.
+- Convert embedded textures only after physical PCVR measurement demonstrates
+  the need.
 - Do not create per-tree materials, textures, or scene graphs in the streaming hot path.
 - Use shader-based wind or compact instance data for motion; these sources contain no skeletal animation clips.
 - Unload complete vegetation sets through the module lifecycle.

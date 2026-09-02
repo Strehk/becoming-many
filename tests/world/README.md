@@ -2,7 +2,7 @@
 Purpose: Explain the World Engine test scope.
 Context: Chunk coordinates and scheduling are shared by every streamed module.
 Responsibility: Describe the invariants protected by tests in this folder.
-Boundary: Visual module behavior and physical PICO acceptance live elsewhere.
+Boundary: Visual module behavior and physical PCVR acceptance live elsewhere.
 -->
 
 # World Tests
@@ -17,4 +17,4 @@ recycling, negative heights, and revision invalidation.
 work, cooperative multi-frame jobs, and the per-frame deadline.
 
 Module tests should remain with their matching test area. Browser checks and
-physical PICO performance measurements are separate acceptance steps.
+physical PCVR performance measurements are separate acceptance steps.

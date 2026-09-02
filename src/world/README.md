@@ -140,4 +140,4 @@ landscape chunk as a single step.
 
 The MVP deliberately has no worker pool, general asset-streaming framework,
 runtime quality adaptation, or distance-based priority system. Those additions
-need measured PICO evidence.
+need measured physical PCVR evidence.

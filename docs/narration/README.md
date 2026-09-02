@@ -44,7 +44,7 @@ by listening before the cue times are tuned.**
 ## Notes
 
 - The narration text itself is audience-facing experience content and therefore stays in its own
-  language — this is the exception to the English-only rule in [`AGENTS.md`](../AGENTS.md).
+  language — this is the exception to the English-only rule in [`AGENTS.md`](../../AGENTS.md).
   Everything around it (filenames, headings of this index, commentary) is English.
 - The two versions are not literal translations of one another. Where they diverge, both are
   intentional as written — do not "fix" one against the other.

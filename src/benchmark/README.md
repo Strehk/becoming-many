@@ -51,9 +51,23 @@ Counters from `renderer.info` are exact integers and repeat across machines.
 Frame times are measurements and only compare against a run on the same
 machine and rendering path. The two never mix in one pass/fail decision.
 
-The overlay from `src/test-ui` stays off during a run so its DOM writes do not
-enter the samples.
+The optional overlay from `src/test-ui` stays off during a run so its DOM writes
+do not enter the samples. The benchmark remains valid after that overlay is
+removed; it owns its own sampling and report path.
 
 Viewport size is part of the workload and must be pinned by the caller.
 Frustum culling depends on the camera aspect ratio, so a different window
 shape produces different draw counts.
+
+## Next measurement profile
+
+The existing route measures independent static levels after a warmup. It does
+not measure the default show's first cue activations. The next extension is a
+separate cold-transition profile that opens a fresh WebGL context and crosses
+each authored cue once. Keep it separate from this route: it answers a
+different question and must not turn the benchmark runtime into a generic
+scenario framework.
+
+Neither profile reproduces the installation transport. Final performance
+acceptance runs on the Windows station and USB-C-connected PICO through
+SteamVR, using the production clock and time-budgeted stream queue.

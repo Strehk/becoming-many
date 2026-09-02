@@ -40,7 +40,7 @@ answers, the widget is what says so.
 `station-settings.ts` holds the port, the reporting rate, and the retry delay.
 
 The broker itself is not here. It runs under Bun rather than in a browser, so
-it lives at [`station/`](../../station/README.md) beside `tests/` and `script/`,
+it lives at [`station/`](../../station/README.md) at the repository root beside `tests/`,
 and imports this folder the way the benchmark runner imports `src/benchmark`.
 
 ## Not an event bus

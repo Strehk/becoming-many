@@ -25,7 +25,7 @@ interface NarrationAsset {
 }
 
 /**
- * The script's nine sections (`script/README.md`) across eight recordings:
+ * The script's nine sections (`docs/narration/README.md`) across eight recordings:
  * file 7 carries Finale and Overload as a single take, so nothing is
  * unrecorded. Reconstructed from delivery rate — sections 1-6 run at 78-96
  * words per minute in both languages, and only the merged reading of file 7

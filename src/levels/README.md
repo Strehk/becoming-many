@@ -15,8 +15,8 @@ Runtime, applies the selected preset, creates only the enabled modules, and
 connects desktop controls.
 
 Every `*.level.ts` file exports its preset as a named `level` constant that
-satisfies the shared `LevelPreset` contract. Presets are sparse: omitted values
-remain unchanged.
+satisfies the shared `LevelPreset` contract. A selected static preset is a
+complete startup recipe; omitted modules are disabled.
 
 `shared-level-values.ts` holds the blocks that several presets carry verbatim
 — the White World air layer, the Scent World layer, the echo-world vegetation
@@ -46,8 +46,8 @@ the Motion Sense fly swarms and their printed trails onto the carried Echo
 world. `thermal.level.ts` is the Thermal Perception level and layers the
 radius-bounded false-color heat view onto the carried Motion world while
 adding the warm animal population. `magnetic.level.ts` is the Magnetic Field
-Perception level and layers the directional ground field lines and the
-northern sky glow onto the carried Thermal world. `connections.level.ts` is
+Perception level and adds the northern magnetic sky glow without touching the
+ground. `connections.level.ts` is
 the Connections level and layers the radius-bounded underground reveal and
 the pulsing mycelium web onto the carried Magnetic world. `test.level.ts` is the
 diagnostic development preset and activates Terrain and Grass, uses Zone

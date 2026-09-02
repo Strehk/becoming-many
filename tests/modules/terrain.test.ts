@@ -2,7 +2,7 @@
  * Purpose: Verify fixed-capacity terrain streaming against the shared world contracts.
  * Context: The terrain module is the first generated chunk consumer in the project.
  * Responsibility: Cover resident mesh capacity, row jobs, slot recycling, and cleanup.
- * Boundary: World-surface formulas and physical PICO frame timing are tested separately.
+ * Boundary: World-surface formulas and physical PCVR frame timing are tested separately.
  */
 
 import { expect, test } from "bun:test";

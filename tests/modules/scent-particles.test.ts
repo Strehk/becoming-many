@@ -2,7 +2,7 @@
  * Purpose: Verify the Scent Particles module against the shared streaming contracts.
  * Context: Scent radiates from the plants of a streamed world and from live animals.
  * Responsibility: Cover shader patches, per-plant emission, printed trails, and cleanup.
- * Boundary: Visual density and physical PICO performance require separate acceptance.
+ * Boundary: Visual density and physical PCVR performance require separate acceptance.
  */
 
 import { describe, expect, test } from "bun:test";

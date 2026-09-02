@@ -7,7 +7,7 @@
 
 export const WORLD_RUNTIME_SETTINGS = {
   renderer: {
-    antialias: false, // Enable global MSAA at renderer creation; measure changes on PICO.
+    antialias: false, // Enable global MSAA at renderer creation; measure changes on PCVR.
   },
   streamQueue: {
     budgetMilliseconds: 0.5, // Limits cooperative stream work started per frame.

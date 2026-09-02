@@ -2,7 +2,7 @@
  * Purpose: Verify fixed-capacity placement for zone-driven static content.
  * Context: Vegetation and Rocks share candidates but own separate render resources.
  * Responsibility: Cover multi-part assets, water exclusion, and complete lifecycle cleanup.
- * Boundary: Real asset appearance and headset performance require browser and PICO checks.
+ * Boundary: Real asset appearance and headset performance require browser and PCVR checks.
  */
 
 import { expect, test } from "bun:test";

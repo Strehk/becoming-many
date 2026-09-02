@@ -2,7 +2,7 @@
 Purpose: Explain the flight-control test scope.
 Context: Navigation constraints must remain independent from browser event handling.
 Responsibility: Route tests for deterministic movement rules under src/control.
-Boundary: World rendering, surface formulas, and physical PICO acceptance live elsewhere.
+Boundary: World rendering, surface formulas, and physical PCVR acceptance live elsewhere.
 -->
 
 # Control Tests
