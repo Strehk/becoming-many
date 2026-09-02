@@ -1,6 +1,6 @@
 /**
  * Purpose: Compose polled device states into render-frame ControlFrames.
- * Context: Polls arrive at ~20Hz, the render loop reads at up to 90Hz; button
+ * Context: Polls arrive at ~6Hz, the render loop reads at up to 90Hz; button
  *   edges and staleness must survive that mismatch, and a wrong device must
  *   warn rather than silently steer.
  * Responsibility: Run derive → safety → auto-neutralize → smooth per poll,

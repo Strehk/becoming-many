@@ -1,6 +1,6 @@
 /**
  * Purpose: Prove the smoother eases live poses and never delays neutral.
- * Context: The 0.25 factor turns a 0.4 step into 0.1 on the first frame —
+ * Context: The 0.625 factor turns a 0.4 step into 0.25 on the first poll —
  *   a resumed stream must not snap, but neutral must land immediately.
  * Responsibility: Cover the ease-up, the immediate neutral, and the reset.
  * Boundary: When smoothing is skipped (neutralizer holding zero) is the
@@ -23,7 +23,7 @@ describe("control smoothing", () => {
     const smoother = createControlSmoother();
 
     expect(smoother.apply(liveFrame({ pitch: 0.4, roll: -0.4 }))).toEqual(
-      liveFrame({ pitch: 0.1, roll: -0.1 }),
+      liveFrame({ pitch: 0.25, roll: -0.25 }),
     );
   });
 
@@ -36,7 +36,7 @@ describe("control smoothing", () => {
     // After the reset the next live pose eases from true zero, not the
     // stale pre-dropout pose.
     expect(smoother.apply(liveFrame({ pitch: 0.4 }))).toEqual(
-      liveFrame({ pitch: 0.1 }),
+      liveFrame({ pitch: 0.25 }),
     );
   });
 });

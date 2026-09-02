@@ -21,8 +21,8 @@ more device adapter beside desktop.
 **Landed** (2026-09-01): `src/m5/control-frame.ts` owns the contract;
 `src/m5/control-source.ts` turns polls into render frames. Button edges are
 **consume-on-read**: a press between two polls is latched and delivered by the
-frame body's single `readFrame` call, so a 20 Hz edge is visible exactly one
-render frame and cannot be missed. While an M5 host is configured the glider
+frame body's single `readFrame` call, so an edge between two polls is visible
+exactly one render frame and cannot be missed. While an M5 host is configured the glider
 **flies every frame**: a stale or failed poll carries neutral steering —
 straight and level — because `quality: 0` means "nothing is steering", never
 "stop". Keyboard movement returns when the host is cleared; mouse look stays
@@ -60,7 +60,9 @@ no WebSocket ([Deployment](deployment.md)).
   counters, and the client diffs them to synthesize the one-frame edges the
   ControlFrame contract promises.
 - The firmware samples at 50 ms and pre-serializes the payload, so polling is
-  a buffer send; clients poll at that cadence.
+  a buffer send. The device still serves one client at a time, so the station
+  budgets its requests rather than matching that cadence: one poll per page at
+  167 ms (under 6 requests/s), which reads a fresh sample every time.
 
 ## Firmware
 

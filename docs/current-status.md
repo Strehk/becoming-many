@@ -617,10 +617,13 @@ type, firmware version constant, and the tested untrusted-payload parser).
 newline-JSON (WiFi credentials, device id, axis map — remembered in
 localStorage).
 
-The in-app adapter consumes `/state`: `src/m5/control-source.ts` runs the
-client-owned pipeline (`safety → auto-neutralize → smooth`, rig profile in
-`m5-settings.ts`), derives one-frame button edges from the payload's counters
-with consume-on-read latching, and goes neutral within one second of silence.
+The in-app adapter consumes `/state` at 167 ms — one poll per page, under six
+requests a second, because the device serves one HTTP client at a time; the
+conductor's crosshair preview reads those same samples rather than polling
+again. `src/m5/control-source.ts` runs the client-owned pipeline
+(`safety → auto-neutralize → smooth`, rig profile in `m5-settings.ts`),
+derives one-frame button edges from the payload's counters with consume-on-read
+latching, and goes neutral within one second of silence.
 While an M5 host is configured the ICAROS glider flies every frame
 (`src/control/m5-flight.ts`: constant glide, roll yaws about world-up, pitch
 climbs — the horizon never banks); a stale or failed poll only straightens

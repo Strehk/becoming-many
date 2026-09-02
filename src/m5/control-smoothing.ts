@@ -1,6 +1,6 @@
 /**
  * Purpose: Ease each new controller pose so a resumed stream never snaps.
- * Context: The device streams at 20Hz; without easing, a reconnect or a
+ * Context: The device is polled at ~6Hz; without easing, a reconnect or a
  *   dropped-and-recovered signal would jump the flight in one frame.
  * Responsibility: Lerp pitch/roll toward each new frame; a neutral frame lands
  *   immediately and resets the easing origin to true zero.

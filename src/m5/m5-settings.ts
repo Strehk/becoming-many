@@ -10,9 +10,11 @@
  */
 
 export const M5_SETTINGS = {
-  // The firmware samples every 50ms; polling faster only re-reads the same
-  // snapshot, slower adds steering latency.
-  pollIntervalMilliseconds: 50,
+  // The device serves one HTTP client at a time, so the poll rate is a load
+  // budget before it is a latency choice: 167ms keeps the station under six
+  // requests a second. The firmware samples every 50ms, so every poll still
+  // reads a fresh snapshot; the cost is up to 167ms of steering latency.
+  pollIntervalMilliseconds: 167,
   // No accepted poll for this long means the device is gone: steer nothing.
   staleAfterMilliseconds: 1_000,
   // The deviceId every payload must carry. Empty accepts any device; a set
@@ -23,7 +25,10 @@ export const M5_SETTINGS = {
   // Resuming from quality 0 at or beyond this deflection is an unsafe pose,
   // not intent — a person lies on the machine.
   resumePoseLimit: 0.85,
-  // A single-poll change this large is a glitch, not a human movement.
+  // A single-poll change this large is a glitch, not a human movement: at the
+  // 167ms poll and the firmware's 45° range it is 243°/s of rig tilt, still
+  // well past a brisk full-range sweep. The limit is per poll, not per second,
+  // so it has to be revisited whenever the poll rate moves.
   abruptStepLimit: 0.9,
 
   // Rig rest pose in -1..1 units. The device calibrates its own zero at the
@@ -39,5 +44,8 @@ export const M5_SETTINGS = {
   maxFrameGapMilliseconds: 1_000,
 
   // Per-poll easing toward the newest pose; 1 would be no smoothing at all.
-  smoothingFactor: 0.25,
+  // It is a time constant in disguise: 0.625 at the 167ms poll eases with the
+  // same ~170ms constant the 0.25-at-50ms tuning had, so a slower poll does
+  // not also slow the feel.
+  smoothingFactor: 0.625,
 } as const;

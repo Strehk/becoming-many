@@ -1,6 +1,6 @@
 /**
  * Purpose: Prove polls become render frames without losing edges or trust.
- * Context: Polls arrive at ~20Hz and the render loop reads at up to 90Hz;
+ * Context: Polls arrive at ~6Hz and the render loop reads at up to 90Hz;
  *   the source bridges the rates and guards against the neighbour rig.
  * Responsibility: Cover edge diffing and latching, staleness, wrong-device
  *   rejection, the firmware-mismatch report, and the non-consuming read a
@@ -80,8 +80,8 @@ describe("control source", () => {
     const source = createControlSource();
     source.pushState(state({ pitch: 0.4 }), 0);
 
-    // One smoothing step: 0.25 of the way from 0 toward 0.4.
-    expect(source.readFrame(10).pitch).toBeCloseTo(0.1);
+    // One smoothing step: 0.625 of the way from 0 toward 0.4.
+    expect(source.readFrame(10).pitch).toBeCloseTo(0.25);
     expect(source.readDeviceReport(10)).toEqual({
       state: "live",
       quality: 1,
