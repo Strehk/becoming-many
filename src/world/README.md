@@ -29,8 +29,18 @@ is a change to the Grass module that should be measured with it.
 
 `world-settings.ts` keeps the permanent renderer and stream-queue tuning values
 in one editable place. `world-runtime.ts` consumes those settings while creating
-the Three.js scene, camera, renderer, module runtime, and stream queue. Every
-frame follows one order:
+the Three.js scene, camera, renderer, module runtime, and stream queue.
+
+The renderer settings are the attributes of the one WebGL2 context, which
+`world-runtime.ts` creates itself and passes to `WebGLRenderer` alongside its
+canvas. They include `xrCompatible: true`: a context that is XR-compatible from
+creation spares Three.js the `makeXRCompatible()` call it would otherwise make
+while adopting a session the headset already presents, and therefore spares the
+world the context loss a runtime on another adapter answers with. A lost
+context is reported on the console, because the silent rebuild that follows the
+restore otherwise looks like a page reload.
+
+Every frame follows one order:
 
 ```text
 update navigation

@@ -521,6 +521,33 @@ and the whole wire (`station-protocol.ts`, `station-link.ts`,
   telemetry and see-through switching — a different wire with a different
   peer, to be designed against that need rather than revived from this one.
 
+### The Render Context Is XR-Compatible From Creation (2026-09-02)
+
+Amends [One Station Window](#one-station-window-2026-09-02).
+
+- **The world creates its own WebGL2 context** in
+  `world-runtime.ts`, from the attributes in `world-settings.ts`, and hands
+  the same record to `getContext` and to `WebGLRenderer`. Three.js otherwise
+  creates the context itself and never forwards `xrCompatible`.
+- **`xrCompatible: true` is the point of doing so.** Without it Three.js has
+  to call `makeXRCompatible()` from inside `setSession`, on a session the
+  runtime already presents. A runtime whose XR device sits on another adapter
+  answers by losing the context: every buffer, texture, and program dies, the
+  projection-layer setup then fails with `InvalidStateError`, and the visitor
+  is left in a live session nothing can draw into — a black headset that only
+  closing the page clears. The restore rebuilds the world from nothing, which
+  reads as a page reload.
+- **A session the renderer cannot adopt is ended, not abandoned.**
+  `xr-session.ts` owns that: once `requestSession` resolves, the runtime is
+  presenting, so a failing `setSession` must call `session.end()` before it
+  rethrows. This is the safety net for runtimes that force the migration
+  anyway; the attribute above is the fix.
+- **The session lifecycle and context loss are logged.** Availability
+  changes, the request, the hand-over, its refusal, and every context loss or
+  restore reach the console — the headset browser has no devtools, and
+  `dev/headset-diagnostics.ts` mirrors console output onto the canvas.
+
+
 ## Approved Navigation Boundary
 
 ### Input and Navigation

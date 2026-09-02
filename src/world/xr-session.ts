@@ -43,25 +43,27 @@ export function createXrSessionControl(
     }
   }
 
+  function setAvailability(next: XrAvailability): void {
+    if (next === availability) return;
+
+    availability = next;
+    console.info(`XR: immersive-vr is ${next}.`);
+    notify();
+  }
+
   // Availability is re-checked whenever the runtime reports a device change,
   // so plugging in a headset or starting the streaming runtime flips the
   // state without a reload.
   function checkAvailability(): void {
     if (!navigator.xr) {
-      availability = "unsupported";
-      notify();
+      setAvailability("unsupported");
       return;
     }
 
     navigator.xr.isSessionSupported("immersive-vr").then(
-      (isSupported) => {
-        availability = isSupported ? "available" : "unsupported";
-        notify();
-      },
-      () => {
-        availability = "unsupported";
-        notify();
-      },
+      (isSupported) =>
+        setAvailability(isSupported ? "available" : "unsupported"),
+      () => setAvailability("unsupported"),
     );
   }
 
@@ -70,10 +72,12 @@ export function createXrSessionControl(
 
   renderer.xr.addEventListener("sessionstart", () => {
     isSessionActive = true;
+    console.info("XR: the renderer is presenting to the headset.");
     notify();
   });
   renderer.xr.addEventListener("sessionend", () => {
     isSessionActive = false;
+    console.info("XR: the session ended.");
     notify();
   });
 
@@ -81,15 +85,34 @@ export function createXrSessionControl(
     start: async (): Promise<void> => {
       if (renderer.xr.getSession() || !navigator.xr) return;
 
+      console.info("XR: requesting an immersive-vr session.");
       const session = await navigator.xr.requestSession(
         "immersive-vr",
         SESSION_INIT,
       );
-      await renderer.xr.setSession(session);
+
+      // The runtime presents this session from here on, and shows the visitor
+      // a black room until something draws into it. A renderer that cannot
+      // adopt it must therefore not leave it open: without this the headset
+      // stays black until the page dies, while the page itself looks idle.
+      console.info("XR: session granted; handing it to the renderer.");
+      try {
+        await renderer.xr.setSession(session);
+      } catch (reason) {
+        console.error("XR: the renderer could not adopt the session.", reason);
+        // Ending a doomed session can fail in its own right; the refusal above
+        // is the reason worth reporting.
+        await session.end().catch(() => undefined);
+        throw reason;
+      }
     },
 
     stop: async (): Promise<void> => {
-      await renderer.xr.getSession()?.end();
+      const session = renderer.xr.getSession();
+      if (!session) return;
+
+      console.info("XR: ending the session.");
+      await session.end();
     },
 
     subscribe: (observer) => {
