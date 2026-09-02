@@ -27,6 +27,31 @@ The current 180-metre landscape test structure is deliberately bounded:
 - provisional stream-work deadline of 0.5 ms per frame
 - no geometry or material allocation during particle, grass, vegetation, or
   rock recycling
+- the clipmap grass field runs in every level from echolocation on and is
+  the largest single addition since this list was written: one 786 KB
+  instance buffer shared by every chunk and level, no vertex buffer written
+  after load, per-blade culling in the vertex shader, and a one-time 35.8 ms
+  fill of its height texture during `load`. Measured against the same level with the
+  field removed, on the quick profile, Apple GPU: it adds 78 draw calls,
+  0.3 M triangles, and about 2 ms p95 — Thermal Perception goes from 81 draw
+  calls and 3.7 ms p95 to 159 and 5.6 ms. `renderer.info.triangles` counts
+  every culled blade as a degenerate triangle, so that count overstates the
+  work.
+
+  Where that cost sits was measured too, and it is not where reaching
+  further would put it. Reducing the fade distance from 128 m to 72 m moved
+  nothing, because the density law has already thinned the distance to a few
+  percent: at 100 m four blades in a hundred survive and a far chunk starts
+  twenty instances. The near field is the whole cost. Halving it — 19 tufts
+  per square metre to 12 — took the surcharge from 3.0 ms to 2.6 ms, and two
+  blade segments instead of three took it to 2.1 ms. Pulling the
+  full-density radius in from 20 m to 14 m would reach 1.4 ms and was
+  rejected: the viewer flies seven metres up, so nearly everything in frame
+  already sits in the thinning zone and the meadow reads as bare ground.
+
+  That machine is not the gate: the PICO 4 at 90 FPS allows 11.1 ms per
+  frame and is far weaker, and neither this field nor its cost under the
+  heat view has been measured there
 
 The 2026-08-24 short desktop Chromium settling smoke reported 89–93 FPS,
 16.8–17.1 ms p95, 61 draw calls, and 5.90 million triangles after every

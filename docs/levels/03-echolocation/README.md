@@ -63,16 +63,22 @@ ripples are excluded by the level intent. No audio counterpart exists yet.
   and applies the same instance to Terrain (through `TerrainMaterialEffect`)
   and to every Vegetation and Rock part material (through the shared
   `UnlitMaterialEffect` contract).
-- Decided 2026-08-30, reversed 2026-08-31: Grass gained the three.js chunk
-  anchors (`<common>`, `<project_vertex>`, and `<color_fragment>`) so the
-  same patch that decorates a built-in material pass reaches it unchanged,
-  and it took its own 64-metre range at the same time. The anchors and the
-  range stay in the module, but no narrative level authors a `grass` block
-  at present: grass is the densest near-camera surface in the world, and
-  Thermal Perception samples a four-octave noise field per fragment on
-  every surface it decorates. The pair is parked until that cost is
-  measured; see [performance.md](../../performance.md). Restoring it is one
-  line in `echo.level.ts`.
+- Decided 2026-09-01: grass grows from this level down the whole narrative
+  chain, through the clipmap field (`src/modules/grass-clipmap/`), which
+  `echo.level.ts` authors and every later preset carries by spreading it.
+  The blades take the same chunk anchors as any other surface
+  (`<common>`, `<project_vertex>`, `<color_fragment>`), so Echo Depth takes
+  their color outright and Thermal covers it inside its radius; where a
+  sense is patched in, the field compiles its own lighting out entirely and
+  keeps only the root-to-tip gradient that shows below full sense
+  intensity.
+- The older `grass` module stays parked. It kept the same anchors and its
+  own 64-metre range since 2026-08-31, but two grass implementations
+  cannot both answer the open question, and the clipmap field reaches
+  further for less. That question is unchanged: grass is the densest
+  near-camera surface in the world, and Thermal Perception samples a
+  four-octave noise field per fragment on every surface it decorates. It is
+  now unmeasured *and* running; see [performance.md](../../performance.md).
 - Excluded by intent: Animals (motion belongs to level 04).
 
 ## Asset and Shader Requirements

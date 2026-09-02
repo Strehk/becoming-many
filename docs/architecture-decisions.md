@@ -199,6 +199,61 @@ Decided 2026-08-30, applying the 2026-08-24 audit's P1 finding.
   drift is linear, so any wrap is a visible step, and the only job of the
   wrap is to keep the noise input inside float precision.
 
+### Clipmap Grass Carries the Narrative Chain (2026-09-01)
+
+- The clipmap grass field from the standalone grass demo enters as its own
+  module, `grass-clipmap/`, beside the existing `grass/`, and becomes the
+  grass of the narrative chain: `echo.level.ts` authors it and every later
+  preset carries it by spreading that one. Grass therefore grows from
+  echolocation on, next to the other plants, and stops being parked.
+- The older `grass/` module stays in the repository, authored only by the
+  test and design presets. Two implementations cannot both answer the open
+  question about cost, and this one reaches further for less. Retiring the
+  older one is a separate decision.
+- The field was landed isolated first, in its own level, and wired into the
+  chain the same day on the author's instruction. The measurement that
+  isolation was meant to enable has not happened: the 2026-08-24 audit
+  parked grass because its cost under the heat view was unmeasured, and that
+  is now unmeasured *and* running. On the fixed benchmark route the
+  Echolocation level goes from 32 draw calls and 2.21 M triangles to 130 and
+  2.64 M; an Apple-GPU Mac renders that at 0.4 ms median and 5.4 ms p95,
+  which is comfortable there and says nothing about the target device.
+- The blades take the same chunk anchors as every other sensed surface
+  (`<common>`, `<project_vertex>`, `<color_fragment>`), so no sense knows
+  that this grass is not an ordinary instanced surface. Because the chunk
+  matrix is a pure translation, the vertex stage hands `<project_vertex>`
+  the local position, which is what Thermal measures its world position
+  against.
+- Thermal Perception gained a `grass` consumer beside terrain, vegetation,
+  rocks, and animals. Grass grows out of the ground and holds the ground's
+  temperature; carrying vegetation's authored warmth made a whole meadow read
+  as one flat hot surface, because a blade has no instance matrix and so no
+  spread and no gradient to break that flatness either.
+- Where a sense is patched in, `GRASS_LIT` compiles the demo's whole
+  lighting model out — some eighty instructions per vertex that Echo Depth
+  would replace anyway. What remains is the root-to-tip gradient that shows
+  below full sense intensity, the same shape the older grass carries.
+- The ground arrives sampled, not analytical. The demo derives blade roots
+  from a sine sum evaluated in the vertex shader; this world's `getGroundY`
+  is four Perlin lookups against a permutation table plus a carved river,
+  which in GLSL is roughly 160 dynamically indexed table reads per vertex.
+  A camera-following texture on Terrain's own two-metre vertex grid carries
+  ground height and zone cover instead, so one fetch answers both and the
+  blades follow the mesh the viewer actually sees rather than an
+  approximation of it. Its first fill costs a measured 35.8 ms during `load`.
+- The texture window is snapped to its own texel grid and published only when
+  a refill is complete. Without the snap the sample points would shift as the
+  camera walks and the ground would ripple; without the deferred publish a
+  half-filled window would root blades in two worlds at once.
+- Not ported: the demo's quality UI and runtime layout API, its benchmark
+  harness, its sky, ground, and controls, its additive zone mode, and its
+  flat single-colour blade mode — measured 7 % faster and unusable at these
+  blade widths, where unshaded overlapping blades merge into one surface.
+- The module lights itself, which no other module in this world does. That is
+  a diagnostic state, not a decision about the look: the shaders carry no
+  three.js chunk anchors yet, so no sense can patch them, and adding those
+  anchors is the next step.
+
 ### Module-Owned Web Worker for Connection Topology (2026-08-31)
 
 - The Connections web topology (kNN plus minimum spanning tree over up to

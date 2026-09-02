@@ -41,7 +41,8 @@ test overlay; its invisible ground flag clamps flight above the shared world
 surface without rendering Terrain, and its invisible vegetation grows the
 plant population the scent radiates from without drawing a single tree. `echo.level.ts` is the Echolocation level
 and decorates the rendered landscape materials with the shared Echo Depth
-distance ramp. `motion.level.ts` is the Motion Perception level and layers
+distance ramp. It is also where grass starts: it authors the clipmap grass
+field, and every later preset carries it by spreading this one. `motion.level.ts` is the Motion Perception level and layers
 the Motion Sense fly swarms and their printed trails onto the carried Echo
 world. `thermal.level.ts` is the Thermal Perception level and layers the
 radius-bounded false-color heat view onto the carried Motion world while

@@ -20,6 +20,11 @@ Terrain-before-content dependency.
 Terrain renders `WorldSurface` ground heights and owns its geometry plus the
 selected presentation material. Grass owns a separate fixed instanced field and
 uses World Surface only for deterministic root height and water exclusion.
+Grass Clipmap is a second grass implementation beside it and the one the
+narrative levels use from echolocation on: it places nothing on the CPU and
+samples the same World Surface into a camera-following texture instead. It
+carries the same chunk anchors, so the senses reach it unchanged. Retiring
+the older module is a decision that still waits on a measurement.
 Vegetation and Rocks own separate zone rules while sharing a compact multi-part
 instancing mechanism. Animals own their cloned actors and bounded animation.
 

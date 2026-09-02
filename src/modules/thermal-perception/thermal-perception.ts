@@ -69,6 +69,12 @@ export interface ThermalPerceptionEffects {
   readonly vegetation: UnlitMaterialEffect;
   readonly rocks: UnlitMaterialEffect;
   /**
+   * Grass. Separate from vegetation because it reads as the ground it grows
+   * out of rather than as the canopy above it, and because a blade derived in
+   * the vertex shader carries no instance matrix to vary itself with.
+   */
+  readonly grass: UnlitMaterialEffect;
+  /**
    * Report the warm bodies now standing in the world. Every sensed surface
    * shares one source set, so a single call reaches all of them; passing no
    * sources leaves the world unwarmed.
@@ -202,6 +208,34 @@ export function createThermalPerception(
             THERMAL_PERCEPTION_SETTINGS.definition.vegetationPivot,
           ),
           ...createBandUniforms(parameters.bands.vegetation),
+          ...HEAT_SENSED,
+        },
+        vertexHeader: instancedVertexShader,
+      }),
+    },
+    grass: {
+      applyTo: createPatchApplier({
+        cacheKey: THERMAL_INSTANCED_CACHE_KEY,
+        uniforms: {
+          ...sharedUniforms,
+          // No spread and no gradient: both are read from an instance matrix
+          // the blades do not have, so authoring them would be a value that
+          // silently does nothing.
+          ...createInstancedWarmthUniforms(
+            parameters.surfaces.grassWarmth,
+            0,
+            0,
+            0,
+          ),
+          ...createTextureUniforms(
+            parameters.surfaces.grassTextureWarmth,
+            worldFeatureSize,
+          ),
+          ...createContrastUniform(
+            parameters.surfaces.grassContrast,
+            THERMAL_PERCEPTION_SETTINGS.definition.grassPivot,
+          ),
+          ...createBandUniforms(parameters.bands.grass),
           ...HEAT_SENSED,
         },
         vertexHeader: instancedVertexShader,

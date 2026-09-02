@@ -8,10 +8,12 @@
 import "./style.css";
 import { createBenchmarkRun } from "./benchmark/benchmark-run";
 import { isBenchmarkProfileName } from "./benchmark/benchmark-settings";
+import { showHeadsetDiagnostics } from "./dev/headset-diagnostics";
 import { resolveNarrationLanguage } from "./dramaturgy/narration-catalog";
 import { PIECE_SCHEDULE } from "./dramaturgy/piece-schedule";
 import type { ShowClock } from "./dramaturgy/show-clock";
 import {
+  isLevelName,
   LEVEL_CATALOG,
   resolveLevelName,
   SHOW_LEVEL,
@@ -41,7 +43,22 @@ declare global {
 // measurement route, `?language=<de|en>` arms the narration language, and
 // `?m5=<host>` polls a tilt controller directly for development.
 const request = new URLSearchParams(window.location.search);
-const requestedLevel = request.get("level");
+
+// `?diagnostics=1` puts errors and one GPU capability report on screen. A
+// headset browser has no console, so a shader that fails to compile there
+// shows only as an empty world; this is how that failure becomes readable.
+if (request.get("diagnostics") !== null) {
+  showHeadsetDiagnostics(document.body);
+}
+
+// `/echo` names a level the same way `?level=echo` does. A path survives
+// what a query string does not: a headset browser that treats a typed address
+// as a search, a link that loses its parameters, a bookmark saved without
+// them. Both forms mean a development run; the bare default still plays the
+// piece.
+const pathLevel = window.location.pathname.replace(/^\/+|\/+$/g, "");
+const requestedLevel =
+  request.get("level") ?? (isLevelName(pathLevel) ? pathLevel : null);
 const levelName = resolveLevelName(requestedLevel);
 const requestedProfile = request.get("benchmark");
 const benchmark =
