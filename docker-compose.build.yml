@@ -1,0 +1,15 @@
+# Purpose: Build the station image from this checkout instead of pulling it.
+# Context: docker-compose.yml runs the released GHCR image; development and
+#   pipeline testing want the local sources under the same service names.
+# Responsibility: Add only the build instruction, layered over the base file.
+# Boundary: Everything else — ports, env, restart, healthchecks — stays in
+#   docker-compose.yml; this file must never diverge from it.
+#
+#   docker compose -f docker-compose.yml -f docker-compose.build.yml up -d --build
+
+services:
+  station:
+    build: .
+
+  m5-sim:
+    build: .

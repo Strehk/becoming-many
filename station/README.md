@@ -50,18 +50,24 @@ for the full descriptions.
 
 ## Docker
 
-One command runs a built station, restarted on failure and health-checked
-(the Dockerfile probes `/health`):
+One command runs a station from the released image, restarted on failure and
+health-checked (the Dockerfile probes `/health`); the station PC needs no
+toolchain beyond Docker:
 
 ```sh
 cp .env.example .env   # fill in per station, every value optional
-docker compose up -d --build
+docker compose up -d
 ```
 
-Publishing a GitHub release builds the same image and pushes it to
-`ghcr.io/strehk/becoming-many` (`.github/workflows/release-image.yml`), so a
-station PC without the toolchain runs `docker compose pull` followed by
-`docker compose up -d` instead of `--build`.
+Publishing a GitHub release builds the image and pushes it to
+`ghcr.io/strehk/becoming-many` (`.github/workflows/release-image.yml`).
+`docker compose pull` updates a station to the newest release — an explicit
+step, so an exhibition never changes under the operators by itself. Building
+from the checkout instead of pulling layers the build override on top:
+
+```sh
+docker compose -f docker-compose.yml -f docker-compose.build.yml up -d --build
+```
 
 The pages are then at `http://localhost/` and `http://localhost/conductor.html`
 (port 80 by default — `HOST_PORT` in `.env` moves it). Serving from

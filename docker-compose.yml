@@ -1,20 +1,21 @@
 # Purpose: Start one Becoming Many station with a single command.
 # Context: Runs on each station PC; the pages must come from http://localhost
 #   (docs/direction/deployment.md), so this publishes a local port, not a host.
-# Responsibility: Build the image, pass the per-station env through, keep the
-#   process restarted, and offer the M5 simulator for hardware-less testing.
+# Responsibility: Run the released image, pass the per-station env through,
+#   keep the process restarted, and offer the M5 simulator for testing.
 # Boundary: Per-station values live in `.env` (see .env.example), never here.
+#   Building locally is docker-compose.build.yml's concern.
 #
-#   docker compose up -d --build          # the station
+#   docker compose up -d                  # the station (pulls on first run)
+#   docker compose pull                   # update to the newest release
 #   docker compose --profile sim up -d    # station + simulated M5
 
 services:
   station:
-    # The release workflow publishes this name; a station without the build
-    # toolchain runs `docker compose pull && docker compose up -d`, while
-    # `docker compose up -d --build` builds the same image locally.
+    # Published by .github/workflows/release-image.yml on every release. The
+    # station PC needs no toolchain; a first `up` pulls, and updating is an
+    # explicit `docker compose pull` — never a surprise mid-exhibition.
     image: ghcr.io/strehk/becoming-many:latest
-    build: .
     ports:
       - "${HOST_PORT:-80}:7823"
     environment:
@@ -29,7 +30,6 @@ services:
   m5-sim:
     profiles: ["sim"]
     image: ghcr.io/strehk/becoming-many:latest
-    build: .
     command: ["bun", "station/m5-sim.ts"]
     ports:
       - "${SIM_PORT:-5183}:5183"

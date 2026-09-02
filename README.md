@@ -48,14 +48,15 @@ health endpoint:
 
 ```sh
 cp .env.example .env        # optional: M5 host, device id, station name
-docker compose up -d --build
+docker compose up -d        # pulls the released image from GHCR
 ```
 
 Show page at [http://localhost](http://localhost), operator page at
-[http://localhost/conductor.html](http://localhost/conductor.html). Published
-releases land on `ghcr.io/strehk/becoming-many`, so a machine without the
-toolchain uses `docker compose pull && docker compose up -d` instead of
-`--build`. Details, endpoints, and the env vars: [station/README.md](station/README.md).
+[http://localhost/conductor.html](http://localhost/conductor.html).
+`docker compose pull` updates to the newest release; building from the
+checkout instead is `docker compose -f docker-compose.yml -f
+docker-compose.build.yml up -d --build`. Details, endpoints, and the env
+vars: [station/README.md](station/README.md).
 
 For development: `bun install`, then `bun run dev` (pages) beside
 `bun run station` (broker) — see [AGENTS.md](AGENTS.md) for the full toolchain.
