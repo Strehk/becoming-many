@@ -12,7 +12,7 @@
  * ground at the rim, and that new ground fades in.
  */
 
-import { Color, type PerspectiveCamera, type Scene } from "three";
+import { Color, type Scene } from "three";
 import { isNormalized, isPositiveFinite } from "../../utils/number-ranges";
 import {
   type ChunkAssignment,
@@ -25,6 +25,7 @@ import {
   type StreamQueue,
   SURFACE_STREAM_PRIORITY,
 } from "../../world/stream-queue";
+import type { Viewpoint } from "../../world/viewer-rig";
 import type { WorldSurface } from "../../world-surface/world-surface";
 import type {
   ConnectionActorSource,
@@ -82,7 +83,7 @@ const NEIGHBOUR_OFFSETS: readonly (readonly [number, number])[] = [
 
 export interface ConnectionsOptions {
   readonly scene: Scene;
-  readonly camera: PerspectiveCamera;
+  readonly viewpoint: Viewpoint;
   readonly streamQueue: StreamQueue;
   /** Ground the module seeds its own soil points against. */
   readonly worldSurface: WorldSurface;
@@ -278,7 +279,7 @@ function loadWeb(
 
   // The first window fills synchronously like the other streamed modules; the
   // first cords appear when the worker replies a few frames later.
-  const { x, z } = options.camera.position;
+  const { x, z } = options.viewpoint.worldPosition;
   for (const assignment of gatherWindow.update(x, z)) {
     gatherSlot(stream, staging, styles, options, assignment);
   }
@@ -298,7 +299,7 @@ function updateWeb(
   if (!stream) return;
   const { staging } = stream;
 
-  const { x, z } = options.camera.position;
+  const { x, z } = options.viewpoint.worldPosition;
   for (const assignment of stream.gatherWindow.update(x, z)) {
     staging.isGathered[assignment.slotIndex] = 0;
     options.streamQueue.enqueue(

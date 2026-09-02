@@ -1,13 +1,14 @@
 /**
  * Purpose: Compose the conductor page around the show it hosts in-process.
  * Context: One window owns the world, the operator UI, and the XR session.
+ *   The surface is touch-first and plain-worded; everything that can break a
+ *   live show lives in the technician drawer.
  * Responsibility: Start the level, snapshot it every frame, and wire panels.
  * Boundary: Show time is owned by the show clock; this page only reflects it.
  */
 
 import {
   NARRATION_LANGUAGES,
-  type NarrationCueId,
   type NarrationLanguage,
 } from "../dramaturgy/narration-catalog";
 import type { NarrationSchedule } from "../dramaturgy/narration-schedule";
@@ -15,6 +16,7 @@ import { SHOW_LEVEL, SHOW_LEVEL_PRESETS } from "../levels/level-catalog";
 import { type RunningShow, startLevel } from "../levels/level-runtime";
 import type { DeploymentConfig } from "../station/deployment-config";
 import type { FrameMetrics } from "../test-ui/frame-metrics";
+import type { XrSessionState } from "../world/xr-session";
 import { type ConductorAction, resolveConductorKey } from "./conductor-keys";
 import { CONDUCTOR_SETTINGS } from "./conductor-settings";
 import type {
@@ -22,13 +24,15 @@ import type {
   ConductorState,
   ShowSnapshot,
 } from "./conductor-state";
-import { createCueInspector } from "./cue-inspector";
 import { createM5Panel } from "./m5-panel";
+import { createSessionBar } from "./session-bar";
 import { createShowActions, type ShowActions } from "./show-actions";
 import { createShowTimeline } from "./show-timeline";
 import { createStagePanel } from "./stage-panel";
 import { createStatusStrip } from "./status-strip";
+import { createTechDrawer } from "./tech-drawer";
 import { createTransportPanel } from "./transport-panel";
+import { createWakeOverlay } from "./wake-overlay";
 import "./conductor.css";
 
 const TYPING_TAGS = new Set(["INPUT", "TEXTAREA", "SELECT"]);
@@ -52,21 +56,22 @@ export async function startConductorPage({
     throw new Error("Missing conductor root: .conductor");
   }
 
-  // The station's name tells a technician which of the identical stations
-  // this window commands — in the tab bar and on the page itself.
   if (deployment.stationName) {
     document.title = `${deployment.stationName} — Becoming Many`;
-    const stationBadge = document.createElement("div");
-    stationBadge.className = "conductor__station-name";
-    stationBadge.textContent = deployment.stationName;
-    container.append(stationBadge);
   }
 
   // A parameter cannot stay narrowed inside the closures below.
   const page = container;
 
+  // The masthead names the station and carries the health tiles: the two
+  // things a person reads from across the room.
+  const masthead = document.createElement("header");
+  masthead.className = "conductor__masthead";
+  masthead.append(createIdentity(deployment.stationName));
+  page.append(masthead);
+
   // The stage mount exists before the level so the world has a home; it gets
-  // its place in the layout when the stage panel wraps it below.
+  // its place in the technician drawer when the stage panel wraps it below.
   const stageMount = document.createElement("div");
   const level = await startLevel(stageMount, SHOW_LEVEL, {
     show: { schedule, language, levels: SHOW_LEVEL_PRESETS },
@@ -76,11 +81,25 @@ export async function startConductorPage({
 
   const actions = createShowActions(level, show);
 
-  let scrubSeconds: number | undefined;
-  let selectedCueId: NarrationCueId | undefined;
+  // The one page-held copy of the session state, so every panel reads the
+  // same instant of it from the snapshot instead of subscribing separately.
+  let xrState: XrSessionState = {
+    availability: "unknown",
+    isSessionActive: false,
+  };
+  level.xr.subscribe((state) => {
+    xrState = state;
+  });
 
-  const statusStrip = createStatusStrip(page);
-  createStagePanel({ parent: page, stageMount, xr: level.xr, actions });
+  let scrubSeconds: number | undefined;
+
+  const statusStrip = createStatusStrip({
+    tilesParent: masthead,
+    bannerParent: page,
+  });
+
+  const drawer = createTechDrawer({ parent: page, actions });
+
   const panels: readonly ConductorPanel[] = [
     statusStrip,
     createTransportPanel({ parent: page, schedule, actions }),
@@ -91,12 +110,21 @@ export async function startConductorPage({
       onScrubChange: (showTimeSeconds) => {
         scrubSeconds = showTimeSeconds;
       },
-      onSelectCue: (cueId) => {
-        selectedCueId = cueId;
-      },
     }),
-    createCueInspector(page, schedule),
-    createM5Panel({ parent: page, actions, lockedHost: deployment.m5Host }),
+    createSessionBar({
+      parent: page,
+      actions,
+      xr: level.xr,
+      onToggleTechDrawer: drawer.toggle,
+    }),
+    createStagePanel({ parent: drawer.stageParent, stageMount }),
+    createM5Panel({
+      parent: drawer.m5Parent,
+      actions,
+      lockedHost: deployment.m5Host,
+    }),
+    drawer.panel,
+    createWakeOverlay(page, deployment.stationName),
   ];
 
   window.addEventListener("keydown", (event) => {
@@ -149,6 +177,7 @@ export async function startConductorPage({
       framesPerSecond: metrics?.framesPerSecond,
       p95Milliseconds: metrics?.p95Milliseconds,
       m5: level.m5?.readOperatorStatus(),
+      xr: xrState,
     };
   }
 
@@ -160,7 +189,6 @@ export async function startConductorPage({
       // While dragging, the operator's own position wins: a clock sampled a
       // frame behind the pointer would fight it.
       showTimeSeconds: scrubSeconds ?? snapshot.showTimeSeconds,
-      selectedCueId,
       isScrubbing: scrubSeconds !== undefined,
     };
   }
@@ -177,6 +205,30 @@ export async function startConductorPage({
   }
 
   requestAnimationFrame(draw);
+}
+
+/**
+ * The piece's name with the station under it, large enough to read across
+ * the room. Which of the identical stations this window commands is a
+ * deployment fact; without one the line simply stays away.
+ */
+function createIdentity(stationName: string | undefined): HTMLElement {
+  const identity = document.createElement("div");
+  identity.className = "conductor__identity";
+
+  const piece = document.createElement("span");
+  piece.className = "conductor__identity-piece";
+  piece.textContent = "Becoming Many";
+  identity.append(piece);
+
+  if (stationName) {
+    const station = document.createElement("span");
+    station.className = "conductor__identity-station";
+    station.textContent = stationName;
+    identity.append(station);
+  }
+
+  return identity;
 }
 
 /** A typed guarantee the hoisted closures above can rely on. */
@@ -231,7 +283,11 @@ function applyAction(
       const next = NARRATION_LANGUAGES.find(
         (candidate) => candidate !== language,
       );
-      if (next) actions.setLanguage(next);
+      if (!next) return;
+      // The same re-arm the language buttons perform: hold, then switch —
+      // see docs/direction/session-operator.md.
+      actions.pause();
+      actions.setLanguage(next);
       return;
     }
   }

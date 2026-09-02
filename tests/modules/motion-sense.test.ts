@@ -8,10 +8,10 @@
 import { describe, expect, test } from "bun:test";
 import {
   BufferAttribute,
-  PerspectiveCamera,
   Points,
   type PointsMaterial,
   Scene,
+  Vector3,
 } from "three";
 import { createBirdFlocks } from "../../src/modules/motion-sense/bird-flocks";
 import { createFlySwarms } from "../../src/modules/motion-sense/fly-swarms";
@@ -26,6 +26,7 @@ import {
   accumulateEnvelopePull,
   createSwarmShapes,
 } from "../../src/modules/motion-sense/swarm-shape";
+import type { Viewpoint } from "../../src/world/viewer-rig";
 
 describe("Motion Trail material", () => {
   test("patches GPU aging, size fade, and the circle shape", () => {
@@ -481,10 +482,14 @@ describe("Bird flocks", () => {
 describe("Motion Sense module", () => {
   test("keeps two fixed draws through the whole lifecycle", () => {
     const scene = new Scene();
-    const camera = new PerspectiveCamera(50, 1, 0.1, 128);
+    const viewerPosition = new Vector3();
+    const viewpoint: Viewpoint = {
+      worldPosition: viewerPosition,
+      viewDistanceMeters: 128,
+    };
     const { module } = createMotionSenseModule({
       scene,
-      camera,
+      viewpoint,
       parameters: createMotionParameters(),
       groundYAt: () => 0,
       zoneAt: () => "meadow",
@@ -517,10 +522,14 @@ describe("Motion Sense module", () => {
 
   test("adds one invisible-actor trail draw when birds are authored", () => {
     const scene = new Scene();
-    const camera = new PerspectiveCamera(50, 1, 0.1, 128);
+    const viewerPosition = new Vector3();
+    const viewpoint: Viewpoint = {
+      worldPosition: viewerPosition,
+      viewDistanceMeters: 128,
+    };
     const { module } = createMotionSenseModule({
       scene,
-      camera,
+      viewpoint,
       parameters: createMotionParameters({ birds: createBirdParameters() }),
       groundYAt: () => 0,
       zoneAt: () => "meadow",

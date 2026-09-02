@@ -5,7 +5,7 @@
  * Boundary: Candidate placement and GPU ranges live in rock-instances.
  */
 
-import type { PerspectiveCamera, Scene } from "three";
+import type { Scene } from "three";
 import {
   disposeGltfAssets,
   type GltfAssets,
@@ -18,6 +18,7 @@ import {
 } from "../../world/chunk-system";
 import type { WorldModule } from "../../world/module-runtime";
 import type { StreamJob, StreamQueue } from "../../world/stream-queue";
+import type { Viewpoint } from "../../world/viewer-rig";
 import type { WorldSurface } from "../../world-surface/world-surface";
 import {
   resolveStaticPopulation,
@@ -49,7 +50,7 @@ const ROCK_CHUNK_LEVEL = 2;
 
 export interface RocksModuleOptions {
   readonly scene: Scene;
-  readonly camera: PerspectiveCamera;
+  readonly viewpoint: Viewpoint;
   readonly preset: RocksPreset;
   readonly assets: GltfAssets;
   readonly streamQueue: StreamQueue;
@@ -59,7 +60,7 @@ export interface RocksModuleOptions {
 
 interface RocksRuntimeOptions {
   readonly scene: Scene;
-  readonly camera: PerspectiveCamera;
+  readonly viewpoint: Viewpoint;
   readonly parameters: StaticPopulationParameters;
   readonly colors: RockColors;
   readonly assets: GltfAssets;
@@ -99,8 +100,8 @@ export function createRocksModule(options: RocksModuleOptions): WorldModule {
 function loadRocks(state: RocksState, options: RocksRuntimeOptions): void {
   const stream = createRockStream(options);
   const assignments = stream.chunkWindow.update(
-    options.camera.position.x,
-    options.camera.position.z,
+    options.viewpoint.worldPosition.x,
+    options.viewpoint.worldPosition.z,
   );
 
   initializeRockChunks(stream.instances, assignments);
@@ -110,15 +111,15 @@ function loadRocks(state: RocksState, options: RocksRuntimeOptions): void {
 
 function updateRocks(
   state: RocksState,
-  { camera, streamQueue }: RocksRuntimeOptions,
+  { viewpoint, streamQueue }: RocksRuntimeOptions,
 ): void {
   const stream = state.currentStream;
   if (!stream) return;
   uploadRockChanges(stream.instances);
 
   const assignments = stream.chunkWindow.update(
-    camera.position.x,
-    camera.position.z,
+    viewpoint.worldPosition.x,
+    viewpoint.worldPosition.z,
   );
   discardRockChunks(stream.instances, assignments);
   uploadRockChanges(stream.instances);
@@ -148,7 +149,10 @@ function createRockStreamJob(
 
 function createRockStream(options: RocksRuntimeOptions): RockStream {
   const chunkSize = getChunkSize(ROCK_CHUNK_LEVEL);
-  const radius = Math.max(1, Math.ceil(options.camera.far / chunkSize));
+  const radius = Math.max(
+    1,
+    Math.ceil(options.viewpoint.viewDistanceMeters / chunkSize),
+  );
   const chunkWindow = new ChunkWindow({ level: ROCK_CHUNK_LEVEL, radius });
   const instances = createRockInstances({
     parameters: options.parameters,

@@ -1,19 +1,22 @@
 /**
- * Purpose: Draw the schedule against show time and let the operator scrub it.
- * Context: Cue slots and recording lengths are what a conductor retimes by ear.
- * Responsibility: Render slots, recordings, and the playhead, and seek on drag.
- * Boundary: Slot arithmetic belongs to the dramaturgy layout, never to this file.
+ * Purpose: Draw the schedule as chapters and let the operator move by touch.
+ * Context: Recovering a lost cue means one tap on a chapter, or a drag on
+ *   the track — the two gestures front-of-house staff actually use.
+ * Responsibility: Render chapter slots, their played progress, the playhead,
+ *   and the chapter buttons; seek on tap and drag.
+ * Boundary: Slot arithmetic belongs to the dramaturgy layout, never to this
+ *   file. Recording lengths and headroom are a tuning concern, verified in
+ *   tests/dramaturgy — this panel shows progress, not takes.
  */
 
-import type { NarrationCueId } from "../dramaturgy/narration-catalog";
 import type { NarrationSchedule } from "../dramaturgy/narration-schedule";
-import { type CueSlot, cueSlots } from "../dramaturgy/schedule-layout";
+import { cueSlots } from "../dramaturgy/schedule-layout";
 import { CONDUCTOR_SETTINGS } from "./conductor-settings";
 import type { ConductorPanel } from "./conductor-state";
 import type { ShowActions } from "./show-actions";
+import { cueDisplayName, formatShowTime } from "./time-format";
 
 const MILLISECONDS_PER_SECOND = 1_000;
-const RULER_INTERVAL_SECONDS = 60;
 
 export interface ShowTimelineOptions {
   readonly parent: HTMLElement;
@@ -21,13 +24,24 @@ export interface ShowTimelineOptions {
   readonly actions: ShowActions;
   /** Reports the operator's own position, or undefined when the drag ends. */
   readonly onScrubChange: (showTimeSeconds: number | undefined) => void;
-  readonly onSelectCue: (cueId: NarrationCueId) => void;
 }
 
-interface SlotView {
-  readonly cueId: NarrationCueId;
-  readonly element: HTMLElement;
-  readonly recording: HTMLElement;
+/**
+ * A chapter as the operator sees it: the schedule's cue slot, with the silent
+ * pre-roll before the first word folded into the first chapter so the track
+ * never shows an unnamed gap and "now" is defined from 0:00.
+ */
+interface Chapter {
+  readonly cueId: string;
+  readonly startSeconds: number;
+  readonly endSeconds: number;
+}
+
+interface ChapterView {
+  readonly chapter: Chapter;
+  readonly slot: HTMLElement;
+  readonly progress: HTMLElement;
+  readonly button: HTMLButtonElement;
 }
 
 export function createShowTimeline({
@@ -35,139 +49,104 @@ export function createShowTimeline({
   schedule,
   actions,
   onScrubChange,
-  onSelectCue,
 }: ShowTimelineOptions): ConductorPanel {
   const { durationSeconds } = schedule;
   const root = document.createElement("section");
   root.className = "conductor__timeline";
   root.setAttribute("aria-label", "Show timeline");
 
-  root.append(createRuler(durationSeconds));
-
   const track = document.createElement("div");
   track.className = "timeline__track";
-  const slots = cueSlots(schedule, "en").map((slot) =>
-    createSlot(track, slot, durationSeconds, onSelectCue),
+
+  const buttons = document.createElement("div");
+  buttons.className = "conductor__chapters";
+
+  const chapters = readChapters(schedule).map((chapter) =>
+    createChapterView(track, buttons, chapter, durationSeconds, actions),
   );
 
   const playhead = document.createElement("div");
   playhead.className = "timeline__playhead";
   track.append(playhead);
-  root.append(track);
-
-  root.append(createJumps(schedule, actions));
+  root.append(track, buttons);
   parent.append(root);
 
   attachScrubbing({ track, durationSeconds, actions, onScrubChange });
 
-  let renderedLanguage: string | undefined;
-
   return {
     update(state): void {
-      if (renderedLanguage !== state.snapshot.language) {
-        renderedLanguage = state.snapshot.language;
-        // Only the recordings change with the language; the slots are shared.
-        cueSlots(schedule, state.snapshot.language).forEach((slot, index) => {
-          writeRecording(slots[index]?.recording, slot);
-        });
-      }
+      const showTimeSeconds = state.showTimeSeconds;
 
       // The scrub gesture reads this to know whether to resume afterwards.
       track.dataset.playing = String(state.snapshot.isPlaying);
-      playhead.style.left = `${toPercent(state.showTimeSeconds, durationSeconds)}%`;
-      for (const slot of slots) {
-        slot.element.setAttribute(
-          "aria-selected",
-          String(slot.cueId === state.selectedCueId),
-        );
+      playhead.style.left = `${toPercent(showTimeSeconds, durationSeconds)}%`;
+
+      for (const view of chapters) {
+        const { startSeconds, endSeconds } = view.chapter;
+        const isCurrent =
+          showTimeSeconds >= startSeconds && showTimeSeconds < endSeconds;
+        view.slot.dataset.current = String(isCurrent);
+        view.button.setAttribute("aria-pressed", String(isCurrent));
+
+        const played =
+          (showTimeSeconds - startSeconds) / (endSeconds - startSeconds);
+        view.progress.style.width = `${Math.min(Math.max(played, 0), 1) * 100}%`;
       }
     },
   };
 }
 
-function createRuler(durationSeconds: number): HTMLElement {
-  const ruler = document.createElement("div");
-  ruler.className = "timeline__ruler";
-
-  for (
-    let atSeconds = 0;
-    atSeconds < durationSeconds;
-    atSeconds += RULER_INTERVAL_SECONDS
-  ) {
-    const tick = document.createElement("span");
-    tick.className = "timeline__tick";
-    tick.style.left = `${toPercent(atSeconds, durationSeconds)}%`;
-    tick.textContent = `${atSeconds / RULER_INTERVAL_SECONDS}:00`;
-    ruler.append(tick);
-  }
-
-  return ruler;
+/** The slot layout with the pre-roll folded into the first chapter. */
+function readChapters(schedule: NarrationSchedule): readonly Chapter[] {
+  // The slots are shared between languages; only recording lengths differ,
+  // and those are not this panel's concern.
+  return cueSlots(schedule, "en").map((slot, index) => ({
+    cueId: slot.cueId,
+    startSeconds: index === 0 ? 0 : slot.atSeconds,
+    endSeconds: slot.atSeconds + slot.slotSeconds,
+  }));
 }
 
-function createSlot(
+function createChapterView(
   track: HTMLElement,
-  slot: CueSlot,
+  buttons: HTMLElement,
+  chapter: Chapter,
   durationSeconds: number,
-  onSelectCue: (cueId: NarrationCueId) => void,
-): SlotView {
-  const element = document.createElement("div");
-  element.className = "timeline__slot";
-  // Placed at its own cue time rather than tiled from the left, so silence in
-  // the schedule — the lead-in before the first word, or any later gap — shows
-  // as empty track instead of sliding every cue earlier than it plays.
-  element.style.left = `${toPercent(slot.atSeconds, durationSeconds)}%`;
-  element.style.width = `${toPercent(slot.slotSeconds, durationSeconds)}%`;
-  element.setAttribute("role", "option");
-  element.setAttribute("aria-selected", "false");
+  actions: ShowActions,
+): ChapterView {
+  const slot = document.createElement("div");
+  slot.className = "timeline__slot";
+  slot.style.left = `${toPercent(chapter.startSeconds, durationSeconds)}%`;
+  slot.style.width = `${toPercent(
+    chapter.endSeconds - chapter.startSeconds,
+    durationSeconds,
+  )}%`;
 
   const name = document.createElement("span");
   name.className = "timeline__slot-name";
-  name.textContent = slot.cueId;
+  name.textContent = cueDisplayName(chapter.cueId);
 
-  const recording = document.createElement("div");
-  recording.className = "timeline__recording";
-  writeRecording(recording, slot);
+  const progress = document.createElement("div");
+  progress.className = "timeline__progress";
 
-  element.append(name, recording);
-  element.addEventListener("pointerdown", () => onSelectCue(slot.cueId));
-  track.append(element);
+  slot.append(name, progress);
+  track.append(slot);
 
-  return { cueId: slot.cueId, element, recording };
-}
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "conductor__chapter-button";
 
-/**
- * The filled bar is the recording; the gap to the slot's right edge is the
- * silence before the next cue. A recording that outlasts its slot fills the
- * whole width and is marked, because the successor would cut it off.
- */
-function writeRecording(
-  recording: HTMLElement | undefined,
-  slot: CueSlot,
-): void {
-  if (!recording) return;
+  const buttonName = document.createElement("span");
+  buttonName.textContent = cueDisplayName(chapter.cueId);
+  const buttonTime = document.createElement("span");
+  buttonTime.className = "conductor__chapter-time";
+  buttonTime.textContent = formatShowTime(chapter.startSeconds);
 
-  const filled = Math.min(slot.recordingSeconds / slot.slotSeconds, 1);
-  recording.style.width = `${filled * 100}%`;
-  recording.dataset.overrun = String(slot.headroomSeconds < 0);
-}
+  button.append(buttonName, buttonTime);
+  button.addEventListener("click", () => actions.seekTo(chapter.startSeconds));
+  buttons.append(button);
 
-function createJumps(
-  schedule: NarrationSchedule,
-  actions: ShowActions,
-): HTMLElement {
-  const jumps = document.createElement("div");
-  jumps.className = "conductor__jumps";
-
-  schedule.narration.forEach((cue, index) => {
-    const button = document.createElement("button");
-    button.type = "button";
-    // The label matches the digit key that reaches the same cue.
-    button.textContent = `${index + 1} ${cue.cueId}`;
-    button.addEventListener("click", () => actions.seekTo(cue.atSeconds));
-    jumps.append(button);
-  });
-
-  return jumps;
+  return { chapter, slot, progress, button };
 }
 
 interface ScrubbingOptions {

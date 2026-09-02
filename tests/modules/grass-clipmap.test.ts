@@ -14,6 +14,7 @@ import {
   PerspectiveCamera,
   Scene,
   type ShaderMaterial,
+  Vector3,
 } from "three";
 import { createGrassClipmapModule } from "../../src/modules/grass-clipmap/grass-clipmap";
 import {
@@ -45,10 +46,17 @@ const PRESET: GrassClipmapPreset = {
 
 const worldSurface = createWorldSurface(WORLD_SURFACE_SETTINGS, ZONE_SETTINGS);
 
-function createModuleOptions(scene: Scene, camera: PerspectiveCamera) {
+function createModuleOptions(scene: Scene, viewerPosition: Vector3) {
   return {
     scene,
-    camera,
+    viewpoint: {
+      worldPosition: viewerPosition,
+      // The clipmap sizes itself from its preset, never from a view distance.
+      viewDistanceMeters: 0,
+    },
+    // Culling reads the projection and view matrices; an untransformed camera
+    // is the neutral frustum these tests want.
+    frustumCamera: new PerspectiveCamera(),
     preset: PRESET,
     streamQueue: new StreamQueue({ budgetMilliseconds: 4, capacity: 64 }),
     worldSurface,
@@ -189,8 +197,10 @@ function readBladeMaterial(group: Group): ShaderMaterial {
 
 test("the blade shaders carry the anchors a sense patches at", () => {
   const scene = new Scene();
-  const camera = new PerspectiveCamera();
-  const module = createGrassClipmapModule(createModuleOptions(scene, camera));
+  const viewerPosition = new Vector3();
+  const module = createGrassClipmapModule(
+    createModuleOptions(scene, viewerPosition),
+  );
 
   module.load();
   const material = readBladeMaterial(scene.children[0] as Group);
@@ -210,7 +220,7 @@ test("the blade shaders carry the anchors a sense patches at", () => {
 
 test("a sense reaches every blade material and takes the lighting with it", () => {
   const scene = new Scene();
-  const camera = new PerspectiveCamera();
+  const viewerPosition = new Vector3();
   const patched: SensedMaterial[] = [];
   const effect: UnlitMaterialEffect = {
     applyTo: (material) => {
@@ -218,7 +228,7 @@ test("a sense reaches every blade material and takes the lighting with it", () =
     },
   };
   const module = createGrassClipmapModule({
-    ...createModuleOptions(scene, camera),
+    ...createModuleOptions(scene, viewerPosition),
     effects: [effect],
   });
 
@@ -243,7 +253,7 @@ test("a sense reaches every blade material and takes the lighting with it", () =
 
 test("a refused refill is retried instead of latching forever", () => {
   const scene = new Scene();
-  const camera = new PerspectiveCamera();
+  const viewerPosition = new Vector3();
   let attempts = 0;
   // A queue that always refuses, the way the real one does once its memory
   // guard is full.
@@ -256,12 +266,12 @@ test("a refused refill is retried instead of latching forever", () => {
     update: () => {},
   } as unknown as StreamQueue;
   const module = createGrassClipmapModule({
-    ...createModuleOptions(scene, camera),
+    ...createModuleOptions(scene, viewerPosition),
     streamQueue: refusing,
   });
 
   module.load();
-  camera.position.set(
+  viewerPosition.set(
     GRASS_CLIPMAP_SETTINGS.heightField.recenterMeters * 4,
     0,
     0,
@@ -279,8 +289,10 @@ test("a refused refill is retried instead of latching forever", () => {
 
 test("the grass clipmap follows the world module lifecycle", () => {
   const scene = new Scene();
-  const camera = new PerspectiveCamera();
-  const module = createGrassClipmapModule(createModuleOptions(scene, camera));
+  const viewerPosition = new Vector3();
+  const module = createGrassClipmapModule(
+    createModuleOptions(scene, viewerPosition),
+  );
 
   module.load();
   const group = scene.children[0] as Group;
@@ -301,8 +313,8 @@ test("the grass clipmap follows the world module lifecycle", () => {
 
 test("walking out of the height window refills it in cooperative steps", () => {
   const scene = new Scene();
-  const camera = new PerspectiveCamera();
-  const options = createModuleOptions(scene, camera);
+  const viewerPosition = new Vector3();
+  const options = createModuleOptions(scene, viewerPosition);
   const module = createGrassClipmapModule(options);
 
   module.load();
@@ -311,7 +323,7 @@ test("walking out of the height window refills it in cooperative steps", () => {
   module.update?.(0.016);
   expect(options.streamQueue.size).toBe(0);
 
-  camera.position.set(
+  viewerPosition.set(
     GRASS_CLIPMAP_SETTINGS.heightField.recenterMeters * 4,
     0,
     0,

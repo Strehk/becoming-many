@@ -783,7 +783,7 @@ function createConnectionsWeb(
 
   return createConnectionsModule(parameters, {
     scene: setup.world.scene,
-    camera: setup.world.camera,
+    viewpoint: setup.world.viewpoint,
     streamQueue: setup.world.streamQueue,
     worldSurface,
     staticSources,
@@ -801,7 +801,7 @@ function createMagneticSky(
 
   return createMagneticSense(parameters, {
     scene: setup.world.scene,
-    camera: setup.world.camera,
+    viewpoint: setup.world.viewpoint,
     skyHazeColor: setup.level.backgroundColor ?? 0xffffff,
   });
 }
@@ -828,7 +828,7 @@ function createMotionSense(
 
   return createMotionSenseModule({
     scene: setup.world.scene,
-    camera: setup.world.camera,
+    viewpoint: setup.world.viewpoint,
     parameters,
     groundYAt: setup.worldSurface.groundYAt,
     zoneAt: setup.worldSurface.zoneAt,
@@ -860,7 +860,7 @@ function createTerrain(
     return setup.level.invisibleGround
       ? createTerrainModule({
           scene: setup.world.scene,
-          camera: setup.world.camera,
+          viewpoint: setup.world.viewpoint,
           worldSurface: setup.worldSurface,
           streamQueue: setup.world.streamQueue,
           parameters: { opacity: 1 },
@@ -885,7 +885,7 @@ function createTerrain(
 
   return createTerrainModule({
     scene: setup.world.scene,
-    camera: setup.world.camera,
+    viewpoint: setup.world.viewpoint,
     worldSurface: setup.worldSurface,
     streamQueue: setup.world.streamQueue,
     parameters: { opacity: preset.opacity },
@@ -904,7 +904,7 @@ function createAirParticles(setup: LevelSetup): WorldModule | undefined {
 
   return createAirParticlesModule({
     scene: setup.world.scene,
-    camera: setup.world.camera,
+    viewpoint: setup.world.viewpoint,
     parameters,
     streamQueue: setup.world.streamQueue,
     surfaceYAt,
@@ -928,7 +928,7 @@ function createScentParticles(
 
   return createScentParticlesModule({
     scene: setup.world.scene,
-    camera: setup.world.camera,
+    viewpoint: setup.world.viewpoint,
     parameters,
     streamQueue: setup.world.streamQueue,
     plantSource: plantPreset
@@ -962,7 +962,8 @@ function createGrassClipmap(
 
   return createGrassClipmapModule({
     scene: setup.world.scene,
-    camera: setup.world.camera,
+    viewpoint: setup.world.viewpoint,
+    frustumCamera: setup.world.camera,
     preset,
     streamQueue: setup.world.streamQueue,
     worldSurface: setup.worldSurface,
@@ -987,7 +988,7 @@ function createGrass(
 
   return createGrassModule({
     scene: setup.world.scene,
-    camera: setup.world.camera,
+    viewpoint: setup.world.viewpoint,
     preset,
     streamQueue: setup.world.streamQueue,
     worldSurface: setup.worldSurface,
@@ -1010,7 +1011,7 @@ function createVegetation(
 
   return createVegetationModule({
     scene: setup.world.scene,
-    camera: setup.world.camera,
+    viewpoint: setup.world.viewpoint,
     preset,
     assets: setup.assets.vegetation,
     streamQueue: setup.world.streamQueue,
@@ -1030,7 +1031,7 @@ function createRocks(
 
   return createRocksModule({
     scene: setup.world.scene,
-    camera: setup.world.camera,
+    viewpoint: setup.world.viewpoint,
     preset,
     assets: setup.assets.rocks,
     streamQueue: setup.world.streamQueue,
@@ -1073,7 +1074,7 @@ function createAnimals(
 
   return createAnimalsModule({
     scene: setup.world.scene,
-    camera: setup.world.camera,
+    viewpoint: setup.world.viewpoint,
     definition: ANIMALS_DEFINITION,
     preset: setup.level.animals,
     assets: setup.assets.animals,

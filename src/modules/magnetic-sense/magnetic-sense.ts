@@ -5,9 +5,10 @@
  * Boundary: The sky module owns the dome and its material; terrain stays untouched.
  */
 
-import type { PerspectiveCamera, Scene } from "three";
+import type { Scene } from "three";
 import { Color, MathUtils, Vector3 } from "three";
 import type { WorldModule } from "../../world/module-runtime";
+import type { Viewpoint } from "../../world/viewer-rig";
 import type { MagneticSenseParameters } from "./magnetic-sense-settings";
 import { MAGNETIC_SENSE_SETTINGS } from "./magnetic-sense-settings";
 import {
@@ -32,7 +33,7 @@ export interface MagneticSenseModuleHandle {
 
 export interface MagneticSenseOptions {
   readonly scene: Scene;
-  readonly camera: PerspectiveCamera;
+  readonly viewpoint: Viewpoint;
   /** The carried level haze the dome meets at the horizon. */
   readonly skyHazeColor: number;
 }
@@ -52,7 +53,7 @@ export function createMagneticSense(
   const loopSeconds = MAGNETIC_SENSE_SETTINGS.animationLoopSeconds;
   const sky = createMagneticSkyModule({
     scene: options.scene,
-    camera: options.camera,
+    viewpoint: options.viewpoint,
     hazeColorUniform: hazeUniform,
     colors: getSkyColors(parameters),
     driftVelocity: getDriftVelocity(),

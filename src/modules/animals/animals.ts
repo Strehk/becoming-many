@@ -5,13 +5,14 @@
  * Boundary: Species data lives in animals-definition; world facts come from World Surface.
  */
 
-import type { Matrix4, PerspectiveCamera, Scene } from "three";
+import type { Matrix4, Scene } from "three";
 import {
   disposeGltfAssets,
   type GltfAssets,
 } from "../../utils/asset-loader/gltf-assets";
 import type { UnlitMaterialEffect } from "../../utils/asset-loader/material-effect";
 import type { WorldModule } from "../../world/module-runtime";
+import type { Viewpoint } from "../../world/viewer-rig";
 import type { WorldSurface } from "../../world-surface/world-surface";
 import {
   type AnimalActors,
@@ -71,7 +72,7 @@ export type AnimalBodiesObserver = (bodies: readonly AnimalBody[]) => void;
 
 export interface AnimalsModuleOptions {
   readonly scene: Scene;
-  readonly camera: PerspectiveCamera;
+  readonly viewpoint: Viewpoint;
   readonly definition: AnimalsDefinition;
   readonly preset: AnimalsPreset;
   readonly assets: GltfAssets;
@@ -158,8 +159,8 @@ function loadAnimals(state: AnimalsState, options: AnimalsModuleOptions): void {
     colors: options.preset.colors,
     effectsFor: options.effectsFor,
     worldSurface: options.worldSurface,
-    startX: options.camera.position.x,
-    startZ: options.camera.position.z,
+    startX: options.viewpoint.worldPosition.x,
+    startZ: options.viewpoint.worldPosition.z,
   });
   population.group.visible = false;
   options.scene.add(population.group);
@@ -173,7 +174,7 @@ function updateAnimals(
 ): void {
   if (!state.population?.group.visible) return;
 
-  updateAnimalActors(state.population, options.camera, deltaSeconds);
+  updateAnimalActors(state.population, options.viewpoint, deltaSeconds);
   if (!options.onBodiesUpdated) return;
 
   readVisibleAnimalBodies(state.population, state.bodies);

@@ -1,118 +1,131 @@
 /**
- * Purpose: Answer "is everything all right" from across the room.
- * Context: A suspended audio context freezes show time and looks like a pause.
- * Responsibility: Render audio, frame rate, M5, level, and language readings.
+ * Purpose: Answer "is everything all right" from across the room, in plain words.
+ * Context: The station is run by front-of-house staff, not technicians.
+ * Responsibility: Render the Sound, Picture, Controller, and Headset tiles,
+ *   and the one banner a fault that needs a person deserves.
  * Boundary: The page decides what the readings mean; this only shows them.
+ *   The numbers behind the words live in the technician drawer.
  */
 
 import type { M5OperatorStatus } from "../m5/m5-adapter";
+import type { XrSessionState } from "../world/xr-session";
 import type { ConductorPanel, ConductorState } from "./conductor-state";
 
 type ReadingState = "idle" | "live" | "warn" | "alarm";
 
-interface Reading {
-  readonly element: HTMLElement;
+interface Tile {
   readonly write: (text: string, state: ReadingState) => void;
 }
 
-export function createStatusStrip(parent: HTMLElement): ConductorPanel {
-  const root = document.createElement("header");
-  root.className = "conductor__status";
+export interface StatusStripOptions {
+  /** The masthead row the tiles sit in, beside the station identity. */
+  readonly tilesParent: HTMLElement;
+  /** The page column the fault banner drops into, under the masthead. */
+  readonly bannerParent: HTMLElement;
+}
+
+export function createStatusStrip({
+  tilesParent,
+  bannerParent,
+}: StatusStripOptions): ConductorPanel {
+  const root = document.createElement("div");
+  root.className = "conductor__tiles";
   root.setAttribute("aria-label", "Station status");
 
-  const audio = createReading(root, "audio");
-  const frames = createReading(root, "frames");
-  const m5 = createReading(root, "m5");
-  const level = createReading(root, "level");
-  const language = createReading(root, "language");
+  const sound = createTile(root, "Sound");
+  const picture = createTile(root, "Picture");
+  const controller = createTile(root, "Controller");
+  const headset = createTile(root, "Headset");
+  tilesParent.append(root);
 
-  // Show time derives from the audio clock, so a context that never received
-  // a gesture freezes the piece while looking exactly like a pause. Any click
-  // or key press on this page clears it — the restart button counts.
+  // The one fault a front-of-house person must act on: a stranger's device is
+  // answering on this station's address, so steering cannot be trusted.
   const banner = document.createElement("p");
   banner.className = "conductor__banner";
   banner.hidden = true;
-  parent.append(root, banner);
-
   banner.textContent =
-    "Show time is frozen: click anywhere or press any key to start the audio clock.";
+    "The hand controller is not answering as this station's own. The show keeps playing — call a technician before the next visitor steers.";
+  bannerParent.append(banner);
 
   return {
     update(state): void {
       const { snapshot } = state;
 
-      audio.write(
-        snapshot.audioState,
-        snapshot.audioState === "running" ? "live" : "warn",
-      );
-      frames.write(...frameReading(state));
-      m5.write(...m5Reading(snapshot.m5));
-      level.write(snapshot.levelName, "idle");
-      language.write(snapshot.language.toUpperCase(), "idle");
+      sound.write(...soundReading(snapshot.audioState));
+      picture.write(...pictureReading(state));
+      controller.write(...controllerReading(snapshot.m5));
+      headset.write(...headsetReading(snapshot.xr));
 
-      banner.hidden = snapshot.audioState === "running";
+      banner.hidden = snapshot.m5?.state !== "wrong-device";
     },
   };
 }
 
 type ReadingText = readonly [text: string, state: ReadingState];
 
+/** Anything but "running" freezes show time; the wake overlay says how. */
+function soundReading(audioState: AudioContextState): ReadingText {
+  return audioState === "running" ? ["OK", "live"] : ["Asleep", "warn"];
+}
+
+function headsetReading(xr: XrSessionState): ReadingText {
+  if (xr.isSessionActive) return ["Streaming", "live"];
+
+  return xr.availability === "available" ? ["Ready", "idle"] : ["—", "idle"];
+}
+
 /**
  * An absent adapter means a benchmark build; `off` means no host is set —
  * both read as "no device", which is a normal state, not a fault. A firmware
- * mismatch is appended so a drifted flash never hides behind a green "live".
+ * mismatch reads as "Check" so a drifted flash never hides behind a green OK;
+ * the mismatch itself is spelled out in the technician drawer.
  */
-function m5Reading(status: M5OperatorStatus | undefined): ReadingText {
+function controllerReading(status: M5OperatorStatus | undefined): ReadingText {
   if (status === undefined || status.state === "off") return ["—", "idle"];
+  if (status.state === "wrong-device") return ["Check", "alarm"];
+  if (status.state === "connecting") return ["Connecting", "warn"];
 
-  const mismatchSuffix = status.hasFirmwareMismatch ? " · fw!" : "";
-  if (status.state === "wrong-device") {
-    return [`wrong device${mismatchSuffix}`, "alarm"];
-  }
-  if (status.state === "connecting") {
-    return [`connecting${mismatchSuffix}`, "warn"];
-  }
-
-  const quality = status.quality?.toFixed(2) ?? "?";
-  return [
-    `live · q${quality}${mismatchSuffix}`,
-    status.hasFirmwareMismatch ? "warn" : "live",
-  ];
+  return status.hasFirmwareMismatch ? ["Check", "warn"] : ["OK", "live"];
 }
 
 /** The acceptance target from docs/performance.md is a stable 90 FPS. */
 const FRAME_RATE_FLOOR = 85;
 
-function frameReading(state: ConductorState): ReadingText {
-  const { framesPerSecond, p95Milliseconds } = state.snapshot;
-  if (framesPerSecond === undefined || p95Milliseconds === undefined) {
-    return ["—", "idle"];
-  }
+function pictureReading(state: ConductorState): ReadingText {
+  const { framesPerSecond } = state.snapshot;
+  if (framesPerSecond === undefined) return ["—", "idle"];
 
-  const text = `${Math.round(framesPerSecond)} fps · ${p95Milliseconds.toFixed(1)} ms p95`;
-
-  return [text, framesPerSecond >= FRAME_RATE_FLOOR ? "live" : "warn"];
+  return framesPerSecond >= FRAME_RATE_FLOOR
+    ? ["OK", "live"]
+    : ["Check", "warn"];
 }
 
-function createReading(root: HTMLElement, labelText: string): Reading {
-  const element = document.createElement("span");
-  element.className = "conductor__reading";
+function createTile(root: HTMLElement, labelText: string): Tile {
+  const tile = document.createElement("div");
+  tile.className = "conductor__tile";
+
+  const dot = document.createElement("span");
+  dot.className = "conductor__tile-dot";
+
+  const body = document.createElement("div");
+  body.className = "conductor__tile-body";
 
   const label = document.createElement("span");
-  label.className = "conductor__reading-label";
-  label.textContent = `${labelText} `;
+  label.className = "conductor__tile-label";
+  label.textContent = labelText;
 
   const value = document.createElement("output");
+  value.className = "conductor__tile-value";
   value.textContent = "—";
 
-  element.append(label, value);
-  root.append(element);
+  body.append(label, value);
+  tile.append(dot, body);
+  root.append(tile);
 
   return {
-    element,
     write(text, state): void {
       value.textContent = text;
-      element.dataset.state = state;
+      tile.dataset.state = state;
     },
   };
 }

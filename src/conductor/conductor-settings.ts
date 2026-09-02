@@ -13,6 +13,10 @@ export const CONDUCTOR_SETTINGS = {
   // The same nudge with Shift held, for moving between sections by hand.
   coarseNudgeSeconds: 30,
 
+  // How far the on-screen buttons move the show. Coarser than the arrow
+  // keys: a finger recovering a moment wants one decisive step.
+  touchNudgeSeconds: 10,
+
   // Offered playback rates. One is the performance rate; the others exist so
   // rehearsal can crawl through a cue or skim to the next one.
   timeScales: [0.25, 0.5, 1, 2] as const,
