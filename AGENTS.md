@@ -47,6 +47,29 @@ German is limited to audience-facing content such as
 - Keep authored configuration in typed TypeScript. JSON under `public/` records
   asset provenance only.
 
+## Git and Issue Workflow
+
+- Use [Refactor Checklist](docs/refactor-checklist.md) as the operational queue.
+  GitHub issue state and the latest `origin/main` remain authoritative.
+- Revalidate one selected issue against the latest `origin/main` before editing.
+  Close or rescope findings that upstream work has resolved or invalidated.
+- Keep the audit snapshot as reference only. Start every implementation from a
+  clean, current `main` on a fresh branch named
+  `david/issue-<number>-<short-slug>`.
+- Work on exactly one confirmed issue per branch and pull request. Do not stack
+  the next issue on an unmerged branch or mix opportunistic cleanup into it.
+- Commit locally only after every required verification has run. New or
+  worsened failures block completion; a pre-existing failure may remain only
+  when it is reproduced on the unchanged base, is not worsened by the patch,
+  and is linked to a separate open issue. Push the branch and open the pull
+  request only when the user asks. The pull request must link the issue with
+  `Closes #<number>` and report tests, browser evidence, simplification
+  evidence, and any required PCVR evidence.
+- Mark the checklist item complete only when the change satisfies its definition
+  of done and the pull request is ready to merge. GitHub closes the issue when
+  the pull request merges. Start the next session from freshly synchronized
+  `main`, never from the previous issue branch.
+
 ## Delivery Platform
 
 - This repository targets only the Windows PC VR installation.
@@ -82,14 +105,31 @@ German is limited to audience-facing content such as
 1. Inspect the relevant todo, owning modules, contracts, tests, and current
    documentation. Check installed library versions and official documentation
    before relying on an API.
-2. Plan and implement the smallest complete patch. Do not mix unrelated todos
-   or broad cleanup into it.
-3. Run focused tests during development. Before a checkpoint, run `bun test`,
-   `bun run check`, `bun run lint`, `bun run build`, and `fallow`.
-4. For browser, XR, control, lifecycle, visual, or performance behavior, also
-   verify the real runtime path required by the task. Passing static gates alone
-   is insufficient.
-5. Update only affected as-built documentation and measured evidence. Remove
+2. If the selected path has no current baseline evidence, run `bun test` and a
+   browser smoke test before editing so pre-existing failures are recorded
+   separately from the change.
+3. Plan and implement the smallest complete patch. Do not mix unrelated todos
+   or broad cleanup into it. Add a focused regression test for changed behavior.
+4. Prove simplification explicitly. Name the files, exports, branches, or
+   duplicated responsibilities removed or consolidated, then verify their
+   absence with a focused `rg` or file-existence check and with Fallow. Record
+   the source-code delta, but do not use lower line count as the only quality
+   measure because tests and clearer contracts may add necessary lines.
+5. Run focused tests during development. After the final change and before a
+   checkpoint, run `bun test`, `bun run check`, `bun run lint`, `bun run build`,
+   `bunx fallow`, and `git diff --check`. A new or worsened failure blocks the
+   change. Record any unchanged baseline failure with its owning issue.
+6. Always run a browser test against the production build after the final
+   change. Smoke-test the default production route and every affected route,
+   record the command and result, and treat page errors, console errors, failed
+   requests required by the feature, or missing expected UI as failures. For a
+   rendered level, the minimum repeatable browser run is
+   `bun run benchmark --profile quick --level <level>`; UI and navigation work
+   also needs a focused Playwright interaction through the affected flow.
+7. For XR, control, lifecycle, visual, or performance behavior, also verify the
+   real runtime path required by the task. Passing static and desktop-browser
+   gates alone is insufficient where physical PCVR acceptance applies.
+8. Update only affected as-built documentation and measured evidence. Remove
    stale statements instead of documenting contradictions.
 
 Keep `main` clean and merge only verified work. Do not commit or push unless the

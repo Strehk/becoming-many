@@ -13,6 +13,7 @@ status.
 - [World Streaming](world-streaming.md) — current chunk window, stream queue, Air Particles consumer, and extension rules.
 - [Landscape Module Contracts](landscape-modules.md) — current boundaries for Rivers, Vegetation, Grass, Rocks, and Animals.
 - [Performance](performance.md) — current evidence, target metrics, and acceptance gates.
+- [Refactor Checklist](refactor-checklist.md) — operational issue queue and the required session, verification, simplification, and pull-request workflow.
 
 ## Product and Delivery Direction
 
