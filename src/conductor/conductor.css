@@ -289,6 +289,86 @@
   font-weight: 700;
 }
 
+/* M5 controller ---------------------------------------------------------- */
+
+.conductor__m5 {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  padding: 12px 16px;
+  background: var(--panel);
+  border: 1px solid var(--edge);
+  border-radius: 12px;
+}
+
+.conductor__m5-label {
+  display: flex;
+  flex: 1;
+  gap: 8px;
+  align-items: center;
+  min-width: 220px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.conductor__m5 input {
+  flex: 1;
+  padding: 8px 10px;
+  color: var(--ink);
+  font: inherit;
+  font-size: 13px;
+  background: var(--ground);
+  border: 1px solid var(--edge);
+  border-radius: 8px;
+}
+
+.conductor__m5-preview {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.conductor__m5-preview[data-live="false"] {
+  opacity: 0.45;
+}
+
+/* The crosshair: one ring, two axis lines, one dot placed by tilt. */
+.conductor__m5-pad {
+  position: relative;
+  width: 72px;
+  height: 72px;
+  overflow: hidden;
+  background:
+    linear-gradient(var(--edge), var(--edge)) center / 100% 1px no-repeat,
+    linear-gradient(var(--edge), var(--edge)) center / 1px 100% no-repeat,
+    var(--ground);
+  border: 1px solid var(--edge);
+  border-radius: 50%;
+}
+
+.conductor__m5-dot {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 10px;
+  height: 10px;
+  background: var(--live);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.conductor__m5-preview[data-live="false"] .conductor__m5-dot {
+  background: var(--muted);
+}
+
+.conductor__m5-readout {
+  min-width: 150px;
+  color: var(--muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
 /* A disconnected station must not look like a show sitting still. */
 .conductor[data-live="false"] .conductor__transport,
 .conductor[data-live="false"] .conductor__timeline {

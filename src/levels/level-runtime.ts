@@ -10,6 +10,7 @@ import type { BenchmarkRun } from "../benchmark/benchmark-run";
 import { createDesktopControls } from "../control/desktop-controls";
 import { keepFlightAboveGround } from "../control/flight-ground-clearance";
 import { resetFlightPose } from "../control/flight-reset";
+import { applyM5Flight } from "../control/m5-flight";
 import type { NarrationLanguage } from "../dramaturgy/narration-catalog";
 import {
   type NarrationSchedule,
@@ -23,6 +24,7 @@ import {
   senseIntensityAt,
   showLevelAt,
 } from "../dramaturgy/show-levels";
+import { createM5Adapter, type M5Adapter } from "../m5/m5-adapter";
 import {
   type AirParticlesParameters,
   createAirParticlesModule,
@@ -209,6 +211,12 @@ export interface RunningLevel {
 
   /** Undefined until frames have been measured. Allocates; not per frame. */
   readonly readFrameMetrics: () => FrameMetrics | undefined;
+
+  /**
+   * The M5 tilt controller, idle until a host is set (by the conductor over
+   * the station link, or a `?m5=` request). Undefined under a benchmark.
+   */
+  readonly m5: M5Adapter | undefined;
 }
 
 interface LoadedLevelAssets {
@@ -310,6 +318,9 @@ function setupLevel(
   const desktopControls = benchmark
     ? undefined
     : createDesktopControls(world.camera, world.renderer.domElement);
+  // Created idle: with no host set it owns no timer and touches no network,
+  // so a show without a conductor behaves exactly as before.
+  const m5 = benchmark ? undefined : createM5Adapter();
   const hasGround = level.invisibleGround === true || hasVisibleSurface(level);
   // One sampler for the whole level: the narrative presets never set `testUi`,
   // so metrics read from the overlay would be missing exactly where an
@@ -330,8 +341,21 @@ function setupLevel(
   return {
     update: (deltaSeconds): void => {
       frameMetrics.add(deltaSeconds);
-      if (benchmark) benchmark.placeCamera(world.camera);
-      else desktopControls?.update(deltaSeconds);
+      if (benchmark) {
+        benchmark.placeCamera(world.camera);
+      } else {
+        // With an M5 host configured the glider flies every frame — a poll
+        // failure only straightens the steering, it never stops the flight.
+        // Keyboard movement returns when the host is cleared; mouse look
+        // stays live either way. This is the frame's one readFrame call —
+        // it consumes the latched button edges.
+        const controlFrame = m5?.readFrame();
+        if (controlFrame) {
+          applyM5Flight(world.camera, controlFrame, deltaSeconds);
+        } else {
+          desktopControls?.update(deltaSeconds);
+        }
+      }
 
       if (hasGround) {
         keepFlightAboveGround(world.camera.position, worldSurface.groundYAt);
@@ -345,6 +369,7 @@ function setupLevel(
       resetFlight: (): void =>
         resetFlightPose(world.camera.position, world.camera.quaternion),
       readFrameMetrics,
+      m5,
     },
   };
 }

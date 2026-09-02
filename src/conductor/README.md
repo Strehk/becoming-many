@@ -25,6 +25,10 @@ cut it off — the same invariant `tests/dramaturgy/piece-schedule.test.ts`
 guards, made visible while cue times are being tuned by ear.
 
 `transport-panel.ts` holds the clock, the cue countdown, and the controls.
+`m5-panel.ts` points the show at the station's M5 tilt controller (`setM5Host`
+over the link, remembered in this browser's localStorage and re-sent when a
+reloaded show window reconnects) and previews the device on a crosshair — the
+page's own slow poll of `/state`, glanceable and never fed into steering.
 `status-strip.ts` answers "is everything all right", including the audio state:
 a context that never received a gesture freezes show time while looking exactly
 like a pause, and only a click in the *show* window can clear it. `cue-inspector.ts`

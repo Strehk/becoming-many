@@ -17,6 +17,7 @@ import { type ConductorAction, resolveConductorKey } from "./conductor-keys";
 import { CONDUCTOR_SETTINGS } from "./conductor-settings";
 import type { ConductorPanel, ConductorState } from "./conductor-state";
 import { createCueInspector } from "./cue-inspector";
+import { createM5Panel } from "./m5-panel";
 import { projectShowTime } from "./playhead";
 import { createShowTimeline } from "./show-timeline";
 import { createStatusStrip } from "./status-strip";
@@ -96,6 +97,7 @@ export function startConductorPage({
       },
     }),
     createCueInspector(page, schedule),
+    createM5Panel({ parent: page, send }),
   ];
 
   window.addEventListener("keydown", (event) => {

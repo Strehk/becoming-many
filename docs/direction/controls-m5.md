@@ -18,6 +18,29 @@ This matches the approved navigation boundary
 [architecture decisions](../architecture-decisions.md)): the M5 adapter is one
 more device adapter beside desktop.
 
+**Landed** (2026-09-01): `src/m5/control-frame.ts` owns the contract;
+`src/m5/control-source.ts` turns polls into render frames. Button edges are
+**consume-on-read**: a press between two polls is latched and delivered by the
+frame body's single `readFrame` call, so a 20 Hz edge is visible exactly one
+render frame and cannot be missed. While an M5 host is configured the glider
+**flies every frame**: a stale or failed poll carries neutral steering —
+straight and level — because `quality: 0` means "nothing is steering", never
+"stop". Keyboard movement returns when the host is cleared; mouse look stays
+live throughout. The flight model is the proven ICAROS
+glider (`src/control/m5-flight.ts`): constant forward glide, roll → yaw rate
+about world-up (heading persists, horizon never banks), pitch → climb rate
+(altitude persists, view never pitches). Desktop path only for now — inside
+`immersive-vr` the headset overwrites the camera pose every frame, the same
+limitation `flight-reset.ts` documents.
+
+The conductor owns enablement: an **M5 host** panel sends `setM5Host` over the
+station link, the show polls that host, and the status strip shows the device
+state (`off / connecting / live / wrong-device`, quality, firmware mismatch).
+The panel also previews the orientation on a crosshair with its own slower
+poll (5 Hz), independent of the show window.
+`?m5=<host>` polls directly for development, and `station/m5-sim.ts`
+(`bun run m5-sim`) stands in for hardware.
+
 ## Transport (PC-VR path)
 
 The controller is an **M5StickS3** (decided 2026-09-01; it replaced the
@@ -63,8 +86,9 @@ StickS3 notes (differences from the StickC Plus2 the old plan assumed):
 - **Pipeline split by ownership**: `normalize → axis-map → calibrate` run on
   the device (calibration persisted in NVS at the rig — one rig, one zero,
   every client agrees). `safety → auto-neutralize → smooth` run in the client
-  as a per-station **rig profile** (the old ICAROS rest-pose numbers are the
-  starting profile — config, not constants).
+  as a per-station **rig profile** — landed in `src/m5/m5-settings.ts` with
+  the old ICAROS safety numbers; the rest pose is 0/0 because the device
+  calibrates its own zero, so the neutralizer only pins idle drift.
 
 ## Setup page (operator/technician only)
 

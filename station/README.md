@@ -17,6 +17,11 @@ It runs under Bun, not in a browser, which is why it sits here rather than in
 which drives `src/benchmark`. Nothing in either page's module graph imports it,
 so Vite never bundles it and it exports nothing.
 
+`bun run m5-sim` starts a second small Bun process from this folder: a stand-in
+M5 controller answering `GET /state` with a slow tilt sweep, for developing the
+polling chain without hardware (`--device` and `--firmware` flags exercise the
+wrong-device and firmware-mismatch warnings).
+
 ## What it does
 
 - Accepts `?role=show` and `?role=conductor`, and refuses anything else.

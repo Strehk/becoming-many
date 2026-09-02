@@ -41,7 +41,8 @@ declare global {
 // answers. `?level=<name>` opens one preset for development instead — no
 // show, no station — `?benchmark[=<profile>]` replays the fixed measurement
 // route, `?language=<de|en>` arms the narration language, and
-// `?station=<ws url>` points at a broker running somewhere else.
+// `?station=<ws url>` points at a broker running somewhere else, and
+// `?m5=<host>` polls a tilt controller directly for development.
 const request = new URLSearchParams(window.location.search);
 const requestedLevel = request.get("level");
 const levelName = resolveLevelName(requestedLevel);
@@ -72,6 +73,13 @@ const level = await startLevel(
 );
 
 window.showClock = level.show?.clock;
+
+// `?m5=<host>` starts polling a tilt controller without broker or conductor —
+// a development convenience; in the installation the conductor sets the host.
+const requestedM5Host = request.get("m5");
+if (requestedM5Host) {
+  level.m5?.setHost(requestedM5Host);
+}
 
 // The station link always accompanies a show and fails soft: with no broker
 // answering it retries quietly, the widget says so, and the piece plays

@@ -9,4 +9,5 @@ Boundary: World rendering, surface formulas, and physical PICO acceptance live e
 
 This folder verifies input-independent navigation behavior. Ground-clearance
 tests protect the minimum flight height without requiring a browser or terrain
-mesh.
+mesh, and the M5 flight tests pin the glider mapping — yaw about world-up with
+a level horizon, climb without pitching the view — against a bare camera.
