@@ -51,21 +51,27 @@ The default page plays the piece: the schedule is the world authority,
 standing the composed show world in each cue's level — senses, structure,
 and background all fade across cue boundaries, nothing cuts — the clock is
 exposed as `window.showClock`, and `?language=<de|en>` arms the narration
-language. The station window is the conductor page at `/conductor.html`: it
+language. It starts the show on load and carries a rehearsal transport bar —
+hold/play, a scrubbable track marked with the section starts, and one button
+per section — so a run-through needs neither the console nor a reload. The station window is the conductor page at `/conductor.html`: it
 hosts the same show in-process behind a small stage view and drives it
 directly — one scrubbable timeline of the schedule, play and hold, time
 scale, jump to any cue, a next-cue countdown, a DE/EN re-arm, resets for the
 show clock, the flight, and the page itself, a Start/Stop Stream button for
 the WebXR session, and a Restart Experience soft reset (rewind, flight
-reset, play). The clock loads held at 0:00 on both pages; nothing plays
-before someone acts.
+reset, play). The conductor page loads held at 0:00, so nothing plays before
+an operator acts; the rehearsal page starts itself. On both, show time waits
+on the audio timebase, which the browser keeps suspended until the first
+gesture in the window.
 
 ## Implemented System
 
 ### Runtime
 
 - `src/main.ts` only selects the active level, calls `startLevel()`, and
-  mounts the VR entry button from the returned `RunningLevel`.
+  mounts the page's own controls from the returned `RunningLevel`: the VR
+  entry button and, on a show run, the rehearsal transport bar
+  (`src/dev/rehearsal-transport.ts`), after starting the show clock.
 - `level-runtime.ts` preloads fixed assets for enabled modules, applies the sparse preset,
   creates only enabled modules, and connects desktop controls.
 - `world-runtime.ts` owns the Three.js scene, the viewer rig and its child

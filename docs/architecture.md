@@ -53,6 +53,9 @@ src/
 │   ├── flight-reset.ts
 │   ├── flight-settings.ts
 │   └── m5-flight.ts
+├── dev/
+│   ├── headset-diagnostics.ts
+│   └── rehearsal-transport.ts
 ├── dramaturgy/
 │   ├── narration-catalog.ts
 │   ├── narration-schedule.ts
@@ -228,6 +231,14 @@ any preset from `levels/level-catalog.ts`, and `?benchmark[=<profile>]` hands
 the World Runtime a `FrameControl` that replaces the wall clock, drives the
 viewer rig along a fixed route, and records every finished frame. Both are
 runtime requests, not authored configuration.
+
+On a show run — the bare default, neither request given — `main.ts` starts the
+show clock and mounts `dev/rehearsal-transport.ts`: one fixed bar with
+hold/play, the clock readout, a scrubbable track marked with the section
+starts, and one button per section. Show time still waits on the audio
+timebase, which the browser keeps suspended until the first gesture in the
+window. The bar is pointer-only by design; the arrow keys steer the flight on
+this page, and the keyboard transport belongs to the conductor page.
 
 ## Ownership
 
@@ -471,8 +482,8 @@ is proven twice; zone and placement policy remain module-owned.
 
 ## Architectural Boundaries
 
-- `main.ts` knows only the selected level, `startLevel()`, and whether a station
-  was requested.
+- `main.ts` knows only the selected level, `startLevel()`, and the page's own
+  controls: the rehearsal transport bar and the VR entry button.
 - `level-runtime.ts` is the only file that composes concrete modules and controls.
 - The World Engine owns execution mechanisms, not experience content.
 - Levels provide values; modules own resources and behavior.

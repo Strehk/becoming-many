@@ -508,9 +508,10 @@ and the whole wire (`station-protocol.ts`, `station-link.ts`,
   imports: the `startLevel`/`RunningLevel` contract, the level catalog, and
   the XR session contract — never `src/world` internals or concrete
   `src/modules`.
-- **`/` stays the bare rehearsal and development page** — held clock,
+- **`/` stays the bare rehearsal and development page** —
   `window.showClock`, `?level`, `?benchmark`, `?m5` — minus the deleted
-  widget and link. The kiosk opens one window (`/conductor.html`).
+  widget and link. (*Amended 2026-09-02:* it no longer loads held; see
+  [The Rehearsal Page Runs Itself](#the-rehearsal-page-runs-itself-2026-09-02).) The kiosk opens one window (`/conductor.html`).
 - **The station server keeps serving.** Pages from `dist/`, deployment facts
   at `/config`, liveness at `/health` (socket counts gone). The M5 host is
   applied by the one page: deployment config when set (read-only), else the
@@ -545,6 +546,35 @@ Amends [One Station Window](#one-station-window-2026-09-02).
   changes, the request, the hand-over, its refusal, and every context loss or
   restore reach the console — the headset browser has no devtools, and
   `dev/headset-diagnostics.ts` mirrors console output onto the canvas.
+
+### The Rehearsal Page Runs Itself (2026-09-02)
+
+Amends [One Station Window](#one-station-window-2026-09-02) for `/` only.
+
+- **The default page starts the show on load.** Rehearsing meant opening the
+  console for `showClock.play()` on every reload — a cost paid dozens of times
+  a day, and one that is paid in a headset with no console at all. The page
+  exists to run the piece, so it runs it.
+- **The conductor page still loads held.** A station window that started
+  playing to an empty rig would be a fault, not a convenience; the operator
+  presses play there. The two pages differ because their audiences do.
+- **Autostart is not autoplay.** A browser keeps the AudioContext suspended
+  until a gesture, and the suspended context stalls the timebase, so the
+  started clock still opens the piece at 0:00 and advances from the first
+  touch. Nothing had to be added for that: it is the timebase decision in
+  [Show Clock and Schedule Authority](#show-clock-and-schedule-authority-2026-09-01)
+  doing its job.
+- **The rehearsal transport is its own small bar, not the conductor's.**
+  `src/dev/rehearsal-transport.ts` mounts hold/play, the clock, a scrubbable
+  track marked with the section starts, and one button per section — styled
+  inline, like the VR entry button, because this page has no stylesheet of its
+  own. Importing the conductor's panels would pull the operator surface, its
+  state contract, and a 755-line stylesheet into the page whose whole point is
+  to be bare; the shared authority that matters, `cueSlots`, is read from
+  `src/dramaturgy` by both.
+- **The bar is pointer-only.** The arrow keys steer the flight here, so a
+  keyboard transport would fight the controls the page exists to try out. The
+  key map stays a conductor-page feature.
 
 ### The Viewer Rig Owns Locomotion (2026-09-02)
 
