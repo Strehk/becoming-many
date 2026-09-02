@@ -1,6 +1,6 @@
 <!--
 Purpose: Document ownership of the experience audio layer.
-Context: Narration is the first audio to ship; beds and the synth follow.
+Context: Narration and the drone organ ship; per-sense beds follow.
 Responsibility: Explain what belongs in src/sound.
 Boundary: When something plays is decided in src/dramaturgy, not here.
 -->
@@ -18,6 +18,16 @@ suspended until a user gesture, so the timebase attaches a self-removing
 gesture listener; while it is suspended the timebase stalls, which correctly
 freezes show time instead of letting the show run without its audio.
 
+`drone-organ/` is the piece's generative instrument: nine layers, each opened
+by one of the show's senses, built on Tone.js and driven from the level
+runtime. It loads Tone only when a show actually asks for the organ, and it
+plays on the context Tone builds for itself rather than on the timebase's —
+Tone's `AudioWorklet` nodes only come up on a context its own audio library
+created, and sharing this one measurably silenced every voice's room. The two
+contexts never mix audio: the timebase's carries no nodes at all, and both
+resume on the same first gesture. The organ's own README explains the
+composition and what the port from the instrument's old repository left behind.
+
 `narration-player.ts` follows the clock. It holds one preloaded
 `HTMLAudioElement` per cue for the session's language only — about 7.4 MB
 across eight recordings — because a retargeted single element would re-stall on
@@ -33,8 +43,12 @@ and pause behave in rehearsal.
 
 ## Not here yet
 
-Per-sense audio beds faded by each sense's intensity signal, the drone-organ
-synth as a sound engine without its UI, spatial audio, and operator volume are
-all planned and deliberately absent. The `AudioContext` is the connection point
-they will share; a master gain node arrives with the first of them, measured on
-the PICO rather than assumed.
+Per-sense audio beds faded by each sense's intensity signal, and operator
+volume, are planned and deliberately absent. The organ gates its layers on a
+sense threshold rather than fading them with the intensity signal, which is the
+next step toward that. No master gain across narration and organ exists yet
+either; both reach the destination on their own, on their own contexts.
+
+The organ's cost has been measured on nothing but a desktop browser so far. It
+carries four Freeverb rooms and one convolution reverb, and Tone builds
+Freeverb on `AudioWorklet` — that is the first thing to measure on the PICO.

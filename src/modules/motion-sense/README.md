@@ -63,6 +63,15 @@ to the existing paths. Upgrading the point birds to bm-base's rigged
 wing-vertex sampling is recorded in
 `docs/levels/04-motion-perception/README.md`.
 
+## Where the clouds are
+
+Besides the point streams the trails print from, both actors report where
+their *clouds* sit: one packed world position per bird flock and per fly
+swarm, read through `readActorCenters` on the module handle. Spatial audio
+places a voice on the nearest cloud of a group through it, so it never has
+to scan hundreds of individual actors. The module answers with an empty
+array for a group this level does not carry, and while it is unloaded.
+
 ## Known simplifications
 
 - Flies are held above a plane fitted to the ground under their anchor, not

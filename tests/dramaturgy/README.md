@@ -30,6 +30,6 @@ outlasts its slot. `piece-schedule.test.ts` consumes the same `cueSlots` rather
 than deriving slot ends a second time, so the guarantee and the conductor's
 timeline cannot drift apart.
 
-There is no `tests/sound/`. The narration player is DOM-bound, and tests here
-stay pure, so its decision logic was kept in `src/dramaturgy` where it can be
-covered.
+The narration player is DOM-bound, and tests here stay pure, so its decision
+logic was kept in `src/dramaturgy` where it can be covered. `tests/sound/`
+covers the drone organ's pure half.

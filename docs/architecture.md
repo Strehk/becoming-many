@@ -117,6 +117,17 @@ src/
 │   └── vegetation/
 ├── sound/
 │   ├── audio-timebase.ts
+│   ├── drone-organ/
+│   │   ├── drone-organ.ts
+│   │   ├── drone-organ-settings.ts
+│   │   ├── nearest-anchor.ts
+│   │   ├── organ-engine.ts
+│   │   ├── organ-harmony.ts
+│   │   ├── organ-layer.ts
+│   │   ├── organ-runtime.ts
+│   │   ├── organ-signals.ts
+│   │   ├── signal-modulation.ts
+│   │   └── voices/
 │   └── narration-player.ts
 ├── station/
 │   ├── deployment-config.ts
@@ -330,6 +341,20 @@ first gesture. `narration-player.ts` holds one preloaded element per cue for
 the session's language and follows the clock. It never decides when a cue
 plays.
 
+`drone-organ/` is the generative instrument, ported from its own repository
+without the patch-cable interface it was played through. Nine layers, each a
+Tone.js voice with its own level, room, and colour; a layer opens when the
+sense that gates it passes half strength. Two layers are placed on the nearest
+bird flock and insect swarm, two are patched to flight height and compass. The
+composition is authored data in `drone-organ-settings.ts` — the whole reason
+the port carries only eight of the instrument's voices and two of its world
+signals. Tone.js arrives through a dynamic import inside `drone-organ.ts`, so a
+benchmark run or a bare level page never builds an audio graph. The organ plays
+on the context Tone builds for itself: its `AudioWorklet`-based rooms only come
+up there, and the timebase's context carries no audio nodes at all, so the two
+never mix — see
+[Architecture Decisions](architecture-decisions.md).
+
 ### `control/`
 
 Desktop controls own pointer lock and keyboard state. Pointer lock rotates the
@@ -477,6 +502,9 @@ is proven twice; zone and placement policy remain module-owned.
 | `Viewpoint` | Published world-space eye position and live view distance |
 | `RunningLevel` | A started level's show, flight reset, frame metrics, and XR session, returned by `startLevel()` |
 | `RunningShow` | A running show's clock, language, and audio state |
+| `DroneOrganFrame` | Play state, sense strengths, listener pose, ground height, and actor centres the organ follows |
+| `OrganComposition` | The authored piece the drone organ plays: harmony, master, and every layer |
+| `MotionActorGroup` | Which moving population a caller means: bird flocks or fly swarms |
 | `ShowActions` | The operator's typed command surface over the show the page hosts |
 | `CueSlot` | One cue's slot, recording length, and headroom in a chosen language |
 
@@ -492,7 +520,8 @@ is proven twice; zone and placement policy remain module-owned.
 - Chunk coordinates, work scheduling, and rendering remain separate concerns.
 - No module starts a private render loop.
 - Dramaturgy owns show time, Sound owns playback, and they meet only in
-  `level-runtime.ts` through one cue-lookup contract.
+  `level-runtime.ts` — through one cue-lookup contract for the narration and
+  one per-frame contract for the drone organ. Sound never reads the schedule.
 - No global event bus or generic service registry is present. The station link
   is not one: it is a cross-process transport with a closed message union, one
   owner per side, and no topics, registration, or lookup.

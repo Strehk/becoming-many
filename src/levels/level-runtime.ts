@@ -59,6 +59,7 @@ import {
 } from "../modules/magnetic-sense/magnetic-sense";
 import {
   createMotionSenseModule,
+  type MotionActorGroup,
   type MotionSenseModuleHandle,
   type MotionSenseParameters,
 } from "../modules/motion-sense/motion-sense";
@@ -105,6 +106,8 @@ import {
 } from "../modules/world-fade/world-fade";
 import { createZoneVisualizer } from "../modules/zone-visualizer/zone-visualizer";
 import { createAudioTimebase } from "../sound/audio-timebase";
+import { createDroneOrgan } from "../sound/drone-organ/drone-organ";
+import type { OrganPlacementGroup } from "../sound/drone-organ/drone-organ-settings";
 import { createNarrationPlayer } from "../sound/narration-player";
 import {
   type FrameMetrics,
@@ -198,6 +201,18 @@ export interface LevelPreset {
    */
   readonly connections?: ConnectionsParameters;
 }
+
+/** Answer for a placement group nothing in this world produces. */
+const NO_ACTOR_CENTERS = new Float32Array(0);
+
+/** The listener pose scratch a show writes each frame; the organ only reads. */
+type MutableListenerPose = {
+  x: number;
+  y: number;
+  z: number;
+  yawRadians: number;
+  pitchRadians: number;
+};
 
 /** The per-frame half of a running show; the commandable half goes to the caller. */
 interface ShowUpdate {
@@ -382,7 +397,7 @@ function setupLevel(
   // timestep is not the real time the show is cut to.
   const show = benchmark
     ? undefined
-    : createShow(options.show, world, composed.reach);
+    : createShow(options.show, world, composed.reach, worldSurface);
   const heightLimits = {
     minimumGroundClearanceMeters: hasGround
       ? BASE_MINIMUM_GROUND_CLEARANCE_METERS
@@ -447,6 +462,7 @@ function createShow(
   request: ShowRequest | undefined,
   world: WorldContext,
   reach: ShowWorldReach,
+  worldSurface: WorldSurface,
 ): ShowUpdate | undefined {
   if (!request) return undefined;
 
@@ -466,8 +482,29 @@ function createShow(
   const cueIds = request.schedule.narration.map((cue) => cue.cueId);
   let language = request.language;
   let narration = createNarrationPlayer({ language, cueIds });
+  // The organ follows the same clock but plays on Tone's own context, which
+  // is the only context its rooms come up on. It loads Tone.js by itself, so
+  // the world runs on before the organ makes a sound.
+  const droneOrgan = createDroneOrgan();
   let activeLevel: ShowLevelName | undefined;
-  // Scratch color and per-level constants, so following allocates nothing.
+  // Scratch state, so following the show allocates nothing per frame. The
+  // sense strengths are written once per frame and read by both the world and
+  // the organ, which is what keeps the two from disagreeing inside a fade.
+  const strengths: Record<ShowSense, number> = {
+    scent: 0,
+    echo: 0,
+    motion: 0,
+    thermal: 0,
+    magnetic: 0,
+    connections: 0,
+  };
+  const listenerPose: MutableListenerPose = {
+    x: 0,
+    y: 0,
+    z: 0,
+    yawRadians: 0,
+    pitchRadians: 0,
+  };
   const liveBackground = new Color(0xffffff);
   const backgroundColors = new Map<ShowLevelName, Color>();
   const backgroundOf = (name: ShowLevelName): Color => {
@@ -524,14 +561,20 @@ function createShow(
   }
 
   function followSenses(showTimeSeconds: number): void {
-    const strengths: Record<ShowSense, number> = {
-      scent: senseIntensityAt(schedule, "scent", showTimeSeconds),
-      echo: senseIntensityAt(schedule, "echo", showTimeSeconds),
-      motion: senseIntensityAt(schedule, "motion", showTimeSeconds),
-      thermal: senseIntensityAt(schedule, "thermal", showTimeSeconds),
-      magnetic: senseIntensityAt(schedule, "magnetic", showTimeSeconds),
-      connections: senseIntensityAt(schedule, "connections", showTimeSeconds),
-    };
+    strengths.scent = senseIntensityAt(schedule, "scent", showTimeSeconds);
+    strengths.echo = senseIntensityAt(schedule, "echo", showTimeSeconds);
+    strengths.motion = senseIntensityAt(schedule, "motion", showTimeSeconds);
+    strengths.thermal = senseIntensityAt(schedule, "thermal", showTimeSeconds);
+    strengths.magnetic = senseIntensityAt(
+      schedule,
+      "magnetic",
+      showTimeSeconds,
+    );
+    strengths.connections = senseIntensityAt(
+      schedule,
+      "connections",
+      showTimeSeconds,
+    );
     for (const sense of Object.keys(strengths) as readonly ShowSense[]) {
       reach.senses[sense]?.(strengths[sense]);
     }
@@ -544,6 +587,17 @@ function createShow(
       if (strengths[GATE_SENSE[gate]] > 0) world.modules.activate(module);
       else world.modules.deactivate(module);
     }
+  }
+
+  function followOrgan(isPlaying: boolean): void {
+    readListenerPose(world, listenerPose);
+    droneOrgan.update({
+      isPlaying,
+      senseStrengths: strengths,
+      listener: listenerPose,
+      groundYMeters: worldSurface.groundYAt(listenerPose.x, listenerPose.z),
+      readGroupCenters: (group) => readActorCenters(reach, group),
+    });
   }
 
   // Open in the first cue's world before the first frame renders: the
@@ -562,6 +616,7 @@ function createShow(
         timeScale: showTime.timeScale,
       });
       followWorld(showTime.timeSeconds);
+      followOrgan(showTime.isPlaying);
     },
 
     readActiveLevelPreset: (): LevelPreset =>
@@ -586,6 +641,40 @@ function createShow(
       },
     },
   };
+}
+
+/**
+ * Read where the visitor is and which way they face, into the caller's pose.
+ * The eye carries the head pose the rig published at the end of the previous
+ * frame — the same frame of reference every module windows its content around.
+ */
+function readListenerPose(
+  world: WorldContext,
+  pose: MutableListenerPose,
+): void {
+  const eye = world.viewpoint.worldPosition;
+  pose.x = eye.x;
+  pose.y = eye.y;
+  pose.z = eye.z;
+
+  // Forward is the camera's negated third column in world space.
+  const elements = world.camera.matrixWorld.elements;
+  const forwardX = -(elements[8] ?? 0);
+  const forwardY = -(elements[9] ?? 0);
+  const forwardZ = -(elements[10] ?? 1);
+  pose.yawRadians = Math.atan2(forwardX, forwardZ);
+  pose.pitchRadians = Math.asin(Math.min(1, Math.max(-1, forwardY)));
+}
+
+/** The organ's placement groups, answered from the moving world it can reach. */
+function readActorCenters(
+  reach: ShowWorldReach,
+  group: OrganPlacementGroup,
+): Float32Array {
+  return (
+    reach.readMotionActorCenters?.(group === "insects" ? "flies" : "birds") ??
+    NO_ACTOR_CENTERS
+  );
 }
 
 function applyLevelPresentation(
@@ -656,6 +745,12 @@ interface ShowWorldReach {
   };
   /** Keeps the opaque sky dome on the live background while it lerps. */
   readonly setSkyBackground?: (background: Color) => void;
+
+  /**
+   * Where the moving actor clouds are, so the drone organ can put its two
+   * placed voices on the birds and the insects the motion sense shows.
+   */
+  readonly readMotionActorCenters?: (group: MotionActorGroup) => Float32Array;
 }
 
 interface ComposedWorld {
@@ -765,6 +860,7 @@ function composeShowReach(
       animals: handles.animalsFade,
     },
     setSkyBackground: handles.magnetic?.setSkyBackground,
+    readMotionActorCenters: handles.motion?.readActorCenters,
   };
 }
 

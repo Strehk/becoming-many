@@ -608,6 +608,30 @@ Amends [One Station Window](#one-station-window-2026-09-02) for `/` only.
 - This is the smallest XR locomotion boundary needed by the running piece; it
   does not introduce the broader XR view-state contract that remains open.
 
+### The Drone Organ Plays on Tone's Own AudioContext (2026-09-02)
+
+- The generative instrument was ported into `src/sound/drone-organ/` as a sound
+  engine without its patch-cable interface, exactly as
+  [dramaturgy-audio.md](direction/dramaturgy-audio.md) calls for. Its composed
+  state is typed configuration in `drone-organ-settings.ts`; only the eight
+  voices and two world signals that composition uses were carried over.
+- **The organ does not share the show's `AudioContext`.** Tone reaches the
+  audio hardware through standardized-audio-context, whose `AudioWorklet`
+  nodes only come up on a context that library created. Handing Tone the
+  timebase's context was measured on the built page: all thirty-two comb
+  filters of the four voice rooms failed to build, one unhandled
+  `InvalidStateError` each, and those rooms fell silent while everything else
+  played on. The organ therefore keeps the context Tone builds for itself.
+- The two contexts never mix audio: the timebase's carries no nodes at all —
+  it is the show's hardware clock — and both resume on the same first gesture.
+  A master gain across narration and organ remains unbuilt.
+- **Tone.js loads through a dynamic import.** Importing it constructs an
+  `AudioContext`, which a benchmark run and a bare `?level=` page must not pay
+  for. The production build emits the organ as its own chunk.
+- **Layers are gated, not faded.** A layer opens when its sense passes half
+  strength, which is what the composition authored. Fading each voice with the
+  sense intensity is the documented direction and a deliberate next step.
+
 
 ## Approved Navigation Boundary
 

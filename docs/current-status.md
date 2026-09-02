@@ -612,6 +612,44 @@ gesture in the window.
   entirely when the preset omits `thermal` or authors intensity zero, so
   an inactive sense costs no GPU work and no warmth attribute.
 
+### Sound: Narration and the Drone Organ
+
+- `sound/audio-timebase.ts` owns the one `AudioContext` and hands its
+  `currentTime` to the show clock. `narration-player.ts` follows that clock
+  with one preloaded element per cue in the armed language.
+- `sound/drone-organ/` is the generative instrument, ported from its own
+  repository without the patch-cable interface it was played through. Nine
+  Tone.js layers — wind, choir, pressure wave, two wing beats, poly rhythm,
+  bass loop, sonar, hi-hat — mix into one master chain and one shared
+  convolution room. The composed piece lives in `drone-organ-settings.ts`.
+- Each layer is gated by one sense of the ladder and opens when that sense
+  passes half strength; the wind is ungated and carries the empty world. All
+  six senses of the ladder are heard, which `tests/sound/` locks.
+- Two wing-beat layers are placed in the world through `Panner3D` on the
+  nearest bird flock and the nearest fly swarm, read from the Motion Sense
+  handle's `readActorCenters`. Two layers are patched to flight: the wind's
+  pad follows climb height, the pressure wave's follows the compass.
+- Tone.js loads through a dynamic import, so a benchmark run and a bare
+  `?level=` page build no audio graph at all; the production build emits it
+  as a separate ~360 kB chunk.
+- The organ plays on the context Tone builds for itself. Sharing the show
+  timebase's context was tried and measured on the built page: all thirty-two
+  comb filters of the four voice rooms failed to build, one unhandled
+  `InvalidStateError` each, and those rooms fell silent — Tone's
+  `AudioWorklet` nodes only come up on a context its own audio library
+  created. The timebase's context carries no audio nodes, so nothing is mixed
+  across the two, and both resume on the same first gesture.
+- Only the port carries over what this composition reaches for: eight of the
+  instrument's voices, two of its world signals, and no master EQ, filter, or
+  delay, all of which the composition left neutral.
+- Verified headless on the built page: the organ builds without a single page
+  error, and its master level rises step by step as the senses layer in —
+  wind alone, then scent, echo, motion, thermal, magnetic, and the full nine.
+- **Unmeasured on the PICO.** The organ runs four Freeverb rooms — thirty-two
+  `AudioWorklet` comb filters — plus one convolution reverb, nine mix strips,
+  and five transport loops. That is the first thing to measure on the headset;
+  no headset audio claim is approved.
+
 ### M5 Controller Firmware and Flash Page
 
 The ICAROS controller is an M5StickS3 running the in-repo PlatformIO firmware
@@ -668,7 +706,7 @@ Manifests remain metadata rather than a parallel runtime configuration system.
 
 The last clean verification recorded:
 
-- `bun test`: 153 tests
+- `bun test`: 394 tests
 - `bun run check`: strict TypeScript
 - `bun run lint`: clean Biome run
 - `bun run build`: Vite production build, including the emitted
@@ -706,8 +744,10 @@ loading or target-device evidence requires it.
 - complete Test Level training flow and narrative state transitions
 - floating origin, LOD, relevance fields, and spatial instance pools
 - asset prefetching, retries, progress UI, and distance-based stream priorities
-- visible water, other perception effects, mycelium, sky additions, and sound
-  modules
+- visible water, other perception effects, mycelium, and sky additions
+- per-sense audio beds, a master gain across narration and organ, and fading
+  the organ's layers with the sense intensity rather than gating them on a
+  threshold
 - wind-coupled scent drift, scent fields, scent fading into the echo haze
   with distance, scent for animals in the levels that carry no Animals
   module, and a runtime scent-intensity driver
