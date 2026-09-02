@@ -59,11 +59,12 @@ language — a German chat still produces English artifacts.
   `bun run build` (typecheck + production build).
 - `bun run benchmark` replays a fixed route in Chromium and writes a report
   artifact. It needs a current `bun run build` and is not part of `bun test`.
-- `bun run station` starts the station server that joins the show window
-  (the default page at `/`; its link connects by itself) to the conductor page
-  (`/conductor.html`), and serves the built pages from `dist/` when present.
-  It is a Bun process, not part of the app bundle, and the show runs without
-  it. `docker compose up -d --build` runs a whole built station in one
+- `bun run station` starts the station server: it serves the built pages from
+  `dist/` and the deployment facts at `/config`. The station window is the
+  conductor page (`/conductor.html`), which hosts the show in-process; `/`
+  stays the bare rehearsal and development page. The server is a Bun process,
+  not part of the app bundle, and the show runs without it.
+  `docker compose up -d --build` runs a whole built station in one
   container — see [station/README.md](station/README.md) and `.env.example`
   for the per-station env vars (M5 host, device id, station name).
 - Run all Bun, Vite, and Fallow checks before checkpoints and commits.

@@ -19,9 +19,7 @@ import {
 } from "./levels/level-catalog";
 import { startLevel } from "./levels/level-runtime";
 import { loadDeploymentConfig } from "./station/deployment-config";
-import { connectShowStation } from "./station/show-station";
-import { resolveStationUrl } from "./station/station-settings";
-import { createStationWidget } from "./station/station-widget";
+import { mountVrEntryButton } from "./world/vr-entry-button";
 
 declare global {
   interface Window {
@@ -29,20 +27,18 @@ declare global {
      * Rehearsal transport. The console commands the show through it; nothing
      * under `src` reads it back, so removing it changes no behavior. It is
      * set on every default run rather than gated on the build mode because
-     * rehearsal happens in the headset, against a production build, where
-     * the conductor page on another machine is not reachable.
+     * rehearsal happens in the headset, against a production build, without
+     * the conductor page's transport at hand.
      */
     showClock?: ShowClock;
   }
 }
 
 // Runtime request, not authored configuration. The default page plays the
-// piece: the schedule is the world authority, and the station link connects
-// by itself so the conductor page can take the transport whenever a broker
-// answers. `?level=<name>` opens one preset for development instead — no
-// show, no station — `?benchmark[=<profile>]` replays the fixed measurement
-// route, `?language=<de|en>` arms the narration language, and
-// `?station=<ws url>` points at a broker running somewhere else, and
+// piece with the schedule as the world authority — held at 0:00 until
+// `window.showClock` starts it. `?level=<name>` opens one preset for
+// development instead — no show — `?benchmark[=<profile>]` replays the fixed
+// measurement route, `?language=<de|en>` arms the narration language, and
 // `?m5=<host>` polls a tilt controller directly for development.
 const request = new URLSearchParams(window.location.search);
 const requestedLevel = request.get("level");
@@ -80,24 +76,12 @@ const level = await startLevel(
 
 window.showClock = level.show?.clock;
 
-// `?m5=<host>` starts polling a tilt controller without broker or conductor —
-// a development convenience, so the explicit request outranks the deployment
-// host; in an installation without either env the conductor sets the host.
+mountVrEntryButton(document.body, level.xr);
+
+// `?m5=<host>` starts polling a tilt controller without a conductor page — a
+// development convenience, so the explicit request outranks the deployment
+// host; the installation runs the conductor page, which owns the host there.
 const m5Host = request.get("m5") ?? deployment.m5Host;
 if (m5Host) {
   level.m5?.setHost(m5Host);
-}
-
-// The station link always accompanies a show and fails soft: with no broker
-// answering it retries quietly, the widget says so, and the piece plays
-// unchanged. The widget also holds the way to the conductor page.
-if (level.show) {
-  const widget = createStationWidget(document.body);
-  connectShowStation({
-    level,
-    show: level.show,
-    stationUrl: resolveStationUrl(request.get("station")),
-    isM5HostLocked: deployment.m5Host !== undefined,
-    onConnectionChange: widget.setConnected,
-  });
 }

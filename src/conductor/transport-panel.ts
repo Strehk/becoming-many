@@ -1,7 +1,7 @@
 /**
  * Purpose: Give the operator the show's position and the controls to move it.
  * Context: A conductor holds, jumps, and re-arms the piece while it is running.
- * Responsibility: Render the clock and cue readouts, and send transport commands.
+ * Responsibility: Render the clock and cue readouts, and apply transport actions.
  * Boundary: The show clock stays the authority; nothing here tracks show time.
  */
 
@@ -11,21 +11,22 @@ import {
   narrationCueAt,
 } from "../dramaturgy/narration-schedule";
 import { nextCueAt } from "../dramaturgy/schedule-layout";
-import type { ShowCommand } from "../station/station-protocol";
 import { CONDUCTOR_SETTINGS } from "./conductor-settings";
 import type { ConductorPanel } from "./conductor-state";
+import { createButton, createConfirmButton } from "./panel-buttons";
+import type { ShowActions } from "./show-actions";
 import { formatShowTime } from "./time-format";
 
 export interface TransportPanelOptions {
   readonly parent: HTMLElement;
   readonly schedule: NarrationSchedule;
-  readonly send: (command: ShowCommand) => void;
+  readonly actions: ShowActions;
 }
 
 export function createTransportPanel({
   parent,
   schedule,
-  send,
+  actions,
 }: TransportPanelOptions): ConductorPanel {
   const root = document.createElement("section");
   root.className = "conductor__transport";
@@ -47,59 +48,43 @@ export function createTransportPanel({
   remaining.className = "conductor__cue-label";
   cues.append(remaining);
 
-  const actions = document.createElement("div");
-  actions.className = "conductor__actions";
+  const controls = document.createElement("div");
+  controls.className = "conductor__actions";
 
   const transportButton = document.createElement("button");
   transportButton.type = "button";
   transportButton.className = "conductor__transport-button";
 
-  const rates = createGroup(actions, "rate");
+  const rates = createGroup(controls, "rate");
   const rateButtons = CONDUCTOR_SETTINGS.timeScales.map((timeScale) =>
-    createGroupButton(rates, `${timeScale}×`, () =>
-      send({ kind: "setTimeScale", timeScale }),
-    ),
+    createButton(rates, `${timeScale}×`, () => actions.setTimeScale(timeScale)),
   );
 
-  const languages = createGroup(actions, "language");
+  const languages = createGroup(controls, "language");
   const languageButtons = NARRATION_LANGUAGES.map((language) =>
-    createGroupButton(languages, language.toUpperCase(), () =>
-      send({ kind: "setLanguage", language }),
+    createButton(languages, language.toUpperCase(), () =>
+      actions.setLanguage(language),
     ),
   );
 
-  actions.append(transportButton);
-  const resetShowButton = createButton(actions, "↺ clock", () =>
-    send({ kind: "resetShow" }),
-  );
-  const resetFlightButton = createButton(actions, "↺ flight", () =>
-    send({ kind: "resetFlight" }),
-  );
-  const reloadButton = createConfirmButton(actions, "⟳ reload", () =>
-    send({ kind: "reloadShow" }),
-  );
+  controls.append(transportButton);
+  createButton(controls, "↺ clock", () => actions.resetShow());
+  createButton(controls, "↺ flight", () => actions.resetFlight());
+  createConfirmButton(controls, "⟳ reload", () => actions.reloadShow());
 
-  root.append(clock, cues, actions);
+  root.append(clock, cues, controls);
   parent.append(root);
 
-  // Mirrors the last reported state so one button both starts and holds.
+  // Mirrors the last drawn state so one button both starts and holds.
   let isShowPlaying = false;
   transportButton.addEventListener("click", () => {
-    send({ kind: isShowPlaying ? "pause" : "play" });
+    if (isShowPlaying) actions.pause();
+    else actions.play();
   });
-
-  const everyButton = [
-    transportButton,
-    resetShowButton,
-    resetFlightButton,
-    reloadButton,
-    ...rateButtons,
-    ...languageButtons,
-  ];
 
   return {
     update(state): void {
-      isShowPlaying = state.status?.isPlaying === true;
+      isShowPlaying = state.snapshot.isPlaying;
       transportButton.textContent = isShowPlaying ? "⏸ hold" : "▶ play";
 
       writeClock(state.showTimeSeconds);
@@ -107,14 +92,13 @@ export function createTransportPanel({
       markPressed(
         rateButtons,
         CONDUCTOR_SETTINGS.timeScales,
-        state.status?.timeScale,
+        state.snapshot.timeScale,
       );
-      markPressed(languageButtons, NARRATION_LANGUAGES, state.language);
-
-      // A dead link must not offer controls that would silently do nothing.
-      for (const button of everyButton) {
-        button.disabled = !state.isLive;
-      }
+      markPressed(
+        languageButtons,
+        NARRATION_LANGUAGES,
+        state.snapshot.language,
+      );
     },
   };
 
@@ -187,62 +171,4 @@ function createGroup(parent: HTMLElement, labelText: string): HTMLElement {
   group.append(label);
   parent.append(group);
   return group;
-}
-
-function createButton(
-  parent: HTMLElement,
-  labelText: string,
-  onClick: () => void,
-): HTMLButtonElement {
-  const button = document.createElement("button");
-  button.type = "button";
-  button.textContent = labelText;
-  button.addEventListener("click", onClick);
-  parent.append(button);
-
-  return button;
-}
-
-function createGroupButton(
-  group: HTMLElement,
-  labelText: string,
-  onClick: () => void,
-): HTMLButtonElement {
-  return createButton(group, labelText, onClick);
-}
-
-/**
- * Reloading the show window drops the visitor out of VR and needs a physical
- * click on that window to come back, so it asks twice. A blocking
- * `window.confirm` is the wrong tool: it would freeze this page's own clock.
- */
-function createConfirmButton(
-  parent: HTMLElement,
-  labelText: string,
-  onConfirm: () => void,
-): HTMLButtonElement {
-  let disarmTimer: ReturnType<typeof setTimeout> | undefined;
-
-  function disarm(button: HTMLButtonElement): void {
-    clearTimeout(disarmTimer);
-    button.dataset.armed = "false";
-    button.textContent = labelText;
-  }
-
-  const button = createButton(parent, labelText, () => {
-    if (button.dataset.armed === "true") {
-      disarm(button);
-      onConfirm();
-      return;
-    }
-
-    button.dataset.armed = "true";
-    button.textContent = "confirm?";
-    disarmTimer = setTimeout(
-      () => disarm(button),
-      CONDUCTOR_SETTINGS.reloadConfirmMilliseconds,
-    );
-  });
-
-  return button;
 }

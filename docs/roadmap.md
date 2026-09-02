@@ -87,8 +87,9 @@ advance.
 
 - Test Level
 - audio master clock *(built: one virtual show clock on the audio timebase)*
-- operator transport and restart *(built: the conductor page scrubs the
-  schedule and resets the clock, the flight, and the show window)*
+- operator transport and restart *(built: the conductor page hosts the show,
+  scrubs the schedule, restarts the experience, and resets the clock, the
+  flight, and itself)*
 - typed state transitions
 - module preloading and unloading around timeline cues
 - per-sense intensity envelopes on the schedule

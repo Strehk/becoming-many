@@ -8,9 +8,9 @@
 import type { NarrationCueId } from "../dramaturgy/narration-catalog";
 import type { NarrationSchedule } from "../dramaturgy/narration-schedule";
 import { type CueSlot, cueSlots } from "../dramaturgy/schedule-layout";
-import type { ShowCommand } from "../station/station-protocol";
-import { STATION_SETTINGS } from "../station/station-settings";
+import { CONDUCTOR_SETTINGS } from "./conductor-settings";
 import type { ConductorPanel } from "./conductor-state";
+import type { ShowActions } from "./show-actions";
 
 const MILLISECONDS_PER_SECOND = 1_000;
 const RULER_INTERVAL_SECONDS = 60;
@@ -18,7 +18,7 @@ const RULER_INTERVAL_SECONDS = 60;
 export interface ShowTimelineOptions {
   readonly parent: HTMLElement;
   readonly schedule: NarrationSchedule;
-  readonly send: (command: ShowCommand) => void;
+  readonly actions: ShowActions;
   /** Reports the operator's own position, or undefined when the drag ends. */
   readonly onScrubChange: (showTimeSeconds: number | undefined) => void;
   readonly onSelectCue: (cueId: NarrationCueId) => void;
@@ -33,7 +33,7 @@ interface SlotView {
 export function createShowTimeline({
   parent,
   schedule,
-  send,
+  actions,
   onScrubChange,
   onSelectCue,
 }: ShowTimelineOptions): ConductorPanel {
@@ -55,25 +55,25 @@ export function createShowTimeline({
   track.append(playhead);
   root.append(track);
 
-  root.append(createJumps(schedule, send));
+  root.append(createJumps(schedule, actions));
   parent.append(root);
 
-  attachScrubbing({ track, durationSeconds, send, onScrubChange });
+  attachScrubbing({ track, durationSeconds, actions, onScrubChange });
 
   let renderedLanguage: string | undefined;
 
   return {
     update(state): void {
-      if (renderedLanguage !== state.language) {
-        renderedLanguage = state.language;
+      if (renderedLanguage !== state.snapshot.language) {
+        renderedLanguage = state.snapshot.language;
         // Only the recordings change with the language; the slots are shared.
-        cueSlots(schedule, state.language).forEach((slot, index) => {
+        cueSlots(schedule, state.snapshot.language).forEach((slot, index) => {
           writeRecording(slots[index]?.recording, slot);
         });
       }
 
       // The scrub gesture reads this to know whether to resume afterwards.
-      track.dataset.playing = String(state.status?.isPlaying === true);
+      track.dataset.playing = String(state.snapshot.isPlaying);
       playhead.style.left = `${toPercent(state.showTimeSeconds, durationSeconds)}%`;
       for (const slot of slots) {
         slot.element.setAttribute(
@@ -153,7 +153,7 @@ function writeRecording(
 
 function createJumps(
   schedule: NarrationSchedule,
-  send: (command: ShowCommand) => void,
+  actions: ShowActions,
 ): HTMLElement {
   const jumps = document.createElement("div");
   jumps.className = "conductor__jumps";
@@ -163,9 +163,7 @@ function createJumps(
     button.type = "button";
     // The label matches the digit key that reaches the same cue.
     button.textContent = `${index + 1} ${cue.cueId}`;
-    button.addEventListener("click", () =>
-      send({ kind: "seekTo", showTimeSeconds: cue.atSeconds }),
-    );
+    button.addEventListener("click", () => actions.seekTo(cue.atSeconds));
     jumps.append(button);
   });
 
@@ -175,7 +173,7 @@ function createJumps(
 interface ScrubbingOptions {
   readonly track: HTMLElement;
   readonly durationSeconds: number;
-  readonly send: (command: ShowCommand) => void;
+  readonly actions: ShowActions;
   readonly onScrubChange: (showTimeSeconds: number | undefined) => void;
 }
 
@@ -188,7 +186,7 @@ interface ScrubbingOptions {
 function attachScrubbing({
   track,
   durationSeconds,
-  send,
+  actions,
   onScrubChange,
 }: ScrubbingOptions): void {
   let wasPlaying = false;
@@ -204,12 +202,12 @@ function attachScrubbing({
   track.addEventListener("pointerdown", (event) => {
     track.setPointerCapture(event.pointerId);
     wasPlaying = track.dataset.playing === "true";
-    if (wasPlaying) send({ kind: "pause" });
+    if (wasPlaying) actions.pause();
 
     const showTimeSeconds = readShowTime(event);
     lastSentMilliseconds = performance.now();
     onScrubChange(showTimeSeconds);
-    send({ kind: "seekTo", showTimeSeconds });
+    actions.seekTo(showTimeSeconds);
   });
 
   track.addEventListener("pointermove", (event) => {
@@ -220,11 +218,11 @@ function attachScrubbing({
 
     const now = performance.now();
     const intervalMilliseconds =
-      MILLISECONDS_PER_SECOND / STATION_SETTINGS.scrubHertz;
+      MILLISECONDS_PER_SECOND / CONDUCTOR_SETTINGS.scrubHertz;
     if (now - lastSentMilliseconds < intervalMilliseconds) return;
 
     lastSentMilliseconds = now;
-    send({ kind: "seekTo", showTimeSeconds });
+    actions.seekTo(showTimeSeconds);
   });
 
   function endScrub(event: PointerEvent): void {
@@ -232,8 +230,8 @@ function attachScrubbing({
 
     track.releasePointerCapture(event.pointerId);
     // The throttle can have swallowed the last move, so land it exactly.
-    send({ kind: "seekTo", showTimeSeconds: readShowTime(event) });
-    if (wasPlaying) send({ kind: "play" });
+    actions.seekTo(readShowTime(event));
+    if (wasPlaying) actions.play();
     wasPlaying = false;
     onScrubChange(undefined);
   }

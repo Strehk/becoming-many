@@ -39,9 +39,12 @@ src/
 │   ├── conductor-state.ts
 │   ├── cue-inspector.ts
 │   ├── m5-panel.ts
-│   ├── playhead.ts
+│   ├── panel-buttons.ts
+│   ├── show-actions.ts
 │   ├── show-timeline.ts
+│   ├── stage-panel.ts
 │   ├── status-strip.ts
+│   ├── stream-button.ts
 │   ├── time-format.ts
 │   └── transport-panel.ts
 ├── control/
@@ -111,9 +114,7 @@ src/
 │   ├── audio-timebase.ts
 │   └── narration-player.ts
 ├── station/
-│   ├── show-station.ts
-│   ├── station-link.ts
-│   ├── station-protocol.ts
+│   ├── deployment-config.ts
 │   └── station-settings.ts
 ├── utils/
 │   ├── asset-loader/
@@ -125,10 +126,11 @@ src/
     ├── module-runtime.ts
     ├── stream-queue.ts
     ├── volume-chunk-window.ts
-    ├── webxr-entry.ts
+    ├── vr-entry-button.ts
     ├── wind.ts
     ├── world-settings.ts
-    └── world-runtime.ts
+    ├── world-runtime.ts
+    └── xr-session.ts
 
 station/
 ├── m5-sim.ts
@@ -243,10 +245,14 @@ Owns the permanent renderer and stream-queue tuning values used by the World
 Runtime. Global MSAA is explicit here and remains disabled until physical PICO
 measurement justifies enabling it.
 
-### `webxr-entry.ts`
+### `xr-session.ts` and `vr-entry-button.ts`
 
-Enables `renderer.xr` and adds Three.js `VRButton`. The current session mode is
-`immersive-vr`.
+`xr-session.ts` enables `renderer.xr` and owns the `immersive-vr` session
+lifecycle behind `XrSessionControl` — start, stop, and a subscription over
+availability (re-checked on `devicechange`) and session state. It travels on
+`RunningLevel.xr`. `vr-entry-button.ts` mounts the rehearsal page's plain
+entry button on that contract; the conductor page mounts its Start/Stop
+Stream button on the same one.
 
 ### `module-runtime.ts`
 
@@ -311,22 +317,23 @@ outside the World Engine.
 
 ### `station/` and `station/station-server.ts`
 
-Owns the wire between a station's two windows, and nothing else: no show state,
-no schedule. `station-protocol.ts` is the closed message union plus a parser
-that refuses anything malformed rather than throwing inside a socket handler;
-`station-link.ts` is the reconnecting browser client; `show-station.ts` applies
-commands to the running level and publishes status on a timer, which keeps
-reporting when the show window is unfocused and its animation frames stop.
-The broker is a Bun process at the repository root, run by `bun run station`;
-it exports nothing and nothing bundles it.
+Owns the deployment-config contract, and nothing else: no show state, no
+schedule. `deployment-config.ts` reads the facts a station server was started
+with (`/config`, failing soft to `{}`); `station-settings.ts` holds the
+server's default port for the server and the Vite proxy. The server is a Bun
+process at the repository root, run by `bun run station`, serving `dist/`,
+`/config`, and `/health`; it exports nothing and nothing bundles it.
 
 ### `conductor/`
 
-Owns the operator page at `conductor.html` — the show transport, the schedule
-timeline and its scrub, the status strip, and the resets. It reads schedule data
-and never authors it, holds no show time of its own, and must not import
-`levels/` or `world/`: one value import would pull Three.js into a bundle that
-is otherwise a few kilobytes.
+Owns the station window at `conductor.html` — the page that hosts the show
+in-process behind a small stage view, plus the show transport, the schedule
+timeline and its scrub, the status strip, the stream and restart controls, and
+the resets. It reads schedule data and never authors it, and holds no show
+time of its own: every frame reads the show clock fresh. The world enters
+through one contract — `startLevel`/`RunningLevel`, the level catalog, and the
+XR session contract — never through `world/` internals or concrete
+`modules/`.
 
 ### `levels/`
 
@@ -438,9 +445,9 @@ is proven twice; zone and placement policy remain module-owned.
 | `VolumeChunkAssignment` | Fixed slot, absolute X/Y/Z volume, origin, and revision |
 | `StreamJob` | Stable key, currentness check, and one bounded work step |
 | `DesktopControls` | One per-frame desktop movement update |
-| `RunningLevel` | A started level's flight reset and frame metrics, returned by `startLevel()` |
+| `RunningLevel` | A started level's show, flight reset, frame metrics, and XR session, returned by `startLevel()` |
 | `RunningShow` | A running show's clock, language, and audio state |
-| `StationMessage` | The closed union carried between the show window and the conductor |
+| `ShowActions` | The operator's typed command surface over the show the page hosts |
 | `CueSlot` | One cue's slot, recording length, and headroom in a chosen language |
 
 ## Architectural Boundaries

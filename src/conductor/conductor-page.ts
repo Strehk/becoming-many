@@ -1,7 +1,7 @@
 /**
- * Purpose: Compose the conductor page and keep its panels on one instant.
- * Context: Status arrives ten times a second; the operator watches continuously.
- * Responsibility: Hold the link and the last status, and redraw every frame.
+ * Purpose: Compose the conductor page around the show it hosts in-process.
+ * Context: One window owns the world, the operator UI, and the XR session.
+ * Responsibility: Start the level, snapshot it every frame, and wire panels.
  * Boundary: Show time is owned by the show clock; this page only reflects it.
  */
 
@@ -11,40 +11,43 @@ import {
   type NarrationLanguage,
 } from "../dramaturgy/narration-catalog";
 import type { NarrationSchedule } from "../dramaturgy/narration-schedule";
+import { SHOW_LEVEL, SHOW_LEVEL_PRESETS } from "../levels/level-catalog";
+import { type RunningShow, startLevel } from "../levels/level-runtime";
 import type { DeploymentConfig } from "../station/deployment-config";
-import { createStationLink } from "../station/station-link";
-import type { ShowCommand, ShowStatus } from "../station/station-protocol";
+import type { FrameMetrics } from "../test-ui/frame-metrics";
 import { type ConductorAction, resolveConductorKey } from "./conductor-keys";
 import { CONDUCTOR_SETTINGS } from "./conductor-settings";
-import type { ConductorPanel, ConductorState } from "./conductor-state";
+import type {
+  ConductorPanel,
+  ConductorState,
+  ShowSnapshot,
+} from "./conductor-state";
 import { createCueInspector } from "./cue-inspector";
 import { createM5Panel } from "./m5-panel";
-import { projectShowTime } from "./playhead";
+import { createShowActions, type ShowActions } from "./show-actions";
 import { createShowTimeline } from "./show-timeline";
+import { createStagePanel } from "./stage-panel";
 import { createStatusStrip } from "./status-strip";
 import { createTransportPanel } from "./transport-panel";
 import "./conductor.css";
 
-const MILLISECONDS_PER_SECOND = 1_000;
 const TYPING_TAGS = new Set(["INPUT", "TEXTAREA", "SELECT"]);
 
 export interface ConductorPageOptions {
   readonly container: Element | null;
   readonly schedule: NarrationSchedule;
-  /** The language shown until the show reports its own. */
+  /** The language the session is armed with; the language buttons re-arm it. */
   readonly language: NarrationLanguage;
-  readonly stationUrl: string;
   /** Facts the station server was deployed with; set fields render read-only. */
   readonly deployment: DeploymentConfig;
 }
 
-export function startConductorPage({
+export async function startConductorPage({
   container,
   schedule,
   language,
-  stationUrl,
   deployment,
-}: ConductorPageOptions): void {
+}: ConductorPageOptions): Promise<void> {
   if (!(container instanceof HTMLElement)) {
     throw new Error("Missing conductor root: .conductor");
   }
@@ -62,47 +65,29 @@ export function startConductorPage({
   // A parameter cannot stay narrowed inside the closures below.
   const page = container;
 
-  let status: ShowStatus | undefined;
-  let statusReceivedMilliseconds = 0;
-  let isStationConnected = false;
-  let isShowConnected = false;
+  // The stage mount exists before the level so the world has a home; it gets
+  // its place in the layout when the stage panel wraps it below.
+  const stageMount = document.createElement("div");
+  const level = await startLevel(stageMount, SHOW_LEVEL, {
+    show: { schedule, language, levels: SHOW_LEVEL_PRESETS },
+    m5ExpectedDeviceId: deployment.m5DeviceId,
+  });
+  const show = requireShow(level.show);
+
+  const actions = createShowActions(level, show);
+
   let scrubSeconds: number | undefined;
   let selectedCueId: NarrationCueId | undefined;
-  let displayedLanguage = language;
 
-  const link = createStationLink({
-    role: "conductor",
-    stationUrl,
-    onMessage: (message) => {
-      if (message.kind === "status") {
-        status = message;
-        statusReceivedMilliseconds = performance.now();
-        displayedLanguage = message.language;
-        return;
-      }
-      if (message.kind === "presence" && message.role === "show") {
-        isShowConnected = message.isConnected;
-        // A closed show window leaves no state worth drawing a playhead from.
-        if (!message.isConnected) status = undefined;
-      }
-    },
-    onConnectionChange: (isConnected) => {
-      isStationConnected = isConnected;
-      if (!isConnected) {
-        isShowConnected = false;
-        status = undefined;
-      }
-    },
-  });
-
-  const send = link.send;
+  const statusStrip = createStatusStrip(page);
+  createStagePanel({ parent: page, stageMount, xr: level.xr, actions });
   const panels: readonly ConductorPanel[] = [
-    createStatusStrip(page),
-    createTransportPanel({ parent: page, schedule, send }),
+    statusStrip,
+    createTransportPanel({ parent: page, schedule, actions }),
     createShowTimeline({
       parent: page,
       schedule,
-      send,
+      actions,
       onScrubChange: (showTimeSeconds) => {
         scrubSeconds = showTimeSeconds;
       },
@@ -111,10 +96,14 @@ export function startConductorPage({
       },
     }),
     createCueInspector(page, schedule),
-    createM5Panel({ parent: page, send, lockedHost: deployment.m5Host }),
+    createM5Panel({ parent: page, actions, lockedHost: deployment.m5Host }),
   ];
 
   window.addEventListener("keydown", (event) => {
+    // A locked pointer means the operator is flying the preview; the arrow
+    // keys then steer the flight and must not also seek the show.
+    if (document.pointerLockElement) return;
+
     const action = resolveConductorKey({
       code: event.code,
       isShiftHeld: event.shiftKey,
@@ -125,42 +114,62 @@ export function startConductorPage({
 
     // Also stops the space bar from re-triggering whichever button has focus.
     event.preventDefault();
-    const command = toCommand(action, schedule, status, displayedLanguage);
-    if (command) send(command);
+    applyAction(action, {
+      schedule,
+      isPlaying: show.clock.sample().isPlaying,
+      language: show.readLanguage(),
+      actions,
+    });
   });
 
-  function readState(): ConductorState {
-    const elapsedMilliseconds = performance.now() - statusReceivedMilliseconds;
-    const isLive =
-      isShowConnected &&
-      status !== undefined &&
-      elapsedMilliseconds < CONDUCTOR_SETTINGS.staleStatusMilliseconds;
+  // Reading the metrics sorts a ring buffer, so the snapshot re-reads them on
+  // a beat rather than every frame.
+  let metrics: FrameMetrics | undefined;
+  let metricsReadAtMilliseconds = 0;
+
+  function readSnapshot(): ShowSnapshot {
+    const showTime = show.clock.sample();
+
+    const now = performance.now();
+    if (
+      now - metricsReadAtMilliseconds >=
+      CONDUCTOR_SETTINGS.metricsIntervalMilliseconds
+    ) {
+      metricsReadAtMilliseconds = now;
+      metrics = level.readFrameMetrics();
+    }
 
     return {
-      status,
-      isStationConnected,
-      isShowConnected,
-      isLive,
-      // While dragging, the operator's own position wins: an echoed status is
-      // always a little behind the pointer and would fight it.
-      showTimeSeconds:
-        scrubSeconds ??
-        (status
-          ? projectShowTime(
-              status,
-              elapsedMilliseconds / MILLISECONDS_PER_SECOND,
-              schedule.durationSeconds,
-            )
-          : 0),
-      language: displayedLanguage,
+      showTimeSeconds: showTime.timeSeconds,
+      isPlaying: showTime.isPlaying,
+      timeScale: showTime.timeScale,
+      language: show.readLanguage(),
+      levelName: show.readActiveLevel(),
+      audioState: show.readAudioState(),
+      framesPerSecond: metrics?.framesPerSecond,
+      p95Milliseconds: metrics?.p95Milliseconds,
+      m5: level.m5?.readOperatorStatus(),
+    };
+  }
+
+  function readState(): ConductorState {
+    const snapshot = readSnapshot();
+
+    return {
+      snapshot,
+      // While dragging, the operator's own position wins: a clock sampled a
+      // frame behind the pointer would fight it.
+      showTimeSeconds: scrubSeconds ?? snapshot.showTimeSeconds,
       selectedCueId,
       isScrubbing: scrubSeconds !== undefined,
     };
   }
 
+  // The page's own loop keeps running during an XR session — only the world's
+  // render loop moves to the headset — so every readout stays live while the
+  // preview freezes.
   function draw(): void {
     const state = readState();
-    page.dataset.live = String(state.isLive);
     for (const panel of panels) {
       panel.update(state);
     }
@@ -170,45 +179,60 @@ export function startConductorPage({
   requestAnimationFrame(draw);
 }
 
+/** A typed guarantee the hoisted closures above can rely on. */
+function requireShow(show: RunningShow | undefined): RunningShow {
+  if (!show) throw new Error("The conductor page always plays the show");
+
+  return show;
+}
+
 function isTypingTarget(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false;
 
   return TYPING_TAGS.has(target.tagName) || target.isContentEditable;
 }
 
+interface ActionContext {
+  readonly schedule: NarrationSchedule;
+  readonly isPlaying: boolean;
+  readonly language: NarrationLanguage;
+  readonly actions: ShowActions;
+}
+
 /**
- * One exhaustive switch over the action union — the same shape as the command
- * dispatch on the show side, and kept whole for the same reason.
+ * One exhaustive switch over the action union — the same shape as the old
+ * wire's command dispatch, and kept whole for the same reason.
  */
 // fallow-ignore-next-line complexity
-function toCommand(
+function applyAction(
   action: ConductorAction,
-  schedule: NarrationSchedule,
-  status: ShowStatus | undefined,
-  language: NarrationLanguage,
-): ShowCommand | undefined {
+  { schedule, isPlaying, language, actions }: ActionContext,
+): void {
   switch (action.kind) {
     case "toggleTransport":
-      return { kind: status?.isPlaying ? "pause" : "play" };
+      if (isPlaying) actions.pause();
+      else actions.play();
+      return;
     case "seekBy":
-      return { kind: "seekBy", offsetSeconds: action.offsetSeconds };
+      actions.seekBy(action.offsetSeconds);
+      return;
     case "jumpToCue": {
       const cue = schedule.narration[action.cueIndex];
-
-      return cue
-        ? { kind: "seekTo", showTimeSeconds: cue.atSeconds }
-        : undefined;
+      if (cue) actions.seekTo(cue.atSeconds);
+      return;
     }
     case "resetShow":
-      return { kind: "resetShow" };
+      actions.resetShow();
+      return;
     case "resetFlight":
-      return { kind: "resetFlight" };
+      actions.resetFlight();
+      return;
     case "toggleLanguage": {
       const next = NARRATION_LANGUAGES.find(
         (candidate) => candidate !== language,
       );
-
-      return next ? { kind: "setLanguage", language: next } : undefined;
+      if (next) actions.setLanguage(next);
+      return;
     }
   }
 }

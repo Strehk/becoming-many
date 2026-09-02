@@ -52,7 +52,7 @@ function readEntry(
 
 /**
  * Fetches the station server's /config. In development Vite proxies the path
- * to the broker; with nothing answering, the page runs exactly as before —
+ * to the server; with nothing answering, the page runs exactly as before —
  * deployment config is an overlay, never a requirement.
  */
 export async function loadDeploymentConfig(): Promise<DeploymentConfig> {
