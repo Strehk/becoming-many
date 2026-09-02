@@ -50,6 +50,35 @@ export interface FrameControl {
 export type WorldUpdate = (deltaSeconds: number) => void;
 type SetupWorld = (context: WorldContext) => WorldUpdate | undefined;
 
+/**
+ * One WebGL2 context, XR-compatible from creation so that starting a headset
+ * session never has to migrate adapters underneath the running renderer.
+ */
+function createWorldRenderer(): WebGLRenderer {
+  const canvas = document.createElement("canvas");
+  const attributes: WebGLContextAttributes = WORLD_RUNTIME_SETTINGS.renderer;
+  const context = canvas.getContext("webgl2", attributes);
+  if (context === null) {
+    throw new Error("The browser offered no WebGL2 context to render into.");
+  }
+
+  // A lost context takes every buffer, texture, and program with it, and the
+  // world quietly rebuilds itself from nothing on the restore — which reads
+  // as a page reload rather than as the failure it is. Say it out loud.
+  canvas.addEventListener("webglcontextlost", () => {
+    console.warn("Renderer: the WebGL context was lost.");
+  });
+  canvas.addEventListener("webglcontextrestored", () => {
+    console.warn("Renderer: the WebGL context was restored.");
+  });
+
+  return new WebGLRenderer({
+    ...WORLD_RUNTIME_SETTINGS.renderer,
+    canvas,
+    context,
+  });
+}
+
 export function startWorld(
   container: HTMLElement,
   setupWorld?: SetupWorld,
@@ -57,7 +86,7 @@ export function startWorld(
 ): void {
   const scene = new Scene();
   const camera = new PerspectiveCamera();
-  const renderer = new WebGLRenderer(WORLD_RUNTIME_SETTINGS.renderer);
+  const renderer = createWorldRenderer();
   const timer = new Timer();
   const modules = new ModuleRuntime();
   const streamQueue = new StreamQueue(
