@@ -7,7 +7,7 @@ Boundary: Product vision and long-term design remain in the specialized document
 
 # Current Development Status
 
-Snapshot: 2026-09-01
+Snapshot: 2026-09-02
 
 The current `src/` and `public/` trees are the source of truth. This page is
 the concise entry point for the current implementation.
@@ -32,7 +32,8 @@ world composed from the sense ladder, following the narration timeline:
   living actors
 - the diagnostic test overlay
 - pointer-lock mouse look
-- WASD and arrow-key flight along the mouse look direction
+- WASD and arrow-key flight along the mouse look direction, carried by the
+  same viewer rig as immersive locomotion
 - a user-triggered Three.js `immersive-vr` button
 
 The application opens the piece by default. It has one Level Runtime
@@ -67,10 +68,10 @@ before someone acts.
   mounts the VR entry button from the returned `RunningLevel`.
 - `level-runtime.ts` preloads fixed assets for enabled modules, applies the sparse preset,
   creates only enabled modules, and connects desktop controls.
-- `world-runtime.ts` owns the Three.js scene, perspective camera, WebGL
-  renderer, timer, resize handling, module runtime, stream queue, and one
-  `renderer.setAnimationLoop()`. It does not import level or concrete module
-  code.
+- `world-runtime.ts` owns the Three.js scene, the viewer rig and its child
+  perspective camera, WebGL renderer, timer, resize handling, module runtime,
+  stream queue, and one `renderer.setAnimationLoop()`. It does not import level
+  or concrete module code.
 - `xr-session.ts` owns WebXR availability and the `immersive-vr` session
   lifecycle behind `XrSessionControl`, surfaced on `RunningLevel.xr`; the
   rehearsal page mounts a plain entry button on it and the conductor page its
@@ -79,8 +80,9 @@ before someone acts.
   `station/station-server.ts` serves `dist/`, `/config`, and `/health` and
   holds no show state. `src/conductor` owns the station window: it hosts the
   show in-process and reads schedule data without authoring it.
-- Every frame updates desktop movement, active modules, bounded stream work,
-  and then renders once.
+- Every frame updates benchmark, desktop, or M5 movement on the viewer rig,
+  publishes the child camera's world-space viewpoint, updates active modules
+  and bounded stream work, and then renders once.
 
 ### Levels and Modules
 
@@ -629,10 +631,12 @@ While an M5 host is configured the ICAROS glider flies every frame
 climbs — the horizon never banks); a stale or failed poll only straightens
 the steering, never stops the flight. Mouse look stays live, and keyboard
 movement returns when the host is cleared. The conductor sets the polled
-host over the station link (`setM5Host`) and its status strip shows the device
-state; `?m5=<host>` polls directly for development and `bun run m5-sim`
-simulates a device. Desktop path only: in `immersive-vr` the headset
-overwrites the camera pose every frame (no camera rig exists yet).
+host through `setM5Host` and its status strip shows the device state;
+`?m5=<host>` polls directly for development and `bun run m5-sim` simulates a
+device. The glider, keyboard translation, ground clearance, flight reset, and
+benchmark route all move the parent viewer rig. The child camera keeps only
+the mouse or headset pose, so Three.js can replace that local pose every XR
+frame without discarding locomotion.
 
 ## Runtime Assets
 
@@ -686,8 +690,6 @@ loading or target-device evidence requires it.
 ## Not Part of the Current Build
 
 - passthrough, `immersive-ar`, operator control, and presentation transitions
-- ICAROS input inside `immersive-vr` (desktop steering landed; the headset
-  overwrites the camera pose every frame until a camera rig exists)
 - complete Test Level training flow and narrative state transitions
 - floating origin, LOD, relevance fields, and spatial instance pools
 - asset prefetching, retries, progress UI, and distance-based stream priorities

@@ -29,9 +29,10 @@ straight and level — because `quality: 0` means "nothing is steering", never
 live throughout. The flight model is the proven ICAROS
 glider (`src/control/m5-flight.ts`): constant forward glide, roll → yaw rate
 about world-up (heading persists, horizon never banks), pitch → climb rate
-(altitude persists, view never pitches). Desktop path only for now — inside
-`immersive-vr` the headset overwrites the camera pose every frame, the same
-limitation `flight-reset.ts` documents.
+(altitude persists, view never pitches). The glider moves the parent viewer
+rig in desktop and `immersive-vr` runs alike; the child camera remains free for
+mouse look or the headset pose. Flight reset and ground clearance target the
+same rig, so the headset's per-frame local pose write cannot erase them.
 
 The conductor owns enablement: an **M5 host** panel points the show it hosts
 at the device, the show polls that host, and the status strip shows the device

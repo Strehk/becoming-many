@@ -376,11 +376,10 @@ machine stays open.
 - **The conductor page must not import `src/levels` or `src/world`.** A single
   value import would pull Three.js into a bundle that is otherwise a few
   kilobytes.
-- **A flight reset is desktop rehearsal only.** Inside an `immersive-vr`
-  session Three.js overwrites the camera pose from the headset every frame, so
-  the reset has no effect there — as, today, ground clearance does not either.
-  A camera rig would fix both and belongs with the XR view-state contract,
-  which stays undecided.
+- **A flight reset is desktop rehearsal only.** *(Superseded 2026-09-02 by
+  [The Viewer Rig Owns Locomotion](#the-viewer-rig-owns-locomotion-2026-09-02).)*
+  Inside an `immersive-vr` session Three.js overwrites the camera pose from the
+  headset every frame, so the reset had no effect there before the viewer rig.
 
 ### The Timeline Sets the World State (2026-09-01)
 
@@ -546,6 +545,25 @@ Amends [One Station Window](#one-station-window-2026-09-02).
   changes, the request, the hand-over, its refusal, and every context loss or
   restore reach the console — the headset browser has no devtools, and
   `dev/headset-diagnostics.ts` mirrors console output onto the canvas.
+
+### The Viewer Rig Owns Locomotion (2026-09-02)
+
+- **The camera is head pose, not locomotion.** `viewer-rig.ts` parents the
+  rendering camera under one scene `Group`. Pointer look and WebXR own the
+  camera's local transform; benchmark placement, keyboard translation, M5
+  flight, reset, and ground clearance own the parent rig. Three.js can replace
+  the local camera pose every XR frame without erasing travel through the
+  world.
+- **M5 heading is independent of gaze.** Roll yaws the rig about world-up and
+  constant glide follows the rig's local −Z. Looking aside in the headset or
+  with the mouse does not steer the ICAROS flight; pitch changes only the rig's
+  altitude.
+- **Modules consume a published viewpoint.** The rig composes its transform
+  with the child camera and publishes the resulting world-space eye once after
+  navigation and before module updates. Content streaming follows the visitor,
+  never a camera-local coordinate.
+- This is the smallest XR locomotion boundary needed by the running piece; it
+  does not introduce the broader XR view-state contract that remains open.
 
 
 ## Approved Navigation Boundary

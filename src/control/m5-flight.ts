@@ -1,5 +1,5 @@
 /**
- * Purpose: Apply an M5 control frame to the camera as ICAROS glider flight.
+ * Purpose: Apply an M5 control frame to the viewer rig as ICAROS glider flight.
  * Context: The rig flies a level glider: constant forward glide, roll steers
  *   the heading, pitch climbs or descends — the horizon never banks and the
  *   view never pitches with altitude.
@@ -9,8 +9,14 @@
  *   elsewhere; ground clearance clamps afterward in the frame body.
  */
 
-import { type Camera, Quaternion, Vector3 } from "three";
+import { Quaternion, Vector3 } from "three";
 import type { ControlFrame } from "../m5/control-frame";
+
+/** The locomotion transform owned by the flight model. */
+interface FlightTransform {
+  readonly position: Vector3;
+  readonly quaternion: Quaternion;
+}
 
 // World units per second of forward glide. Halved from the desktop
 // MOVEMENT_SPEED after flying it: the piece wants a drift, not a rush.
@@ -21,11 +27,12 @@ const CLIMB_RATE = 10;
 const YAW_RATE = 0.8;
 
 const WORLD_UP = new Vector3(0, 1, 0);
+const LOCAL_FORWARD = new Vector3(0, 0, -1);
 const yawStep = new Quaternion();
 const glideDirection = new Vector3();
 
 export function applyM5Flight(
-  camera: Camera,
+  flight: FlightTransform,
   frame: ControlFrame,
   deltaSeconds: number,
 ): void {
@@ -37,20 +44,20 @@ export function applyM5Flight(
 
   // Yaw about world-up, never a tilted local axis: the heading persists after
   // the roll returns to zero and the horizon can never bank. Pre-multiplying
-  // composes cleanly with PointerLockControls, which re-reads the camera
-  // quaternion into a YXZ euler on every mouse move.
+  // keeps the heading in world space; local headset or mouse look stays
+  // independent on the child camera.
   yawStep.setFromAxisAngle(WORLD_UP, -steeringRoll * YAW_RATE * deltaSeconds);
-  camera.quaternion.premultiply(yawStep);
+  flight.quaternion.premultiply(yawStep);
 
-  // Glide along the level projection of the view direction; altitude is owned
-  // by the climb rate below, so looking down does not dive the flight.
-  camera.getWorldDirection(glideDirection);
+  // The rig's local -Z is the glider heading. Headset and mouse look live on
+  // the child camera, so looking aside never steers the flight.
+  glideDirection.copy(LOCAL_FORWARD).applyQuaternion(flight.quaternion);
   glideDirection.y = 0;
   const planarLength = glideDirection.length();
   if (planarLength > 1e-6) {
     glideDirection.divideScalar(planarLength);
-    camera.position.addScaledVector(glideDirection, GLIDE_SPEED * deltaSeconds);
+    flight.position.addScaledVector(glideDirection, GLIDE_SPEED * deltaSeconds);
   }
 
-  camera.position.y += steeringPitch * CLIMB_RATE * deltaSeconds;
+  flight.position.y += steeringPitch * CLIMB_RATE * deltaSeconds;
 }

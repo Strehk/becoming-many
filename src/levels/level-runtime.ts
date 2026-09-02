@@ -227,10 +227,8 @@ export interface RunningLevel {
   readonly show: RunningShow | undefined;
 
   /**
-   * Return the flight to the level's start pose. Desktop rehearsal only:
-   * inside an `immersive-vr` session Three.js overwrites the camera position
-   * and orientation from the headset pose every frame, so this has no effect
-   * there until the camera sits under a rig.
+   * Return the flight rig to the level's start pose. The visitor's local head
+   * pose remains owned by pointer look or the headset.
    */
   readonly resetFlight: () => void;
 
@@ -347,11 +345,15 @@ function setupLevel(
   activateModules(world, composed.modules);
 
   const benchmark = options.benchmark;
-  // A benchmark drives the camera itself; PointerLock controls cannot be
+  // A benchmark drives the viewer rig itself; PointerLock controls cannot be
   // driven reproducibly, and the overlay would add DOM writes to the samples.
   const desktopControls = benchmark
     ? undefined
-    : createDesktopControls(world.camera, world.renderer.domElement);
+    : createDesktopControls(
+        world.camera,
+        world.viewerRig,
+        world.renderer.domElement,
+      );
   // Created idle: with no host set it owns no timer and touches no network,
   // so a show without a conductor behaves exactly as before.
   const m5 = benchmark
@@ -378,7 +380,7 @@ function setupLevel(
     update: (deltaSeconds): void => {
       frameMetrics.add(deltaSeconds);
       if (benchmark) {
-        benchmark.placeCamera(world.camera);
+        benchmark.placeViewer(world.viewerRig);
       } else {
         // With an M5 host configured the glider flies every frame — a poll
         // failure only straightens the steering, it never stops the flight.
@@ -387,14 +389,14 @@ function setupLevel(
         // it consumes the latched button edges.
         const controlFrame = m5?.readFrame();
         if (controlFrame) {
-          applyM5Flight(world.camera, controlFrame, deltaSeconds);
+          applyM5Flight(world.viewerRig, controlFrame, deltaSeconds);
         } else {
           desktopControls?.update(deltaSeconds);
         }
       }
 
       if (hasGround) {
-        keepFlightAboveGround(world.camera.position, worldSurface.groundYAt);
+        keepFlightAboveGround(world.viewerRig.position, worldSurface.groundYAt);
       }
       testOverlay?.update(deltaSeconds);
       show?.update();
@@ -403,7 +405,7 @@ function setupLevel(
     running: {
       show: show?.running,
       resetFlight: (): void =>
-        resetFlightPose(world.camera.position, world.camera.quaternion),
+        resetFlightPose(world.viewerRig.position, world.viewerRig.quaternion),
       readFrameMetrics,
       m5,
       xr: world.xr,

@@ -225,16 +225,23 @@ WebXR rendering use the same frame path.
 `main.ts` also reads two runtime requests from the URL. `?level=<name>` opens
 any preset from `levels/level-catalog.ts`, and `?benchmark[=<profile>]` hands
 the World Runtime a `FrameControl` that replaces the wall clock, drives the
-camera along a fixed route, and records every finished frame. Both are runtime
-requests, not authored configuration.
+viewer rig along a fixed route, and records every finished frame. Both are
+runtime requests, not authored configuration.
 
 ## Ownership
 
 ### `world-runtime.ts`
 
-Owns the permanent Three.js scene, perspective camera, WebGL renderer, timer,
-resize handling, module runtime, stream queue, WebXR entry, and animation loop.
-It knows neither the selected level nor concrete content modules.
+Owns the permanent Three.js scene, viewer rig and child perspective camera,
+WebGL renderer, timer, resize handling, module runtime, stream queue, WebXR
+entry, and animation loop. It knows neither the selected level nor concrete
+content modules.
+
+`viewer-rig.ts` parents the rendering camera under the locomotion transform.
+Benchmark placement, desktop translation, M5 flight, reset, and ground
+clearance write the rig; pointer look and WebXR write only the child camera's
+local pose. Its `Viewpoint` publishes the resulting world-space eye position
+once per frame before modules update.
 
 `FrameControl` is the optional measurement seam. When present it supplies the
 fixed timestep, a virtual clock for the stream queue, and a callback that runs
@@ -311,11 +318,11 @@ plays.
 
 ### `control/`
 
-Desktop controls own pointer lock, keyboard state, and direct camera movement.
-`flight-reset.ts` returns the flight to a level's start pose for the conductor;
-like ground clearance, it has no effect inside an XR session, where Three.js
-writes the camera pose from the headset every frame. Input handling remains
-outside the World Engine.
+Desktop controls own pointer lock and keyboard state. Pointer lock rotates the
+child camera while keyboard translation moves its parent viewer rig. M5 flight,
+`flight-reset.ts`, and ground clearance write that same locomotion transform,
+so they remain effective while Three.js writes the headset pose onto the child
+camera every XR frame. Input handling remains outside the World Engine.
 
 ### `station/` and `station/station-server.ts`
 
@@ -449,6 +456,8 @@ is proven twice; zone and placement policy remain module-owned.
 | `VolumeChunkAssignment` | Fixed slot, absolute X/Y/Z volume, origin, and revision |
 | `StreamJob` | Stable key, currentness check, and one bounded work step |
 | `DesktopControls` | One per-frame desktop movement update |
+| `FlightTransform` | Position and orientation owned by flight navigation |
+| `Viewpoint` | Published world-space eye position and live view distance |
 | `RunningLevel` | A started level's show, flight reset, frame metrics, and XR session, returned by `startLevel()` |
 | `RunningShow` | A running show's clock, language, and audio state |
 | `ShowActions` | The operator's typed command surface over the show the page hosts |

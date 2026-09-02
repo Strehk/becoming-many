@@ -19,7 +19,7 @@ describe("resetFlightPose", () => {
     expect(position.toArray()).toEqual([0, 0, 0]);
   });
 
-  test("levels the view back to the default forward", () => {
+  test("levels the flight heading back to the default forward", () => {
     const position = new Vector3();
     const quaternion = new Quaternion().setFromAxisAngle(
       new Vector3(0, 1, 0),

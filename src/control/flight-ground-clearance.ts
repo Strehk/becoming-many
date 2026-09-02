@@ -1,6 +1,6 @@
 /**
  * Purpose: Keep flight navigation above the deterministic world ground.
- * Context: Mouse-directed movement can otherwise move the camera through terrain.
+ * Context: Flight navigation can otherwise move the viewer rig through terrain.
  * Responsibility: Clamp only the vertical position to a safe ground clearance.
  * Boundary: Input capture, surface generation, rendering, and full physics stay elsewhere.
  */

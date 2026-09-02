@@ -1,11 +1,11 @@
 /**
  * Purpose: Replay one fixed route and record what every rendered frame cost.
  * Context: Live controls and a wall clock make two runs incomparable.
- * Responsibility: Own the frame index, camera placement, sampling, and result.
+ * Responsibility: Own the frame index, viewer placement, sampling, and result.
  * Boundary: Route maths, summarizing, and level composition live elsewhere.
  */
 
-import { MathUtils, type PerspectiveCamera } from "three";
+import { MathUtils, type Object3D } from "three";
 import type { WorldFrame } from "../world/world-runtime";
 import { WORLD_RUNTIME_SETTINGS } from "../world/world-settings";
 import type { BenchmarkFrameSample, BenchmarkReport } from "./benchmark-report";
@@ -37,8 +37,8 @@ export interface BenchmarkRun {
   readonly fixedDeltaSeconds: number;
   /** Virtual clock making stream-queue work per frame frame-driven too. */
   readonly readStreamTimeMilliseconds: () => number;
-  /** Places the camera for the frame about to render. */
-  readonly placeCamera: (camera: PerspectiveCamera) => void;
+  /** Places the viewer rig for the frame about to render. */
+  readonly placeViewer: (viewerRig: Object3D) => void;
   /** Records a finished frame. Returns false once the route is complete. */
   readonly afterFrame: (frame: WorldFrame) => boolean;
 }
@@ -86,16 +86,16 @@ export function createBenchmarkRun(
       return now;
     },
 
-    placeCamera(camera): void {
+    placeViewer(viewerRig): void {
       // Hold the first waypoint through warmup so streaming settles before the
       // route starts, then advance route time from the frame index alone.
       const routeSeconds =
         Math.max(0, frameIndex - warmupFrames) * fixedDeltaSeconds;
       const pose = cameraPoseAt(route, routeSeconds);
 
-      camera.position.set(...pose.positionMeters);
-      camera.rotation.order = "YXZ";
-      camera.rotation.set(
+      viewerRig.position.set(...pose.positionMeters);
+      viewerRig.rotation.order = "YXZ";
+      viewerRig.rotation.set(
         MathUtils.degToRad(pose.pitchDegrees),
         MathUtils.degToRad(pose.yawDegrees),
         0,

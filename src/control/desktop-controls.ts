@@ -1,11 +1,11 @@
 /**
  * Purpose: Provide minimal first-person controls for desktop development.
  * Context: The current MVP needs mouse look and keyboard navigation.
- * Responsibility: Capture pointer input and move the camera through 3D space.
+ * Responsibility: Capture pointer input and move the viewer rig through 3D space.
  * Boundary: WebXR input, collisions, physics, and world rendering live elsewhere.
  */
 
-import type { Camera } from "three";
+import { type Camera, type Object3D, Quaternion, Vector3 } from "three";
 import { PointerLockControls } from "three/addons/controls/PointerLockControls.js";
 
 const MOVEMENT_SPEED = 20;
@@ -30,6 +30,7 @@ export interface DesktopControls {
 
 export function createDesktopControls(
   camera: Camera,
+  viewerRig: Object3D,
   domElement: HTMLElement,
 ): DesktopControls {
   const controls = new PointerLockControls(camera, domElement);
@@ -39,7 +40,7 @@ export function createDesktopControls(
 
   return {
     update: (deltaSeconds) =>
-      updateMovement(controls, pressedKeys, deltaSeconds),
+      updateMovement(controls, viewerRig, pressedKeys, deltaSeconds),
   };
 }
 
@@ -66,6 +67,7 @@ function trackMovementKeys(): ReadonlySet<string> {
 
 function updateMovement(
   controls: PointerLockControls,
+  viewerRig: Object3D,
   pressedKeys: ReadonlySet<string>,
   deltaSeconds: number,
 ): void {
@@ -78,11 +80,24 @@ function updateMovement(
   if (directionLength === 0) return;
 
   const distance = (MOVEMENT_SPEED * deltaSeconds) / directionLength;
-  // PointerLockControls.moveForward() deliberately ignores camera pitch.
-  // Local camera axes make forward flight follow the mouse look direction.
-  controls.object.translateZ(-forward * distance);
-  controls.object.translateX(right * distance);
+  // Pointer lock owns only the camera's look. Translate its parent rig along
+  // the camera's world axes so desktop flight still follows that look without
+  // putting locomotion on the camera WebXR overwrites.
+  controls.object.getWorldQuaternion(viewQuaternion);
+  forwardDirection
+    .set(0, 0, -1)
+    .applyQuaternion(viewQuaternion)
+    .multiplyScalar(forward * distance);
+  rightDirection
+    .set(1, 0, 0)
+    .applyQuaternion(viewQuaternion)
+    .multiplyScalar(right * distance);
+  viewerRig.position.add(forwardDirection).add(rightDirection);
 }
+
+const viewQuaternion = new Quaternion();
+const forwardDirection = new Vector3();
+const rightDirection = new Vector3();
 
 function getDirection(
   pressedKeys: ReadonlySet<string>,

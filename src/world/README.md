@@ -29,7 +29,10 @@ is a change to the Grass module that should be measured with it.
 
 `world-settings.ts` keeps the permanent renderer and stream-queue tuning values
 in one editable place. `world-runtime.ts` consumes those settings while creating
-the Three.js scene, camera, renderer, module runtime, and stream queue.
+the Three.js scene, viewer rig and child camera, renderer, module runtime, and
+stream queue. Navigation moves the rig; desktop look and WebXR own the camera's
+local pose. The rig publishes their combined world-space viewpoint before
+modules update.
 
 The renderer settings are the attributes of the one WebGL2 context, which
 `world-runtime.ts` creates itself and passes to `WebGLRenderer` alongside its
