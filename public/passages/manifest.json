@@ -1,0 +1,103 @@
+{
+  "version": 1,
+  "author": "Becoming Many project",
+  "license": "UNRECORDED",
+  "note": "Carried over from https://github.com/Strehk/uni-becoming-many, which recorded no provenance for these files. The routes are Blender exports of an animated Empty holding a position track; the models are the two flying animals the passages need. Author and licence need confirming before release — see docs/direction/open-decisions.md.",
+  "assets": [
+    {
+      "id": "bat",
+      "file": "/passages/bat.glb",
+      "sourceRepository": "https://github.com/Strehk/uni-becoming-many",
+      "sourcePath": "public/creatures/bat_BS_rig.glb",
+      "sha256": "1d24395a80d0cb7b28fea3905d55fd27961f986a546963928710c73ed8c0b4ba",
+      "metrics": {
+        "bytes": 361520,
+        "nodes": 7,
+        "meshes": 1,
+        "materials": 1,
+        "textures": 1,
+        "images": 1,
+        "primitives": 1,
+        "vertices": 936,
+        "triangles": 498,
+        "estimatedDrawCalls": 1,
+        "animations": 2
+      },
+      "animationClips": ["Armature.001Action", "CylinderAction"]
+    },
+    {
+      "id": "bird",
+      "file": "/passages/bird.glb",
+      "sourceRepository": "https://github.com/Strehk/uni-becoming-many",
+      "sourcePath": "public/creatures/bird_erasmus.glb",
+      "sha256": "f4e6b76babe6951c598d68fad4b7905287f7fe288d34a095b4f24115db076918",
+      "metrics": {
+        "bytes": 39232,
+        "nodes": 10,
+        "meshes": 4,
+        "materials": 4,
+        "textures": 0,
+        "images": 0,
+        "primitives": 4,
+        "vertices": 297,
+        "triangles": 316,
+        "estimatedDrawCalls": 4,
+        "animations": 1
+      },
+      "animationClips": ["ArmatureAction"]
+    },
+    {
+      "id": "bat-route",
+      "file": "/passages/bat-route.glb",
+      "sourceRepository": "https://github.com/Strehk/uni-becoming-many",
+      "sourcePath": "public/events/bat_path.glb",
+      "sha256": "b2ef7c66c59e664707f6ad06ab3ade2d4a08ccf25c6b30e9a424c917262e3d2b",
+      "metrics": {
+        "bytes": 9072,
+        "nodes": 1,
+        "meshes": 0,
+        "materials": 0,
+        "textures": 0,
+        "images": 0,
+        "primitives": 0,
+        "vertices": 0,
+        "triangles": 0,
+        "estimatedDrawCalls": 0,
+        "animations": 1
+      },
+      "animationClips": ["EmptyAction"]
+    },
+    {
+      "id": "mosquito-route",
+      "file": "/passages/mosquito-route.glb",
+      "sourceRepository": "https://github.com/Strehk/uni-becoming-many",
+      "sourcePath": "public/events/mosquito_path_neu_neu_neu.glb",
+      "sha256": "60712993e1ff4cc4526cdf7b805a779320a141e39e740a136f744a43535f1862",
+      "metrics": {
+        "bytes": 6784,
+        "nodes": 1,
+        "meshes": 0,
+        "materials": 0,
+        "textures": 0,
+        "images": 0,
+        "primitives": 0,
+        "vertices": 0,
+        "triangles": 0,
+        "estimatedDrawCalls": 0,
+        "animations": 1
+      },
+      "animationClips": ["EmptyAction"]
+    },
+    {
+      "id": "bird-route",
+      "file": "/passages/bird-route.fbx",
+      "sourceRepository": "https://github.com/Strehk/uni-becoming-many",
+      "sourcePath": "public/events/bird-circle.fbx",
+      "sha256": "cbe47c85d8833cc230d2231099c329519f66336951c5fd2d3da58632ec9e3497",
+      "metrics": {
+        "bytes": 23996
+      },
+      "note": "The one FBX in the repository. Kept in its authored format so the circling route it carries is bit-identical to the tuned original; converting it would re-sample the track."
+    }
+  ]
+}

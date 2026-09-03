@@ -576,6 +576,40 @@ Amends [One Station Window](#one-station-window-2026-09-02) for `/` only.
   keyboard transport would fight the controls the page exists to try out. The
   key map stays a conductor-page feature.
 
+### An Animal Passage Is Scheduled Data, Not a Triggered Event (2026-09-03)
+
+Carries the predecessor project's animal events into the piece and resolves how
+a one-shot staged moment is placed, extending
+[The Timeline Sets the World State](#the-timeline-sets-the-world-state-2026-09-01).
+
+- **A passage is the second facet of the one schedule.** `passage-schedule.ts`
+  holds the contract and `passageProgressAt(schedule, id, showTime)` is the
+  whole lookup, exactly as `narrationCueAt` is for narration. There is still
+  one schedule authority; `piece-schedule.ts` is still the one authored data
+  file for the piece.
+- **Progress is derived, never accumulated.** A passage carries a duration
+  where a narration cue deliberately does not, because the pose is read from
+  it on every frame. The predecessor triggered these on the rising edge of a
+  timeline pulse carried over an event bus. That was rejected on two counts:
+  the engineering standards forbid a global event bus and
+  [open decision 2](direction/open-decisions.md) still has no consumer for
+  one, and a rising edge cannot be seeked — scrubbing back re-fires it and a
+  jump past it misses it entirely, while the conductor page and the rehearsal
+  bar both scrub. The two values the old flight captured at a phase boundary
+  are computed from the route instead, so a seek answers what a play-through
+  would have.
+- **The authored routes and their constants are transcribed, not re-derived.**
+  Which direction an animal comes from and how close it passes is the tuning,
+  so the route files, scale, rotation, start offset, entry points, phase
+  durations, and model axes are carried over verbatim, including the one FBX
+  in the repository. What was dropped is the host coupling: the bus, the
+  Theatre binding, the XR camera special case, and the clip-less route
+  fallback that neither authored route reaches.
+- **Passages are ungated and undecorated.** A crossing happens *between*
+  senses, so no sense strength may put it away, and it wears plain unlit
+  materials rather than the sense effects and world fades the population
+  carries — a passage has to land in the white world before any sense exists.
+
 ### The Viewer Rig Owns Locomotion (2026-09-02)
 
 - **The camera is head pose, not locomotion.** `viewer-rig.ts` parents the
