@@ -14,10 +14,17 @@ the schedule names, and then leaves.
 
 Each passage announces the sense whose animal names it —
 `docs/experience.md` gives Bat for Echolocation, Frog and insects for Motion
-Perception, and Migratory birds for Magnetic Field Perception. The bat and the
-bird are staged here. The animal enters while the previous world still stands
-and is gone once the new sense has faded in, so it introduces the sense rather
-than illustrating it.
+Perception, and Migratory birds for Magnetic Field Perception. The animal
+enters six seconds before that cue, while the previous world still stands, and
+is gone once the new sense has faded in: it introduces the sense rather than
+illustrating it.
+
+Two of the three cross as bodies flying a route and are staged here. The
+mosquitoes have no body — in the project these come from, their particles were
+never drawn, and what the visitor saw was only the trail their movement
+printed. They are staged as a swarm in `src/modules/motion-sense`, where trail
+printing lives, and this module gives it the route and the schedule through one
+function: where the centre is now, and how long it has been crossing.
 
 ## Derived, not triggered
 
@@ -83,14 +90,18 @@ effects or the world fades that decorate the population. This is authored: a
 passage has to land in the white world before any sense exists, and a body only
 the heat view could see would simply be missing there.
 
+## The swarm carries its own trails
+
+The mosquitoes keep the same six-second lead as the other two, and that has one
+consequence worth stating: they cannot print through the Motion Sense module,
+because that module is gated on the very sense they are announcing and stands
+at zero strength while they cross. The swarm therefore owns its own trail ring
+at full strength, composed beside Motion Sense rather than inside it. It is the
+same rule as the flown animals wearing plain unlit materials — a passage must
+land in the world that is still standing, not in the one it is announcing.
+
 ## Not here yet
 
-- **The mosquitoes before Motion Perception.** They cross as a swarm printing
-  motion trails rather than as a flown body, so they belong to Motion Sense as
-  a swarm anchor driven along a route — the path-flyby swarm
-  `docs/levels/04-motion-perception/README.md` records as a follow-up. The
-  `PassageId` union already names them; scheduling them is one entry in
-  `piece-schedule.ts` once that swarm exists.
 - **Passages for Scent, Thermal, and Connections.** Those three senses have no
   animal in the authored set. Their absence is a choice, not a gap.
 - **Ground clearance under a moving frame.** The bat's route is lifted against

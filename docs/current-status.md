@@ -433,10 +433,17 @@ gesture in the window.
 
 - A passage is one animal crossing the visitor's flight on an authored route,
   placed by the schedule rather than living in the world: the bat before
-  Echolocation and the bird before Magnetic Field Perception, the two senses
-  in the authored set whose animal names them. Each enters six seconds before
-  its cue and is gone after the new sense has faded in, so it introduces the
-  sense instead of illustrating it.
+  Echolocation, the mosquitoes before Motion Perception, and the bird before
+  Magnetic Field Perception — the three senses whose animal names them. Each
+  enters six seconds before its cue and is gone after the new sense has faded
+  in, so it introduces the sense instead of illustrating it.
+- The mosquitoes have no body: their particles are never drawn, and what
+  crosses is the trail their movement prints. They are staged as a swarm in
+  Motion Sense, which owns trail printing, from a route and a schedule the
+  passage module hands over through one function. That swarm carries its own
+  trail ring at full strength rather than the sense's, because the sense it
+  announces still stands at zero while it crosses — the same rule that keeps
+  the flown animals on plain unlit materials.
 - `passage-schedule.ts` is the second facet of the one show schedule, beside
   narration, and `passageProgressAt` is its whole contract. A passage carries
   a duration where a cue does not, because progress is derived from it: the

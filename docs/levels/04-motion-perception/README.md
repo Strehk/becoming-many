@@ -111,12 +111,12 @@ cyan accent `#10BEDB` that the palette reserved for them. The orange
   wing-silhouette traces, and root-space sampling so only the flap — not
   world flight — prints) remains open behind the same `MotionPointSource`
   seam.
-- The bm-base path-flyby swarm event is unblocked as of 2026-09-03: passages
-  are placed as scheduled data, and the mosquitoes that announce this level
-  are the one authored passage still missing. They stay a Motion Sense
-  concern — a swarm anchor driven along a route — because what crosses is
-  their printed trails, not a body. The current swarms remain persistent and
-  statically authored.
+- The bm-base path-flyby swarm landed 2026-09-03 as the mosquito passage that
+  announces this level: a cloud following an authored route, printing through
+  its own trail ring. It stays a Motion Sense concern because what crosses is
+  its printed trails, not a body, and it carries its own ring because it
+  arrives six seconds before this level's sense has any strength. The ambient
+  swarms remain persistent and statically authored.
 - Trail length is authored in rendered frames (fourteen ≈ 155 ms at 90 FPS
   but 233 ms at 60 FPS). Frame-based ring math is kept for bm-base parity; a
   fixed-cadence spawn accumulator is the known fix if the frame-rate

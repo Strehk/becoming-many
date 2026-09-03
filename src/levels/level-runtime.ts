@@ -40,6 +40,7 @@ import {
   loadPassageResources,
   type PassageResources,
 } from "../modules/animal-passages/animal-passages";
+import { MOSQUITO_PASSAGE } from "../modules/animal-passages/passage-definitions";
 import {
   type AnimalBodiesObserver,
   type AnimalsModuleHandle,
@@ -69,6 +70,7 @@ import {
   type MotionSenseModuleHandle,
   type MotionSenseParameters,
 } from "../modules/motion-sense/motion-sense";
+import { createPassageSwarmModule } from "../modules/motion-sense/passage-swarm";
 import {
   type ConnectionsModuleHandle,
   type ConnectionsParameters,
@@ -710,6 +712,7 @@ function createConfiguredModules(setup: LevelSetup): ComposedWorld {
   const connections = createConnectionsWeb(setup, animals);
   const motion = createMotionSense(setup);
   const passages = createAnimalPassages(setup);
+  const passageSwarm = createPassageSwarm(setup, passages);
 
   add(
     "terrain",
@@ -733,7 +736,10 @@ function createConfiguredModules(setup: LevelSetup): ComposedWorld {
   add("connections", connections?.module);
   // Ungated: a passage crosses *between* senses, so no single sense strength
   // may put it away. The schedule alone decides when its animal is in the air.
+  // The swarm passage is the sharpest case — it announces the very sense whose
+  // gate would otherwise be holding it shut while it crosses.
   add(undefined, passages?.module);
+  add(undefined, passageSwarm);
 
   return {
     modules,
@@ -780,6 +786,30 @@ function createAnimalPassages(
       // visitor out behind them.
       return Math.atan2(-heading.x, -heading.z);
     },
+  });
+}
+
+/**
+ * The trail ring of the swarm passage. It is composed here rather than inside
+ * Motion Sense because it must outlive that module's gate: the mosquitoes
+ * cross six seconds before the motion cue, where the sense they announce still
+ * stands at zero. Motion Sense owns how a trail is printed; the passage owns
+ * where and when.
+ */
+function createPassageSwarm(
+  setup: LevelSetup,
+  passages: AnimalPassagesModuleHandle | undefined,
+): WorldModule | undefined {
+  const parameters = setup.level.motion;
+  if (!passages || !parameters) return undefined;
+
+  return createPassageSwarmModule({
+    scene: setup.world.scene,
+    parameters,
+    pointCount: MOSQUITO_PASSAGE.pointCount,
+    cloudRadiusMeters: MOSQUITO_PASSAGE.cloudRadiusMeters,
+    cloudHeightMeters: MOSQUITO_PASSAGE.cloudHeightMeters,
+    readCrossing: passages.readSwarmCrossing,
   });
 }
 

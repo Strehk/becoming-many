@@ -39,6 +39,13 @@ interface MotionTrailBufferOptions {
 export interface MotionTrailBuffer {
   readonly points: Points<BufferGeometry, PointsMaterial>;
   readonly spawnFromWorldPoints: (worldPositions: Float32Array) => void;
+  /**
+   * Drop the memory of where the tracked points last were. A source that goes
+   * away and comes back somewhere else has no continuity with its own past,
+   * and without this its return prints one frame of enormous movement — a
+   * bright streak across everything between the two places.
+   */
+  readonly forgetHistory: () => void;
   readonly dispose: () => void;
 }
 
@@ -112,6 +119,9 @@ export function createMotionTrailBuffer({
       requestSlotUpload(frameAttribute, slotStart, pointCount);
       material.setFrame(frame);
       frame += 1;
+    },
+    forgetHistory: () => {
+      previousReady = false;
     },
     dispose: () => {
       geometry.dispose();

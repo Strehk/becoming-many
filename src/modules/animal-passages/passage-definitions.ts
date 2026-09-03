@@ -153,8 +153,63 @@ export const BIRD_PASSAGE: PassageFlightDefinition = {
   departureBearingRadians: 0,
 };
 
-/** Every animal that crosses on a flown route. */
+/** Every animal that crosses as a body flying an authored route. */
 export const PASSAGE_FLIGHTS: readonly PassageFlightDefinition[] = [
   BAT_PASSAGE,
   BIRD_PASSAGE,
 ];
+
+/**
+ * One passage that crosses as a swarm rather than as a body. Nothing of it is
+ * ever drawn: what the visitor sees is the trail its movement prints, which is
+ * why it needs a cloud size and a route but no model, no wingspan, and no
+ * forward axis.
+ */
+export interface PassageSwarmDefinition {
+  readonly passageId: PassageId;
+  readonly routeUrl: string;
+  /** Seconds the crossing takes; the authored track is stretched to it. */
+  readonly durationSeconds: number;
+  readonly routeScaleToMeters: number;
+  readonly axisStretch: Vector3;
+  readonly routeStart: Vector3;
+  /** How many points the cloud carries, and how far they spread around it. */
+  readonly pointCount: number;
+  readonly cloudRadiusMeters: number;
+  readonly cloudHeightMeters: number;
+  /*
+   * The swarm prints at the level's own authored trail size. The predecessor
+   * shrank its mosquito particles to just over a fifth, but that scale was
+   * against a different renderer's base size and does not carry: at a fifth of
+   * the mark authored here the cloud all but disappears at the three metres it
+   * passes at. Rather than invent a replacement number, it prints as the level
+   * says a trail prints.
+   */
+  /** Minimum height above ground for the swarm's centre. */
+  readonly groundClearanceMeters: number;
+}
+
+/**
+ * The mosquitoes, before Motion Perception. They enter two metres to the right
+ * and two behind, pass at under three metres, and leave low and far — close
+ * enough that their traces cross the whole view.
+ *
+ * The authored track is stretched wide across the view and shortened along it,
+ * which is what makes the cloud read as passing *by* rather than as receding,
+ * and its start height is the track's own zero, so the swarm enters at eye
+ * level. Every value is carried over from the project it was tuned in; the
+ * fifteen seconds are the track's seven and a half at the half speed it was
+ * played back at.
+ */
+export const MOSQUITO_PASSAGE: PassageSwarmDefinition = {
+  passageId: "mosquitoes",
+  routeUrl: "/passages/mosquito-route.glb",
+  durationSeconds: 15,
+  routeScaleToMeters: 1,
+  axisStretch: new Vector3(1.5, 1.5, 0.5),
+  routeStart: new Vector3(2, 0, 2),
+  pointCount: 220,
+  cloudRadiusMeters: 1.6,
+  cloudHeightMeters: 0.7,
+  groundClearanceMeters: 0.8,
+};
