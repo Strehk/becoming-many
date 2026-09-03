@@ -91,7 +91,7 @@ issue and a bounded implementation.
 
 Verified on 2026-09-03 after the entry-point isolation:
 
-- `bun test`: PENDING_COUNT passed, 0 failed across PENDING_FILES files.
+- `bun test`: 401 passed, 0 failed across 55 files.
 - `bun run check`: passed.
 - `bun run lint`: passed.
 - `bun run build`: passed with existing Vite warnings about one extensionless
