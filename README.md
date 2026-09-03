@@ -43,6 +43,8 @@ bun run dev
 ```
 
 The bare page at `/` runs the complete show and includes a rehearsal transport.
+Starting `bun run dev` opens this page automatically in the default browser;
+use the URL Vite prints when its default port is already occupied.
 Use `?level=<name>` or `/<name>` for a showless level, and
 `?benchmark[=<profile>]` for a deterministic route. See
 [AGENTS.md](AGENTS.md) for conventions and verification commands.
