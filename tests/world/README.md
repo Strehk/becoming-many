@@ -15,6 +15,8 @@ windows, fixed slot reuse, negative coordinates, and revision invalidation.
 recycling, negative heights, and revision invalidation.
 `stream-queue.test.ts` verifies bounded capacity, replacement of stale slot
 work, cooperative multi-frame jobs, and the per-frame deadline.
+`module-runtime.test.ts` verifies the module lifecycle, including that a
+warming module is updated without being shown and shown without being rebuilt.
 
 Module tests should remain with their matching test area. Browser checks and
 physical PICO performance measurements are separate acceptance steps.

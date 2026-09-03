@@ -19,6 +19,7 @@ import {
   type ShowLevelState,
   type ShowSense,
   senseIntensityAt,
+  senseStandingAt,
   showLevelAt,
 } from "../dramaturgy/show-levels";
 import type { WorldFadeEffect } from "../modules/world-fade/world-fade";
@@ -47,6 +48,13 @@ type SenseDrivers = Readonly<
 
 /** Narrow reach from show policy into the world composed by Level Runtime. */
 export interface ShowWorldReach {
+  /**
+   * The modules each sense puts up or away. A gated module is seen exactly
+   * while its sense carries strength, so a fading-out module keeps rendering
+   * until it has fully dissolved, and it already runs hidden through the
+   * prewarm window before the sense arrives. Ungated modules — Air Particles
+   * above all — stay up for every world state as the neutral baseline.
+   */
   readonly gates: ReadonlyMap<ShowSense, readonly WorldModule[]>;
   readonly senses: SenseDrivers;
   readonly worldFades: {
@@ -107,13 +115,22 @@ export function createShowRuntime(
     reach.setSkyBackground?.(liveBackground);
   }
 
-  function setSense(sense: ShowSense, intensity: number): void {
+  function setSense(
+    sense: ShowSense,
+    intensity: number,
+    showTimeSeconds: number,
+  ): void {
     reach.senses[sense]?.(intensity);
     const modules = reach.gates.get(sense);
     if (!modules) return;
 
+    // Standing, not strength: a gated layer is put up one prewarm window
+    // before the sense that reveals it, hidden, so what the fade raises is
+    // already built and already following the viewer.
+    const standing = senseStandingAt(schedule, states, sense, showTimeSeconds);
     for (const module of modules) {
-      if (intensity > 0) world.modules.activate(module);
+      if (standing === "live") world.modules.activate(module);
+      else if (standing === "warming") world.modules.warm(module);
       else world.modules.deactivate(module);
     }
   }
@@ -146,12 +163,12 @@ export function createShowRuntime(
       showTimeSeconds,
     );
 
-    setSense("scent", scent);
-    setSense("echo", echo);
-    setSense("motion", motion);
-    setSense("thermal", thermal);
-    setSense("magnetic", magnetic);
-    setSense("connections", connections);
+    setSense("scent", scent, showTimeSeconds);
+    setSense("echo", echo, showTimeSeconds);
+    setSense("motion", motion, showTimeSeconds);
+    setSense("thermal", thermal, showTimeSeconds);
+    setSense("magnetic", magnetic, showTimeSeconds);
+    setSense("connections", connections, showTimeSeconds);
     reach.worldFades.structure?.setPresence(echo);
     reach.worldFades.animals?.setPresence(thermal);
     // Derived like everything else here, so a seek lands mid-fade and a seek

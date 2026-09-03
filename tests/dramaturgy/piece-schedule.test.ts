@@ -14,6 +14,11 @@ import {
 import { narrationCueAt } from "../../src/dramaturgy/narration-schedule";
 import { PIECE_SCHEDULE } from "../../src/dramaturgy/piece-schedule";
 import { cueSlots } from "../../src/dramaturgy/schedule-layout";
+import {
+  SENSE_FADE_SECONDS,
+  SENSE_PREWARM_SECONDS,
+  worldTimeOf,
+} from "../../src/dramaturgy/show-levels";
 
 // ffprobe and HTMLMediaElement can disagree by about one MP3 frame of encoder
 // padding, so a slot must clear its recording by more than a rounding error.
@@ -72,6 +77,39 @@ describe("the piece schedule", () => {
         );
       }
     }
+  });
+
+  // A sense stands its modules up one prewarm window before the cue that
+  // reveals it. A slot shorter than that window would start warming the next
+  // layer before its own cue had even spoken.
+  test("gives every cue a slot longer than the prewarm window", () => {
+    for (const slot of cueSlots(PIECE_SCHEDULE, "en")) {
+      expect(slot.slotSeconds).toBeGreaterThan(SENSE_PREWARM_SECONDS);
+    }
+  });
+
+  test("moves every world forward in time, leads included", () => {
+    const worldTimes = CUES.map(worldTimeOf);
+
+    expect(worldTimes).toEqual([...worldTimes].sort((a, b) => a - b));
+    expect(new Set(worldTimes).size).toBe(worldTimes.length);
+  });
+
+  // The piece closes into finished white: the return strips the world back
+  // while the finale has fallen silent, and the last words start once the
+  // fade that carries the world there has run out.
+  test("speaks the closing words into a world that has finished changing", () => {
+    const finale = CUES.find((cue) => cue.cueId === "finale");
+    const closing = CUES[CUES.length - 1];
+    if (!finale || !closing) throw new Error("The piece schedule has no cues");
+
+    const { en, de } = NARRATION_CUES[finale.cueId].durationSeconds;
+    expect(worldTimeOf(closing)).toBeGreaterThanOrEqual(
+      finale.atSeconds + Math.max(en, de),
+    );
+    expect(closing.atSeconds - worldTimeOf(closing)).toBeGreaterThanOrEqual(
+      SENSE_FADE_SECONDS,
+    );
   });
 
   test("ends after the last recording has finished", () => {

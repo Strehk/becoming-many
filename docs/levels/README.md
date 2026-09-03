@@ -18,7 +18,9 @@ their tunable values.
 | Connections | 5:35 | pulsing mycelium network and underground reveal |
 | White World return | 7:26 | removal of accumulated layers |
 
-`PIECE_SCHEDULE` owns exact timing. The final show duration is 8:41.
+`PIECE_SCHEDULE` owns exact timing. The final show duration is 8:45. The White
+World return is the one cue whose world leads its narration: the strip-back
+starts at 7:26 and the closing words follow at 7:30, into finished white.
 
 ## Layering Rule
 

@@ -5,7 +5,11 @@
  * Boundary: Presets, modules, and how intensities reach the GPU live elsewhere.
  */
 
-import type { NarrationSchedule, ShowLevelName } from "./narration-schedule";
+import type {
+  NarrationCue,
+  NarrationSchedule,
+  ShowLevelName,
+} from "./narration-schedule";
 
 /** Every layered sense, named after the level that introduces it. */
 export type ShowSense =
@@ -88,6 +92,32 @@ export const SHOW_LEVEL_STATES: Record<ShowLevelName, ShowLevelState> = {
 export const SENSE_FADE_SECONDS = 4;
 
 /**
+ * How long before a sense first carries strength its content already runs,
+ * hidden. A gated module builds nothing while its sense is down: its chunk
+ * window stops following the viewer and its actors stop moving, so at the cue
+ * boundary the whole layer would have to stream and re-home from scratch — and
+ * it would arrive in pieces under a fade that is already climbing, which is
+ * exactly what reads as popping. Warming stands the layer up early and
+ * invisible, so the fade only has to raise something already complete.
+ *
+ * The window must stay shorter than the shortest cue slot, or a sense would
+ * begin warming before the cue it is warming behind; `piece-schedule.test.ts`
+ * holds the authored piece to that bound.
+ */
+export const SENSE_PREWARM_SECONDS = 20;
+
+/**
+ * When this cue's world arrives. It is the cue's own instant for every cue
+ * that lets its sense grow in under the narration, and earlier for one that
+ * has to stand its world up before the first word is spoken. The one place
+ * the lead is applied, so a schedule guarantee and the running show read the
+ * same instant.
+ */
+export function worldTimeOf(cue: NarrationCue): number {
+  return cue.atSeconds - (cue.worldLeadSeconds ?? 0);
+}
+
+/**
  * The world state holding at a show time. A cue's level holds until the next
  * cue starts, exactly like its recording; before the first cue the show
  * already stands in that cue's level, so the lead-in opens the first world.
@@ -99,7 +129,7 @@ export function showLevelAt(
 ): ShowLevelName | undefined {
   let holding = schedule.narration[0];
   for (const cue of schedule.narration) {
-    if (cue.atSeconds > showTimeSeconds) break;
+    if (worldTimeOf(cue) > showTimeSeconds) break;
     holding = cue;
   }
   return holding?.level;
@@ -142,13 +172,13 @@ export function levelTransitionAt(
   let holding = schedule.narration[0];
   let previous = schedule.narration[0];
   for (const cue of schedule.narration) {
-    if (cue.atSeconds > showTimeSeconds) break;
+    if (worldTimeOf(cue) > showTimeSeconds) break;
     previous = holding;
     holding = cue;
   }
   if (!holding || !previous) return undefined;
 
-  const elapsed = showTimeSeconds - holding.atSeconds;
+  const elapsed = showTimeSeconds - worldTimeOf(holding);
   const progress =
     elapsed >= SENSE_FADE_SECONDS
       ? 1
@@ -176,15 +206,16 @@ export function senseIntensityAt(
   let rampTarget = 0;
 
   for (const cue of schedule.narration) {
-    if (cue.atSeconds > showTimeSeconds) break;
+    const worldTime = worldTimeOf(cue);
+    if (worldTime > showTimeSeconds) break;
 
     rampStartValue = rampValueAt(
       rampStartSeconds,
       rampStartValue,
       rampTarget,
-      cue.atSeconds,
+      worldTime,
     );
-    rampStartSeconds = cue.atSeconds;
+    rampStartSeconds = worldTime;
     rampTarget = states[cue.level].senses.includes(sense) ? 1 : 0;
   }
 
@@ -194,6 +225,40 @@ export function senseIntensityAt(
     rampTarget,
     showTimeSeconds,
   );
+}
+
+/** What a sense's content is doing at a show time. */
+export type SenseStanding =
+  /** Nothing of the sense exists; its modules stay put away. */
+  | "away"
+  /** Building and following the viewer, with nothing on screen yet. */
+  | "warming"
+  /** Carrying strength: the sense is on screen, fading in, out, or held. */
+  | "live";
+
+/**
+ * Whether a sense's content must be running at a show time, and whether it may
+ * be seen. Derived from the same ramp the strengths are, one prewarm window
+ * ahead, so a seek lands a warming layer exactly as playing through would have
+ * — and a jump straight into a cue gets no warming, because there is no show
+ * time before it in which to warm.
+ */
+export function senseStandingAt(
+  schedule: NarrationSchedule,
+  states: Record<ShowLevelName, ShowLevelState>,
+  sense: ShowSense,
+  showTimeSeconds: number,
+): SenseStanding {
+  if (senseIntensityAt(schedule, states, sense, showTimeSeconds) > 0)
+    return "live";
+
+  const warmed = senseIntensityAt(
+    schedule,
+    states,
+    sense,
+    showTimeSeconds + SENSE_PREWARM_SECONDS,
+  );
+  return warmed > 0 ? "warming" : "away";
 }
 
 function rampValueAt(

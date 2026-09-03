@@ -58,7 +58,12 @@ clock would turn back onto the same bearing every minute.
 ## Deliberately Absent
 
 Scent fields and distance fading into the echo haze are absent. The show drives
-the implemented particle intensity through `setIntensity()`. The module owns
+the implemented particle intensity through `setIntensity()`. That strength
+scales the point size, and an opaque speck either clears the pixel it needs to
+rasterize or is not there at all — so one shared strength put the whole field
+on screen in a single frame. Each particle therefore takes its own share of
+the fade window from the phase it already carries, and the field condenses
+speck by speck instead. Both layers spread it the same way. The module owns
 neither the show clock nor a separate render loop.
 
 `scent-emitter-anchors.ts` no longer emits anything: it keeps the forest

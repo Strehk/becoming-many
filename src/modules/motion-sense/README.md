@@ -59,6 +59,12 @@ the authored 720 flies); age, fade, outward drift, and collapse derive
 GPU-only from one advancing `motionFrame` uniform. Deactivation stops
 printing and hides both objects; nothing per-particle is ever rewritten.
 
+The show's sense fade also scales the fly point size, so the pool would cross
+the pixel it needs to rasterize in one frame and the swarms would appear at
+once. One fixed per-fly attribute, written at load and never touched again,
+gives each speck its own share of the fade window; the trails need none,
+because their fade is already an alpha per print.
+
 ## The `MotionPointSource` seam
 
 Every actor prints trails through the same seam: a trail ring consumes

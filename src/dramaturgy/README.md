@@ -33,7 +33,16 @@ recording: the level holds until the next cue starts, and before the first cue
 the show already stands in that cue's world. Sense intensities are *derived*,
 not authored yet: each cue boundary sets a per-sense target of zero or one from
 the level ladder, and the strength ramps there over one shared fade constant,
-starting at the boundary. `levelTransitionAt` reports the crossing itself —
+starting at the boundary. `senseStandingAt` answers the same ladder one step earlier: whether a sense's
+content must already be *running* at a show time, and whether it may be seen
+yet. A module that is put away builds nothing — its chunk window stops
+following the viewer, its actors stop moving — so a layer switched on at its
+cue would stream and re-home in pieces under a fade that is already climbing.
+That is what reads as popping. One prewarm window before the cue, the layer is
+therefore stood up hidden, and the fade then only has to raise content that is
+already complete. A jump straight into a cue skips the warming, because there
+is no show time before it in which to warm.
+`levelTransitionAt` reports the crossing itself —
 which world the show is fading from, into which, and how far — for values
 that blend between levels rather than belonging to one sense, the background
 color above all. All lookups are pure functions of show time, so a seek or
@@ -46,10 +55,14 @@ headroom between the two. It is the one place slot arithmetic lives, so the
 guarantee the tests enforce and the timeline the conductor draws are the same
 calculation.
 
-`piece-schedule.ts` is the authored data for the 8:41 main show. It opens on five
+`piece-schedule.ts` is the authored data for the 8:45 main show. It opens on five
 seconds of silence before the first word, so the visitor is flying before a
 voice arrives. That lead-in needs no mechanism — `narrationCueAt` answers
 nothing before the first cue, so it is simply the gap in front of `prologue`.
+It closes the other way round: the return cue carries a `worldLeadSeconds`, so
+its world starts going white where the finale falls silent and its recording
+begins once that fade has finished. Every other cue leads by nothing, because
+a sense is meant to grow in under the words that name it.
 No tutorial schedule is currently implemented. Schedules are typed TypeScript data files, never JSON, per
 the repository's configuration rule, and there is **one schedule authority
 total**.

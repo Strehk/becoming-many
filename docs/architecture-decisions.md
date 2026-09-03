@@ -75,6 +75,9 @@ history belongs in Git; unresolved product and deployment questions belong in
   time, cues, and world-state timing.
 - The default page runs only the complete show. The explicit Test entry owns
   standalone levels, benchmarks, headset diagnostics, and direct-M5 requests.
+- Content a sense reveals is stood up before that sense, hidden: a module runs
+  and streams while warming, and its visibility is what the fade raises. No
+  layer may first build on the frame its cue arrives.
 - The viewer rig owns locomotion while the camera owns local desktop-look or
   headset pose. Desktop and M5 controls move the same rig.
 - The conductor is one station window that hosts the show in-process. Its panels

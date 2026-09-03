@@ -6,15 +6,21 @@
  */
 
 import { describe, expect, test } from "bun:test";
-import type { NarrationSchedule } from "../../src/dramaturgy/narration-schedule";
+import type {
+  NarrationCue,
+  NarrationSchedule,
+} from "../../src/dramaturgy/narration-schedule";
 import { PIECE_SCHEDULE } from "../../src/dramaturgy/piece-schedule";
 import {
   levelTransitionAt,
   SENSE_FADE_SECONDS,
+  SENSE_PREWARM_SECONDS,
   SHOW_LEVEL_STATES,
   senseIntensityAt,
+  senseStandingAt,
   showLevelAt,
   showLevelStateAt,
+  worldTimeOf,
 } from "../../src/dramaturgy/show-levels";
 
 const SCHEDULE: NarrationSchedule = {
@@ -159,6 +165,144 @@ describe("senseIntensityAt", () => {
     expect(
       senseIntensityAt(SCHEDULE, states, "scent", 50 + SENSE_FADE_SECONDS),
     ).toBe(0);
+  });
+});
+
+describe("senseStandingAt", () => {
+  test("keeps a sense away while its cue is beyond the prewarm window", () => {
+    expect(senseStandingAt(SCHEDULE, SHOW_LEVEL_STATES, "scent", 0)).toBe(
+      "away",
+    );
+    // The window reaches exactly to the boundary, where the ramp still stands
+    // at zero — the same instant the sense itself is not yet live at its cue.
+    expect(
+      senseStandingAt(
+        SCHEDULE,
+        SHOW_LEVEL_STATES,
+        "scent",
+        50 - SENSE_PREWARM_SECONDS,
+      ),
+    ).toBe("away");
+  });
+
+  test("warms a sense through the prewarm window before its cue", () => {
+    expect(
+      senseStandingAt(
+        SCHEDULE,
+        SHOW_LEVEL_STATES,
+        "scent",
+        50 - SENSE_PREWARM_SECONDS + 0.01,
+      ),
+    ).toBe("warming");
+    expect(senseStandingAt(SCHEDULE, SHOW_LEVEL_STATES, "scent", 49.99)).toBe(
+      "warming",
+    );
+  });
+
+  test("goes live the moment the sense carries strength", () => {
+    expect(senseStandingAt(SCHEDULE, SHOW_LEVEL_STATES, "scent", 50.01)).toBe(
+      "live",
+    );
+    expect(senseStandingAt(SCHEDULE, SHOW_LEVEL_STATES, "scent", 100)).toBe(
+      "live",
+    );
+  });
+
+  test("stays live through a fade out and leaves once it is over", () => {
+    // The return strips the world back at 150; the fade runs from there.
+    expect(
+      senseStandingAt(
+        SCHEDULE,
+        SHOW_LEVEL_STATES,
+        "scent",
+        150 + SENSE_FADE_SECONDS - 0.01,
+      ),
+    ).toBe("live");
+    expect(
+      senseStandingAt(
+        SCHEDULE,
+        SHOW_LEVEL_STATES,
+        "scent",
+        150 + SENSE_FADE_SECONDS,
+      ),
+    ).toBe("away");
+  });
+
+  test("warms every sense of the piece inside the cue before it", () => {
+    for (const cue of PIECE_SCHEDULE.narration) {
+      for (const sense of SHOW_LEVEL_STATES[cue.level].senses) {
+        // The one this cue introduces: absent from the level before it.
+        if (
+          senseIntensityAt(
+            PIECE_SCHEDULE,
+            SHOW_LEVEL_STATES,
+            sense,
+            cue.atSeconds,
+          ) > 0
+        )
+          continue;
+
+        expect(
+          senseStandingAt(
+            PIECE_SCHEDULE,
+            SHOW_LEVEL_STATES,
+            sense,
+            cue.atSeconds - 0.01,
+          ),
+        ).toBe("warming");
+      }
+    }
+  });
+});
+
+describe("a cue whose world leads its recording", () => {
+  // The closing shape of the piece: the world is stripped back first and the
+  // last words are spoken into it once it has finished changing.
+  const LED: NarrationSchedule = {
+    durationSeconds: 200,
+    narration: [
+      { cueId: "prologue", atSeconds: 10, level: "white-world" },
+      { cueId: "scent", atSeconds: 50, level: "scent" },
+      {
+        cueId: "return",
+        atSeconds: 150,
+        level: "white-world",
+        worldLeadSeconds: SENSE_FADE_SECONDS,
+      },
+    ],
+  };
+
+  test("reads the world at the led instant, not at the recording", () => {
+    expect(worldTimeOf(LED.narration[2] as NarrationCue)).toBe(
+      150 - SENSE_FADE_SECONDS,
+    );
+    expect(showLevelAt(LED, 150 - SENSE_FADE_SECONDS - 0.01)).toBe("scent");
+    expect(showLevelAt(LED, 150 - SENSE_FADE_SECONDS)).toBe("white-world");
+  });
+
+  test("finishes the fade before the recording starts", () => {
+    expect(
+      senseIntensityAt(
+        LED,
+        SHOW_LEVEL_STATES,
+        "scent",
+        150 - SENSE_FADE_SECONDS,
+      ),
+    ).toBe(1);
+    expect(senseIntensityAt(LED, SHOW_LEVEL_STATES, "scent", 150)).toBe(0);
+  });
+
+  test("crosses worlds from the led instant", () => {
+    const crossing = levelTransitionAt(LED, 150 - SENSE_FADE_SECONDS / 2);
+
+    expect(crossing?.from).toBe("scent");
+    expect(crossing?.to).toBe("white-world");
+    expect(crossing?.progress).toBeCloseTo(0.5, 5);
+    expect(levelTransitionAt(LED, 150)?.progress).toBe(1);
+  });
+
+  test("leaves a cue without a lead reading at its own instant", () => {
+    expect(worldTimeOf(LED.narration[1] as NarrationCue)).toBe(50);
   });
 });
 
