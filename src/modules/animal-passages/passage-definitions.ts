@@ -34,6 +34,19 @@ export interface PassageFlightDefinition {
   /** The model's own nose axis, aligned to the flight basis at build time. */
   readonly modelForward: Vector3;
   readonly modelRollOffsetRadians: number;
+  /**
+   * Ring depth of the trace this animal prints, in rendered frames. A crossing
+   * draws one line across the sky, so it holds longer than a flock's trace,
+   * which is redrawn by sixty birds at once.
+   */
+  readonly traceLifetimeFrames: number;
+  /**
+   * The colour the animal is painted, replacing whatever texture or part
+   * colours the model was authored with. A passage crosses a world the senses
+   * have already coloured — a body wearing its own photograph reads as a
+   * cut-out dropped into it.
+   */
+  readonly bodyColor: number;
   /** Names the wing clip; omit to use the model's first animation. */
   readonly flapClipName?: string;
   readonly flapTimeScale: number;
@@ -83,6 +96,12 @@ const BAT_ROUTE_INITIAL_DIRECTION = new Vector3(
 export const BAT_PASSAGE: PassageFlightDefinition = {
   passageId: "bat",
   modelUrl: "/passages/bat.glb",
+  // The fur tone the walking population carries: the bat crosses into the
+  // pale scent world and hands over to the echo palette it is drawn in.
+  bodyColor: 0x171717,
+  // The bat crosses before Echolocation, where movement leaves no trace yet:
+  // a ring is carried but nothing of the sense is up to print it warm.
+  traceLifetimeFrames: 120,
   routeUrl: "/passages/bat-route.glb",
   wingspanMeters: 0.7,
   routeDurationSeconds: 10.416667,
@@ -130,6 +149,14 @@ export const BAT_PASSAGE: PassageFlightDefinition = {
 export const BIRD_PASSAGE: PassageFlightDefinition = {
   passageId: "bird",
   modelUrl: "/passages/bird.glb",
+  // The palette's hot stop: the bird crosses under an open heat view, where
+  // a warm body is the brightest thing in the world and its own feathers are
+  // not what a visitor is seeing.
+  bodyColor: 0xfb5f16,
+  // Six seconds of line behind it: the bird crosses with the motion sense
+  // fully open, and a trace shorter than the crossing would never read as the
+  // path it flew.
+  traceLifetimeFrames: 360,
   routeUrl: "/passages/bird-route.fbx",
   wingspanMeters: 1.65,
   routeDurationSeconds: 7.5,

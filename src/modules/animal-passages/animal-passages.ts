@@ -79,6 +79,13 @@ export interface AnimalPassagesModuleHandle {
    * flown animals answer the same instant.
    */
   readonly readSwarmCrossing: ReadSwarmCrossing;
+
+  /**
+   * The three points a flown passage is printing right now — body and both
+   * wingtips — or false while it is away. The trail ring that draws them
+   * lives with the other rings, in Motion Sense.
+   */
+  readonly readFlownTrace: (passageId: PassageId, out: Float32Array) => boolean;
 }
 
 /**
@@ -181,6 +188,16 @@ export function createAnimalPassagesModule(
         }
         passage.flight.applyProgress(progress);
       }
+    },
+
+    readFlownTrace: (passageId, out): boolean => {
+      const passage = staged.find(
+        ({ definition }) => definition.passageId === passageId,
+      );
+      if (!passage?.crossing) return false;
+
+      passage.flight.readPoints(out);
+      return true;
     },
 
     readSwarmCrossing: (centre: Vector3): number | undefined => {
@@ -288,10 +305,11 @@ function prepareModel(
     const sources = Array.isArray(object.material)
       ? object.material
       : [object.material];
-    // No colour override: the bird carries its own part colours and the bat
-    // its texture, which is what these two were authored to look like.
+    // Painted from the authored palette, which drops the model's own texture
+    // and part colours: a passage crosses a world the senses have coloured,
+    // and a body wearing its own photograph reads as a cut-out in it.
     const replacements = sources.map((material) =>
-      createUnlitMaterial(material),
+      createUnlitMaterial(material, definition.bodyColor),
     );
     object.material = Array.isArray(object.material)
       ? replacements

@@ -76,6 +76,11 @@ export interface PassageFlight {
    * and scrubbing lands mid-route rather than restarting the flight.
    */
   readonly applyProgress: (progress: number) => void;
+  /**
+   * Body and both wingtips in world space, the same three points a flock bird
+   * prints. Written into the caller's array so a trace costs no allocation.
+   */
+  readonly readPoints: (out: Float32Array) => void;
   /** Turn the route frame to its bearing. Called once as the animal enters. */
   readonly anchor: () => void;
   readonly dispose: () => void;
@@ -372,9 +377,34 @@ export function createPassageFlight(
     root.visible = raw < EXIT_HIDE_PROGRESS;
   }
 
+  const tracePoint = new Vector3();
+  const traceLateral = new Vector3();
+
   return {
     root,
     durationSeconds,
+    readPoints: (out) => {
+      // Read off the carrier itself: whatever the approach, the route, or the
+      // exit last did to it is where the animal actually is.
+      carrier.updateWorldMatrix(true, false);
+      tracePoint.setFromMatrixPosition(carrier.matrixWorld);
+      // The wings reach across the carrier's own sideways axis, so a banked
+      // animal prints a banked pair of tips.
+      traceLateral
+        .set(1, 0, 0)
+        .transformDirection(carrier.matrixWorld)
+        .multiplyScalar(definition.wingspanMeters / 2);
+
+      out[0] = tracePoint.x;
+      out[1] = tracePoint.y;
+      out[2] = tracePoint.z;
+      out[3] = tracePoint.x + traceLateral.x;
+      out[4] = tracePoint.y + traceLateral.y;
+      out[5] = tracePoint.z + traceLateral.z;
+      out[6] = tracePoint.x - traceLateral.x;
+      out[7] = tracePoint.y - traceLateral.y;
+      out[8] = tracePoint.z - traceLateral.z;
+    },
 
     anchor: (): void => {
       // Turning the frame rather than the route keeps the entry, the route,

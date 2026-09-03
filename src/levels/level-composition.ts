@@ -17,7 +17,10 @@ import {
   loadPassageResources,
   type PassageResources,
 } from "../modules/animal-passages/animal-passages";
-import { MOSQUITO_PASSAGE } from "../modules/animal-passages/passage-definitions";
+import {
+  BIRD_PASSAGE,
+  MOSQUITO_PASSAGE,
+} from "../modules/animal-passages/passage-definitions";
 import {
   type AnimalBodiesObserver,
   type AnimalsModuleHandle,
@@ -44,6 +47,7 @@ import {
   type MotionSenseModuleHandle,
 } from "../modules/motion-sense/motion-sense";
 import { createPassageSwarmModule } from "../modules/motion-sense/passage-swarm";
+import { createPassageTraceModule } from "../modules/motion-sense/passage-trace";
 import {
   type ConnectionsModuleHandle,
   createConnectionsModule,
@@ -214,6 +218,7 @@ function createConfiguredModules(setup: LevelSetup): ComposedWorld {
   const motion = createMotionSense(setup);
   const passages = createAnimalPassages(setup);
   const passageSwarm = createPassageSwarm(setup, passages);
+  const passageTrace = createPassageTrace(setup, passages);
 
   add(
     "echo",
@@ -241,6 +246,7 @@ function createConfiguredModules(setup: LevelSetup): ComposedWorld {
   // gate would otherwise be holding it shut while it crosses.
   add(undefined, passages?.module);
   add(undefined, passageSwarm);
+  add(undefined, passageTrace);
   add(undefined, endCredits?.module);
 
   return {
@@ -437,6 +443,26 @@ function createAnimalPassages(
  * stands at zero. Motion Sense owns how a trail is printed; the passage owns
  * where and when.
  */
+/**
+ * The bird passage prints what it flies, exactly as the flocks do: an animal
+ * crossing the same sky without a trace would be the one bird in the piece
+ * whose movement leaves nothing.
+ */
+function createPassageTrace(
+  setup: LevelSetup,
+  passages: AnimalPassagesModuleHandle | undefined,
+): WorldModule | undefined {
+  const parameters = setup.level.motion;
+  if (!passages || !parameters) return undefined;
+
+  return createPassageTraceModule({
+    scene: setup.world.scene,
+    parameters,
+    trailLifetimeFrames: BIRD_PASSAGE.traceLifetimeFrames,
+    readTrace: (out) => passages.readFlownTrace(BIRD_PASSAGE.passageId, out),
+  });
+}
+
 function createPassageSwarm(
   setup: LevelSetup,
   passages: AnimalPassagesModuleHandle | undefined,
