@@ -16,7 +16,7 @@ issue and a bounded implementation.
 
 ## Runnable Surfaces
 
-- `/` starts the full show on load and mounts the rehearsal transport.
+- `/` starts the full show on load.
 - `?level=<name>` or `/<name>` opens one preset without the show. Known names
   are `white-world`, `scent`, `echo`, `motion`, `thermal`, `magnetic`,
   `connections`, `test`, and `design-test`.
