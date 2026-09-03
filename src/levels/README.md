@@ -7,21 +7,28 @@ Boundary: Runtime mechanisms and concrete content implementations live elsewhere
 
 # Levels
 
-This folder owns typed standalone level data, the preloaded show composition,
+This folder owns the authored configuration blocks, the sense layers built from
+them, the typed standalone level presets, the preloaded show composition,
 concrete world construction, and the runtime that turns either request into one
 running world.
 
-Every `*.level.ts` exports one complete, data-only `LevelPreset`. A preset
-imports only its contract: it never imports, spreads, or shares configuration
-objects with another authored level. Omitted module blocks are intentionally
-off. The narrative names remain ordered as:
+Every `*.level.ts` exports one data-only `LevelPreset`: its own presentation
+values followed by the sense layers it carries, spread in ladder order. Omitted
+layers are intentionally off. The narrative names remain ordered as:
 
 ```text
 white-world → scent → echo → motion → thermal → magnetic → connections
 ```
 
-This ordering describes the experience, not code inheritance. Repeated values
-are explicit so changing one level cannot silently change another.
+`authored/` holds each configuration block exactly once, typed against the
+module contract it configures. `sense-layers.ts` groups those blocks into one
+layer per sense. A level names layers, never another level, so the ordering is
+the experience and not code inheritance — and a retune of a sense is one edit
+that reaches every level carrying it. Layers only add keys, with one named
+exception: the thermal layer carries `HEAT_MOTION_SENSE`, the motion sense with
+its bird trail repainted, defined beside the base value it deviates from.
+Scent's invisible plants take their placement from `authored/vegetation.ts`,
+so a trail a traveler follows in Scent rises where Echo later shows a plant.
 
 `test.level.ts` and `designTest.level.ts` are diagnostic/integration presets,
 not narrative states. The Test preset still uses the older Grass module and

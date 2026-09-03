@@ -24,17 +24,22 @@ history belongs in Git; unresolved product and deployment questions belong in
   it is not a parallel runtime.
 - Concrete content modules never import sibling modules. Level Composition
   connects them through small directional contracts.
-- Every standalone `LevelPreset` owns a complete object literal and does not
-  import, spread, or share configuration objects with another authored level.
-  `ShowComposition` and `ShowLevelState` are separate contracts because they
-  have different lifecycles and consumers.
-- This deliberate separation favors robustness over deduplicating authored
-  values: changing a standalone level cannot mutate a later level or the show,
-  and the opening show state is applied before view-dependent resources are
-  allocated.
+- Every authored block exists once, in `src/levels/authored/`, typed against
+  the module contract it configures. `src/levels/sense-layers.ts` groups those
+  blocks into one layer per sense of the ladder. A standalone `LevelPreset` is
+  its own presentation values plus the layers up to its rung, spread in ladder
+  order; `ShowComposition.world` is the spread of every layer. A change to a
+  block therefore reaches every level that carries that sense, which is what
+  "senses layer, never swap" means. `ShowComposition` and `ShowLevelState` are
+  separate contracts because they have different lifecycles and consumers.
+- Layers only add keys, with one named exception: `THERMAL_LAYER.motion` is
+  `HEAT_MOTION_SENSE`, derived beside `MOTION_SENSE` with the bird trail
+  repainted, so the deviation is one greppable value rather than a nested
+  override inside a level. The opening show state is still applied before
+  view-dependent resources are allocated.
 - The design stays simple: there is no preset inheritance, deep merge, module
-  registry, dependency-injection container, or second runtime. Repeated level
-  values remain visible data when that is clearer than another abstraction.
+  registry, dependency-injection container, or second runtime. A level file
+  says which senses it carries; the values live where the sense is authored.
 - The execution path is directly traceable: a static request points to one
   `LevelPreset`; a show request points to one `ShowComposition` and one state
   map; Level Composition constructs the world; Level Runtime starts and updates

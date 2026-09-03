@@ -1,11 +1,16 @@
 /**
- * Purpose: Verify independent authored levels and the separate show composition.
- * Context: Static presets must remain complete without inheriting another level.
- * Responsibility: Lock level ownership, intended module presence, and authored values.
+ * Purpose: Verify the authored levels, their sense layers, and the separate show composition.
+ * Context: Each level is presentation plus the layers up to its rung; the show is the whole ladder.
+ * Responsibility: Lock layer presence per level, the one authored deviation, and authored values.
  * Boundary: Runtime construction and rendering are tested separately.
  */
 
 import { expect, test } from "bun:test";
+import {
+  HEAT_MOTION_SENSE,
+  MOTION_SENSE,
+} from "../../src/levels/authored/motion-sense";
+import { VEGETATION_PLACEMENT } from "../../src/levels/authored/vegetation";
 import { level as connectionsLevel } from "../../src/levels/connections.level";
 import { level as designTestLevel } from "../../src/levels/designTest.level";
 import { level as echoLevel } from "../../src/levels/echo.level";
@@ -26,14 +31,6 @@ import { WORLD_WIND } from "../../src/world/wind";
 test("every level authors the current terrain-relative flight ceiling", () => {
   for (const preset of Object.values(LEVEL_CATALOG)) {
     expect(preset.maximumGroundClearanceMeters).toBe(50);
-  }
-});
-
-test("authored levels do not share configuration objects", () => {
-  const owners = new Map<object, string>();
-
-  for (const [levelName, preset] of Object.entries(LEVEL_CATALOG)) {
-    claimConfigurationObjects(preset, levelName, owners);
   }
 });
 
@@ -115,7 +112,6 @@ test("the show composition contains construction data only", () => {
   const composition = SHOW_COMPOSITION.world;
   const presentation = composition as LevelPreset;
 
-  expect(composition).not.toBe(connectionsLevel);
   expect(presentation.backgroundColor).toBeUndefined();
   expect(presentation.viewDistance).toBeUndefined();
   expect(presentation.maximumGroundClearanceMeters).toBeUndefined();
@@ -128,17 +124,17 @@ test("the show composition contains construction data only", () => {
   expect(composition.magnetic).toBeDefined();
   expect(composition.connections).toBeDefined();
 
-  for (const key of [
-    "airParticles",
-    "scentParticles",
-    "echoDepth",
-    "motion",
-    "thermal",
-    "magnetic",
-    "connections",
-  ] as const) {
-    expect(composition[key]).not.toBe(connectionsLevel[key]);
-  }
+  // "Senses layer, never swap": the show's union is the last rung of the
+  // ladder with the presentation stripped, and nothing more or less. Spelled
+  // out separately in show-composition.ts, so this pins the two together.
+  const {
+    backgroundColor: _background,
+    viewDistance: _viewDistance,
+    maximumGroundClearanceMeters: _clearance,
+    testUi: _testUi,
+    ...lastRung
+  } = connectionsLevel;
+  expect(composition).toEqual(lastRung);
 });
 
 test("Echo Level owns a complete depth-world startup recipe", () => {
@@ -215,12 +211,14 @@ test("Scent Level owns its complete invisible source world", () => {
   // Level 02 keeps every source object invisible, so its plants exist only
   // as the population the scent radiates from.
   expect(scentPreset.vegetation).toBeUndefined();
-  expect(scentPreset.invisibleVegetation?.instancesPerHectareByZone).toEqual({
-    meadow: 12,
-    coniferForest: 150,
-    deciduousForest: 150,
-    shrubSlope: 70,
-  });
+  // The unseen plants stand exactly where Echo will later show them, so a
+  // trail a traveler follows in Scent rises from a plant they can see later.
+  expect(scentPreset.invisibleVegetation?.instancesPerHectareByZone).toBe(
+    VEGETATION_PLACEMENT,
+  );
+  expect(echoLevel.vegetation?.instancesPerHectareByZone).toBe(
+    VEGETATION_PLACEMENT,
+  );
 
   const scent = scentPreset.scentParticles;
   if (!scent) throw new Error("Scent Level must author the scent sense");
@@ -307,6 +305,8 @@ test("Motion Level owns its complete motion-world startup recipe", () => {
   expect(motion.trail.density).toBeGreaterThan(0);
   expect(motion.trail.density).toBeLessThanOrEqual(1);
 
+  // Motion carries the base sense; only the heat rungs above repaint it.
+  expect(motion).toBe(MOTION_SENSE);
   // Bird traces use the cyan accent reserved for them in the 04 palette.
   expect(motion.birds?.appearance.trailColor).toBe(0x10bedb);
   expect(motion.birds?.flockCount).toBeGreaterThan(0);
@@ -345,6 +345,8 @@ test("Thermal Level owns its complete heat-world startup recipe", () => {
   // the level's brightest untruth.
   const thermalMotion = thermalPreset.motion;
   if (!thermalMotion?.birds) throw new Error("Thermal Level must carry birds");
+  // The thermal layer is spread after the motion layer, so its motion wins.
+  expect(thermalMotion).toBe(HEAT_MOTION_SENSE);
   expect(thermalMotion.birds.appearance.trailColor).toBe(
     thermal.colors.hotColor,
   );
@@ -525,19 +527,3 @@ test("Design Test authors semantic colors without development diagnostics", () =
   expect(designTestLevel.rocks?.colors.lightColor).toBe(0x739fa8);
   expect(designTestLevel.animals?.colors.furColor).toBe(0xf3d34f);
 });
-
-function claimConfigurationObjects(
-  value: unknown,
-  levelName: string,
-  owners: Map<object, string>,
-): void {
-  if (typeof value !== "object" || value === null) return;
-
-  const previousOwner = owners.get(value);
-  expect(previousOwner).toBeUndefined();
-  owners.set(value, levelName);
-
-  for (const child of Object.values(value)) {
-    claimConfigurationObjects(child, levelName, owners);
-  }
-}

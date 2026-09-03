@@ -35,9 +35,11 @@ issue and a bounded implementation.
 - A viewer rig owns locomotion while the camera retains desktop-look or headset
   pose. Flight is clamped against the shared world surface and authored height
   limits.
-- Independent typed `LevelPreset` files own standalone startup recipes. The
-  separate `ShowComposition` preloads the show world once, while
-  `ShowLevelState` contains only live presentation changes.
+- Typed `LevelPreset` files own their presentation and spread the sense layers
+  of `sense-layers.ts`, which are built from the single-copy authored blocks in
+  `src/levels/authored/`. The separate `ShowComposition` spreads every layer to
+  preload the show world once, while `ShowLevelState` contains only live
+  presentation changes.
 - `level-runtime.ts` owns startup and frame coordination;
   `level-composition.ts` owns assets, World Surface creation, concrete module
   construction, and cross-module wiring. `show-runtime.ts` owns show following,

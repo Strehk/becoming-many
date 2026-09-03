@@ -115,12 +115,15 @@ wiring in `src/levels/level-composition.ts`.
 
 ## Levels and Show
 
-Files in `src/levels/*.level.ts` are independent, complete, typed startup
-recipes. Each file owns its values directly and imports no other authored
-level. `test` and `design-test` remain diagnostic presets.
+Files in `src/levels/*.level.ts` are typed startup recipes: each owns its
+presentation values and spreads the sense layers up to its rung, in ladder
+order. The layers live in `src/levels/sense-layers.ts` and are built from the
+authored blocks in `src/levels/authored/`, where every configuration value
+exists once. A level names layers, never another level. `test` and
+`design-test` remain diagnostic presets with values of their own.
 
-`show-composition.ts` explicitly owns the complete module and asset union the
-default page creates once. `SHOW_LEVEL_STATES` contains only presentation facts
+`show-composition.ts` spreads every layer into the complete module and asset
+union the default page creates once. `SHOW_LEVEL_STATES` contains only presentation facts
 that can change while that world is running. `PIECE_SCHEDULE` and the show
 clock select those states, drive sense intensities and background transitions,
 synchronize narration, and fade in the end credits at the authored
