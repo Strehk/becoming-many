@@ -29,7 +29,7 @@ the XR session state), and redraws every panel from that instant.
 
 `show-actions.ts` is the operator's command surface over the running level —
 transport, language, resets, the M5 host, and the between-visitors
-`restartExperience` (rewind, flight reset, play). Panels call actions; nothing
+`restartExperience` (rewind, flight reset, hold). Panels call actions; nothing
 else touches the clock.
 
 `status-strip.ts` answers "is everything all right" as four plain tiles —
@@ -55,7 +55,7 @@ schedule.
 `session-bar.ts` holds the between-visitors controls: the language switch
 (switching mid-piece is a re-arm and holds the show, per the session rules),
 the headset button (`stream-button.ts` decides its one label from the XR
-session state), the two-tap "New visitor" restart, and the technician-drawer
+session state), the two-tap "New visitor" reset, and the technician-drawer
 toggle.
 
 `tech-drawer.ts` is where the breaking and misleading controls live:
