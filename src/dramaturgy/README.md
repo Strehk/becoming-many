@@ -68,7 +68,7 @@ panel away, and the clock clamping at the show length is what holds the credits
 up until staff restart. What the panel looks like belongs to
 `src/modules/end-credits`.
 
-`level-runtime.ts` composes the two halves; this folder never imports
+`show-runtime.ts` composes the two halves; this folder never imports
 `src/sound`, and `src/sound` never decides when a cue plays.
 
 ## Deliberately Absent

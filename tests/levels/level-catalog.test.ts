@@ -11,12 +11,19 @@ import {
   LEVEL_NAMES,
   resolveLevelName,
 } from "../../src/levels/level-catalog";
+import { levelNameFromPath } from "../../src/levels/level-names";
 
 test("every catalog name resolves to itself", () => {
   for (const name of LEVEL_NAMES) {
     expect(resolveLevelName(name)).toBe(name);
     expect(isLevelName(name)).toBe(true);
   }
+});
+
+test("named level paths select the Test entry", () => {
+  expect(levelNameFromPath("/echo")).toBe("echo");
+  expect(levelNameFromPath("/design-test/")).toBe("design-test");
+  expect(levelNameFromPath("/conductor.html")).toBeUndefined();
 });
 
 test("no request opens the default without a word", () => {

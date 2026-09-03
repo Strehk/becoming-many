@@ -12,7 +12,7 @@ from, and the page that hosts the piece itself. It is the page
 [Session and Operator](../../docs/direction/session-operator.md) describes,
 opened at `/conductor.html` — the world runs in-process behind the page, and
 the headset stream starts from this page's own button. The default page at `/`
-stays the bare rehearsal and development world.
+stays the bare rehearsal show; development worlds use `/test.html`.
 
 The surface is **touch-first and plain-worded**, because the station is run by
 front-of-house staff, not technicians: every target is thumb-sized, the
@@ -77,9 +77,9 @@ from this page; glanceable and never fed into steering.
 ## Boundaries
 
 - **The world enters through one contract.** This folder imports
-  `startLevel`/`RunningLevel` from `src/levels/level-runtime`, the presets
-  from `src/levels/level-catalog`, and the XR session contract from
-  `src/world/xr-session` — and commands it all through `show-actions.ts`. It
+  `startLevel`/`RunningLevel` from `src/levels/level-runtime`, the explicit
+  show composition, and the XR session contract from `src/world/xr-session` —
+  and commands it all through `show-actions.ts`. It
   never imports `src/world` internals or concrete `src/modules`; reaching
   around the level contract is how a second world authority would start.
 - **Slot arithmetic is not here.** `cueSlots` lives in

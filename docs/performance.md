@@ -22,10 +22,20 @@ owned disposal. The narrative Grass Clipmap uses a shared instance buffer and a
 camera-following height texture; Connections uses fixed render pools and moves
 topology generation off the frame path.
 
+Before the show becomes ready, its renderer compiles the composed material
+variants and renders the current camera view once into a disposable 1 × 1
+target. This moves real first-use buffer and texture setup out of visible cue
+frames without keeping inactive modules rendering. The target is restored and
+disposed before show time, controls, simulation, or narration can advance.
+
+The schedule's opening show state is applied before module construction and
+loading. Fixed Terrain and Air Particle windows therefore use the authored
+opening view distance instead of Three.js's default camera far plane.
+
 This bounded structure prevents unbounded growth but does not prove the frame
-budget. Thermal fragment work, first-use shader and buffer initialization,
-Grass ownership, redundant diagnostics, and complete-show transitions remain
-active performance concerns.
+budget. Thermal fragment work, physical first-use validation, Grass ownership,
+redundant diagnostics, and complete-show transitions remain active performance
+concerns.
 
 ## Deterministic Benchmark
 
@@ -68,6 +78,29 @@ yet been accepted.
 - Desktop Grass Clipmap comparisons showed that near-field density and blade
   segments dominated its cost more than far fade distance. Those results guide
   tuning but do not establish PICO acceptance.
+- A 2026-09-03 fresh-context Chromium run compared `compileAsync()` alone with
+  `compileAsync()` plus the bounded offscreen render. No cue linked a new
+  program in either run. First-activation `bufferData` calls changed as follows:
+
+  | Cue | Compile only | With offscreen render |
+  | --- | ---: | ---: |
+  | Scent | 10 | 0 |
+  | Echolocation | 268 | 16 |
+  | Motion | 9 | 0 |
+  | Thermal | 70 | 0 |
+  | Magnetic | 29 | 0 |
+  | Connections | 21 | 0 |
+
+  The remaining Echolocation allocation totaled about 136 KB and did not recur
+  on its second activation. These are desktop causal measurements, not accepted
+  frame times or physical PICO evidence.
+- A separate 2026-09-03 Chromium startup check reduced default-show readiness
+  from about 22.1 seconds before the opening-state fix to 1.31 seconds for the
+  first browser launch and 0.53/0.54 seconds in two subsequent fresh contexts.
+  The static Test level became ready in 0.43 seconds, and the built Station
+  route in 0.46 seconds. All routes returned HTTP 200 with one canvas and no
+  console errors or warnings. These desktop times establish the startup-order
+  cause; they do not establish physical PICO acceptance.
 
 ## Open Measurement Work
 
@@ -75,7 +108,7 @@ The benchmark already reports frame-time percentiles, missed-frame runs,
 renderer counters, queue depth, and streaming drain. Still needed are:
 
 - module update, stream work, and GPU upload time;
-- first-use transition and shader-compilation cost;
+- physical first-use transition and shader-compilation cost;
 - stale job and long-flight memory behavior;
 - module load, activation, deactivation, and unload cost;
 - physical PICO frame timing for the complete show;

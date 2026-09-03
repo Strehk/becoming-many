@@ -27,8 +27,9 @@ wrong-device and firmware-mismatch warnings).
 
 - `/conductor.html` — the station window, served from `dist/` (run
   `bun run build` first; in development the pages come from `bun run dev`
-  instead, which proxies `/config` here). `/` stays the bare rehearsal and
-  development page.
+  instead, which proxies `/config` here). `/` stays the bare rehearsal page.
+- `/test.html` and named paths such as `/echo` — standalone development levels,
+  benchmarks, and opt-in diagnostics.
 - `/health` — liveness JSON: status and uptime. It reports the process, never
   the show: a healthy server with zero windows is healthy.
 - `/config` — the deployment facts the process was started with, for the

@@ -9,6 +9,7 @@
  */
 
 import { join } from "node:path";
+import { levelNameFromPath } from "../src/levels/level-names";
 import {
   type DeploymentConfig,
   parseDeploymentConfig,
@@ -50,7 +51,12 @@ async function serveStatic(pathname: string): Promise<Response> {
   // of it is not a page request.
   if (decoded.includes("..")) return new Response("Not found", { status: 404 });
 
-  const relative = decoded === "/" ? "/index.html" : decoded;
+  const relative =
+    decoded === "/"
+      ? "/index.html"
+      : levelNameFromPath(decoded)
+        ? "/test.html"
+        : decoded;
   const file = Bun.file(join(DIST_DIRECTORY, relative));
   if (!(await file.exists())) {
     return new Response(
