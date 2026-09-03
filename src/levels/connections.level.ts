@@ -23,7 +23,7 @@ export const level: LevelPreset = {
   // world, connecting the same deterministic positions the earlier senses
   // source.
   connections: {
-    // Full sense strength until a dramaturgy driver exists.
+    // Full strength in a standalone level; the show drives this at runtime.
     intensity: 1,
     // Reach before density (the grass module's rule): a root system carried
     // at the wurzeln experiment's density cannot also span the horizon, so

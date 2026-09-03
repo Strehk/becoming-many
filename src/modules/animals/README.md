@@ -6,7 +6,7 @@ animation, and bounded behavior updates.
 It consumes shared world data and owns its loaded animal resources. It does
 not create a separate render loop or import other concrete content modules.
 
-## Current MVP
+## Current Behavior
 
 - `animals-definition.ts` owns the Deer, Stag, Fox, and Rat assets, population,
   habitat, movement, and visibility budget. The level uses `animals: true` to
@@ -27,7 +27,7 @@ not create a separate render loop or import other concrete content modules.
   movement heading.
 - Visible actors are selected from separate directions before vacant slots are
   filled by distance. Only those actors advance animation mixers; the current
-  Test Level limit is four.
+  definition limits that set to four.
 - Selection and being drawn are separate: an actor that takes a slot fades in
   over its material opacity, and one that loses a slot fades out and keeps
   walking until it is invisible. Arriving complete in one frame read as an
@@ -41,5 +41,5 @@ not create a separate render loop or import other concrete content modules.
 - Unload stops mixers, releases cloned skeletons, removes actors, and disposes
   the shared source assets.
 
-Spatial audio, complex behavior, collision, flocking, and LOD are not part of
-this MVP. Animals do not query concrete sibling modules.
+Spatial audio, complex behavior, collision, flocking, and LOD are deliberately
+absent. Animals do not query concrete sibling modules.

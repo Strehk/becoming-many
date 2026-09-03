@@ -14,7 +14,7 @@ stages (`normalize → axis-map → calibrate`), and serves the result as JSON o
 `src/m5/protocol.ts` is the shared wire contract; keep `FirmwareVersion` in
 `src/main.cpp` in sync with `M5_FIRMWARE_VERSION` there.
 
-The StickS3 differs from the M5StickC Plus2 the previous stack used: ESP32-S3
+The StickS3 uses an ESP32-S3
 with native USB (no UART bridge), a BMI270 IMU behind M5Unified, an M5PM1
 power chip (no GPIO4 power-hold), and no PlatformIO board definition — the
 generic `esp32-s3-devkitc-1` board with 8MB partitions matches the official

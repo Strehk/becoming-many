@@ -242,7 +242,7 @@ export const sharedEchoRocks: SharedBlock<"rocks"> = {
  * the ground the newer senses print against.
  */
 export const sharedEchoDepth: SharedBlock<"echoDepth"> = {
-  // Full sense strength until a dramaturgy driver exists.
+  // Full strength in a standalone level; the show drives this at runtime.
   intensity: 1,
   // The nearest band stays one solid silhouette tone during fast flight.
   nearDistanceMeters: 6,
@@ -305,7 +305,7 @@ export const sharedMotionSenseBirds: NonNullable<
  * swarms and invisible bird flocks printing trails onto the carried world.
  */
 export const sharedMotionSense: SharedBlock<"motion"> = {
-  // Full sense strength until a dramaturgy driver exists.
+  // Full strength in a standalone level; the show drives this at runtime.
   intensity: 1,
   swarms: {
     // Twelve clouds spread the near-to-far rings; 720 flies total.

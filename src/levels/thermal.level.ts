@@ -54,7 +54,7 @@ export const level: LevelPreset = {
   // it is authored below. How far up the warmth range each stop is reached
   // is set by the ramp thresholds the module owns.
   thermal: {
-    // Full sense strength until a dramaturgy driver exists.
+    // Full strength in a standalone level; the show drives this at runtime.
     intensity: 1,
     // Heat is a near sense, and narrowly so: the false-color view reaches 35
     // metres and feathers back into the echo ramp far inside its 96 m far

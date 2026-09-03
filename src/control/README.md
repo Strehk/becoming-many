@@ -2,7 +2,7 @@
 
 This folder contains input, navigation, and operator-control logic.
 
-`desktop-controls.ts` provides the first MVP adapter: click the canvas to capture
+`desktop-controls.ts` provides the desktop adapter: click the canvas to capture
 the mouse, look around with the mouse, fly in the viewing direction with WASD
 or the arrow keys, and press Escape to release the pointer.
 
@@ -20,7 +20,7 @@ so a dropped poll continues the glide and gentle descent. Keyboard movement
 returns when the host is cleared; the frames come from `src/m5`.
 
 `flight-reset.ts` returns the flight rig to the pose a level starts from, which
-the conductor page reaches over the station link. Reset and height limits stay
+the in-process conductor page reaches through `RunningLevel`. Reset and height limits stay
 effective in immersive VR because they move the rig, not the headset-owned
 camera pose.
 

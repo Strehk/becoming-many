@@ -184,11 +184,7 @@ export interface LevelPreset {
    */
   readonly thermal?: ThermalPerceptionParameters;
 
-  /**
-   * Directional field lines decorating the Terrain material plus the sky
-   * dome glowing toward the field direction; the stripes read outside the
-   * thermal radius and the dome stays behind every other surface.
-   */
+  /** A sky dome whose pole shimmer follows the authored magnetic field axis. */
   readonly magnetic?: MagneticSenseParameters;
 
   /**

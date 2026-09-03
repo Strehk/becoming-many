@@ -55,12 +55,11 @@ plant scent and animal trails always lean the same way. The wind clock runs
 separately from the 60-second animation clock: a wind read from the animation
 clock would turn back onto the same bearing every minute.
 
-## Not part of this version
+## Deliberately Absent
 
-Scent fields and a runtime intensity driver (blocked on the open
-runtime-coordination decision). Emitted particles do not fade into
-the echo haze with distance. The module owns neither the master audio clock
-nor a separate render loop.
+Scent fields and distance fading into the echo haze are absent. The show drives
+the implemented particle intensity through `setIntensity()`. The module owns
+neither the show clock nor a separate render loop.
 
 `scent-emitter-anchors.ts` no longer emits anything: it keeps the forest
 clearing positions the Connections web links, frozen at the values level 07

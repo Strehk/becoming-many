@@ -1,10 +1,13 @@
 <!--
 Purpose: Preserve the 2026-09-02 performance-focused code review of PR #8 (grass-clipmap) as an improvement backlog.
 Scope: The grass-clipmap module, its settings and level wiring, plus two non-performance catches found on the way.
-Boundary: Findings are static-analysis reasoning against PR head ab526b4, verified per finding but not re-measured; a parallel performance review and rewrite is in progress, so reconcile each item against that work before applying it.
+Boundary: Findings are static-analysis reasoning against PR head ab526b4 and were not re-measured; current source and open issues decide which findings still apply.
 -->
 
 # Performance Review — grass-clipmap (PR #8) — 2026-09-02
+
+Historical review evidence. Findings describe PR head `ab526b4`; the current
+checkout and open issues decide what remains actionable.
 
 ## Status
 

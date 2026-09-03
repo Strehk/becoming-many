@@ -6,7 +6,7 @@ dedicated Grass module.
 It consumes World Surface facts and owns its bounded vegetation resources. It
 does not define stream-cell policy or the permanent world coordinate system.
 
-## Current MVP
+## Current Behavior
 
 - `vegetation-definition.ts` owns the seed, candidate spacing, GLB details,
   authored sizes, and weighted model variants. Level Runtime preloads these
@@ -41,4 +41,5 @@ does not define stream-cell policy or the permanent world coordinate system.
   documented 2.5-metre river-footprint stand-in, because the true footprint
   radius needs the loaded asset.
 
-GPU wind, LOD, and larger species variation remain outside this measured MVP.
+GPU wind and LOD are absent. Add either only when a current visual or measured
+performance need justifies it.

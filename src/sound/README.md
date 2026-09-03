@@ -31,10 +31,9 @@ The audio hardware clock is the **timebase**; the Show Clock in
 `src/dramaturgy` is the **authority**. Everything here is a follower, so seek
 and pause behave in rehearsal.
 
-## Not here yet
+## Deliberately Absent
 
-Per-sense audio beds faded by each sense's intensity signal, the drone-organ
-synth as a sound engine without its UI, spatial audio, and operator volume are
-all planned and deliberately absent. The `AudioContext` is the connection point
-they will share; a master gain node arrives with the first of them, measured on
-the PICO rather than assumed.
+Per-sense audio beds, the drone-organ synth, spatial audio, and operator volume
+are absent. A small issue-backed audio addition must follow the existing show
+time, own a bounded voice/resource pool, and be measured on the PICO. Do not add
+a second timeline or speculative audio framework.

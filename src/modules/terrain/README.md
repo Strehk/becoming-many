@@ -6,8 +6,8 @@ does not define ground shape, rivers, or zones. It always queries
 optional diagnostic zone presentation.
 
 Terrain owns its neutral material color and renders the carved river bed as
-solid ground. It does not classify zones or draw a water surface. A Rivers
-module can later query `surfaceYAt()` without changing terrain geometry.
+solid ground. It does not classify zones or draw a water surface. The reserved
+Rivers boundary may consume `surfaceYAt()` without changing terrain geometry.
 
 The diagnostic Zone Visualizer supplies one material and the shared
 `zoneConditionsAt(x, z)` query. Terrain stores the four continuous conditions
@@ -25,13 +25,13 @@ parameter is `opacity`, following Three.js semantics from `0` (invisible) to
 `1` (opaque). Optional diagnostic presentation and material effects are nested
 under the same level entry but remain separate module-owned implementations.
 
-No terrain texture asset is selected yet, so the geometry does not allocate a
-UV attribute. A later texture implementation must add its real data path rather
-than expose a switch that has no visible effect. Fully opaque terrain stays on
-Three.js's cheaper opaque material path.
+No terrain texture asset is selected, so the geometry allocates no UV
+attribute. Fully opaque terrain stays on Three.js's cheaper opaque material
+path.
 
-The current MVP uses 64-metre chunks with 32 segments per side. With the
-Test Level 180-metre view distance, the fixed resident window is 7×7 meshes.
+The current implementation uses 64-metre chunks with 32 segments per side. The
+fixed resident-window radius follows the active view distance; the 180-metre
+diagnostic presets use 7×7 meshes.
 When the player crosses a chunk boundary, only the incoming edge is rebuilt.
 Each job samples one vertex row per queue step. It writes into fixed staging
 arrays and publishes only after the complete chunk is ready, so visible meshes
