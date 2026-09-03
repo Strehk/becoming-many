@@ -7,7 +7,7 @@ Boundary: Level density lives in the authored preset; the model's provenance in 
 
 # Ruins
 
-One ruined temple, standing where the open landscape has room for it. Unlike
+One ruined house, standing where the open landscape has room for it. Unlike
 Vegetation and Rocks, which scatter many small models across every zone, a
 ruin is a **landmark**: large, rare, and refused far more often than it is
 placed.
@@ -29,9 +29,13 @@ placed.
 ## Cost
 
 The whole window is one `InstancedMesh` and one draw call, with the refused
-candidates compacted away rather than drawn at zero scale. The model is one
-merged geometry: the authored FBX is a cell fracture of 132 pieces, which
-would otherwise be 132 draw calls for every ruin standing.
+candidates compacted away rather than drawn at zero scale.
+
+The model itself is expensive: at 86,927 triangles it is the heaviest single
+model in the piece, and two or three standing at once is a quarter of a
+million triangles. That is the authored fracture's own cost, not something
+the placement adds — a decimated version is the known next step, and the
+manifest records it as one.
 
 Placement runs only when the traveller crosses a 128-metre cell boundary, and
 costs five ground samples per candidate. There is no stream job: a window this

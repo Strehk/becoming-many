@@ -1,5 +1,5 @@
 /**
- * Purpose: Define the ruin model and where the landscape is allowed to carry one.
+ * Purpose: Define the ruined house and where the landscape is allowed to carry one.
  * Context: A ruin is a landmark, not a scatter: one candidate per cell, most refused.
  * Responsibility: Keep the asset, its size, its ground demands, and the seed explicit.
  * Boundary: Streaming, placement, and rendering live beside this file.
@@ -35,19 +35,19 @@ export interface RuinsDefinition {
 export const RUINS_DEFINITION: RuinsDefinition = {
   seed: 4441, // Keeps ruin placement stable across levels and runs.
   asset: {
-    id: "temple-ruin",
-    url: "/ruins/temple-ruin.glb",
-    objectName: "temple-ruin",
+    id: "house-ruin",
+    url: "/ruins/house-ruin.glb",
+    objectName: "house-ruin",
   },
   chunkLevel: 3,
   // Test value: three tries per cell finds a ruin often enough to judge the
   // placement while flying. One is what a landmark would offer.
   candidatesPerCell: 3,
-  // The model is a colonnade on a platform: at seven metres a visitor flies
-  // level with its roof, which is what makes it read as a building rather
-  // than as a rock formation.
-  heightMeters: { minimum: 6.5, maximum: 9 },
-  footprintRadiusMeters: 11,
+  // The model is a collapsed house: walls standing to about half their height
+  // with the roof down inside them. Six metres puts a flying visitor level
+  // with the tallest wall, which is what makes it read as a building.
+  heightMeters: { minimum: 5, maximum: 7 },
+  footprintRadiusMeters: 9,
   // A temple standing on a slope reads as a prop dropped on the landscape.
   // Two metres across twenty-two is the fall a stepped platform can still
   // carry without looking like it slid.

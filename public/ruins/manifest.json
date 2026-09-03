@@ -5,22 +5,22 @@
   "note": "Authored for this piece and handed over as an FBX; no author or licence was recorded with it. Author and licence need confirming before release \u2014 see docs/direction/open-decisions.md.",
   "assets": [
     {
-      "id": "temple-ruin",
-      "file": "/ruins/temple-ruin.glb",
-      "sourceFile": "ruins_tempel_bissel_kaputt.fbx",
-      "sha256": "54cc8b5d58ebc49b15cf7fddec8491838cbd6a6b6d85d2814dc67a3557a4bb1a",
-      "preparation": "The authored FBX is a cell fracture: 132 separate meshes, which would be 132 draw calls for every ruin standing. They are merged into one geometry with one material, and the FBX materials are dropped because the senses colour every surface from the level palette anyway.",
+      "id": "house-ruin",
+      "file": "/ruins/house-ruin.glb",
+      "sourceFile": "Haus_ruine.fbx",
+      "sha256": "0c125248ba8754de89ec5649f20649015efe3cf35ec8a176d0422532a2d58830",
+      "preparation": "The authored FBX is a cell fracture carried in one mesh. It is re-exported with its material dropped, because the senses colour every surface from the level palette anyway. The triangle count is the model's own: at 86,927 it is the most expensive single model in the piece, and a decimated version is the known next step if headset frames ask for one.",
       "metrics": {
-        "bytes": 829384,
+        "bytes": 8346272,
         "meshes": 1,
         "materials": 1,
-        "triangles": 8627,
+        "triangles": 86927,
         "estimatedDrawCalls": 1,
         "animations": 0
       },
       "modelSpace": {
         "up": "+y",
-        "sizeMeters": [11.8, 7.7, 19.9]
+        "sizeMeters": [17.6, 7.1, 17.9]
       }
     }
   ]
