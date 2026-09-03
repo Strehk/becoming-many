@@ -1,42 +1,36 @@
 # Quality and Operations Direction
 
-Extends the current gates (`bun test`, `bun run check`, `bun run lint`,
-[engineering standards](../engineering-standards.md)) toward the installation.
+## Current
 
-## Gates and CI
+Local engineering gates are separate commands: `bun test`, `bun run check`,
+`bun run lint`, `bun run build`, and `bunx fallow`. The release-image workflow
+builds and publishes Docker images when a GitHub release is published. There is
+no current pull-request CI workflow that runs the complete local gate set.
 
-- **One gate command.** Direction: `bun run check` chains format check, lint,
-  typecheck, and tests, and CI runs exactly that command on every push — the
-  same one a human runs locally. Scripts without CI enforcement decay.
-- **Performance budgets in CI.** The roadmap's performance harness (roadmap §2)
-  grows into per-profile CI budgets: frame-time p50/p95/p99, draw-call and
-  triangle ceilings. The profile set depends on
-  [Open Decision 1](open-decisions.md).
-- **Runtime governor.** Frame-histogram-driven tier degradation turning module
-  capacity values (render scale, instance counts, draw ranges) — possible by
-  construction because capacities are runtime values
-  ([Rendering Constraints](rendering-constraints.md)).
-- **Multi-artifact CI** once firmware and agent exist: build the firmware +
-  esp-web-tools manifest and the agent APK in CI, so app, firmware, and agent
-  cannot drift apart unnoticed.
+The deterministic benchmark guards accepted renderer counters and records
+machine-specific frame measurements. It is not a headset or station acceptance
+test.
 
-## Spikes (throwaway, before dependent work)
+## Planned Evidence
 
-- **P1 — see-through path on real hardware** ([Headset](headset.md)). The
-  highest-risk item in the project.
-- **H1 — esp-web-tools flash** of the M5StickS3 through the landed
-  `/flash.html` page, on real hardware ([Controls and M5](controls-m5.md)).
-  The page, firmware, and merged binary exist; the spike is the physical
-  evidence that the flow works end to end.
+Every hardware or station result must record:
 
-## Evidence rules
+- repository revision and built artifact;
+- headset model/edition, OS, browser or streaming client, and refresh rate;
+- station CPU/GPU, driver, XR runtime, and cable/transport when relevant;
+- exact route or session sequence and duration;
+- frame timing, reconnect/recovery observations, and resource growth.
 
-- **Dated hardware evidence.** Every spike result and every station acceptance
-  run records its exact matrix: headset edition and model number, PICO OS,
-  streaming-client/TobService versions, GPU/driver, build revision. A result
-  without its matrix is not evidence.
-- **Station acceptance protocol**: a two-hour soak cycling the full session
-  state machine; streaming and M5 disconnect/reconnect recovery without manual
-  repair; renderer resource counts returning to baseline after repeated
-  cycles; a bounded overhead budget if the scrcpy diagnostic mirror is used
-  during measurement.
+A station acceptance run should repeatedly cycle real visitor sessions, include
+M5 and headset disconnect/reconnect, verify restart without code or terminal
+intervention, and confirm resource counts return to a stable range.
+
+## Open
+
+- Final standalone-versus-PCVR profile and budgets.
+- Whether PR CI is worth adding for the existing static gates.
+- Automated firmware artifact production and version matching.
+- Exact soak duration and venue sign-off procedure.
+
+Do not add a runtime quality governor before device measurements show a
+repeatable need and define which fixed capacities may safely change.

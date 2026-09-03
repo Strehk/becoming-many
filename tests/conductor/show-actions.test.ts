@@ -7,7 +7,8 @@
 
 import { describe, expect, test } from "bun:test";
 import { createShowActions } from "../../src/conductor/show-actions";
-import type { RunningLevel, RunningShow } from "../../src/levels/level-runtime";
+import type { RunningLevel } from "../../src/levels/level-runtime";
+import type { RunningShow } from "../../src/levels/show-runtime";
 
 interface Recorder {
   readonly calls: string[];
@@ -49,12 +50,12 @@ function createRecorder(): Recorder {
 }
 
 describe("createShowActions", () => {
-  test("restartExperience rewinds, resets the flight, then plays", () => {
+  test("restartExperience rewinds, resets the flight, and holds", () => {
     const { calls, level, show } = createRecorder();
 
     createShowActions(level, show).restartExperience();
 
-    expect(calls).toEqual(["seekTo:0", "resetFlight", "play"]);
+    expect(calls).toEqual(["seekTo:0", "resetFlight", "pause"]);
   });
 
   test("resetShow rewinds and holds", () => {

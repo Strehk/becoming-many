@@ -1,0 +1,25 @@
+watchdogConfig:
+  logConfig:
+    logfile: C:/becoming-many/watchdog/logs/pico.log
+    logger: rotating
+
+  restartApp: true
+  watchFrequency: 2
+  hideConsoleWindow: false
+
+  udpControl:
+    commands:
+      - systemHalt: halt
+      - systemReboot: reboot
+      - restartApplication: restart
+      - stopApplication: stop
+      - startApplication: start
+    port: 2347
+    returnmessage: true
+
+  application:
+    binary: "C:/Program Files/Business Streaming/Business Streaming.exe"
+    directory: "C:/Program Files/Business Streaming"
+    # start-station.bat owns cold-start spacing between applications.
+    waitDuringStartup: 0
+    waitDuringRestart: 5

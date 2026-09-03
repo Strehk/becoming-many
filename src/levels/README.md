@@ -1,88 +1,78 @@
 <!--
-Purpose: Document ownership of source-level narrative presets.
-Context: Narrative levels are continuous world states, not separate scenes.
-Responsibility: Explain what belongs in src/levels.
-Boundary: Runtime mechanisms and module implementations live elsewhere.
+Purpose: Document ownership of typed level presets and their composition root.
+Context: Narrative states layer inside one running show composition.
+Responsibility: Explain what belongs in src/levels and how entries select it.
+Boundary: Runtime mechanisms and concrete content implementations live elsewhere.
 -->
 
 # Levels
 
-This folder contains typed, data-only presets for narrative world states.
+This folder owns the authored configuration blocks, the sense layers built from
+them, the typed standalone level presets, the preloaded show composition,
+concrete world construction, and the runtime that turns either request into one
+running world.
 
-`level-runtime.ts` owns the sparse `LevelPreset` input contract and is the
-single composition boundary beside the presets. It starts the permanent World
-Runtime, applies the selected preset, creates only the enabled modules, and
-connects desktop controls.
+Every `*.level.ts` exports one data-only `LevelPreset`: its own presentation
+values followed by the sense layers it carries, spread in ladder order. Omitted
+layers are intentionally off. The narrative names remain ordered as:
 
-Every `*.level.ts` file exports its preset as a named `level` constant that
-satisfies the shared `LevelPreset` contract. Presets are sparse: omitted values
-remain unchanged.
+```text
+white-world → scent → echo → motion → thermal → magnetic → connections
+```
 
-`shared-level-values.ts` holds the blocks that several presets carry verbatim
-— the White World air layer, the Scent World layer, the echo-world vegetation
-and rock palettes, the Echo Depth ramp, the Motion Sense response, and the
-decided population densities and grass distribution. Level files compose these
-constants and overwrite single values with object spreads where they diverge;
-values unique to one level stay in its file.
+`authored/` holds each configuration block exactly once, typed against the
+module contract it configures. `sense-layers.ts` groups those blocks into one
+layer per sense. A level names layers, never another level, so the ordering is
+the experience and not code inheritance — and a retune of a sense is one edit
+that reaches every level carrying it. Layers only add keys, with one named
+exception: the thermal layer carries `HEAT_MOTION_SENSE`, the motion sense with
+its bird trail repainted, defined beside the base value it deviates from.
+Scent's invisible plants take their placement from `authored/vegetation.ts`,
+so a trail a traveler follows in Scent rises where Echo later shows a plant.
 
-From Echolocation onward the narrative levels also inherit literally:
-`motion.level.ts` spreads the echo preset and adds the motion block,
-`thermal.level.ts` spreads the motion preset and adds the animal and thermal
-blocks, `magnetic.level.ts` spreads the thermal preset and adds the
-magnetic block, and `connections.level.ts` spreads the magnetic preset and
-adds the connections block. Editing an earlier level in that chain therefore
-carries into every later one ("senses layer, never swap"). These preset
-imports stay data-only and do not break the module-boundary rule.
+`test.level.ts` and `designTest.level.ts` are diagnostic/integration presets,
+not narrative states. The Test preset still uses the older Grass module and
+the browser Test UI.
 
-`white-world.level.ts` owns the narrative White World values and does not
-activate Terrain. `scent.level.ts` is the Scent World base experiment and
-activates Scent Particles and the White World Air Particles layer beside the
-test overlay; its invisible ground flag clamps flight above the shared world
-surface without rendering Terrain, and its invisible vegetation grows the
-plant population the scent radiates from without drawing a single tree. `echo.level.ts` is the Echolocation level
-and decorates the rendered landscape materials with the shared Echo Depth
-distance ramp. It is also where grass starts: it authors the clipmap grass
-field, and every later preset carries it by spreading this one. `motion.level.ts` is the Motion Perception level and layers
-the Motion Sense fly swarms and their printed trails onto the carried Echo
-world. `thermal.level.ts` is the Thermal Perception level and layers the
-radius-bounded false-color heat view onto the carried Motion world while
-adding the warm animal population. `magnetic.level.ts` is the Magnetic Field
-Perception level and layers the directional ground field lines and the
-northern sky glow onto the carried Thermal world. `connections.level.ts` is
-the Connections level and layers the radius-bounded underground reveal and
-the pulsing mycelium web onto the carried Magnetic world. `test.level.ts` is the
-diagnostic development preset and activates Terrain and Grass, uses Zone
-Visualizer as the base presentation, and authors its own diagnostic magnetic
-block.
+## Catalog and Entries
 
-Presentation values can include the background, the camera view distance, the
-maximum flight clearance above local terrain, and optional module parameters.
-The view distance is also the hard visibility boundary used to size streamed
-module windows with an additional preparation margin. These are level data;
-the permanent runtime does not invent a world look or flight ceiling.
+`level-catalog.ts` names only standalone presets. `show-composition.ts` owns the
+separate construction-only `ShowComposition` loaded once for the complete
+show. `show-levels.ts` owns the narrow presentation states the running show can
+change. The bare `src/main.ts` route starts that show; `?level=<name>` and
+matching path names enter through `src/test-main.ts` and select one showless
+development preset. Benchmarks use that Test entry too.
 
-During a show (the default page) the timeline is the world authority: the world is
-composed once from `SHOW_LEVEL` — the ladder's last preset, which the
-layering rule makes the union, minus the development overlay — and the Level
-Runtime stands it in the state the schedule calls for. Nothing cuts: the
-senses fade through runtime intensity drivers, the background lerps between
-the states' colors, and solid structure dissolves into and out of that live
-background through the World Fade effect — Terrain, Vegetation, and Rocks
-riding the echo strength, Animals the thermal strength. Echo Depth alone has
-no driver of its own: the surfaces it decorates are what the World Fade
-dissolves, so the ramp appears and vanishes with them at full strength
-rather than fading twice. Each gated module
-stays active exactly while its introducing sense carries any strength, so a
-fading world keeps rendering until it has fully dissolved. `?level` is
-ignored while a show runs. Flight stays clamped above the world surface and
-below the active level's ceiling through the whole show, including White World
-phases, so terrain arriving at the echo cue cannot find the visitor beneath it.
+An unknown requested name warns and falls back to Connections. That fallback is
+for explicit development selection, not the behavior of the bare show route.
 
-`level-catalog.ts` names every preset so a run can select one without editing
-the entry point. It holds the default the browser opens and resolves an
-unknown request back to that default rather than failing. `?level=<name>` in
-the URL is a runtime request, not authored configuration.
+## Runtime and Composition
 
-Preset files do not create Three.js resources, start render loops, or import
-concrete module implementations. `main.ts` only selects one preset and passes
-it to `startLevel()`.
+`level-preset.ts` owns the data contracts. `level-runtime.ts` owns startup and
+frame coordination. It:
+
+- starts the permanent World Runtime;
+- applies the initial static or show presentation before module loading;
+- loads and activates the configured module list;
+- connects the selected desktop or M5 flight source;
+- accepts entry-owned Test UI metrics and overlay creation only when requested;
+- delegates optional show time, narration, transitions, sense fades, and the
+  drone organ's per-frame contract to `show-runtime.ts`;
+- returns the narrow `RunningLevel` command/query surface used by pages.
+
+`level-composition.ts` loads the required GLTF assets, creates the shared World
+Surface, constructs the concrete modules, orders material effects, and wires
+neutral provider contracts. It returns only the surface, module list, ground
+presence, and `ShowWorldReach` needed by the runtime.
+
+Preset files create no resources and import no module implementation. Concrete
+modules do not import siblings; Level Composition performs cross-boundary
+wiring.
+
+During a show, the schedule selects a `ShowLevelState` and drives module
+activation, sense intensity, background blending, and World Fade without
+recreating the composition. Static `LevelPreset` objects are not read by the
+show. The opening show state is applied before modules size fixed spatial
+windows; later states remain driven by the same schedule and state map. Flight
+remains constrained against the shared surface through White World and every
+transition.

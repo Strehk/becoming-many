@@ -22,6 +22,7 @@ const BIRD_RANDOM_SCATTER_HEIGHT = 2;
 const BIRD_RANDOM_FLAP_FREQUENCY = 3;
 const BIRD_RANDOM_FLAP_PHASE = 4;
 const FLOCK_RANDOM_START_ANGLE = 5;
+const FLOCK_RANDOM_SIZE = 6;
 
 type BirdParameters = NonNullable<MotionSenseParameters["birds"]>;
 
@@ -68,6 +69,8 @@ export function createBirdFlocks(options: BirdFlocksOptions): BirdFlocks {
   const { birds } = options;
   const settings = MOTION_SENSE_SETTINGS;
   const birdCount = birds.flockCount * birds.birdsPerFlock;
+  const flockSizes = createFlockSizes(birds.flockCount, birds.birdsPerFlock);
+  const flockFirstBird = createFlockFirstBirds(flockSizes);
   const worldPositions = new Float32Array(
     getBirdPointCount(birds) * COMPONENTS_PER_VALUE,
   );
@@ -114,6 +117,8 @@ export function createBirdFlocks(options: BirdFlocksOptions): BirdFlocks {
       writeFlockPositions({
         options,
         flockIndex,
+        flockSize: flockSizes[flockIndex] ?? 0,
+        firstBirdIndex: flockFirstBird[flockIndex] ?? 0,
         anchor: anchors[flockIndex] ?? { x: 0, z: 0 },
         orbitAngle: orbitAngles[flockIndex] ?? 0,
         elapsedSeconds,
@@ -153,6 +158,73 @@ export function createBirdFlocks(options: BirdFlocksOptions): BirdFlocks {
   };
 }
 
+/**
+ * Draw one size per flock around the authored average and normalize the draws
+ * back onto the authored total, so no flock is the same size as its
+ * neighbours while the pool, its buffers, and the trail ring stay exactly the
+ * size `getBirdPointCount` reports.
+ */
+function createFlockSizes(flockCount: number, birdsPerFlock: number): number[] {
+  const total = flockCount * birdsPerFlock;
+  const { birdFlockSizeVariation, minBirdsPerFlock } = MOTION_SENSE_SETTINGS;
+  const smallest = Math.min(minBirdsPerFlock, Math.floor(total / flockCount));
+  const weights = Array.from(
+    { length: flockCount },
+    (_unused, flockIndex) =>
+      1 +
+      (getMotionRandom(flockIndex, FLOCK_RANDOM_SIZE) - 0.5) *
+        2 *
+        birdFlockSizeVariation,
+  );
+  const weightSum = weights.reduce((sum, weight) => sum + weight, 0);
+  const sizes = weights.map((weight) =>
+    Math.max(smallest, Math.round((total * weight) / weightSum)),
+  );
+
+  // Rounding and the smallest-flock floor both move the sum off the total.
+  // Settling the difference on the largest flock keeps the contrast between
+  // flocks, which is the whole point of drawing the sizes at all.
+  let remaining = total - sizes.reduce((sum, size) => sum + size, 0);
+  while (remaining !== 0) {
+    const step = Math.sign(remaining);
+    const target = findAdjustableFlock(sizes, step, smallest);
+    if (target === -1) break;
+
+    sizes[target] = (sizes[target] ?? 0) + step;
+    remaining -= step;
+  }
+  return sizes;
+}
+
+/** The largest flock that may still take one bird more, or give one up. */
+function findAdjustableFlock(
+  sizes: readonly number[],
+  step: number,
+  smallest: number,
+): number {
+  let target = -1;
+  let largest = -1;
+  sizes.forEach((size, flockIndex) => {
+    if (step < 0 && size <= smallest) return;
+    if (size > largest) {
+      largest = size;
+      target = flockIndex;
+    }
+  });
+  return target;
+}
+
+/** The pool index of each flock's first bird, from the drawn flock sizes. */
+function createFlockFirstBirds(flockSizes: readonly number[]): number[] {
+  const firstBirds: number[] = [];
+  let nextBird = 0;
+  for (const size of flockSizes) {
+    firstBirds.push(nextBird);
+    nextBird += size;
+  }
+  return firstBirds;
+}
+
 /** The orbit radius for one flock, interpolated near to far across the pool. */
 function getOrbitRadius(flockIndex: number, flockCount: number): number {
   const { birdOrbitRadius } = MOTION_SENSE_SETTINGS;
@@ -166,6 +238,8 @@ function getOrbitRadius(flockIndex: number, flockCount: number): number {
 interface FlockWriteInput {
   readonly options: BirdFlocksOptions;
   readonly flockIndex: number;
+  readonly flockSize: number;
+  readonly firstBirdIndex: number;
   readonly anchor: { readonly x: number; readonly z: number };
   readonly orbitAngle: number;
   readonly elapsedSeconds: number;
@@ -199,8 +273,8 @@ function writeFlockPositions(input: FlockWriteInput): void {
     groundYAt(centerX, centerZ) + birds.flightHeightMeters;
   input.flockCenters[centerOffset + 2] = centerZ;
 
-  for (let localIndex = 0; localIndex < birds.birdsPerFlock; localIndex += 1) {
-    const birdIndex = input.flockIndex * birds.birdsPerFlock + localIndex;
+  for (let localIndex = 0; localIndex < input.flockSize; localIndex += 1) {
+    const birdIndex = input.firstBirdIndex + localIndex;
     const scatterOffset = birdIndex * COMPONENTS_PER_VALUE;
     const bodyX = centerX + (input.scatterOffsets[scatterOffset] ?? 0);
     const bodyZ = centerZ + (input.scatterOffsets[scatterOffset + 2] ?? 0);

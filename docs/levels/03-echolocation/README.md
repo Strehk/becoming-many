@@ -1,156 +1,28 @@
-<!--
-Purpose: Document the Echolocation level (03) as designed and as built.
-Context: Echolocation is the second sense level, following Scent World.
-Responsibility: Keep narrative intent, the exact preset, and open decisions in one place.
-Boundary: The Level Guide owns the cross-level sequence; modules own their implementations.
--->
-
 # 03 — Echolocation
 
-## Narrative Intent and Experience Goal
+## Current Experience
 
-Give the world clearly perceptible depth ("Bat — Depth"): the first question
-is not *what is that* but *how far is that*. The result of echolocation is
-shown directly through distance-dependent visibility; individual visible echo
-waves are explicitly excluded. The base world becomes dark and visually
-reduced, and terrain, vegetation, and rocks emerge purely through their
-distance to the viewer.
+Echolocation reveals the solid landscape: Terrain, Vegetation, Rocks, and the
+Grass Clipmap appear through a camera-distance colour ramp. Air and Scent remain
+active underneath because narrative senses layer.
 
-## Entry, Exit, and Timeline Cues
+The narration cue begins at 2:14. The show fades the solid world in without
+teleporting the visitor or creating a second scene.
 
-- Enters from Scent World: scent particles fade and unload while world
-  position and flight state remain stable.
-- Exits toward Motion Perception: motion cues may begin during the exit so
-  moving plants and animals lead naturally into the next state.
-- The timeline driver (audio clock / schedule) is unresolved — see
-  `docs/direction/open-decisions.md` §2. Until then the sense intensity is
-  authored statically in the preset and this level runs standalone from
-  `src/main.ts`; no cross-level transition machinery exists yet.
+## Runtime Ownership
 
-## Visual and Audio Direction
+[`echo.level.ts`](../../../src/levels/echo.level.ts) owns the sparse authored
+composition. Echo Depth is one material effect applied to Terrain, Vegetation,
+Rocks, and clipmap grass through shared shader contracts. Each content module
+retains its own geometry, placement, and lifecycle.
 
-Palette (see [moodboard](mood/moodboard.png)):
-`#0E1017` `#0D1730` `#3C4782` `#3FA7E2` `#CBD9E5` `#F6F0E9`
+Grass Clipmap is the narrative grass implementation from this level onward. The
+older Grass module remains in diagnostic presets only while issue #13 evaluates
+one owner using current measurements.
 
-Decided art direction (2026-08-25): aerial-perspective depth mapping in the
-spirit of the moodboard, authored as a grayscale ramp that keeps the
-moodboard palette's luminance steps, the two far stops since lifted above
-theirs (see the 2026-08-30 decision below):
-`#101010` `#171717` `#494949` `#959595` `#E2E2E2` `#F7F7F7`
+## Current Risks
 
-Near geometry reads as near-black silhouettes and recedes through gray into
-an off-white haze that equals the background color, so distant geometry
-dissolves completely. Every surface shows only its depth-ramp color: there
-are no proximity accents, so approaching a tree darkens it toward the near
-color instead of lighting it up. Individual visible echo waves or ping
-ripples are excluded by the level intent. No audio counterpart exists yet.
-
-## Exact Typed Preset and Active Modules
-
-- Preset: `src/levels/echo.level.ts` (`testUi: true`, 128-metre view
-  distance, background `0xF7F7F7` equal to the ramp haze stop).
-- Fields: `terrain` (plain material, full opacity), `vegetation`, and
-  `rocks` (dark-palette base colors, Test Level densities), the
-  unchanged White World `airParticles` values, the unchanged Scent World
-  `scentParticles` values, and `echoDepth: EchoDepthParameters` (intensity
-  1, ramp from 6 to 120 metres, the fixed level palette).
-- Active modules: Terrain, Vegetation, and Rocks, plus Air Particles
-  and Scent Particles carried over as accumulated earlier senses ("senses
-  layer, never swap"), and the test overlay. Scent clouds keep their 02-palette
-  signature colors and now anchor above the rendered ground; the composition
-  root never applies Echo Depth to them, so the sense does not recolor a
-  sibling. The root creates one `EchoDepthEffect` (`src/modules/echo-depth/`)
-  and applies the same instance to Terrain (through `TerrainMaterialEffect`)
-  and to every Vegetation and Rock part material (through the shared
-  `UnlitMaterialEffect` contract).
-- Decided 2026-09-01: grass grows from this level down the whole narrative
-  chain, through the clipmap field (`src/modules/grass-clipmap/`), which
-  `echo.level.ts` authors and every later preset carries by spreading it.
-  The blades take the same chunk anchors as any other surface
-  (`<common>`, `<project_vertex>`, `<color_fragment>`), so Echo Depth takes
-  their color outright and Thermal covers it inside its radius; where a
-  sense is patched in, the field compiles its own lighting out entirely and
-  keeps only the root-to-tip gradient that shows below full sense
-  intensity.
-- The older `grass` module stays parked. It kept the same anchors and its
-  own 64-metre range since 2026-08-31, but two grass implementations
-  cannot both answer the open question, and the clipmap field reaches
-  further for less. That question is unchanged: grass is the densest
-  near-camera surface in the world, and Thermal Perception samples a
-  four-octave noise field per fragment on every surface it decorates. It is
-  now unmeasured *and* running; see [performance.md](../../performance.md).
-- Excluded by intent: Animals (motion belongs to level 04).
-
-## Asset and Shader Requirements
-
-- No external assets beyond the trees and rocks already owned by the
-  Vegetation and Rocks definitions.
-- Two module-owned GLSL ES 3.00 files: `echo-depth.vert.glsl` (camera-space
-  radial distance) and `echo-depth.frag.glsl` (four-segment palette ramp and
-  intensity mix). The effect patches existing `MeshBasicMaterial` passes; it
-  adds no geometry, texture, scene pass, or draw call.
-
-## Performance Budget and Measured Evidence
-
-- The depth response is pure material work: one varying plus four
-  `smoothstep` and five `mix` operations per fragment, no texture samples.
-- Terrain, Vegetation, and Rocks reuse their existing fixed pools at the
-  128-metre view distance; the Air and Scent Particle layers add one streamed
-  draw call each with their known Scent World budgets. The draw-call shape
-  stays at or below the Test Level's measured 61 calls because the effect
-  itself adds none.
-- The far ramp distance (120 m) sits below the view distance (128 m), so
-  chunk streaming pop-in happens inside the haze where geometry has already
-  dissolved into the background color.
-- Camera-space radial distance is rotation-invariant: the ramp does not swim
-  during headset turns, and the monotonic smoothstep ramp avoids banding
-  strobe during fast flight.
-- Rendering smoke (2026-08-25, headless Chromium on the SwiftShader software
-  rasterizer, including the carried-over air and scent layers): the level
-  renders the intended aerial-perspective treatment with zero console errors
-  or warnings, roughly 22–30 draw calls, and 1.2–2.2 million rendered
-  triangles in settled and post-flight views. Frame rates under software
-  rasterization are not meaningful and are deliberately not recorded.
-- No hardware desktop measurement has been recorded for this level yet.
-- The standalone PICO 4 / 90 FPS gate is not yet measured; no 72 Hz or 90 Hz
-  headset claim is approved.
-
-## Decisions, Risks, and Open Questions
-
-- A cyan rim accent on near forms was implemented and removed on 2026-08-25:
-  nearby trees lit up on approach, but every surface must always show only
-  its depth-ramp color. The removal also dropped the effect's only use of
-  normals, so Terrain's deleted `normal` attribute needs no special
-  handling.
-- The `applyTo` shader-patch idiom was deliberately parallel to Magnetic
-  Sense. When Thermal Perception arrived as the third material effect
-  (2026-08-28), the wrap-and-inject block was extracted into the shared
-  `src/utils/asset-loader/material-shader-patch.ts` helper, which also
-  documents the first-applied-wins anchor ordering.
-- Vegetation and Rock base colors are visible only below full intensity; they
-  are authored from the dark palette end so a future intensity ramp fades
-  between related tones.
-- The runtime intensity driver is blocked on open-decisions §2; a future
-  driver must deactivate the effect rather than merely zero the uniform,
-  because only the composition-root skip removes the GPU work.
-- The ramp is authored grayscale (decided 2026-08-25); the indigo moodboard
-  palette remains the documented reference and can return by editing only
-  the preset colors.
-- Lighter horizon (decided 2026-08-30): the two far stops rose from `#D7D7D7`
-  and `#F1F1F1` to `#E2E2E2` and `#F7F7F7`, so they now sit above the
-  luminance of the moodboard stops they were derived from. The haze is what
-  the world ends in, and at its old value the horizon read as a grey wall
-  closing the distance rather than as the world thinning out of sight. They
-  moved as a pair on purpose: lightening only the stop the world dissolves
-  into would have left the band before it as a visible step short of the
-  horizon. Every stop below them is untouched, so near geometry still reads
-  as near-black silhouette and the ramp still walks the palette's luminance
-  order. This reaches levels 04 and 05 as well — the echo ramp is carried
-  verbatim by both, there is no per-level override, and `sharedEchoHazeColor`
-  is also each of those levels' background color.
-- Open art decisions: ramp stop tuning against real headset contrast;
-  whether the carried-over dark air motes should adopt a pale gray tone for
-  legibility against dark near forms; whether scent intensity should be
-  reduced here to express "color and scent recede" from the Level Guide
-  transition; whether the moodboard's indigo and cyan tones return once the
-  grayscale base is approved.
+- Grass Clipmap performance has desktop evidence but no complete physical PICO
+  acceptance.
+- First-use material compilation contributes to transition-risk issue #16.
+- Shader patch validation is tracked in issue #20.

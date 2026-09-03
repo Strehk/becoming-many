@@ -14,7 +14,7 @@ const THREE_CLIPPING_FRAGMENT_SHADER = "#include <clipping_planes_fragment>";
 // Three.js assigns gl_PointSize between project_vertex and this include, so
 // the sense fade must scale the size here (scent particles set the precedent).
 const THREE_POINT_SIZE_SHADER = "#include <logdepthbuf_vertex>";
-const MATERIAL_CACHE_KEY = "motion-fly-material-v2";
+const MATERIAL_CACHE_KEY = "motion-fly-material-v3";
 
 /** Create one opaque round-speck material for the fly point pool. */
 export function createFlySwarmMaterial(
@@ -32,11 +32,14 @@ export function createFlySwarmMaterial(
     shader.vertexShader = shader.vertexShader
       .replace(
         THREE_COMMON_SHADER,
-        `${THREE_COMMON_SHADER}\nuniform float motionSenseFade;`,
+        // The per-fly arrival carries a swarm in and out around a re-anchor:
+        // its specks shrink away, the swarm moves while nothing of it is on
+        // screen, and they swell back at the new place.
+        `${THREE_COMMON_SHADER}\nuniform float motionSenseFade;\nattribute float flyArrival;`,
       )
       .replace(
         THREE_POINT_SIZE_SHADER,
-        `gl_PointSize *= motionSenseFade;\n${THREE_POINT_SIZE_SHADER}`,
+        `gl_PointSize *= motionSenseFade * flyArrival;\n${THREE_POINT_SIZE_SHADER}`,
       );
     shader.fragmentShader = shader.fragmentShader
       .replace(THREE_COMMON_SHADER, `${THREE_COMMON_SHADER}\n${circleShader}`)

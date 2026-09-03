@@ -4,9 +4,9 @@ The first animal set contains four unique animated GLB files. The Deer URL was s
 
 ## Current Runtime Status
 
-The files and manifest exist under `public/animals`. Test Level loads all four
-models from `/animals/...`; authored species counts produce ten actors while
-only the nearest four animation mixers advance.
+The files and manifest exist under `public/animals`. Levels with Animals load
+all four models from `/animals/...`; authored species counts produce ten actors
+while only four visible animation mixers advance.
 
 ## Inventory
 
@@ -25,7 +25,9 @@ Animation data is required runtime content. Preserve skeletons, skins, clip name
 
 Deer and Stag provide attack, death, eating, gallop, jump, walk, hit-reaction, and idle clips. Fox provides the same core set with one attack clip. Rat provides attack, death, idle, jump, run, and walk clips.
 
-Deer, Stag, and Fox contain both plain clip names and matching `AnimalArmature|...` names. Keep the source files unchanged for now. The animal module must later map semantic actions to one verified clip family without playing duplicate aliases.
+Deer, Stag, and Fox contain both plain clip names and matching
+`AnimalArmature|...` names. The current definition selects and verifies one
+walk clip per species and does not play duplicate aliases.
 
 ## Runtime Rules
 

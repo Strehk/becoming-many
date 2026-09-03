@@ -1,0 +1,60 @@
+# Purpose: Notice when the station stops serving its pages, even though every
+#   process involved still looks alive, and force the stack back up.
+# Context: docker.yaml guarantees Docker Desktop is running. It cannot tell a
+#   working engine from a hung one, a container from a crash loop, or a bound
+#   port from an unbound one. All of those look identical from the outside:
+#   a live tray icon and a black kiosk window.
+# Responsibility: Run a poller that touches a heartbeat file only while
+#   http://localhost/health answers, and re-run the compose bring-up on every
+#   launch, so a stalled heartbeat becomes a recovery.
+# Boundary: This config does not restart Docker Desktop -- that is docker.yaml's
+#   job, and a heavier hammer than a stack that only needs bringing up again.
+
+watchdogConfig:
+  logConfig:
+    logfile: C:/becoming-many/watchdog/logs/station.log
+    logger: rotating
+
+  restartApp: true
+  watchFrequency: 2
+  hideConsoleWindow: false
+
+  # The recovery itself. Every launch of the poller -- the first one, and every
+  # one the heartbeat timeout below forces -- brings the stack up again.
+  preAppLaunchCommand: 'cmd /c "C:\becoming-many\watchdog\bin\docker-up.bat"'
+
+  udpControl:
+    commands:
+      - systemHalt: halt
+      - systemReboot: reboot
+      - restartApplication: restart
+      - stopApplication: stop
+      - startApplication: start
+    port: 2349
+    returnmessage: true
+    statusReport:
+      runtimeStatus: status
+
+  application:
+    # Launched through cmd.exe: a .bat is a script for the command interpreter,
+    # not an image Windows can start on its own.
+    binary: C:/Windows/System32/cmd.exe
+    directory: C:/becoming-many/watchdog
+    arguments:
+      - /c
+      - 'C:\becoming-many\watchdog\bin\poll-health.bat'
+      - http://localhost/health
+      - 'C:\becoming-many\watchdog\run\station.hb'
+      - "10"
+    waitDuringStartup: 0
+    waitDuringRestart: 5
+    heartbeat:
+      heartbeatFile: C:/becoming-many/watchdog/run/station.hb
+      # Six missed ten-second beats: about a minute of a dead station before
+      # the stack is brought back up. Short enough that a visitor waits rather
+      # than leaves, long enough to sit out a container restart.
+      heartbeatFrequency: 10
+      allowMissingHeartbeats: 6
+      # Cold start: the engine, then the image, then the server. Nothing is
+      # wrong before this expires.
+      firstHeartbeatDelay: 90

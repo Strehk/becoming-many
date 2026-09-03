@@ -12,7 +12,7 @@ from, and the page that hosts the piece itself. It is the page
 [Session and Operator](../../docs/direction/session-operator.md) describes,
 opened at `/conductor.html` — the world runs in-process behind the page, and
 the headset stream starts from this page's own button. The default page at `/`
-stays the bare rehearsal and development world.
+stays the bare rehearsal show; development worlds use `/test.html`.
 
 The surface is **touch-first and plain-worded**, because the station is run by
 front-of-house staff, not technicians: every target is thumb-sized, the
@@ -29,7 +29,7 @@ the XR session state), and redraws every panel from that instant.
 
 `show-actions.ts` is the operator's command surface over the running level —
 transport, language, resets, the M5 host, and the between-visitors
-`restartExperience` (rewind, flight reset, play). Panels call actions; nothing
+`restartExperience` (rewind, flight reset, hold). Panels call actions; nothing
 else touches the clock.
 
 `status-strip.ts` answers "is everything all right" as four plain tiles —
@@ -55,7 +55,7 @@ schedule.
 `session-bar.ts` holds the between-visitors controls: the language switch
 (switching mid-piece is a re-arm and holds the show, per the session rules),
 the headset button (`stream-button.ts` decides its one label from the XR
-session state), the two-tap "New visitor" restart, and the technician-drawer
+session state), the two-tap "New visitor" reset, and the technician-drawer
 toggle.
 
 `tech-drawer.ts` is where the breaking and misleading controls live:
@@ -77,9 +77,9 @@ from this page; glanceable and never fed into steering.
 ## Boundaries
 
 - **The world enters through one contract.** This folder imports
-  `startLevel`/`RunningLevel` from `src/levels/level-runtime`, the presets
-  from `src/levels/level-catalog`, and the XR session contract from
-  `src/world/xr-session` — and commands it all through `show-actions.ts`. It
+  `startLevel`/`RunningLevel` from `src/levels/level-runtime`, the explicit
+  show composition, and the XR session contract from `src/world/xr-session` —
+  and commands it all through `show-actions.ts`. It
   never imports `src/world` internals or concrete `src/modules`; reaching
   around the level contract is how a second world authority would start.
 - **Slot arithmetic is not here.** `cueSlots` lives in
@@ -91,9 +91,11 @@ from this page; glanceable and never fed into steering.
   only page-held position is the operator's own while scrubbing, which wins
   over the clock until the drag ends.
 
-## Not here yet
+## Remaining Direction
 
-The session state machine and M5 and headset telemetry are planned and
-deliberately absent. [Open Decision 2](../../docs/direction/open-decisions.md)
-still owns the state machine; this page commands the show clock, not session
-phases.
+The page reports its current XR session state and detailed M5 state, but it has
+no headset battery/worn telemetry, passthrough control, or installation session
+state machine. Those additions remain dependent on the delivery-platform and
+session decisions in
+[Installation Direction](../../docs/direction/README.md). This page currently
+commands the show clock and viewer lifecycle, not venue session phases.

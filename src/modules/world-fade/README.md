@@ -2,7 +2,7 @@
 Purpose: Document ownership of the world-fade surface effect.
 Context: Show world states fade in and out instead of cutting.
 Responsibility: Explain what belongs in src/modules/world-fade.
-Boundary: When and how far to fade is decided by the show driver in level-runtime.
+Boundary: When and how far to fade is decided by the show driver in show-runtime.
 -->
 
 # World Fade

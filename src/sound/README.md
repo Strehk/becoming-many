@@ -19,14 +19,14 @@ gesture listener; while it is suspended the timebase stalls, which correctly
 freezes show time instead of letting the show run without its audio.
 
 `drone-organ/` is the piece's generative instrument: nine layers, each opened
-by one of the show's senses, built on Tone.js and driven from the level
-runtime. It loads Tone only when a show actually asks for the organ, and it
-plays on the context Tone builds for itself rather than on the timebase's —
-Tone's `AudioWorklet` nodes only come up on a context its own audio library
-created, and sharing this one measurably silenced every voice's room. The two
-contexts never mix audio: the timebase's carries no nodes at all, and both
-resume on the same first gesture. The organ's own README explains the
-composition and what the port from the instrument's old repository left behind.
+by one of the show's senses, built on Tone.js and driven from the Show Runtime.
+It loads Tone only when a show actually asks for the organ, and it plays on the
+context Tone builds for itself rather than on the timebase's — Tone's
+`AudioWorklet` nodes only come up on a context its own audio library created,
+and sharing this one measurably silenced every voice's room. The two contexts
+never mix audio: the timebase's carries no nodes at all, and both resume on the
+same first gesture. The organ's own README explains the composition and what
+the port from the instrument's old repository left behind.
 
 `narration-player.ts` follows the clock. It holds one preloaded
 `HTMLAudioElement` per cue for the session's language only — about 7.4 MB
@@ -41,13 +41,16 @@ The audio hardware clock is the **timebase**; the Show Clock in
 `src/dramaturgy` is the **authority**. Everything here is a follower, so seek
 and pause behave in rehearsal.
 
-## Not here yet
+## Deliberately Absent
 
 Per-sense audio beds faded by each sense's intensity signal, and operator
-volume, are planned and deliberately absent. The organ gates its layers on a
-sense threshold rather than fading them with the intensity signal, which is the
-next step toward that. No master gain across narration and organ exists yet
-either; both reach the destination on their own, on their own contexts.
+volume, are absent. The organ gates its layers on a sense threshold rather than
+fading them with the intensity signal, which is the next step toward the beds.
+No master gain across narration and organ exists yet either; both reach the
+destination on their own, on their own contexts. A small issue-backed audio
+addition must follow the existing show time, own a bounded voice/resource pool,
+and be measured on the PICO. Do not add a second timeline or speculative audio
+framework.
 
 The organ's cost has been measured on nothing but a desktop browser so far. It
 carries four Freeverb rooms and one convolution reverb, and Tone builds

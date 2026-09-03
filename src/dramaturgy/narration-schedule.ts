@@ -45,6 +45,13 @@ export interface NarrationSchedule {
   readonly durationSeconds: number;
 
   /**
+   * Show time the end credits begin to fade in, holding from there to the
+   * clamp. Absent means a schedule that closes without credits, which is why
+   * it is optional rather than a required end marker.
+   */
+  readonly creditsAtSeconds?: number;
+
+  /**
    * Ordered by `atSeconds`. A cue holds the timeline until the next one starts,
    * which is why no cue carries a duration: the same section runs up to nine
    * seconds longer in German than in English while cue times stay shared.

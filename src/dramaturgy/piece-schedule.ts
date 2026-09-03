@@ -27,12 +27,16 @@ import type { NarrationSchedule } from "./narration-schedule";
  * in the full Connections synthesis — and the return strips back to White
  * World, so the piece closes where it opened.
  *
- * The result is 8:41. `docs/direction/dramaturgy-audio.md` still calls the
- * piece "roughly five minutes", which the 7:41 of English narration alone
- * cannot fit; that conflict is open and is not resolved here.
+ * The result is 8:41 and is reflected in the current experience and direction
+ * documentation.
  */
 export const PIECE_SCHEDULE: NarrationSchedule = {
   durationSeconds: 521, // Last cue, its longer recording, and slot margin.
+  // The return recording ends at 515.6 s in English and 519.9 s in German, so
+  // the panel comes up just after the English last word and over the final
+  // German lines. Four seconds of fade puts it at full opacity at 520 s, a
+  // second before the clock clamps and holds it there.
+  creditsAtSeconds: 516,
   narration: [
     // Five seconds of lead-in before the first word; every later cue carries
     // that offset, so the slots below are unchanged by it.

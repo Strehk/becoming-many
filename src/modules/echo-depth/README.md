@@ -17,9 +17,9 @@ root applies the same effect instance to Terrain (through
 `TerrainMaterialEffect`) and to Vegetation and Rocks (through the shared
 `UnlitMaterialEffect` contract); this module never imports a sibling module.
 
-Not part of this version: a runtime intensity driver (blocked on the open
-runtime-coordination decision — the preset authors intensity statically, and
-the composition root skips the effect entirely at intensity zero so its GPU
-work is skipped), an audio counterpart, and any post-processing pass. A cyan
-rim accent on near forms was implemented and removed on 2026-08-25 because
-near geometry must keep the pure depth color.
+Echo Depth deliberately has no independent runtime intensity driver: during a
+show, World Fade dissolves the surfaces it decorates so the depth ramp appears
+once at full strength rather than being faded twice. A showless preset authors
+its static intensity, and zero skips the effect entirely. An audio counterpart
+and post-processing pass are absent. Near geometry keeps the pure depth color;
+the module adds no rim accent.

@@ -14,6 +14,12 @@ scatter through an emission volume authored in fractions of its own height,
 so one signature fits a knee-high bush and a ten-metre pine, and its scent
 lifts by its own authored rise rather than by one height for the whole layer.
 
+Inside that volume the particles sit on a ring around the plant rather than on
+its axis: evenly by area, with the innermost core left clear. Emission from a
+single centre put the whole signature downwind of the plant as soon as the wind
+picked it up, so the upwind side of a tree smelled of nothing. Starting the
+scent off the axis is what makes a plant smell on every side of itself.
+
 Every particle drifts on its own phase, its own amplitude, and a second
 faster turn, so a plant's scent churns instead of sliding about as one rigid
 block. On top of that drift the shared wind carries the scent downwind in
@@ -49,12 +55,11 @@ plant scent and animal trails always lean the same way. The wind clock runs
 separately from the 60-second animation clock: a wind read from the animation
 clock would turn back onto the same bearing every minute.
 
-## Not part of this version
+## Deliberately Absent
 
-Scent fields and a runtime intensity driver (blocked on the open
-runtime-coordination decision). Emitted particles do not fade into
-the echo haze with distance. The module owns neither the master audio clock
-nor a separate render loop.
+Scent fields and distance fading into the echo haze are absent. The show drives
+the implemented particle intensity through `setIntensity()`. The module owns
+neither the show clock nor a separate render loop.
 
 `scent-emitter-anchors.ts` no longer emits anything: it keeps the forest
 clearing positions the Connections web links, frozen at the values level 07

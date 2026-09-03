@@ -29,6 +29,10 @@ import type {
   StaticPopulationParameters,
 } from "../../src/modules/static-population";
 import {
+  getVegetationStature,
+  VEGETATION_DEFINITION,
+} from "../../src/modules/vegetation/vegetation-definition";
+import {
   createVegetationChunkWriter,
   createVegetationInstances,
   discardVegetationChunks,
@@ -138,8 +142,9 @@ test("Vegetation keeps complete model footprints outside river channels", () => 
   disposeVegetationInstances(instances);
 });
 
-test("Vegetation applies shared material effects to every part material", () => {
+test("Vegetation applies the effects of each model's own stature", () => {
   const decorated: SensedMaterial[] = [];
+  const staturesAsked: string[] = [];
   const instances = createVegetationInstances({
     colors: VEGETATION_COLORS,
     parameters: createVegetationParameters("meadow"),
@@ -147,15 +152,40 @@ test("Vegetation applies shared material effects to every part material", () => 
     chunkSize: 16,
     chunkSlotCount: 1,
     worldSurface: createFlatSurface("meadow"),
-    effects: [{ applyTo: (material) => decorated.push(material) }],
+    effectsFor: (stature) => {
+      staturesAsked.push(stature);
+      return [
+        { applyTo: (material: SensedMaterial) => decorated.push(material) },
+      ];
+    },
   });
 
+  // The test population is one model, and it is not one of the two bushes.
+  expect(staturesAsked).toEqual(["canopy"]);
   expect(decorated).toHaveLength(2);
   expect(new Set(decorated).size).toBe(2);
   expect(
     decorated.every((material) => material instanceof MeshBasicMaterial),
   ).toBe(true);
   disposeVegetationInstances(instances);
+});
+
+test("Vegetation reads the bushes as undergrowth and the rest as canopy", () => {
+  expect(getVegetationStature("bush")).toBe("undergrowth");
+  expect(getVegetationStature("flowering-bush")).toBe("undergrowth");
+  for (const assetId of [
+    "pine-1",
+    "birch-2",
+    "deciduous-tree-3",
+    "dead-tree-1",
+  ]) {
+    expect(getVegetationStature(assetId)).toBe("canopy");
+  }
+
+  // Every model the definition carries answers one or the other.
+  for (const { id } of VEGETATION_DEFINITION.assets) {
+    expect(["canopy", "undergrowth"]).toContain(getVegetationStature(id));
+  }
 });
 
 test("Rocks apply shared material effects to every part material", () => {

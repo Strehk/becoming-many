@@ -1,63 +1,65 @@
 # Experience
 
-## Core Experience
+## Implemented Piece
 
-**Becoming Many** is one continuous narrative flight through a procedurally streamed world. The user keeps their position while the world changes around them. Narrative world states are not separate scenes or traditional levels. A Test Level will precede them to teach ICAROS flight.
+**Becoming Many** is one continuous flight through a procedurally streamed
+world. The visitor retains their position while sensory layers appear around
+them. World states are authored levels, but the running show composes their
+union once and transitions through intensities rather than loading separate
+scenes.
 
-In the complete experience, flight does not control narrative time. The audio
-timeline controls state changes and transitions.
+The current typed schedule lasts 8 minutes 41 seconds:
 
-## Current Playable Slice
+| Time | World state | Perceptual focus |
+| ---: | --- | --- |
+| 0:00 | White World | silent lead-in and openness |
+| 0:05 | White World | prologue |
+| 1:22 | Scent | chemical traces and sources |
+| 2:14 | Echolocation | depth reveals the solid world |
+| 2:47 | Motion | moving signals and trails |
+| 3:50 | Thermal | false-colour heat relationships |
+| 4:39 | Magnetic | directional sky perception |
+| 5:35 | Connections | the layered network synthesis |
+| 7:26 | White World | return |
+| 8:36 | White World | end credits |
 
-The current application starts with the visual-design preset in
-`designTest.level.ts`. It provides a pale blue background, authored module
-colors, streamed Air Particles, generated Terrain, desktop flight, and
-user-triggered `immersive-vr` entry. The complete Test Level training flow,
-audio timeline, state transitions, operator controls, and passthrough flow do
-not exist yet.
+Cue timings are authored in `src/dramaturgy/piece-schedule.ts`; narration text
+is authoritative in `script/en.md` and `script/de.md`.
 
-## Target Presentation Flow
+## Presentation Flow
 
-1. Start in passthrough so the headset can be fitted safely.
-2. The operator enters the Test Level through a shared presentation contract.
-3. The user learns the ICAROS flight controls in opaque VR.
-4. The operator starts the narrative experience in White World.
-5. The user flies continuously while narrative world states change.
-6. The operator starts offboarding through the same presentation contract.
-7. The virtual world fades out and passthrough returns.
+The default page starts the complete show and waits for a user gesture when the
+browser has suspended audio. The rehearsal transport can hold, seek, or jump.
+The conductor page provides the same show in an operator-facing station window,
+with transport, language, reset, headset entry, controller setup, and technical
+status.
 
-The operator is the first presentation-control source. The contract must allow a different source later.
+Passthrough onboarding/offboarding and an explicit installation session state
+machine are product direction, not current runtime behavior. Their decisions
+remain in [direction](direction/README.md).
 
-## Planned World States
+## Visual Layers
 
-| State | Inspiration | Focus | Main modules |
-| --- | --- | --- | --- |
-| 00 — Test Level | Flight training | Learn ICAROS flight before the narrative experience | Training environment, flight input |
-| 01 — White World | Initial state | Atmosphere and openness | Light, fog, minimal air particles |
-| 02 — Scent World | Smell | Colored scent signatures | Scent fields, plants, scent particles |
-| 03 — Echolocation | Bat | Depth-dependent visibility | Terrain, vegetation, depth |
-| 04 — Motion Perception | Frog and insects | Visibility through movement | Animals, plant motion, motion |
-| 05 — Thermal Perception | Snake | Temperature contrast | Animals, ground, vegetation, thermal |
-| 06 — Magnetic Field Perception | Migratory birds | Ground field lines and persistent north orientation | Terrain, magnetic sense, optional sky cue |
-| 07 — Connections | Relationships and networks | Visible relationships | Roots, mycelium, world connections |
+- White World establishes fog, background, and air.
+- Scent adds bounded particles emitted from deterministic plants and animals.
+- Echolocation reveals terrain, vegetation, rocks, and distance colour, and
+  introduces the narrative Grass Clipmap.
+- Motion adds point actors and persistent movement trails.
+- Thermal applies a local false-colour view to solid surfaces and animals.
+- Magnetic adds a directional sky dome without recolouring the ground.
+- Connections reveals a pulsing network between world anchors.
 
-Transitions between narrative states must blend compatible states without teleporting the user or rebuilding the complete world. Whether the Test Level resets position or velocity before White World remains open.
+The finale layers these signals deliberately. The return removes them until the
+visitor reaches White World again, where the end credits fade in over the last
+German lines and hold until the experience is restarted.
 
-See the [Level Guide](levels/README.md) for the current detailed direction of each state.
+## Input and Audio
 
-## Audio Direction
+Desktop development uses pointer-lock look and keyboard flight. WebXR tracking
+provides local head pose while the same viewer rig receives flight movement.
+The M5 adapter maps physical tilt and button state into that flight boundary.
 
-The likely baseline is one continuous master audio file. Its exact structure is still open.
-
-The audio clock is authoritative for narrative cues. Spatial and granular layers may be added, but they must remain synchronized with the master clock and use bounded voice pools.
-
-## Input
-
-Development flight currently uses pointer-lock mouse look and WASD or arrow-key
-flight through 3D space. Forward and backward movement follow the mouse look
-direction and move the Three.js camera directly.
-
-The next navigation layer will normalize input before producing position,
-orientation, and velocity. A later ICAROS adapter will use that same narrow
-contract without changing world modules. The Test Level will teach the final
-ICAROS controls before the narrative experience begins.
+English and German narration share one typed schedule and one audio timebase.
+The audio timebase is show-time authority; if audio is suspended, show time does
+not silently advance. Additional spatial sound design remains possible as a
+small issue-backed product addition, but it must stay synchronized and bounded.

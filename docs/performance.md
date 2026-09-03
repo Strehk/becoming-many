@@ -1,177 +1,128 @@
 # Performance
 
-Performance is the primary product requirement. The physical PICO headset is
-the final authority; desktop checks only detect regressions.
+Performance is the primary product requirement. Stable physical-headset output
+is the authority; desktop and deterministic runs are regression instruments.
 
-## Current Evidence
+## Targets
 
-The current 180-metre landscape test structure is deliberately bounded:
+- Primary: stable 90 Hz, an 11.11 ms frame interval, on PICO 4.
+- Candidate fallback: stable 72 Hz, a 13.89 ms frame interval, only when
+  explicitly accepted from physical measurements.
+- The application must leave time for the browser or XR host, compositor,
+  audio, streaming, and—on PCVR—encode, transport, and decode.
 
-- one renderer and one render loop
-- one browser-only Test Level overlay for FPS, p95, draw calls, and triangles
-- one `THREE.Points` object for all 58,320 resident Test Level Air Particles
-- fixed position and visibility buffers with partial slot-range updates
-- 49 fixed Terrain meshes with 100,352 resident triangles
-- one fixed Grass mesh with 152,100 candidates and 304,200 resident triangles
-  inside its own 64-metre range, down from 492,804 and 985,608 when the range
-  followed the 180-metre view distance
-- compact instanced Vegetation and Rock draws that exclude rejected capacity
-- ten animal actors with at most four visible animation mixers and slope samples
-- Magnetic Sense adds one opaque sky-dome draw call, no geometry and no
-  render pass, and since 2026-09-01 no Terrain fragment work at all. Its
-  four-octave noise runs only inside the two pole cones, behind one coherent
-  early-out; the open sky costs a gradient and a handful of scalar ops
-- fixed Terrain staging arrays and no geometry allocation during recycling
-- fixed chunk-window capacity
-- stream queue capacity of 256 jobs
-- provisional stream-work deadline of 0.5 ms per frame
-- no geometry or material allocation during particle, grass, vegetation, or
-  rock recycling
-- the clipmap grass field runs in every level from echolocation on and is
-  the largest single addition since this list was written: one 786 KB
-  instance buffer shared by every chunk and level, no vertex buffer written
-  after load, per-blade culling in the vertex shader, and a one-time 35.8 ms
-  fill of its height texture during `load`. Measured against the same level with the
-  field removed, on the quick profile, Apple GPU: it adds 78 draw calls,
-  0.3 M triangles, and about 2 ms p95 — Thermal Perception goes from 81 draw
-  calls and 3.7 ms p95 to 159 and 5.6 ms. `renderer.info.triangles` counts
-  every culled blade as a degenerate triangle, so that count overstates the
-  work.
+No current physical PICO 4 acceptance is recorded for the complete show or the
+narrative Grass Clipmap. Wired Windows/SteamVR/PICO startup is also unresolved.
 
-  Where that cost sits was measured too, and it is not where reaching
-  further would put it. Reducing the fade distance from 128 m to 72 m moved
-  nothing, because the density law has already thinned the distance to a few
-  percent: at 100 m four blades in a hundred survive and a far chunk starts
-  twenty instances. The near field is the whole cost. Halving it — 19 tufts
-  per square metre to 12 — took the surcharge from 3.0 ms to 2.6 ms, and two
-  blade segments instead of three took it to 2.1 ms. Pulling the
-  full-density radius in from 20 m to 14 m would reach 1.4 ms and was
-  rejected: the viewer flies seven metres up, so nearly everything in frame
-  already sits in the thinning zone and the meadow reads as bare ground.
+## Current Structure
 
-  That machine is not the gate: the PICO 4 at 90 FPS allows 11.1 ms per
-  frame and is far weaker, and neither this field nor its cost under the
-  heat view has been measured there
+The runtime uses one renderer and render loop, fixed spatial windows, pooled or
+instanced content, partial buffer updates, cooperative stream jobs, and module
+owned disposal. The narrative Grass Clipmap uses a shared instance buffer and a
+camera-following height texture; Connections uses fixed render pools and moves
+topology generation off the frame path.
 
-The 2026-08-24 short desktop Chromium settling smoke reported 89–93 FPS,
-16.8–17.1 ms p95, 61 draw calls, and 5.90 million triangles after every
-configured GLB loaded successfully. The current expanded view and dense
-landscape still miss the 90-Hz browser budget and require physical PICO
-validation.
-Before compaction, zero-scaled static capacity produced about 26 million
-triangles and 35 FPS; that path remains removed.
-A separate ten-minute browser soak is recorded in the
-[2026-08-24 performance audit](performance-audit-2026-08-24.md); there is still
-no physical PICO measurement.
+Before the show becomes ready, its renderer compiles the composed material
+variants and renders the current camera view once into a disposable 1 × 1
+target. This moves real first-use buffer and texture setup out of visible cue
+frames without keeping inactive modules rendering. The target is restored and
+disposed before show time, controls, simulation, or narration can advance.
 
-The 2026-08-23 World Surface refactor removed hard zone classification and
-vertex colors from Terrain generation. Neutral Terrain samples only ground
-height. The optional Zone Visualizer instead writes four continuous conditions
-per vertex and classifies them after GPU interpolation. The earlier Terrain
-initialization benchmark predates this final visualizer path and is therefore
-not retained as current evidence.
+The schedule's opening show state is applied before module construction and
+loading. Fixed Terrain and Air Particle windows therefore use the authored
+opening view distance instead of Three.js's default camera far plane.
 
-The overlay provides quick development feedback from recent frame intervals
-and `renderer.info`. It is not visible inside immersive WebXR and does not
-replace repeatable browser profiling or physical PICO measurements. The current
-structure therefore supports performance testing but does not yet prove a
-frame-rate target.
+This bounded structure prevents unbounded growth but does not prove the frame
+budget. Thermal fragment work, physical first-use validation, Grass ownership,
+redundant diagnostics, and complete-show transitions remain active performance
+concerns.
 
 ## Deterministic Benchmark
 
-`bun run benchmark` replays one authored camera route through any level and
-writes a report artifact. It exists so two measurements can be compared at
-all; the overlay cannot do that, because a free-running session never repeats
-the same workload.
+`bun run benchmark` replays an authored route after `bun run build`. It replaces
+wall time, interactive controls, duration, and the production stream deadline
+with deterministic equivalents. Consequently:
 
-Four substitutions make a run repeatable, and each one is a deliberate
-departure from interactive behavior:
+- `renderer.info` counters are exact regression facts;
+- frame-time measurements are comparable only on the same machine and path;
+- virtual streaming behavior does not represent production timing;
+- headless SwiftShader results do not represent a GPU or headset.
 
-- a fixed timestep replaces the wall clock, so world state follows the frame
-  index instead of machine speed
-- an authored route replaces desktop controls
-- a fixed frame count replaces a duration
-- a virtual clock replaces the stream queue's 0.5 ms wall-clock budget
+The accepted quick-profile counters in
+`tests/benchmark/benchmark-baseline.ts` are:
 
-The last one matters when reading a report. Production streaming completes as
-much work as fits in a time budget, so a faster machine leaves more content
-resident. A benchmark instead advances a fixed number of stream steps per
-frame. Its counters therefore repeat exactly, but its streaming behavior is
-not the production one, and streaming spikes must still be judged from a
-normal session.
+| Level | Draw calls | Triangles |
+| --- | ---: | ---: |
+| White World | 1 | 0 |
+| Scent | 13 | 1,408 |
+| Echolocation | 60 | 3,810,268 |
+| Motion | 63 | 3,810,268 |
+| Thermal | 89 | 3,820,178 |
+| Magnetic | 90 | 3,821,138 |
+| Connections | 92 | 3,847,938 |
+| Test | 82 | 4,278,320 |
+| Design Test | 81 | 4,277,360 |
 
-Only `renderer.info` counters are treated as facts. They are exact integers,
-they repeat across machines, and `tests/benchmark/benchmark-baseline.ts`
-records the accepted values so `--check` fails on a real change in what the
-scene draws. Frame times from the same run are measurements: comparable to
-another run on the same machine and rendering path, and nothing else. Headless
-runs use SwiftShader and describe a software rasterizer, not a headset.
+These counters include degenerate triangles emitted by shader-culling paths and
+therefore overstate visible grass geometry. The full-profile baseline has not
+yet been accepted.
 
-The harness is documented in [src/benchmark](../src/benchmark/README.md) and
-[tests/benchmark](../tests/benchmark/README.md).
+## Dated Evidence
 
-## Acceptance Targets
+- The [2026-08-24 browser audit](performance-audit-2026-08-24.md) measured an
+  earlier landscape composition. It remains useful evidence for the fixed-pool
+  and streaming changes it tested, but its totals are not current-show totals.
+- The [2026-09-02 Grass Clipmap review](performance-review-grass-clipmap-2026-09-02.md)
+  records static findings against its named revision. Current code and issues
+  determine which findings still apply.
+- Desktop Grass Clipmap comparisons showed that near-field density and blade
+  segments dominated its cost more than far fade distance. Those results guide
+  tuning but do not establish PICO acceptance.
+- A 2026-09-03 fresh-context Chromium run compared `compileAsync()` alone with
+  `compileAsync()` plus the bounded offscreen render. No cue linked a new
+  program in either run. First-activation `bufferData` calls changed as follows:
 
-- Primary target: stable 90 Hz with an 11.11 ms frame interval.
-- Candidate fallback: stable 72 Hz with a 13.89 ms frame interval.
-- The application must leave time for the browser, XR compositor, audio, and
-  streaming instead of consuming the complete frame interval.
-- A profile becomes accepted only after repeatable physical-headset testing.
+  | Cue | Compile only | With offscreen render |
+  | --- | ---: | ---: |
+  | Scent | 10 | 0 |
+  | Echolocation | 268 | 16 |
+  | Motion | 9 | 0 |
+  | Thermal | 70 | 0 |
+  | Magnetic | 29 | 0 |
+  | Connections | 21 | 0 |
 
-## Metrics to Add
+  The remaining Echolocation allocation totaled about 136 KB and did not recur
+  on its second activation. These are desktop causal measurements, not accepted
+  frame times or physical PICO evidence.
+- A separate 2026-09-03 Chromium startup check reduced default-show readiness
+  from about 22.1 seconds before the opening-state fix to 1.31 seconds for the
+  first browser launch and 0.53/0.54 seconds in two subsequent fresh contexts.
+  The static Test level became ready in 0.43 seconds, and the built Station
+  route in 0.46 seconds. All routes returned HTTP 200 with one canvas and no
+  console errors or warnings. These desktop times establish the startup-order
+  cause; they do not establish physical PICO acceptance.
+
+## Open Measurement Work
 
 The benchmark already reports frame-time percentiles, missed-frame runs,
-`renderer.info` counters, peak queue depth, and the frame at which streaming
-drains. Still missing:
+renderer counters, queue depth, and streaming drain. Still needed are:
 
-- module update, stream work, and GPU upload time
-- stale stream jobs
-- memory growth during a long flight
-- module load, activation, deactivation, and unload cost
-- PC render, encode, transport, decode, and total latency if PCVR proceeds
+- module update, stream work, and GPU upload time;
+- physical first-use transition and shader-compilation cost;
+- stale job and long-flight memory behavior;
+- module load, activation, deactivation, and unload cost;
+- physical PICO frame timing for the complete show;
+- PCVR render, encode, USB transport, decode, and end-to-end latency.
 
-## Current Scheduling Rules
-
-- The world runtime advances the shared queue once per frame before rendering.
-- Every job performs at most one cooperative step per queue update.
-- The queue checks its deadline between steps and cannot interrupt running
-  JavaScript.
-- Stable resource keys replace older pending work for the same slot.
-- Fixed resource pools are recycled instead of recreated.
-- Air Particles and Grass preload one chunk ring outside the visible radius.
-  Grass measures that radius against its own 64-metre range rather than the
-  level view distance, which is the 2026-08-24 audit's P1 fix: range and
-  preload before density, with the authored zone densities left untouched.
-
-Level Runtime asynchronously preloads the fixed asset definitions of enabled
-modules before World Runtime starts. Distance priorities, future-level
-prefetching, progress UI,
-retries, and shader warmup are not part of the current scheduler.
-
-## Terrain Candidate
-
-The implemented first candidate is recycled CPU-sampled chunk terrain:
-
-- 64-metre chunks
-- 7×7 fixed resident mesh pool at the current Test Level 180-metre view distance
-- 32 segments per side and 2,048 triangles per chunk
-- one sampled vertex row per stream-queue step
-- fixed staging arrays and atomic publication of complete chunks
-
-Measure browser frame time, streaming spikes, uploads, memory stability, and
-future vegetation placement before accepting it. A GPU geometry clipmap should
-be built only if this measured candidate is not viable; no strategy framework
-is needed in advance.
-
-Do not add workers, generalized pooling, relevance fields, or adaptive quality
-before this experiment demonstrates a need.
+The relevant issues are grouped under Performance in
+[roadmap.md](roadmap.md).
 
 ## Development Loop
 
 ```text
-build one element → verify correctness → measure in browser
-→ measure on PICO → simplify → measure again → checkpoint
+small change → static gates → deterministic comparison
+→ normal browser profile → physical target profile → record evidence
 ```
 
-A performance regression blocks completion until it is removed or explicitly
-accepted with measured evidence.
+Do not claim a performance improvement without a comparable measurement. Do
+not claim installation acceptance from desktop evidence.

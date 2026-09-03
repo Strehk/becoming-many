@@ -1,0 +1,49 @@
+# Purpose: Keep Docker Desktop running on a station PC and bring the station
+#   stack up once its engine answers.
+# Context: docker-compose.yml runs the station container with
+#   `restart: unless-stopped`, so Docker restores a crashed container without
+#   help. What it cannot restore is Docker Desktop itself: once that is gone,
+#   the restart policy has nothing left to act on and the station goes dark.
+# Responsibility: Supervise the Docker Desktop process, and run the compose
+#   bring-up after every successful launch of it.
+# Boundary: Whether the served page is actually alive is station.yaml's
+#   concern -- a hung engine keeps a healthy-looking process here. Turn Docker
+#   Desktop's own "Start Docker Desktop when you sign in" OFF, or two owners
+#   fight over the same process.
+
+watchdogConfig:
+  logConfig:
+    logfile: C:/becoming-many/watchdog/logs/docker.log
+    logger: rotating
+
+  restartApp: true
+  watchFrequency: 2
+  hideConsoleWindow: false
+
+  # Docker Desktop reports a running process long before the engine accepts
+  # commands, so the bring-up cannot simply follow the launch. bin/docker-up.bat
+  # waits for `docker info` instead of guessing; this delay only keeps it from
+  # spinning through the first half minute.
+  postAppLaunchDelay: 30
+  postAppLaunchCommand: 'cmd /c "C:\becoming-many\watchdog\bin\docker-up.bat"'
+
+  udpControl:
+    commands:
+      - systemHalt: halt
+      - systemReboot: reboot
+      - restartApplication: restart
+      - stopApplication: stop
+      - startApplication: start
+    port: 2348
+    returnmessage: true
+    statusReport:
+      runtimeStatus: status
+
+  application:
+    binary: "C:/Program Files/Docker/Docker/Docker Desktop.exe"
+    directory: "C:/Program Files/Docker/Docker"
+    waitDuringStartup: 0
+    # Docker Desktop needs time to release its lock files and shut down its VM
+    # before a relaunch takes; a short wait here turns a failed restart into a
+    # slow one.
+    waitDuringRestart: 15

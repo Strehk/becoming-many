@@ -9,12 +9,12 @@
 
 import { describe, expect, test } from "bun:test";
 import {
-  SHOW_LEVEL_SENSES,
+  SHOW_LEVEL_STATES,
   type ShowSense,
 } from "../../src/dramaturgy/show-levels";
 import { DRONE_ORGAN_COMPOSITION } from "../../src/sound/drone-organ/drone-organ-settings";
 
-const LADDER = SHOW_LEVEL_SENSES.connections;
+const LADDER = SHOW_LEVEL_STATES.connections.senses;
 const { layers } = DRONE_ORGAN_COMPOSITION;
 
 function isControlValue(value: number): boolean {
