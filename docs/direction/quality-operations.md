@@ -8,22 +8,22 @@ Extends the current gates (`bun test`, `bun run check`, `bun run lint`,
 - **One gate command.** Direction: `bun run check` chains format check, lint,
   typecheck, and tests, and CI runs exactly that command on every push — the
   same one a human runs locally. Scripts without CI enforcement decay.
-- **Performance budgets in CI.** The roadmap's performance harness (roadmap §2)
-  grows into per-profile CI budgets: frame-time p50/p95/p99, draw-call and
-  triangle ceilings. The profile set depends on
-  [Open Decision 1](open-decisions.md).
+- **Performance budgets in CI.** The deterministic benchmark grows into
+  per-profile CI budgets for frame-time p50/p95/p99, draw calls, and triangles.
+  Physical acceptance covers the complete wired Windows, SteamVR, PICO
+  Business Streaming, and headset presentation chain.
 - **Runtime governor.** Frame-histogram-driven tier degradation turning module
   capacity values (render scale, instance counts, draw ranges) — possible by
   construction because capacities are runtime values
   ([Rendering Constraints](rendering-constraints.md)).
-- **Multi-artifact CI** once firmware and agent exist: build the firmware +
-  esp-web-tools manifest and the agent APK in CI, so app, firmware, and agent
-  cannot drift apart unnoticed.
+- **Multi-artifact CI** builds the browser application, firmware, and
+  esp-web-tools manifest together once the installation pipeline requires it.
 
 ## Spikes (throwaway, before dependent work)
 
-- **P1 — see-through path on real hardware** ([Headset](headset.md)). The
-  highest-risk item in the project.
+- **P1 — wired PCVR path on real hardware** ([Headset](headset.md)). Validate
+  session startup, tracking, audio, controls, recovery, see-through behavior,
+  and performance on the pinned station matrix.
 - **H1 — esp-web-tools flash** of the M5StickS3 through the landed
   `/flash.html` page, on real hardware ([Controls and M5](controls-m5.md)).
   The page, firmware, and merged binary exist; the spike is the physical

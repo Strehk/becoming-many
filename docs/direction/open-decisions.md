@@ -4,16 +4,10 @@ Decisions that need discussion before implementation commits to a path. Do not
 preempt them in code — ask. Until a decision falls, the current
 [engineering standards](../engineering-standards.md) stand.
 
-## 1. Delivery platform: standalone PICO vs Windows PC-VR streaming
-
-- [Platforms](../platforms.md) keeps both targets and an open research
-  question, prefers wired USB streaming, and keeps wireless streaming outside
-  the installation baseline.
-- The pre-import draft had decided the opposite corner: PC-VR through
-  SteamVR/OpenXR with wireless PICO Business Streaming, a desktop-GPU
-  performance budget, and the headset as a display only.
-- Coupled to the headset integration model ([Headset](headset.md)). Until
-  decided, the mobile-first performance rules in AGENTS.md stand.
+Decision numbers remain stable because other direction documents refer to them.
+Decision 1 is resolved: this repository targets the wired Windows PCVR path
+defined in [Platforms](../platforms.md) and
+[Windows PCVR Delivery](../architecture-decisions.md#windows-pcvr-delivery-2026-09-02).
 
 ## 2. Runtime coordination layer
 
@@ -62,5 +56,7 @@ Chromium runner that drives `src/benchmark`.
 
 Still open:
 
-- The headset agent (Android) and a technician CLI. The pre-import draft's
-  proposed repository layout remains non-binding.
+- A Windows-side streaming adapter and a technician CLI, but only if the pinned
+  installation spike proves that PICO Business Streaming's built-in controls,
+  status, and diagnostics cannot satisfy a concrete operator need. Native
+  Android headset code remains outside this repository.

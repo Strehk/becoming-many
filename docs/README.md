@@ -14,13 +14,15 @@ separate from verified technical status.
 - [Performance](performance.md) — current evidence, target metrics, and acceptance gates.
 - [Browser Performance Audit — 2026-08-24](performance-audit-2026-08-24.md) — measured browser bottlenecks, diagnostic A/B runs, and prioritized fixes.
 - [Performance Review — grass-clipmap (PR #8) — 2026-09-02](performance-review-grass-clipmap-2026-09-02.md) — verified review findings held as an improvement backlog; reconcile against the parallel performance rewrite before acting.
+- [Refactor Checklist](refactor-checklist.md) — operational issue queue and the required session, verification, simplification, and pull-request workflow.
+- [Stabilization Todo](todo/README.md) — audit findings to revalidate against current code before implementation.
 
 ## Product and Delivery Direction
 
 - [Experience](experience.md) — continuous flight, world states, audio, and AR/VR transitions.
 - [Levels](levels/README.md) — detailed intent, behavior, transitions, and future art-direction structure for every world state.
-- [Platforms](platforms.md) — current WebXR entry plus standalone PICO and wired PCVR direction.
-- [Roadmap](roadmap.md) — implementation status and the next measurable milestones.
+- [Platforms](platforms.md) — selected Windows/SteamVR/wired-PICO delivery target and acceptance boundary.
+- [Roadmap](roadmap.md) — outcome-based order for the stabilization backlog.
 - [Architecture Decisions](architecture-decisions.md) — confirmed decisions that constrain future implementation.
 - [Installation Direction](direction/README.md) — where the piece is headed at the Futurium: deployment, senses, dramaturgy, controls, operator, headset. Subordinate to the current-system documents; conflicts are tracked in [Open Decisions](direction/open-decisions.md).
 

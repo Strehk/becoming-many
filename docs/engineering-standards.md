@@ -19,7 +19,8 @@ should extend it. They are defaults, not reasons to add infrastructure.
 - Add an abstraction only for a concrete current need. A possible future use is
   not sufficient.
 - Keep performance work measurable. Desktop behavior is useful evidence, but
-  physical PICO validation is required for headset performance claims.
+  physical validation across the complete wired PCVR chain is required for
+  installation performance claims.
 
 ## Naming and Types
 
@@ -106,7 +107,7 @@ should extend it. They are defaults, not reasons to add infrastructure.
   official manual, matching [Three.js examples](https://threejs.org/examples/),
   then official addon or source code.
 - Prefer maintained Three.js APIs and addons over local replacements. Current
-  examples are `PointerLockControls`, `VRButton`, `Timer`, and
+  examples are `PointerLockControls`, `Timer`, `WebGLRenderer.xr`, and
   `renderer.setAnimationLoop()`.
 - Treat examples as focused implementation references, not architectures to
   copy wholesale. Adapt only the smallest relevant pattern to the project's
@@ -127,7 +128,9 @@ should extend it. They are defaults, not reasons to add infrastructure.
   behavior and assets.
 - Separate verified current behavior from planned product direction. Never
   describe a proposal, folder placeholder, or reference project as implemented.
-- Record physical PICO results separately from desktop or browser results.
+- Record physical wired PCVR results separately from desktop or browser
+  results. Include the pinned station matrix and the complete render, encode,
+  transport, decode, and presentation path.
 - Use folder READMEs to explain ownership and boundaries, not to duplicate
   implementation walkthroughs.
 - Keep `current-status.md` factual, `architecture.md` implementation-based,

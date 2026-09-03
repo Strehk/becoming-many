@@ -1,56 +1,77 @@
+<!--
+Purpose: Define the supported delivery platform and its acceptance boundary.
+Context: The installation uses a Windows station PC and a streamed PICO headset.
+Responsibility: Prevent standalone and PCVR requirements from being mixed in one codebase.
+Boundary: Detailed hardware procedures and measured evidence live in docs/direction and docs/performance.md.
+-->
+
 # Platforms
 
-## Current Support
+## Delivery Target
+
+This repository targets one delivery topology: **Windows PC VR streamed to a
+PICO headset over wired USB**.
+
+```text
+Three.js/WebXR in a Windows browser
+    → SteamVR
+    → PICO Business Streaming
+    → wired USB connection
+    → PICO headset display and tracking
+```
+
+- The station PC runs the browser application and performs rendering.
+- SteamVR is the selected PC VR runtime.
+- PICO Business Streaming carries the session between the station PC and the
+  headset.
+- Wired USB is the installation transport. Wireless streaming is outside the
+  baseline and is not a fallback to implement here.
+- The headset is a display and tracking endpoint, not the host for this
+  repository's TypeScript runtime.
+
+PICO's Business Streaming product documentation confirms that its PC software
+runs on a VR-ready Windows PC with SteamVR installed and supports wired
+streaming to enterprise 6DoF headsets. The exact browser, runtime, headset,
+cable, port, and software-version matrix still requires installation evidence.
+
+## Current Application Support
 
 The application currently runs as a Vite/Three.js browser application.
 
-- Desktop development uses pointer-lock mouse look and WASD or arrow keys.
-- Three.js `VRButton` starts a user-triggered `immersive-vr` WebXR session.
-- Desktop and WebXR rendering share one `renderer.setAnimationLoop()` path.
+- Desktop development uses pointer-lock mouse look and keyboard controls.
+- The World Runtime owns one WebXR-compatible WebGL2 context and one
+  `renderer.setAnimationLoop()` path.
+- The Conductor page hosts the show and WebXR session in one station window.
+- The bare default page remains available for rehearsal and development.
 
-There is currently no passthrough, `immersive-ar`, operator control, platform
-profile, restart flow, or PICO-specific deployment integration. No physical
-PICO acceptance is recorded.
+The codebase does not yet contain a recorded end-to-end wired PCVR acceptance
+run. That is an installation and evidence gap, not an open platform choice.
 
-## Standalone PICO Target
+## Standalone Fork Boundary
 
-- Target PICO 4 and PICO 4 Enterprise.
-- Run the shared TypeScript and Three.js runtime directly on the headset.
-- Support passthrough onboarding, opaque VR, and passthrough offboarding.
-- Prefer a verified 90 Hz profile and retain 72 Hz only as a measured fallback.
+Standalone PICO execution is not a target of this repository. A later,
+deliberately reduced PICO edition belongs in its own fork. Keep shared
+Experience code independent from PC-only operator and diagnostic composition,
+but do not add parallel platform profiles, native Android code, or compatibility
+switches for that possible fork.
 
-The next platform milestone is not a second renderer. It is a minimal
-presentation boundary around the existing world runtime.
+## Acceptance Boundary
 
-## Windows PCVR Target
+Desktop and headless measurements are useful regression evidence. Delivery
+acceptance requires the real wired chain on a pinned station matrix:
 
-- Render on a VR-ready Windows computer.
-- Stream to PICO 4 Enterprise through USB.
-- Evaluate PICO Business Streaming with OpenXR or SteamVR.
-- Reuse the same runtime, world logic, shaders, presets, and content modules
-  when the Windows XR host supports them reliably.
-- Keep wireless streaming outside the installation baseline.
+- Windows, browser, GPU, and driver versions;
+- SteamVR version and active runtime configuration;
+- PICO Business Streaming version and mode;
+- headset model and PICO OS version;
+- USB cable, host port, connection, and reconnect behavior;
+- application rendering plus encode, transport, decode, and presentation.
 
-PCVR requires its own measured profile for rendering, encoding, USB transport,
-headset decoding, and end-to-end latency.
+Do not describe a desktop-browser result as PCVR acceptance, and do not use a
+standalone-headset result as evidence for this delivery path.
 
-## Operator Control Target
+## Primary Source
 
-The operator will control onboarding, VR entry, offboarding, restart, and
-recovery. The headset remains authoritative and confirms applied state.
-
-The intended presentation states are:
-
-```text
-passthrough → transitioning-to-vr → vr → transitioning-to-passthrough
-```
-
-## Open Research Question
-
-Can the shared web runtime run reliably on Windows through PICO Business
-Streaming, including operator-controlled passthrough transitions, or is a
-minimal native OpenXR host required?
-
-Research must verify runtime host behavior, passthrough control, supported
-refresh rates, tracking, packaging, startup, reconnect, and recovery. A native
-host is justified only if the shared web runtime cannot meet those requirements.
+- [PICO Business Streaming product documentation](https://business.picoxr.com/us/software/streaming-assistant)
+  confirms the Windows and SteamVR requirements and wired enterprise-headset
+  support.
