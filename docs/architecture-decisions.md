@@ -68,8 +68,8 @@ history belongs in Git; unresolved product and deployment questions belong in
 
 - The show clock and typed narration schedule are the sole authorities for show
   time, cues, and world-state timing.
-- The default page runs the complete show; explicit level and benchmark routes
-  are showless development surfaces.
+- The default page runs only the complete show. The explicit Test entry owns
+  standalone levels, benchmarks, headset diagnostics, and direct-M5 requests.
 - The viewer rig owns locomotion while the camera owns local desktop-look or
   headset pose. Desktop and M5 controls move the same rig.
 - The conductor is one station window that hosts the show in-process. Its panels

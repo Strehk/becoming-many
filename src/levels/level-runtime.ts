@@ -5,6 +5,7 @@
  * Boundary: Authored data and concrete world composition live in dedicated level files.
  */
 
+import type { WebGLRenderer } from "three";
 import type { BenchmarkRun } from "../benchmark/benchmark-run";
 import { createDesktopControls } from "../control/desktop-controls";
 import { createFlightControlSource } from "../control/flight-control-source";
@@ -16,11 +17,6 @@ import { resetFlightPose } from "../control/flight-reset";
 import { FLIGHT_SETTINGS } from "../control/flight-settings";
 import { showLevelStateAt } from "../dramaturgy/show-levels";
 import { createM5Adapter, type M5Adapter } from "../m5/m5-adapter";
-import {
-  type FrameMetrics,
-  FrameMetricsSampler,
-} from "../test-ui/frame-metrics";
-import { createTestOverlay } from "../test-ui/test-overlay";
 import type { WorldModule } from "../world/module-runtime";
 import {
   startWorld,
@@ -33,6 +29,7 @@ import {
   composeLevel,
   type LoadedLevelAssets,
   loadLevelAssets,
+  type TestLevelModules,
 } from "./level-composition";
 import type {
   LevelPreset,
@@ -47,6 +44,26 @@ import {
   type ShowRuntime,
   type ShowWorldReach,
 } from "./show-runtime";
+
+export interface FrameMetrics {
+  readonly framesPerSecond: number;
+  readonly p95Milliseconds: number;
+}
+
+interface FrameMetricsRecorder {
+  readonly add: (deltaSeconds: number) => void;
+  readonly read: () => FrameMetrics | undefined;
+}
+
+interface LevelTestOverlay {
+  readonly update: (deltaSeconds: number) => void;
+}
+
+type TestOverlayFactory = (
+  container: HTMLElement,
+  renderer: WebGLRenderer,
+  readFrameMetrics: () => FrameMetrics | undefined,
+) => LevelTestOverlay;
 
 /** One running level, returned so the page that started it can command it. */
 export interface RunningLevel {
@@ -73,6 +90,12 @@ export interface RunningLevel {
 
 interface CommonLevelRequest {
   readonly m5ExpectedDeviceId?: string;
+  /** Entry-owned sampling used by Test UI or the Conductor status strip. */
+  readonly frameMetrics?: FrameMetricsRecorder;
+  /** Test-entry UI factory; absent from show entry graphs. */
+  readonly testOverlay?: TestOverlayFactory;
+  /** Concrete modules that only diagnostic presets can request. */
+  readonly testModules?: TestLevelModules;
 }
 
 export interface StaticLevelRequest extends CommonLevelRequest {
@@ -141,17 +164,15 @@ async function setupLevel(
     benchmark,
     request.m5ExpectedDeviceId,
   );
-  // One sampler for the whole level: the narrative presets never set `testUi`,
-  // so metrics read from the overlay would be missing exactly where an
-  // operator surface needs them.
-  const frameMetrics = new FrameMetricsSampler();
-  const readFrameMetrics = (): FrameMetrics | undefined => frameMetrics.read();
+  const frameMetrics = request.frameMetrics;
+  const readFrameMetrics = (): FrameMetrics | undefined => frameMetrics?.read();
   const testOverlay = createOptionalTestOverlay({
     container,
     world,
     request,
     benchmark,
     readFrameMetrics,
+    factory: request.testOverlay,
   });
   // A benchmark must stay deterministic: an audio context and media elements
   // would add nondeterministic decode work to the samples, and a fixed
@@ -225,6 +246,7 @@ async function prepareLevelComposition(
         ? request.preset.backgroundColor
         : request.composition.materialHazeColor,
     forShow: request.kind === "show",
+    testModules: request.testModules,
   });
   activateModules(world, composed.modules);
   if (request.kind === "show") await prepareShowRenderer(world);
@@ -287,20 +309,22 @@ interface OptionalTestOverlayOptions {
   readonly request: LevelStartRequest;
   readonly benchmark: BenchmarkRun | undefined;
   readonly readFrameMetrics: () => FrameMetrics | undefined;
+  readonly factory: TestOverlayFactory | undefined;
 }
 
 function createOptionalTestOverlay(
   options: OptionalTestOverlayOptions,
-): ReturnType<typeof createTestOverlay> | undefined {
+): LevelTestOverlay | undefined {
   if (
     options.benchmark ||
     options.request.kind !== "static" ||
-    !options.request.preset.testUi
+    !options.request.preset.testUi ||
+    !options.factory
   ) {
     return undefined;
   }
 
-  return createTestOverlay(
+  return options.factory(
     options.container,
     options.world.renderer,
     options.readFrameMetrics,
@@ -329,18 +353,18 @@ interface LevelFrameOptions {
     | ReturnType<typeof createFlightControlSource>
     | undefined;
   readonly show: ReturnType<typeof createShowRuntime> | undefined;
-  readonly frameMetrics: FrameMetricsSampler;
+  readonly frameMetrics: FrameMetricsRecorder | undefined;
   readonly heightLimits: {
     minimumGroundClearanceMeters: number | undefined;
     maximumGroundClearanceMeters: number | undefined;
   };
   readonly staticMaximumGroundClearanceMeters: number | undefined;
-  readonly testOverlay: ReturnType<typeof createTestOverlay> | undefined;
+  readonly testOverlay: LevelTestOverlay | undefined;
 }
 
 function createLevelUpdate(options: LevelFrameOptions): WorldUpdate {
   return (deltaSeconds): void => {
-    options.frameMetrics.add(deltaSeconds);
+    options.frameMetrics?.add(deltaSeconds);
     if (options.benchmark) {
       options.benchmark.placeViewer(options.world.viewerRig);
     } else {

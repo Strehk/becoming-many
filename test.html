@@ -1,0 +1,20 @@
+<!--
+Purpose: Host standalone development levels, benchmarks, and diagnostics.
+Context: The rehearsal show and Test tooling use separate browser entries.
+Responsibility: Provide the Test mount and load src/test-main.ts.
+Boundary: Runtime composition and development behavior live in TypeScript.
+-->
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#ffffff" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <title>Becoming Many — Test</title>
+  </head>
+  <body>
+    <main class="app"></main>
+    <script type="module" src="/src/test-main.ts"></script>
+  </body>
+</html>

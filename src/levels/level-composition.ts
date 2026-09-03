@@ -19,7 +19,6 @@ import {
   createEchoDepth,
   type EchoDepthEffect,
 } from "../modules/echo-depth/echo-depth";
-import { createGrassModule } from "../modules/grass/grass";
 import { createGrassClipmapModule } from "../modules/grass-clipmap/grass-clipmap";
 import { getGrassZoneCoverage } from "../modules/grass-clipmap/grass-height-field";
 import {
@@ -62,7 +61,6 @@ import {
   createWorldFade,
   type WorldFadeEffect,
 } from "../modules/world-fade/world-fade";
-import { createZoneVisualizer } from "../modules/zone-visualizer/zone-visualizer";
 import {
   type GltfAssetRequest,
   type GltfAssets,
@@ -94,6 +92,17 @@ interface LevelSetup {
   readonly materialHazeColor: number;
   /** Only a show composes world fades; a static run keeps its materials bare. */
   readonly forShow: boolean;
+  readonly testModules: TestLevelModules | undefined;
+}
+
+type CreateLegacyGrass =
+  typeof import("../modules/grass/grass").createGrassModule;
+type CreateZonePresentation =
+  typeof import("../modules/zone-visualizer/zone-visualizer").createZoneVisualizer;
+
+export interface TestLevelModules {
+  readonly createLegacyGrass?: CreateLegacyGrass;
+  readonly createZonePresentation?: CreateZonePresentation;
 }
 
 interface LevelCompositionOptions {
@@ -102,6 +111,7 @@ interface LevelCompositionOptions {
   readonly assets: LoadedLevelAssets;
   readonly materialHazeColor: number;
   readonly forShow: boolean;
+  readonly testModules?: TestLevelModules;
 }
 
 export interface ComposedLevel {
@@ -116,7 +126,11 @@ export function composeLevel(options: LevelCompositionOptions): ComposedLevel {
     WORLD_SURFACE_SETTINGS,
     ZONE_SETTINGS,
   );
-  const setup: LevelSetup = { ...options, worldSurface };
+  const setup: LevelSetup = {
+    ...options,
+    worldSurface,
+    testModules: options.testModules,
+  };
   const configured = createConfiguredModules(setup);
 
   return {
@@ -373,7 +387,7 @@ function createTerrain(
       : undefined;
   }
 
-  const presentation = createTerrainPresentation(preset, setup.worldSurface);
+  const presentation = createTerrainPresentation(preset, setup);
   // The first-applied effect executes last and wins the final color (see
   // material-shader-patch): the world fade dissolves the finished surface
   // into the background, thermal covers everything inside its radius, and
@@ -490,7 +504,10 @@ function createGrass(
   const preset = setup.level.grass;
   if (!preset) return undefined;
 
-  return createGrassModule({
+  const createLegacyGrass = setup.testModules?.createLegacyGrass;
+  if (!createLegacyGrass) throw new Error("Legacy Grass module was not loaded");
+
+  return createLegacyGrass({
     scene: setup.world.scene,
     viewpoint: setup.world.viewpoint,
     preset,
@@ -607,16 +624,20 @@ function composeBodyObservers(
 
 function createTerrainPresentation(
   preset: TerrainPreset,
-  worldSurface: WorldSurface,
+  setup: LevelSetup,
 ): TerrainPresentation | undefined {
   if (preset.presentation === "zones") {
-    return createZoneVisualizer(worldSurface, ZONE_SETTINGS);
+    const createZonePresentation = setup.testModules?.createZonePresentation;
+    if (!createZonePresentation) {
+      throw new Error("Zone Visualizer module was not loaded");
+    }
+    return createZonePresentation(setup.worldSurface, ZONE_SETTINGS);
   }
   if (preset.colors) {
     return createTerrainColors(
       preset.colors,
       WORLD_SURFACE_SETTINGS,
-      worldSurface,
+      setup.worldSurface,
     );
   }
   return undefined;

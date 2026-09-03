@@ -8,6 +8,7 @@
 import { level as connectionsLevel } from "./connections.level";
 import { level as designTestLevel } from "./designTest.level";
 import { level as echoLevel } from "./echo.level";
+import { isLevelName, LEVEL_NAMES, type LevelName } from "./level-names";
 import type { LevelPreset } from "./level-preset";
 import { level as magneticLevel } from "./magnetic.level";
 import { level as motionLevel } from "./motion.level";
@@ -27,18 +28,12 @@ export const LEVEL_CATALOG = {
   connections: connectionsLevel,
   test: testLevel,
   "design-test": designTestLevel,
-} as const satisfies Record<string, LevelPreset>;
+} as const satisfies Record<LevelName, LevelPreset>;
 
-export type LevelName = keyof typeof LEVEL_CATALOG;
+export { isLevelName, LEVEL_NAMES, type LevelName } from "./level-names";
 
 /** The level the browser entry opens without an explicit request. */
 const DEFAULT_LEVEL_NAME: LevelName = "connections";
-
-export const LEVEL_NAMES = Object.keys(LEVEL_CATALOG) as readonly LevelName[];
-
-export function isLevelName(value: string): value is LevelName {
-  return value in LEVEL_CATALOG;
-}
 
 /** Falls back to the default rather than failing on an unknown request. */
 export function resolveLevelName(requested: string | null): LevelName {
