@@ -225,11 +225,14 @@ test("Scent Level layers scent onto the White World air baseline", () => {
     ),
   );
   expect(carriedMetres).toBeGreaterThan(tallestRise);
-  // A route is carried much further still: nothing holds a print in place
-  // once the animal has walked on.
-  expect(scent.animals?.windResponseMeters ?? 0).toBeGreaterThan(
-    scent.motion.windResponseMeters,
-  );
+  // A route is carried less far than airborne plant scent, and never nothing:
+  // a print clings to the ground it was left on, so the weather leans a trail
+  // instead of moving it off the ground the animal actually walked. Carried
+  // further than the plants, as it was authored once, the trail stopped being
+  // something a traveler could follow at all.
+  const trailCarriedMetres = scent.animals?.windResponseMeters ?? 0;
+  expect(trailCarriedMetres).toBeGreaterThan(0);
+  expect(trailCarriedMetres).toBeLessThan(scent.motion.windResponseMeters);
   // The trail must stay inside the 60-second animation loop it ages against.
   expect(scent.animals?.lifetimeSeconds).toBeLessThanOrEqual(60);
 });
@@ -296,7 +299,32 @@ test("Thermal Level layers heat onto the carried Motion world", () => {
   expect(thermalPreset.terrain).toEqual(motionLevel.terrain);
   expect(thermalPreset.vegetation).toEqual(motionLevel.vegetation);
   expect(thermalPreset.rocks).toEqual(motionLevel.rocks);
-  expect(thermalPreset.motion).toEqual(motionLevel.motion);
+  // The one authored deviation from the carried Motion world: a bird is a warm
+  // body, so a heat view prints its trace in the palette's hot stop instead of
+  // the cold accent the pale world reads it as. Everything else about the
+  // flocks carries over, and the cold-blooded flies keep their own colors.
+  const carriedMotion = motionLevel.motion;
+  const thermalMotion = thermalPreset.motion;
+  if (!carriedMotion?.birds) throw new Error("Motion Level must author birds");
+  if (!thermalMotion?.birds) throw new Error("Thermal Level must carry birds");
+  expect({ ...thermalMotion, birds: undefined }).toEqual({
+    ...carriedMotion,
+    birds: undefined,
+  });
+  expect({ ...thermalMotion.birds, appearance: undefined }).toEqual({
+    ...carriedMotion.birds,
+    appearance: undefined,
+  });
+  expect({ ...thermalMotion.birds.appearance, trailColor: 0 }).toEqual({
+    ...carriedMotion.birds.appearance,
+    trailColor: 0,
+  });
+  expect(thermalMotion.birds.appearance.trailColor).toBe(
+    thermal.colors.hotColor,
+  );
+  expect(carriedMotion.birds.appearance.trailColor).not.toBe(
+    thermalMotion.birds.appearance.trailColor,
+  );
   expect(thermalPreset.backgroundColor).toBe(motionLevel.backgroundColor ?? -1);
   expect(thermalPreset.grass).toBeUndefined();
   expect(thermalPreset.grassClipmap).toEqual(echoLevel.grassClipmap);
@@ -337,6 +365,24 @@ test("Thermal Level layers heat onto the carried Motion world", () => {
   );
   expect(thermal.bands.grass.ceilingWarmth).toBeLessThan(
     thermal.bands.vegetation.ceilingWarmth,
+  );
+  // A bush is read from the meadow it stands in upward, not from the canopy
+  // down: warmer than the grass around it, cooler than the plants that carry
+  // a crown, and never able to reach the magenta a stem is allowed. Under the
+  // canopy's values it was the one thing in the landscape holding a single
+  // warm color across its whole body, because a plant sheds its warmth over
+  // its own metres and a bush has too few to shed any.
+  expect(thermal.surfaces.undergrowthWarmth).toBeGreaterThan(
+    thermal.surfaces.grassWarmth,
+  );
+  expect(thermal.surfaces.undergrowthWarmth).toBeLessThan(
+    thermal.surfaces.vegetationWarmth,
+  );
+  expect(thermal.bands.undergrowth.ceilingWarmth).toBeGreaterThan(
+    thermal.bands.grass.ceilingWarmth,
+  );
+  expect(thermal.bands.undergrowth.ceilingWarmth).toBeLessThan(
+    THERMAL_PERCEPTION_SETTINGS.warmStopFraction,
   );
 
   // Animals outside the radius sit inside the carried echo grayscale.

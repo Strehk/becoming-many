@@ -67,6 +67,13 @@ export interface ThermalTerrainEffect {
 export interface ThermalPerceptionEffects {
   readonly terrain: ThermalTerrainEffect;
   readonly vegetation: UnlitMaterialEffect;
+  /**
+   * Undergrowth. Separate from vegetation because a plant's gradient is shed
+   * over its own metres: a bush has too few of them to shed anything, so one
+   * set of values cannot describe both a shrub and a ten-metre pine. It reads
+   * from the meadow it stands in upward rather than from the canopy down.
+   */
+  readonly undergrowth: UnlitMaterialEffect;
   readonly rocks: UnlitMaterialEffect;
   /**
    * Grass. Separate from vegetation because it reads as the ground it grows
@@ -208,6 +215,31 @@ export function createThermalPerception(
             THERMAL_PERCEPTION_SETTINGS.definition.vegetationPivot,
           ),
           ...createBandUniforms(parameters.bands.vegetation),
+          ...HEAT_SENSED,
+        },
+        vertexHeader: instancedVertexShader,
+      }),
+    },
+    undergrowth: {
+      applyTo: createPatchApplier({
+        cacheKey: THERMAL_INSTANCED_CACHE_KEY,
+        uniforms: {
+          ...sharedUniforms,
+          ...createInstancedWarmthUniforms(
+            parameters.surfaces.undergrowthWarmth,
+            parameters.surfaces.undergrowthWarmthSpread,
+            parameters.surfaces.undergrowthHeightWarmthPerMeter,
+            parameters.surfaces.undergrowthAxisWarmthPerMeter,
+          ),
+          ...createTextureUniforms(
+            parameters.surfaces.undergrowthTextureWarmth,
+            worldFeatureSize,
+          ),
+          ...createContrastUniform(
+            parameters.surfaces.undergrowthContrast,
+            THERMAL_PERCEPTION_SETTINGS.definition.undergrowthPivot,
+          ),
+          ...createBandUniforms(parameters.bands.undergrowth),
           ...HEAT_SENSED,
         },
         vertexHeader: instancedVertexShader,
@@ -452,6 +484,10 @@ function validateThermalPerceptionParameters(
     parameters.terrainTextureWarmth,
     parameters.actorTextureWarmth,
     parameters.surfaces.vegetationTextureWarmth,
+    parameters.surfaces.undergrowthWarmth,
+    parameters.surfaces.undergrowthWarmthSpread,
+    parameters.surfaces.undergrowthTextureWarmth,
+    parameters.surfaces.undergrowthContrast,
     parameters.surfaces.rockTextureWarmth,
     parameters.heatEmission.strength,
     parameters.terrainContrast,
@@ -472,6 +508,8 @@ function validateThermalPerceptionParameters(
   const gradients = [
     parameters.surfaces.vegetationHeightWarmthPerMeter,
     parameters.surfaces.vegetationAxisWarmthPerMeter,
+    parameters.surfaces.undergrowthHeightWarmthPerMeter,
+    parameters.surfaces.undergrowthAxisWarmthPerMeter,
     parameters.surfaces.rockHeightWarmthPerMeter,
     parameters.surfaces.rockAxisWarmthPerMeter,
   ];

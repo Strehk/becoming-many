@@ -15,6 +15,7 @@ import {
 import { resetFlightPose } from "../control/flight-reset";
 import { FLIGHT_SETTINGS } from "../control/flight-settings";
 import { applyM5Flight } from "../control/m5-flight";
+import { END_CREDITS, endCreditsPresenceAt } from "../dramaturgy/end-credits";
 import type { NarrationLanguage } from "../dramaturgy/narration-catalog";
 import {
   type NarrationSchedule,
@@ -46,6 +47,10 @@ import {
   type EchoDepthEffect,
   type EchoDepthParameters,
 } from "../modules/echo-depth/echo-depth";
+import {
+  createEndCreditsPanel,
+  type EndCreditsPanelHandle,
+} from "../modules/end-credits/end-credits-panel";
 import { createGrassModule, type GrassPreset } from "../modules/grass/grass";
 import {
   createGrassClipmapModule,
@@ -489,6 +494,11 @@ function createShow(
     followViewDistance(showTimeSeconds);
     followBackground(showTimeSeconds);
     followSenses(showTimeSeconds);
+    // Derived like everything else here, so a seek lands mid-fade and a seek
+    // to zero puts the credits away without a second piece of state.
+    reach.setEndCreditsPresence?.(
+      endCreditsPresenceAt(schedule, showTimeSeconds),
+    );
   }
 
   function followViewDistance(showTimeSeconds: number): void {
@@ -652,6 +662,11 @@ interface ShowWorldReach {
   };
   /** Keeps the opaque sky dome on the live background while it lerps. */
   readonly setSkyBackground?: (background: Color) => void;
+  /**
+   * Fades the closing credits in at the end of the show. Not a gate: the
+   * credits are not a sense, and the panel costs no draw while hidden.
+   */
+  readonly setEndCreditsPresence?: (presence: number) => void;
 }
 
 interface ComposedWorld {
@@ -675,6 +690,17 @@ function createConfiguredModules(setup: LevelSetup): ComposedWorld {
   // materials skip the extra fragment mix entirely.
   const structureFade = setup.forShow ? createWorldFade() : undefined;
   const animalsFade = setup.forShow ? createWorldFade() : undefined;
+  // The credits close a show. A development preset and the benchmark route
+  // never reach an ending, so neither builds the panel or its texture.
+  const endCredits = setup.forShow
+    ? createEndCreditsPanel({
+        scene: setup.world.scene,
+        viewpoint: setup.world.viewpoint,
+        viewerRig: setup.world.viewerRig,
+        viewPitchDegrees: FLIGHT_SETTINGS.viewPitchAssistDegrees,
+        definition: END_CREDITS,
+      })
+    : undefined;
 
   const echoDepth = createEchoDepthEffect(setup.level);
   const thermal = createThermalEffects(setup);
@@ -712,6 +738,7 @@ function createConfiguredModules(setup: LevelSetup): ComposedWorld {
   add("motion", motion?.module);
   add("magneticSky", magnetic?.module);
   add("connections", connections?.module);
+  add(undefined, endCredits?.module);
 
   return {
     modules,
@@ -723,6 +750,7 @@ function createConfiguredModules(setup: LevelSetup): ComposedWorld {
       connections,
       structureFade,
       animalsFade,
+      endCredits,
     }),
   };
 }
@@ -741,6 +769,7 @@ interface ComposedSenseHandles {
   readonly connections: ConnectionsModuleHandle | undefined;
   readonly structureFade: WorldFadeEffect | undefined;
   readonly animalsFade: WorldFadeEffect | undefined;
+  readonly endCredits: EndCreditsPanelHandle | undefined;
 }
 
 function composeShowReach(
@@ -761,6 +790,7 @@ function composeShowReach(
       animals: handles.animalsFade,
     },
     setSkyBackground: handles.magnetic?.setSkyBackground,
+    setEndCreditsPresence: handles.endCredits?.setPresence,
   };
 }
 
@@ -1041,7 +1071,16 @@ function createVegetation(
     assets: setup.assets.vegetation,
     streamQueue: setup.world.streamQueue,
     worldSurface: setup.worldSurface,
-    effects: buildSurfaceEffects(worldFade, thermal?.vegetation, echoDepth),
+    // Asked per stature: heat reads a bush as its own substance, nearer the
+    // meadow it stands in than the wood above it, because a plant sheds its
+    // warmth over its own metres and a bush has too few to shed any. Every
+    // other sense answers the same for both.
+    effectsFor: (stature) =>
+      buildSurfaceEffects(
+        worldFade,
+        stature === "undergrowth" ? thermal?.undergrowth : thermal?.vegetation,
+        echoDepth,
+      ),
   });
 }
 

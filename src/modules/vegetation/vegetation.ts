@@ -23,7 +23,10 @@ import {
   type StaticPopulationParameters,
   type StaticPopulationPreset,
 } from "../static-population";
-import { VEGETATION_DEFINITION } from "./vegetation-definition";
+import {
+  VEGETATION_DEFINITION,
+  type VegetationStature,
+} from "./vegetation-definition";
 import {
   createVegetationChunkWriter,
   createVegetationInstances,
@@ -46,6 +49,15 @@ export interface VegetationPreset extends StaticPopulationPreset {
   readonly colors: VegetationColors;
 }
 
+/**
+ * Supply the effects one stature of plant is drawn with. It is asked once per
+ * model at load, so a sense that reads a bush and a pine as different
+ * substances answers differently for each without knowing the asset list.
+ */
+export type VegetationEffectsFor = (
+  stature: VegetationStature,
+) => readonly UnlitMaterialEffect[] | undefined;
+
 const VEGETATION_CHUNK_LEVEL = 2;
 
 export interface VegetationModuleOptions {
@@ -55,7 +67,7 @@ export interface VegetationModuleOptions {
   readonly assets: GltfAssets;
   readonly streamQueue: StreamQueue;
   readonly worldSurface: WorldSurface;
-  readonly effects?: readonly UnlitMaterialEffect[];
+  readonly effectsFor?: VegetationEffectsFor;
 }
 
 interface VegetationRuntimeOptions {
@@ -66,7 +78,7 @@ interface VegetationRuntimeOptions {
   readonly assets: GltfAssets;
   readonly streamQueue: StreamQueue;
   readonly worldSurface: WorldSurface;
-  readonly effects?: readonly UnlitMaterialEffect[];
+  readonly effectsFor?: VegetationEffectsFor;
 }
 
 interface VegetationStream {
@@ -171,7 +183,7 @@ function createVegetationStream(
     chunkSize,
     chunkSlotCount: chunkWindow.slotCount,
     worldSurface: options.worldSurface,
-    effects: options.effects,
+    effectsFor: options.effectsFor,
   });
   const slotJobKeys = Array.from({ length: chunkWindow.slotCount }, () => ({}));
   return { chunkWindow, instances, slotJobKeys };

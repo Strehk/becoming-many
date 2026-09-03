@@ -7,6 +7,10 @@
 
 import type { LevelPreset } from "./level-runtime";
 import { level as motionLevel } from "./motion.level";
+import {
+  sharedMotionSense,
+  sharedMotionSenseBirds,
+} from "./shared-level-values";
 
 export const level: LevelPreset = {
   // Senses layer, never swap: the world carries the Motion Perception preset
@@ -14,6 +18,23 @@ export const level: LevelPreset = {
   // outside it the carried Motion world shows unchanged.
   ...motionLevel,
   maximumGroundClearanceMeters: 50,
+  // The one thing level 05 repaints in the carried Motion world. A bird is a
+  // warm body, and a heat view that prints its trace in the cold accent of
+  // the pale world says the opposite of what the sense is for. The trace
+  // takes the palette's hot stop, the same orange the ramp gives a warm
+  // surface, so a flock reads as heat crossing the sky.
+  // The flies keep their indigo: an insect carries no warmth of its own, and
+  // a swarm printed warm would be the level's brightest untruth.
+  motion: {
+    ...sharedMotionSense,
+    birds: {
+      ...sharedMotionSenseBirds,
+      appearance: {
+        ...sharedMotionSenseBirds.appearance,
+        trailColor: 0xfb5f16,
+      },
+    },
+  },
   // New in level 05: warm bodies against the carried grayscale world. Fur
   // colors come from the level-03 dark stops so animals outside the thermal
   // radius sit inside the echo palette like vegetation does.
@@ -169,12 +190,45 @@ export const level: LevelPreset = {
       // about a metre and is under a metre across, so it loses little from its
       // foot in either direction and reads near its base temperature — one
       // small warm thing in a meadow rather than a gradient too small to see.
-      vegetationWarmth: 0.84,
+      // Lowered from 0.84: a plant does not hold the heat that value gave it.
+      // The base is what a low trunk reads, and everything above it is that
+      // value shed by distance from the foot, so the base alone decides how
+      // warm a whole plant is — and at 0.84 the contrast curve carried a foot
+      // to full orange, the color this level reserves for a living body.
+      // It costs the bushes most, which is the point: a bush is a metre tall
+      // and a metre across, so it sheds almost nothing from its own foot and
+      // reads at very nearly this value all over. That is why the bushes are
+      // no longer authored here at all: they are a stature of their own now,
+      // and these values describe only the plants that carry a canopy.
+      vegetationWarmth: 0.76,
       vegetationWarmthSpread: 0.05,
       vegetationHeightWarmthPerMeter: -0.06,
       vegetationAxisWarmthPerMeter: -0.11,
       vegetationTextureWarmth: 0.26,
       vegetationContrast: 0.34,
+      // Undergrowth, read from the meadow upward rather than from the canopy
+      // down. A bush is a low body of leaf standing in grass, and every value
+      // a tree earns by being tall is one a bush cannot earn: it has no stem
+      // to hold heat at the bottom of, and no reach to shed heat over. Given
+      // the trees' values it was the one thing in the landscape that held a
+      // single warm color across its whole body, which read as a hot object
+      // in a cold field rather than as scrub.
+      // The base is the grass's own reading plus a little, so a bush and the
+      // meadow around it are the same substance seen at two thicknesses. What
+      // is left of the plant gradient is aimed at its middle: the falloff per
+      // metre is steep for something a metre wide, so the heart of the bush
+      // keeps the warmth and the outer leaf arrives back at the grass. The
+      // texture and contrast are the grass's too, so the two carry one
+      // register and a meadow does not change substance where a bush stands
+      // in it. The spread between bushes is wider than the trees' because it
+      // is the only variation a plant this small has: nothing else about it
+      // separates one from the next.
+      undergrowthWarmth: 0.42,
+      undergrowthWarmthSpread: 0.07,
+      undergrowthHeightWarmthPerMeter: -0.09,
+      undergrowthAxisWarmthPerMeter: -0.16,
+      undergrowthTextureWarmth: 0.28,
+      undergrowthContrast: 0.5,
       // Rock is cold, heavy substance: it sits near the ground's own range,
       // warmest on the face the sun reaches and cooler down its flanks.
       // It was the last solid thing left in the image: the ground around it
@@ -219,12 +273,14 @@ export const level: LevelPreset = {
     // blue is fully reached, which is where the outermost foliage lands, so a
     // crown fades out into cold blue rather than into the near-black the
     // ground's own hollows use: a plant sharing the ground's darkest color
-    // stops reading as a separate object standing in it. Their ceiling still
-    // sits exactly where orange is fully reached, so the foot of the
-    // trunk is allowed that color and one tree covers blue through cyan and
-    // magenta to orange between that foot and its farthest tips, with no
-    // stretch of it left flat. Yellow
-    // stays out of reach. A living body's floor is lifted far higher: it sits
+    // stops reading as a separate object standing in it. Their ceiling used to
+    // sit exactly where orange is fully reached, which allowed the foot of a
+    // trunk that color; it now sits below that stop, so the warmest thing a
+    // plant can be is a warm magenta however its texture and contrast add up.
+    // One tree still covers blue through cyan into magenta between its foot
+    // and its farthest tips, with no stretch of it left flat — what it no
+    // longer does is arrive at the color of a body. Orange and yellow
+    // stay out of reach. A living body's floor is lifted far higher: it sits
     // above the warm stop, so the coolest reading anywhere on an animal — a
     // hoof tip, an antler end, the end of a tail — is a full magenta, and
     // nothing on a body can arrive at the cyan the landscape ends on. That is
@@ -232,7 +288,13 @@ export const level: LevelPreset = {
     // thing, and the whole of it has to read that way.
     bands: {
       terrain: { floorWarmth: 0, ceilingWarmth: 0.48 },
-      vegetation: { floorWarmth: 0.16, ceilingWarmth: 0.86 },
+      vegetation: { floorWarmth: 0.16, ceilingWarmth: 0.82 },
+      // Undergrowth is held just above the grass and nowhere near the canopy:
+      // the ceiling leaves room for the little heat a bush keeps in its middle
+      // and stops well below the magenta a tree's stem is allowed, and the
+      // floor is the grass's, so an outer leaf may arrive at the meadow's own
+      // color rather than at a plant's cold blue.
+      undergrowth: { floorWarmth: 0, ceilingWarmth: 0.6 },
       rocks: { floorWarmth: 0, ceilingWarmth: 0.48 },
       // Barely wider than the ground's, and starting at the same floor: grass
       // may read a shade warmer than the soil under it, never like a plant.

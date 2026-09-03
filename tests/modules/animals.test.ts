@@ -44,6 +44,8 @@ const DEFINITION: AnimalsDefinition = {
   species: [createSpecies("deer"), createSpecies("fox")],
 };
 
+const MEADOW_ISLAND_RADIUS_METERS = 25;
+
 const PRESET = {
   colors: {
     furColor: 0x886644,
@@ -52,6 +54,56 @@ const PRESET = {
     featureColor: 0x111111,
   },
 } as const;
+
+test("Animals fade in when they take a visible slot", () => {
+  const scene = new Scene();
+  const viewpoint: Viewpoint = {
+    worldPosition: new Vector3(),
+    viewDistanceMeters: DEFAULT_VIEW_DISTANCE_METERS,
+  };
+  const { module } = createAnimalsModule({
+    scene,
+    viewpoint,
+    definition: DEFINITION,
+    preset: PRESET,
+    assets: createAnimalAssets(),
+    worldSurface: createFlatSurface(),
+  });
+
+  module.load();
+  module.activate();
+  const population = scene.children[0];
+  if (!(population instanceof Group)) throw new Error("Expected animal Group");
+
+  const arrival: number[] = [];
+  for (let step = 0; step < 90; step += 1) {
+    module.update?.(1 / 60);
+    arrival.push(readVisibleOpacity(population));
+  }
+
+  // It arrives over time rather than between two frames, and it is drawn all
+  // the way through: an actor that only appeared once it was solid would be
+  // the pop this fade exists to remove.
+  expect(arrival[0]).toBeLessThan(0.2);
+  expect(arrival.at(-1)).toBe(1);
+  expect(arrival.indexOf(1)).toBeGreaterThan(5);
+  for (let frame = 1; frame < arrival.length; frame += 1) {
+    expect(arrival[frame] ?? 0).toBeGreaterThanOrEqual(arrival[frame - 1] ?? 0);
+  }
+
+  // The materials stay transparent for the whole loaded lifetime, so the fade
+  // never asks the patched shader to recompile.
+  const transparency: boolean[] = [];
+  population.traverse((object) => {
+    if (object instanceof Mesh && !Array.isArray(object.material)) {
+      transparency.push(object.material.transparent);
+    }
+  });
+  expect(transparency).not.toHaveLength(0);
+  expect(transparency.every((transparent) => transparent)).toBe(true);
+
+  module.unload();
+});
 
 test("Animals animate only the nearest bounded population", () => {
   const scene = new Scene();
@@ -171,7 +223,9 @@ test("Animals occupy separate territories around the player", () => {
 
   module.load();
   module.activate();
-  module.update?.(0);
+  // Long enough for the arrival fade to finish: an actor taking a visible
+  // slot fades in rather than appearing complete in one frame.
+  module.update?.(1);
 
   const population = scene.children[0];
   if (!(population instanceof Group)) throw new Error("Expected animal Group");
@@ -244,6 +298,98 @@ test("Animals align their up axis with the local surface slope", () => {
   expect(actorForward.dot(expectedSurfaceForward)).toBeGreaterThan(0.999);
 });
 
+test("Animals lean onto an arc at a zone edge instead of pivoting", () => {
+  const scene = new Scene();
+  const viewpoint: Viewpoint = {
+    worldPosition: new Vector3(),
+    viewDistanceMeters: DEFAULT_VIEW_DISTANCE_METERS,
+  };
+  const species = {
+    ...createSpecies("deer"),
+    count: 1,
+    heightMeters: 1.4,
+    speedMetersPerSecond: 0.65,
+    allowedZones: ["meadow"] as const,
+  };
+  const headings: number[] = [];
+  const bodyPath: { x: number; z: number }[] = [];
+  const { module } = createAnimalsModule({
+    scene,
+    viewpoint,
+    definition: {
+      ...DEFINITION,
+      maxVisible: 1,
+      // Inside the island, so the actor is placed on ground it may stand on.
+      activeRadiusMeters: MEADOW_ISLAND_RADIUS_METERS,
+      species: [species],
+    },
+    preset: PRESET,
+    assets: createAnimalAssets(),
+    worldSurface: createIslandSurface(MEADOW_ISLAND_RADIUS_METERS),
+    onBodiesUpdated: (bodies) => {
+      const body = bodies[0];
+      if (!body) return;
+
+      headings.push(body.headingRadians);
+      bodyPath.push({ x: body.x, z: body.z });
+    },
+  });
+
+  module.load();
+  module.activate();
+  const stepSeconds = 1 / 60;
+  for (let step = 0; step < 7_200; step += 1) module.update?.(stepSeconds);
+
+  // The turning circle is authored in body heights, so the fastest the
+  // heading may move is the speed over that radius.
+  const turnRateRadiansPerSecond =
+    species.speedMetersPerSecond / (species.heightMeters * 2.5);
+  const largestStep = turnRateRadiansPerSecond * stepSeconds * 1.0001;
+  let turningFrames = 0;
+  for (let frame = 1; frame < headings.length; frame += 1) {
+    const change = Math.abs(
+      Math.atan2(
+        Math.sin((headings[frame] ?? 0) - (headings[frame - 1] ?? 0)),
+        Math.cos((headings[frame] ?? 0) - (headings[frame - 1] ?? 0)),
+      ),
+    );
+    expect(change).toBeLessThanOrEqual(largestStep);
+    if (change > 0) turningFrames += 1;
+  }
+
+  // It has to have met the edge and turned there, and it has to have kept
+  // walking through the turn rather than standing still to make it.
+  expect(turningFrames).toBeGreaterThan(0);
+  let walkingFrames = 0;
+  for (let frame = 1; frame < bodyPath.length; frame += 1) {
+    const from = bodyPath[frame - 1];
+    const to = bodyPath[frame];
+    if (!from || !to) continue;
+    if (Math.hypot(to.x - from.x, to.z - from.z) > 1e-9) walkingFrames += 1;
+  }
+  expect(walkingFrames).toBeGreaterThan((bodyPath.length - 1) * 0.9);
+
+  // And it never left the one zone it is allowed to stand in.
+  for (const { x, z } of bodyPath) {
+    expect(Math.hypot(x, z)).toBeLessThanOrEqual(MEADOW_ISLAND_RADIUS_METERS);
+  }
+
+  module.unload();
+});
+
+/** The opacity of the actors currently drawn; zero when none is. */
+function readVisibleOpacity(population: Group): number {
+  let highest = 0;
+  population.traverse((object) => {
+    if (!(object instanceof Mesh) || !object.visible) return;
+    if (Array.isArray(object.material)) return;
+    if (!object.parent?.visible) return;
+
+    highest = Math.max(highest, object.material.opacity);
+  });
+  return highest;
+}
+
 function createSpecies(id: string) {
   return {
     id,
@@ -288,6 +434,15 @@ function createFlatSurface(): WorldSurface {
       forestRegionValue: 0,
     }),
     zoneAt: () => "meadow",
+  };
+}
+
+/** One round meadow in conifer forest: walking straight always finds an edge. */
+function createIslandSurface(radiusMeters: number): WorldSurface {
+  return {
+    ...createFlatSurface(),
+    zoneAt: (worldX, worldZ) =>
+      Math.hypot(worldX, worldZ) <= radiusMeters ? "meadow" : "coniferForest",
   };
 }
 

@@ -62,34 +62,50 @@ export function placeSwarmAnchors(
   playerZ: number,
 ): void {
   for (let swarmIndex = 0; swarmIndex < anchors.length; swarmIndex += 1) {
-    const anchor = anchors[swarmIndex];
-    if (!anchor) continue;
-
-    const ring = getSwarmRing(swarmIndex, anchors.length);
-    for (
-      let attempt = 0;
-      attempt < MOTION_SENSE_SETTINGS.placementAttemptsPerAnchor;
-      attempt += 1
-    ) {
-      const angle =
-        getMotionRandom(swarmIndex, ANCHOR_RANDOM_ANGLE, epoch, attempt) * TAU;
-      const radius =
-        ring.minMeters +
-        Math.sqrt(
-          getMotionRandom(swarmIndex, ANCHOR_RANDOM_RADIUS, epoch, attempt),
-        ) *
-          (ring.maxMeters - ring.minMeters);
-      anchor.x = playerX + Math.cos(angle) * radius;
-      anchor.z = playerZ + Math.sin(angle) * radius;
-      if (surface.zoneAt(anchor.x, anchor.z) !== "water") break;
-    }
-    // A fresh anchor snaps onto its ground plane; only later frames ease.
-    sampleGroundPlane(surface.groundYAt, anchor.x, anchor.z);
-    anchor.y =
-      scratchGroundPlane.height + MOTION_SENSE_SETTINGS.groundClearanceMeters;
-    anchor.groundSlopeX = scratchGroundPlane.slopeX;
-    anchor.groundSlopeZ = scratchGroundPlane.slopeZ;
+    placeSwarmAnchor(anchors, swarmIndex, surface, epoch, playerX, playerZ);
   }
+}
+
+/**
+ * Place one swarm's anchor on its own ring. Swarms are moved one at a time
+ * rather than all at once, each while it is faded out, so the layer never
+ * jumps as a whole where the traveler can see it happen.
+ */
+export function placeSwarmAnchor(
+  anchors: readonly SwarmAnchor[],
+  swarmIndex: number,
+  surface: AnchorSurface,
+  epoch: number,
+  playerX: number,
+  playerZ: number,
+): void {
+  const anchor = anchors[swarmIndex];
+  if (!anchor) return;
+
+  const ring = getSwarmRing(swarmIndex, anchors.length);
+  for (
+    let attempt = 0;
+    attempt < MOTION_SENSE_SETTINGS.placementAttemptsPerAnchor;
+    attempt += 1
+  ) {
+    const angle =
+      getMotionRandom(swarmIndex, ANCHOR_RANDOM_ANGLE, epoch, attempt) * TAU;
+    const radius =
+      ring.minMeters +
+      Math.sqrt(
+        getMotionRandom(swarmIndex, ANCHOR_RANDOM_RADIUS, epoch, attempt),
+      ) *
+        (ring.maxMeters - ring.minMeters);
+    anchor.x = playerX + Math.cos(angle) * radius;
+    anchor.z = playerZ + Math.sin(angle) * radius;
+    if (surface.zoneAt(anchor.x, anchor.z) !== "water") break;
+  }
+  // A fresh anchor snaps onto its ground plane; only later frames ease.
+  sampleGroundPlane(surface.groundYAt, anchor.x, anchor.z);
+  anchor.y =
+    scratchGroundPlane.height + MOTION_SENSE_SETTINGS.groundClearanceMeters;
+  anchor.groundSlopeX = scratchGroundPlane.slopeX;
+  anchor.groundSlopeZ = scratchGroundPlane.slopeZ;
 }
 
 /**

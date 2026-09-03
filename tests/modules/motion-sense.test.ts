@@ -305,9 +305,41 @@ describe("Fly swarms", () => {
       expect(settledCentroids[swarmIndex]?.z).toBeCloseTo(centroid.z);
     });
 
-    // Crossing the threshold relocates every swarm around the new position.
+    // Crossing the threshold relocates every swarm around the new position,
+    // but no swarm may be seen doing it: each one shrinks its specks away,
+    // moves while nothing of it is on screen, and swells back at its new
+    // ring. A jump with the flies at any size is the pop this replaces.
     const travelledX = MOTION_SENSE_SETTINGS.reanchorDistanceMeters + 20;
     swarms.update(0, travelledX, 0);
+    const stepSeconds = 1 / 60;
+    let previous = getSwarmCentroids(
+      swarms.getWorldPositions(),
+      parameters.swarms,
+    );
+    const moveSeconds =
+      MOTION_SENSE_SETTINGS.swarmFadeStaggerSeconds *
+        parameters.swarms.swarmCount +
+      MOTION_SENSE_SETTINGS.swarmFadeSeconds * 2;
+    for (let step = 0; step * stepSeconds < moveSeconds + 1; step += 1) {
+      swarms.update(stepSeconds, travelledX, 0);
+      const current = getSwarmCentroids(
+        swarms.getWorldPositions(),
+        parameters.swarms,
+      );
+      const arrival = swarms.points.geometry.getAttribute("flyArrival");
+      current.forEach((centroid, swarmIndex) => {
+        const before = previous[swarmIndex];
+        if (!before) return;
+        const jumped = Math.hypot(centroid.x - before.x, centroid.z - before.z);
+        if (jumped <= 1) return;
+
+        expect(arrival.getX(swarmIndex * parameters.swarms.fliesPerSwarm)).toBe(
+          0,
+        );
+      });
+      previous = current;
+    }
+
     const farRingReach =
       MOTION_SENSE_SETTINGS.farRing.maxMeters +
       MOTION_SENSE_SETTINGS.swarmRadiusMeters;
@@ -318,6 +350,12 @@ describe("Fly swarms", () => {
       const distance = Math.hypot(centroid.x - travelledX, centroid.z);
       expect(distance).toBeLessThanOrEqual(farRingReach);
       expect(distance).toBeGreaterThan(1);
+    }
+
+    // And every swarm is fully there again once the moves are walked out.
+    const arrival = swarms.points.geometry.getAttribute("flyArrival");
+    for (let fly = 0; fly < arrival.count; fly += 1) {
+      expect(arrival.getX(fly)).toBe(1);
     }
     swarms.dispose();
   });
@@ -459,6 +497,53 @@ describe("Bird flocks", () => {
     }
   });
 
+  test("draws its own size for every flock without resizing the pool", () => {
+    const parameters = {
+      ...createBirdParameters(),
+      flockCount: 5,
+      birdsPerFlock: 12,
+    };
+    const birds = createBirdFlocks({
+      birds: parameters,
+      groundYAt: () => 10,
+      initialPlayerX: 0,
+      initialPlayerZ: 0,
+    });
+
+    const points = birds.getWorldPositions();
+    const { birdPointsPerBird, birdOrbitRadius, minBirdsPerFlock } =
+      MOTION_SENSE_SETTINGS;
+    expect(points.length).toBe(
+      parameters.flockCount * parameters.birdsPerFlock * birdPointsPerBird * 3,
+    );
+
+    // Each flock circles its own ring, and the rings sit further apart than a
+    // flock is wide, so a body's distance from the anchor names its flock.
+    const flockSizes = new Map<number, number>();
+    const valuesPerBird = birdPointsPerBird * 3;
+    for (let value = 0; value < points.length; value += valuesPerBird) {
+      const distance = Math.hypot(points[value] ?? 0, points[value + 2] ?? 0);
+      const ring = Math.round(
+        ((distance - birdOrbitRadius.minMeters) /
+          (birdOrbitRadius.maxMeters - birdOrbitRadius.minMeters)) *
+          (parameters.flockCount - 1),
+      );
+      flockSizes.set(ring, (flockSizes.get(ring) ?? 0) + 1);
+    }
+
+    // Every flock is present, none is a stray pair, no bird is lost, and the
+    // sizes actually differ — an unwritten slot would print a stale trail.
+    expect(flockSizes.size).toBe(parameters.flockCount);
+    const sizes = [...flockSizes.values()];
+    expect(sizes.reduce((total, size) => total + size, 0)).toBe(
+      parameters.flockCount * parameters.birdsPerFlock,
+    );
+    for (const size of sizes) {
+      expect(size).toBeGreaterThanOrEqual(minBirdsPerFlock);
+    }
+    expect(new Set(sizes).size).toBeGreaterThan(1);
+  });
+
   test("moves every point between frames so trails always print", () => {
     const birds = createBirds();
     const before = Array.from(birds.getWorldPositions());
@@ -557,6 +642,49 @@ describe("Motion Sense module", () => {
     module.unload();
     expect(scene.children).toHaveLength(0);
   });
+
+  test("sizes the bird ring on its own depth, not the fly trail's", () => {
+    const scene = new Scene();
+    const viewpoint: Viewpoint = {
+      worldPosition: new Vector3(),
+      viewDistanceMeters: 128,
+    };
+    const birds = { ...createBirdParameters(), trailLifetimeFrames: 9 };
+    const parameters = createMotionParameters({ birds });
+    const { module } = createMotionSenseModule({
+      scene,
+      viewpoint,
+      parameters,
+      groundYAt: () => 0,
+      zoneAt: () => "meadow",
+    });
+
+    module.load();
+
+    // A bird crosses the sky and a fly buzzes in place, so the two traces are
+    // authored to different lengths and each ring is sized for its own.
+    const trailCounts = scene.children
+      .filter(
+        (child) =>
+          child instanceof Points &&
+          child.geometry.getAttribute("motionSpawnFrame") !== undefined,
+      )
+      .map(
+        (child) => (child as Points).geometry.getAttribute("position").count,
+      );
+    const flyPoints =
+      parameters.swarms.swarmCount * parameters.swarms.fliesPerSwarm;
+    const birdPoints =
+      birds.flockCount *
+      birds.birdsPerFlock *
+      MOTION_SENSE_SETTINGS.birdPointsPerBird;
+    expect(trailCounts).toEqual([
+      flyPoints * parameters.trail.lifetimeFrames,
+      birdPoints * birds.trailLifetimeFrames,
+    ]);
+
+    module.unload();
+  });
 });
 
 interface TestShader {
@@ -598,6 +726,7 @@ function createBirdParameters(): NonNullable<MotionSenseParameters["birds"]> {
     flockCount: 2,
     birdsPerFlock: 4,
     flightSpeedMetersPerSecond: 8,
+    trailLifetimeFrames: 5,
     flightHeightMeters: 14,
     appearance: {
       trailColor: 0x10bedb,

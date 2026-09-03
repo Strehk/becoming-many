@@ -17,10 +17,7 @@ import {
   uploadCommittedModels,
   writeModelInstance,
 } from "../../utils/asset-loader/instanced-model-pool";
-import {
-  applyMaterialEffects,
-  type UnlitMaterialEffect,
-} from "../../utils/asset-loader/material-effect";
+import { applyMaterialEffects } from "../../utils/asset-loader/material-effect";
 import { createStaticModelAsset } from "../../utils/asset-loader/static-model";
 import {
   type ChunkCandidate,
@@ -39,7 +36,8 @@ import {
   selectStaticPlacement,
   validateStaticPopulation,
 } from "../static-population";
-import type { VegetationColors } from "./vegetation";
+import type { VegetationColors, VegetationEffectsFor } from "./vegetation";
+import { getVegetationStature } from "./vegetation-definition";
 
 const FULL_ROTATION_RADIANS = Math.PI * 2;
 const MINIMUM_HORIZONTAL_SCALE = 0.82;
@@ -53,7 +51,7 @@ interface VegetationInstancesOptions {
   readonly chunkSize: number;
   readonly chunkSlotCount: number;
   readonly worldSurface: WorldSurface;
-  readonly effects?: readonly UnlitMaterialEffect[];
+  readonly effectsFor?: VegetationEffectsFor;
 }
 
 export interface VegetationInstances {
@@ -79,7 +77,7 @@ export function createVegetationInstances({
   chunkSize,
   chunkSlotCount,
   worldSurface,
-  effects,
+  effectsFor,
 }: VegetationInstancesOptions): VegetationInstances {
   validateStaticPopulation(parameters, chunkSize, "Vegetation");
   const candidateGrid = createChunkCandidateGrid(
@@ -94,8 +92,13 @@ export function createVegetationInstances({
       (material) => getVegetationColor(colors, material.name, assetIndex),
     ),
   }));
-  if (effects) {
-    for (const { model } of sources) {
+  if (effectsFor) {
+    // Asked per model rather than once for the layer: a sense may read a bush
+    // and a pine as different substances, and this is where that is decided.
+    for (const { id, model } of sources) {
+      const effects = effectsFor(getVegetationStature(id));
+      if (!effects) continue;
+
       for (const part of model.parts) {
         applyMaterialEffects(effects, part.material);
       }
