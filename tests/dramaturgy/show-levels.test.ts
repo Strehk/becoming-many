@@ -11,8 +11,10 @@ import { PIECE_SCHEDULE } from "../../src/dramaturgy/piece-schedule";
 import {
   levelTransitionAt,
   SENSE_FADE_SECONDS,
+  SENSE_PREWARM_SECONDS,
   SHOW_LEVEL_SENSES,
   senseIntensityAt,
+  senseStandingAt,
   showLevelAt,
 } from "../../src/dramaturgy/show-levels";
 
@@ -104,6 +106,53 @@ describe("senseIntensityAt", () => {
     expect(
       senseIntensityAt(interrupted, "scent", boundary + SENSE_FADE_SECONDS),
     ).toBe(1);
+  });
+});
+
+describe("senseStandingAt", () => {
+  test("keeps a sense away while its cue is beyond the prewarm window", () => {
+    expect(senseStandingAt(SCHEDULE, "scent", 0)).toBe("away");
+    // The window reaches exactly to the boundary, where the ramp still stands
+    // at zero — the same instant the sense itself is not yet live at its cue.
+    expect(senseStandingAt(SCHEDULE, "scent", 50 - SENSE_PREWARM_SECONDS)).toBe(
+      "away",
+    );
+  });
+
+  test("warms a sense through the prewarm window before its cue", () => {
+    expect(
+      senseStandingAt(SCHEDULE, "scent", 50 - SENSE_PREWARM_SECONDS + 0.01),
+    ).toBe("warming");
+    expect(senseStandingAt(SCHEDULE, "scent", 49.99)).toBe("warming");
+  });
+
+  test("goes live the moment the sense carries strength", () => {
+    expect(senseStandingAt(SCHEDULE, "scent", 50.01)).toBe("live");
+    expect(senseStandingAt(SCHEDULE, "scent", 100)).toBe("live");
+  });
+
+  test("stays live through a fade out and leaves once it is over", () => {
+    // The return strips the world back at 150; the fade runs from there.
+    expect(
+      senseStandingAt(SCHEDULE, "scent", 150 + SENSE_FADE_SECONDS - 0.01),
+    ).toBe("live");
+    expect(senseStandingAt(SCHEDULE, "scent", 150 + SENSE_FADE_SECONDS)).toBe(
+      "away",
+    );
+  });
+
+  test("warms every sense of the piece inside the cue before it", () => {
+    for (const cue of PIECE_SCHEDULE.narration) {
+      for (const sense of SHOW_LEVEL_SENSES[cue.level]) {
+        // The one this cue introduces: absent from the level before it.
+        if (senseIntensityAt(PIECE_SCHEDULE, sense, cue.atSeconds) > 0)
+          continue;
+
+        expect(
+          senseStandingAt(PIECE_SCHEDULE, sense, cue.atSeconds - 0.01),
+        ).toBe("warming");
+      }
+    }
   });
 });
 

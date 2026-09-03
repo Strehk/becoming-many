@@ -50,6 +50,21 @@ export const SHOW_LEVEL_SENSES: Record<ShowLevelName, readonly ShowSense[]> = {
 export const SENSE_FADE_SECONDS = 4;
 
 /**
+ * How long before a sense first carries strength its content already runs,
+ * hidden. A gated module builds nothing while its sense is down: its chunk
+ * window stops following the viewer and its actors stop moving, so at the cue
+ * boundary the whole layer would have to stream and re-home from scratch — and
+ * it would arrive in pieces under a fade that is already climbing, which is
+ * exactly what reads as popping. Warming stands the layer up early and
+ * invisible, so the fade only has to raise something already complete.
+ *
+ * The window must stay shorter than the shortest cue slot, or a sense would
+ * begin warming before the cue it is warming behind; `piece-schedule.test.ts`
+ * holds the authored piece to that bound.
+ */
+export const SENSE_PREWARM_SECONDS = 20;
+
+/**
  * The world state holding at a show time. A cue's level holds until the next
  * cue starts, exactly like its recording; before the first cue the show
  * already stands in that cue's level, so the lead-in opens the first world.
@@ -145,6 +160,37 @@ export function senseIntensityAt(
     rampTarget,
     showTimeSeconds,
   );
+}
+
+/** What a sense's content is doing at a show time. */
+export type SenseStanding =
+  /** Nothing of the sense exists; its modules stay put away. */
+  | "away"
+  /** Building and following the viewer, with nothing on screen yet. */
+  | "warming"
+  /** Carrying strength: the sense is on screen, fading in, out, or held. */
+  | "live";
+
+/**
+ * Whether a sense's content must be running at a show time, and whether it may
+ * be seen. Derived from the same ramp the strengths are, one prewarm window
+ * ahead, so a seek lands a warming layer exactly as playing through would have
+ * — and a jump straight into a cue gets no warming, because there is no show
+ * time before it in which to warm.
+ */
+export function senseStandingAt(
+  schedule: NarrationSchedule,
+  sense: ShowSense,
+  showTimeSeconds: number,
+): SenseStanding {
+  if (senseIntensityAt(schedule, sense, showTimeSeconds) > 0) return "live";
+
+  const warmed = senseIntensityAt(
+    schedule,
+    sense,
+    showTimeSeconds + SENSE_PREWARM_SECONDS,
+  );
+  return warmed > 0 ? "warming" : "away";
 }
 
 function rampValueAt(

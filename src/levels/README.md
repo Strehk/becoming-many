@@ -53,6 +53,8 @@ Preset files create no resources and import no module implementation. Concrete
 modules do not import siblings; Level Runtime performs cross-boundary wiring.
 
 During a show, the schedule selects the active level data and drives module
-activation, sense intensity, background blending, and World Fade without
-recreating the composition. Flight remains constrained against the shared
+standing, sense intensity, background blending, and World Fade without
+recreating the composition. Standing is the wider of the two: a gated module is
+warmed one prewarm window before the sense that reveals it — running, following
+the viewer, and drawn by nothing — so what the fade raises is already built. Flight remains constrained against the shared
 surface through White World and every transition.

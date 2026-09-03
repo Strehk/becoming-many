@@ -27,6 +27,7 @@ import {
   levelTransitionAt,
   type ShowSense,
   senseIntensityAt,
+  senseStandingAt,
   showLevelAt,
 } from "../dramaturgy/show-levels";
 import { createM5Adapter, type M5Adapter } from "../m5/m5-adapter";
@@ -546,8 +547,17 @@ function createShow(
     reach.worldFades.structure?.setPresence(strengths.echo);
     reach.worldFades.animals?.setPresence(strengths.thermal);
 
+    // Standing, not strength: a gated layer is put up one prewarm window
+    // before the sense that reveals it, hidden, so what the fade raises is
+    // already built and already following the viewer.
     for (const [gate, module] of reach.gates) {
-      if (strengths[GATE_SENSE[gate]] > 0) world.modules.activate(module);
+      const standing = senseStandingAt(
+        schedule,
+        GATE_SENSE[gate],
+        showTimeSeconds,
+      );
+      if (standing === "live") world.modules.activate(module);
+      else if (standing === "warming") world.modules.warm(module);
       else world.modules.deactivate(module);
     }
   }
@@ -609,10 +619,11 @@ function applyLevelPresentation(
 
 /**
  * A module a show puts up or away as the world state changes. Each gate rides
- * the sense that introduces its module on the ladder: the module is active
+ * the sense that introduces its module on the ladder: the module is seen
  * exactly while that sense carries any strength, so a fading-out module keeps
- * rendering until it has fully dissolved. Air Particles stay ungated — every
- * world state carries them as the neutral depth baseline.
+ * rendering until it has fully dissolved, and it already runs hidden through
+ * the prewarm window before the sense arrives. Air Particles stay ungated —
+ * every world state carries them as the neutral depth baseline.
  */
 type ShowGate =
   | "scentParticles"

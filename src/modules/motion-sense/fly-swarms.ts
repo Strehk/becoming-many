@@ -52,6 +52,7 @@ const FLY_RANDOM_SPEED = 4;
 const FLY_RANDOM_PHASE = 5;
 const FLY_RANDOM_FREQUENCY = 6;
 const FLY_RANDOM_STRENGTH = 7;
+const FLY_RANDOM_SENSE_ARRIVAL = 8;
 
 /** Buzz character ranges ported from the proven bm-base swarm feel. */
 const MIN_BUZZ_FREQUENCY = 12;
@@ -134,10 +135,25 @@ export function createFlySwarms(options: FlySwarmsOptions): FlySwarms {
   const flyArrival = new Float32Array(flyCount).fill(1);
   const arrivalAttribute = new BufferAttribute(flyArrival, 1);
   arrivalAttribute.setUsage(DynamicDrawUsage);
+  // Each fly's own place in the show's sense fade. Written once and never
+  // touched again: what it spreads is the instant a speck starts to grow, so
+  // the swarms gather one fly at a time instead of the whole pool crossing
+  // the pixel it needs to rasterize in the same frame.
+  const flySenseArrival = new Float32Array(flyCount);
+  for (let flyIndex = 0; flyIndex < flyCount; flyIndex += 1) {
+    flySenseArrival[flyIndex] = getMotionRandom(
+      flyIndex,
+      FLY_RANDOM_SENSE_ARRIVAL,
+    );
+  }
   const swarmMoves = createSwarmMoves(swarmCount);
   const geometry = new BufferGeometry();
   geometry.setAttribute("position", positionAttribute);
   geometry.setAttribute("flyArrival", arrivalAttribute);
+  geometry.setAttribute(
+    "flySenseArrival",
+    new BufferAttribute(flySenseArrival, 1),
+  );
   const points = new Points(
     geometry,
     createFlySwarmMaterial(parameters.appearance, options.senseFadeUniform),

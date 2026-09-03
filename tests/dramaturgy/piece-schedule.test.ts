@@ -14,6 +14,7 @@ import {
 import { narrationCueAt } from "../../src/dramaturgy/narration-schedule";
 import { PIECE_SCHEDULE } from "../../src/dramaturgy/piece-schedule";
 import { cueSlots } from "../../src/dramaturgy/schedule-layout";
+import { SENSE_PREWARM_SECONDS } from "../../src/dramaturgy/show-levels";
 
 // ffprobe and HTMLMediaElement can disagree by about one MP3 frame of encoder
 // padding, so a slot must clear its recording by more than a rounding error.
@@ -71,6 +72,15 @@ describe("the piece schedule", () => {
           SLOT_MARGIN_SECONDS,
         );
       }
+    }
+  });
+
+  // A sense stands its modules up one prewarm window before the cue that
+  // reveals it. A slot shorter than that window would start warming the next
+  // layer before its own cue had even spoken.
+  test("gives every cue a slot longer than the prewarm window", () => {
+    for (const slot of cueSlots(PIECE_SCHEDULE, "en")) {
+      expect(slot.slotSeconds).toBeGreaterThan(SENSE_PREWARM_SECONDS);
     }
   });
 
