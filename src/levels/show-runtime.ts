@@ -75,6 +75,13 @@ export interface ShowWorldReach {
   readonly setEndCreditsPresence?: (presence: number) => void;
 
   /**
+   * Reveals the bird bodies with the heat view. Not a sense of its own: the
+   * flocks fly from Motion Perception on either way, and what changes at the
+   * Thermal cue is only whether the bodies flying them can be seen.
+   */
+  readonly setBirdBodyPresence?: (presence: number) => void;
+
+  /**
    * Where the moving actor clouds are, so the drone organ can put its two
    * placed voices on the birds and the insects the motion sense shows.
    */
@@ -212,6 +219,9 @@ export function createShowRuntime(
     setSense("connections", connections);
     reach.worldFades.structure?.setPresence(echo);
     reach.worldFades.animals?.setPresence(thermal);
+    // The birds already fly the sky from Motion Perception on; the heat view
+    // is what puts a body on the trace.
+    reach.setBirdBodyPresence?.(thermal);
     // Derived like everything else here, so a seek lands mid-fade and a seek
     // to zero puts the credits away without a second piece of state.
     reach.setEndCreditsPresence?.(

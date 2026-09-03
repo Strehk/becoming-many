@@ -31,6 +31,7 @@ import {
   createMagneticSense,
   type MagneticSenseModuleHandle,
 } from "../modules/magnetic-sense/magnetic-sense";
+import { BIRD_BODY_ASSET } from "../modules/motion-sense/bird-bodies";
 import {
   createMotionSenseModule,
   type MotionSenseModuleHandle,
@@ -88,6 +89,7 @@ export interface LoadedLevelAssets {
   readonly vegetation: GltfAssets;
   readonly rocks: GltfAssets;
   readonly animals: GltfAssets;
+  readonly birds: GltfAssets;
 }
 
 interface LevelSetup {
@@ -200,7 +202,7 @@ function createConfiguredModules(setup: LevelSetup): ComposedWorld {
     scent?.observeActorBodies,
   );
   const connections = createConnectionsWeb(setup, animals);
-  const motion = createMotionSense(setup);
+  const motion = createMotionSense(setup, animalsFade);
 
   add(
     "echo",
@@ -275,6 +277,7 @@ function composeShowReach(
     },
     setSkyBackground: handles.magnetic?.setSkyBackground,
     setEndCreditsPresence: handles.endCredits?.setPresence,
+    setBirdBodyPresence: handles.motion?.setBodyPresence,
     readMotionActorCenters: handles.motion?.readActorCenters,
   };
 }
@@ -362,9 +365,21 @@ function createThermalEffects(
 /** Skip the sense entirely at intensity zero so its GPU work never runs. */
 function createMotionSense(
   setup: LevelSetup,
+  animalsFade: WorldFadeEffect | undefined,
 ): MotionSenseModuleHandle | undefined {
   const parameters = setup.level.motion;
   if (!parameters || parameters.intensity === 0) return undefined;
+
+  // The bodies belong to the warm population rather than to the motion sense:
+  // they ride the animals' World Fade, so a show condenses them out of the
+  // haze with the heat view that reveals them. They circle well beyond that
+  // view's reach, so like an unwarmed animal they keep the echo palette their
+  // color is authored in.
+  const asset = setup.assets.birds.get(BIRD_BODY_ASSET.id);
+  const birdBody =
+    parameters.birds?.body && asset
+      ? { asset, effects: animalsFade ? [animalsFade] : [] }
+      : undefined;
 
   return createMotionSenseModule({
     scene: setup.world.scene,
@@ -372,6 +387,7 @@ function createMotionSense(
     parameters,
     groundYAt: setup.worldSurface.groundYAt,
     zoneAt: setup.worldSurface.zoneAt,
+    birdBody,
   });
 }
 
@@ -687,7 +703,7 @@ function hasVisibleSurface(level: WorldComposition): boolean {
 export async function loadLevelAssets(
   level: WorldComposition,
 ): Promise<LoadedLevelAssets> {
-  const [vegetation, rocks, animals] = await Promise.all([
+  const [vegetation, rocks, animals, birds] = await Promise.all([
     loadGltfAssets(
       level.vegetation
         ? createStaticAssetRequests(VEGETATION_DEFINITION.assets)
@@ -701,9 +717,10 @@ export async function loadLevelAssets(
         ? createStaticAssetRequests(ANIMALS_DEFINITION.species)
         : [],
     ),
+    loadGltfAssets(level.motion?.birds?.body ? [BIRD_BODY_ASSET] : []),
   ]);
 
-  return { vegetation, rocks, animals };
+  return { vegetation, rocks, animals, birds };
 }
 
 function createStaticAssetRequests(

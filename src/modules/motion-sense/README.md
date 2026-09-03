@@ -8,8 +8,11 @@ Boundary: Level values live in presets; composition lives in the Level Runtime.
 # Motion Sense
 
 Motion Sense is the level-04 content module: persistent ambient fly swarms
-and invisible circling bird flocks whose movement prints fading motion-trail
-ring buffers — movement literally leaves a visible trace. It is a port of
+and circling bird flocks whose movement prints fading motion-trail ring
+buffers — movement literally leaves a visible trace. The flocks fly as pure
+trace here, because movement without a body is what level 04 is about; from
+level 05 on a level may also author bodies for them, and a show only lets
+those be seen once the heat view opens. It is a port of
 the proven bm-base motion layer (`mosquito-flocks` plus the
 `ParticleTrailBuffer`), rewritten from WebGPU/TSL to this repository's
 WebGL2 idiom: `THREE.Points`, `PointsMaterial`, `onBeforeCompile` patches,
@@ -24,6 +27,12 @@ and raw GLSL ES 3.00 files.
   on player-centred distance rings, stepped-noise buzz, strided flockmate
   sampling, lobe cohesion, a hard clamp above the anchor's fitted ground
   plane, epoch-based re-anchoring, and the opaque fly point pool.
+- `bird-bodies.ts` owns the optional pool of bodies flying the flocks: one
+  `InstancedMesh` for all sixty birds, the model measured onto the authored
+  length, and the signed wing span every vertex carries. A skeleton each is
+  not affordable, so `bird-wing-beat.vert.glsl` swings the wings about the
+  flight axis from one value per instance. It reads the flock's body stream
+  and decides nothing about the flight.
 - `swarm-shape.ts` owns the volume a swarm buzzes inside: the per-swarm
   anisotropic axes and yaw, the drifting density lobes flies clump around,
   the Gaussian seeding, the per-fly binding, and the envelope spring whose
@@ -93,3 +102,8 @@ array for a group this level does not carry, and while it is unloaded.
   dependence.
 - The current swarms are persistent and statically authored. A path-flyby event
   would be a new product feature and needs its own issue and capacity budget.
+- Bird bodies carry the authored echo tone rather than the heat view's false
+  colour. The flocks circle 30 to 90 metres out, well beyond the heat view's
+  35 m reach, so they read like an unwarmed animal; a bird that came closer
+  would stay dark where a walking animal would glow. Per-instance warmth is
+  the exact fix and needs the thermal contract to accept an instance matrix.

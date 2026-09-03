@@ -1,0 +1,31 @@
+{
+  "version": 1,
+  "author": "Becoming Many project",
+  "license": "UNRECORDED",
+  "note": "Carried over from https://github.com/Strehk/uni-becoming-many, which recorded no provenance for this file. The same model flies the passages in PR #58; both come from public/creatures/bird_erasmus.glb there, and one of the two copies should go once that branch lands. Author and licence need confirming before release \u2014 see docs/direction/open-decisions.md.",
+  "assets": [
+    {
+      "id": "bird",
+      "file": "/birds/bird.glb",
+      "sourceRepository": "https://github.com/Strehk/uni-becoming-many",
+      "sourcePath": "public/creatures/bird_erasmus.glb",
+      "sourceSha256": "f4e6b76babe6951c598d68fad4b7905287f7fe288d34a095b4f24115db076918",
+      "sha256": "46ae8ae602afcccec83da21c25277db39dc9bf92a448358a0eab16f711ec269a",
+      "preparation": "Skinning baked at the bind pose, the four primitives merged into one geometry, and the body turned to face +z. A pool of sixty birds cannot afford a skeleton each: the wings beat in the vertex shader instead, so what ships is one static mesh in a spread-wing pose.",
+      "metrics": {
+        "bytes": 23760,
+        "meshes": 1,
+        "materials": 1,
+        "triangles": 316,
+        "estimatedDrawCalls": 1,
+        "animations": 0
+      },
+      "modelSpace": {
+        "facing": "+z",
+        "up": "+y",
+        "span": "x",
+        "lengthUnits": 10.04
+      }
+    }
+  ]
+}

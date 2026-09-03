@@ -347,6 +347,11 @@ test("Thermal Level owns its complete heat-world startup recipe", () => {
   if (!thermalMotion?.birds) throw new Error("Thermal Level must carry birds");
   // The thermal layer is spread after the motion layer, so its motion wins.
   expect(thermalMotion).toBe(HEAT_MOTION_SENSE);
+  // Movement without a body is what Motion Perception is about: the flocks
+  // fly it as pure trace, and the heat view is the first sense to reveal what
+  // flies them.
+  expect(MOTION_SENSE.birds?.body).toBeUndefined();
+  expect(thermalMotion.birds.body?.lengthMeters).toBeGreaterThan(0);
   expect(thermalMotion.birds.appearance.trailColor).toBe(
     thermal.colors.hotColor,
   );
