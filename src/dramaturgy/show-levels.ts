@@ -5,7 +5,11 @@
  * Boundary: Presets, modules, and how intensities reach the GPU live elsewhere.
  */
 
-import type { NarrationSchedule, ShowLevelName } from "./narration-schedule";
+import type {
+  NarrationCue,
+  NarrationSchedule,
+  ShowLevelName,
+} from "./narration-schedule";
 
 /** Every layered sense, named after the level that introduces it. */
 export type ShowSense =
@@ -65,6 +69,17 @@ export const SENSE_FADE_SECONDS = 4;
 export const SENSE_PREWARM_SECONDS = 20;
 
 /**
+ * When this cue's world arrives. It is the cue's own instant for every cue
+ * that lets its sense grow in under the narration, and earlier for one that
+ * has to stand its world up before the first word is spoken. The one place
+ * the lead is applied, so a schedule guarantee and the running show read the
+ * same instant.
+ */
+export function worldTimeOf(cue: NarrationCue): number {
+  return cue.atSeconds - (cue.worldLeadSeconds ?? 0);
+}
+
+/**
  * The world state holding at a show time. A cue's level holds until the next
  * cue starts, exactly like its recording; before the first cue the show
  * already stands in that cue's level, so the lead-in opens the first world.
@@ -76,7 +91,7 @@ export function showLevelAt(
 ): ShowLevelName | undefined {
   let holding = schedule.narration[0];
   for (const cue of schedule.narration) {
-    if (cue.atSeconds > showTimeSeconds) break;
+    if (worldTimeOf(cue) > showTimeSeconds) break;
     holding = cue;
   }
   return holding?.level;
@@ -109,13 +124,13 @@ export function levelTransitionAt(
   let holding = schedule.narration[0];
   let previous = schedule.narration[0];
   for (const cue of schedule.narration) {
-    if (cue.atSeconds > showTimeSeconds) break;
+    if (worldTimeOf(cue) > showTimeSeconds) break;
     previous = holding;
     holding = cue;
   }
   if (!holding || !previous) return undefined;
 
-  const elapsed = showTimeSeconds - holding.atSeconds;
+  const elapsed = showTimeSeconds - worldTimeOf(holding);
   const progress =
     elapsed >= SENSE_FADE_SECONDS
       ? 1
@@ -142,15 +157,16 @@ export function senseIntensityAt(
   let rampTarget = 0;
 
   for (const cue of schedule.narration) {
-    if (cue.atSeconds > showTimeSeconds) break;
+    const worldTime = worldTimeOf(cue);
+    if (worldTime > showTimeSeconds) break;
 
     rampStartValue = rampValueAt(
       rampStartSeconds,
       rampStartValue,
       rampTarget,
-      cue.atSeconds,
+      worldTime,
     );
-    rampStartSeconds = cue.atSeconds;
+    rampStartSeconds = worldTime;
     rampTarget = SHOW_LEVEL_SENSES[cue.level].includes(sense) ? 1 : 0;
   }
 

@@ -6,7 +6,7 @@ details.
 ## Product State
 
 The core experience is largely implemented. The default browser page starts the
-complete 8:41 show, layers the seven narrative world states, plays synchronized
+complete 8:45 show, layers the seven narrative world states, plays synchronized
 English or German narration, returns to White World, and closes on the end
 credits. The project is now in
 a stabilization and refinement phase rather than an MVP construction phase.

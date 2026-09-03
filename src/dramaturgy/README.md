@@ -55,10 +55,14 @@ headroom between the two. It is the one place slot arithmetic lives, so the
 guarantee the tests enforce and the timeline the conductor draws are the same
 calculation.
 
-`piece-schedule.ts` is the authored data for the 8:41 main show. It opens on five
+`piece-schedule.ts` is the authored data for the 8:45 main show. It opens on five
 seconds of silence before the first word, so the visitor is flying before a
 voice arrives. That lead-in needs no mechanism — `narrationCueAt` answers
 nothing before the first cue, so it is simply the gap in front of `prologue`.
+It closes the other way round: the return cue carries a `worldLeadSeconds`, so
+its world starts going white where the finale falls silent and its recording
+begins once that fade has finished. Every other cue leads by nothing, because
+a sense is meant to grow in under the words that name it.
 No tutorial schedule is currently implemented. Schedules are typed TypeScript data files, never JSON, per
 the repository's configuration rule, and there is **one schedule authority
 total**.

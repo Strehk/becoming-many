@@ -6,6 +6,7 @@
  */
 
 import type { NarrationSchedule } from "./narration-schedule";
+import { SENSE_FADE_SECONDS } from "./show-levels";
 
 /**
  * The piece opens on five seconds of silence. The visitor is on the rig and
@@ -27,16 +28,21 @@ import type { NarrationSchedule } from "./narration-schedule";
  * in the full Connections synthesis — and the return strips back to White
  * World, so the piece closes where it opened.
  *
- * The result is 8:41 and is reflected in the current experience and direction
+ * The return is the one cue whose world runs ahead of its recording. Every
+ * other sense grows in under the words that name it; the closing words are
+ * spoken into a world that has already gone white, so the cue leads its
+ * narration by exactly the fade it starts.
+ *
+ * The result is 8:45 and is reflected in the current experience and direction
  * documentation.
  */
 export const PIECE_SCHEDULE: NarrationSchedule = {
-  durationSeconds: 521, // Last cue, its longer recording, and slot margin.
-  // The return recording ends at 515.6 s in English and 519.9 s in German, so
+  durationSeconds: 525, // Last cue, its longer recording, and slot margin.
+  // The return recording ends at 519.6 s in English and 523.9 s in German, so
   // the panel comes up just after the English last word and over the final
-  // German lines. Four seconds of fade puts it at full opacity at 520 s, a
+  // German lines. Four seconds of fade puts it at full opacity at 524 s, a
   // second before the clock clamps and holds it there.
-  creditsAtSeconds: 516,
+  creditsAtSeconds: 520,
   narration: [
     // Five seconds of lead-in before the first word; every later cue carries
     // that offset, so the slots below are unchanged by it.
@@ -46,7 +52,15 @@ export const PIECE_SCHEDULE: NarrationSchedule = {
     { cueId: "motion", atSeconds: 167, level: "motion" }, // Slot 63 s, longest recording 58.4.
     { cueId: "thermal", atSeconds: 230, level: "thermal" }, // Slot 49 s, longest recording 44.6.
     { cueId: "magnetic", atSeconds: 279, level: "magnetic" }, // Slot 56 s, longest recording 51.0.
-    { cueId: "finale", atSeconds: 335, level: "connections" }, // Slot 111 s, longest recording 106.9.
-    { cueId: "return", atSeconds: 446, level: "white-world" }, // Slot 75 s, longest recording 73.8.
+    { cueId: "finale", atSeconds: 335, level: "connections" }, // Slot 115 s, longest recording 106.9.
+    // The world starts going white at 446 s, where the finale's longer
+    // recording has just finished, and the voice comes in at 450 s into a
+    // world that is already white again.
+    {
+      cueId: "return",
+      atSeconds: 450,
+      level: "white-world",
+      worldLeadSeconds: SENSE_FADE_SECONDS,
+    }, // Slot 75 s, longest recording 73.8.
   ],
 };
