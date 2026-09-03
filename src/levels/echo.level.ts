@@ -1,58 +1,135 @@
 /**
- * Purpose: Define the Echolocation level preset ("Bat — Depth", level 03).
- * Context: Echolocation (level 03) develops in isolation before narrative integration.
- * Responsibility: Provide immutable level values to the shared world runtime.
+ * Purpose: Define the independent Echolocation startup preset.
+ * Context: Direct routes and benchmarks can start this world without earlier levels.
+ * Responsibility: Own every authored value required by Echolocation.
  * Boundary: This file contains data only and creates no runtime resources.
  */
 
-import type { LevelPreset } from "./level-runtime";
-import {
-  sharedAirParticles,
-  sharedEchoDepth,
-  sharedEchoHazeColor,
-  sharedEchoRocks,
-  sharedEchoVegetation,
-  sharedScentParticles,
-} from "./shared-level-values";
+import type { LevelPreset } from "./level-preset";
 
 export const level: LevelPreset = {
-  backgroundColor: sharedEchoHazeColor,
+  backgroundColor: 0xf7f7f7,
   viewDistance: 128,
   maximumGroundClearanceMeters: 50,
   testUi: true,
+  airParticles: {
+    density: {
+      particlesPerChunk: 270,
+    },
+    appearance: {
+      color: 0x202126,
+      sizeMeters: 0.075,
+    },
+    motion: {
+      horizontalAmplitudeMeters: 0.12,
+      verticalAmplitudeMeters: 0.24,
+      speedMultiplier: 1,
+    },
+  },
+  scentParticles: {
+    plants: {
+      conifer: {
+        color: 0x55d1ba,
+        particlesPerPlant: 70,
+        emissionBottomFraction: 0.25,
+        emissionTopFraction: 1,
+        emissionRadiusFraction: 0.26,
+        riseHeightMeters: 2.2,
+      },
+      deciduous: {
+        color: 0x6adadd,
+        particlesPerPlant: 70,
+        emissionBottomFraction: 0.45,
+        emissionTopFraction: 1,
+        emissionRadiusFraction: 0.38,
+        riseHeightMeters: 2.2,
+      },
+      birch: {
+        color: 0xb185c2,
+        particlesPerPlant: 60,
+        emissionBottomFraction: 0.5,
+        emissionTopFraction: 1,
+        emissionRadiusFraction: 0.3,
+        riseHeightMeters: 2,
+      },
+      bush: {
+        color: 0x50be81,
+        particlesPerPlant: 32,
+        emissionBottomFraction: 0.1,
+        emissionTopFraction: 1,
+        emissionRadiusFraction: 0.72,
+        riseHeightMeters: 0.7,
+      },
+      floweringBush: {
+        color: 0xa865c7,
+        particlesPerPlant: 42,
+        emissionBottomFraction: 0.1,
+        emissionTopFraction: 1,
+        emissionRadiusFraction: 0.8,
+        riseHeightMeters: 0.9,
+      },
+      deadWood: {
+        color: 0xb2a17f,
+        particlesPerPlant: 14,
+        emissionBottomFraction: 0.2,
+        emissionTopFraction: 0.9,
+        emissionRadiusFraction: 0.2,
+        riseHeightMeters: 0.5,
+      },
+    },
+    animals: {
+      signatures: {
+        deer: {
+          color: 0xfdbb54,
+        },
+        stag: {
+          color: 0xef8f3c,
+        },
+        fox: {
+          color: 0xfda39d,
+        },
+        rat: {
+          color: 0xd8919c,
+        },
+      },
+      printsPerSecond: 30,
+      lifetimeSeconds: 25,
+      emissionBottomFraction: 0.15,
+      emissionTopFraction: 0.85,
+      emissionRadiusFraction: 0.35,
+      riseHeightMeters: 0.8,
+      windResponseMeters: 14,
+    },
+    appearance: {
+      sizeMeters: 0.16,
+    },
+    motion: {
+      riseDurationSeconds: 10,
+      driftAmplitudeMeters: 1.8,
+      speedMultiplier: 1,
+      windResponseMeters: 7,
+    },
+  },
   terrain: {
     opacity: 1,
   },
-  vegetation: sharedEchoVegetation,
-  // Grass returns here and carries through every later level, because they
-  // spread this preset. It is the clipmap field, not the older `grass`
-  // module: that one stays parked. The blades answer to the senses like any
-  // other surface — Echo Depth takes their color outright, Thermal covers it
-  // inside its radius — so nothing here authors a look, only a density and a
-  // size. What a field this dense costs under the heat view is still
-  // unmeasured on the target device.
+  vegetation: {
+    colors: {
+      trunkColor: 0x101010,
+      leafColor: 0x171717,
+      leafAccentColor: 0x494949,
+      flowerColor: 0x959595,
+    },
+    instancesPerHectareByZone: {
+      meadow: 12,
+      coniferForest: 150,
+      deciduousForest: 150,
+      shrubSlope: 70,
+    },
+  },
   grassClipmap: {
-    // Both of these are the near field, and the near field is where the
-    // field costs. Measured on the quick profile, Thermal Perception, as the
-    // grass surcharge over the same level without it: 19 tufts to 20 m costs
-    // 3.0 ms p95, 12 to 20 m costs 2.6 ms, 12 to 14 m costs 1.4 ms. The
-    // cheapest of those is not the one to take: at 14 m the viewer flies
-    // seven metres up, so nearly everything in frame already sits in the
-    // thinning zone and the meadow reads as bare ground. Reaching less far
-    // costs almost nothing to give up instead, because the law has already
-    // thinned the distance to a few percent — at 100 m four blades in a
-    // hundred survive and a far chunk starts twenty instances.
     tuftsPerSquareMeter: 21.85,
-    // Full density holds this far and then falls with one over distance
-    // squared. Shorter than the source demo's 32 m: this world is flown over
-    // rather than walked through, and grass that stays dense into the
-    // distance reads as a carpet instead of as a meadow.
     fullDensityRadiusMeters: 14,
-    // An exact maximum, not a nominal value: scatter and clumping only ever
-    // take from it, so a typical blade stands near 0.9 m and the tallest
-    // reach 2.1 m. The demo authored 3 m, which is right at eye level when
-    // walking and too tall for a landscape seen from above; a third of that
-    // reduction was given back because the field read as mown.
     bladeHeightMeters: 3,
     bladeWidthMeters: 0.2,
     colors: {
@@ -60,10 +137,28 @@ export const level: LevelPreset = {
       tipColor: 0x94c356,
     },
   },
-  rocks: sharedEchoRocks,
-  // Senses layer, never swap: the White World air layer and the Scent World
-  // layer stay present while the depth response becomes dominant.
-  airParticles: sharedAirParticles,
-  scentParticles: sharedScentParticles,
-  echoDepth: sharedEchoDepth,
+  rocks: {
+    colors: {
+      darkColor: 0x171717,
+      lightColor: 0x494949,
+    },
+    instancesPerHectareByZone: {
+      meadow: 8,
+      coniferForest: 10,
+      deciduousForest: 10,
+      shrubSlope: 60,
+    },
+  },
+  echoDepth: {
+    intensity: 1,
+    nearDistanceMeters: 6,
+    farDistanceMeters: 96,
+    colors: {
+      nearColor: 0x101010,
+      nearShadeColor: 0x494949,
+      midColor: 0x959595,
+      farColor: 0xe2e2e2,
+      hazeColor: 0xf7f7f7,
+    },
+  },
 };

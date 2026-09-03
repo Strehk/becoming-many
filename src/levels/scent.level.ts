@@ -1,39 +1,122 @@
 /**
- * Purpose: Define the Scent World base-experiment preset.
- * Context: Scent (level 02) develops in isolation before narrative integration.
- * Responsibility: Provide immutable level values to the shared world runtime.
+ * Purpose: Define the independent Scent World startup preset.
+ * Context: Direct routes and benchmarks can start this world without show state.
+ * Responsibility: Own every authored value required by Scent World.
  * Boundary: This file contains data only and creates no runtime resources.
  */
 
-import type { LevelPreset } from "./level-runtime";
-import {
-  sharedAirParticles,
-  sharedScentParticles,
-  sharedVegetationDensities,
-} from "./shared-level-values";
+import type { LevelPreset } from "./level-preset";
 
 export const level: LevelPreset = {
-  // The moodboard reserves its pale stop #F6EEE0 for the background, and this
-  // level ran on it. It runs on white instead: the Scent World is entered
-  // from the colour-less White World, which is white, and its whole premise
-  // is that colour arrives through the scent signatures alone. A warm base
-  // tone is itself a colour, so it quietly spent the one thing the level had
-  // to give. Every signature also reads slightly harder against it.
   backgroundColor: 0xffffff,
   viewDistance: 128,
   maximumGroundClearanceMeters: 50,
   testUi: true,
-  // The continuous world terrain stays invisible but bounds flight from below.
   invisibleGround: true,
-  // Scent radiates from the plants themselves, so the level needs a plant
-  // population — but its intent keeps every source object invisible, exactly
-  // as the ground above is present without being rendered. The densities are
-  // the shared decided ones, so the wood the scent maps is the same wood the
-  // later levels show.
   invisibleVegetation: {
-    instancesPerHectareByZone: sharedVegetationDensities,
+    instancesPerHectareByZone: {
+      meadow: 12,
+      coniferForest: 150,
+      deciduousForest: 150,
+      shrubSlope: 70,
+    },
   },
-  // The White World air layer stays present as the neutral depth baseline.
-  airParticles: sharedAirParticles,
-  scentParticles: sharedScentParticles,
+  airParticles: {
+    density: {
+      particlesPerChunk: 270,
+    },
+    appearance: {
+      color: 0x202126,
+      sizeMeters: 0.075,
+    },
+    motion: {
+      horizontalAmplitudeMeters: 0.12,
+      verticalAmplitudeMeters: 0.24,
+      speedMultiplier: 1,
+    },
+  },
+  scentParticles: {
+    plants: {
+      conifer: {
+        color: 0x55d1ba,
+        particlesPerPlant: 70,
+        emissionBottomFraction: 0.25,
+        emissionTopFraction: 1,
+        emissionRadiusFraction: 0.26,
+        riseHeightMeters: 2.2,
+      },
+      deciduous: {
+        color: 0x6adadd,
+        particlesPerPlant: 70,
+        emissionBottomFraction: 0.45,
+        emissionTopFraction: 1,
+        emissionRadiusFraction: 0.38,
+        riseHeightMeters: 2.2,
+      },
+      birch: {
+        color: 0xb185c2,
+        particlesPerPlant: 60,
+        emissionBottomFraction: 0.5,
+        emissionTopFraction: 1,
+        emissionRadiusFraction: 0.3,
+        riseHeightMeters: 2,
+      },
+      bush: {
+        color: 0x50be81,
+        particlesPerPlant: 32,
+        emissionBottomFraction: 0.1,
+        emissionTopFraction: 1,
+        emissionRadiusFraction: 0.72,
+        riseHeightMeters: 0.7,
+      },
+      floweringBush: {
+        color: 0xa865c7,
+        particlesPerPlant: 42,
+        emissionBottomFraction: 0.1,
+        emissionTopFraction: 1,
+        emissionRadiusFraction: 0.8,
+        riseHeightMeters: 0.9,
+      },
+      deadWood: {
+        color: 0xb2a17f,
+        particlesPerPlant: 14,
+        emissionBottomFraction: 0.2,
+        emissionTopFraction: 0.9,
+        emissionRadiusFraction: 0.2,
+        riseHeightMeters: 0.5,
+      },
+    },
+    animals: {
+      signatures: {
+        deer: {
+          color: 0xfdbb54,
+        },
+        stag: {
+          color: 0xef8f3c,
+        },
+        fox: {
+          color: 0xfda39d,
+        },
+        rat: {
+          color: 0xd8919c,
+        },
+      },
+      printsPerSecond: 30,
+      lifetimeSeconds: 25,
+      emissionBottomFraction: 0.15,
+      emissionTopFraction: 0.85,
+      emissionRadiusFraction: 0.35,
+      riseHeightMeters: 0.8,
+      windResponseMeters: 14,
+    },
+    appearance: {
+      sizeMeters: 0.16,
+    },
+    motion: {
+      riseDurationSeconds: 10,
+      driftAmplitudeMeters: 1.8,
+      speedMultiplier: 1,
+      windResponseMeters: 7,
+    },
+  },
 };

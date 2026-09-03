@@ -63,7 +63,9 @@ export interface FrameControl {
 }
 
 export type WorldUpdate = (deltaSeconds: number) => void;
-type SetupWorld = (context: WorldContext) => WorldUpdate | undefined;
+type SetupWorld = (
+  context: WorldContext,
+) => WorldUpdate | undefined | Promise<WorldUpdate | undefined>;
 
 export interface WorldStartOptions {
   readonly setupWorld?: SetupWorld;
@@ -100,10 +102,10 @@ function createWorldRenderer(): WebGLRenderer {
   });
 }
 
-export function startWorld(
+export async function startWorld(
   container: HTMLElement,
   options: WorldStartOptions = {},
-): void {
+): Promise<void> {
   const { setupWorld, frameControl, viewPitchAssistDegrees = 0 } = options;
   const scene = new Scene();
   const viewer = createViewerRig(viewPitchAssistDegrees);
@@ -124,7 +126,7 @@ export function startWorld(
   const xr = createXrSessionControl(renderer);
   timer.connect(document);
 
-  const updateWorld = setupWorld?.({
+  const updateWorld = await setupWorld?.({
     scene,
     camera,
     viewerRig: viewer.group,

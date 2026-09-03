@@ -14,7 +14,7 @@ WorldSurface + chunk assignments + StreamQueue + wind
 ```
 
 Concrete modules never import siblings. When one module needs information from
-another, a narrow neutral contract is defined and wired by Level Runtime.
+another, a narrow neutral contract is defined and wired by Level Composition.
 
 ## Current Modules
 

@@ -13,14 +13,14 @@ import { showHeadsetDiagnostics } from "./dev/headset-diagnostics";
 import { resolveNarrationLanguage } from "./dramaturgy/narration-catalog";
 import { PIECE_SCHEDULE } from "./dramaturgy/piece-schedule";
 import type { ShowClock } from "./dramaturgy/show-clock";
+import { SHOW_LEVEL_STATES } from "./dramaturgy/show-levels";
 import {
   isLevelName,
   LEVEL_CATALOG,
   resolveLevelName,
-  SHOW_LEVEL,
-  SHOW_LEVEL_PRESETS,
 } from "./levels/level-catalog";
-import { startLevel } from "./levels/level-runtime";
+import { type LevelStartRequest, startLevel } from "./levels/level-runtime";
+import { SHOW_COMPOSITION } from "./levels/show-composition";
 import { loadDeploymentConfig } from "./station/deployment-config";
 import { mountVrEntryButton } from "./world/vr-entry-button";
 
@@ -78,7 +78,7 @@ const show =
     : {
         schedule: PIECE_SCHEDULE,
         language: resolveNarrationLanguage(request.get("language")),
-        levels: SHOW_LEVEL_PRESETS,
+        states: SHOW_LEVEL_STATES,
       };
 
 // Deployment facts the station server was started with; empty when nothing
@@ -86,11 +86,20 @@ const show =
 // the matching conductor control turns read-only.
 const deployment = await loadDeploymentConfig();
 
-const level = await startLevel(
-  document.querySelector(".app"),
-  show ? SHOW_LEVEL : LEVEL_CATALOG[levelName],
-  { benchmark, show, m5ExpectedDeviceId: deployment.m5DeviceId },
-);
+const levelRequest: LevelStartRequest = show
+  ? {
+      kind: "show",
+      composition: SHOW_COMPOSITION,
+      show,
+      m5ExpectedDeviceId: deployment.m5DeviceId,
+    }
+  : {
+      kind: "static",
+      preset: LEVEL_CATALOG[levelName],
+      benchmark,
+      m5ExpectedDeviceId: deployment.m5DeviceId,
+    };
+const level = await startLevel(document.querySelector(".app"), levelRequest);
 
 window.showClock = level.show?.clock;
 

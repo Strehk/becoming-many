@@ -60,7 +60,7 @@ clock is the *authority*, and playback is a follower. Seeking to 03:12 lands
 the narration 03:12 into the show, inside whichever recording covers that
 instant — it never retriggers a file.
 
-`level-runtime.ts` composes the two halves; this folder never imports
+`show-runtime.ts` composes the two halves; this folder never imports
 `src/sound`, and `src/sound` never decides when a cue plays.
 
 ## Deliberately Absent

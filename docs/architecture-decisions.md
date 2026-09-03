@@ -19,11 +19,26 @@ history belongs in Git; unresolved product and deployment questions belong in
 
 ## Composition and Contracts
 
-- `src/levels/level-runtime.ts` is the single current composition root. Its
-  responsibilities may be split by issue #15, but a parallel runtime must not
-  be introduced.
-- Concrete content modules never import sibling modules. The composition root
+- `src/levels/level-runtime.ts` is the single startup and frame-coordination
+  entry. `src/levels/level-composition.ts` is its concrete construction owner;
+  it is not a parallel runtime.
+- Concrete content modules never import sibling modules. Level Composition
   connects them through small directional contracts.
+- Every standalone `LevelPreset` owns a complete object literal and does not
+  import, spread, or share configuration objects with another authored level.
+  `ShowComposition` and `ShowLevelState` are separate contracts because they
+  have different lifecycles and consumers.
+- This deliberate separation favors robustness over deduplicating authored
+  values: changing a standalone level cannot mutate a later level or the show,
+  and the opening show state is applied before view-dependent resources are
+  allocated.
+- The design stays simple: there is no preset inheritance, deep merge, module
+  registry, dependency-injection container, or second runtime. Repeated level
+  values remain visible data when that is clearer than another abstraction.
+- The execution path is directly traceable: a static request points to one
+  `LevelPreset`; a show request points to one `ShowComposition` and one state
+  map; Level Composition constructs the world; Level Runtime starts and updates
+  it; Show Runtime follows the schedule.
 - World facts flow from `WorldSurface` and permanent world contracts into
   modules. Modules do not mutate those facts.
 - Material effects cross module boundaries through the shared shader-patch

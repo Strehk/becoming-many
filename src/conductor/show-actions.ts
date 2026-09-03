@@ -6,7 +6,8 @@
  */
 
 import type { NarrationLanguage } from "../dramaturgy/narration-catalog";
-import type { RunningLevel, RunningShow } from "../levels/level-runtime";
+import type { RunningLevel } from "../levels/level-runtime";
+import type { RunningShow } from "../levels/show-runtime";
 import type { M5State } from "../m5/protocol";
 
 export interface ShowActions {
