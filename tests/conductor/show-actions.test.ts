@@ -49,12 +49,12 @@ function createRecorder(): Recorder {
 }
 
 describe("createShowActions", () => {
-  test("restartExperience rewinds, resets the flight, then plays", () => {
+  test("restartExperience rewinds, resets the flight, and holds", () => {
     const { calls, level, show } = createRecorder();
 
     createShowActions(level, show).restartExperience();
 
-    expect(calls).toEqual(["seekTo:0", "resetFlight", "play"]);
+    expect(calls).toEqual(["seekTo:0", "resetFlight", "pause"]);
   });
 
   test("resetShow rewinds and holds", () => {

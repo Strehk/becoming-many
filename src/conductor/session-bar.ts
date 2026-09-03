@@ -1,9 +1,9 @@
 /**
- * Purpose: Hold the between-visitors controls: language, headset, restart.
+ * Purpose: Hold the between-visitors controls: language, headset, reset.
  * Context: Arming the next session is the one job front-of-house staff do
  *   between visitors, so its controls share one thumb-sized bar.
  * Responsibility: Render the language switch, the headset button, the
- *   "New visitor" restart, and the technician-drawer toggle.
+ *   "New visitor" reset, and the technician-drawer toggle.
  * Boundary: Session rules live in docs/direction/session-operator.md; the
  *   show is commanded only through the actions contract.
  */
@@ -53,7 +53,7 @@ export function createSessionBar({
   const restartButton = createConfirmButton(
     root,
     "New visitor",
-    "Tap again to restart",
+    "Tap again to reset",
     () => actions.restartExperience(),
   );
   restartButton.classList.add("conductor__restart-button");
