@@ -89,9 +89,9 @@ Verified on 2026-09-03 for the level-contract refactor branch:
 - `bun run lint`: passed.
 - `bun run build`: passed with existing Vite warnings about one extensionless
   config import and a large output chunk.
-- `bunx fallow`: completed with known findings: one unused dependency override,
-  seven clone groups, sixteen complexity findings, and one hotspot. These
-  findings are tracked as cleanup issues; Fallow is not currently clean.
+- `bunx fallow`: found no dead files or exports. The remaining unused dependency
+  override, duplication, complexity, and hotspot findings are tracked as
+  cleanup issues; Fallow is not currently clean.
 
 The deterministic benchmark has accepted renderer-counter baselines, but its
 frame times are machine-specific. The grass clipmap and the complete current
