@@ -48,6 +48,7 @@ import {
   type ScentParticlesModuleHandle,
   type ScentParticlesParameters,
 } from "../modules/scent-particles/scent-particles";
+import { createSnakesModule } from "../modules/snakes/snakes";
 import { createGroundOccluder } from "../modules/terrain/ground-occluder";
 import { createTerrainModule } from "../modules/terrain/terrain";
 import { createTerrainColors } from "../modules/terrain/terrain-colors";
@@ -218,6 +219,7 @@ function createConfiguredModules(setup: LevelSetup): ComposedWorld {
   add(undefined, createGrassClipmap(setup, echoDepth, thermal, structureFade));
   add("echo", createVegetation(setup, echoDepth, thermal, structureFade));
   add("echo", createRocks(setup, echoDepth, thermal, structureFade));
+  add("thermal", createSnakes(setup, echoDepth, structureFade));
   add("thermal", animals?.module);
   add("motion", motion?.module);
   add("magnetic", magnetic?.module);
@@ -569,6 +571,29 @@ function createVegetation(
         stature === "undergrowth" ? thermal?.undergrowth : thermal?.vegetation,
         echoDepth,
       ),
+  });
+}
+
+/**
+ * Snakes join the world at the Thermal cue, beside the walking population.
+ * A cold body is the one thing a heat view would not show, so this is a
+ * dramaturgical placement rather than a physical one: it is where the piece
+ * wants them, and the ground they cross still colours them like the rocks.
+ */
+function createSnakes(
+  setup: LevelSetup,
+  echoDepth: EchoDepthEffect | undefined,
+  worldFade: WorldFadeEffect | undefined,
+): WorldModule | undefined {
+  const preset = setup.level.snakes;
+  if (!preset) return undefined;
+
+  return createSnakesModule({
+    scene: setup.world.scene,
+    viewpoint: setup.world.viewpoint,
+    preset,
+    worldSurface: setup.worldSurface,
+    effects: buildSurfaceEffects(worldFade, undefined, echoDepth),
   });
 }
 
