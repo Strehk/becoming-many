@@ -33,7 +33,8 @@ M5 over plain HTTP.
 An installed station does not use the launcher below. It runs the window under
 the Artcom Watchdog, from [watchdog/kiosk.yaml](watchdog/kiosk.yaml), which
 waits for `/health`, opens the window with `--kiosk` rather than `--app`, and
-reopens it after a crash or a stray `Alt+F4` — see
+marks the dedicated kiosk window as topmost. It also reopens Chrome after a
+crash or a stray `Alt+F4` — see
 [watchdog/README.md](watchdog/README.md), including how to stop it when
 servicing the machine. The flags there and the flags here must stay in step.
 
