@@ -82,7 +82,8 @@ issue and a bounded implementation.
 
 ## Verification Snapshot
 
-Verified on 2026-09-03 for the level-contract refactor branch:
+Verified on 2026-09-03 after the level-contract and runtime-composition
+refactor:
 
 - `bun test`: 375 passed, 0 failed across 52 files.
 - `bun run check`: passed.
@@ -106,8 +107,12 @@ in [roadmap.md](roadmap.md). The largest risks are:
 - physical PICO performance and transition spikes;
 - PCVR startup and delivery-platform validation;
 - diagnostics, lifecycle, M5, and shader-patch robustness;
-- composition-root and entry-point cleanup;
+- entry-point isolation and remaining module-ownership cleanup;
 - measured removal or consolidation of redundant runtime paths.
+
+The next dependency-aware engineering sequence is #19, #16, #35, then #11.
+The reasons and completion boundaries are recorded in
+[roadmap.md](roadmap.md); detailed acceptance criteria remain in the issues.
 
 README-only folders under `src/modules` and `src/utils` are reserved extension
 boundaries. They are intentionally retained and do not claim an implementation.

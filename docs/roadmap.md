@@ -10,6 +10,25 @@ Issue numbers and titles below mirror the open issue list on 2026-09-03. Work
 proceeds one focused issue at a time. Small product features may be added only
 through a concrete issue.
 
+## Next Dependency-Aware Sequence
+
+1. [#19 — Isolate Rehearsal, Test, and Conductor Entry Points](https://github.com/Strehk/becoming-many/issues/19)
+   establishes the dedicated Test entry without removing its current metrics.
+2. [#16 — Eliminate Cold-Start CPU Spikes at Level Transitions](https://github.com/Strehk/becoming-many/issues/16)
+   classifies the remaining Echolocation uploads and records physical PICO 4
+   transition evidence while the diagnostic path still exists.
+3. [#35 — Remove Redundant Test UI Runtime Cost](https://github.com/Strehk/becoming-many/issues/35)
+   removes the overlay and unconditional frame sampler only after #19 and the
+   required transition measurements.
+4. [#11 — Configure Fallow Architecture Boundaries](https://github.com/Strehk/becoming-many/issues/11)
+   encodes the resulting stable entry and runtime graph instead of protecting a
+   temporary structure.
+
+Hardware-independent cleanup may proceed between device sessions, but each
+issue keeps its own branch, verification, and pull request. In particular, the
+Grass ownership decision in #13 remains measurement-led and must not be folded
+into entry or diagnostics work.
+
 ## Performance
 
 - [#13 — Choose One Grass Owner Using Current Measurements](https://github.com/Strehk/becoming-many/issues/13)
