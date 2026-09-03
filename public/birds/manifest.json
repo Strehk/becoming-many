@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "author": "Becoming Many project",
+  "license": "UNRECORDED",
+  "assets": [
+    {
+      "id": "falcon",
+      "file": "/birds/falcon.glb",
+      "sourceFile": "bird_high.fbx",
+      "sha256": "3d09a843d8bb6709c8a21eb26212c413d9dd2246c25a85110703f2dbb18715a8",
+      "preparation": "Re-exported from the authored FBX with its material dropped, because the senses colour every surface from the level palette. The armature and its half-second wing beat are kept: one raptor can afford a skeleton where a flock of sixty cannot.",
+      "metrics": {
+        "bytes": 1985504,
+        "meshes": 1,
+        "materials": 1,
+        "triangles": 11680,
+        "estimatedDrawCalls": 1,
+        "animations": 1
+      },
+      "animationClips": ["Armature|ArmatureAction"],
+      "modelSpace": {
+        "up": "+y",
+        "sizeMeters": [1.52, 0.5, 0.57]
+      }
+    }
+  ],
+  "note": "Carried over or authored for this piece with no author or licence recorded. Author and licence need confirming before release \u2014 see docs/direction/open-decisions.md."
+}

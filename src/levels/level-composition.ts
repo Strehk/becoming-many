@@ -39,6 +39,8 @@ import {
   type ConnectionsModuleHandle,
   createConnectionsModule,
 } from "../modules/mycelium/mycelium";
+import { createRaptorModule } from "../modules/raptor/raptor";
+import { RAPTOR_DEFINITION } from "../modules/raptor/raptor-definition";
 import { createRockConnectionSource } from "../modules/rocks/rock-nodes";
 import { createRocksModule } from "../modules/rocks/rocks";
 import { ROCKS_DEFINITION } from "../modules/rocks/rocks-definition";
@@ -88,6 +90,7 @@ export interface LoadedLevelAssets {
   readonly vegetation: GltfAssets;
   readonly rocks: GltfAssets;
   readonly animals: GltfAssets;
+  readonly raptor: GltfAssets;
 }
 
 interface LevelSetup {
@@ -219,6 +222,7 @@ function createConfiguredModules(setup: LevelSetup): ComposedWorld {
   add("echo", createVegetation(setup, echoDepth, thermal, structureFade));
   add("echo", createRocks(setup, echoDepth, thermal, structureFade));
   add("thermal", animals?.module);
+  add("thermal", createRaptor(setup, animalsFade));
   add("motion", motion?.module);
   add("magnetic", magnetic?.module);
   add("connections", connections?.module);
@@ -572,6 +576,29 @@ function createVegetation(
   });
 }
 
+/**
+ * The one bird with a skeleton of its own. It rides the animal population's
+ * World Fade, so the heat view that reveals a warm body reveals this one too,
+ * and holds its ring far outside that view's reach — which is why it carries
+ * the echo palette rather than a false colour.
+ */
+function createRaptor(
+  setup: LevelSetup,
+  animalsFade: WorldFadeEffect | undefined,
+): WorldModule | undefined {
+  const preset = setup.level.raptor;
+  if (!preset) return undefined;
+
+  return createRaptorModule({
+    scene: setup.world.scene,
+    viewpoint: setup.world.viewpoint,
+    preset,
+    assets: setup.assets.raptor,
+    worldSurface: setup.worldSurface,
+    effects: animalsFade ? [animalsFade] : [],
+  });
+}
+
 function createRocks(
   setup: LevelSetup,
   echoDepth: EchoDepthEffect | undefined,
@@ -687,7 +714,7 @@ function hasVisibleSurface(level: WorldComposition): boolean {
 export async function loadLevelAssets(
   level: WorldComposition,
 ): Promise<LoadedLevelAssets> {
-  const [vegetation, rocks, animals] = await Promise.all([
+  const [vegetation, rocks, animals, raptor] = await Promise.all([
     loadGltfAssets(
       level.vegetation
         ? createStaticAssetRequests(VEGETATION_DEFINITION.assets)
@@ -701,9 +728,10 @@ export async function loadLevelAssets(
         ? createStaticAssetRequests(ANIMALS_DEFINITION.species)
         : [],
     ),
+    loadGltfAssets(level.raptor ? [RAPTOR_DEFINITION.asset] : []),
   ]);
 
-  return { vegetation, rocks, animals };
+  return { vegetation, rocks, animals, raptor };
 }
 
 function createStaticAssetRequests(

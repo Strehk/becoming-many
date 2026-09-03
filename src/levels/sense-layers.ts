@@ -12,6 +12,7 @@ import { ECHO_DEPTH } from "./authored/echo-depth";
 import { GRASS_CLIPMAP } from "./authored/grass-clipmap";
 import { MAGNETIC_SENSE } from "./authored/magnetic-sense";
 import { HEAT_MOTION_SENSE, MOTION_SENSE } from "./authored/motion-sense";
+import { RAPTOR } from "./authored/raptor";
 import { ROCKS } from "./authored/rocks";
 import { SCENT_PARTICLES } from "./authored/scent-particles";
 import { ZONE_TERRAIN } from "./authored/terrain";
@@ -51,11 +52,12 @@ export const MOTION_LAYER: Pick<WorldComposition, "motion"> = {
 
 export const THERMAL_LAYER: Pick<
   WorldComposition,
-  "motion" | "animals" | "thermal"
+  "motion" | "animals" | "thermal" | "raptor"
 > = {
   motion: HEAT_MOTION_SENSE,
   animals: WARM_ANIMALS,
   thermal: THERMAL_PERCEPTION,
+  raptor: RAPTOR,
 };
 
 export const MAGNETIC_LAYER: Pick<WorldComposition, "magnetic"> = {

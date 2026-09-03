@@ -66,7 +66,7 @@ issue and a bounded implementation.
   and the narrative grass clipmap.
 - Motion: bounded fly and bird point actors with GPU-aged motion trails.
 - Thermal: a viewer-centred false-colour material effect across terrain,
-  vegetation, rocks, and animals.
+  vegetation, rocks, and animals, and one raptor soaring on a wide ring.
 - Magnetic: one opaque camera-following sky dome; it does not patch terrain or
   other module materials.
 - Connections: a worker-generated, fixed-pool mycelium network connected to
