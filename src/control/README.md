@@ -19,6 +19,10 @@ frame while an M5 host is configured — a quality-0 frame is neutral steering,
 so a dropped poll continues the glide and gentle descent. Keyboard movement
 returns when the host is cleared; the frames come from `src/m5`.
 
+`flight-control-source.ts` owns the one runtime choice between those adapters:
+an available M5 frame has exclusive control for that frame; otherwise desktop
+input updates the same viewer rig.
+
 `flight-reset.ts` returns the flight rig to the pose a level starts from, which
 the in-process conductor page reaches through `RunningLevel`. Reset and height limits stay
 effective in immersive VR because they move the rig, not the headset-owned

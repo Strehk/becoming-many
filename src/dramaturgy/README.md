@@ -40,6 +40,14 @@ color above all. All lookups are pure functions of show time, so a seek or
 scrub lands inside a world state and mid-fade exactly where playing through
 would have.
 
+`organ-score.ts` says which voices of the drone organ each world state carries,
+and to what pulse. It is the audio counterpart of the sense ladder and is shaped
+the same way: voices layer up the ladder and none is swapped out, and
+`organVoiceStrengthAt` derives a voice's strength from the schedule on the very
+ramp a sense fades on. The organ in `src/sound` follows it the way the
+narration follows the schedule — it has no clock of its own, and the pulse
+here is the only tempo it steps to.
+
 `schedule-layout.ts` measures a schedule in seconds: where each cue's slot
 starts and ends, how long its recording runs in a given language, and the
 headroom between the two. It is the one place slot arithmetic lives, so the
@@ -68,7 +76,7 @@ panel away, and the clock clamping at the show length is what holds the credits
 up until staff restart. What the panel looks like belongs to
 `src/modules/end-credits`.
 
-`level-runtime.ts` composes the two halves; this folder never imports
+`show-runtime.ts` composes the two halves; this folder never imports
 `src/sound`, and `src/sound` never decides when a cue plays.
 
 ## Deliberately Absent

@@ -71,9 +71,11 @@ should extend it. They are defaults, not reasons to add infrastructure.
 
 ## Architecture
 
-- `src/main.ts` remains a minimal browser entry that selects one level.
-  `src/levels/level-runtime.ts` is the single composition root that connects
-  the preset to concrete systems without absorbing their implementation.
+- `src/main.ts` remains the minimal rehearsal-show entry; `src/test-main.ts`
+  owns standalone level, benchmark, diagnostics, and direct-M5 requests.
+  `src/levels/level-runtime.ts` is the single startup and frame-coordination
+  root. `src/levels/level-composition.ts` connects authored composition to
+  concrete content modules without creating a parallel runtime.
 - `src/world` owns permanent execution mechanisms. `src/modules` owns
   unloadable content, `src/control` owns input and navigation, and `src/levels`
   contains data-only presets.

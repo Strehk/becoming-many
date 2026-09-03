@@ -5,10 +5,11 @@ deployment choices live under [direction](direction/README.md).
 
 ## Runtime Surfaces
 
-The build has three browser entries:
+The build has four browser entries:
 
-- `index.html` loads `src/main.ts`: the complete show by default, or a
-  development level/benchmark when requested by URL.
+- `index.html` loads `src/main.ts`: the complete rehearsal show only.
+- `test.html` loads `src/test-main.ts`: standalone levels, benchmarks,
+  headset diagnostics, and direct-M5 development.
 - `conductor.html` loads `src/conductor/conductor-main.ts`: the operator surface
   with the show running in the same page.
 - `flash.html` loads `src/flash/flash-main.ts`: Web Serial firmware setup for the
@@ -20,10 +21,18 @@ show state.
 
 ## Composition and Frame Flow
 
-`src/levels/level-runtime.ts` is the current composition root. It receives one
-sparse `LevelPreset`, preloads the fixed GLTF definitions it needs, creates the
-shared world surface, connects controls and optional show state, creates enabled
-modules, then starts `src/world/world-runtime.ts`.
+`src/levels/level-runtime.ts` is the startup and frame-coordination root. A
+static request contains one independent `LevelPreset`; a show request contains
+the separate construction-only `ShowComposition` and narrow `ShowLevelState`
+map. The runtime loads the required assets, starts `src/world/world-runtime.ts`,
+applies the opening presentation, delegates concrete construction to
+`src/levels/level-composition.ts`, activates the returned module list, and
+connects controls and optional show following. Presentation is applied before
+any module derives a fixed spatial window from the camera.
+
+Test UI sampling and overlay creation are entry-owned optional dependencies.
+Legacy Grass and Zone Visualizer implementations load only for the standalone
+presets that author them; the rehearsal show does not fetch those chunks.
 
 The single frame loop is owned by World Runtime:
 
@@ -48,12 +57,13 @@ src/
 ├── dev/             opt-in diagnostics and rehearsal controls
 ├── dramaturgy/      show clock, schedule, cue layout, and level timing
 ├── flash/           M5 Web Serial setup page
-├── levels/          typed presets and the current composition root
+├── levels/          typed presets, startup coordination, and world composition
 ├── m5/              untrusted controller protocol and polling adapter
 ├── modules/         unloadable visual and world content
-├── sound/           narration playback and the audio timebase
+├── sound/           narration, the audio timebase, and the drone organ
 ├── station/         browser-side deployment facts
 ├── test-ui/         browser-only frame metrics and diagnostic overlay
+├── test-main.ts     standalone level and benchmark browser entry
 ├── utils/           narrow shared technical utilities
 ├── world/           permanent runtime, XR, chunks, and scheduling
 └── world-surface/   deterministic read-only height and zone facts
@@ -107,20 +117,36 @@ receive it as a read-only contract.
 Concrete modules do not import siblings. Cross-module information uses narrow
 contracts such as `WorldSurface`, `UnlitMaterialEffect`, `MotionPointSource`,
 `ScentSource`, and `ConnectionNodeSource`; the composition root performs the
-wiring.
+wiring in `src/levels/level-composition.ts`.
 
 ## Levels and Show
 
-Files in `src/levels/*.level.ts` are typed authored data. Narrative presets
-layer in order from White World through Connections, while `test` and
-`design-test` are diagnostic presets. `level-catalog.ts` names all presets and
-builds `SHOW_LEVEL`, the full layered composition without the test overlay.
+Files in `src/levels/*.level.ts` are typed startup recipes: each owns its
+presentation values and spreads the sense layers up to its rung, in ladder
+order. The layers live in `src/levels/sense-layers.ts` and are built from the
+authored blocks in `src/levels/authored/`, where every configuration value
+exists once. A level names layers, never another level. `test` and
+`design-test` remain diagnostic presets with values of their own.
 
-The default page creates that composition once. `PIECE_SCHEDULE` and the show
-clock select the current authored world state, drive sense intensities and
-background transitions, synchronize narration, and fade in the end credits at
-the authored `creditsAtSeconds`. A requested standalone level or benchmark does
-not start a show, so neither builds the credits panel.
+`show-composition.ts` spreads every layer into the complete module and asset
+union the default page creates once. `SHOW_LEVEL_STATES` contains only presentation facts
+that can change while that world is running. `PIECE_SCHEDULE` and the show
+clock select those states, drive sense intensities and background transitions,
+synchronize narration, and fade in the end credits at the authored
+`creditsAtSeconds`. The schedule's opening state is also applied before module
+construction so fixed spatial pools use its authored view distance. A requested
+standalone level or benchmark does not start a show, so neither builds the
+credits panel.
+
+`show-runtime.ts` also drives the drone organ in `src/sound/drone-organ/`
+through one per-frame contract: the show time sample, the strength of each
+voice as `organ-score.ts` derives it, the listener pose, ground height, and
+the live bird-flock and fly-swarm centres that Motion Sense reports through
+`ShowWorldReach`. Sound never reads the schedule and keeps no clock: the
+organ's rhythmic voices step on grids of show seconds that the runtime places
+onto audio time each frame. Tone.js arrives through a dynamic import inside
+`drone-organ.ts`, and the organ plays on the context Tone builds for itself —
+see [Architecture Decisions](architecture-decisions.md).
 
 ## Station and Control Boundaries
 

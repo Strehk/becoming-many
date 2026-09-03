@@ -19,11 +19,31 @@ history belongs in Git; unresolved product and deployment questions belong in
 
 ## Composition and Contracts
 
-- `src/levels/level-runtime.ts` is the single current composition root. Its
-  responsibilities may be split by issue #15, but a parallel runtime must not
-  be introduced.
-- Concrete content modules never import sibling modules. The composition root
+- `src/levels/level-runtime.ts` is the single startup and frame-coordination
+  entry. `src/levels/level-composition.ts` is its concrete construction owner;
+  it is not a parallel runtime.
+- Concrete content modules never import sibling modules. Level Composition
   connects them through small directional contracts.
+- Every authored block exists once, in `src/levels/authored/`, typed against
+  the module contract it configures. `src/levels/sense-layers.ts` groups those
+  blocks into one layer per sense of the ladder. A standalone `LevelPreset` is
+  its own presentation values plus the layers up to its rung, spread in ladder
+  order; `ShowComposition.world` is the spread of every layer. A change to a
+  block therefore reaches every level that carries that sense, which is what
+  "senses layer, never swap" means. `ShowComposition` and `ShowLevelState` are
+  separate contracts because they have different lifecycles and consumers.
+- Layers only add keys, with one named exception: `THERMAL_LAYER.motion` is
+  `HEAT_MOTION_SENSE`, derived beside `MOTION_SENSE` with the bird trail
+  repainted, so the deviation is one greppable value rather than a nested
+  override inside a level. The opening show state is still applied before
+  view-dependent resources are allocated.
+- The design stays simple: there is no preset inheritance, deep merge, module
+  registry, dependency-injection container, or second runtime. A level file
+  says which senses it carries; the values live where the sense is authored.
+- The execution path is directly traceable: a static request points to one
+  `LevelPreset`; a show request points to one `ShowComposition` and one state
+  map; Level Composition constructs the world; Level Runtime starts and updates
+  it; Show Runtime follows the schedule.
 - World facts flow from `WorldSurface` and permanent world contracts into
   modules. Modules do not mutate those facts.
 - Material effects cross module boundaries through the shared shader-patch
@@ -53,8 +73,8 @@ history belongs in Git; unresolved product and deployment questions belong in
 
 - The show clock and typed narration schedule are the sole authorities for show
   time, cues, and world-state timing.
-- The default page runs the complete show; explicit level and benchmark routes
-  are showless development surfaces.
+- The default page runs only the complete show. The explicit Test entry owns
+  standalone levels, benchmarks, headset diagnostics, and direct-M5 requests.
 - The viewer rig owns locomotion while the camera owns local desktop-look or
   headset pose. Desktop and M5 controls move the same rig.
 - The conductor is one station window that hosts the show in-process. Its panels
@@ -63,6 +83,27 @@ history belongs in Git; unresolved product and deployment questions belong in
   no show transport or session state.
 - Browser pages validate deployment and controller data at their boundaries.
   Installation secrets must not be persisted or logged.
+- The drone organ lives in `src/sound/drone-organ/` as a sound engine without
+  the patch-cable interface it was played through. How its voices sound is
+  typed configuration in `drone-organ-settings.ts`; which voice sounds when,
+  and to what pulse, is the score in `src/dramaturgy/organ-score.ts`. The port
+  carries only the voices and world signals the composition reaches for.
+- The show clock is the organ's only clock. Tone's transport is not used:
+  every rhythmic voice steps on a grid of show seconds placed onto audio time
+  just ahead of the playhead, and every generative draw is a hash of its step,
+  so pause, seek, and rehearsal speed reach the organ exactly as they reach
+  the narration.
+- The organ plays on the `AudioContext` Tone.js builds for itself, not on the
+  show timebase's. Tone's `AudioWorklet` nodes only come up on a context its
+  own audio library created; sharing the timebase's context was measured to
+  silence every voice room. The two contexts never mix audio, and both resume
+  on the same first gesture. A master gain across narration and organ remains
+  unbuilt.
+- Tone.js loads through a dynamic import, so a benchmark run and a bare
+  `?level=` page build no audio graph. The production build emits the organ as
+  its own chunk.
+- Organ voices fade on the score's derived ramp, the same ramp a sense fades
+  on. A voice at zero strength puts its lane to sleep and schedules nothing.
 
 ## Performance Evidence
 

@@ -40,8 +40,8 @@ export const END_CREDITS: EndCreditsDefinition = {
     { role: "title", text: "BECOMING MANY" },
     { role: "role", text: "A Project By" },
     { role: "name", text: "Erasmus Schmidt" },
-    { role: "name", text: "Eddie Huesmann" },
     { role: "name", text: "Tade Strehk" },
+    { role: "name", text: "Eddie Huesmann" },
   ],
 };
 

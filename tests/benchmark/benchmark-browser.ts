@@ -143,7 +143,7 @@ async function replayLevel(
 
   try {
     await page.goto(
-      `${request.baseUrl}/?level=${levelName}&benchmark=${request.profileName}`,
+      `${request.baseUrl}/test.html?level=${levelName}&benchmark=${request.profileName}`,
       { waitUntil: "load" },
     );
     await waitForReport(page);

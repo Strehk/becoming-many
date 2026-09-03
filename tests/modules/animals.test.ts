@@ -45,6 +45,14 @@ const DEFINITION: AnimalsDefinition = {
 };
 
 const MEADOW_ISLAND_RADIUS_METERS = 25;
+/* Long enough that the body meets the island edge and turns on it. */
+const FRAME_RATE_PROBE_SECONDS = 60;
+/*
+ * Two frame rates stagger where a turn begins by up to a frame, never how
+ * fast it is walked, so a minute of arcs ends this close and no further.
+ */
+const FRAME_RATE_HEADING_TOLERANCE_RADIANS = 0.05;
+const FRAME_RATE_POSITION_TOLERANCE_METERS = 0.5;
 
 const PRESET = {
   colors: {
@@ -377,6 +385,25 @@ test("Animals lean onto an arc at a zone edge instead of pivoting", () => {
   module.unload();
 });
 
+test("Animals walk the same arc whatever the frame rate", () => {
+  const thirtyFps = walkOnIsland(30);
+  const ninetyFps = walkOnIsland(90);
+
+  // A turn authored per frame rather than per second walks a different path
+  // at every frame rate, and a headset holds no single one. The same minute
+  // of walking, stepped thirty times a second and ninety, has to leave the
+  // body on the same ground facing the same way.
+  expect(thirtyFps.turnedRadians).toBeGreaterThan(1);
+  expect(
+    Math.abs(
+      shortestAngle(ninetyFps.headingRadians - thirtyFps.headingRadians),
+    ),
+  ).toBeLessThan(FRAME_RATE_HEADING_TOLERANCE_RADIANS);
+  expect(
+    Math.hypot(ninetyFps.x - thirtyFps.x, ninetyFps.z - thirtyFps.z),
+  ).toBeLessThan(FRAME_RATE_POSITION_TOLERANCE_METERS);
+});
+
 /** The opacity of the actors currently drawn; zero when none is. */
 function readVisibleOpacity(population: Group): number {
   let highest = 0;
@@ -435,6 +462,70 @@ function createFlatSurface(): WorldSurface {
     }),
     zoneAt: () => "meadow",
   };
+}
+
+interface IslandWalk {
+  readonly headingRadians: number;
+  readonly turnedRadians: number;
+  readonly x: number;
+  readonly z: number;
+}
+
+/** Where one deer stands after walking the island at this frame rate. */
+function walkOnIsland(framesPerSecond: number): IslandWalk {
+  let latest: IslandWalk | undefined;
+  const { module } = createAnimalsModule({
+    scene: new Scene(),
+    viewpoint: {
+      worldPosition: new Vector3(),
+      viewDistanceMeters: DEFAULT_VIEW_DISTANCE_METERS,
+    },
+    definition: {
+      ...DEFINITION,
+      maxVisible: 1,
+      // Inside the island, so the actor is placed on ground it may stand on.
+      activeRadiusMeters: MEADOW_ISLAND_RADIUS_METERS,
+      species: [
+        {
+          ...createSpecies("deer"),
+          count: 1,
+          heightMeters: 1.4,
+          speedMetersPerSecond: 0.65,
+          allowedZones: ["meadow"],
+        },
+      ],
+    },
+    preset: PRESET,
+    assets: createAnimalAssets(),
+    worldSurface: createIslandSurface(MEADOW_ISLAND_RADIUS_METERS),
+    onBodiesUpdated: (bodies) => {
+      const body = bodies[0];
+      if (!body) return;
+      const turnedThisFrame = latest
+        ? Math.abs(shortestAngle(body.headingRadians - latest.headingRadians))
+        : 0;
+      latest = {
+        headingRadians: body.headingRadians,
+        turnedRadians: (latest?.turnedRadians ?? 0) + turnedThisFrame,
+        x: body.x,
+        z: body.z,
+      };
+    },
+  });
+
+  module.load();
+  module.activate();
+  const stepSeconds = 1 / framesPerSecond;
+  const steps = Math.round(FRAME_RATE_PROBE_SECONDS * framesPerSecond);
+  for (let step = 0; step < steps; step += 1) module.update?.(stepSeconds);
+  module.unload();
+  if (!latest) throw new Error("Expected an observed animal body");
+  return latest;
+}
+
+/** The signed way round from one angle to another, never the long way. */
+function shortestAngle(radians: number): number {
+  return Math.atan2(Math.sin(radians), Math.cos(radians));
 }
 
 /** One round meadow in conifer forest: walking straight always finds an edge. */

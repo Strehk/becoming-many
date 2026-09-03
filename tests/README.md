@@ -19,6 +19,10 @@ benchmark runner, which `bun test` ignores because it is not a test file.
 `dramaturgy/` verifies show time and cue lookup, both pure; the narration
 player is DOM-bound and is not tested here.
 
+`sound/` verifies what the drone organ decides before it touches an audio
+graph — the composed piece against the sense ladder, the patch chain, and the
+placement lookup; the graph itself needs a browser.
+
 `station/` verifies the deployment-config contract; the server is
 connection-bound and is not tested here. `conductor/` verifies what the
 operator page decides before it touches the DOM — the key map, the operator

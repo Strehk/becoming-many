@@ -16,12 +16,16 @@ Narration playback supplies the audio timebase. Pause, seek, and rehearsal
 speed therefore keep sound and visuals aligned. A suspended browser audio
 context also suspends show progress.
 
+The drone organ gives the perception layers their sonic counterparts. Its
+score — which voice each world state carries, and the shared pulse — is
+dramaturgy data beside the sense ladder, and the organ follows show time with
+no clock of its own, so pause, seek, and rehearsal speed reach it.
+
 ## Planned
 
-Small sound additions may give perception layers bounded sonic counterparts.
-They must use the existing show time, survive pause/seek, own and cap their
-voices, and have a concrete issue. A second timeline, runtime curve editor, or
-UI-heavy audio engine is outside the current need.
+Further sound additions must use the existing show time, survive pause/seek,
+own and cap their voices, and have a concrete issue. A second timeline, runtime
+curve editor, or UI-heavy audio engine is outside the current need.
 
 ## Open
 
