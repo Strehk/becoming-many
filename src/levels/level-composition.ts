@@ -48,6 +48,7 @@ import {
   type ScentParticlesModuleHandle,
   type ScentParticlesParameters,
 } from "../modules/scent-particles/scent-particles";
+import { createSnakesModule } from "../modules/snakes/snakes";
 import { createGroundOccluder } from "../modules/terrain/ground-occluder";
 import { createTerrainModule } from "../modules/terrain/terrain";
 import { createTerrainColors } from "../modules/terrain/terrain-colors";
@@ -218,6 +219,7 @@ function createConfiguredModules(setup: LevelSetup): ComposedWorld {
   add(undefined, createGrassClipmap(setup, echoDepth, thermal, structureFade));
   add("echo", createVegetation(setup, echoDepth, thermal, structureFade));
   add("echo", createRocks(setup, echoDepth, thermal, structureFade));
+  add("echo", createSnakes(setup, echoDepth, thermal, structureFade));
   add("thermal", animals?.module);
   add("motion", motion?.module);
   add("magnetic", magnetic?.module);
@@ -569,6 +571,29 @@ function createVegetation(
         stature === "undergrowth" ? thermal?.undergrowth : thermal?.vegetation,
         echoDepth,
       ),
+  });
+}
+
+/**
+ * A snake is a cold body: the heat view is the one sense that would not show
+ * it, so it belongs to the world echolocation opens rather than to the warm
+ * population. It takes the same senses the ground it crosses takes.
+ */
+function createSnakes(
+  setup: LevelSetup,
+  echoDepth: EchoDepthEffect | undefined,
+  thermal: ThermalPerceptionEffects | undefined,
+  worldFade: WorldFadeEffect | undefined,
+): WorldModule | undefined {
+  const preset = setup.level.snakes;
+  if (!preset) return undefined;
+
+  return createSnakesModule({
+    scene: setup.world.scene,
+    viewpoint: setup.world.viewpoint,
+    preset,
+    worldSurface: setup.worldSurface,
+    effects: buildSurfaceEffects(worldFade, thermal?.rocks, echoDepth),
   });
 }
 

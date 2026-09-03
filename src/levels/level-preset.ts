@@ -15,6 +15,7 @@ import type { MotionSenseParameters } from "../modules/motion-sense/motion-sense
 import type { ConnectionsParameters } from "../modules/mycelium/mycelium";
 import type { RocksPreset } from "../modules/rocks/rocks";
 import type { ScentParticlesParameters } from "../modules/scent-particles/scent-particles";
+import type { SnakesPreset } from "../modules/snakes/snakes";
 import type { StaticPopulationPreset } from "../modules/static-population";
 import type { TerrainColors } from "../modules/terrain/terrain-colors";
 import type { ThermalPerceptionParameters } from "../modules/thermal-perception/thermal-perception";
@@ -37,6 +38,7 @@ export interface WorldComposition {
   readonly grassClipmap?: GrassClipmapPreset;
   readonly vegetation?: VegetationPreset;
   readonly rocks?: RocksPreset;
+  readonly snakes?: SnakesPreset;
   readonly animals?: AnimalsPreset;
   readonly echoDepth?: EchoDepthParameters;
   readonly motion?: MotionSenseParameters;
