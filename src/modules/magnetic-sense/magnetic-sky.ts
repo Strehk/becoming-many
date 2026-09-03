@@ -35,7 +35,7 @@ export interface MagneticSkyOptions {
   readonly colors: MagneticSkyColors;
   /** Noise drift in units per second, derived from the module settings. */
   readonly driftVelocity: Vector3;
-  /** Shared so a future dramaturgy driver steers the sense through one value. */
+  /** Shared so the show driver steers the complete sense through one value. */
   readonly fieldAxisUniform: { readonly value: Vector3 };
   /** Shared for the same reason; fades the shimmer back into the plain sky. */
   readonly intensityUniform: { readonly value: number };

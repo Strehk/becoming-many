@@ -20,7 +20,7 @@ import { M5_SETTINGS } from "./m5-settings";
 import { M5_FIRMWARE_VERSION, type M5State } from "./protocol";
 import { deriveControlFrame } from "./state-frames";
 
-/** Operator-facing device state, published over the station link. */
+/** Operator-facing device state read by the page that owns the adapter. */
 export type M5DeviceState = "off" | "connecting" | "live" | "wrong-device";
 
 export interface M5DeviceReport {

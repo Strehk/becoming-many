@@ -1,49 +1,37 @@
 # Installation Direction
 
-The as-built documentation ([architecture](../architecture.md),
-[engineering standards](../engineering-standards.md),
-[architecture decisions](../architecture-decisions.md),
-[current status](../current-status.md), [roadmap](../roadmap.md)) describes and
-governs the current code — **it takes priority**.
+These documents describe the remaining product and delivery direction for a
+Futurium installation. They do not override the as-built
+[architecture](../architecture.md), [current status](../current-status.md),
+[engineering standards](../engineering-standards.md), or issue-backed
+[roadmap](../roadmap.md).
 
-These direction documents describe where the piece is headed as a Futurium
-installation: deployment, dramaturgy, controls, operations, and headset
-integration. They were distilled from the pre-import design sessions
-(2026-08-21/22) and the reference-project findings. Where a direction conflicts
-with the current implementation or standards, the conflict is recorded in
-[Open Decisions](open-decisions.md) and resolved by discussion — never silently
-in code.
+Every document distinguishes:
 
-Each document is self-contained so a task can load only the module it needs.
+- **Current** — implemented in this repository;
+- **Planned** — intended product or operations work without an implementation
+  claim;
+- **Open** — a choice or hardware fact that needs evidence or discussion.
 
 ## Documents
 
-- [Open Decisions](open-decisions.md) — unresolved conflicts and TODOs. Read
-  this first before starting work that touches one of them.
-- [Deployment](deployment.md) — the two-station Futurium topology and its
-  consequences.
-- [Senses](senses.md) — the sense-layer model, module contract direction, and
-  the reference-project extraction map.
-- [Dramaturgy and Audio](dramaturgy-audio.md) — schedule, narration languages,
-  audio direction.
-- [Controls and M5](controls-m5.md) — ICAROS rig input, the M5 transport,
-  firmware, and setup tooling.
-- [Session and Operator](session-operator.md) — session state machine and
-  operator page.
-- [Headset](headset.md) — PICO integration: see-through switching, headset
-  agent, provisioning, rejected alternatives.
-- [Rendering Constraints](rendering-constraints.md) — hard-won GPU/WebXR
-  constraints that hold regardless of the open stack decisions.
-- [Quality and Operations](quality-operations.md) — spikes, evidence rules, CI
-  and station-acceptance direction.
-- [Architecture Review — 2026-08-22](architecture-review-2026-08-22.md) — dated
-  critical review of the pre-import architecture draft (historical context).
+- [Open Decisions](open-decisions.md) — unresolved choices that must not be
+  implemented by assumption.
+- [Deployment](deployment.md) — current station package and intended two-station
+  topology.
+- [Headset](headset.md) — current WebXR support and planned passthrough/device
+  integration.
+- [Controls and M5](controls-m5.md) — implemented control chain and remaining
+  hardware/security work.
+- [Dramaturgy and Audio](dramaturgy-audio.md) — current show authority and small
+  possible audio additions.
+- [Session and Operator](session-operator.md) — current Conductor and planned
+  installation session flow.
+- [Quality and Operations](quality-operations.md) — current gates and required
+  device/station evidence.
 
-## Sequencing
-
-Near-term implementation follows the [roadmap](../roadmap.md). The installation
-work phases in after the landscape and performance milestones, roughly: senses
-and dramaturgy → session/operator → hardware (M5 firmware, headset agent,
-provisioning) → station acceptance. The spikes in
-[Quality and Operations](quality-operations.md) run before the work that
-depends on them.
+Rendering constraints now live in [Engineering Standards](../engineering-standards.md)
+and [Performance](../performance.md). The implemented senses are documented in
+[Experience](../experience.md) and the [Level Guide](../levels/README.md). The
+superseded architecture-review notes are not part of current product direction;
+their remaining actionable findings are represented by current issues.

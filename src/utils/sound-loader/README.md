@@ -1,8 +1,16 @@
+<!--
+Purpose: Reserve a utility boundary for shared audio asset loading.
+Context: Current narration loading is owned directly by src/sound.
+Responsibility: State when a shared loader would be justified.
+Boundary: This folder currently contains documentation only and owns no playback policy.
+-->
+
 # Sound Loader
 
-This utility contains shared loading helpers for audio files and audio
-metadata.
+This is a README-only reserved extension boundary. No shared Sound Loader is
+implemented because the current narration path has one owner and no duplicated
+loading contract.
 
-It does not own narrative timing, playback policy, spatial sound behavior, or
-the sound module lifecycle. Those responsibilities belong to the sound
-module.
+Extract a utility here only when a second real audio consumer needs the same
+validated loading behavior. Narrative timing, playback, spatialization, voice
+limits, and disposal remain with the consuming sound owner.

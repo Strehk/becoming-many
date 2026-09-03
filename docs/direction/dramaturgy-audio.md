@@ -1,39 +1,32 @@
 # Dramaturgy and Audio
 
-## Schedule
+## Current
 
-- The runtime plays **plain baked schedule data**: per-sense intensity
-  envelopes (keyframed 0..1 curves), narration cue times, and audio gains —
-  against one virtual clock with pause/seek/timeScale, so scrubbing and
-  rehearsal work. Schedules are committed as typed TypeScript data files, per
-  the repository's configuration rule — no JSON schedule format.
-- There are two schedules: the **tutorial** (a short scripted mini-course
-  confirming the visitor can steer) and the **piece** (roughly five minutes:
-  discovery → realisation → overload → return).
-- Authoring loop: tune in the browser → export the baked schedule as a typed
-  TypeScript data file → commit. Any curve-editor tool is **dev-only and
-  exports baked data** — never a runtime dependency, never a second schedule
-  authority.
-- One schedule authority total. How clock and schedule integrate with the Level
-  Runtime is [Open Decision 2](open-decisions.md).
+The piece uses one typed baked schedule and one show clock. The authored show is
+8:41, including lead-in and the return to White World. Cue times select world
+states and narration; sense intensities and visual transitions are derived from
+the same show time.
 
-## Language
+English and German share cue timing. Language selects assets addressed by cue
+id; `script/en.md` and `script/de.md` remain the authoritative wording. Changing
+language re-arms narration at the current time and pauses the show for an
+explicit restart.
 
-- **Language is a session parameter (DE/EN)**, fixed when staff arm a session.
-  The operator page is where staff set it. It can be re-armed while the piece is
-  loaded, which pauses the show and re-seats the narration at the same instant;
-  that is a rehearsal affordance, not something done under a visitor.
-- `script/de.md` and `script/en.md` are both shippable content; narration
-  assets are addressed as `narration/<lang>/<cueId>`. Cue *times* are shared —
-  only audio files (and audience-facing copy) switch.
+Narration playback supplies the audio timebase. Pause, seek, and rehearsal
+speed therefore keep sound and visuals aligned. A suspended browser audio
+context also suspends show progress.
 
-## Audio
+## Planned
 
-- Audio plays in the headset.
-- Every sense has a sonic counterpart faded by the sense's intensity signal —
-  the accumulation is heard as much as seen.
-- The **drone-organ synth** integrates as a sound engine without its UI: the
-  Tone.js patch graph driven by schedule envelopes and sense intensities like
-  every other audio layer. Its patch-cable UI stays in its old repository.
-- Everything audio is slaved to the clock so seek and pause behave in
-  rehearsal.
+Small sound additions may give perception layers bounded sonic counterparts.
+They must use the existing show time, survive pause/seek, own and cap their
+voices, and have a concrete issue. A second timeline, runtime curve editor, or
+UI-heavy audio engine is outside the current need.
+
+## Open
+
+- Final narration recordings and authored cue timing may still be tuned by ear.
+- Installation volume, headphones, ambience, and operator adjustment need venue
+  acceptance.
+- A separate tutorial is not implemented and should be added only if visitor
+  testing demonstrates a need.

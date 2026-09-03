@@ -110,9 +110,9 @@ thermal first in each effect list so it wins the final surface color over the
 carried echo ramp (first-applied executes last; see
 `src/utils/asset-loader/material-shader-patch.ts`).
 
-Not part of this version: a runtime intensity driver (the preset authors
-intensity statically and the composition root skips the effect entirely at
-intensity zero), temporal heat variation or heat trails (a body warms its
+The show drives the shared runtime intensity through `setIntensity()`; a
+showless preset uses its authored static value and skips the effect entirely at
+zero. Deliberately absent are temporal heat variation or heat trails (a body warms its
 surroundings only where it stands now, and leaves nothing behind when it
 moves on), any surface texture or material map beyond the procedural warmth
 texture described above, and any additional thermal camera or duplicate

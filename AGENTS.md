@@ -3,98 +3,91 @@
 Guidance for AI coding agents working in this repository. Humans are welcome to
 read it too.
 
-## Orientation
+## Project Status
 
 - **Becoming Many** is a speculative VR experience about layered, non-human
-  perception — see [README.md](README.md) for the concept.
-- The code in `src/` and `public/` is the source of truth. The as-built
-  documentation — [docs/architecture.md](docs/architecture.md),
-  [docs/engineering-standards.md](docs/engineering-standards.md),
-  [docs/architecture-decisions.md](docs/architecture-decisions.md),
-  [docs/current-status.md](docs/current-status.md),
-  [docs/roadmap.md](docs/roadmap.md) — describes and governs it, and
-  **takes priority**.
-- [docs/direction/](docs/direction/README.md) describes where the piece is
-  headed as a Futurium installation. Conflicts between direction and current
-  code are tracked in
-  [docs/direction/open-decisions.md](docs/direction/open-decisions.md) —
-  never resolve one silently in code; ask.
+  perception. See [README.md](README.md) for the concept.
+- The core experience and its level sequence are largely implemented. Current
+  work focuses on measured performance improvements, stability, code cleanup,
+  and issue fixes.
+- Small product additions remain possible when they answer a concrete current
+  need, have a dedicated issue, and can be delivered as a small testable step.
+- `src/` and `public/` are the source of truth. The current as-built state is
+  documented in [docs/current-status.md](docs/current-status.md), while
+  [docs/roadmap.md](docs/roadmap.md) mirrors the remaining issue-backed work.
+- Product direction is kept in [docs/direction/](docs/direction/README.md).
+  Never implement an open product or deployment decision silently.
 
-## Language rule
+## Language
 
-**Everything committed to this repository is written in English**: code,
+Everything committed to this repository is written in English: code,
 identifiers, file names, comments, commit messages, documentation, and log
-output. German exists only as experience content (`script/de.md`, narration
-assets, audience-facing copy). This holds regardless of the conversation
-language — a German chat still produces English artifacts.
+output. German is limited to experience content such as `script/de.md`,
+narration assets, and audience-facing copy.
 
-## How to work
+## Working Method
 
-- Follow [docs/engineering-standards.md](docs/engineering-standards.md) for
-  coding, architecture, Three.js, documentation, and validation conventions.
-- **Contracts and modularity are of utmost importance.** Small,
-  self-contained modules own their resources and complete lifecycle; data
-  crosses an ownership boundary only through a small, strict TypeScript
-  contract; concrete modules never import sibling modules. Extending a
-  contract cleanly always beats reaching around one.
-- **All configuration is TypeScript.** Settings, presets, definitions, and
-  tunables live in typed `.ts` files (`*-settings.ts`, `*.level.ts`, module
-  definitions) — never in JSON, YAML, or environment formats. JSON under
-  `public/` records asset provenance only.
-- Build the smallest viable step. Follow KISS and YAGNI. Plan every change
-  before implementing; work one step at a time.
-- **Ask before assuming.** If a task depends on an unwritten or open decision,
-  ask rather than inventing one and burying it in code.
-- **Finish what you start.** Leave the repo with the gates passing, or say
-  explicitly what is unfinished.
-- **Write down decisions** in `docs/`, not only in commit messages.
-- Keep `main` clean: develop on feature branches and merge only verified work.
-  **Do not commit or push unless asked.**
+- Work on one issue at a time. Before changing code, verify that the issue still
+  describes the current checkout, reproduce the problem where possible, and
+  identify the smallest complete fix.
+- Follow [docs/engineering-standards.md](docs/engineering-standards.md). Prefer
+  removal, reuse, and simplification before adding abstractions or dependencies.
+- Keep changes focused. Do not combine unrelated cleanup with an issue fix.
+- Ask when work depends on an unwritten or open decision. Do not hide product or
+  architecture choices inside implementation details.
+- Update affected documentation and issue descriptions when code changes make
+  them stale. Keep current facts, plans, and historical evidence separate.
+- Finish each change with its relevant verification gates passing, or state
+  exactly what remains unverified.
+- Develop on feature branches. Do not commit or push unless asked.
 
-## Toolchain
+## Architecture Boundaries
 
-- **Bun** (packages, tests), **Vite** (build), **Biome** (lint + format),
-  **Fallow** (export analysis, `.fallowrc.jsonc`).
-- `bun run dev` · `bun test` · `bun run check` (typecheck) · `bun run lint` ·
-  `bun run build` (typecheck + production build).
-- `bun run benchmark` replays a fixed route in Chromium and writes a report
-  artifact. It needs a current `bun run build` and is not part of `bun test`.
-- `bun run station` starts the station server: it serves the built pages from
-  `dist/` and the deployment facts at `/config`. The station window is the
-  conductor page (`/conductor.html`), which hosts the show in-process; `/`
-  stays the bare rehearsal and development page. The server is a Bun process,
-  not part of the app bundle, and the show runs without it.
-  `docker compose up -d --build` runs a whole built station in one
-  container — see [station/README.md](station/README.md) and `.env.example`
-  for the per-station env vars (M5 host, device id, station name).
-- Run all Bun, Vite, and Fallow checks before checkpoints and commits.
+- Contracts and modularity are primary constraints. Small modules own their
+  resources and complete lifecycle, and data crosses ownership boundaries only
+  through narrow TypeScript contracts.
+- Concrete modules never import sibling modules. Extend an existing boundary
+  instead of reaching around it or creating a parallel runtime.
+- Keep one Three.js render loop. The creator of a resource disposes it.
+- Keep runtime work and memory bounded through fixed capacities, pooling,
+  recycling, and frame-budgeted jobs.
+- All authored configuration is typed TypeScript. JSON under `public/` records
+  asset provenance only; do not add JSON, YAML, or environment configuration to
+  the application.
+- README-only source folders are reserved extension boundaries. Keep their
+  READMEs until that product area is either implemented or explicitly retired.
 
-## Performance rules
+## Toolchain and Verification
 
-The delivery platform question is open
-([open decision 1](docs/direction/open-decisions.md)); until it is decided,
-these rules stand unchanged:
+- Bun manages packages and tests; Vite builds the application; Biome checks
+  formatting and lint; Fallow reports export, dependency, duplication, and
+  complexity findings.
+- Development commands: `bun run dev`, `bun run station`, and
+  `docker compose up -d --build` for a complete station container.
+- Before checkpoints and commits, run `bun test`, `bun run check`,
+  `bun run lint`, `bun run build`, and `bunx fallow`.
+- `bun run benchmark` replays a deterministic browser route after a current
+  build. It is separate from the standard test suite.
 
-- Target PICO 4. Performance is the highest priority; target stable 90 FPS.
-  Any performance regression blocks completion.
-- Always choose the simplest, most GPU-friendly solution.
-- Keep shaders mobile-first and minimal: prefer opaque, unlit, or baked
-  lighting; minimize fragment work, texture samples, variants, and overdraw;
-  avoid dynamic branches and loops. Store shaders only in dedicated GLSL ES
-  3.00 files (`*.vert.glsl`, `*.frag.glsl`); never inline them.
-- Minimize draw calls. Use `InstancedMesh` for repeated geometry and
-  materials, `BatchedMesh` for varied geometry sharing a material. Reuse
-  geometry, materials, and buffers.
-- Stream procedural content in bounded, distance-based chunks. Pool and
-  recycle instances, use LOD and frustum culling, prefer KTX2 textures, and
-  always dispose unused GPU resources.
+## Performance
 
-## Repository conventions
+- Performance is the primary product requirement. Follow
+  [docs/performance.md](docs/performance.md).
+- Target stable 90 Hz on a physical PICO 4. Desktop and deterministic benchmark
+  results detect regressions but do not prove headset acceptance.
+- Prefer the simplest GPU-friendly path: shared resources, low draw-call count,
+  minimal opaque mobile-first shaders, bounded streaming, LOD, culling, and
+  explicit disposal.
+- A measured performance regression blocks completion until removed or
+  explicitly accepted with evidence.
 
-- Documentation lives in `docs/` ([docs/README.md](docs/README.md) is the
-  index); this file stays short and points there.
-- `README.md` describes the piece for a reader who has never seen it. Keep the
-  vision text and implementation notes separate.
-- `script/` holds the narration (`en.md`, `de.md`). It is the authoritative
-  voiceover wording — content, not a draft; do not reword it while working on
-  code.
+## Documentation and Content
+
+- Documentation lives in `docs/`; [docs/README.md](docs/README.md) is its index.
+- Keep `current-status.md` factual, `architecture.md` implementation-based,
+  `performance.md` evidence-based, `roadmap.md` forward-looking, and
+  `architecture-decisions.md` limited to current confirmed decisions.
+- `README.md` introduces the piece to a new reader. Keep vision separate from
+  implementation detail.
+- `script/en.md` and `script/de.md` are the authoritative narration. Do not
+  reword them during engineering or documentation work.

@@ -1,6 +1,6 @@
 <!--
 Purpose: Record source, license, and runtime use of the first rock assets.
-Context: Rocks are loaded as zone-driven instanced content in Test Level.
+Context: Rocks are loaded as zone-driven instanced content in diagnostic and narrative levels.
 Responsibility: Keep asset provenance and current technical boundaries visible.
 Boundary: Placement settings and runtime ownership remain in src/modules/rocks.
 -->

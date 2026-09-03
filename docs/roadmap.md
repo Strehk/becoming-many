@@ -1,130 +1,73 @@
-# MVP Roadmap
+# Stabilization Roadmap
 
-The roadmap starts from the [current working system](current-status.md). Each
-milestone should produce one measurable result before broader infrastructure is
-added. Section numbers group implementation areas; the current feature track is
-the landscape-module sequence in section 5.
+The core experience is largely implemented. This roadmap contains remaining
+issue-backed work only; current facts belong in
+[current-status.md](current-status.md), architecture rules in
+[architecture.md](architecture.md), and detailed acceptance criteria in each
+GitHub issue.
 
-## Completed Foundation
+Issue numbers and titles below mirror the open issue list after the 2026-09-03
+documentation triage. Work proceeds one focused issue at a time. Small product
+features may be added only through a concrete issue.
 
-- strict TypeScript, Vite, Three.js, and one render loop
-- user-triggered `immersive-vr` entry
-- pointer-lock desktop movement
-- sparse White World level preset
-- synchronous module lifecycle
-- aligned fixed-capacity chunk windows
-- bounded cooperative stream queue
-- one-draw deterministic Air Particles consumer with GPU animation
-- deterministic World Surface with separate height and zone queries
-- fixed-capacity generated Terrain consumer
-- fixed-capacity one-draw Grass consumer with GPU wind
-- composable single-pass Magnetic Sense stripe effect
-- explicit GLTF preloading and complete multi-part model extraction
-- compact zone-driven Vegetation and Rocks streaming
-- bounded four-species Animals MVP
-- top-level Bun tests for world infrastructure and module integration
+## Documentation Change in Progress
 
-This foundation is code-complete for its current scope. It is not yet approved
-for physical PICO performance.
+These two issues are implemented by the current documentation branch and remain
+open until that branch is published:
 
-## 1. Navigation Boundary — Planned
+- [#10 — Align As-Built Documentation With the Runtime](https://github.com/Strehk/becoming-many/issues/10)
+- [#24 — Move the Performance Map Out of the Root README](https://github.com/Strehk/becoming-many/issues/24)
 
-- normalize desktop input before applying movement
-- expose position, orientation, and velocity as the navigation state
-- pass navigation state explicitly into world updates
-- add listener and pointer-lock cleanup
-- keep terrain, collision, streaming, and XR view logic outside navigation
+## Performance
 
-## 2. Performance Harness
+- [#13 — Choose One Grass Owner Using Current Measurements](https://github.com/Strehk/becoming-many/issues/13)
+- [#16 — Eliminate Cold-Start CPU Spikes at Level Transitions](https://github.com/Strehk/becoming-many/issues/16)
+- [#21 — Enforce the Performance Merge Gate](https://github.com/Strehk/becoming-many/issues/21)
+- [#26 — Bring Scent Within the Frame Budget](https://github.com/Strehk/becoming-many/issues/26)
+- [#32 — Reduce Thermal Fragment Cost](https://github.com/Strehk/becoming-many/issues/32)
+- [#35 — Remove Redundant Test UI Runtime Cost](https://github.com/Strehk/becoming-many/issues/35)
 
-- deterministic benchmark flight route
-- frame-time median, p95, and p99
-- `renderer.info` counts
-- queue depth and streaming duration
-- browser baseline
-- first physical PICO run at 90 Hz, with 72 Hz retained as a candidate fallback
+## Stability, Security, and Installation
 
-## 3. Terrain Measurement
+- [#9 — Complete the Application Lifecycle](https://github.com/Strehk/becoming-many/issues/9)
+- [#12 — Stop Persisting and Logging Wi-Fi Passwords](https://github.com/Strehk/becoming-many/issues/12)
+- [#14 — Bound Headset Diagnostics Lifecycle and GPU Probing](https://github.com/Strehk/becoming-many/issues/14)
+- [#17 — Reset M5 State on Host Change](https://github.com/Strehk/becoming-many/issues/17)
+- [#18 — Enforce M5 Liveness, Identity, Sequence, and Calibration](https://github.com/Strehk/becoming-many/issues/18)
+- [#20 — Tighten the Material Shader Patch Contract](https://github.com/Strehk/becoming-many/issues/20)
+- [#28 — Validate Every Consumer of Shared Wind Changes](https://github.com/Strehk/becoming-many/issues/28)
+- [#29 — Smooth Animal Boundary Turns](https://github.com/Strehk/becoming-many/issues/29)
+- [#33 — Validate XR Flight on a Physical PICO](https://github.com/Strehk/becoming-many/issues/33)
+- [#42 — Diagnose Wired PCVR Startup on Windows, SteamVR, and PICO](https://github.com/Strehk/becoming-many/issues/42)
+- [#46 — Auto-center the headset before every visitor flight](https://github.com/Strehk/becoming-many/issues/46)
 
-- measure the implemented recycled chunk terrain on desktop and PICO
-- record streaming spikes, draw calls, triangles, and long-flight memory
-- compare a GPU clipmap only if measurements show the chunk candidate is not viable
+## Cleanup and Architecture
 
-## 4. Generated Landscape Foundation — Implemented MVP
+- [#11 — Configure Fallow Architecture Boundaries](https://github.com/Strehk/becoming-many/issues/11)
+- [#15 — Reduce Level Runtime Responsibilities](https://github.com/Strehk/becoming-many/issues/15)
+- [#19 — Isolate Rehearsal, Test, and Conductor Entry Points](https://github.com/Strehk/becoming-many/issues/19)
+- [#22 — Remove the Unused @material/web Override](https://github.com/Strehk/becoming-many/issues/22)
+- [#23 — Remove the Unused sharedEchoGrass Export](https://github.com/Strehk/becoming-many/issues/23)
+- [#25 — Rename Runtime Concepts by Current Ownership](https://github.com/Strehk/becoming-many/issues/25)
+- [#27 — Tighten Scent Source Types](https://github.com/Strehk/becoming-many/issues/27)
+- [#34 — Separate authored level states from show composition](https://github.com/Strehk/becoming-many/issues/34)
+- [#36 — Simplify Conductor Ownership and State Flow](https://github.com/Strehk/becoming-many/issues/36)
+- [#38 — Tighten the M5 Control Boundary](https://github.com/Strehk/becoming-many/issues/38)
+- [#39 — Deduplicate positive modulo inside the World domain](https://github.com/Strehk/becoming-many/issues/39)
+- [#40 — Reuse the World cell random function in Grass](https://github.com/Strehk/becoming-many/issues/40)
+- [#41 — Reduce Rocks and Vegetation runtime duplication](https://github.com/Strehk/becoming-many/issues/41)
 
-- deterministic ground and visible-surface sampling from absolute coordinates
-- one continuous carved river represented through the water zone
-- generated-chunk consumer using `ChunkWindow` and `StreamQueue`
-- fixed mesh and staging-buffer capacity
-- stable memory over a long flight remains to be measured
-- floating origin only when world-coordinate range requires it
+## Small Product Features
 
-## 5. World Fields and Landscape Modules — In Progress
+- [#47 — Add a View-Guaranteed Encounter Module](https://github.com/Strehk/becoming-many/issues/47)
+- [#48 — Add the Timed Bat Encounter](https://github.com/Strehk/becoming-many/issues/48)
+- [#49 — Add the Timed Mosquito Swarm Encounter](https://github.com/Strehk/becoming-many/issues/49)
+- [#50 — Rewrite and Integrate the Flight Tutorial](https://github.com/Strehk/becoming-many/issues/50)
+- [#51 — Show End Credits in Immersive VR](https://github.com/Strehk/becoming-many/issues/51)
 
-Follow the boundaries in
-[Landscape Module Contracts](landscape-modules.md), one measurable module at a
-time:
+## Completion Gates
 
-1. high-capacity instanced grass — implemented MVP, browser measurement recorded, PICO pending
-2. instanced trees and bushes — implemented MVP, browser measurement recorded, PICO pending
-3. instanced rocks — implemented MVP, browser measurement recorded, PICO pending
-4. visible rivers consuming the existing surface facts — next
-
-Each module owns its placement and resources, retains fixed capacity, hides
-chunk boundaries, unloads cleanly, and passes target-device measurement before
-the next module starts. Do not add a generic ecology or placement framework in
-advance.
-
-## 6. Animals — Implemented MVP
-
-- manifest runtime paths align with `public/animals`
-- authored actor counts per species consume World Surface without sibling imports
-- simple bounded movement and deterministic habitat search are active
-- only the nearest configured actors render and animate
-- spatial audio and complex behavior remain deferred
-
-## 7. Narrative Runtime
-
-- Test Level
-- audio master clock *(built: one virtual show clock on the audio timebase)*
-- operator transport and restart *(built: the conductor page hosts the show,
-  scrubs the schedule, restarts the experience, and resets the clock, the
-  flight, and itself)*
-- typed state transitions
-- module preloading and unloading around timeline cues
-- per-sense intensity envelopes on the schedule
-
-## 8. Perception Modules
-
-Develop and measure scent, depth, motion, and thermal perception independently.
-Magnetic Sense has an implemented terrain-line MVP and a browser diagnostic
-measurement; physical PICO measurement remains open. Reuse existing landscape
-geometry and fixed pools.
-
-## 9. Connections
-
-- bounded local mycelium and root networks
-- relationships derived from streamed world positions
-- controlled integration of earlier perception languages
-
-## 10. Platform Integration
-
-- passthrough onboarding and offboarding
-- standalone PICO presentation profile
-- Windows PCVR research and wired profile
-- operator controls with confirmed headset state
-- ICAROS input adapter
-
-## 11. Full Integration
-
-- complete continuous narrative timeline
-- long-flight memory stability
-- no shader, loading, upload, or disposal spikes
-- standalone and PCVR acceptance runs
-
-## Completion Gate
-
-```text
-brainstorm → implement MVP → test and type-check → measure
-→ remove bloat → measure again → checkpoint
-```
+A change is complete only when its issue acceptance criteria and relevant static
+gates pass. Performance-sensitive work additionally requires a comparable
+benchmark and, before installation acceptance, a physical target-device result.
+Desktop measurements must remain labelled as desktop evidence.
