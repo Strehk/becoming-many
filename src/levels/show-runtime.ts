@@ -1,7 +1,7 @@
 /**
  * Purpose: Drive one preloaded world from narration show time.
  * Context: The show changes presentation, sense strength, and module gates without rebuilding resources.
- * Responsibility: Own narration following, transitions, sense intensities, the drone organ's frame, and the public show controls.
+ * Responsibility: Own narration following, transitions, sense intensities, the organ's frame, and the public show controls.
  * Boundary: Level Runtime constructs modules; concrete modules and the render loop remain elsewhere.
  */
 
@@ -13,7 +13,17 @@ import {
   narrationCueAt,
   type ShowLevelName,
 } from "../dramaturgy/narration-schedule";
-import { createShowClock, type ShowClock } from "../dramaturgy/show-clock";
+import {
+  ORGAN_SCORE,
+  ORGAN_VOICES,
+  type OrganVoiceName,
+  organVoiceStrengthAt,
+} from "../dramaturgy/organ-score";
+import {
+  createShowClock,
+  type ShowClock,
+  type ShowTimeSample,
+} from "../dramaturgy/show-clock";
 import {
   levelTransitionAt,
   type ShowLevelState,
@@ -107,18 +117,21 @@ export function createShowRuntime(
   // The organ follows the same clock but plays on Tone's own context, which
   // is the only context its rooms come up on. It loads Tone.js by itself, so
   // the world runs on before the organ makes a sound.
-  const droneOrgan = createDroneOrgan();
+  const droneOrgan = createDroneOrgan({
+    pulseSeconds: ORGAN_SCORE.pulseSeconds,
+  });
   let activeLevel: ShowLevelName | undefined;
-  // Scratch state, so following the show allocates nothing per frame. The
-  // sense strengths are written once per frame and read by both the world and
-  // the organ, which is what keeps the two from disagreeing inside a fade.
-  const strengths: Record<ShowSense, number> = {
-    scent: 0,
-    echo: 0,
-    motion: 0,
-    thermal: 0,
-    magnetic: 0,
-    connections: 0,
+  // Scratch state, so following the show allocates nothing per frame.
+  const voiceStrengths: Record<OrganVoiceName, number> = {
+    wind: 0,
+    choir: 0,
+    sonar: 0,
+    birdWingBeat: 0,
+    insectWingBeat: 0,
+    bassLoop: 0,
+    pressureWave: 0,
+    polyRhythm: 0,
+    hiHat: 0,
   };
   const listenerPose: MutableListenerPose = {
     x: 0,
@@ -164,17 +177,41 @@ export function createShowRuntime(
   }
 
   function followSenses(showTimeSeconds: number): void {
-    for (const sense of Object.keys(strengths) as readonly ShowSense[]) {
-      strengths[sense] = senseIntensityAt(
-        schedule,
-        states,
-        sense,
-        showTimeSeconds,
-      );
-      setSense(sense, strengths[sense]);
-    }
-    reach.worldFades.structure?.setPresence(strengths.echo);
-    reach.worldFades.animals?.setPresence(strengths.thermal);
+    const scent = senseIntensityAt(schedule, states, "scent", showTimeSeconds);
+    const echo = senseIntensityAt(schedule, states, "echo", showTimeSeconds);
+    const motion = senseIntensityAt(
+      schedule,
+      states,
+      "motion",
+      showTimeSeconds,
+    );
+    const thermal = senseIntensityAt(
+      schedule,
+      states,
+      "thermal",
+      showTimeSeconds,
+    );
+    const magnetic = senseIntensityAt(
+      schedule,
+      states,
+      "magnetic",
+      showTimeSeconds,
+    );
+    const connections = senseIntensityAt(
+      schedule,
+      states,
+      "connections",
+      showTimeSeconds,
+    );
+
+    setSense("scent", scent);
+    setSense("echo", echo);
+    setSense("motion", motion);
+    setSense("thermal", thermal);
+    setSense("magnetic", magnetic);
+    setSense("connections", connections);
+    reach.worldFades.structure?.setPresence(echo);
+    reach.worldFades.animals?.setPresence(thermal);
     // Derived like everything else here, so a seek lands mid-fade and a seek
     // to zero puts the credits away without a second piece of state.
     reach.setEndCreditsPresence?.(
@@ -188,11 +225,23 @@ export function createShowRuntime(
     followSenses(showTimeSeconds);
   }
 
-  function followOrgan(isPlaying: boolean): void {
+  // The organ is a follower like the narration: the score says how strong
+  // each voice stands at this instant, and the clock says what instant it is.
+  function followOrgan(showTime: ShowTimeSample): void {
+    for (const voice of ORGAN_VOICES) {
+      voiceStrengths[voice] = organVoiceStrengthAt(
+        schedule,
+        ORGAN_SCORE,
+        voice,
+        showTime.timeSeconds,
+      );
+    }
     readListenerPose(world, listenerPose);
     droneOrgan.update({
-      isPlaying,
-      senseStrengths: strengths,
+      showTimeSeconds: showTime.timeSeconds,
+      isPlaying: showTime.isPlaying,
+      timeScale: showTime.timeScale,
+      voiceStrengths,
       listener: listenerPose,
       groundYMeters: worldSurface.groundYAt(listenerPose.x, listenerPose.z),
       readGroupCenters: (group) => readActorCenters(reach, group),
@@ -210,7 +259,7 @@ export function createShowRuntime(
         timeScale: showTime.timeScale,
       });
       followWorld(showTime.timeSeconds);
-      followOrgan(showTime.isPlaying);
+      followOrgan(showTime);
     },
 
     readActiveLevelState: () => states[activeLevel ?? openingLevel],

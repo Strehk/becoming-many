@@ -4,17 +4,18 @@ Context: The instrument was ported here from its own repository, without the
   patch-cable interface it was played through.
 Responsibility: Name the ownership boundaries inside the folder and the
   decisions the port made.
-Boundary: The composed values live in drone-organ-settings.ts; when a sense
-  rises is decided in src/dramaturgy.
+Boundary: The composed values live in drone-organ-settings.ts; which voice
+  sounds when, and to what pulse, is the score in src/dramaturgy.
 -->
 
 # Drone Organ
 
 The drone organ is the piece's generative instrument: nine layers, each one a
-voice with its own level, room, and colour, each opened by one of the show's
-senses. It plays nothing that was written down — the melodic voices walk a
-shared scale, so any combination of layers agrees harmonically. What the show
-composes is which layers are heard, and how loud.
+voice with its own level, room, and colour, each brought in by the dramaturgy's
+score as the show climbs its ladder. It plays nothing that was written down —
+the melodic voices walk a shared scale, so any combination of layers agrees
+harmonically. What the show composes is which voices are heard, when, and how
+loud; that lives in `src/dramaturgy/organ-score.ts`, not here.
 
 Two of the layers are placed in the world: a wing beat on the nearest bird
 flock, another on the nearest insect swarm. Two more are patched to the flight
@@ -32,9 +33,16 @@ with the compass.
 - `organ-runtime.ts` builds the instrument and follows the world each frame.
   Everything Tone touches hangs below it.
 - `organ-engine.ts` owns the master chain and the shared room;
-  `organ-layer.ts` owns one voice's mix strip, gate, and placement.
-- `organ-signals.ts`, `signal-modulation.ts`, and `nearest-anchor.ts` are pure
-  and covered by `tests/sound/`.
+  `organ-layer.ts` owns one voice's mix strip, strength fader, lane, and
+  placement.
+- `organ-timeline.ts` and `step-sequencer.ts` carry show time onto the
+  rhythmic voices: each voice registers a grid of show seconds on its layer's
+  lane, and every frame the steps just ahead of the playhead are placed onto
+  audio time. There is no transport. `organ-random.ts` is the hash every
+  generative draw comes from.
+- `organ-signals.ts`, `signal-modulation.ts`, `nearest-anchor.ts`, the
+  timeline, the sequencer, and `voices/derived-sequences.ts` are pure and
+  covered by `tests/sound/`.
 - `voices/` holds one file per voice, plus the room, the walk, the chord
   cycle, and the looping sequence they build on.
 
@@ -63,13 +71,22 @@ reaches for was carried over:
   `InvalidStateError` each, and the rooms fell silent while the rest played on.
   The two contexts never mix audio — the timebase's carries no nodes, it is the
   show's clock — and both resume on the same first gesture.
-- **A gate is a threshold, not a fade.** A layer opens once its sense passes
-  half strength and closes again below it, which is what the composition
-  authored. Fading each voice with its sense's intensity is the documented
-  direction (`docs/direction/dramaturgy-audio.md`) and a deliberate next step,
-  not something this port decided on its own.
-- **A held show holds the beat, not the drones.** Pausing stops the transport,
-  so the rhythmic voices stand still while wind and drones keep breathing.
+- **The show clock is the only clock.** The instrument ran on Tone's
+  transport, a second timeline that a seek could not reach. It is gone: a
+  step's time is its index times its length in show seconds, and the organ
+  places the steps just ahead of the playhead onto Tone's audio time each
+  frame. Pause holds the grids where they are; seek and rehearsal speed reach
+  every voice. Wind and drones keep breathing through a hold, because they
+  are not stepped at all.
+- **Every note is a function of show time.** Nothing draws from `Math.random`.
+  Density rolls, gusts, the bass loop's mutations, and the wind's walk are all
+  hashed from the step, and the cumulative figures replay themselves from step
+  zero after a seek backward. A seek therefore lands on the note playing
+  through would have reached, the same promise the senses make.
+- **A voice fades on the score's ramp, not a threshold.** The score derives a
+  strength per voice the way the dramaturgy derives a sense intensity, and the
+  layer's fader follows it. At zero the layer's lane sleeps, so a voice nobody
+  hears schedules nothing; its continuous sources and rooms still run.
 - **Placement is cheap on purpose.** A placed layer follows the nearest
   *cloud* — a flock, a swarm — never an individual bird, and a closed layer is
   not placed at all.

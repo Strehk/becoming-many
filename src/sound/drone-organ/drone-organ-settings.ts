@@ -4,16 +4,17 @@
  * Context: The old instrument saved this as a state file its patch-cable UI
  *   wrote. That UI stays in its old repository; this is the same composition
  *   as typed configuration, and it is the only place to retune the organ.
- * Responsibility: Own the harmony, the master, and every layer's voice, gate,
- *   mix, placement, and patched signals.
- * Boundary: What a setting does to the sound lives in the voice that reads it.
+ * Responsibility: Own the harmony, the master, and every layer's voice, mix,
+ *   placement, and patched signals.
+ * Boundary: What a setting does to the sound lives in the voice that reads it;
+ *   which voice sounds when, and to what pulse, is the dramaturgy's score.
  *
  * Every control below is 0..1 — the range the instrument's knobs turned in.
  * Knob positions are carried at four decimals, which is far below what an ear
  * can tell apart on any of them.
  */
 
-import type { ShowSense } from "../../dramaturgy/show-levels";
+import type { OrganVoiceName } from "../../dramaturgy/organ-score";
 import type { ModulationSettings } from "./signal-modulation";
 import type { OrganVoiceSettings } from "./voices/voice-catalog";
 
@@ -21,7 +22,6 @@ export const DRONE_ORGAN_COMPOSITION: OrganComposition = {
   harmony: {
     rootNote: "A2", // Every voice is transposed from this root.
     scaleSemitones: [0, 3, 5, 7, 10], // Pentatonic minor; the shared scale.
-    pulseBeatsPerMinute: 54, // The slow common pulse the rhythmic voices ride.
   },
 
   masterVolume: 0.77, // Level of the whole organ before its limiter.
@@ -32,8 +32,9 @@ export const DRONE_ORGAN_COMPOSITION: OrganComposition = {
   },
 
   layers: [
-    // The wind carries the empty world: the one voice no sense has to open.
+    // The wind carries the empty world: the one voice the score never puts away.
     {
+      name: "wind",
       voice: {
         kind: "wind",
         gustRate: 0.0737,
@@ -42,7 +43,6 @@ export const DRONE_ORGAN_COMPOSITION: OrganComposition = {
         gustDepth: 1,
         melodyDensity: 0.25,
       },
-      gate: "always",
       volume: 0.3307,
       roomSend: 0.34,
       cutoff: 0.7293,
@@ -62,13 +62,13 @@ export const DRONE_ORGAN_COMPOSITION: OrganComposition = {
 
     // Magnetic: a sub drone whose depth turns with the compass.
     {
+      name: "pressureWave",
       voice: {
         kind: "pressureWave",
         pressure: 0.8194,
         waveDepth: 0.6,
         secondVoice: 0.4,
       },
-      gate: "magnetic",
       volume: 0.334,
       roomSend: 1,
       cutoff: 0.1917,
@@ -83,6 +83,7 @@ export const DRONE_ORGAN_COMPOSITION: OrganComposition = {
 
     // Connections: three euclidean voices running against one another.
     {
+      name: "polyRhythm",
       voice: {
         kind: "polyRhythm",
         haste: 0.5,
@@ -99,7 +100,6 @@ export const DRONE_ORGAN_COMPOSITION: OrganComposition = {
           wallHardness: 0.4,
         },
       },
-      gate: "connections",
       volume: 0.64, // Held back from the composed 0.8094: about 2 dB quieter.
       roomSend: 0.34,
       cutoff: 0.3907,
@@ -108,6 +108,7 @@ export const DRONE_ORGAN_COMPOSITION: OrganComposition = {
 
     // Scent: the choir, quiet and almost entirely inside the shared room.
     {
+      name: "choir",
       voice: {
         kind: "choir",
         breath: 0.15,
@@ -116,7 +117,6 @@ export const DRONE_ORGAN_COMPOSITION: OrganComposition = {
         melodyDensity: 0.3,
         chordSeconds: 8,
       },
-      gate: "scent",
       volume: 0.0786,
       roomSend: 0.9501,
       cutoff: 0.9,
@@ -125,6 +125,7 @@ export const DRONE_ORGAN_COMPOSITION: OrganComposition = {
 
     // Motion, on the birds: a slow beat placed on the nearest flock.
     {
+      name: "birdWingBeat",
       voice: {
         kind: "wingBeat",
         gustiness: 0.4,
@@ -132,7 +133,6 @@ export const DRONE_ORGAN_COMPOSITION: OrganComposition = {
         sharpness: 0.1292,
         level: 0.8,
       },
-      gate: "motion",
       volume: 0.484,
       roomSend: 0.6441,
       cutoff: 0.424,
@@ -142,6 +142,7 @@ export const DRONE_ORGAN_COMPOSITION: OrganComposition = {
 
     // Motion, on the insects: the same voice, faster and drier, in the swarms.
     {
+      name: "insectWingBeat",
       voice: {
         kind: "wingBeat",
         gustiness: 0.4,
@@ -149,7 +150,6 @@ export const DRONE_ORGAN_COMPOSITION: OrganComposition = {
         sharpness: 0.4,
         level: 0.8,
       },
-      gate: "motion",
       volume: 0.5123,
       roomSend: 0,
       cutoff: 0.6347,
@@ -159,6 +159,7 @@ export const DRONE_ORGAN_COMPOSITION: OrganComposition = {
 
     // Thermal: the bass loop, wide open and echoing at full feedback.
     {
+      name: "bassLoop",
       voice: {
         kind: "bassLoop",
         pluck: 0.4869,
@@ -176,7 +177,6 @@ export const DRONE_ORGAN_COMPOSITION: OrganComposition = {
           wallHardness: 0.4,
         },
       },
-      gate: "thermal",
       volume: 0.36, // Held back from the composed 0.4874: about 2.6 dB quieter.
       roomSend: 1,
       cutoff: 1,
@@ -185,6 +185,7 @@ export const DRONE_ORGAN_COMPOSITION: OrganComposition = {
 
     // Echo: the sonar, calling into a room three quarters of a wall away.
     {
+      name: "sonar",
       voice: {
         kind: "sonar",
         returns: 0.62,
@@ -199,7 +200,6 @@ export const DRONE_ORGAN_COMPOSITION: OrganComposition = {
           dryMix: 1,
         },
       },
-      gate: "echo",
       volume: 0.4169,
       roomSend: 0.6869,
       cutoff: 0.2622,
@@ -208,6 +208,7 @@ export const DRONE_ORGAN_COMPOSITION: OrganComposition = {
 
     // Connections again, on top: the metallic hiss over the poly rhythm.
     {
+      name: "hiHat",
       voice: {
         kind: "hiHat",
         openness: 0.25,
@@ -225,7 +226,6 @@ export const DRONE_ORGAN_COMPOSITION: OrganComposition = {
           wallHardness: 0.55,
         },
       },
-      gate: "connections",
       volume: 0.42, // Held back from the composed 0.4576, with the poly rhythm.
       roomSend: 0.34,
       cutoff: 1,
@@ -233,12 +233,6 @@ export const DRONE_ORGAN_COMPOSITION: OrganComposition = {
     },
   ],
 };
-
-/**
- * What opens a layer. A sense name opens it once that sense carries strength;
- * `always` is the world's own voice, which the show never puts away.
- */
-export type OrganGate = "always" | ShowSense;
 
 /** The moving world groups a layer can be placed on. */
 export type OrganPlacementGroup = "birds" | "insects";
@@ -254,8 +248,9 @@ export interface OrganPlacement {
 }
 
 export interface OrganLayerSettings {
+  /** Which voice of the score this layer is; the score says when it sounds. */
+  readonly name: OrganVoiceName;
   readonly voice: OrganVoiceSettings;
-  readonly gate: OrganGate;
   readonly volume: number;
 
   /** How much of the layer is sent into the organ's shared room. */
@@ -281,7 +276,6 @@ export interface OrganComposition {
   readonly harmony: {
     readonly rootNote: string;
     readonly scaleSemitones: readonly number[];
-    readonly pulseBeatsPerMinute: number;
   };
   readonly masterVolume: number;
   readonly room: {

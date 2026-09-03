@@ -7,10 +7,9 @@
  */
 
 import { type Gain, MonoSynth } from "tone";
-import type { OrganHarmony } from "../organ-harmony";
 import { createEchoRoom, type EchoRoomSettings } from "./echo-room";
 import { createLoopingSequence } from "./looping-sequence";
-import type { OrganVoice } from "./organ-voice";
+import type { OrganVoice, VoiceContext } from "./organ-voice";
 
 export interface BassLoopSettings {
   readonly pluck: number; // 0..1 how fast the filter envelope closes.
@@ -24,7 +23,7 @@ export interface BassLoopSettings {
 
 export function createBassLoopVoice(
   bus: Gain,
-  harmony: OrganHarmony,
+  context: VoiceContext,
   settings: BassLoopSettings,
 ): OrganVoice {
   const bass = new MonoSynth({
@@ -46,9 +45,10 @@ export function createBassLoopVoice(
 
   bass.filterEnvelope.decay = 0.04 + settings.pluck * 0.5;
 
-  const sequence = createLoopingSequence(harmony, {
+  // Eighth notes: two steps to the beat.
+  const sequence = createLoopingSequence(context, {
     instrument: bass,
-    interval: "8n",
+    stepSeconds: context.harmony.pulseSeconds / 2,
     noteDurationSeconds: 0.08 + settings.noteLength * 0.7,
     baseOctave: 0,
     octaves: 2,
@@ -67,7 +67,6 @@ export function createBassLoopVoice(
     },
 
     dispose: (): void => {
-      sequence.dispose();
       bass.dispose();
       room.dispose();
     },

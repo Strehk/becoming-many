@@ -10,11 +10,10 @@
  */
 
 import type { Gain } from "tone";
-import type { OrganHarmony } from "../organ-harmony";
 import { type BassLoopSettings, createBassLoopVoice } from "./bass-loop-voice";
 import { type ChoirVoiceSettings, createChoirVoice } from "./choir-voice";
 import { createHiHatVoice, type HiHatSettings } from "./hi-hat-voice";
-import type { OrganVoice } from "./organ-voice";
+import type { OrganVoice, VoiceContext } from "./organ-voice";
 import {
   createPolyRhythmVoice,
   type PolyRhythmSettings,
@@ -40,25 +39,25 @@ export type OrganVoiceSettings =
 
 export function createOrganVoice(
   bus: Gain,
-  harmony: OrganHarmony,
+  context: VoiceContext,
   settings: OrganVoiceSettings,
 ): OrganVoice {
   switch (settings.kind) {
     case "wind":
-      return createWindVoice(bus, harmony, settings);
+      return createWindVoice(bus, context, settings);
     case "choir":
-      return createChoirVoice(bus, harmony, settings);
+      return createChoirVoice(bus, context, settings);
     case "pressureWave":
       return createPressureWaveVoice(bus, settings);
     case "wingBeat":
-      return createWingBeatVoice(bus, settings);
+      return createWingBeatVoice(bus, context, settings);
     case "polyRhythm":
-      return createPolyRhythmVoice(bus, settings);
+      return createPolyRhythmVoice(bus, context, settings);
     case "bassLoop":
-      return createBassLoopVoice(bus, harmony, settings);
+      return createBassLoopVoice(bus, context, settings);
     case "sonar":
-      return createSonarVoice(bus, settings);
+      return createSonarVoice(bus, context, settings);
     case "hiHat":
-      return createHiHatVoice(bus, settings);
+      return createHiHatVoice(bus, context, settings);
   }
 }

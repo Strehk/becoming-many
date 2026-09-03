@@ -18,15 +18,20 @@ suspended until a user gesture, so the timebase attaches a self-removing
 gesture listener; while it is suspended the timebase stalls, which correctly
 freezes show time instead of letting the show run without its audio.
 
-`drone-organ/` is the piece's generative instrument: nine layers, each opened
-by one of the show's senses, built on Tone.js and driven from the Show Runtime.
-It loads Tone only when a show actually asks for the organ, and it plays on the
-context Tone builds for itself rather than on the timebase's — Tone's
-`AudioWorklet` nodes only come up on a context its own audio library created,
-and sharing this one measurably silenced every voice's room. The two contexts
-never mix audio: the timebase's carries no nodes at all, and both resume on the
-same first gesture. The organ's own README explains the composition and what
-the port from the instrument's old repository left behind.
+`drone-organ/` is the piece's generative instrument: nine voices built on
+Tone.js and driven from the Show Runtime. Which voice sounds when, and to what
+pulse, is the dramaturgy's score in `src/dramaturgy/organ-score.ts`; the organ
+follows it exactly as the narration follows the schedule. It has no clock of
+its own: Tone's transport is not used, every rhythmic voice steps on a grid of
+show seconds, and every note it plays is a hash of its step, so a seek lands
+on the note playing through would have reached. It loads Tone only when a show
+actually asks for the organ, and it plays on the context Tone builds for
+itself rather than on the timebase's — Tone's `AudioWorklet` nodes only come
+up on a context its own audio library created, and sharing this one
+measurably silenced every voice's room. The two contexts never mix audio: the
+timebase's carries no nodes at all, and both resume on the same first gesture.
+The organ's own README explains the composition and what the port from the
+instrument's old repository left behind.
 
 `narration-player.ts` follows the clock. It holds one preloaded
 `HTMLAudioElement` per cue for the session's language only — about 7.4 MB
@@ -43,14 +48,12 @@ and pause behave in rehearsal.
 
 ## Deliberately Absent
 
-Per-sense audio beds faded by each sense's intensity signal, and operator
-volume, are absent. The organ gates its layers on a sense threshold rather than
-fading them with the intensity signal, which is the next step toward the beds.
-No master gain across narration and organ exists yet either; both reach the
-destination on their own, on their own contexts. A small issue-backed audio
-addition must follow the existing show time, own a bounded voice/resource pool,
-and be measured on the PICO. Do not add a second timeline or speculative audio
-framework.
+Per-sense audio beds and operator volume are absent. No master gain across
+narration and organ exists yet either; both reach the destination on their
+own, on their own contexts. A small issue-backed audio addition must follow the
+existing show time, own a bounded voice/resource pool, and be measured on the
+PICO. Do not add a second timeline or speculative audio framework: the organ
+had one in Tone's transport and it was removed for exactly that reason.
 
 The organ's cost has been measured on nothing but a desktop browser so far. It
 carries four Freeverb rooms and one convolution reverb, and Tone builds

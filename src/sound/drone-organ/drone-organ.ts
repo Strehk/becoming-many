@@ -1,27 +1,35 @@
 /**
  * Purpose: Play the drone organ under the show — the old instrument as a sound
  *   engine, without its user interface.
- * Context: Nine layers, each opened by one of the show's senses, so the ladder
- *   of perception is heard accumulating as much as it is seen. The composition
- *   is fixed; nothing about it is played live.
+ * Context: Nine voices, each brought in by the dramaturgy's score, so the
+ *   ladder of perception is heard accumulating as much as it is seen. The
+ *   composition is fixed; nothing about it is played live.
  * Responsibility: Own the organ's lifetime and the per-frame contract the show
  *   drives it through.
  * Boundary: Tone.js and the whole audio graph hang below `organ-runtime.ts`,
- *   which this file loads only once a show actually asks for the organ. When a
- *   sense rises is decided in `src/dramaturgy`.
+ *   which this file loads only once a show actually asks for the organ. When
+ *   a voice sounds, and to what pulse, is decided in `src/dramaturgy`.
  */
 
-import type { ShowSense } from "../../dramaturgy/show-levels";
+import type { OrganVoiceName } from "../../dramaturgy/organ-score";
 import type { OrganPlacementGroup } from "./drone-organ-settings";
 import type { OrganRuntime } from "./organ-runtime";
 import type { ListenerPose } from "./organ-signals";
+import type { OrganClock } from "./organ-timeline";
 
-export interface DroneOrganFrame {
-  /** A held show holds the beat; the drones keep breathing through it. */
-  readonly isPlaying: boolean;
+export interface DroneOrganOptions {
+  /** One beat of the score's pulse, in show seconds. */
+  readonly pulseSeconds: number;
+}
 
-  /** What opens the gated layers, on the same 0..1 scale the world uses. */
-  readonly senseStrengths: Readonly<Record<ShowSense, number>>;
+/**
+ * What the show hands the organ each frame. Time is the show clock's: the
+ * organ has no transport, and every step it plays is derived from
+ * `showTimeSeconds`, so a seek lands where playing through would have.
+ */
+export interface DroneOrganFrame extends OrganClock {
+  /** How strongly each voice sounds, 0..1, as the score derives it. */
+  readonly voiceStrengths: Readonly<Record<OrganVoiceName, number>>;
 
   readonly listener: ListenerPose;
 
@@ -50,14 +58,14 @@ export interface DroneOrgan {
  * one. Until the import lands the returned organ accepts frames and does
  * nothing with them.
  */
-export function createDroneOrgan(): DroneOrgan {
+export function createDroneOrgan(options: DroneOrganOptions): DroneOrgan {
   let runtime: OrganRuntime | undefined;
   let isUnloaded = false;
 
   void import("./organ-runtime").then(({ startOrganRuntime }) => {
     if (isUnloaded) return;
 
-    runtime = startOrganRuntime();
+    runtime = startOrganRuntime(options);
   });
 
   return {

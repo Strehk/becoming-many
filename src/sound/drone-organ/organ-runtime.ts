@@ -1,15 +1,16 @@
 /**
- * Purpose: Run the composed organ: build it once, then follow the world.
+ * Purpose: Run the composed organ: build it once, then follow the show.
  * Context: Everything Tone touches hangs below this file, so the public entry
  *   beside it can stay free of the library and load it only for a show.
- * Responsibility: Build engine and layers, open and close gates, carry the
- *   patched signals onto the pads, and keep the placed layers in their places.
- * Boundary: Where the visitor is and how strong each sense stands is decided
- *   by the show; how a voice sounds is decided by the voice.
+ * Responsibility: Build engine and layers, carry show time onto the grids and
+ *   the voice strengths onto the faders, carry the patched signals onto the
+ *   pads, and keep the placed layers in their places.
+ * Boundary: Where the visitor is, what time it is, and how strong each voice
+ *   stands is decided by the show; how a voice sounds is decided by the voice.
  */
 
-import { getListener } from "tone";
-import type { DroneOrganFrame } from "./drone-organ";
+import { getListener, now } from "tone";
+import type { DroneOrganFrame, DroneOrganOptions } from "./drone-organ";
 import {
   DRONE_ORGAN_COMPOSITION,
   type OrganLayerSettings,
@@ -18,10 +19,8 @@ import { type AnchorPoint, readNearestAnchor } from "./nearest-anchor";
 import { createOrganEngine } from "./organ-engine";
 import { createOrganLayer, type OrganLayer } from "./organ-layer";
 import { readOrganSignal } from "./organ-signals";
+import { createOrganTimeline } from "./organ-timeline";
 import { createModulation, type ModulationSettings } from "./signal-modulation";
-
-/** Sense strength at which a gated layer opens. */
-const GATE_THRESHOLD = 0.5;
 
 /** Control moves below this are not written; they are inaudible and not free. */
 const CONTROL_DEAD_BAND = 0.0005;
@@ -70,9 +69,13 @@ export interface OrganRuntime {
   readonly dispose: () => void;
 }
 
-export function startOrganRuntime(): OrganRuntime {
+export function startOrganRuntime(options: DroneOrganOptions): OrganRuntime {
   const composition = DRONE_ORGAN_COMPOSITION;
-  const engine = createOrganEngine(composition);
+  const engine = createOrganEngine(composition, options.pulseSeconds);
+  // Steps are placed against Tone's `now()`, which already stands its own
+  // lookahead past the hardware clock, so a step at the near edge of the
+  // window is still scheduled ahead of the audio thread.
+  const timeline = createOrganTimeline(now);
   const listener = getListener();
   const nearest: AnchorPoint = { x: 0, y: 0, z: 0 };
   // The pose the listener currently stands at, so a visitor holding still —
@@ -87,8 +90,8 @@ export function startOrganRuntime(): OrganRuntime {
   let framesSincePlacing = LISTENER_WRITE_INTERVAL_FRAMES;
 
   const layers: readonly RunningLayer[] = composition.layers.map(
-    (settings) => ({
-      layer: createOrganLayer(engine, settings),
+    (settings, index) => ({
+      layer: createOrganLayer(engine, timeline.createLane(), index, settings),
       settings,
       padX: createPadAxis(settings.modulation?.padX),
       padY: createPadAxis(settings.modulation?.padY),
@@ -101,12 +104,11 @@ export function startOrganRuntime(): OrganRuntime {
     }),
   );
 
-  function followGates(frame: DroneOrganFrame): void {
+  function followStrengths(frame: DroneOrganFrame): void {
     for (const running of layers) {
-      const gate = running.settings.gate;
-      running.isOpen =
-        gate === "always" || frame.senseStrengths[gate] > GATE_THRESHOLD;
-      running.layer.setGateOpen(running.isOpen);
+      const strength = frame.voiceStrengths[running.settings.name];
+      running.isOpen = strength > 0;
+      running.layer.setStrength(strength);
     }
   }
 
@@ -206,9 +208,9 @@ export function startOrganRuntime(): OrganRuntime {
 
   return {
     update: (frame): void => {
-      engine.setPlaying(frame.isPlaying);
-      followGates(frame);
+      followStrengths(frame);
       followPads(frame);
+      timeline.follow(frame);
       followListener(frame);
       followPlacements(frame);
     },

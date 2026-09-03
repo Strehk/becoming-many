@@ -1,16 +1,17 @@
 /**
  * Purpose: Turn a fixed chord progression into a breathing melodic voice.
  * Context: The choir needs harmony under its surface without anyone playing
- *   notes: the progression turns on its own clock while a voice walks up the
+ *   notes: the progression turns on show time while a voice walks up the
  *   chord it currently stands in.
- * Responsibility: Own both transport loops, the progression, and the triggers.
+ * Responsibility: Own both grids, the progression, and the triggers.
  * Boundary: The instrument and what a chord change sounds like belong to the
  *   voice that supplies them.
  */
 
-import { Frequency, getTransport, Loop } from "tone";
-import type { OrganHarmony } from "../organ-harmony";
+import { Frequency } from "tone";
+import { stepRandom } from "../organ-random";
 import type { MelodyInstrument } from "./melody-instrument";
+import type { VoiceContext } from "./organ-voice";
 
 /** One chord relative to the world root, in semitones. */
 interface Chord {
@@ -30,10 +31,16 @@ const PROGRESSION: readonly Chord[] = [
   { rootOffset: 10, intervals: [0, 4, 7] },
 ];
 
+/** Hash channel of the roll that decides whether a step sounds. */
+const DENSITY_CHANNEL = 21;
+
+/** Guards `ceil` against a chord boundary landing a rounding error late. */
+const GRID_EPSILON = 1e-9;
+
 export interface ChordCycleSettings {
   readonly instrument: MelodyInstrument;
-  readonly interval: string; // Transport grid the walking voice steps on.
-  readonly noteDuration: string | number;
+  readonly stepSeconds: number; // Show seconds the walking voice steps on.
+  readonly noteDurationSeconds: number;
   readonly baseOctave: number; // Octaves above the world root.
   readonly octaves: number; // How many octaves the chord is spread over.
   readonly velocity: number;
@@ -47,21 +54,18 @@ export interface ChordCycleSettings {
 export interface ChordCycle {
   readonly setBaseOctave: (octave: number) => void;
   readonly setOctaves: (octaves: number) => void;
-  readonly dispose: () => void;
 }
 
 export function createChordCycle(
-  harmony: OrganHarmony,
+  context: VoiceContext,
   settings: ChordCycleSettings,
 ): ChordCycle {
+  const { harmony, salt } = context;
   let baseOctave = settings.baseOctave;
   let octaves = settings.octaves;
-  let chordIndex = -1;
-  let step = 0;
-  let hasSounded = false;
 
-  function chordNotes(): readonly number[] {
-    const chord = PROGRESSION[chordIndex];
+  function chordNotes(chordOrdinal: number): readonly number[] {
+    const chord = PROGRESSION[chordOrdinal % PROGRESSION.length];
     if (!chord) return [];
 
     const base = harmony.rootMidi + baseOctave * 12 + chord.rootOffset;
@@ -74,33 +78,42 @@ export function createChordCycle(
     return notes;
   }
 
-  function advance(time: number): void {
-    chordIndex = (chordIndex + 1) % PROGRESSION.length;
-    step = 0;
-    settings.onChordChange?.(chordNotes(), time);
+  function sounds(step: number): boolean {
+    return stepRandom(step, DENSITY_CHANNEL, salt) <= settings.density;
   }
 
-  const chordLoop = new Loop(advance, settings.chordSeconds).start(0);
-  const noteLoop = new Loop((time) => {
-    if (chordIndex < 0 || settings.density <= 0.02) return;
-    if (hasSounded && Math.random() > settings.density) return;
+  context.lane.addSteps(settings.chordSeconds, (chordOrdinal, time) => {
+    settings.onChordChange?.(chordNotes(chordOrdinal), time);
+  });
 
-    const notes = chordNotes();
-    const note = notes[step % notes.length];
+  context.lane.addSteps(settings.stepSeconds, (step, time) => {
+    if (settings.density <= 0.02 || !sounds(step)) return;
+
+    // The chord this step stands in, and how many steps have sounded since it
+    // began: the voice walks up the chord one sounding step at a time.
+    const chordOrdinal = Math.floor(
+      (step * settings.stepSeconds) / settings.chordSeconds,
+    );
+    const chordFirstStep = Math.ceil(
+      (chordOrdinal * settings.chordSeconds) / settings.stepSeconds -
+        GRID_EPSILON,
+    );
+    let soundedBefore = 0;
+    for (let earlier = chordFirstStep; earlier < step; earlier += 1) {
+      if (sounds(earlier)) soundedBefore += 1;
+    }
+
+    const notes = chordNotes(chordOrdinal);
+    const note = notes[soundedBefore % notes.length];
     if (note === undefined) return;
 
-    hasSounded = true;
-    step += 1;
     settings.instrument.triggerAttackRelease(
       Frequency(note, "midi").toFrequency(),
-      settings.noteDuration,
+      settings.noteDurationSeconds,
       time,
       settings.velocity,
     );
-  }, settings.interval).start(0);
-
-  // Open on the first chord instead of after a full turn of the chord loop.
-  getTransport().scheduleOnce(advance, "+0.15");
+  });
 
   return {
     setBaseOctave: (octave): void => {
@@ -109,11 +122,6 @@ export function createChordCycle(
 
     setOctaves: (value): void => {
       octaves = value;
-    },
-
-    dispose: (): void => {
-      chordLoop.dispose();
-      noteLoop.dispose();
     },
   };
 }

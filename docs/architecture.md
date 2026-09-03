@@ -139,10 +139,12 @@ standalone level or benchmark does not start a show, so neither builds the
 credits panel.
 
 `show-runtime.ts` also drives the drone organ in `src/sound/drone-organ/`
-through one per-frame contract: play state, the sense strengths it just applied
-to the world, the listener pose, ground height, and the live bird-flock and
-fly-swarm centres that Motion Sense reports through `ShowWorldReach`. Sound
-never reads the schedule. Tone.js arrives through a dynamic import inside
+through one per-frame contract: the show time sample, the strength of each
+voice as `organ-score.ts` derives it, the listener pose, ground height, and
+the live bird-flock and fly-swarm centres that Motion Sense reports through
+`ShowWorldReach`. Sound never reads the schedule and keeps no clock: the
+organ's rhythmic voices step on grids of show seconds that the runtime places
+onto audio time each frame. Tone.js arrives through a dynamic import inside
 `drone-organ.ts`, and the organ plays on the context Tone builds for itself —
 see [Architecture Decisions](architecture-decisions.md).
 

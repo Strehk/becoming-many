@@ -3,9 +3,10 @@
  *   the composition places it — a position in the world.
  * Context: Every layer is built the same way, whatever voice it holds, which is
  *   what lets nine of them stack without turning to mud.
- * Responsibility: Own the mix strip, the gate ramp, and the panner.
- * Boundary: The sound itself belongs to the voice; when a gate opens is decided
- *   by the show.
+ * Responsibility: Own the mix strip, the strength fader, the lane, and the
+ *   panner.
+ * Boundary: The sound itself belongs to the voice; how strong a layer stands
+ *   at a show time is decided by the dramaturgy's score.
  *
  *   voice -> bus -> cutoff -> [panner] -> level -> master
  *                                            |--> room send -> shared reverb
@@ -19,6 +20,7 @@ import type {
   OrganPlacement,
 } from "./drone-organ-settings";
 import type { OrganEngine } from "./organ-engine";
+import type { OrganLane } from "./organ-timeline";
 import type { OrganVoice } from "./voices/organ-voice";
 import { createOrganVoice } from "./voices/voice-catalog";
 
@@ -28,9 +30,15 @@ const VOLUME_SCALE = 0.6;
 /** The post-fader send is scaled back up so the room sounds as it was composed. */
 const SEND_SCALE = 1.5;
 
-/** The organ wakes slowly; a gate opening later is a quicker, deliberate move. */
-const WAKE_SECONDS = 1.2;
-const GATE_SECONDS = 0.25;
+/**
+ * How long one strength write takes to land on the fader. The score fades a
+ * voice over seconds, one write per frame; this only smooths the steps between
+ * writes, and turns a seek's jump into a short ramp rather than a click.
+ */
+const STRENGTH_RAMP_SECONDS = 0.05;
+
+/** Fader moves below this are not written; they are inaudible and not free. */
+const STRENGTH_DEAD_BAND = 0.0005;
 
 /** The cutoff control spans 80 Hz to 20 kHz exponentially; 1 is fully open. */
 const CUTOFF_BASE_HERTZ = 80;
@@ -45,8 +53,11 @@ export interface OrganLayer {
   /** Present when the composition places this layer on a world group. */
   readonly placement: OrganPlacement | undefined;
 
-  /** Open the layer for its sense, or close it again. */
-  readonly setGateOpen: (isOpen: boolean) => void;
+  /**
+   * How strongly the layer sounds, 0..1, as the score derives it. At zero the
+   * layer's lane sleeps as well, so a voice nobody hears schedules nothing.
+   */
+  readonly setStrength: (strength: number) => void;
 
   readonly setPad: (x: number, y: number) => void;
 
@@ -58,6 +69,8 @@ export interface OrganLayer {
 
 export function createOrganLayer(
   engine: OrganEngine,
+  lane: OrganLane,
+  salt: number,
   settings: OrganLayerSettings,
 ): OrganLayer {
   const bus = new Gain(1);
@@ -87,26 +100,31 @@ export function createOrganLayer(
 
   const voice: OrganVoice = createOrganVoice(
     bus,
-    engine.harmony,
+    { harmony: engine.harmony, lane, salt },
     settings.voice,
   );
   voice.setPad(settings.pad[0], settings.pad[1]);
+  lane.setActive(false);
 
-  let isOpen = false;
-  let hasOpened = false;
+  let writtenLevel = 0;
 
   return {
     placement: settings.placement,
 
-    setGateOpen: (open): void => {
-      if (open === isOpen) return;
+    setStrength: (strength): void => {
+      lane.setActive(strength > 0);
 
-      isOpen = open;
-      level.gain.rampTo(
-        open ? settings.volume * VOLUME_SCALE : 0,
-        open && !hasOpened ? WAKE_SECONDS : GATE_SECONDS,
-      );
-      hasOpened = hasOpened || open;
+      const target = settings.volume * VOLUME_SCALE * strength;
+      if (target === writtenLevel) return;
+      if (
+        target !== 0 &&
+        Math.abs(target - writtenLevel) < STRENGTH_DEAD_BAND
+      ) {
+        return;
+      }
+
+      writtenLevel = target;
+      level.gain.rampTo(target, STRENGTH_RAMP_SECONDS);
     },
 
     setPad: voice.setPad,
@@ -116,6 +134,7 @@ export function createOrganLayer(
     },
 
     dispose: (): void => {
+      lane.dispose();
       voice.dispose();
       for (const node of [bus, cutoff, level, roomSend, panner])
         node?.dispose();

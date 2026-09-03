@@ -6,12 +6,16 @@
  * Boundary: Level, room send, and cutoff belong to the layer.
  */
 
-import { Filter, type Gain, Loop, MetalSynth } from "tone";
+import { Filter, type Gain, MetalSynth } from "tone";
+import { stepRandom } from "../organ-random";
 import { createEchoRoom, type EchoRoomSettings } from "./echo-room";
-import type { OrganVoice } from "./organ-voice";
+import type { OrganVoice, VoiceContext } from "./organ-voice";
 
 /** Steps in the figure; the open hit lands on its off-beats. */
 const FIGURE_STEPS = 8;
+
+/** Hash channels of the three rolls one hit makes. */
+const CHANNEL = { scatter: 40, open: 41, velocity: 42 } as const;
 
 export interface HiHatSettings {
   readonly openness: number; // 0..1 how often and how far the hat opens.
@@ -25,8 +29,11 @@ export interface HiHatSettings {
 
 export function createHiHatVoice(
   bus: Gain,
+  context: VoiceContext,
   settings: HiHatSettings,
 ): OrganVoice {
+  const { salt } = context;
+  const hitSeconds = context.harmony.pulseSeconds / 16;
   // Six detuned squares through a band-pass: the classic hi-hat recipe, and
   // what a swarm needs — many fast metallic events rather than a tone.
   const hat = new MetalSynth({
@@ -50,37 +57,41 @@ export function createHiHatVoice(
   // ramped value would be overwritten before it were heard.
   const bodyHertz = 120 + settings.body * 500;
 
-  let position = 0;
-  const loop = new Loop((time) => {
-    const step = position % FIGURE_STEPS;
-    position += 1;
+  const track = context.lane.addSteps(0.13, (hit, time) => {
+    const step = hit % FIGURE_STEPS;
 
     // Scatter eats a hit now and then — a swarm does not count along.
-    if (settings.scatter > 0 && Math.random() < settings.scatter * 0.22) return;
+    if (
+      settings.scatter > 0 &&
+      stepRandom(hit, CHANNEL.scatter, salt) < settings.scatter * 0.22
+    ) {
+      return;
+    }
 
     const isOpen =
       settings.openness > 0 &&
       (step === 3 || step === 7) &&
-      Math.random() < settings.openness;
+      stepRandom(hit, CHANNEL.open, salt) < settings.openness;
     hat.envelope.decay = isOpen
       ? 0.06 + settings.openness * 0.4
       : 0.008 + settings.closedness * 0.07;
     const stress = step % 4 === 0 ? 1 : 1 - settings.accent * 0.55;
     const velocity = Math.max(
       0.05,
-      stress * (1 - Math.random() * settings.scatter) * 0.9,
+      stress *
+        (1 - stepRandom(hit, CHANNEL.velocity, salt) * settings.scatter) *
+        0.9,
     );
-    hat.triggerAttackRelease(bodyHertz, "64n", time, velocity);
-  }, 0.13).start(0);
+    hat.triggerAttackRelease(bodyHertz, hitSeconds, time, velocity);
+  });
 
   return {
     setPad: (x, y): void => {
-      loop.interval = 0.25 - x * 0.2; // Four to twenty hits per second.
+      track.setStepSeconds(0.25 - x * 0.2); // Four to twenty hits per second.
       highPass.frequency.rampTo(1500 + y * 10000, 0.15);
     },
 
     dispose: (): void => {
-      loop.dispose();
       room.dispose();
       for (const node of [hat, highPass]) node.dispose();
     },

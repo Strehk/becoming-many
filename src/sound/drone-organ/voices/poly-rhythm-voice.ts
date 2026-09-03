@@ -7,15 +7,15 @@
  * Boundary: Level, room send, and cutoff belong to the layer.
  */
 
-import { Filter, type Gain, Loop, MembraneSynth, NoiseSynth } from "tone";
+import { Filter, type Gain, MembraneSynth, NoiseSynth } from "tone";
 import { createEchoRoom, type EchoRoomSettings } from "./echo-room";
-import type { OrganVoice } from "./organ-voice";
+import type { OrganVoice, VoiceContext } from "./organ-voice";
 
 /** Step counts the three voices spread apart to at full spread. */
 const STEP_COUNTS = [16, 12, 9] as const;
 
-/** Transport grids the haste control chooses between. */
-const HASTE_GRID = ["4n", "8n", "16n", "32n"] as const;
+/** Step lengths in beats the haste control chooses between. */
+const HASTE_BEATS = [1, 1 / 2, 1 / 4, 1 / 8] as const;
 
 /**
  * Bjorklund's euclidean rhythm: `hits` beats spread as evenly as possible over
@@ -39,13 +39,12 @@ function euclideanPattern(hits: number, steps: number): boolean[] {
 interface RhythmVoice {
   steps: number;
   hits: number;
-  position: number;
   pattern: boolean[];
   readonly fire: (time: number) => void;
 }
 
 export interface PolyRhythmSettings {
-  readonly haste: number; // 0..1 which transport grid the three step on.
+  readonly haste: number; // 0..1 which step length the three step on.
   readonly lowVoice: number; // 0..1 level of the membrane drum.
   readonly middleVoice: number; // 0..1 level of the pink-noise hit.
   readonly highVoice: number; // 0..1 level of the white-noise tick.
@@ -55,8 +54,10 @@ export interface PolyRhythmSettings {
 
 export function createPolyRhythmVoice(
   bus: Gain,
+  context: VoiceContext,
   settings: PolyRhythmSettings,
 ): OrganVoice {
+  const { pulseSeconds } = context.harmony;
   const room = createEchoRoom(bus, settings.room);
   const low = new MembraneSynth({
     pitchDecay: 0.04,
@@ -87,21 +88,19 @@ export function createPolyRhythmVoice(
     {
       steps: 16,
       hits: 5,
-      position: 0,
       pattern: [],
-      fire: (time) => low.triggerAttackRelease(58, "8n", time, 0.95),
+      fire: (time) =>
+        low.triggerAttackRelease(58, pulseSeconds / 2, time, 0.95),
     },
     {
       steps: 12,
       hits: 4,
-      position: 0,
       pattern: [],
       fire: (time) => middle.triggerAttackRelease(0.06, time, 0.7),
     },
     {
       steps: 9,
       hits: 4,
-      position: 0,
       pattern: [],
       fire: (time) => high.triggerAttackRelease(0.02, time, 0.6),
     },
@@ -127,17 +126,17 @@ export function createPolyRhythmVoice(
   };
   rebuildPatterns();
 
-  const loop = new Loop((time) => {
+  // Each voice's position is the step itself, so a seek lands inside the
+  // 144-step figure exactly where playing through would have.
+  const stepBeats =
+    HASTE_BEATS[Math.floor(settings.haste * (HASTE_BEATS.length - 0.001))] ??
+    1 / 4;
+  context.lane.addSteps(stepBeats * pulseSeconds, (step, time) => {
     for (const voice of voices) {
-      const index = voice.position % voice.steps;
-      voice.position += 1;
-      if (voice.pattern[index]) voice.fire(time);
+      if (voice.pattern[step % voice.steps]) voice.fire(time);
     }
-  }, "16n").start(0);
+  });
 
-  loop.interval =
-    HASTE_GRID[Math.floor(settings.haste * (HASTE_GRID.length - 0.001))] ??
-    "16n";
   low.volume.rampTo(-40 + settings.lowVoice * 38, 0.1);
   middle.volume.rampTo(-46 + settings.middleVoice * 36, 0.1);
   high.volume.rampTo(-50 + settings.highVoice * 36, 0.1);
@@ -151,7 +150,6 @@ export function createPolyRhythmVoice(
     },
 
     dispose: (): void => {
-      loop.dispose();
       room.dispose();
       for (const node of [low, middle, middleBand, high, highBand]) {
         node.dispose();

@@ -6,9 +6,9 @@
  * Boundary: Level, room send, and cutoff belong to the layer.
  */
 
-import { Filter, type Gain, Loop, MembraneSynth, NoiseSynth } from "tone";
+import { Filter, type Gain, MembraneSynth, NoiseSynth } from "tone";
 import { createEchoRoom, type EchoRoomSettings } from "./echo-room";
-import type { OrganVoice } from "./organ-voice";
+import type { OrganVoice, VoiceContext } from "./organ-voice";
 
 /** Call spacing at the pad's extremes: far apart, or standing close in. */
 const SLOWEST_CALL_SECONDS = 2.4;
@@ -26,8 +26,10 @@ export interface SonarVoiceSettings {
 
 export function createSonarVoice(
   bus: Gain,
+  context: VoiceContext,
   settings: SonarVoiceSettings,
 ): OrganVoice {
+  const callSeconds = context.harmony.pulseSeconds / 8;
   // The call is an edge rather than a note: nothing to hold on to, so what
   // the ear follows is the return.
   const ping = new MembraneSynth({
@@ -56,19 +58,18 @@ export function createSonarVoice(
   const clickLevel = settings.click;
   clickBand.frequency.rampTo(700 + settings.edge * 7000, 0.1);
 
-  const loop = new Loop((time) => {
-    ping.triggerAttackRelease(callHertz, "32n", time, 0.9);
+  const calls = context.lane.addSteps(1.2, (_call, time) => {
+    ping.triggerAttackRelease(callHertz, callSeconds, time, 0.9);
     if (clickLevel > 0.02) click.triggerAttackRelease(0.02, time, clickLevel);
-  }, 1.2).start(0);
+  });
 
   return {
     setPad: (x, y): void => {
-      loop.interval = SLOWEST_CALL_SECONDS - x * CALL_SPEED_RANGE_SECONDS;
+      calls.setStepSeconds(SLOWEST_CALL_SECONDS - x * CALL_SPEED_RANGE_SECONDS);
       room.setDelay(y); // Distance to the wall.
     },
 
     dispose: (): void => {
-      loop.dispose();
       room.dispose();
       for (const node of [ping, click, clickBand]) node.dispose();
     },

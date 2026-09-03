@@ -1,24 +1,15 @@
 /**
- * Purpose: Own the drone organ's audio context, its shared chain, and its
- *   transport.
+ * Purpose: Own the drone organ's audio context and its shared chain.
  * Context: Every voice mixes into one master chain and sends into one room, so
  *   the layers of the organ sound like one instrument rather than nine.
  * Responsibility: Build master, limiter, and reverb on Tone's own context,
- *   resume that context on a gesture, hold the resolved harmony, and follow the
- *   show's play state.
- * Boundary: Voices and their mix strips live beside this file; when the show
- *   plays is decided in `src/dramaturgy`.
+ *   resume that context on a gesture, and hold the resolved harmony.
+ * Boundary: Voices and their mix strips live beside this file; time is the
+ *   show clock's, carried in through the organ's timeline — the engine keeps
+ *   no transport.
  */
 
-import {
-  Frequency,
-  Gain,
-  getContext,
-  getTransport,
-  Limiter,
-  Reverb,
-  start,
-} from "tone";
+import { Frequency, Gain, getContext, Limiter, Reverb, start } from "tone";
 import type { OrganComposition } from "./drone-organ-settings";
 import type { OrganHarmony } from "./organ-harmony";
 
@@ -30,13 +21,6 @@ export interface OrganEngine {
   readonly reverb: Reverb;
 
   readonly harmony: OrganHarmony;
-
-  /**
-   * Hold or resume the beat. Only the rhythmic voices ride the transport;
-   * drones and wind keep breathing while the show stands still, which is what
-   * a held rehearsal is supposed to sound like.
-   */
-  readonly setPlaying: (isPlaying: boolean) => void;
 
   readonly dispose: () => void;
 }
@@ -54,7 +38,10 @@ export interface OrganEngine {
  * no audio at all — it is the show's hardware clock — so nothing is mixed
  * across the two, and both resume on the same first gesture.
  */
-export function createOrganEngine(composition: OrganComposition): OrganEngine {
+export function createOrganEngine(
+  composition: OrganComposition,
+  pulseSeconds: number,
+): OrganEngine {
   const releaseGesture = resumeOnGesture();
 
   // Master → limiter → speakers. The composition leaves the equalizer and the
@@ -75,10 +62,6 @@ export function createOrganEngine(composition: OrganComposition): OrganEngine {
   });
   reverb.connect(master);
 
-  const transport = getTransport();
-  transport.bpm.value = composition.harmony.pulseBeatsPerMinute;
-  let isRunning = false;
-
   return {
     master,
     reverb,
@@ -86,19 +69,11 @@ export function createOrganEngine(composition: OrganComposition): OrganEngine {
     harmony: {
       rootMidi: Frequency(composition.harmony.rootNote).toMidi(),
       scaleSemitones: composition.harmony.scaleSemitones,
-    },
-
-    setPlaying: (isPlaying): void => {
-      if (isPlaying === isRunning) return;
-
-      isRunning = isPlaying;
-      if (isPlaying) transport.start();
-      else transport.pause();
+      pulseSeconds,
     },
 
     dispose: (): void => {
       releaseGesture();
-      transport.stop();
       reverb.dispose();
       limiter.dispose();
       master.dispose();

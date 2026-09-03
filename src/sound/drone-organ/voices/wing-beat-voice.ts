@@ -7,11 +7,15 @@
  * Boundary: Where the voice sits in the world belongs to the layer.
  */
 
-import { Filter, Gain, LFO, Loop, Noise } from "tone";
-import type { OrganVoice } from "./organ-voice";
+import { Filter, Gain, LFO, Noise } from "tone";
+import { stepRandom } from "../organ-random";
+import type { OrganVoice, VoiceContext } from "./organ-voice";
 
 /** How often the flap rate is re-diced. Short enough to read as a creature. */
 const GUST_INTERVAL_SECONDS = 0.42;
+
+/** Hash channel of the gust draw. */
+const GUST_CHANNEL = 30;
 
 export interface WingBeatSettings {
   readonly gustiness: number; // 0..1 how far the flap rate is thrown per gust.
@@ -22,6 +26,7 @@ export interface WingBeatSettings {
 
 export function createWingBeatVoice(
   bus: Gain,
+  context: VoiceContext,
   settings: WingBeatSettings,
 ): OrganVoice {
   // Noise through a band-pass is the body of air a wing moves.
@@ -45,11 +50,11 @@ export function createWingBeatVoice(
   // The rate is re-diced in bursts rather than driven by a second LFO: a
   // signal connected to `flap.frequency` would take the parameter over, and
   // every later ramp on it would throw. A creature is not a sine wave anyway.
-  const gust = new Loop(() => {
-    const gusted =
-      flapHertz * (1 + (Math.random() * 2 - 1) * settings.gustiness * 0.8);
-    flap.frequency.rampTo(Math.max(1, gusted), 0.18);
-  }, GUST_INTERVAL_SECONDS).start(0);
+  context.lane.addSteps(GUST_INTERVAL_SECONDS, (gust, time) => {
+    const draw = stepRandom(gust, GUST_CHANNEL, context.salt) * 2 - 1;
+    const gusted = flapHertz * (1 + draw * settings.gustiness * 0.8);
+    flap.frequency.rampTo(Math.max(1, gusted), 0.18, time);
+  });
 
   flap.min = settings.restingAir * 0.6;
   body.Q.rampTo(0.5 + settings.sharpness * 12, 0.1);
@@ -63,7 +68,6 @@ export function createWingBeatVoice(
     },
 
     dispose: (): void => {
-      gust.dispose();
       for (const node of [flap, noise, body, beat, output]) node.dispose();
     },
   };

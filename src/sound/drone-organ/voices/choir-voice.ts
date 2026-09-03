@@ -8,9 +8,8 @@
  */
 
 import { Filter, Frequency, Gain, Noise, PolySynth, Synth } from "tone";
-import type { OrganHarmony } from "../organ-harmony";
 import { createChordCycle } from "./chord-cycle";
-import type { OrganVoice } from "./organ-voice";
+import type { OrganVoice, VoiceContext } from "./organ-voice";
 
 /** How long a chord change holds its swell, and how far its notes fan out. */
 const SWELL_SECONDS = 6;
@@ -27,9 +26,10 @@ export interface ChoirVoiceSettings {
 
 export function createChoirVoice(
   bus: Gain,
-  harmony: OrganHarmony,
+  context: VoiceContext,
   settings: ChoirVoiceSettings,
 ): OrganVoice {
+  const { pulseSeconds } = context.harmony;
   const pad = new PolySynth(Synth, {
     oscillator: { type: "sine" },
     envelope: { attack: 2.2, decay: 1, sustain: 0.7, release: 6 },
@@ -47,10 +47,11 @@ export function createChoirVoice(
   breathLevel.gain.rampTo(settings.breath * 0.25, 0.1);
   lowPass.frequency.rampTo(800 + settings.brightness * 5200, 0.2);
 
-  const cycle = createChordCycle(harmony, {
+  // A step every two beats, each note held a whole bar.
+  const cycle = createChordCycle(context, {
     instrument: pad,
-    interval: "2n",
-    noteDuration: "1n",
+    stepSeconds: 2 * pulseSeconds,
+    noteDurationSeconds: 4 * pulseSeconds,
     baseOctave: 2,
     octaves: 1 + Math.round(settings.fullness),
     velocity: 0.3,
@@ -80,7 +81,6 @@ export function createChoirVoice(
     },
 
     dispose: (): void => {
-      cycle.dispose();
       for (const node of [pad, lowPass, breath, breathBand, breathLevel]) {
         node.dispose();
       }

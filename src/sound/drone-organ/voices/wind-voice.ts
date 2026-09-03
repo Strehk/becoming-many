@@ -1,15 +1,14 @@
 /**
  * Purpose: The wind: filtered noise in gusts, with a slow sine pad walking the
  *   world scale behind it.
- * Context: The organ's one ungated voice — it carries the empty world before
- *   any sense has been introduced.
+ * Context: The one voice the score never puts away — it carries the empty
+ *   world before any sense has been introduced.
  * Responsibility: Build the noise, its gusting band-pass, the pad, and the walk.
  * Boundary: Level, room send, and cutoff belong to the layer.
  */
 
 import { Filter, Gain, LFO, Noise, PolySynth, Synth } from "tone";
-import type { OrganHarmony } from "../organ-harmony";
-import type { OrganVoice } from "./organ-voice";
+import type { OrganVoice, VoiceContext } from "./organ-voice";
 import { createScaleWalk } from "./scale-walk";
 
 export interface WindVoiceSettings {
@@ -22,9 +21,10 @@ export interface WindVoiceSettings {
 
 export function createWindVoice(
   bus: Gain,
-  harmony: OrganHarmony,
+  context: VoiceContext,
   settings: WindVoiceSettings,
 ): OrganVoice {
+  const { pulseSeconds } = context.harmony;
   const noise = new Noise("pink").start();
   const band = new Filter(600, "bandpass");
   band.Q.value = 1.4;
@@ -49,10 +49,11 @@ export function createWindVoice(
   pad.volume.rampTo(-30 + settings.padLevel * 24, 0.1);
   gust.amplitude.rampTo(settings.gustDepth, 0.2);
 
-  const walk = createScaleWalk(harmony, {
+  // A step every two beats, each note held a whole bar.
+  createScaleWalk(context, {
     instrument: pad,
-    interval: "2n",
-    noteDuration: "1n",
+    stepSeconds: 2 * pulseSeconds,
+    noteDurationSeconds: 4 * pulseSeconds,
     baseOctave: 2,
     octaves: 2,
     velocity: 0.45,
@@ -68,7 +69,6 @@ export function createWindVoice(
     },
 
     dispose: (): void => {
-      walk.dispose();
       for (const node of [noise, band, noiseLevel, gust, pad]) node.dispose();
     },
   };
