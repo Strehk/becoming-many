@@ -6,6 +6,7 @@
  */
 
 import { describe, expect, test } from "bun:test";
+import { END_CREDITS_FADE_SECONDS } from "../../src/dramaturgy/end-credits";
 import {
   NARRATION_CUES,
   narrationUrl,
@@ -81,6 +82,32 @@ describe("the piece schedule", () => {
 
     expect(PIECE_SCHEDULE.durationSeconds).toBeGreaterThanOrEqual(
       lastCue.atSeconds + Math.max(en, de),
+    );
+  });
+
+  test("brings the credits up once the English return has finished", () => {
+    const lastCue = CUES[CUES.length - 1];
+    if (!lastCue) throw new Error("The piece schedule has no cues");
+    const { creditsAtSeconds } = PIECE_SCHEDULE;
+    if (creditsAtSeconds === undefined) {
+      throw new Error("The piece schedule authors no credits time");
+    }
+
+    expect(creditsAtSeconds).toBeGreaterThanOrEqual(
+      lastCue.atSeconds + NARRATION_CUES[lastCue.cueId].durationSeconds.en,
+    );
+  });
+
+  // The clock clamps at the show length. A fade that is still running there
+  // would freeze part way and never reach a readable panel.
+  test("leaves the credits room to fade in before the clock clamps", () => {
+    const { creditsAtSeconds, durationSeconds } = PIECE_SCHEDULE;
+    if (creditsAtSeconds === undefined) {
+      throw new Error("The piece schedule authors no credits time");
+    }
+
+    expect(creditsAtSeconds + END_CREDITS_FADE_SECONDS).toBeLessThanOrEqual(
+      durationSeconds,
     );
   });
 
