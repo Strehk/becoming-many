@@ -24,7 +24,8 @@
   },
   "dependencies": {
     "esp-web-tools": "^10.4.0",
-    "three": "^0.185.1"
+    "three": "^0.185.1",
+    "tone": "14.8.49"
   },
   "overrides": {
     "@material/web": "2.3.0"

@@ -77,6 +77,13 @@ export interface FlySwarms {
 
   /** Tightly packed world xyz triples of every fly; stable array identity. */
   readonly getWorldPositions: () => Float32Array;
+
+  /**
+   * Tightly packed world xyz triples, one per swarm: where the cloud sits,
+   * rather than where its flies are. Spatial audio places a sound on the
+   * nearest swarm through this; stable identity, refreshed on read.
+   */
+  readonly readSwarmCenters: () => Float32Array;
   readonly update: (
     deltaSeconds: number,
     playerX: number,
@@ -103,6 +110,7 @@ export function createFlySwarms(options: FlySwarmsOptions): FlySwarms {
     getLobeSlotCount(swarmCount) * COMPONENTS_PER_VALUE,
   );
   const anchors: readonly SwarmAnchor[] = createSwarmAnchors(swarmCount);
+  const swarmCenters = new Float32Array(swarmCount * COMPONENTS_PER_VALUE);
   const anchorOrigin = { x: options.initialPlayerX, z: options.initialPlayerZ };
   let anchorEpoch = 0;
   let elapsedSeconds = 0;
@@ -165,6 +173,17 @@ export function createFlySwarms(options: FlySwarmsOptions): FlySwarms {
   return {
     points,
     getWorldPositions: () => worldPositions,
+    readSwarmCenters: () => {
+      // Anchors settle toward the ground as the world streams under them, so
+      // the centres are copied on read rather than kept in step from afar.
+      anchors.forEach((anchor, index) => {
+        const offset = index * COMPONENTS_PER_VALUE;
+        swarmCenters[offset] = anchor.x;
+        swarmCenters[offset + 1] = anchor.y;
+        swarmCenters[offset + 2] = anchor.z;
+      });
+      return swarmCenters;
+    },
     update: (deltaSeconds, playerX, playerZ) => {
       const movedX = playerX - anchorOrigin.x;
       const movedZ = playerZ - anchorOrigin.z;

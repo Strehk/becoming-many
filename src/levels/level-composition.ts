@@ -297,6 +297,7 @@ function composeShowReach(
     setSkyBackground: handles.magnetic?.setSkyBackground,
     setEndCreditsPresence: handles.endCredits?.setPresence,
     followPassages: handles.passages?.followShowTime,
+    readMotionActorCenters: handles.motion?.readActorCenters,
   };
 }
 

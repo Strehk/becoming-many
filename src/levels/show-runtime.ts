@@ -1,7 +1,7 @@
 /**
  * Purpose: Drive one preloaded world from narration show time.
  * Context: The show changes presentation, sense strength, and module gates without rebuilding resources.
- * Responsibility: Own narration following, transitions, sense intensities, and the public show controls.
+ * Responsibility: Own narration following, transitions, sense intensities, the organ's frame, and the public show controls.
  * Boundary: Level Runtime constructs modules; concrete modules and the render loop remain elsewhere.
  */
 
@@ -13,7 +13,17 @@ import {
   narrationCueAt,
   type ShowLevelName,
 } from "../dramaturgy/narration-schedule";
-import { createShowClock, type ShowClock } from "../dramaturgy/show-clock";
+import {
+  ORGAN_SCORE,
+  ORGAN_VOICES,
+  type OrganVoiceName,
+  organVoiceStrengthAt,
+} from "../dramaturgy/organ-score";
+import {
+  createShowClock,
+  type ShowClock,
+  type ShowTimeSample,
+} from "../dramaturgy/show-clock";
 import {
   levelTransitionAt,
   type ShowLevelState,
@@ -21,11 +31,15 @@ import {
   senseIntensityAt,
   showLevelAt,
 } from "../dramaturgy/show-levels";
+import type { MotionActorGroup } from "../modules/motion-sense/motion-sense";
 import type { WorldFadeEffect } from "../modules/world-fade/world-fade";
 import { createAudioTimebase } from "../sound/audio-timebase";
+import { createDroneOrgan } from "../sound/drone-organ/drone-organ";
+import type { OrganPlacementGroup } from "../sound/drone-organ/drone-organ-settings";
 import { createNarrationPlayer } from "../sound/narration-player";
 import type { WorldModule } from "../world/module-runtime";
 import type { WorldContext } from "../world/world-runtime";
+import type { WorldSurface } from "../world-surface/world-surface";
 
 export interface ShowRequest {
   readonly schedule: NarrationSchedule;
@@ -61,7 +75,25 @@ export interface ShowWorldReach {
   readonly setEndCreditsPresence?: (presence: number) => void;
   /** Places the authored animal crossings; composed only for a show. */
   readonly followPassages?: (showTimeSeconds: number) => void;
+
+  /**
+   * Where the moving actor clouds are, so the drone organ can put its two
+   * placed voices on the birds and the insects the motion sense shows.
+   */
+  readonly readMotionActorCenters?: (group: MotionActorGroup) => Float32Array;
 }
+
+/** Answer for a placement group nothing in this world produces. */
+const NO_ACTOR_CENTERS = new Float32Array(0);
+
+/** The listener pose scratch a show writes each frame; the organ only reads. */
+type MutableListenerPose = {
+  x: number;
+  y: number;
+  z: number;
+  yawRadians: number;
+  pitchRadians: number;
+};
 
 export interface ShowRuntime {
   readonly update: () => void;
@@ -73,6 +105,7 @@ export function createShowRuntime(
   request: ShowRequest,
   world: WorldContext,
   reach: ShowWorldReach,
+  worldSurface: WorldSurface,
 ): ShowRuntime {
   const { schedule, states } = request;
   const openingLevel = showLevelAt(schedule, 0);
@@ -83,7 +116,32 @@ export function createShowRuntime(
   const cueIds = schedule.narration.map((cue) => cue.cueId);
   let language = request.language;
   let narration = createNarrationPlayer({ language, cueIds });
+  // The organ follows the same clock but plays on Tone's own context, which
+  // is the only context its rooms come up on. It loads Tone.js by itself, so
+  // the world runs on before the organ makes a sound.
+  const droneOrgan = createDroneOrgan({
+    pulseSeconds: ORGAN_SCORE.pulseSeconds,
+  });
   let activeLevel: ShowLevelName | undefined;
+  // Scratch state, so following the show allocates nothing per frame.
+  const voiceStrengths: Record<OrganVoiceName, number> = {
+    wind: 0,
+    choir: 0,
+    sonar: 0,
+    birdWingBeat: 0,
+    insectWingBeat: 0,
+    bassLoop: 0,
+    pressureWave: 0,
+    polyRhythm: 0,
+    hiHat: 0,
+  };
+  const listenerPose: MutableListenerPose = {
+    x: 0,
+    y: 0,
+    z: 0,
+    yawRadians: 0,
+    pitchRadians: 0,
+  };
   const liveBackground = new Color(0xffffff);
   const backgroundColors = createBackgroundColors(states);
 
@@ -172,6 +230,29 @@ export function createShowRuntime(
     reach.followPassages?.(showTimeSeconds);
   }
 
+  // The organ is a follower like the narration: the score says how strong
+  // each voice stands at this instant, and the clock says what instant it is.
+  function followOrgan(showTime: ShowTimeSample): void {
+    for (const voice of ORGAN_VOICES) {
+      voiceStrengths[voice] = organVoiceStrengthAt(
+        schedule,
+        ORGAN_SCORE,
+        voice,
+        showTime.timeSeconds,
+      );
+    }
+    readListenerPose(world, listenerPose);
+    droneOrgan.update({
+      showTimeSeconds: showTime.timeSeconds,
+      isPlaying: showTime.isPlaying,
+      timeScale: showTime.timeScale,
+      voiceStrengths,
+      listener: listenerPose,
+      groundYMeters: worldSurface.groundYAt(listenerPose.x, listenerPose.z),
+      readGroupCenters: (group) => readActorCenters(reach, group),
+    });
+  }
+
   followWorld(0);
 
   return {
@@ -183,6 +264,7 @@ export function createShowRuntime(
         timeScale: showTime.timeScale,
       });
       followWorld(showTime.timeSeconds);
+      followOrgan(showTime);
     },
 
     readActiveLevelState: () => states[activeLevel ?? openingLevel],
@@ -202,6 +284,40 @@ export function createShowRuntime(
       },
     },
   };
+}
+
+/**
+ * Read where the visitor is and which way they face, into the caller's pose.
+ * The eye carries the head pose the rig published at the end of the previous
+ * frame — the same frame of reference every module windows its content around.
+ */
+function readListenerPose(
+  world: WorldContext,
+  pose: MutableListenerPose,
+): void {
+  const eye = world.viewpoint.worldPosition;
+  pose.x = eye.x;
+  pose.y = eye.y;
+  pose.z = eye.z;
+
+  // Forward is the camera's negated third column in world space.
+  const elements = world.camera.matrixWorld.elements;
+  const forwardX = -(elements[8] ?? 0);
+  const forwardY = -(elements[9] ?? 0);
+  const forwardZ = -(elements[10] ?? 1);
+  pose.yawRadians = Math.atan2(forwardX, forwardZ);
+  pose.pitchRadians = Math.asin(Math.min(1, Math.max(-1, forwardY)));
+}
+
+/** The organ's placement groups, answered from the moving world it can reach. */
+function readActorCenters(
+  reach: ShowWorldReach,
+  group: OrganPlacementGroup,
+): Float32Array {
+  return (
+    reach.readMotionActorCenters?.(group === "insects" ? "flies" : "birds") ??
+    NO_ACTOR_CENTERS
+  );
 }
 
 function createBackgroundColors(
