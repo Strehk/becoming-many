@@ -96,14 +96,10 @@ describe("the piece's passages", () => {
     expect(() => validatePassageSchedule(PIECE_PASSAGES)).not.toThrow();
   });
 
-  /*
-   * The mosquitoes before Motion Perception are the third authored animal and
-   * are deliberately absent until Motion Sense can stage a swarm on a route;
-   * this pins the gap so filling it is a deliberate edit.
-   */
-  test("carry the animals that are staged today", () => {
+  test("carry one animal for each sense that names one", () => {
     expect(PIECE_PASSAGES.passages.map(({ passageId }) => passageId)).toEqual([
       "bat",
+      "mosquitoes",
       "bird",
     ]);
   });

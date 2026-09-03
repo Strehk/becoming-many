@@ -76,11 +76,8 @@ wing-vertex sampling is recorded in
 - Trail length is authored in rendered frames for bm-base parity; a
   fixed-cadence spawn accumulator is the known fix for frame-rate
   dependence.
-- The path-flyby swarm event from bm-base is no longer blocked on the runtime
-  coordination decision: a passage is placed as scheduled data
-  (`src/dramaturgy/passage-schedule.ts`), and the mosquitoes before Motion
-  Perception are the one authored passage still missing. They belong here
-  rather than in Animal Passages, because they cross as a swarm printing
-  trails and not as a flown body — one anchor driven along a route instead of
-  relocated on its ring. The current swarms are persistent and statically
-  authored.
+- The path-flyby swarm from bm-base is built: `passage-swarm.ts` prints the
+  mosquito passage's trails from a cloud following a route, and is composed
+  beside this module rather than inside it because it crosses before the sense
+  it announces and so cannot ride this module's gate or its fade. The ambient
+  swarms remain persistent and statically authored.

@@ -25,6 +25,12 @@ import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 export interface RouteTransform {
   /** Authored route units to metres. */
   readonly scaleToMeters: number;
+  /**
+   * Per-axis stretch applied after the uniform scale; omit for none. A route
+   * can be widened across the view and shortened along it, which is how a
+   * crossing is made to read as passing *by* rather than as receding.
+   */
+  readonly axisStretch?: Vector3;
   /** Fixed rotation applied to route deltas before the start offset. */
   readonly rotation: Quaternion;
   /** Where the route's first point sits, relative to the visitor. */
@@ -207,11 +213,9 @@ function toRouteSpace(
   origin: Vector3,
   transform: RouteTransform,
 ): Vector3 {
-  return point
-    .sub(origin)
-    .multiplyScalar(transform.scaleToMeters)
-    .applyQuaternion(transform.rotation)
-    .add(transform.start);
+  const scaled = point.sub(origin).multiplyScalar(transform.scaleToMeters);
+  if (transform.axisStretch) scaled.multiply(transform.axisStretch);
+  return scaled.applyQuaternion(transform.rotation).add(transform.start);
 }
 
 function readEndDirection(

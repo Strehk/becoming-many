@@ -10,6 +10,7 @@ import { Vector3 } from "three";
 import { PIECE_PASSAGES } from "../../src/dramaturgy/piece-schedule";
 import {
   BIRD_PASSAGE,
+  MOSQUITO_PASSAGE,
   PASSAGE_FLIGHTS,
   type PassageFlightDefinition,
 } from "../../src/modules/animal-passages/passage-definitions";
@@ -63,14 +64,27 @@ function flightSeconds(definition: PassageFlightDefinition): number {
   );
 }
 
+/** How long a scheduled passage actually takes, flown or swarming. */
+function stagedSeconds(passageId: string): number {
+  const flight = PASSAGE_FLIGHTS.find(
+    (candidate) => candidate.passageId === passageId,
+  );
+  if (flight) return flightSeconds(flight);
+  if (passageId === MOSQUITO_PASSAGE.passageId) {
+    return MOSQUITO_PASSAGE.durationSeconds;
+  }
+  throw new Error(`Scheduled passage is staged by nothing: ${passageId}`);
+}
+
 describe("the authored passages", () => {
-  test("have a definition for every animal the piece schedules", () => {
+  /*
+   * Every scheduled animal must be staged by something. One that is not would
+   * leave the moment announcing a sense empty, with nothing at runtime saying
+   * so — the mosquitoes were exactly that until their swarm existed.
+   */
+  test("are each staged, as a flight or as a swarm", () => {
     for (const passage of PIECE_PASSAGES.passages) {
-      expect(
-        PASSAGE_FLIGHTS.some(
-          (flight) => flight.passageId === passage.passageId,
-        ),
-      ).toBe(true);
+      expect(() => stagedSeconds(passage.passageId)).not.toThrow();
     }
   });
 
@@ -81,13 +95,22 @@ describe("the authored passages", () => {
    */
   test("are scheduled for exactly as long as they take to cross", () => {
     for (const passage of PIECE_PASSAGES.passages) {
-      const definition = PASSAGE_FLIGHTS.find(
-        (flight) => flight.passageId === passage.passageId,
+      expect(passage.durationSeconds).toBeCloseTo(
+        stagedSeconds(passage.passageId),
+        5,
       );
-      if (!definition) throw new Error(`No definition: ${passage.passageId}`);
-
-      expect(passage.durationSeconds).toBeCloseTo(flightSeconds(definition), 5);
     }
+  });
+
+  /*
+   * The swarm has no body, so it needs a cloud instead of a model: points to
+   * print, and a volume for them to move inside.
+   */
+  test("give the swarm a cloud to print instead of a model", () => {
+    expect(MOSQUITO_PASSAGE.pointCount).toBeGreaterThan(0);
+    expect(MOSQUITO_PASSAGE.cloudRadiusMeters).toBeGreaterThan(0);
+    expect(MOSQUITO_PASSAGE.cloudHeightMeters).toBeGreaterThan(0);
+    expect(MOSQUITO_PASSAGE.routeUrl).toStartWith("/passages/");
   });
 
   test("carry a model, a route, and a wingspan to scale it to", () => {

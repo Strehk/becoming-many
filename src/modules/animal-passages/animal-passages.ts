@@ -5,7 +5,14 @@
  * Boundary: When a passage runs is the schedule's; how it flies is the flight's.
  */
 
-import { type AnimationClip, Mesh, type Object3D, type Scene } from "three";
+import {
+  type AnimationClip,
+  Mesh,
+  type Object3D,
+  Quaternion,
+  type Scene,
+  Vector3,
+} from "three";
 import { clone } from "three/addons/utils/SkeletonUtils.js";
 import type {
   PassageId,
@@ -22,17 +29,30 @@ import type { WorldModule } from "../../world/module-runtime";
 import type { Viewpoint } from "../../world/viewer-rig";
 import type { WorldSurface } from "../../world-surface/world-surface";
 import {
+  MOSQUITO_PASSAGE,
   PASSAGE_FLIGHTS,
   type PassageFlightDefinition,
 } from "./passage-definitions";
 import { createPassageFlight, type PassageFlight } from "./passage-flight";
-import { loadPassageRoute, type PassageRoute } from "./passage-route";
+import {
+  loadPassageRoute,
+  type PassageRoute,
+  samplePassageRoute,
+} from "./passage-route";
 
 /** The models and routes every passage needs, loaded before the world starts. */
 export interface PassageResources {
   readonly models: GltfAssets;
   readonly routes: ReadonlyMap<PassageId, PassageRoute>;
 }
+
+/**
+ * Where the swarm passage's centre is now and how long it has been crossing,
+ * or undefined while it is away. This is the whole contract between a passage
+ * and the trail ring that draws it: the passage owns the route and the
+ * schedule, and knows nothing about how a swarm is printed.
+ */
+export type ReadSwarmCrossing = (centre: Vector3) => number | undefined;
 
 export interface AnimalPassagesModuleOptions {
   readonly scene: Scene;
@@ -53,6 +73,12 @@ export interface AnimalPassagesModuleHandle {
    * show time, so a passage seeks with everything else.
    */
   readonly followShowTime: (showTimeSeconds: number) => void;
+  /**
+   * Where the swarm passage stands, for the trail ring that draws it. It reads
+   * the show time the last `followShowTime` was given, so the swarm and the
+   * flown animals answer the same instant.
+   */
+  readonly readSwarmCrossing: ReadSwarmCrossing;
 }
 
 /**
@@ -64,7 +90,10 @@ export async function loadPassageResources(
   schedule: PassageSchedule,
 ): Promise<PassageResources> {
   const definitions = scheduledFlights(schedule);
-  const [models, routes] = await Promise.all([
+  const swarmScheduled = schedule.passages.some(
+    ({ passageId }) => passageId === MOSQUITO_PASSAGE.passageId,
+  );
+  const [models, routes, swarmRoute] = await Promise.all([
     loadGltfAssets(
       definitions.map(({ passageId, modelUrl }) => ({
         id: passageId,
@@ -88,9 +117,23 @@ export async function loadPassageResources(
           ] as const,
       ),
     ),
+    swarmScheduled
+      ? loadPassageRoute(
+          MOSQUITO_PASSAGE.routeUrl,
+          {
+            scaleToMeters: MOSQUITO_PASSAGE.routeScaleToMeters,
+            axisStretch: MOSQUITO_PASSAGE.axisStretch,
+            rotation: new Quaternion(),
+            start: MOSQUITO_PASSAGE.routeStart,
+          },
+          MOSQUITO_PASSAGE.durationSeconds,
+        )
+      : undefined,
   ]);
 
-  return { models, routes: new Map(routes) };
+  const loaded = new Map(routes);
+  if (swarmRoute) loaded.set(MOSQUITO_PASSAGE.passageId, swarmRoute);
+  return { models, routes: loaded };
 }
 
 export function createAnimalPassagesModule(
@@ -98,6 +141,8 @@ export function createAnimalPassagesModule(
 ): AnimalPassagesModuleHandle {
   const staged: StagedPassage[] = [];
   let active = false;
+  let showTime = 0;
+  const swarmPoint = new Vector3();
 
   return {
     module: {
@@ -115,6 +160,7 @@ export function createAnimalPassagesModule(
     },
 
     followShowTime: (showTimeSeconds: number): void => {
+      showTime = showTimeSeconds;
       if (!active) return;
 
       for (const passage of staged) {
@@ -135,6 +181,36 @@ export function createAnimalPassagesModule(
         }
         passage.flight.applyProgress(progress);
       }
+    },
+
+    readSwarmCrossing: (centre: Vector3): number | undefined => {
+      const route = options.resources.routes.get(MOSQUITO_PASSAGE.passageId);
+      const progress = passageProgressAt(
+        options.schedule,
+        MOSQUITO_PASSAGE.passageId,
+        showTime,
+      );
+      if (!route || progress === undefined) return undefined;
+
+      const crossingSeconds = progress * MOSQUITO_PASSAGE.durationSeconds;
+      samplePassageRoute(route, crossingSeconds, swarmPoint);
+      // The route is authored around the visitor, like every passage, so the
+      // world centre is their position plus the route offset. Nothing turns
+      // it: the mosquitoes carry no compass meaning, and turning the cloud
+      // would only move which side of the flight it passes on.
+      centre
+        .copy(options.viewpoint.worldPosition)
+        .add(swarmPoint)
+        .setY(
+          Math.max(
+            options.viewpoint.worldPosition.y + swarmPoint.y,
+            options.worldSurface.groundYAt(
+              options.viewpoint.worldPosition.x + swarmPoint.x,
+              options.viewpoint.worldPosition.z + swarmPoint.z,
+            ) + MOSQUITO_PASSAGE.groundClearanceMeters,
+          ),
+        );
+      return crossingSeconds;
     },
   };
 }
@@ -245,20 +321,25 @@ function measureSpan(model: Object3D): number {
 }
 
 /**
- * The flights the schedule actually calls for. A passage authored without an
- * implementation is a fault, not a silent absence: it would leave the moment
- * that announces a sense simply empty.
+ * The flown animals the schedule calls for. A scheduled passage that is
+ * neither flown nor the swarm is a fault, not a silent absence: it would leave
+ * the moment that announces a sense simply empty.
  */
 function scheduledFlights(
   schedule: PassageSchedule,
 ): readonly PassageFlightDefinition[] {
-  return schedule.passages.map(({ passageId }) => {
+  const flights: PassageFlightDefinition[] = [];
+  for (const { passageId } of schedule.passages) {
     const definition = PASSAGE_FLIGHTS.find(
       (candidate) => candidate.passageId === passageId,
     );
-    if (!definition) {
+    if (definition) {
+      flights.push(definition);
+      continue;
+    }
+    if (passageId !== MOSQUITO_PASSAGE.passageId) {
       throw new Error(`Scheduled passage has no definition: ${passageId}`);
     }
-    return definition;
-  });
+  }
+  return flights;
 }
