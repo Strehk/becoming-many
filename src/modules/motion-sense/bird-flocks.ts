@@ -41,6 +41,13 @@ interface BirdFlocksOptions {
 export interface BirdFlocks {
   /** Tightly packed world xyz triples of every bird point; stable identity. */
   readonly getWorldPositions: () => Float32Array;
+
+  /**
+   * Tightly packed world xyz triples, one per flock: where the flock itself
+   * is, rather than where its individual birds are. Spatial audio places a
+   * sound on the nearest flock through this; stable identity.
+   */
+  readonly getFlockCenters: () => Float32Array;
   readonly update: (
     deltaSeconds: number,
     playerX: number,
@@ -75,6 +82,9 @@ export function createBirdFlocks(options: BirdFlocksOptions): BirdFlocks {
     z: options.initialPlayerZ,
   }));
   const orbitAngles = new Float32Array(birds.flockCount);
+  const flockCenters = new Float32Array(
+    birds.flockCount * COMPONENTS_PER_VALUE,
+  );
   let elapsedSeconds = 0;
 
   for (let birdIndex = 0; birdIndex < birdCount; birdIndex += 1) {
@@ -113,6 +123,7 @@ export function createBirdFlocks(options: BirdFlocksOptions): BirdFlocks {
         orbitAngle: orbitAngles[flockIndex] ?? 0,
         elapsedSeconds,
         worldPositions,
+        flockCenters,
         scatterOffsets,
         flapFrequencies,
         flapPhases,
@@ -123,6 +134,7 @@ export function createBirdFlocks(options: BirdFlocksOptions): BirdFlocks {
 
   return {
     getWorldPositions: () => worldPositions,
+    getFlockCenters: () => flockCenters,
     update: (deltaSeconds, playerX, playerZ) => {
       if (deltaSeconds <= 0) return;
 
@@ -232,6 +244,7 @@ interface FlockWriteInput {
   readonly orbitAngle: number;
   readonly elapsedSeconds: number;
   readonly worldPositions: Float32Array;
+  readonly flockCenters: Float32Array;
   readonly scatterOffsets: Float32Array;
   readonly flapFrequencies: Float32Array;
   readonly flapPhases: Float32Array;
@@ -251,6 +264,14 @@ function writeFlockPositions(input: FlockWriteInput): void {
   const lateralX = -headingZ;
   const lateralZ = headingX;
   const halfSpan = settings.birdWingSpanMeters / 2;
+
+  // Where the flock as a whole is: its orbit point at flight height. One extra
+  // ground sample per flock, which is what spatial audio needs to place it.
+  const centerOffset = input.flockIndex * COMPONENTS_PER_VALUE;
+  input.flockCenters[centerOffset] = centerX;
+  input.flockCenters[centerOffset + 1] =
+    groundYAt(centerX, centerZ) + birds.flightHeightMeters;
+  input.flockCenters[centerOffset + 2] = centerZ;
 
   for (let localIndex = 0; localIndex < input.flockSize; localIndex += 1) {
     const birdIndex = input.firstBirdIndex + localIndex;

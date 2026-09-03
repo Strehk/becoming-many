@@ -58,12 +58,26 @@ interface MotionSenseState {
   currentResources: MotionSenseResources | undefined;
 }
 
+/** The moving actor groups this module simulates. */
+export type MotionActorGroup = "birds" | "flies";
+
 /** The module beside its runtime sense driver. */
 export interface MotionSenseModuleHandle {
   readonly module: WorldModule;
   /** Drive the sense strength at runtime; flies and trails share the value. */
   readonly setIntensity: (intensity: number) => void;
+
+  /**
+   * Tightly packed world xyz triples, one per live cloud of the group: where
+   * the flocks and swarms are, not where their individual actors are. Empty
+   * while the module is unloaded, and for birds a level never authored — the
+   * caller places sound on what exists and stays silent about the rest.
+   */
+  readonly readActorCenters: (group: MotionActorGroup) => Float32Array;
 }
+
+/** Answer for a group with nothing in the world; shared, never written. */
+const NO_CENTERS = new Float32Array(0);
 
 export function createMotionSenseModule(
   options: MotionSenseModuleOptions,
@@ -82,7 +96,20 @@ export function createMotionSenseModule(
     setIntensity: (intensity) => {
       senseFadeUniform.value = intensity;
     },
+    readActorCenters: (group) => readActorCenters(state, group),
   };
+}
+
+function readActorCenters(
+  state: MotionSenseState,
+  group: MotionActorGroup,
+): Float32Array {
+  const resources = state.currentResources;
+  if (!resources) return NO_CENTERS;
+
+  return group === "flies"
+    ? resources.flySwarms.readSwarmCenters()
+    : (resources.birdFlocks?.getFlockCenters() ?? NO_CENTERS);
 }
 
 function loadMotionSense(

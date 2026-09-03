@@ -182,6 +182,7 @@ async function setupLevel(
     benchmark,
     world,
     reach,
+    worldSurface,
   });
   const staticMaximumGroundClearanceMeters =
     request.kind === "static"
@@ -336,13 +337,19 @@ interface OptionalShowOptions {
   readonly benchmark: BenchmarkRun | undefined;
   readonly world: WorldContext;
   readonly reach: ShowWorldReach;
+  readonly worldSurface: WorldSurface;
 }
 
 function createOptionalShow(
   options: OptionalShowOptions,
 ): ShowRuntime | undefined {
   if (options.benchmark || options.request.kind !== "show") return undefined;
-  return createShowRuntime(options.request.show, options.world, options.reach);
+  return createShowRuntime(
+    options.request.show,
+    options.world,
+    options.reach,
+    options.worldSurface,
+  );
 }
 
 interface LevelFrameOptions {

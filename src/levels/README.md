@@ -56,8 +56,8 @@ frame coordination. It:
 - loads and activates the configured module list;
 - connects the selected desktop or M5 flight source;
 - accepts entry-owned Test UI metrics and overlay creation only when requested;
-- delegates optional show time, narration, transitions, and sense fades to
-  `show-runtime.ts`;
+- delegates optional show time, narration, transitions, sense fades, and the
+  drone organ's per-frame contract to `show-runtime.ts`;
 - returns the narrow `RunningLevel` command/query surface used by pages.
 
 `level-composition.ts` loads the required GLTF assets, creates the shared World

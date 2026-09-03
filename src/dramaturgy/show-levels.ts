@@ -196,7 +196,12 @@ export function senseIntensityAt(
   );
 }
 
-function rampValueAt(
+/**
+ * Where a linear ramp stands at an instant: from its start value toward its
+ * target over `SENSE_FADE_SECONDS`. Shared with the organ score, so a voice
+ * fades on exactly the curve a sense does.
+ */
+export function rampValueAt(
   rampStartSeconds: number,
   rampStartValue: number,
   rampTarget: number,
