@@ -15,10 +15,11 @@ import {
   levelTransitionAt,
   SENSE_FADE_SECONDS,
   SENSE_PREWARM_SECONDS,
-  SHOW_LEVEL_SENSES,
+  SHOW_LEVEL_STATES,
   senseIntensityAt,
   senseStandingAt,
   showLevelAt,
+  showLevelStateAt,
   worldTimeOf,
 } from "../../src/dramaturgy/show-levels";
 
@@ -56,35 +57,74 @@ describe("showLevelAt", () => {
   });
 });
 
+describe("showLevelStateAt", () => {
+  test("resolves the opening state from the schedule and authored state map", () => {
+    const scentFirst: NarrationSchedule = {
+      durationSeconds: 10,
+      narration: [{ cueId: "scent", atSeconds: 5, level: "scent" }],
+    };
+
+    expect(showLevelStateAt(scentFirst, SHOW_LEVEL_STATES, 0)).toBe(
+      SHOW_LEVEL_STATES.scent,
+    );
+  });
+
+  test("answers nothing for a schedule with no opening state", () => {
+    expect(
+      showLevelStateAt(
+        { durationSeconds: 10, narration: [] },
+        SHOW_LEVEL_STATES,
+        0,
+      ),
+    ).toBeUndefined();
+  });
+});
+
 describe("senseIntensityAt", () => {
   test("keeps a sense silent before its level arrives", () => {
-    expect(senseIntensityAt(SCHEDULE, "scent", 0)).toBe(0);
-    expect(senseIntensityAt(SCHEDULE, "scent", 50)).toBe(0);
-    expect(senseIntensityAt(SCHEDULE, "echo", 99)).toBe(0);
+    expect(senseIntensityAt(SCHEDULE, SHOW_LEVEL_STATES, "scent", 0)).toBe(0);
+    expect(senseIntensityAt(SCHEDULE, SHOW_LEVEL_STATES, "scent", 50)).toBe(0);
+    expect(senseIntensityAt(SCHEDULE, SHOW_LEVEL_STATES, "echo", 99)).toBe(0);
   });
 
   test("ramps a sense in linearly from its cue boundary", () => {
     const halfway = 50 + SENSE_FADE_SECONDS / 2;
 
-    expect(senseIntensityAt(SCHEDULE, "scent", halfway)).toBeCloseTo(0.5, 5);
-    expect(senseIntensityAt(SCHEDULE, "scent", 50 + SENSE_FADE_SECONDS)).toBe(
-      1,
-    );
+    expect(
+      senseIntensityAt(SCHEDULE, SHOW_LEVEL_STATES, "scent", halfway),
+    ).toBeCloseTo(0.5, 5);
+    expect(
+      senseIntensityAt(
+        SCHEDULE,
+        SHOW_LEVEL_STATES,
+        "scent",
+        50 + SENSE_FADE_SECONDS,
+      ),
+    ).toBe(1);
   });
 
   test("carries a sense at full strength through later levels", () => {
     // Senses layer, never swap: echo keeps scent at one.
-    expect(senseIntensityAt(SCHEDULE, "scent", 120)).toBe(1);
+    expect(senseIntensityAt(SCHEDULE, SHOW_LEVEL_STATES, "scent", 120)).toBe(1);
   });
 
   test("fades every sense out when the world strips back", () => {
     const halfway = 150 + SENSE_FADE_SECONDS / 2;
 
-    expect(senseIntensityAt(SCHEDULE, "scent", halfway)).toBeCloseTo(0.5, 5);
-    expect(senseIntensityAt(SCHEDULE, "echo", halfway)).toBeCloseTo(0.5, 5);
-    expect(senseIntensityAt(SCHEDULE, "echo", 150 + SENSE_FADE_SECONDS)).toBe(
-      0,
-    );
+    expect(
+      senseIntensityAt(SCHEDULE, SHOW_LEVEL_STATES, "scent", halfway),
+    ).toBeCloseTo(0.5, 5);
+    expect(
+      senseIntensityAt(SCHEDULE, SHOW_LEVEL_STATES, "echo", halfway),
+    ).toBeCloseTo(0.5, 5);
+    expect(
+      senseIntensityAt(
+        SCHEDULE,
+        SHOW_LEVEL_STATES,
+        "echo",
+        150 + SENSE_FADE_SECONDS,
+      ),
+    ).toBe(0);
   });
 
   test("continues an interrupted fade from where it stood", () => {
@@ -103,57 +143,112 @@ describe("senseIntensityAt", () => {
     };
     const boundary = 10 + SENSE_FADE_SECONDS / 2;
 
-    expect(senseIntensityAt(interrupted, "scent", boundary)).toBeCloseTo(
-      0.5,
-      5,
-    );
     expect(
-      senseIntensityAt(interrupted, "scent", boundary + SENSE_FADE_SECONDS),
+      senseIntensityAt(interrupted, SHOW_LEVEL_STATES, "scent", boundary),
+    ).toBeCloseTo(0.5, 5);
+    expect(
+      senseIntensityAt(
+        interrupted,
+        SHOW_LEVEL_STATES,
+        "scent",
+        boundary + SENSE_FADE_SECONDS,
+      ),
     ).toBe(1);
+  });
+
+  test("reads sense presence from the supplied show states", () => {
+    const states = {
+      ...SHOW_LEVEL_STATES,
+      scent: { ...SHOW_LEVEL_STATES.scent, senses: [] },
+    };
+
+    expect(
+      senseIntensityAt(SCHEDULE, states, "scent", 50 + SENSE_FADE_SECONDS),
+    ).toBe(0);
   });
 });
 
 describe("senseStandingAt", () => {
   test("keeps a sense away while its cue is beyond the prewarm window", () => {
-    expect(senseStandingAt(SCHEDULE, "scent", 0)).toBe("away");
-    // The window reaches exactly to the boundary, where the ramp still stands
-    // at zero — the same instant the sense itself is not yet live at its cue.
-    expect(senseStandingAt(SCHEDULE, "scent", 50 - SENSE_PREWARM_SECONDS)).toBe(
+    expect(senseStandingAt(SCHEDULE, SHOW_LEVEL_STATES, "scent", 0)).toBe(
       "away",
     );
+    // The window reaches exactly to the boundary, where the ramp still stands
+    // at zero — the same instant the sense itself is not yet live at its cue.
+    expect(
+      senseStandingAt(
+        SCHEDULE,
+        SHOW_LEVEL_STATES,
+        "scent",
+        50 - SENSE_PREWARM_SECONDS,
+      ),
+    ).toBe("away");
   });
 
   test("warms a sense through the prewarm window before its cue", () => {
     expect(
-      senseStandingAt(SCHEDULE, "scent", 50 - SENSE_PREWARM_SECONDS + 0.01),
+      senseStandingAt(
+        SCHEDULE,
+        SHOW_LEVEL_STATES,
+        "scent",
+        50 - SENSE_PREWARM_SECONDS + 0.01,
+      ),
     ).toBe("warming");
-    expect(senseStandingAt(SCHEDULE, "scent", 49.99)).toBe("warming");
+    expect(senseStandingAt(SCHEDULE, SHOW_LEVEL_STATES, "scent", 49.99)).toBe(
+      "warming",
+    );
   });
 
   test("goes live the moment the sense carries strength", () => {
-    expect(senseStandingAt(SCHEDULE, "scent", 50.01)).toBe("live");
-    expect(senseStandingAt(SCHEDULE, "scent", 100)).toBe("live");
+    expect(senseStandingAt(SCHEDULE, SHOW_LEVEL_STATES, "scent", 50.01)).toBe(
+      "live",
+    );
+    expect(senseStandingAt(SCHEDULE, SHOW_LEVEL_STATES, "scent", 100)).toBe(
+      "live",
+    );
   });
 
   test("stays live through a fade out and leaves once it is over", () => {
     // The return strips the world back at 150; the fade runs from there.
     expect(
-      senseStandingAt(SCHEDULE, "scent", 150 + SENSE_FADE_SECONDS - 0.01),
+      senseStandingAt(
+        SCHEDULE,
+        SHOW_LEVEL_STATES,
+        "scent",
+        150 + SENSE_FADE_SECONDS - 0.01,
+      ),
     ).toBe("live");
-    expect(senseStandingAt(SCHEDULE, "scent", 150 + SENSE_FADE_SECONDS)).toBe(
-      "away",
-    );
+    expect(
+      senseStandingAt(
+        SCHEDULE,
+        SHOW_LEVEL_STATES,
+        "scent",
+        150 + SENSE_FADE_SECONDS,
+      ),
+    ).toBe("away");
   });
 
   test("warms every sense of the piece inside the cue before it", () => {
     for (const cue of PIECE_SCHEDULE.narration) {
-      for (const sense of SHOW_LEVEL_SENSES[cue.level]) {
+      for (const sense of SHOW_LEVEL_STATES[cue.level].senses) {
         // The one this cue introduces: absent from the level before it.
-        if (senseIntensityAt(PIECE_SCHEDULE, sense, cue.atSeconds) > 0)
+        if (
+          senseIntensityAt(
+            PIECE_SCHEDULE,
+            SHOW_LEVEL_STATES,
+            sense,
+            cue.atSeconds,
+          ) > 0
+        )
           continue;
 
         expect(
-          senseStandingAt(PIECE_SCHEDULE, sense, cue.atSeconds - 0.01),
+          senseStandingAt(
+            PIECE_SCHEDULE,
+            SHOW_LEVEL_STATES,
+            sense,
+            cue.atSeconds - 0.01,
+          ),
         ).toBe("warming");
       }
     }
@@ -186,8 +281,15 @@ describe("a cue whose world leads its recording", () => {
   });
 
   test("finishes the fade before the recording starts", () => {
-    expect(senseIntensityAt(LED, "scent", 150 - SENSE_FADE_SECONDS)).toBe(1);
-    expect(senseIntensityAt(LED, "scent", 150)).toBe(0);
+    expect(
+      senseIntensityAt(
+        LED,
+        SHOW_LEVEL_STATES,
+        "scent",
+        150 - SENSE_FADE_SECONDS,
+      ),
+    ).toBe(1);
+    expect(senseIntensityAt(LED, SHOW_LEVEL_STATES, "scent", 150)).toBe(0);
   });
 
   test("crosses worlds from the led instant", () => {
@@ -205,10 +307,18 @@ describe("a cue whose world leads its recording", () => {
 });
 
 describe("the sense ladder", () => {
+  test("defines complete presentation values for every show level", () => {
+    for (const state of Object.values(SHOW_LEVEL_STATES)) {
+      expect(state.viewDistance).toBeGreaterThan(0);
+      expect(state.maximumGroundClearanceMeters).toBeGreaterThan(0);
+      expect(Number.isInteger(state.backgroundColor)).toBe(true);
+    }
+  });
+
   test("layers senses without ever dropping an earlier one", () => {
-    const ladder = Object.values(SHOW_LEVEL_SENSES).sort(
-      (a, b) => a.length - b.length,
-    );
+    const ladder = Object.values(SHOW_LEVEL_STATES)
+      .map(({ senses }) => senses)
+      .sort((a, b) => a.length - b.length);
 
     for (let index = 1; index < ladder.length; index++) {
       const previous = ladder[index - 1] ?? [];
@@ -239,7 +349,7 @@ describe("the piece's world arc", () => {
 
   test("climbs the ladder one sense per cue", () => {
     const climbed = PIECE_SCHEDULE.narration.map(
-      (cue) => SHOW_LEVEL_SENSES[cue.level].length,
+      (cue) => SHOW_LEVEL_STATES[cue.level].senses.length,
     );
 
     expect(climbed).toEqual([0, 1, 2, 3, 4, 5, 6, 0]);

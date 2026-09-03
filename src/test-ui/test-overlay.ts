@@ -6,7 +6,7 @@
  */
 
 import type { WebGLRenderer } from "three";
-import type { FrameMetrics } from "./frame-metrics";
+import type { FrameMetrics } from "../levels/level-runtime";
 import "./test-overlay.css";
 
 const DISPLAY_REFRESH_SECONDS = 0.25;

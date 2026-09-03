@@ -6,17 +6,28 @@ issue-backed work only; current facts belong in
 [architecture.md](architecture.md), and detailed acceptance criteria in each
 GitHub issue.
 
-Issue numbers and titles below mirror the open issue list after the 2026-09-03
-documentation triage. Work proceeds one focused issue at a time. Small product
-features may be added only through a concrete issue.
+Issue numbers and titles below mirror the open issue list on 2026-09-03. Work
+proceeds one focused issue at a time. Small product features may be added only
+through a concrete issue.
 
-## Documentation Change in Progress
+## Next Dependency-Aware Sequence
 
-These two issues are implemented by the current documentation branch and remain
-open until that branch is published:
+1. [#19 — Isolate Rehearsal, Test, and Conductor Entry Points](https://github.com/Strehk/becoming-many/issues/19)
+   establishes the dedicated Test entry without removing its current metrics.
+2. [#16 — Eliminate Cold-Start CPU Spikes at Level Transitions](https://github.com/Strehk/becoming-many/issues/16)
+   classifies the remaining Echolocation uploads and records physical PICO 4
+   transition evidence while the diagnostic path still exists.
+3. [#35 — Remove Redundant Test UI Runtime Cost](https://github.com/Strehk/becoming-many/issues/35)
+   removes the overlay and unconditional frame sampler only after #19 and the
+   required transition measurements.
+4. [#11 — Configure Fallow Architecture Boundaries](https://github.com/Strehk/becoming-many/issues/11)
+   encodes the resulting stable entry and runtime graph instead of protecting a
+   temporary structure.
 
-- [#10 — Align As-Built Documentation With the Runtime](https://github.com/Strehk/becoming-many/issues/10)
-- [#24 — Move the Performance Map Out of the Root README](https://github.com/Strehk/becoming-many/issues/24)
+Hardware-independent cleanup may proceed between device sessions, but each
+issue keeps its own branch, verification, and pull request. In particular, the
+Grass ownership decision in #13 remains measurement-led and must not be folded
+into entry or diagnostics work.
 
 ## Performance
 
@@ -44,13 +55,10 @@ open until that branch is published:
 ## Cleanup and Architecture
 
 - [#11 — Configure Fallow Architecture Boundaries](https://github.com/Strehk/becoming-many/issues/11)
-- [#15 — Reduce Level Runtime Responsibilities](https://github.com/Strehk/becoming-many/issues/15)
 - [#19 — Isolate Rehearsal, Test, and Conductor Entry Points](https://github.com/Strehk/becoming-many/issues/19)
 - [#22 — Remove the Unused @material/web Override](https://github.com/Strehk/becoming-many/issues/22)
-- [#23 — Remove the Unused sharedEchoGrass Export](https://github.com/Strehk/becoming-many/issues/23)
 - [#25 — Rename Runtime Concepts by Current Ownership](https://github.com/Strehk/becoming-many/issues/25)
 - [#27 — Tighten Scent Source Types](https://github.com/Strehk/becoming-many/issues/27)
-- [#34 — Separate authored level states from show composition](https://github.com/Strehk/becoming-many/issues/34)
 - [#36 — Simplify Conductor Ownership and State Flow](https://github.com/Strehk/becoming-many/issues/36)
 - [#38 — Tighten the M5 Control Boundary](https://github.com/Strehk/becoming-many/issues/38)
 - [#39 — Deduplicate positive modulo inside the World domain](https://github.com/Strehk/becoming-many/issues/39)

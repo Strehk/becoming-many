@@ -7,8 +7,8 @@ Boundary: Rendering, level data, and the browser runner live elsewhere.
 
 # Benchmark
 
-This folder owns the replayed measurement mode. It is inert unless the browser
-entry is opened with `?benchmark`.
+This folder owns the replayed measurement mode. It is inert unless the Test
+entry at `/test.html` is opened with `?benchmark`.
 
 `benchmark-settings.ts` authors the camera route, the warmup frame count, the
 stream step count, the 90 Hz frame budget, and the replay profiles.

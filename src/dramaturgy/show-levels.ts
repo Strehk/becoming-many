@@ -20,7 +20,7 @@ export type ShowSense =
   | "magnetic"
   | "connections";
 
-const SENSE_LADDER: readonly ShowSense[] = [
+const SHOW_SENSES: readonly ShowSense[] = [
   "scent",
   "echo",
   "motion",
@@ -29,20 +29,58 @@ const SENSE_LADDER: readonly ShowSense[] = [
   "connections",
 ];
 
-/**
- * Which senses each world state carries. "Senses layer, never swap": every
- * level keeps the senses of the level before it, so the ladder is a prefix
- * per level rather than a free set. White World carries none; the level
- * presets in `src/levels` enable the same senses through their module blocks.
- */
-export const SHOW_LEVEL_SENSES: Record<ShowLevelName, readonly ShowSense[]> = {
-  "white-world": SENSE_LADDER.slice(0, 0),
-  scent: SENSE_LADDER.slice(0, 1),
-  echo: SENSE_LADDER.slice(0, 2),
-  motion: SENSE_LADDER.slice(0, 3),
-  thermal: SENSE_LADDER.slice(0, 4),
-  magnetic: SENSE_LADDER.slice(0, 5),
-  connections: SENSE_LADDER,
+/** Values the running show can change without rebuilding its world. */
+export interface ShowLevelState {
+  readonly backgroundColor: number;
+  readonly viewDistance: number;
+  readonly maximumGroundClearanceMeters: number;
+  readonly senses: readonly ShowSense[];
+}
+
+/** One truthful runtime state for every level name a schedule can select. */
+export const SHOW_LEVEL_STATES: Record<ShowLevelName, ShowLevelState> = {
+  "white-world": {
+    backgroundColor: 0xffffff,
+    viewDistance: 128,
+    maximumGroundClearanceMeters: 50,
+    senses: [],
+  },
+  scent: {
+    backgroundColor: 0xffffff,
+    viewDistance: 128,
+    maximumGroundClearanceMeters: 50,
+    senses: ["scent"],
+  },
+  echo: {
+    backgroundColor: 0xf7f7f7,
+    viewDistance: 128,
+    maximumGroundClearanceMeters: 50,
+    senses: ["scent", "echo"],
+  },
+  motion: {
+    backgroundColor: 0xf7f7f7,
+    viewDistance: 128,
+    maximumGroundClearanceMeters: 50,
+    senses: ["scent", "echo", "motion"],
+  },
+  thermal: {
+    backgroundColor: 0xf7f7f7,
+    viewDistance: 128,
+    maximumGroundClearanceMeters: 50,
+    senses: ["scent", "echo", "motion", "thermal"],
+  },
+  magnetic: {
+    backgroundColor: 0xf7f7f7,
+    viewDistance: 128,
+    maximumGroundClearanceMeters: 50,
+    senses: ["scent", "echo", "motion", "thermal", "magnetic"],
+  },
+  connections: {
+    backgroundColor: 0xf7f7f7,
+    viewDistance: 128,
+    maximumGroundClearanceMeters: 50,
+    senses: SHOW_SENSES,
+  },
 };
 
 /**
@@ -97,6 +135,16 @@ export function showLevelAt(
   return holding?.level;
 }
 
+/** The authored live state holding at one show time. */
+export function showLevelStateAt(
+  schedule: NarrationSchedule,
+  states: Record<ShowLevelName, ShowLevelState>,
+  showTimeSeconds: number,
+): ShowLevelState | undefined {
+  const levelName = showLevelAt(schedule, showTimeSeconds);
+  return levelName === undefined ? undefined : states[levelName];
+}
+
 /** One world-state crossing: what the show is fading from, to, and how far. */
 export interface LevelTransition {
   /** The world state before the most recent cue boundary. */
@@ -148,6 +196,7 @@ export function levelTransitionAt(
  */
 export function senseIntensityAt(
   schedule: NarrationSchedule,
+  states: Record<ShowLevelName, ShowLevelState>,
   sense: ShowSense,
   showTimeSeconds: number,
 ): number {
@@ -167,7 +216,7 @@ export function senseIntensityAt(
       worldTime,
     );
     rampStartSeconds = worldTime;
-    rampTarget = SHOW_LEVEL_SENSES[cue.level].includes(sense) ? 1 : 0;
+    rampTarget = states[cue.level].senses.includes(sense) ? 1 : 0;
   }
 
   return rampValueAt(
@@ -196,13 +245,16 @@ export type SenseStanding =
  */
 export function senseStandingAt(
   schedule: NarrationSchedule,
+  states: Record<ShowLevelName, ShowLevelState>,
   sense: ShowSense,
   showTimeSeconds: number,
 ): SenseStanding {
-  if (senseIntensityAt(schedule, sense, showTimeSeconds) > 0) return "live";
+  if (senseIntensityAt(schedule, states, sense, showTimeSeconds) > 0)
+    return "live";
 
   const warmed = senseIntensityAt(
     schedule,
+    states,
     sense,
     showTimeSeconds + SENSE_PREWARM_SECONDS,
   );

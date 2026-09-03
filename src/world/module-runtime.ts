@@ -76,7 +76,6 @@ export class ModuleRuntime {
   }
 
   // Part of the explicit lifecycle API; modules must remain fully unloadable.
-  // fallow-ignore-next-line unused-class-member
   unload(module: WorldModule): void {
     if (!this.states.has(module)) return;
 

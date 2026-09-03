@@ -5,13 +5,7 @@
  * Boundary: Zone Visualizer stays in test.level; this file creates no runtime resources.
  */
 
-import type { LevelPreset } from "./level-runtime";
-import {
-  sharedAirParticles,
-  sharedGrassZones,
-  sharedRocksDensities,
-  sharedVegetationDensities,
-} from "./shared-level-values";
+import type { LevelPreset } from "./level-preset";
 
 export const level: LevelPreset = {
   backgroundColor: 0xeaf0fb,
@@ -19,14 +13,18 @@ export const level: LevelPreset = {
   maximumGroundClearanceMeters: 50,
   testUi: true,
   airParticles: {
-    ...sharedAirParticles,
-    // Thinner than the narrative layer, recolored into the design palette.
     density: {
+      // Thinner than the narrative layer, recolored into the design palette.
       particlesPerChunk: 80,
     },
     appearance: {
-      ...sharedAirParticles.appearance,
       color: 0x292a32,
+      sizeMeters: 0.075,
+    },
+    motion: {
+      horizontalAmplitudeMeters: 0.12,
+      verticalAmplitudeMeters: 0.24,
+      speedMultiplier: 1,
     },
   },
   terrain: {
@@ -40,7 +38,10 @@ export const level: LevelPreset = {
   grass: {
     rootColor: 0x49328b,
     tipColor: 0x67d6ad,
-    zones: sharedGrassZones,
+    zones: {
+      meadow: { tuftsPerSquareMeter: 1.5, bladeHeightMeters: 0.75 },
+      shrubSlope: { tuftsPerSquareMeter: 0.4, bladeHeightMeters: 0.22 },
+    },
   },
   vegetation: {
     colors: {
@@ -49,14 +50,24 @@ export const level: LevelPreset = {
       leafAccentColor: 0x68728f,
       flowerColor: 0xf4d36f,
     },
-    instancesPerHectareByZone: sharedVegetationDensities,
+    instancesPerHectareByZone: {
+      meadow: 12,
+      coniferForest: 150,
+      deciduousForest: 150,
+      shrubSlope: 70,
+    },
   },
   rocks: {
     colors: {
       darkColor: 0x37354f,
       lightColor: 0x739fa8,
     },
-    instancesPerHectareByZone: sharedRocksDensities,
+    instancesPerHectareByZone: {
+      meadow: 8,
+      coniferForest: 10,
+      deciduousForest: 10,
+      shrubSlope: 60,
+    },
   },
   animals: {
     colors: {
