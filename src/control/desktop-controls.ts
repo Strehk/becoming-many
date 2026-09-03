@@ -1,6 +1,6 @@
 /**
  * Purpose: Provide minimal first-person controls for desktop development.
- * Context: The current MVP needs mouse look and keyboard navigation.
+ * Context: The browser runtime needs mouse look and keyboard navigation.
  * Responsibility: Capture pointer input and move the viewer rig through 3D space.
  * Boundary: WebXR input, collisions, physics, and world rendering live elsewhere.
  */

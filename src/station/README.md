@@ -26,14 +26,6 @@ The server itself is not here. It runs under Bun rather than in a browser, so
 it lives at [`station/`](../../station/README.md) beside `tests/` and `script/`,
 and imports this folder the way the benchmark runner imports `src/benchmark`.
 
-## The wire that was here
-
-Until 2026-09-02 this folder owned a WebSocket protocol, client, and the show
-window's end of it, relayed by a broker in the station server — the transport
-between a show window and a separate conductor window. The conductor page now
-hosts the show in-process, so the wire is gone; see
-[One Station Window](../../docs/architecture-decisions.md) for the decision.
-The in-process command bus that
-[Open Decision 2](../../docs/direction/open-decisions.md) leaves rejected stays
-rejected — the operator surface commands the show through one typed actions
-contract (`src/conductor/show-actions.ts`), not through topics or lookup.
+The Conductor hosts the show in-process and commands it through one typed
+actions contract. No station protocol, broker, command bus, or remote show
+transport exists in this folder.

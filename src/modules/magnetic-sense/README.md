@@ -1,3 +1,10 @@
+<!--
+Purpose: Document the current Magnetic Sense module.
+Context: Level 06 layers one directional sky signal over the carried world.
+Responsibility: Explain the dome, runtime drivers, cost boundary, and ownership.
+Boundary: The module patches no sibling material and creates no render pass.
+-->
+
 # Magnetic Sense
 
 This module contains the magnetic-field perception (level 06). The whole
@@ -10,13 +17,9 @@ fades the whole sense — shimmer and iridescence together — and
 while a show lerps the clear color between world states, so the sky never
 splits from the fogged distance.
 
-The look is ported from the previous version of the piece
-(`src/senses/magnetfeld/sky.ts` there), which offered nine blendable sky
-modes behind a dev console. Its saved state
-(`src/senses/state.json`, module `magnetfeld`) had exactly one of them
-active — `birdspec`, the radical-pair shimmer — and those authored values
-are hardcoded here in `magnetic-sense-settings.ts`. The nine-mode
-machinery, its uniform registry, and its UI are not ported.
+The authored dome values live in `magnetic-sense-settings.ts`; field axis,
+elevation, intensity, and palette come from the level preset. There is no mode
+registry or module-specific UI.
 
 What the shader draws: a pale sky graded from the carried level haze at
 the horizon to a light blue zenith, and a grainy radical-pair pattern that
@@ -33,18 +36,14 @@ wherever the pole zone cannot reach a displayable value. The branch is
 deliberate and spatially coherent, unlike the per-pixel branching the
 performance rules warn about; the noise loop itself is unrolled.
 
-The previous version wrote linear colors and let its renderer convert on
-output. This dome does the same through `#include <colorspace_fragment>`,
-so its colors sit in the same space as every other material in the world.
-Hex values that carry a ported linear literal are noted where they appear.
+The shader uses `#include <colorspace_fragment>` so its output follows the
+renderer color-space conversion like other world materials.
 
 The dome is one opaque back-side sphere (120 m radius, 32×16 segments)
 with `depthWrite` off and `renderOrder` −1: it draws first and every later
 opaque fragment paints over it. One draw call, no transparency, no extra
 render pass.
 
-The pole palette and the field axis are preset-authored; every shape and
-motion value is module-owned. The Level Runtime adds the sense as a world
-module and nothing else — it patches no material and reaches neither
-Terrain nor Grass. Until 2026-09-01 the field was a Terrain stripe effect;
-see [Architecture Decisions](../../../docs/architecture-decisions.md).
+The pole palette and field axis are preset-authored; every shape and motion
+value is module-owned. Level Runtime adds the sense as a world module and
+nothing else. It patches no material and reaches neither Terrain nor Grass.

@@ -69,7 +69,7 @@ export interface AnimalPassagesModuleHandle {
   readonly module: WorldModule;
   /**
    * Put every passage where the schedule says it stands at this instant. The
-   * Level Runtime calls it beside the sense strengths, from the same sampled
+   * Show Runtime calls it beside the sense strengths, from the same sampled
    * show time, so a passage seeks with everything else.
    */
   readonly followShowTime: (showTimeSeconds: number) => void;

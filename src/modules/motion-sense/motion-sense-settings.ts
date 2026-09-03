@@ -11,6 +11,17 @@ export const MOTION_SENSE_SETTINGS = {
   nearRing: { minMeters: 5, maxMeters: 18 },
   farRing: { minMeters: 35, maxMeters: 65 }, // Below the 128-metre view distance.
   reanchorDistanceMeters: 80, // Player travel that relocates every swarm anchor.
+  /*
+   * A relocated swarm used to arrive at its new ring between two frames,
+   * which reads as a cloud of insects popping into the air. A swarm now
+   * shrinks its specks away, moves while it is invisible, and swells back in,
+   * and the swarms take their turns one after another rather than all at
+   * once: the stagger is what keeps a re-anchor from reading as the whole
+   * layer blinking. Twelve swarms at this stagger spend under three seconds
+   * moving, and travel of eighty metres is what triggers it.
+   */
+  swarmFadeSeconds: 0.55,
+  swarmFadeStaggerSeconds: 0.12,
   groundClearanceMeters: 0.9, // Swarm centre height above the sampled ground.
   // Central-difference step fitting the ground plane every fly is held above.
   // Wide enough to read the hill a stray crosses, not the pebbles under it.
@@ -55,6 +66,15 @@ export const MOTION_SENSE_SETTINGS = {
   birdOrbitRadius: { minMeters: 30, maxMeters: 90 }, // Interpolated across the flock pool.
   birdAnchorFollowRate: 0.02, // Per-update fraction flock centres drift after the player.
   birdScatter: { radiusMeters: 6, heightMeters: 1.5 }, // Bird slots inside one flock.
+  /*
+   * How far one flock's size may run from the authored average, as a fraction
+   * of it. Every flock holding exactly the same number of birds read as one
+   * flock drawn several times over; drawn sizes are normalized back onto the
+   * authored total, so the pool and its buffers stay exactly as large as
+   * `birdsPerFlock` across the flock count says.
+   */
+  birdFlockSizeVariation: 0.65,
+  minBirdsPerFlock: 3, // Below this a flock reads as strays, not as a flock.
   birdWingSpanMeters: 0.9, // Lateral wingtip distance printing the wing traces.
   birdFlapAmplitudeMeters: 0.28, // Vertical wingtip travel per flap.
   birdFlapFrequency: { minHertz: 4, maxHertz: 8 }, // Per-bird deterministic flap rate.
@@ -100,10 +120,25 @@ export interface MotionSenseParameters {
   readonly birds?: {
     /** Orbit rings interpolate near to far across this count. */
     readonly flockCount: number;
+
+    /**
+     * The average flock, not the size of every one: each flock draws its own
+     * size around this, and the drawn sizes are normalized back onto
+     * `flockCount * birdsPerFlock`, which stays the exact pool size.
+     */
     readonly birdsPerFlock: number;
 
     /** Orbit speed along the flock's air ring. */
     readonly flightSpeedMetersPerSecond: number;
+
+    /**
+     * Ring depth of the bird trace, in rendered frames, authored apart from
+     * the fly trail's: a bird crosses the sky and its trace is the line it
+     * drew doing so, while a fly buzzes in place and a trace that long would
+     * close its cloud into a solid. It sizes this ring on its own, so a
+     * longer bird trace costs nothing on the fly layer.
+     */
+    readonly trailLifetimeFrames: number;
 
     /** Flock centre height above the sampled ground. */
     readonly flightHeightMeters: number;

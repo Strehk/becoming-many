@@ -23,7 +23,20 @@ height and axis distance measured in metres: because the instance matrix
 carries the per-object scale, one authored gradient per metre reads the same
 on a 0.6 m shrub and a 10 m tree: warmth climbs toward an exposed crown and
 its fine outer branches, and toward the face of a rock the sun reaches, while
-a shaded trunk or a rock's flank stays near its own base temperature. Animals are warmest at a body core:
+a shaded trunk or a rock's flank stays near its own base temperature.
+
+Plants come in two statures, and each carries its own set of those values.
+The gradient is shed over a plant's own metres, so a bush a metre tall and a
+metre across sheds almost nothing over its own size and reads at very nearly
+its base everywhere: given the canopy's values it was the one thing in the
+landscape holding a single warm color across its whole body, and no per-metre
+value could fix that, because it has no metres to lose warmth over. The
+`undergrowth` effect authors it from the grass upward instead, with its own
+band, so a bush reads as the meadow it stands in at two thicknesses and keeps
+only a little held heat in its middle. Vegetation asks which effect a model
+takes once per model at load, by stature.
+
+Animals are warmest at a body core:
 the consumer supplies, per animated mesh, the matrix mapping mesh space onto
 its actor's normalized body space (y 0..1 from lowest point to crown), and
 the actor shader falls off from an authored core inside that space, so legs,
@@ -110,9 +123,9 @@ thermal first in each effect list so it wins the final surface color over the
 carried echo ramp (first-applied executes last; see
 `src/utils/asset-loader/material-shader-patch.ts`).
 
-Not part of this version: a runtime intensity driver (the preset authors
-intensity statically and the composition root skips the effect entirely at
-intensity zero), temporal heat variation or heat trails (a body warms its
+The show drives the shared runtime intensity through `setIntensity()`; a
+showless preset uses its authored static value and skips the effect entirely at
+zero. Deliberately absent are temporal heat variation or heat trails (a body warms its
 surroundings only where it stands now, and leaves nothing behind when it
 moves on), any surface texture or material map beyond the procedural warmth
 texture described above, and any additional thermal camera or duplicate

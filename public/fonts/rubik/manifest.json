@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "author": "Rubik Project Authors",
+  "license": "OFL-1.1",
+  "assets": [
+    {
+      "id": "rubik-bold",
+      "file": "/fonts/rubik/Rubik-Bold.ttf",
+      "sourcePage": "https://fonts.google.com/specimen/Rubik",
+      "sha256": "2fb105e3a66c3540e2308321e7c5bd786ce98a232930cd31c62e20d47747ad20",
+      "weight": 700
+    }
+  ]
+}

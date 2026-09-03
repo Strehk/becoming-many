@@ -41,10 +41,16 @@ and raw GLSL ES 3.00 files.
   deterministic density thinning, and bounded partial uploads.
 - `motion-trail-material.ts` and `fly-swarm-material.ts` own the two
   materials; the GLSL files beside them carry all shader logic.
+- A swarm is never relocated where it can be seen doing it. Crossing the
+  travel threshold only asks the swarms to leave: each one shrinks its specks
+  away over a per-fly arrival attribute, places its anchor in the frame that
+  reaches nothing, and swells back at its new ring. They take their turns a
+  stagger apart, so a re-anchor reads as one cloud thinning out and another
+  thickening rather than as the whole layer blinking.
 
 ## Per-frame cost is bounded uploads plus uniforms
 
-The rendering-constraints rule "CPU sets up, GPU animates" is honoured by
+The performance rule "CPU sets up, GPU animates" is honoured by
 splitting the work: the boid simulation is irreducibly CPU (like Animals)
 but bounded by the authored pool, and the trail ring stores only immutable
 spawn-time attributes. Each frame the CPU writes exactly one ring slot and
@@ -76,8 +82,7 @@ wing-vertex sampling is recorded in
 - Trail length is authored in rendered frames for bm-base parity; a
   fixed-cadence spawn accumulator is the known fix for frame-rate
   dependence.
-- The path-flyby swarm from bm-base is built: `passage-swarm.ts` prints the
-  mosquito passage's trails from a cloud following a route, and is composed
-  beside this module rather than inside it because it crosses before the sense
-  it announces and so cannot ride this module's gate or its fade. The ambient
-  swarms remain persistent and statically authored.
+- The ambient swarms are persistent and statically authored. The one
+  route-following swarm is the mosquito passage, printed by `passage-swarm.ts`
+  and composed beside this module: it crosses before the sense it announces, so
+  it can ride neither this module's gate nor its fade.

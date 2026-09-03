@@ -1,56 +1,48 @@
 # Platforms
 
-## Current Support
+## Current Browser Runtime
 
-The application currently runs as a Vite/Three.js browser application.
+The same Vite/Three.js/WebGL2 application runs on desktop and through WebXR.
+Desktop uses pointer-lock and keyboard controls; immersive sessions use one
+user-triggered VR entry and the existing render loop. The WebGL context is
+created XR-compatible.
 
-- Desktop development uses pointer-lock mouse look and WASD or arrow keys.
-- Three.js `VRButton` starts a user-triggered `immersive-vr` WebXR session.
-- Desktop and WebXR rendering share one `renderer.setAnimationLoop()` path.
+The implementation contains no current passthrough or `immersive-ar` flow.
 
-There is currently no passthrough, `immersive-ar`, operator control, platform
-profile, restart flow, or PICO-specific deployment integration. No physical
-PICO acceptance is recorded.
+## Current Station Runtime
 
-## Standalone PICO Target
+The station package consists of one browser window and one small Bun server:
 
-- Target PICO 4 and PICO 4 Enterprise.
-- Run the shared TypeScript and Three.js runtime directly on the headset.
-- Support passthrough onboarding, opaque VR, and passthrough offboarding.
-- Prefer a verified 90 Hz profile and retain 72 Hz only as a measured fallback.
+- `/conductor.html` hosts the show and operator controls in-process;
+- the server serves the built files plus `/config` and `/health`;
+- Docker packaging, an explicit release-image update path, and a Windows kiosk
+  launcher are present;
+- an optional M5 simulator supports development without hardware.
 
-The next platform milestone is not a second renderer. It is a minimal
-presentation boundary around the existing world runtime.
+This is implemented deployment infrastructure, not proof of venue reliability.
+Recovery, session-state, telemetry, and security work remains issue-backed.
 
-## Windows PCVR Target
+## Standalone PICO
 
-- Render on a VR-ready Windows computer.
-- Stream to PICO 4 Enterprise through USB.
-- Evaluate PICO Business Streaming with OpenXR or SteamVR.
-- Reuse the same runtime, world logic, shaders, presets, and content modules
-  when the Windows XR host supports them reliably.
-- Keep wireless streaming outside the installation baseline.
+PICO 4 remains the primary performance target. WebXR entry and rig locomotion
+are implemented and covered by automated contract tests, but the complete
+current show has no recorded physical PICO 4 performance acceptance. XR flight
+also requires final device validation.
 
-PCVR requires its own measured profile for rendering, encoding, USB transport,
-headset decoding, and end-to-end latency.
+Target-device evidence must record headset model, browser/runtime version,
+refresh rate, level or route, frame timing, and observed recovery behavior.
 
-## Operator Control Target
+## Windows PCVR
 
-The operator will control onboarding, VR entry, offboarding, restart, and
-recovery. The headset remains authoritative and confirms applied state.
+Wired Windows/SteamVR/PICO delivery remains an open validation path. Current
+code does not establish that the station can start and present reliably through
+PICO Business Streaming. Issue #42 owns physical reproduction and diagnosis;
+the result must distinguish application, WebXR host, SteamVR, streaming, cable,
+and headset failures before choosing a fix.
 
-The intended presentation states are:
+## Open Delivery Decision
 
-```text
-passthrough → transitioning-to-vr → vr → transitioning-to-passthrough
-```
-
-## Open Research Question
-
-Can the shared web runtime run reliably on Windows through PICO Business
-Streaming, including operator-controlled passthrough transitions, or is a
-minimal native OpenXR host required?
-
-Research must verify runtime host behavior, passthrough control, supported
-refresh rates, tracking, packaging, startup, reconnect, and recovery. A native
-host is justified only if the shared web runtime cannot meet those requirements.
+The installation still needs measured evidence before choosing standalone PICO
+or Windows PCVR as its final delivery baseline. That decision and the associated
+passthrough question are tracked in
+[direction/open-decisions.md](direction/open-decisions.md).

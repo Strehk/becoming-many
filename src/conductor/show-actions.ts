@@ -6,7 +6,8 @@
  */
 
 import type { NarrationLanguage } from "../dramaturgy/narration-catalog";
-import type { RunningLevel, RunningShow } from "../levels/level-runtime";
+import type { RunningLevel } from "../levels/level-runtime";
+import type { RunningShow } from "../levels/show-runtime";
 import type { M5State } from "../m5/protocol";
 
 export interface ShowActions {
@@ -21,7 +22,8 @@ export interface ShowActions {
   readonly resetFlight: () => void;
   /**
    * The between-visitors soft reset: rewind, return the flight to the start
-   * pose, and play from the top. The built world keeps running throughout.
+   * pose, and hold at the top, so the next visitor is started deliberately.
+   * The built world keeps running throughout.
    */
   readonly restartExperience: () => void;
   /** Point the show at an M5 controller; an empty host stops polling. */
@@ -56,7 +58,7 @@ export function createShowActions(
     restartExperience: () => {
       show.clock.seekTo(0);
       level.resetFlight();
-      show.clock.play();
+      show.clock.pause();
     },
 
     setM5Host: (host) => level.m5?.setHost(host),

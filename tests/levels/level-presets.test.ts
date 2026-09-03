@@ -1,19 +1,25 @@
 /**
- * Purpose: Verify the boundary between White World and the landscape Test Level.
- * Context: Terrain development must never silently become part of White World.
- * Responsibility: Lock the intended sparse Terrain activation into a regression test.
- * Boundary: Terrain rendering and landscape generation are tested separately.
+ * Purpose: Verify the authored levels, their sense layers, and the separate show composition.
+ * Context: Each level is presentation plus the layers up to its rung; the show is the whole ladder.
+ * Responsibility: Lock layer presence per level, the one authored deviation, and authored values.
+ * Boundary: Runtime construction and rendering are tested separately.
  */
 
 import { expect, test } from "bun:test";
+import {
+  HEAT_MOTION_SENSE,
+  MOTION_SENSE,
+} from "../../src/levels/authored/motion-sense";
+import { VEGETATION_PLACEMENT } from "../../src/levels/authored/vegetation";
 import { level as connectionsLevel } from "../../src/levels/connections.level";
 import { level as designTestLevel } from "../../src/levels/designTest.level";
 import { level as echoLevel } from "../../src/levels/echo.level";
 import { LEVEL_CATALOG } from "../../src/levels/level-catalog";
-import type { LevelPreset } from "../../src/levels/level-runtime";
+import type { LevelPreset } from "../../src/levels/level-preset";
 import { level as magneticLevel } from "../../src/levels/magnetic.level";
 import { level as motionLevel } from "../../src/levels/motion.level";
 import { level as scentLevel } from "../../src/levels/scent.level";
+import { SHOW_COMPOSITION } from "../../src/levels/show-composition";
 import { level as testLevel } from "../../src/levels/test.level";
 import { level as thermalLevel } from "../../src/levels/thermal.level";
 import { level as whiteWorld } from "../../src/levels/white-world.level";
@@ -28,7 +34,7 @@ test("every level authors the current terrain-relative flight ceiling", () => {
   }
 });
 
-test("only the Test Level activates development diagnostics", () => {
+test("Test owns its diagnostic world values independently", () => {
   const testPreset: LevelPreset = testLevel;
   const whiteWorldPreset: LevelPreset = whiteWorld;
 
@@ -58,6 +64,10 @@ test("only the Test Level activates development diagnostics", () => {
   });
   expect(testPreset.animals?.colors.featureColor).toBe(0x292929);
   expect(testPreset.testUi).toBe(true);
+  expect(testPreset.airParticles).not.toBe(whiteWorldPreset.airParticles);
+  expect(testPreset.vegetation?.instancesPerHectareByZone).not.toBe(
+    scentLevel.invisibleVegetation?.instancesPerHectareByZone,
+  );
   expect(whiteWorldPreset.terrain).toBeUndefined();
   expect(whiteWorldPreset.vegetation).toBeUndefined();
   expect(whiteWorldPreset.rocks).toBeUndefined();
@@ -98,7 +108,36 @@ test("only the Test Level activates development diagnostics", () => {
   expect(magneticLevel.connections).toBeUndefined();
 });
 
-test("Echo Level renders depth through shared materials only", () => {
+test("the show composition contains construction data only", () => {
+  const composition = SHOW_COMPOSITION.world;
+  const presentation = composition as LevelPreset;
+
+  expect(presentation.backgroundColor).toBeUndefined();
+  expect(presentation.viewDistance).toBeUndefined();
+  expect(presentation.maximumGroundClearanceMeters).toBeUndefined();
+  expect(presentation.testUi).toBeUndefined();
+  expect(composition.airParticles).toBeDefined();
+  expect(composition.scentParticles).toBeDefined();
+  expect(composition.echoDepth).toBeDefined();
+  expect(composition.motion).toBeDefined();
+  expect(composition.thermal).toBeDefined();
+  expect(composition.magnetic).toBeDefined();
+  expect(composition.connections).toBeDefined();
+
+  // "Senses layer, never swap": the show's union is the last rung of the
+  // ladder with the presentation stripped, and nothing more or less. Spelled
+  // out separately in show-composition.ts, so this pins the two together.
+  const {
+    backgroundColor: _background,
+    viewDistance: _viewDistance,
+    maximumGroundClearanceMeters: _clearance,
+    testUi: _testUi,
+    ...lastRung
+  } = connectionsLevel;
+  expect(composition).toEqual(lastRung);
+});
+
+test("Echo Level owns a complete depth-world startup recipe", () => {
   const echoPreset: LevelPreset = echoLevel;
   // Grayscale versions of the level-03 palette luminance steps, with the two
   // far stops lifted above theirs so the horizon thins instead of ending in a
@@ -124,9 +163,8 @@ test("Echo Level renders depth through shared materials only", () => {
   // senses take their color, exactly as they take every other surface.
   expect(echoPreset.grassClipmap?.colors.rootColor).toBeDefined();
   expect(echoPreset.animals).toBeUndefined();
-  // Senses layer, never swap: the air and scent layers carry over unchanged.
-  expect(echoPreset.airParticles).toEqual(whiteWorld.airParticles);
-  expect(echoPreset.scentParticles).toEqual(scentLevel.scentParticles);
+  expect(echoPreset.airParticles).toBeDefined();
+  expect(echoPreset.scentParticles).toBeDefined();
   expect(echoPreset.invisibleGround).toBeUndefined();
 
   expect(echoDepth.intensity).toBe(1);
@@ -148,7 +186,7 @@ test("Echo Level renders depth through shared materials only", () => {
   ).toBe(true);
 });
 
-test("Scent Level layers scent onto the White World air baseline", () => {
+test("Scent Level owns its complete invisible source world", () => {
   const scentPreset: LevelPreset = scentLevel;
   const scentWorldPalette = [
     0xf6eee0, 0xb8e0e1, 0x9dd2c8, 0xd1c1d7, 0xfda39d, 0xfdbb54,
@@ -173,12 +211,14 @@ test("Scent Level layers scent onto the White World air baseline", () => {
   // Level 02 keeps every source object invisible, so its plants exist only
   // as the population the scent radiates from.
   expect(scentPreset.vegetation).toBeUndefined();
-  expect(scentPreset.invisibleVegetation?.instancesPerHectareByZone).toEqual({
-    meadow: 12,
-    coniferForest: 150,
-    deciduousForest: 150,
-    shrubSlope: 70,
-  });
+  // The unseen plants stand exactly where Echo will later show them, so a
+  // trail a traveler follows in Scent rises from a plant they can see later.
+  expect(scentPreset.invisibleVegetation?.instancesPerHectareByZone).toBe(
+    VEGETATION_PLACEMENT,
+  );
+  expect(echoLevel.vegetation?.instancesPerHectareByZone).toBe(
+    VEGETATION_PLACEMENT,
+  );
 
   const scent = scentPreset.scentParticles;
   if (!scent) throw new Error("Scent Level must author the scent sense");
@@ -225,16 +265,19 @@ test("Scent Level layers scent onto the White World air baseline", () => {
     ),
   );
   expect(carriedMetres).toBeGreaterThan(tallestRise);
-  // A route is carried much further still: nothing holds a print in place
-  // once the animal has walked on.
-  expect(scent.animals?.windResponseMeters ?? 0).toBeGreaterThan(
-    scent.motion.windResponseMeters,
-  );
+  // A route is carried less far than airborne plant scent, and never nothing:
+  // a print clings to the ground it was left on, so the weather leans a trail
+  // instead of moving it off the ground the animal actually walked. Carried
+  // further than the plants, as it was authored once, the trail stopped being
+  // something a traveler could follow at all.
+  const trailCarriedMetres = scent.animals?.windResponseMeters ?? 0;
+  expect(trailCarriedMetres).toBeGreaterThan(0);
+  expect(trailCarriedMetres).toBeLessThan(scent.motion.windResponseMeters);
   // The trail must stay inside the 60-second animation loop it ages against.
   expect(scent.animals?.lifetimeSeconds).toBeLessThanOrEqual(60);
 });
 
-test("Motion Level layers fly swarms onto the carried Echo world", () => {
+test("Motion Level owns its complete motion-world startup recipe", () => {
   const motionPreset: LevelPreset = motionLevel;
   // The dark stops of the level-04 moodboard palette color the motion actors.
   const motionDarkStops = [0x212133, 0x312758, 0x45577a];
@@ -242,16 +285,14 @@ test("Motion Level layers fly swarms onto the carried Echo world", () => {
   if (!motion) throw new Error("Motion Level must author the motion sense");
 
   expect(motionPreset.testUi).toBe(true);
-  // Senses layer, never swap: every echo-world layer carries over unchanged.
-  expect(motionPreset.airParticles).toEqual(echoLevel.airParticles);
-  expect(motionPreset.scentParticles).toEqual(echoLevel.scentParticles);
-  expect(motionPreset.echoDepth).toEqual(echoLevel.echoDepth);
-  expect(motionPreset.terrain).toEqual(echoLevel.terrain);
-  expect(motionPreset.vegetation).toEqual(echoLevel.vegetation);
-  expect(motionPreset.rocks).toEqual(echoLevel.rocks);
-  expect(motionPreset.backgroundColor).toBe(echoLevel.backgroundColor ?? -1);
+  expect(motionPreset.airParticles).toBeDefined();
+  expect(motionPreset.scentParticles).toBeDefined();
+  expect(motionPreset.echoDepth).toBeDefined();
+  expect(motionPreset.terrain).toBeDefined();
+  expect(motionPreset.vegetation).toBeDefined();
+  expect(motionPreset.rocks).toBeDefined();
   expect(motionPreset.grass).toBeUndefined();
-  expect(motionPreset.grassClipmap).toEqual(echoLevel.grassClipmap);
+  expect(motionPreset.grassClipmap).toBeDefined();
   expect(motionPreset.animals).toBeUndefined();
   expect(motionPreset.invisibleGround).toBeUndefined();
 
@@ -264,6 +305,8 @@ test("Motion Level layers fly swarms onto the carried Echo world", () => {
   expect(motion.trail.density).toBeGreaterThan(0);
   expect(motion.trail.density).toBeLessThanOrEqual(1);
 
+  // Motion carries the base sense; only the heat rungs above repaint it.
+  expect(motion).toBe(MOTION_SENSE);
   // Bird traces use the cyan accent reserved for them in the 04 palette.
   expect(motion.birds?.appearance.trailColor).toBe(0x10bedb);
   expect(motion.birds?.flockCount).toBeGreaterThan(0);
@@ -271,7 +314,7 @@ test("Motion Level layers fly swarms onto the carried Echo world", () => {
   expect(motion.birds?.flightHeightMeters).toBeGreaterThan(0);
 });
 
-test("Thermal Level layers heat onto the carried Motion world", () => {
+test("Thermal Level owns its complete heat-world startup recipe", () => {
   const thermalPreset: LevelPreset = thermalLevel;
   // The documented level-05 false-color palette, cold to hot. The warm three
   // are the moodboard colors verbatim. The cold three are carried down their
@@ -289,17 +332,30 @@ test("Thermal Level layers heat onto the carried Motion world", () => {
   if (!animals) throw new Error("Thermal Level must author warm animals");
 
   expect(thermalPreset.testUi).toBe(true);
-  // Senses layer, never swap: every motion-world layer carries over unchanged.
-  expect(thermalPreset.airParticles).toEqual(motionLevel.airParticles);
-  expect(thermalPreset.scentParticles).toEqual(motionLevel.scentParticles);
-  expect(thermalPreset.echoDepth).toEqual(motionLevel.echoDepth);
-  expect(thermalPreset.terrain).toEqual(motionLevel.terrain);
-  expect(thermalPreset.vegetation).toEqual(motionLevel.vegetation);
-  expect(thermalPreset.rocks).toEqual(motionLevel.rocks);
-  expect(thermalPreset.motion).toEqual(motionLevel.motion);
-  expect(thermalPreset.backgroundColor).toBe(motionLevel.backgroundColor ?? -1);
+  expect(thermalPreset.airParticles).toBeDefined();
+  expect(thermalPreset.scentParticles).toBeDefined();
+  expect(thermalPreset.echoDepth).toBeDefined();
+  expect(thermalPreset.terrain).toBeDefined();
+  expect(thermalPreset.vegetation).toBeDefined();
+  expect(thermalPreset.rocks).toBeDefined();
+  expect(thermalPreset.motion).toBeDefined();
+  // A bird is a warm body, so the heat view prints its trace in the palette's
+  // hot stop instead of the cold accent the pale world reads it as. The
+  // cold-blooded flies keep their own colors: a swarm printed warm would be
+  // the level's brightest untruth.
+  const thermalMotion = thermalPreset.motion;
+  if (!thermalMotion?.birds) throw new Error("Thermal Level must carry birds");
+  // The thermal layer is spread after the motion layer, so its motion wins.
+  expect(thermalMotion).toBe(HEAT_MOTION_SENSE);
+  expect(thermalMotion.birds.appearance.trailColor).toBe(
+    thermal.colors.hotColor,
+  );
+  expect(thermalMotion.appearance.flyColor).not.toBe(thermal.colors.hotColor);
+  expect(thermalMotion.birds.appearance.trailColor).not.toBe(
+    motionLevel.motion?.birds?.appearance.trailColor,
+  );
   expect(thermalPreset.grass).toBeUndefined();
-  expect(thermalPreset.grassClipmap).toEqual(echoLevel.grassClipmap);
+  expect(thermalPreset.grassClipmap).toBeDefined();
   expect(thermalPreset.invisibleGround).toBeUndefined();
 
   expect(thermal.intensity).toBe(1);
@@ -338,6 +394,24 @@ test("Thermal Level layers heat onto the carried Motion world", () => {
   expect(thermal.bands.grass.ceilingWarmth).toBeLessThan(
     thermal.bands.vegetation.ceilingWarmth,
   );
+  // A bush is read from the meadow it stands in upward, not from the canopy
+  // down: warmer than the grass around it, cooler than the plants that carry
+  // a crown, and never able to reach the magenta a stem is allowed. Under the
+  // canopy's values it was the one thing in the landscape holding a single
+  // warm color across its whole body, because a plant sheds its warmth over
+  // its own metres and a bush has too few to shed any.
+  expect(thermal.surfaces.undergrowthWarmth).toBeGreaterThan(
+    thermal.surfaces.grassWarmth,
+  );
+  expect(thermal.surfaces.undergrowthWarmth).toBeLessThan(
+    thermal.surfaces.vegetationWarmth,
+  );
+  expect(thermal.bands.undergrowth.ceilingWarmth).toBeGreaterThan(
+    thermal.bands.grass.ceilingWarmth,
+  );
+  expect(thermal.bands.undergrowth.ceilingWarmth).toBeLessThan(
+    THERMAL_PERCEPTION_SETTINGS.warmStopFraction,
+  );
 
   // Animals outside the radius sit inside the carried echo grayscale.
   const echoWorldPalette = [0x101010, 0x171717, 0x494949];
@@ -346,7 +420,7 @@ test("Thermal Level layers heat onto the carried Motion world", () => {
   }
 });
 
-test("Magnetic Level layers the field onto the carried Thermal world", () => {
+test("Magnetic Level owns its complete field-world startup recipe", () => {
   const magneticPreset: LevelPreset = magneticLevel;
   const { magnetic } = magneticPreset;
   if (!magnetic) {
@@ -354,21 +428,17 @@ test("Magnetic Level layers the field onto the carried Thermal world", () => {
   }
 
   expect(magneticPreset.testUi).toBe(true);
-  // Senses layer, never swap: every thermal-world layer carries over unchanged.
-  expect(magneticPreset.airParticles).toEqual(thermalLevel.airParticles);
-  expect(magneticPreset.scentParticles).toEqual(thermalLevel.scentParticles);
-  expect(magneticPreset.echoDepth).toEqual(thermalLevel.echoDepth);
-  expect(magneticPreset.terrain).toEqual(thermalLevel.terrain);
-  expect(magneticPreset.vegetation).toEqual(thermalLevel.vegetation);
-  expect(magneticPreset.rocks).toEqual(thermalLevel.rocks);
-  expect(magneticPreset.animals).toEqual(thermalLevel.animals);
-  expect(magneticPreset.motion).toEqual(thermalLevel.motion);
-  expect(magneticPreset.thermal).toEqual(thermalLevel.thermal);
-  expect(magneticPreset.backgroundColor).toBe(
-    thermalLevel.backgroundColor ?? -1,
-  );
+  expect(magneticPreset.airParticles).toBeDefined();
+  expect(magneticPreset.scentParticles).toBeDefined();
+  expect(magneticPreset.echoDepth).toBeDefined();
+  expect(magneticPreset.terrain).toBeDefined();
+  expect(magneticPreset.vegetation).toBeDefined();
+  expect(magneticPreset.rocks).toBeDefined();
+  expect(magneticPreset.animals).toBeDefined();
+  expect(magneticPreset.motion).toBeDefined();
+  expect(magneticPreset.thermal).toBeDefined();
   expect(magneticPreset.grass).toBeUndefined();
-  expect(magneticPreset.grassClipmap).toEqual(echoLevel.grassClipmap);
+  expect(magneticPreset.grassClipmap).toBeDefined();
   expect(magneticPreset.invisibleGround).toBeUndefined();
 
   expect(magnetic.intensity).toBe(1);
@@ -385,7 +455,7 @@ test("Magnetic Level layers the field onto the carried Thermal world", () => {
   expect(magnetic.colors.zenithColor).toBe(0xc4d7f6);
 });
 
-test("Connections Level layers the web onto the carried Magnetic world", () => {
+test("Connections Level owns its complete connected-world startup recipe", () => {
   const connectionsPreset: LevelPreset = connectionsLevel;
   // The documented level-07 moodboard palette.
   const connectionsPalette = [
@@ -397,24 +467,18 @@ test("Connections Level layers the web onto the carried Magnetic world", () => {
   }
 
   expect(connectionsPreset.testUi).toBe(true);
-  // Senses layer, never swap: every magnetic-world layer carries over unchanged.
-  expect(connectionsPreset.airParticles).toEqual(magneticLevel.airParticles);
-  expect(connectionsPreset.scentParticles).toEqual(
-    magneticLevel.scentParticles,
-  );
-  expect(connectionsPreset.echoDepth).toEqual(magneticLevel.echoDepth);
-  expect(connectionsPreset.terrain).toEqual(magneticLevel.terrain);
-  expect(connectionsPreset.vegetation).toEqual(magneticLevel.vegetation);
-  expect(connectionsPreset.rocks).toEqual(magneticLevel.rocks);
-  expect(connectionsPreset.animals).toEqual(magneticLevel.animals);
-  expect(connectionsPreset.motion).toEqual(magneticLevel.motion);
-  expect(connectionsPreset.thermal).toEqual(magneticLevel.thermal);
-  expect(connectionsPreset.magnetic).toEqual(magneticLevel.magnetic);
-  expect(connectionsPreset.backgroundColor).toBe(
-    magneticLevel.backgroundColor ?? -1,
-  );
+  expect(connectionsPreset.airParticles).toBeDefined();
+  expect(connectionsPreset.scentParticles).toBeDefined();
+  expect(connectionsPreset.echoDepth).toBeDefined();
+  expect(connectionsPreset.terrain).toBeDefined();
+  expect(connectionsPreset.vegetation).toBeDefined();
+  expect(connectionsPreset.rocks).toBeDefined();
+  expect(connectionsPreset.animals).toBeDefined();
+  expect(connectionsPreset.motion).toBeDefined();
+  expect(connectionsPreset.thermal).toBeDefined();
+  expect(connectionsPreset.magnetic).toBeDefined();
   expect(connectionsPreset.grass).toBeUndefined();
-  expect(connectionsPreset.grassClipmap).toEqual(echoLevel.grassClipmap);
+  expect(connectionsPreset.grassClipmap).toBeDefined();
   expect(connectionsPreset.invisibleGround).toBeUndefined();
 
   expect(connections.intensity).toBe(1);

@@ -6,7 +6,7 @@ dedicated Grass module.
 It consumes World Surface facts and owns its bounded vegetation resources. It
 does not define stream-cell policy or the permanent world coordinate system.
 
-## Current MVP
+## Current Behavior
 
 - `vegetation-definition.ts` owns the seed, candidate spacing, GLB details,
   authored sizes, and weighted model variants. Level Runtime preloads these
@@ -28,6 +28,11 @@ does not define stream-cell policy or the permanent world coordinate system.
 - Conifer and deciduous forests use the same weighted individual-tree contract.
   A model variant never contains several trunks sharing one terrain anchor.
 - The module owns its pool, unlit materials, source assets, and full disposal.
+- Material effects are asked for per stature, not once for the layer: a model
+  either carries a canopy or is undergrowth, and the caller answers for each.
+  It is the one distinction a sense can make about a plant without knowing the
+  asset list, and a sense that reads a plant as a body of substance needs it —
+  heat sheds over a plant's own metres, and a bush has too few to shed any.
 - `vegetation-nodes.ts` and `vegetation-scent.ts` replay the same placement
   walk for senses that decorate the plants without loading them: the web gets
   positions, the scent sense also gets the model standing there and its
@@ -36,4 +41,5 @@ does not define stream-cell policy or the permanent world coordinate system.
   documented 2.5-metre river-footprint stand-in, because the true footprint
   radius needs the loaded asset.
 
-GPU wind, LOD, and larger species variation remain outside this measured MVP.
+GPU wind and LOD are absent. Add either only when a current visual or measured
+performance need justifies it.

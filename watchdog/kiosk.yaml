@@ -1,0 +1,78 @@
+# Purpose: Hold the one window a station shows -- the conductor page in a
+#   locked Chromium kiosk window -- open for the length of an exhibition day.
+# Context: KIOSK.md describes the flags and why each one is there. On a station
+#   this config, not station/start-kiosk.bat, is what runs them: an unattended
+#   installation needs the window to come back after a crash, a stray Alt+F4,
+#   or a graphics driver reset.
+# Responsibility: Wait for the station to answer, launch chrome.exe with the
+#   kiosk flag set, and relaunch it whenever it exits.
+# Boundary: The flags here must stay in step with KIOSK.md. Serving the page is
+#   station.yaml's concern; this config only displays it.
+
+watchdogConfig:
+  logConfig:
+    logfile: C:/becoming-many/watchdog/logs/kiosk.log
+    logger: rotating
+
+  restartApp: true
+  watchFrequency: 2
+  hideConsoleWindow: false
+
+  # Chromium shows its own error page when nothing answers, and then sits there
+  # happily -- a running process in front of a dead station, which no watchdog
+  # can see. Wait for /health first. The script gives up after five minutes and
+  # opens anyway, so a technician gets an error page to read instead of a black
+  # screen to guess at.
+  preAppLaunchCommand: 'cmd /c "C:\becoming-many\watchdog\bin\wait-health.bat http://localhost/health 300"'
+
+  # --kiosk is fullscreen but not topmost. Wait for Chrome to create the window
+  # and place that dedicated-profile window above PICO, SteamVR, and other apps.
+  # The hook runs again whenever Watchdog relaunches Chrome.
+  postAppLaunchCommand: 'C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "C:\becoming-many\watchdog\bin\keep-kiosk-on-top.ps1"'
+
+  udpControl:
+    commands:
+      - systemHalt: halt
+      - systemReboot: reboot
+      - restartApplication: restart
+      - stopApplication: stop
+      - startApplication: start
+    port: 2350
+    returnmessage: true
+    statusReport:
+      runtimeStatus: status
+
+  application:
+    binary: "C:/Program Files/Google/Chrome/Application/chrome.exe"
+    waitDuringStartup: 0
+    waitDuringRestart: 5
+    arguments:
+      # Not optional: without its own profile directory the command hands the
+      # URL to an already-running browser, which opens a plain tab in a normal
+      # window and ignores every flag below. It lives beside the other watchdog
+      # runtime state rather than in the compose checkout, and it is kept -- the
+      # HTTP cache in it is what saves refetching the world assets on restart.
+      - --user-data-dir=C:\becoming-many\watchdog\run\kiosk-station
+      # The real lock. No frame, no address bar, no tab strip; Alt+F4 is the
+      # only way out, and this watchdog undoes that within seconds. See the
+      # README for how to stop it when servicing the machine.
+      - --kiosk
+      - http://localhost/conductor.html
+      # Narration and the sound layer otherwise wait behind a suspended audio
+      # context until someone clicks the window. Silence is the failure mode.
+      - --autoplay-policy=no-user-gesture-required
+      - --no-first-run
+      - --no-default-browser-check
+      # After a hard power-off the default is a restore bubble over the piece.
+      - --noerrdialogs
+      - --disable-session-crashed-bubble
+      # An unfocused or occluded window gets its timers and animation frames
+      # throttled: the M5 poll loops, the operator readouts, the show itself.
+      - --disable-background-timer-throttling
+      - --disable-backgrounding-occluded-windows
+      - --disable-renderer-backgrounding
+      - --disable-features=Translate,TranslateUI
+      # An exhibition should not change under its operators, the same reason
+      # updating the image is an explicit `docker compose pull`.
+      - --check-for-update-interval=31536000
+      - --overscroll-history-navigation=0
