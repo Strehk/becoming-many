@@ -32,7 +32,9 @@ and raw GLSL ES 3.00 files.
   traveller flies past and leaves behind. Only when the ring is far enough
   behind to be out of the world does another open ahead. It prints the same
   three points a flock bird does — body and both wingtips — through the same
-  seam.
+  seam. The next ring opens **ahead** of the way the traveller is going: one
+  opened in any direction is behind them within the minute, and a bird nobody
+  ever flies toward is a bird nobody meets.
 - `raptor-body.ts` owns the model flying that ring, and is the only body in
   the piece with a skeleton of its own: one actor can afford what sixty
   cannot. Its authored beat plays back at a fifth speed, because a soaring

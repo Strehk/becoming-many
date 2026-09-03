@@ -24,11 +24,20 @@ export const RAPTOR_DEFINITION = {
   /** The same beat as a rate and a lift, for the trace the wingtips print. */
   beatHertz: 0.4,
   beatAmplitudeMeters: 0.35,
-  /** Wingspan in metres; the model is measured onto it. */
-  wingSpanMeters: 2.1,
-  /** The ring it holds over its place, and how high above the ground. */
-  ringRadiusMeters: 62,
-  heightAboveGroundMeters: 70,
+  /*
+   * Wider than the eagle it is: at the distance a ring is held, two metres of
+   * bird is a mark of a degree and a half, which is a thing you find only if
+   * you already know it is there.
+   */
+  wingSpanMeters: 3.2,
+  /*
+   * The ring it holds over its place, and how high above the ground. Seventy
+   * metres put the bird forty above a flying visitor, so finding it meant
+   * looking almost straight up; at thirty it crosses the view a flight is
+   * already pointed along.
+   */
+  ringRadiusMeters: 48,
+  heightAboveGroundMeters: 32,
   /*
    * Slow enough to read as soaring rather than as a bird in a hurry: one turn
    * of the ring takes about a minute.
@@ -43,7 +52,12 @@ export const RAPTOR_DEFINITION = {
    * Beyond this the bird is out of the world anyway, and holding the old
    * place would mean a sky that never carries one again.
    */
-  abandonRingMeters: 320,
+  abandonRingMeters: 260,
   /** Where a new ring opens, measured from the visitor who left the last. */
-  reopenReachMeters: { minimum: 170, maximum: 260 },
+  reopenReachMeters: { minimum: 150, maximum: 230 },
+  /**
+   * How far off the way a traveller is going the next ring may open. Wide
+   * enough that a bird is never on the nose, narrow enough that it is ahead.
+   */
+  reopenSpreadRadians: 1.5,
 } as const;

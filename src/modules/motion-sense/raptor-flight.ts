@@ -15,6 +15,8 @@ const RANDOM_ANGLE = 0;
 const RANDOM_REACH = 1;
 /** Where the bird is, the bearing it holds, and where its wings stand. */
 const BODY_VALUES = 5;
+/** Below this much travel in one update there is no way to read a bearing. */
+const MINIMUM_TRAVEL_SQUARED = 1e-8;
 
 export interface RaptorFlightOptions {
   readonly groundYAt: WorldSurface["groundYAt"];
@@ -50,22 +52,36 @@ export function createRaptorFlight(options: RaptorFlightOptions): RaptorFlight {
   );
   const bodyStream = new Float32Array(BODY_VALUES);
   const centre = { x: options.initialPlayerX, z: options.initialPlayerZ };
+  const previousPlayer = {
+    x: options.initialPlayerX,
+    z: options.initialPlayerZ,
+  };
   let ringAngleRadians = 0;
   let elapsedSeconds = 0;
   let ringEpoch = 0;
+  // The way the traveller last went, which is where the next ring opens.
+  let travelBearing = 0;
 
-  const openRingAhead = (playerX: number, playerZ: number): void => {
+  const openRingAhead = (
+    playerX: number,
+    playerZ: number,
+    travelBearing: number,
+  ): void => {
     ringEpoch += 1;
-    // Somewhere ahead and to one side, at the far edge of what can be seen:
-    // a bird that appeared overhead would have arrived from nowhere.
-    const angle = getMotionRandom(ringEpoch, RANDOM_ANGLE) * TAU;
+    // Ahead, off to one side: a ring opened in any direction is behind a
+    // traveller within the minute, and a bird nobody ever flies toward is a
+    // bird nobody meets. The spread keeps it from sitting on the nose.
+    const spread =
+      (getMotionRandom(ringEpoch, RANDOM_ANGLE) - 0.5) *
+      RAPTOR_DEFINITION.reopenSpreadRadians;
+    const angle = travelBearing + spread;
     const reach =
       RAPTOR_DEFINITION.reopenReachMeters.minimum +
       getMotionRandom(ringEpoch, RANDOM_REACH) *
         (RAPTOR_DEFINITION.reopenReachMeters.maximum -
           RAPTOR_DEFINITION.reopenReachMeters.minimum);
-    centre.x = playerX + Math.cos(angle) * reach;
-    centre.z = playerZ + Math.sin(angle) * reach;
+    centre.x = playerX + Math.sin(angle) * reach;
+    centre.z = playerZ + Math.cos(angle) * reach;
   };
 
   const writePoints = (): void => {
@@ -119,9 +135,17 @@ export function createRaptorFlight(options: RaptorFlightOptions): RaptorFlight {
           RAPTOR_DEFINITION.ringRadiusMeters) *
         deltaSeconds;
 
+      const travelX = playerX - previousPlayer.x;
+      const travelZ = playerZ - previousPlayer.z;
+      if (travelX * travelX + travelZ * travelZ > MINIMUM_TRAVEL_SQUARED) {
+        travelBearing = Math.atan2(travelX, travelZ);
+      }
+      previousPlayer.x = playerX;
+      previousPlayer.z = playerZ;
+
       const away = Math.hypot(playerX - centre.x, playerZ - centre.z);
       if (away > RAPTOR_DEFINITION.abandonRingMeters) {
-        openRingAhead(playerX, playerZ);
+        openRingAhead(playerX, playerZ, travelBearing);
       }
       writePoints();
     },

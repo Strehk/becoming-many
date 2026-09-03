@@ -14,11 +14,14 @@ import type { MotionSenseParameters } from "../../modules/motion-sense/motion-se
  * circle draws a line, and a line needs the frames to stay drawn.
  */
 const RAPTOR: NonNullable<MotionSenseParameters["raptor"]> = {
-  trailLifetimeFrames: 300,
+  // Fifteen seconds of memory: at the pace a ring is held, that is a hundred
+  // metres of line, which reads as an arc across the sky rather than as a
+  // short stroke trailing a speck.
+  trailLifetimeFrames: 900,
   appearance: {
     trailColor: 0x2f6f8f,
-    trailSizeMeters: 0.5,
-    trailOpacity: 0.5,
+    trailSizeMeters: 0.9,
+    trailOpacity: 0.65,
   },
 };
 
