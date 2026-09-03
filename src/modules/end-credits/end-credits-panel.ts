@@ -47,7 +47,8 @@ interface EndCreditsResources {
 /**
  * One plane, one material, one texture, and one draw call while it is
  * visible. The fade is the material's own opacity against the drawn alpha, so
- * the panel needs no shader of its own and the canvas is never repainted.
+ * the panel needs no shader of its own, and the canvas repaints at most
+ * once more, when the shipped font resolves.
  *
  * It is the piece's one transparent surface. An opaque plane would follow the
  * world's fade-to-background rule, but it would also occlude the air

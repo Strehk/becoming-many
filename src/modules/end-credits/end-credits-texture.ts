@@ -13,9 +13,10 @@ import type {
 import { END_CREDITS_PANEL_SETTINGS } from "./end-credits-settings";
 
 /**
- * A single canvas painted once at load, never per frame. The panel appears
- * only against White World, so the glyphs are plain black on transparency
- * with no card, box, or halo behind them.
+ * A canvas painted at load, and repainted exactly once more if Rubik was
+ * still loading when the first paint ran — never per frame. The panel
+ * appears only against White World, so the glyphs are plain black on
+ * transparency with no card, box, or halo behind them.
  */
 export function drawEndCreditsTexture(
   definition: EndCreditsDefinition,
@@ -37,7 +38,43 @@ export function drawEndCreditsTexture(
   // The panel is read at an angle as often as head-on; anisotropy keeps the
   // smaller lines from smearing when it is.
   texture.anisotropy = panel.textureAnisotropy;
+
+  // The first paint above may have fallen back to the system stack if Rubik
+  // had not resolved yet. Repaint once it has and push the result to the GPU;
+  // a font that never resolves leaves the fallback paint standing rather than
+  // blocking the credits.
+  void ensureEndCreditsFont().then(() => {
+    paintEndCredits(context, definition);
+    texture.needsUpdate = true;
+  });
+
   return texture;
+}
+
+/**
+ * Load Rubik once and register it with the document, so canvas text can draw
+ * in it. Idempotent: every panel instance shares the one load.
+ */
+let fontReady: Promise<void> | undefined;
+function ensureEndCreditsFont(): Promise<void> {
+  if (!fontReady) {
+    const panel = END_CREDITS_PANEL_SETTINGS;
+    const face = new FontFace(panel.fontFamilyName, `url(${panel.fontUrl})`, {
+      weight: panel.fontWeight,
+    });
+    fontReady = face
+      .load()
+      .then((loaded) => {
+        document.fonts.add(loaded);
+      })
+      .catch((error: unknown) => {
+        console.warn(
+          "[end-credits] Rubik failed to load — using fallback",
+          error,
+        );
+      });
+  }
+  return fontReady;
 }
 
 function paintEndCredits(
@@ -47,6 +84,9 @@ function paintEndCredits(
   const panel = END_CREDITS_PANEL_SETTINGS;
   const centerX = panel.canvasWidthPixels / 2;
 
+  // Cleared on every paint, not only the first: the repaint once Rubik
+  // resolves would otherwise draw over its own fallback-face pass and ghost.
+  context.clearRect(0, 0, panel.canvasWidthPixels, panel.canvasHeightPixels);
   context.textAlign = "center";
   context.textBaseline = "middle";
   context.fillStyle = panel.textColor;
@@ -61,7 +101,7 @@ function paintEndCredits(
           ? panel.titleGapPixels
           : panel.lineHeightPixels;
     }
-    context.font = `${fontSizePixels(line.role)}px ${panel.fontFamily}`;
+    context.font = `${panel.fontWeight} ${fontSizePixels(line.role)}px ${panel.fontFamily}`;
     context.fillText(line.text, centerX, nextY);
     previousRole = line.role;
   }

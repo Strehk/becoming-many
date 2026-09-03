@@ -19,12 +19,17 @@ opacity and hides the panel entirely at zero, so an invisible panel costs no
 draw call. There is no shader of its own: the material's opacity multiplies
 the alpha already drawn into the texture, which is what makes the fade free.
 
-`end-credits-texture.ts` paints the lines once at load onto a transparent
-canvas — black glyphs, no card, no box — and never repaints. The type sizes
-come from the line's semantic role, so a name is never recognised by comparing
-its text. `end-credits-settings.ts` holds the panel's proportions and type
-scale; the lines themselves are authored in `src/dramaturgy/end-credits.ts`
-and handed in by Level Runtime, so this module never reads the schedule.
+`end-credits-texture.ts` paints the lines onto a transparent canvas — black
+glyphs, no card, no box — in Rubik at weight 700, the one static weight
+shipped at `public/fonts/rubik/Rubik-Bold.ttf` (`manifest.json` beside it
+records the license and source). The font loads asynchronously through the
+`FontFace` API, so the canvas paints once immediately in a fallback face and
+once more, at most, when Rubik resolves — never per frame, and a failed load
+just leaves the fallback paint standing. The type sizes come from the line's
+semantic role, so a name is never recognised by comparing its text.
+`end-credits-settings.ts` holds the panel's proportions and type scale; the
+lines themselves are authored in `src/dramaturgy/end-credits.ts` and handed in
+by Level Runtime, so this module never reads the schedule.
 
 `end-credits-pose.ts` is the placement, kept pure so it is covered by
 `bun test` without a browser. The panel rides a fixed distance ahead of the
@@ -41,9 +46,8 @@ One plane, one material, one texture, and one draw call while the credits are
 visible; nothing at all before that. This is the piece's one transparent
 surface, and deliberately so: an opaque plane would follow the world's
 fade-to-background rule but would also occlude the air particles still
-drifting through White World behind it. The canvas is never redrawn after
-load, and no font file ships — the panel is set in the platform's own sans
-face.
+drifting through White World behind it. The canvas repaints at most once more
+after load, when the shipped font resolves.
 
 Level Runtime builds the panel only for a show. A requested development preset
 and the deterministic benchmark route never reach an ending, so neither creates
