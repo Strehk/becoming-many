@@ -25,6 +25,9 @@ export default defineConfig({
   },
   server: {
     host: true,
+    // Development starts at the complete rehearsal show; named level routes
+    // remain explicit URLs for focused work.
+    open: "/",
     allowedHosts: ["dev.strehk.eu", "dev.e.strehk.eu"],
     proxy: stationProxy,
   },
