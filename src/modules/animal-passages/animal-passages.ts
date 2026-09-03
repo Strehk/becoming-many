@@ -290,9 +290,15 @@ function prepareModel(
       : [object.material];
     // No colour override: the bird carries its own part colours and the bat
     // its texture, which is what these two were authored to look like.
-    const replacements = sources.map((material) =>
-      createUnlitMaterial(material),
-    );
+    const replacements = sources.map((material) => {
+      const unlit = createUnlitMaterial(material);
+      // Transparent for the whole crossing, at full opacity for all of it but
+      // the departure: the flight ends by thinning into the air rather than
+      // by being switched off, and toggling the flag at the end would
+      // recompile the material in the middle of a passage.
+      unlit.transparent = true;
+      return unlit;
+    });
     object.material = Array.isArray(object.material)
       ? replacements
       : (replacements[0] ?? object.material);

@@ -11,6 +11,7 @@ import {
   AnimationMixer,
   CatmullRomCurve3,
   Group,
+  type Material,
   MathUtils,
   Matrix4,
   Mesh,
@@ -27,8 +28,14 @@ import {
   samplePassageRoute,
 } from "./passage-route";
 
-/** Hide the animal a touch before the exit curve's end; it has left the frame. */
-const EXIT_HIDE_PROGRESS = 0.94;
+/**
+ * Where along the exit the animal begins to thin out, and where it is gone.
+ * It leaves by fading into the air over the last stretch of its departure
+ * rather than by being switched off: at fifty-five metres a body is still
+ * plainly a body, and a visitor watching one go saw it blink out.
+ */
+const EXIT_FADE_FROM = 0.55;
+const EXIT_HIDE_PROGRESS = 0.995;
 /** Time over which the approach's heading and speed ease into the route. */
 const APPROACH_HANDOFF_BLEND_SECONDS = 2.4;
 /** How far ahead the route is read to find the direction of travel. */
@@ -91,6 +98,7 @@ export function createPassageFlight(
 
   const carrier = createCarrier(options.model, definition);
   root.add(options.model);
+  const materials = readMaterials(options.model);
 
   const mixer = createMixer(options.model, options.animations, definition);
   const approachCurve = createApproachCurve(definition, route);
@@ -351,6 +359,11 @@ export function createPassageFlight(
     return ((target - current + Math.PI * 3) % (Math.PI * 2)) - Math.PI;
   }
 
+  /** Carry one opacity across every material the animal wears. */
+  function applyOpacity(opacity: number): void {
+    for (const material of materials) material.opacity = opacity;
+  }
+
   function applyExitAt(timeSeconds: number): void {
     const curve = getExitCurve();
     const raw = MathUtils.clamp(
@@ -369,6 +382,7 @@ export function createPassageFlight(
     faceDirection(
       scratch.direction.subVectors(scratch.lookAt, scratch.position),
     );
+    applyOpacity(1 - MathUtils.smoothstep(raw, EXIT_FADE_FROM, 1));
     root.visible = raw < EXIT_HIDE_PROGRESS;
   }
 
@@ -396,6 +410,9 @@ export function createPassageFlight(
       // they are would otherwise be left behind within seconds of gliding.
       root.position.copy(viewpoint.worldPosition);
       root.quaternion.copy(heading);
+      // Full opacity for everything but the departure: a passage arrives as a
+      // body and only leaves as air.
+      applyOpacity(1);
       root.visible = true;
 
       const elapsed = MathUtils.clamp(progress, 0, 1) * durationSeconds;
@@ -507,4 +524,18 @@ function createMixer(
   action.timeScale = definition.flapTimeScale;
   action.play();
   return mixer;
+}
+
+/** Every material the animal wears, so a departure can thin all of them. */
+function readMaterials(model: Object3D): readonly Material[] {
+  const materials: Material[] = [];
+  model.traverse((object) => {
+    if (!(object instanceof Mesh)) return;
+
+    const worn = Array.isArray(object.material)
+      ? object.material
+      : [object.material];
+    materials.push(...worn);
+  });
+  return materials;
 }
