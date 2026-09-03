@@ -4,7 +4,10 @@
 
 Motion Perception keeps the Echolocation world and adds signals that exist
 through movement: persistent fly swarms, bird traces, and GPU-aged trails. The
-new layer begins with its narration cue at 2:47.
+new layer begins with its narration cue at 2:47. A mosquito swarm crosses six
+seconds ahead of that cue to announce it, following an authored route and
+printing through its own trail ring — composed beside Motion Sense, because the
+sense it announces still stands at zero while the swarm is in the air.
 
 ## Runtime Ownership
 

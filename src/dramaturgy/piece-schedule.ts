@@ -6,6 +6,7 @@
  */
 
 import type { NarrationSchedule } from "./narration-schedule";
+import type { PassageSchedule } from "./passage-schedule";
 
 /**
  * The piece opens on five seconds of silence. The visitor is on the rig and
@@ -48,5 +49,55 @@ export const PIECE_SCHEDULE: NarrationSchedule = {
     { cueId: "magnetic", atSeconds: 279, level: "magnetic" }, // Slot 56 s, longest recording 51.0.
     { cueId: "finale", atSeconds: 335, level: "connections" }, // Slot 111 s, longest recording 106.9.
     { cueId: "return", atSeconds: 446, level: "white-world" }, // Slot 75 s, longest recording 73.8.
+  ],
+};
+
+/**
+ * How long before its cue boundary an animal enters. The passage runs across
+ * the boundary rather than up to it: the animal arrives while the old world
+ * still stands, and is gone by the time the new sense has faded in over
+ * `SENSE_FADE_SECONDS`. That is the difference between an animal that
+ * introduces a sense and one that illustrates it.
+ */
+const PASSAGE_LEAD_SECONDS = 6;
+
+/**
+ * The three animals that cross the piece, each entering before the cue that
+ * opens the sense named after it: the bat before Echolocation, the mosquitoes
+ * before Motion Perception, the bird before Magnetic Field Perception.
+ *
+ * Every duration is the authored route's own length plus its exit, carried
+ * unchanged from the routes these passages were tuned against — the bat's
+ * 10.4-second track plus a six-second exit, the mosquito track at the half
+ * speed it was played back at, the bird's approach, route, and long exit.
+ * Editing a start time is editing one number here; the durations belong to the
+ * routes and should follow them.
+ *
+ * The mosquitoes keep the same six-second lead as the others even though what
+ * they leave behind is motion trails, which is the Motion Perception sense's
+ * own material. That is why the swarm carries its own trail ring at full
+ * strength instead of the sense's: on the sense's it would be invisible for
+ * exactly the seconds in which it is supposed to be announcing it.
+ */
+export const PIECE_PASSAGES: PassageSchedule = {
+  passages: [
+    // Enters at 128, gone by 144.4 — the echo cue opens at 134.
+    {
+      passageId: "bat",
+      atSeconds: 134 - PASSAGE_LEAD_SECONDS,
+      durationSeconds: 16.416667,
+    },
+    // Enters at 161, gone by 176 — the motion cue opens at 167.
+    {
+      passageId: "mosquitoes",
+      atSeconds: 167 - PASSAGE_LEAD_SECONDS,
+      durationSeconds: 15,
+    },
+    // Enters at 273, gone by 298.5 — the magnetic cue opens at 279.
+    {
+      passageId: "bird",
+      atSeconds: 279 - PASSAGE_LEAD_SECONDS,
+      durationSeconds: 25.5,
+    },
   ],
 };

@@ -123,7 +123,7 @@ export async function startLevel(
 
   const level =
     request.kind === "static" ? request.preset : request.composition.world;
-  const assets = await loadLevelAssets(level);
+  const assets = await loadLevelAssets(level, request.kind === "show");
   let running: RunningLevel | undefined;
   await startWorld(container, {
     setupWorld: async (world) => {

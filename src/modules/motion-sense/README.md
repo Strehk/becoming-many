@@ -91,5 +91,7 @@ array for a group this level does not carry, and while it is unloaded.
 - Trail length is authored in rendered frames for bm-base parity; a
   fixed-cadence spawn accumulator is the known fix for frame-rate
   dependence.
-- The current swarms are persistent and statically authored. A path-flyby event
-  would be a new product feature and needs its own issue and capacity budget.
+- The ambient swarms are persistent and statically authored. The one
+  route-following swarm is the mosquito passage, printed by `passage-swarm.ts`
+  and composed beside this module: it crosses before the sense it announces, so
+  it can ride neither this module's gate nor its fade.

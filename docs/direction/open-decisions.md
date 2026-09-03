@@ -26,7 +26,10 @@ and confirmed.
 
 The smallest candidate is a local Conductor-owned phase model around boarding,
 active show, return, and safety exit. Do not introduce a global event bus,
-service locator, remote operator service, or second schedule authority.
+service locator, remote operator service, or second schedule authority. One-shot
+staged moments — the animal passages — are scheduled data read by a show-time
+lookup, so they are not an argument for a trigger channel; see
+[An Animal Passage Is Scheduled Data, Not a Triggered Event](../architecture-decisions.md).
 
 ## 3. Additional Installation Runtimes
 

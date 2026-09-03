@@ -73,6 +73,15 @@ history belongs in Git; unresolved product and deployment questions belong in
 
 - The show clock and typed narration schedule are the sole authorities for show
   time, cues, and world-state timing.
+- A staged one-shot moment is scheduled data, not a triggered event. The animal
+  passages are the second facet of the one authored schedule, read by the pure
+  lookup `passageProgressAt(schedule, id, showTime)`, so a scrub lands an animal
+  where playing through would have put it — which a rising edge over an event
+  bus could not. Their authored routes and constants are transcribed from the
+  predecessor project rather than re-derived, because direction and closeness
+  are the tuning. A passage is ungated and undecorated: a crossing happens
+  between senses, so no sense strength may put it away and it wears none of
+  their effects.
 - The default page runs only the complete show. The explicit Test entry owns
   standalone levels, benchmarks, headset diagnostics, and direct-M5 requests.
 - The viewer rig owns locomotion while the camera owns local desktop-look or

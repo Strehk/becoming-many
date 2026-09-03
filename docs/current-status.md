@@ -71,6 +71,14 @@ issue and a bounded implementation.
   other module materials.
 - Connections: a worker-generated, fixed-pool mycelium network connected to
   deterministic and live world anchors.
+- Animal passages: three animals cross the show on routes carried over from the
+  predecessor project — the bat, the mosquito swarm, and the bird — each
+  entering six seconds before the cue that opens the sense it announces, and
+  gone once that sense has faded in. Their pose is derived from show time, so a
+  scrub lands them on their route. They are ungated and wear no sense effects,
+  because a crossing happens between senses. The swarm has no body: what
+  crosses is the trail it prints, through its own ring composed beside Motion
+  Sense at full strength, since the sense it announces still stands at zero.
 - The `test` and `design-test` presets remain integration/diagnostic surfaces;
   they are not narrative states.
 
@@ -102,9 +110,10 @@ issue and a bounded implementation.
 
 ## Verification Snapshot
 
-Verified on 2026-09-03 after the drone organ was moved onto the show clock:
+Verified on 2026-09-03 after the animal passages joined the drone organ on the
+show clock:
 
-- `bun test`: 447 passed, 0 failed across 62 files.
+- `bun test`: 481 passed, 0 failed across 69 files.
 - `bun run check`: passed.
 - `bun run lint`: passed.
 - `bun run build`: passed with existing Vite warnings about one extensionless

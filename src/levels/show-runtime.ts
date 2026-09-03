@@ -73,6 +73,8 @@ export interface ShowWorldReach {
    * credits are not a sense, and the panel costs no draw while hidden.
    */
   readonly setEndCreditsPresence?: (presence: number) => void;
+  /** Places the authored animal crossings; composed only for a show. */
+  readonly followPassages?: (showTimeSeconds: number) => void;
 
   /**
    * Where the moving actor clouds are, so the drone organ can put its two
@@ -223,6 +225,9 @@ export function createShowRuntime(
     followViewDistance(showTimeSeconds);
     followBackground(showTimeSeconds);
     followSenses(showTimeSeconds);
+    // Passages read the same instant as the senses they announce, so an
+    // animal crossing a cue boundary stays in step with the fade under it.
+    reach.followPassages?.(showTimeSeconds);
   }
 
   // The organ is a follower like the narration: the score says how strong
