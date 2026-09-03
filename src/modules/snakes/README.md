@@ -47,9 +47,10 @@ instead of wagging. A whole pool of snakes is one draw call and one uniform.
   carries half the grass and no canopy, and is the one ground a snake is met
   on from the air — so it carries the most.
 - Left unweighted, the population followed the landscape: three in five
-  snakes lay in meadow, where nobody would ever find one. Weighted, seven
-  snakes are within seventy metres of a flight at a time and half of them on
-  ground the grass does not close over.
+  snakes lay in meadow, where nobody would ever find one. Weighted, and at
+  the density the piece currently carries, about seventeen snakes are within
+  seventy metres of a flight at a time and nine of them on ground the grass
+  does not close over.
 - A snake walks its way and starts it again, so it never crawls out of the
   country its place was accepted in.
 
