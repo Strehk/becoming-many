@@ -12,8 +12,10 @@ import {
   type NarrationLanguage,
 } from "../dramaturgy/narration-catalog";
 import type { NarrationSchedule } from "../dramaturgy/narration-schedule";
-import { SHOW_LEVEL, SHOW_LEVEL_PRESETS } from "../levels/level-catalog";
-import { type RunningShow, startLevel } from "../levels/level-runtime";
+import { SHOW_LEVEL_STATES } from "../dramaturgy/show-levels";
+import { startLevel } from "../levels/level-runtime";
+import { SHOW_COMPOSITION } from "../levels/show-composition";
+import type { RunningShow } from "../levels/show-runtime";
 import type { DeploymentConfig } from "../station/deployment-config";
 import type { FrameMetrics } from "../test-ui/frame-metrics";
 import type { XrSessionState } from "../world/xr-session";
@@ -73,8 +75,10 @@ export async function startConductorPage({
   // The stage mount exists before the level so the world has a home; it gets
   // its place in the technician drawer when the stage panel wraps it below.
   const stageMount = document.createElement("div");
-  const level = await startLevel(stageMount, SHOW_LEVEL, {
-    show: { schedule, language, levels: SHOW_LEVEL_PRESETS },
+  const level = await startLevel(stageMount, {
+    kind: "show",
+    composition: SHOW_COMPOSITION,
+    show: { schedule, language, states: SHOW_LEVEL_STATES },
     m5ExpectedDeviceId: deployment.m5DeviceId,
   });
   const show = requireShow(level.show);

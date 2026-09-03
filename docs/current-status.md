@@ -34,8 +34,15 @@ issue and a bounded implementation.
 - A viewer rig owns locomotion while the camera retains desktop-look or headset
   pose. Flight is clamped against the shared world surface and authored height
   limits.
-- `level-runtime.ts` composes sparse typed presets, shared resources, controls,
-  narration, and enabled modules.
+- Independent typed `LevelPreset` files own standalone startup recipes. The
+  separate `ShowComposition` preloads the show world once, while
+  `ShowLevelState` contains only live presentation changes.
+- `level-runtime.ts` owns startup and frame coordination;
+  `level-composition.ts` owns assets, World Surface creation, concrete module
+  construction, and cross-module wiring. `show-runtime.ts` owns show following,
+  and `flight-control-source.ts` owns desktop/M5 arbitration.
+- Static presentation or the schedule's opening show state is applied before
+  modules size their fixed spatial windows.
 - The show clock is the authority for narration, world-state selection,
   transitions, and sense intensity.
 - Fixed chunk windows and the bounded `StreamQueue` recycle module-owned
@@ -75,17 +82,16 @@ issue and a bounded implementation.
 
 ## Verification Snapshot
 
-Verified on 2026-09-03 for this documentation branch:
+Verified on 2026-09-03 for the level-contract refactor branch:
 
-- `bun test`: 366 passed, 0 failed across 50 files.
+- `bun test`: 375 passed, 0 failed across 52 files.
 - `bun run check`: passed.
 - `bun run lint`: passed.
 - `bun run build`: passed with existing Vite warnings about one extensionless
   config import and a large output chunk.
-- `bunx fallow`: completed with known findings: one unused export, one unused
-  dependency override, nine clone groups, seventeen complexity findings, and
-  two hotspots. These findings are tracked as cleanup issues; Fallow is not
-  currently clean.
+- `bunx fallow`: completed with known findings: one unused dependency override,
+  seven clone groups, sixteen complexity findings, and one hotspot. These
+  findings are tracked as cleanup issues; Fallow is not currently clean.
 
 The deterministic benchmark has accepted renderer-counter baselines, but its
 frame times are machine-specific. The grass clipmap and the complete current

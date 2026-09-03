@@ -7,7 +7,8 @@
 
 import { describe, expect, test } from "bun:test";
 import { createShowActions } from "../../src/conductor/show-actions";
-import type { RunningLevel, RunningShow } from "../../src/levels/level-runtime";
+import type { RunningLevel } from "../../src/levels/level-runtime";
+import type { RunningShow } from "../../src/levels/show-runtime";
 
 interface Recorder {
   readonly calls: string[];

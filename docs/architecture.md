@@ -20,10 +20,14 @@ show state.
 
 ## Composition and Frame Flow
 
-`src/levels/level-runtime.ts` is the current composition root. It receives one
-sparse `LevelPreset`, preloads the fixed GLTF definitions it needs, creates the
-shared world surface, connects controls and optional show state, creates enabled
-modules, then starts `src/world/world-runtime.ts`.
+`src/levels/level-runtime.ts` is the startup and frame-coordination root. A
+static request contains one independent `LevelPreset`; a show request contains
+the separate construction-only `ShowComposition` and narrow `ShowLevelState`
+map. The runtime loads the required assets, starts `src/world/world-runtime.ts`,
+applies the opening presentation, delegates concrete construction to
+`src/levels/level-composition.ts`, activates the returned module list, and
+connects controls and optional show following. Presentation is applied before
+any module derives a fixed spatial window from the camera.
 
 The single frame loop is owned by World Runtime:
 
@@ -48,7 +52,7 @@ src/
 ├── dev/             opt-in diagnostics and rehearsal controls
 ├── dramaturgy/      show clock, schedule, cue layout, and level timing
 ├── flash/           M5 Web Serial setup page
-├── levels/          typed presets and the current composition root
+├── levels/          typed presets, startup coordination, and world composition
 ├── m5/              untrusted controller protocol and polling adapter
 ├── modules/         unloadable visual and world content
 ├── sound/           narration playback and the audio timebase
@@ -107,19 +111,21 @@ receive it as a read-only contract.
 Concrete modules do not import siblings. Cross-module information uses narrow
 contracts such as `WorldSurface`, `UnlitMaterialEffect`, `MotionPointSource`,
 `ScentSource`, and `ConnectionNodeSource`; the composition root performs the
-wiring.
+wiring in `src/levels/level-composition.ts`.
 
 ## Levels and Show
 
-Files in `src/levels/*.level.ts` are typed authored data. Narrative presets
-layer in order from White World through Connections, while `test` and
-`design-test` are diagnostic presets. `level-catalog.ts` names all presets and
-builds `SHOW_LEVEL`, the full layered composition without the test overlay.
+Files in `src/levels/*.level.ts` are independent, complete, typed startup
+recipes. Each file owns its values directly and imports no other authored
+level. `test` and `design-test` remain diagnostic presets.
 
-The default page creates that composition once. `PIECE_SCHEDULE` and the show
-clock select the current authored world state, drive sense intensities and
-background transitions, and synchronize narration. A requested standalone
-level or benchmark does not start a show.
+`show-composition.ts` explicitly owns the complete module and asset union the
+default page creates once. `SHOW_LEVEL_STATES` contains only presentation facts
+that can change while that world is running. `PIECE_SCHEDULE` and the show
+clock select those states, drive sense intensities and background transitions,
+and synchronize narration. The schedule's opening state is also applied before
+module construction so fixed spatial pools use its authored view distance. A
+requested standalone level or benchmark does not start a show.
 
 ## Station and Control Boundaries
 
