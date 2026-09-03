@@ -17,13 +17,12 @@ issue and a bounded implementation.
 ## Runnable Surfaces
 
 - `/` starts the full show on load and mounts the rehearsal transport.
-- `?level=<name>` or `/<name>` opens one preset without the show. Known names
-  are `white-world`, `scent`, `echo`, `motion`, `thermal`, `magnetic`,
-  `connections`, `test`, and `design-test`.
-- `?benchmark[=<profile>]` runs the authored deterministic camera route.
 - `?language=de|en` selects narration for the full show.
-- `?m5=<host>` connects an M5 controller directly for development.
-- `?diagnostics=1` exposes browser and shader failures on the page.
+- `/test.html?level=<name>` or `/<name>` opens one preset without the show.
+  Known names are `white-world`, `scent`, `echo`, `motion`, `thermal`,
+  `magnetic`, `connections`, `test`, and `design-test`.
+- The Test page accepts `?benchmark[=<profile>]`, `?m5=<host>`, and
+  `?diagnostics=1` for deterministic replay and explicit development tools.
 - `/conductor.html` is the station/operator page and hosts the show in-process.
 - `/flash.html` installs the bundled M5 firmware through Web Serial.
 
@@ -43,6 +42,9 @@ issue and a bounded implementation.
   and `flight-control-source.ts` owns desktop/M5 arbitration.
 - Static presentation or the schedule's opening show state is applied before
   modules size their fixed spatial windows.
+- Test UI metrics are supplied only by the Test and Conductor entries. The
+  rehearsal show neither samples them nor loads Test UI, legacy Grass, or Zone
+  Visualizer code.
 - The show clock is the authority for narration, world-state selection,
   transitions, and sense intensity.
 - Fixed chunk windows and the bounded `StreamQueue` recycle module-owned
@@ -82,10 +84,9 @@ issue and a bounded implementation.
 
 ## Verification Snapshot
 
-Verified on 2026-09-03 after the level-contract and runtime-composition
-refactor:
+Verified on 2026-09-03 after the entry-point isolation:
 
-- `bun test`: 375 passed, 0 failed across 52 files.
+- `bun test`: 379 passed, 0 failed across 53 files.
 - `bun run check`: passed.
 - `bun run lint`: passed.
 - `bun run build`: passed with existing Vite warnings about one extensionless
@@ -107,11 +108,11 @@ in [roadmap.md](roadmap.md). The largest risks are:
 - physical PICO performance and transition spikes;
 - PCVR startup and delivery-platform validation;
 - diagnostics, lifecycle, M5, and shader-patch robustness;
-- entry-point isolation and remaining module-ownership cleanup;
+- remaining module-ownership cleanup;
 - measured removal or consolidation of redundant runtime paths.
 
-The next dependency-aware engineering sequence is #19, #16, #35, then #11.
-The reasons and completion boundaries are recorded in
+After this entry-point change, the next dependency-aware engineering sequence
+is #16, #35, then #11. The reasons and completion boundaries are recorded in
 [roadmap.md](roadmap.md); detailed acceptance criteria remain in the issues.
 
 README-only folders under `src/modules` and `src/utils` are reserved extension

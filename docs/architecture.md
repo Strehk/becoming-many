@@ -5,10 +5,11 @@ deployment choices live under [direction](direction/README.md).
 
 ## Runtime Surfaces
 
-The build has three browser entries:
+The build has four browser entries:
 
-- `index.html` loads `src/main.ts`: the complete show by default, or a
-  development level/benchmark when requested by URL.
+- `index.html` loads `src/main.ts`: the complete rehearsal show only.
+- `test.html` loads `src/test-main.ts`: standalone levels, benchmarks,
+  headset diagnostics, and direct-M5 development.
 - `conductor.html` loads `src/conductor/conductor-main.ts`: the operator surface
   with the show running in the same page.
 - `flash.html` loads `src/flash/flash-main.ts`: Web Serial firmware setup for the
@@ -28,6 +29,10 @@ applies the opening presentation, delegates concrete construction to
 `src/levels/level-composition.ts`, activates the returned module list, and
 connects controls and optional show following. Presentation is applied before
 any module derives a fixed spatial window from the camera.
+
+Test UI sampling and overlay creation are entry-owned optional dependencies.
+Legacy Grass and Zone Visualizer implementations load only for the standalone
+presets that author them; the rehearsal show does not fetch those chunks.
 
 The single frame loop is owned by World Runtime:
 
@@ -58,6 +63,7 @@ src/
 ├── sound/           narration playback and the audio timebase
 ├── station/         browser-side deployment facts
 ├── test-ui/         browser-only frame metrics and diagnostic overlay
+├── test-main.ts     standalone level and benchmark browser entry
 ├── utils/           narrow shared technical utilities
 ├── world/           permanent runtime, XR, chunks, and scheduling
 └── world-surface/   deterministic read-only height and zone facts

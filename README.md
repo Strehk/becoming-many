@@ -43,8 +43,8 @@ bun run dev
 ```
 
 The bare page at `/` runs the complete show and includes a rehearsal transport.
-Use `?level=<name>` or `/<name>` for a showless level, and
-`?benchmark[=<profile>]` for a deterministic route. See
+Use `/test.html?level=<name>` or `/<name>` for a showless level, and add
+`&benchmark[=<profile>]` for a deterministic route. See
 [AGENTS.md](AGENTS.md) for conventions and verification commands.
 
 ## Running a Station
