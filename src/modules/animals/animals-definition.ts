@@ -24,6 +24,12 @@ export interface AnimalsDefinition {
   readonly species: readonly AnimalSpeciesDefinition[];
 }
 
+/*
+ * Every walking speed here was lowered by seven percent from the first set
+ * that read correctly in scale: at the earlier values the animals covered
+ * ground faster than their own size suggests, which reads as hurrying rather
+ * than as living in the place.
+ */
 export const ANIMALS_DEFINITION: AnimalsDefinition = {
   seed: 953, // Keeps animal homes stable across level loads.
   maxVisible: 4, // Bounds animated models and their draw calls on PICO.
@@ -34,7 +40,7 @@ export const ANIMALS_DEFINITION: AnimalsDefinition = {
       url: "/animals/deer.glb",
       count: 3,
       heightMeters: 1.4,
-      speedMetersPerSecond: 0.7,
+      speedMetersPerSecond: 0.65,
       allowedZones: ["meadow", "deciduousForest"],
       walkAnimation: "Walk",
     },
@@ -43,7 +49,7 @@ export const ANIMALS_DEFINITION: AnimalsDefinition = {
       url: "/animals/stag.glb",
       count: 2,
       heightMeters: 1.6,
-      speedMetersPerSecond: 0.65,
+      speedMetersPerSecond: 0.605,
       allowedZones: ["coniferForest", "deciduousForest"],
       walkAnimation: "Walk",
     },
@@ -52,7 +58,7 @@ export const ANIMALS_DEFINITION: AnimalsDefinition = {
       url: "/animals/fox.glb",
       count: 2,
       heightMeters: 0.7,
-      speedMetersPerSecond: 0.85,
+      speedMetersPerSecond: 0.79,
       allowedZones: ["coniferForest", "deciduousForest", "shrubSlope"],
       walkAnimation: "Walk",
     },
@@ -61,7 +67,7 @@ export const ANIMALS_DEFINITION: AnimalsDefinition = {
       url: "/animals/rat.glb",
       count: 3,
       heightMeters: 0.25,
-      speedMetersPerSecond: 0.35,
+      speedMetersPerSecond: 0.325,
       allowedZones: ["meadow", "shrubSlope"],
       walkAnimation: "RatArmature|Rat_Walk",
     },

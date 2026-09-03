@@ -23,7 +23,20 @@ height and axis distance measured in metres: because the instance matrix
 carries the per-object scale, one authored gradient per metre reads the same
 on a 0.6 m shrub and a 10 m tree: warmth climbs toward an exposed crown and
 its fine outer branches, and toward the face of a rock the sun reaches, while
-a shaded trunk or a rock's flank stays near its own base temperature. Animals are warmest at a body core:
+a shaded trunk or a rock's flank stays near its own base temperature.
+
+Plants come in two statures, and each carries its own set of those values.
+The gradient is shed over a plant's own metres, so a bush a metre tall and a
+metre across sheds almost nothing over its own size and reads at very nearly
+its base everywhere: given the canopy's values it was the one thing in the
+landscape holding a single warm color across its whole body, and no per-metre
+value could fix that, because it has no metres to lose warmth over. The
+`undergrowth` effect authors it from the grass upward instead, with its own
+band, so a bush reads as the meadow it stands in at two thicknesses and keeps
+only a little held heat in its middle. Vegetation asks which effect a model
+takes once per model at load, by stature.
+
+Animals are warmest at a body core:
 the consumer supplies, per animated mesh, the matrix mapping mesh space onto
 its actor's normalized body space (y 0..1 from lowest point to crown), and
 the actor shader falls off from an authored core inside that space, so legs,

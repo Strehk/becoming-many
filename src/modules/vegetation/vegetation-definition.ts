@@ -7,6 +7,25 @@
 
 import type { StaticPopulationDefinition } from "../static-population";
 
+/**
+ * What a plant is, told apart by stature rather than by species: a plant that
+ * carries a canopy above a stem, and a plant that is all low body. It is the
+ * one distinction a sense can make without knowing the asset list, and senses
+ * that treat a plant as a body of substance need it — a bush is too small to
+ * carry a gradient a ten-metre pine carries easily.
+ */
+export type VegetationStature = "canopy" | "undergrowth";
+
+/** The models that are undergrowth; everything else carries a canopy. */
+const UNDERGROWTH_ASSET_IDS: ReadonlySet<string> = new Set([
+  "bush",
+  "flowering-bush",
+]);
+
+export function getVegetationStature(assetId: string): VegetationStature {
+  return UNDERGROWTH_ASSET_IDS.has(assetId) ? "undergrowth" : "canopy";
+}
+
 export const VEGETATION_DEFINITION: StaticPopulationDefinition = {
   seed: 341, // Keeps vegetation placement stable across levels.
   candidateSpacingMeters: 8, // Caps placement at 156.25 candidates per hectare.
@@ -197,7 +216,12 @@ export const VEGETATION_DEFINITION: StaticPopulationDefinition = {
       { assetId: "pine-4", weight: 1 },
       { assetId: "pine-5", weight: 1 },
       { assetId: "pine-6", weight: 1 },
-      { assetId: "pine-7", weight: 1 },
+      // PineTree_4 is the one model in the pack that is not an upright cone:
+      // its trunk drifts more than two units sideways over its own height and
+      // carries a nearly horizontal limb, so a full share of it put visibly
+      // crooked trees through the whole wood. Kept at a fifteenth of a share,
+      // it is the rare leaning tree a forest has rather than a defect.
+      { assetId: "pine-7", weight: 0.15 },
       { assetId: "dead-tree-1", weight: 0.5 },
     ],
     // Five round crowns against three birches: roughly a third of the wood

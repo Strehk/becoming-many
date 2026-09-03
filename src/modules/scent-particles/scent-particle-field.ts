@@ -33,9 +33,20 @@ const COMPONENTS_PER_VALUE = 3;
 
 /** Fixed per-particle random component indexes. */
 const PARTICLE_RANDOM_HEIGHT = 0;
-const PARTICLE_RANDOM_SCATTER_X = 1;
-const PARTICLE_RANDOM_SCATTER_Z = 3;
+const PARTICLE_RANDOM_ANGLE = 1;
+const PARTICLE_RANDOM_RADIUS = 3;
 const PARTICLE_RANDOM_PHASE = 5;
+
+const FULL_TURN = Math.PI * 2;
+
+/**
+ * The share of the emission radius kept clear around the plant's own axis.
+ * A particle born on the axis is only ever seen once the wind has already
+ * carried it somewhere, so a plant emitting from its centre smelled of
+ * nothing on its upwind side. Starting the scent off the axis puts it on
+ * every side of the plant before the weather takes it anywhere.
+ */
+const EMISSION_INNER_SHARE = 0.18;
 
 interface ScentParticleFieldOptions {
   readonly parameters: ScentParticlesParameters;
@@ -369,14 +380,15 @@ function writePlantParticles(
     randomKey.particleIndex = particleIndex;
     const heightRandom = getScentRandom(randomKey, PARTICLE_RANDOM_HEIGHT);
 
+    const angle = getScentRandom(randomKey, PARTICLE_RANDOM_ANGLE) * FULL_TURN;
+    const radius = getEmissionRadius(randomKey, emissionRadius);
+
     field.renderedPositions[valueOffset] =
-      emission.worldX +
-      getScatter(randomKey, PARTICLE_RANDOM_SCATTER_X, emissionRadius);
+      emission.worldX + Math.cos(angle) * radius;
     field.renderedPositions[valueOffset + 1] =
       emission.groundY + bottomY + heightRandom * bandHeight;
     field.renderedPositions[valueOffset + 2] =
-      emission.worldZ +
-      getScatter(randomKey, PARTICLE_RANDOM_SCATTER_Z, emissionRadius);
+      emission.worldZ + Math.sin(angle) * radius;
 
     for (let component = 0; component < COMPONENTS_PER_VALUE; component += 1) {
       field.renderedColors[valueOffset + component] =
@@ -393,23 +405,25 @@ function writePlantParticles(
 }
 
 /**
- * Return one symmetric scatter offset within the given half extent, drawn so
- * the emission thins out toward its boundary instead of ending at a wall.
+ * Return one radius inside the authored emission radius, drawn so a plant's
+ * particles cover the ring around it evenly by area instead of piling up on
+ * its own axis.
  *
- * Averaging two independent draws makes the offset triangular: density peaks
- * on the plant's own axis and falls linearly to nothing at the half extent,
- * so the scent keeps a defined core at the plant and dissolves away from it.
- * The half extent stays the hard bound, so authored radii still hold.
+ * The square root is what makes the coverage even: without it the draws would
+ * crowd the centre, which is the shape the emission had before, and a plant
+ * then read as one point source with a plume rather than as a body that
+ * smells all round. The innermost share stays clear so the scent surrounds
+ * the plant even once the wind has leaned it downwind, and the authored
+ * radius stays the hard bound.
  */
-function getScatter(
+function getEmissionRadius(
   randomKey: ScentRandomKey,
-  componentIndex: number,
   halfExtent: number,
 ): number {
-  const firstDraw = getScentRandom(randomKey, componentIndex);
-  const secondDraw = getScentRandom(randomKey, componentIndex + 1);
+  const draw = getScentRandom(randomKey, PARTICLE_RANDOM_RADIUS);
+  const areaShare = EMISSION_INNER_SHARE + (1 - EMISSION_INNER_SHARE) * draw;
 
-  return (firstDraw + secondDraw - 1) * halfExtent;
+  return Math.sqrt(areaShare) * halfExtent;
 }
 
 /** Convert the authored signatures once into working-color-space triples. */

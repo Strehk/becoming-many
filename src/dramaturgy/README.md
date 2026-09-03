@@ -60,6 +60,14 @@ clock is the *authority*, and playback is a follower. Seeking to 03:12 lands
 the narration 03:12 into the show, inside whichever recording covers that
 instant — it never retriggers a file.
 
+`end-credits.ts` is the piece's authored ending: the ordered closing lines and
+the pure ramp that answers how present they are at a show time. The ramp is
+derived the same way the sense strengths are — from one authored instant on the
+schedule, `creditsAtSeconds` — so a seek lands mid-fade, a seek to zero puts the
+panel away, and the clock clamping at the show length is what holds the credits
+up until staff restart. What the panel looks like belongs to
+`src/modules/end-credits`.
+
 `show-runtime.ts` composes the two halves; this folder never imports
 `src/sound`, and `src/sound` never decides when a cue plays.
 

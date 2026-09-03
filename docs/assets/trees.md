@@ -12,6 +12,15 @@ per preload request. Multi-part objects remain complete and become compact
 instanced mesh parts; source groups containing multiple trees are not treated as
 one placement unit.
 
+One of those conifer variants, `pine-7` (`PineTree_4` inside
+`pine-trees-01.glb`), is not an upright cone: its trunk drifts more than two
+units sideways over its own height and carries a nearly horizontal limb. At a
+full share it put visibly crooked trees through the whole conifer forest, so
+it is weighted at 0.15 against the other conifers' 1 — the rare leaning tree a
+wood has, rather than a defect. Nothing in the placement path tilts a plant:
+instances are rotated around the vertical axis only, so a visibly leaning tree
+is always the model.
+
 The shipping GLBs remain their source-quality versions. No current physical
 PICO measurement has justified a derived mesh or texture optimization set.
 

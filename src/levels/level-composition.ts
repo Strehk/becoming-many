@@ -6,6 +6,8 @@
  */
 
 import type { Matrix4 } from "three";
+import { FLIGHT_SETTINGS } from "../control/flight-settings";
+import { END_CREDITS } from "../dramaturgy/end-credits";
 import type { ShowSense } from "../dramaturgy/show-levels";
 import { createAirParticlesModule } from "../modules/air-particles/air-particles";
 import {
@@ -19,6 +21,10 @@ import {
   createEchoDepth,
   type EchoDepthEffect,
 } from "../modules/echo-depth/echo-depth";
+import {
+  createEndCreditsPanel,
+  type EndCreditsPanelHandle,
+} from "../modules/end-credits/end-credits-panel";
 import { createGrassModule } from "../modules/grass/grass";
 import { createGrassClipmapModule } from "../modules/grass-clipmap/grass-clipmap";
 import { getGrassZoneCoverage } from "../modules/grass-clipmap/grass-height-field";
@@ -154,6 +160,17 @@ function createConfiguredModules(setup: LevelSetup): ComposedWorld {
   // materials skip the extra fragment mix entirely.
   const structureFade = setup.forShow ? createWorldFade() : undefined;
   const animalsFade = setup.forShow ? createWorldFade() : undefined;
+  // The credits close a show. A development preset and the benchmark route
+  // never reach an ending, so neither builds the panel or its texture.
+  const endCredits = setup.forShow
+    ? createEndCreditsPanel({
+        scene: setup.world.scene,
+        viewpoint: setup.world.viewpoint,
+        viewerRig: setup.world.viewerRig,
+        viewPitchDegrees: FLIGHT_SETTINGS.viewPitchAssistDegrees,
+        definition: END_CREDITS,
+      })
+    : undefined;
 
   const echoDepth = createEchoDepthEffect(setup.level);
   const thermal = createThermalEffects(setup);
@@ -191,6 +208,7 @@ function createConfiguredModules(setup: LevelSetup): ComposedWorld {
   add("motion", motion?.module);
   add("magnetic", magnetic?.module);
   add("connections", connections?.module);
+  add(undefined, endCredits?.module);
 
   return {
     modules,
@@ -202,6 +220,7 @@ function createConfiguredModules(setup: LevelSetup): ComposedWorld {
       connections,
       structureFade,
       animalsFade,
+      endCredits,
     }),
   };
 }
@@ -220,6 +239,7 @@ interface ComposedSenseHandles {
   readonly connections: ConnectionsModuleHandle | undefined;
   readonly structureFade: WorldFadeEffect | undefined;
   readonly animalsFade: WorldFadeEffect | undefined;
+  readonly endCredits: EndCreditsPanelHandle | undefined;
 }
 
 function composeShowReach(
@@ -240,6 +260,7 @@ function composeShowReach(
       animals: handles.animalsFade,
     },
     setSkyBackground: handles.magnetic?.setSkyBackground,
+    setEndCreditsPresence: handles.endCredits?.setPresence,
   };
 }
 
@@ -520,7 +541,16 @@ function createVegetation(
     assets: setup.assets.vegetation,
     streamQueue: setup.world.streamQueue,
     worldSurface: setup.worldSurface,
-    effects: buildSurfaceEffects(worldFade, thermal?.vegetation, echoDepth),
+    // Asked per stature: heat reads a bush as its own substance, nearer the
+    // meadow it stands in than the wood above it, because a plant sheds its
+    // warmth over its own metres and a bush has too few to shed any. Every
+    // other sense answers the same for both.
+    effectsFor: (stature) =>
+      buildSurfaceEffects(
+        worldFade,
+        stature === "undergrowth" ? thermal?.undergrowth : thermal?.vegetation,
+        echoDepth,
+      ),
   });
 }
 

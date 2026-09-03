@@ -41,6 +41,12 @@ and raw GLSL ES 3.00 files.
   deterministic density thinning, and bounded partial uploads.
 - `motion-trail-material.ts` and `fly-swarm-material.ts` own the two
   materials; the GLSL files beside them carry all shader logic.
+- A swarm is never relocated where it can be seen doing it. Crossing the
+  travel threshold only asks the swarms to leave: each one shrinks its specks
+  away over a per-fly arrival attribute, places its anchor in the frame that
+  reaches nothing, and swells back at its new ring. They take their turns a
+  stagger apart, so a re-anchor reads as one cloud thinning out and another
+  thickening rather than as the whole layer blinking.
 
 ## Per-frame cost is bounded uploads plus uniforms
 

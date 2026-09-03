@@ -25,6 +25,11 @@ watchdogConfig:
   # screen to guess at.
   preAppLaunchCommand: 'cmd /c "C:\becoming-many\watchdog\bin\wait-health.bat http://localhost/health 300"'
 
+  # --kiosk is fullscreen but not topmost. Wait for Chrome to create the window
+  # and place that dedicated-profile window above PICO, SteamVR, and other apps.
+  # The hook runs again whenever Watchdog relaunches Chrome.
+  postAppLaunchCommand: 'C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "C:\becoming-many\watchdog\bin\keep-kiosk-on-top.ps1"'
+
   udpControl:
     commands:
       - systemHalt: halt

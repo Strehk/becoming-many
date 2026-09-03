@@ -123,9 +123,11 @@ level. `test` and `design-test` remain diagnostic presets.
 default page creates once. `SHOW_LEVEL_STATES` contains only presentation facts
 that can change while that world is running. `PIECE_SCHEDULE` and the show
 clock select those states, drive sense intensities and background transitions,
-and synchronize narration. The schedule's opening state is also applied before
-module construction so fixed spatial pools use its authored view distance. A
-requested standalone level or benchmark does not start a show.
+synchronize narration, and fade in the end credits at the authored
+`creditsAtSeconds`. The schedule's opening state is also applied before module
+construction so fixed spatial pools use its authored view distance. A requested
+standalone level or benchmark does not start a show, so neither builds the
+credits panel.
 
 ## Station and Control Boundaries
 

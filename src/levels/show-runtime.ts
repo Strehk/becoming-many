@@ -6,6 +6,7 @@
  */
 
 import { Color } from "three";
+import { endCreditsPresenceAt } from "../dramaturgy/end-credits";
 import type { NarrationLanguage } from "../dramaturgy/narration-catalog";
 import {
   type NarrationSchedule,
@@ -53,6 +54,11 @@ export interface ShowWorldReach {
     readonly animals?: WorldFadeEffect;
   };
   readonly setSkyBackground?: (background: Color) => void;
+  /**
+   * Fades the closing credits in at the end of the show. Not a gate: the
+   * credits are not a sense, and the panel costs no draw while hidden.
+   */
+  readonly setEndCreditsPresence?: (presence: number) => void;
 }
 
 export interface ShowRuntime {
@@ -148,6 +154,11 @@ export function createShowRuntime(
     setSense("connections", connections);
     reach.worldFades.structure?.setPresence(echo);
     reach.worldFades.animals?.setPresence(thermal);
+    // Derived like everything else here, so a seek lands mid-fade and a seek
+    // to zero puts the credits away without a second piece of state.
+    reach.setEndCreditsPresence?.(
+      endCreditsPresenceAt(schedule, showTimeSeconds),
+    );
   }
 
   function followWorld(showTimeSeconds: number): void {

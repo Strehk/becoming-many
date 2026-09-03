@@ -28,6 +28,12 @@ config file from this folder.
 | `pico.yaml` | `PICOBusinessStreaming.exe` | 2347 | the streaming client gone or crashed |
 | `kiosk.yaml` | `chrome.exe` | 2350 | a closed, crashed or killed kiosk window |
 
+After each kiosk launch, `kiosk.yaml` runs
+[bin/keep-kiosk-on-top.ps1](bin/keep-kiosk-on-top.ps1). The helper waits for
+the uniquely titled conductor window and gives it Windows topmost Z-order,
+placing it above the windows already opened by PICO and SteamVR. It does not
+activate the window or interfere with keyboard focus.
+
 ## Why the station is watched twice
 
 `docker-compose.yml` sets `restart: unless-stopped`, so Docker itself brings a
@@ -93,6 +99,7 @@ C:\becoming-many\
     start-station.bat
     docker.yaml  station.yaml  steamvr.yaml  pico.yaml  kiosk.yaml
     bin\  docker-up.bat  poll-health.bat  wait-health.bat
+          keep-kiosk-on-top.ps1
     logs\   created on first start
     run\    heartbeat file and the kiosk browser profile
 <current user's Startup folder>\
