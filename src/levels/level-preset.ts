@@ -13,7 +13,6 @@ import type { GrassClipmapPreset } from "../modules/grass-clipmap/grass-clipmap"
 import type { MagneticSenseParameters } from "../modules/magnetic-sense/magnetic-sense";
 import type { MotionSenseParameters } from "../modules/motion-sense/motion-sense";
 import type { ConnectionsParameters } from "../modules/mycelium/mycelium";
-import type { RaptorPreset } from "../modules/raptor/raptor";
 import type { RocksPreset } from "../modules/rocks/rocks";
 import type { ScentParticlesParameters } from "../modules/scent-particles/scent-particles";
 import type { StaticPopulationPreset } from "../modules/static-population";
@@ -39,7 +38,6 @@ export interface WorldComposition {
   readonly vegetation?: VegetationPreset;
   readonly rocks?: RocksPreset;
   readonly animals?: AnimalsPreset;
-  readonly raptor?: RaptorPreset;
   readonly echoDepth?: EchoDepthParameters;
   readonly motion?: MotionSenseParameters;
   readonly thermal?: ThermalPerceptionParameters;

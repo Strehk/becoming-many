@@ -144,6 +144,22 @@ export interface MotionSenseParameters {
     readonly flightHeightMeters: number;
     readonly appearance: MotionTrailAppearance;
   };
+
+  /** One raptor circling a place in the landscape; omitted means none. */
+  readonly raptor?: RaptorParameters;
+}
+
+/** One raptor holding a ring over the landscape, or absent for a sky without one. */
+export interface RaptorParameters {
+  /** Ring depth of the raptor's trace, in rendered frames. */
+  readonly trailLifetimeFrames: number;
+  readonly appearance: MotionTrailAppearance;
+  /**
+   * The body flying the ring, or absent while only its trace is shown. The
+   * Motion Perception level authors none: what that world state shows is
+   * movement, and a warm body belongs to the sense that reveals warm bodies.
+   */
+  readonly body?: { readonly color: number };
 }
 
 /** The per-source trail appearance shared by the fly and bird trail rings. */

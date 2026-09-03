@@ -35,12 +35,11 @@ import {
   createMotionSenseModule,
   type MotionSenseModuleHandle,
 } from "../modules/motion-sense/motion-sense";
+import { RAPTOR_DEFINITION } from "../modules/motion-sense/raptor-definition";
 import {
   type ConnectionsModuleHandle,
   createConnectionsModule,
 } from "../modules/mycelium/mycelium";
-import { createRaptorModule } from "../modules/raptor/raptor";
-import { RAPTOR_DEFINITION } from "../modules/raptor/raptor-definition";
 import { createRockConnectionSource } from "../modules/rocks/rock-nodes";
 import { createRocksModule } from "../modules/rocks/rocks";
 import { ROCKS_DEFINITION } from "../modules/rocks/rocks-definition";
@@ -90,7 +89,8 @@ export interface LoadedLevelAssets {
   readonly vegetation: GltfAssets;
   readonly rocks: GltfAssets;
   readonly animals: GltfAssets;
-  readonly raptor: GltfAssets;
+  /** What the motion sense's own actors need: the raptor's model today. */
+  readonly motion: GltfAssets;
 }
 
 interface LevelSetup {
@@ -203,7 +203,7 @@ function createConfiguredModules(setup: LevelSetup): ComposedWorld {
     scent?.observeActorBodies,
   );
   const connections = createConnectionsWeb(setup, animals);
-  const motion = createMotionSense(setup);
+  const motion = createMotionSense(setup, animalsFade);
 
   add(
     "echo",
@@ -222,7 +222,6 @@ function createConfiguredModules(setup: LevelSetup): ComposedWorld {
   add("echo", createVegetation(setup, echoDepth, thermal, structureFade));
   add("echo", createRocks(setup, echoDepth, thermal, structureFade));
   add("thermal", animals?.module);
-  add("thermal", createRaptor(setup, animalsFade));
   add("motion", motion?.module);
   add("magnetic", magnetic?.module);
   add("connections", connections?.module);
@@ -273,14 +272,37 @@ function composeShowReach(
       magnetic: handles.magnetic?.setIntensity,
       connections: handles.connections?.setIntensity,
     },
-    worldFades: {
-      structure: handles.structureFade,
-      animals: handles.animalsFade,
-    },
+    worldFades: composeWorldFades(handles),
+    ...composeShowDrivers(handles),
+  };
+}
+
+/**
+ * Everything a show drives that is not a sense of its own: the sky's haze,
+ * the closing credits, the raptor's body, and where the moving clouds are.
+ */
+function composeShowDrivers(
+  handles: ComposedSenseHandles,
+): Pick<
+  ShowWorldReach,
+  | "setSkyBackground"
+  | "setEndCreditsPresence"
+  | "setBodyPresence"
+  | "readMotionActorCenters"
+> {
+  return {
     setSkyBackground: handles.magnetic?.setSkyBackground,
     setEndCreditsPresence: handles.endCredits?.setPresence,
+    setBodyPresence: handles.motion?.setBodyPresence,
     readMotionActorCenters: handles.motion?.readActorCenters,
   };
+}
+
+/** The surface groups a show dissolves into and out of its background. */
+function composeWorldFades(
+  handles: ComposedSenseHandles,
+): ShowWorldReach["worldFades"] {
+  return { structure: handles.structureFade, animals: handles.animalsFade };
 }
 
 /**
@@ -366,9 +388,20 @@ function createThermalEffects(
 /** Skip the sense entirely at intensity zero so its GPU work never runs. */
 function createMotionSense(
   setup: LevelSetup,
+  animalsFade: WorldFadeEffect | undefined,
 ): MotionSenseModuleHandle | undefined {
   const parameters = setup.level.motion;
   if (!parameters || parameters.intensity === 0) return undefined;
+
+  // The raptor's body belongs to the warm population rather than to the
+  // motion sense: it rides the animals' World Fade, so a show condenses it
+  // out of the haze with the heat view that reveals a warm body at all. Its
+  // trace is the motion sense's own and needs nothing.
+  const asset = setup.assets.motion.get(RAPTOR_DEFINITION.asset.id);
+  const raptorBody =
+    parameters.raptor?.body && asset
+      ? { asset, effects: animalsFade ? [animalsFade] : [] }
+      : undefined;
 
   return createMotionSenseModule({
     scene: setup.world.scene,
@@ -376,6 +409,7 @@ function createMotionSense(
     parameters,
     groundYAt: setup.worldSurface.groundYAt,
     zoneAt: setup.worldSurface.zoneAt,
+    raptorBody,
   });
 }
 
@@ -576,29 +610,6 @@ function createVegetation(
   });
 }
 
-/**
- * The one bird with a skeleton of its own. It rides the animal population's
- * World Fade, so the heat view that reveals a warm body reveals this one too,
- * and holds its ring far outside that view's reach — which is why it carries
- * the echo palette rather than a false colour.
- */
-function createRaptor(
-  setup: LevelSetup,
-  animalsFade: WorldFadeEffect | undefined,
-): WorldModule | undefined {
-  const preset = setup.level.raptor;
-  if (!preset) return undefined;
-
-  return createRaptorModule({
-    scene: setup.world.scene,
-    viewpoint: setup.world.viewpoint,
-    preset,
-    assets: setup.assets.raptor,
-    worldSurface: setup.worldSurface,
-    effects: animalsFade ? [animalsFade] : [],
-  });
-}
-
 function createRocks(
   setup: LevelSetup,
   echoDepth: EchoDepthEffect | undefined,
@@ -714,7 +725,7 @@ function hasVisibleSurface(level: WorldComposition): boolean {
 export async function loadLevelAssets(
   level: WorldComposition,
 ): Promise<LoadedLevelAssets> {
-  const [vegetation, rocks, animals, raptor] = await Promise.all([
+  const [vegetation, rocks, animals, motion] = await Promise.all([
     loadGltfAssets(
       level.vegetation
         ? createStaticAssetRequests(VEGETATION_DEFINITION.assets)
@@ -728,10 +739,10 @@ export async function loadLevelAssets(
         ? createStaticAssetRequests(ANIMALS_DEFINITION.species)
         : [],
     ),
-    loadGltfAssets(level.raptor ? [RAPTOR_DEFINITION.asset] : []),
+    loadGltfAssets(level.motion?.raptor?.body ? [RAPTOR_DEFINITION.asset] : []),
   ]);
 
-  return { vegetation, rocks, animals, raptor };
+  return { vegetation, rocks, animals, motion };
 }
 
 function createStaticAssetRequests(

@@ -6,6 +6,8 @@
  */
 
 import type { Scene } from "three";
+import type { GLTF } from "three/examples/jsm/loaders/GLTFLoader.js";
+import type { UnlitMaterialEffect } from "../../utils/asset-loader/material-effect";
 import type { WorldModule } from "../../world/module-runtime";
 import type { Viewpoint } from "../../world/viewer-rig";
 import type { WorldSurface } from "../../world-surface/world-surface";
@@ -20,6 +22,12 @@ import {
   createMotionTrailBuffer,
   type MotionTrailBuffer,
 } from "./motion-trail-buffer";
+import { createRaptorBody, type RaptorBody } from "./raptor-body";
+import {
+  createRaptorFlight,
+  RAPTOR_POINT_COUNT,
+  type RaptorFlight,
+} from "./raptor-flight";
 
 export type { MotionSenseParameters } from "./motion-sense-settings";
 
@@ -40,6 +48,15 @@ export interface MotionSenseModuleOptions {
   readonly parameters: MotionSenseParameters;
   readonly groundYAt: WorldSurface["groundYAt"];
   readonly zoneAt: WorldSurface["zoneAt"];
+  /**
+   * The raptor's model, and what a show fades it through. Absent for a level
+   * that authors only its trace, and for one composed without a show: what
+   * the motion sense shows is movement, and a body only ever joins it.
+   */
+  readonly raptorBody?: {
+    readonly asset: GLTF;
+    readonly effects: readonly UnlitMaterialEffect[];
+  };
 }
 
 /** One actor's position stream paired with the ring it prints into. */
@@ -50,12 +67,17 @@ interface MotionTrailPrinter {
 
 interface MotionSenseResources {
   readonly flySwarms: FlySwarms;
+  readonly raptorFlight: RaptorFlight | undefined;
+  readonly raptorBody: RaptorBody | undefined;
   readonly birdFlocks: BirdFlocks | undefined;
   readonly printers: readonly MotionTrailPrinter[];
 }
 
 interface MotionSenseState {
   currentResources: MotionSenseResources | undefined;
+  /** Both must hold for a body to be drawn: the sense up, and warmth seen. */
+  isActive: boolean;
+  hasBodyPresence: boolean;
 }
 
 /** The moving actor groups this module simulates. */
@@ -74,6 +96,13 @@ export interface MotionSenseModuleHandle {
    * caller places sound on what exists and stays silent about the rest.
    */
   readonly readActorCenters: (group: MotionActorGroup) => Float32Array;
+
+  /**
+   * How present the raptor's body is, 0..1. Its ring never changes: this only
+   * decides whether the bird flying it can be seen, which is the heat view's
+   * business rather than the motion sense's.
+   */
+  readonly setBodyPresence: (presence: number) => void;
 }
 
 /** Answer for a group with nothing in the world; shared, never written. */
@@ -83,7 +112,11 @@ export function createMotionSenseModule(
   options: MotionSenseModuleOptions,
 ): MotionSenseModuleHandle {
   const senseFadeUniform = { value: 1 };
-  const state: MotionSenseState = { currentResources: undefined };
+  const state: MotionSenseState = {
+    currentResources: undefined,
+    isActive: false,
+    hasBodyPresence: true,
+  };
 
   return {
     module: {
@@ -97,6 +130,10 @@ export function createMotionSenseModule(
       senseFadeUniform.value = intensity;
     },
     readActorCenters: (group) => readActorCenters(state, group),
+    setBodyPresence: (presence) => {
+      state.hasBodyPresence = presence > 0;
+      applyRaptorBodyVisibility(state);
+    },
   };
 }
 
@@ -124,7 +161,6 @@ function loadMotionSense(
     zoneAt: options.zoneAt,
     initialPlayerX: viewpoint.worldPosition.x,
     initialPlayerZ: viewpoint.worldPosition.z,
-    senseFadeUniform,
   });
   const printers: MotionTrailPrinter[] = [
     {
@@ -140,33 +176,17 @@ function loadMotionSense(
     },
   ];
 
-  // Bird bodies stay invisible (perception-only actors): only their trail
-  // ring joins the scene beside the visible fly specks.
-  const birdFlocks = parameters.birds
-    ? createBirdFlocks({
-        birds: parameters.birds,
-        groundYAt: options.groundYAt,
-        initialPlayerX: viewpoint.worldPosition.x,
-        initialPlayerZ: viewpoint.worldPosition.z,
-      })
-    : undefined;
-  if (birdFlocks && parameters.birds) {
-    printers.push({
-      source: birdFlocks,
-      trail: createMotionTrailBuffer({
-        pointCount: getBirdPointCount(parameters.birds),
-        // The flocks' own ring depth; everything else about a trail — its
-        // expansion, its motion gain, its fade — is one shared behavior.
-        trail: {
-          ...parameters.trail,
-          lifetimeFrames: parameters.birds.trailLifetimeFrames,
-        },
-        appearance: parameters.birds.appearance,
-        intensity: parameters.intensity,
-        senseFadeUniform,
-      }),
-    });
-  }
+  const birdFlocks = loadBirdFlocks(options, senseFadeUniform, printers);
+  const raptorFlight = loadRaptorFlight(options, senseFadeUniform, printers);
+  const raptorBody =
+    raptorFlight && parameters.raptor?.body && options.raptorBody
+      ? createRaptorBody({
+          scene,
+          asset: options.raptorBody.asset,
+          appearance: parameters.raptor.body,
+          effects: options.raptorBody.effects,
+        })
+      : undefined;
 
   // Loading happens before the first render. Keep every object hidden until
   // the module lifecycle activates it.
@@ -176,7 +196,79 @@ function loadMotionSense(
     printer.trail.points.visible = false;
     scene.add(printer.trail.points);
   }
-  state.currentResources = { flySwarms, birdFlocks, printers };
+  state.currentResources = {
+    flySwarms,
+    birdFlocks,
+    raptorFlight,
+    raptorBody,
+    printers,
+  };
+}
+
+/** The flocks and the ring they print into, or nothing for a sky without. */
+function loadBirdFlocks(
+  options: MotionSenseModuleOptions,
+  senseFadeUniform: { readonly value: number },
+  printers: MotionTrailPrinter[],
+): BirdFlocks | undefined {
+  const { parameters, viewpoint } = options;
+  if (!parameters.birds) return undefined;
+
+  const birdFlocks = createBirdFlocks({
+    birds: parameters.birds,
+    groundYAt: options.groundYAt,
+    initialPlayerX: viewpoint.worldPosition.x,
+    initialPlayerZ: viewpoint.worldPosition.z,
+  });
+  printers.push({
+    source: birdFlocks,
+    trail: createMotionTrailBuffer({
+      pointCount: getBirdPointCount(parameters.birds),
+      // The flocks' own ring depth; everything else about a trail — its
+      // expansion, its motion gain, its fade — is one shared behavior.
+      trail: {
+        ...parameters.trail,
+        lifetimeFrames: parameters.birds.trailLifetimeFrames,
+      },
+      appearance: parameters.birds.appearance,
+      intensity: parameters.intensity,
+      senseFadeUniform,
+    }),
+  });
+  return birdFlocks;
+}
+
+/**
+ * The one bird that circles a place rather than the visitor, and the ring it
+ * prints into. Its trace joins the same seam every other actor prints through.
+ */
+function loadRaptorFlight(
+  options: MotionSenseModuleOptions,
+  senseFadeUniform: { readonly value: number },
+  printers: MotionTrailPrinter[],
+): RaptorFlight | undefined {
+  const { parameters, viewpoint } = options;
+  if (!parameters.raptor) return undefined;
+
+  const raptorFlight = createRaptorFlight({
+    groundYAt: options.groundYAt,
+    initialPlayerX: viewpoint.worldPosition.x,
+    initialPlayerZ: viewpoint.worldPosition.z,
+  });
+  printers.push({
+    source: raptorFlight,
+    trail: createMotionTrailBuffer({
+      pointCount: RAPTOR_POINT_COUNT,
+      trail: {
+        ...parameters.trail,
+        lifetimeFrames: parameters.raptor.trailLifetimeFrames,
+      },
+      appearance: parameters.raptor.appearance,
+      intensity: parameters.intensity,
+      senseFadeUniform,
+    }),
+  });
+  return raptorFlight;
 }
 
 function updateMotionSense(
@@ -199,6 +291,19 @@ function updateMotionSense(
     viewpoint.worldPosition.x,
     viewpoint.worldPosition.z,
   );
+  resources.raptorFlight?.update(
+    deltaSeconds,
+    viewpoint.worldPosition.x,
+    viewpoint.worldPosition.z,
+  );
+  // Placed from the same stream that prints its trace, so the bird is always
+  // exactly where the line it drew says it is.
+  if (resources.raptorFlight && resources.raptorBody) {
+    resources.raptorBody.update(
+      resources.raptorFlight.getBodyStream(),
+      deltaSeconds,
+    );
+  }
   for (const printer of resources.printers) {
     printer.trail.spawnFromWorldPoints(printer.source.getWorldPositions());
   }
@@ -215,6 +320,15 @@ function setMotionSenseVisible(
   for (const printer of resources.printers) {
     printer.trail.points.visible = visible;
   }
+  state.isActive = visible;
+  applyRaptorBodyVisibility(state);
+}
+
+/** A body is drawn only while the sense stands and something reveals it. */
+function applyRaptorBodyVisibility(state: MotionSenseState): void {
+  state.currentResources?.raptorBody?.setVisible(
+    state.isActive && state.hasBodyPresence,
+  );
 }
 
 function unloadMotionSense(state: MotionSenseState, scene: Scene): void {
@@ -222,6 +336,7 @@ function unloadMotionSense(state: MotionSenseState, scene: Scene): void {
   if (!resources) return;
 
   state.currentResources = undefined;
+  resources.raptorBody?.dispose();
   scene.remove(resources.flySwarms.points);
   resources.flySwarms.dispose();
   for (const printer of resources.printers) {

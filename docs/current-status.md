@@ -64,9 +64,11 @@ issue and a bounded implementation.
   system.
 - Echolocation: terrain, vegetation, rocks, distance-based material effects,
   and the narrative grass clipmap.
-- Motion: bounded fly and bird point actors with GPU-aged motion trails.
+- Motion: bounded fly and bird point actors with GPU-aged motion trails, and
+  one raptor holding a ring over a place in the landscape. Its body joins at
+  the Thermal cue; before that the ring is only the line it draws.
 - Thermal: a viewer-centred false-colour material effect across terrain,
-  vegetation, rocks, and animals, and one raptor soaring on a wide ring.
+  vegetation, rocks, and animals.
 - Magnetic: one opaque camera-following sky dome; it does not patch terrain or
   other module materials.
 - Connections: a worker-generated, fixed-pool mycelium network connected to

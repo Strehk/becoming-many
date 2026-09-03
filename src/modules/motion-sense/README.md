@@ -7,9 +7,12 @@ Boundary: Level values live in presets; composition lives in the Level Runtime.
 
 # Motion Sense
 
-Motion Sense is the level-04 content module: persistent ambient fly swarms
-and invisible circling bird flocks whose movement prints fading motion-trail
-ring buffers — movement literally leaves a visible trace. It is a port of
+Motion Sense is the level-04 content module: persistent ambient fly swarms,
+invisible circling bird flocks, and one raptor holding a ring over the
+landscape, whose movement prints fading motion-trail ring buffers — movement
+literally leaves a visible trace. The raptor's body joins from level 05 on,
+where the heat view first shows a warm body at all; before that its ring is
+a line drawn across the sky and nothing else. It is a port of
 the proven bm-base motion layer (`mosquito-flocks` plus the
 `ParticleTrailBuffer`), rewritten from WebGPU/TSL to this repository's
 WebGL2 idiom: `THREE.Points`, `PointsMaterial`, `onBeforeCompile` patches,
@@ -24,6 +27,16 @@ and raw GLSL ES 3.00 files.
   on player-centred distance rings, stepped-noise buzz, strided flockmate
   sampling, lobe cohesion, a hard clamp above the anchor's fitted ground
   plane, epoch-based re-anchoring, and the opaque fly point pool.
+- `raptor-flight.ts` owns the one bird that circles a **place** rather than
+  the visitor: a ring standing over a fixed point of the landscape, which a
+  traveller flies past and leaves behind. Only when the ring is far enough
+  behind to be out of the world does another open ahead. It prints the same
+  three points a flock bird does — body and both wingtips — through the same
+  seam.
+- `raptor-body.ts` owns the model flying that ring, and is the only body in
+  the piece with a skeleton of its own: one actor can afford what sixty
+  cannot. Its authored beat plays back at a fifth speed, because a soaring
+  bird holds the wing and lets the air work.
 - `swarm-shape.ts` owns the volume a swarm buzzes inside: the per-swarm
   anisotropic axes and yaw, the drifting density lobes flies clump around,
   the Gaussian seeding, the per-fly binding, and the envelope spring whose

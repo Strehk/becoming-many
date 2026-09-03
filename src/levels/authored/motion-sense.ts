@@ -8,6 +8,20 @@
 import type { MotionSenseParameters } from "../../modules/motion-sense/motion-sense";
 
 /** Typed on its own so the heat variant below can rebuild it without a guard. */
+/*
+ * One raptor, holding a ring over a place in the landscape. Its trace is
+ * longer-lived than a flock's: a bird that crosses the whole sky in one slow
+ * circle draws a line, and a line needs the frames to stay drawn.
+ */
+const RAPTOR: NonNullable<MotionSenseParameters["raptor"]> = {
+  trailLifetimeFrames: 300,
+  appearance: {
+    trailColor: 0x2f6f8f,
+    trailSizeMeters: 0.5,
+    trailOpacity: 0.5,
+  },
+};
+
 const BIRDS: NonNullable<MotionSenseParameters["birds"]> = {
   flockCount: 5,
   birdsPerFlock: 12,
@@ -43,6 +57,7 @@ export const MOTION_SENSE: MotionSenseParameters = {
     density: 1,
   },
   birds: BIRDS,
+  raptor: RAPTOR,
 };
 
 /**
@@ -51,6 +66,15 @@ export const MOTION_SENSE: MotionSenseParameters = {
  */
 export const HEAT_MOTION_SENSE: MotionSenseParameters = {
   ...MOTION_SENSE,
+  raptor: {
+    ...RAPTOR,
+    appearance: { ...RAPTOR.appearance, trailColor: 0xfb5f16 },
+    // New in level 05: the bird itself, not only the line it draws. The fur
+    // colour the walking population carries — it holds its ring seventy
+    // metres up, far outside the heat view's reach, so it reads in the echo
+    // palette like a body the warmth has not arrived at.
+    body: { color: 0x171717 },
+  },
   birds: {
     ...BIRDS,
     appearance: {
