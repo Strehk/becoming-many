@@ -7,7 +7,7 @@ Boundary: Product vision and long-term design remain in the specialized document
 
 # Current Development Status
 
-Snapshot: 2026-09-02
+Snapshot: 2026-09-03
 
 The current `src/` and `public/` trees are the source of truth. This page is
 the concise entry point for the current implementation.
@@ -400,6 +400,37 @@ gesture in the window.
   height samples. Their body follows the slope while its forward axis remains
   aligned with movement; hidden actors incur no orientation sampling cost.
 - Unload stops mixers, releases clone skeletons, and disposes source assets.
+
+### Animal Passages
+
+- A passage is one animal crossing the visitor's flight on an authored route,
+  placed by the schedule rather than living in the world: the bat before
+  Echolocation and the bird before Magnetic Field Perception, the two senses
+  in the authored set whose animal names them. Each enters six seconds before
+  its cue and is gone after the new sense has faded in, so it introduces the
+  sense instead of illustrating it.
+- `passage-schedule.ts` is the second facet of the one show schedule, beside
+  narration, and `passageProgressAt` is its whole contract. A passage carries
+  a duration where a cue does not, because progress is derived from it: the
+  pose comes from show time on every frame, never accumulated, so a scrub
+  lands the animal on its route where playing through would have put it and
+  the wingbeat lands mid-flap. That is the deliberate departure from the
+  predecessor project, where these were fire-and-forget events pulsed over a
+  bus; a rising edge cannot be seeked, and both the conductor page and the
+  rehearsal bar scrub.
+- The route files, the models, and every constant that shapes a crossing —
+  scale, rotation, start offset, entry points, phase durations, forward axis,
+  roll — are carried over unchanged from the project they were tuned in.
+  Direction and closeness to the visitor *are* those numbers. The route frame
+  follows the viewpoint each frame, so a crossing is not left behind by the
+  gliding visitor; only the bat's route turns to the visitor's heading, once,
+  as it enters.
+- Passages are ungated: a crossing happens *between* senses, so no single
+  sense strength may put it away. They are also not decorated by the sense
+  effects or world fades, which is authored — a passage has to land in the
+  white world, where a body only the heat view could see would be missing.
+- Verified in the browser: both animals load, cross, and leave inside their
+  authored windows, with no console error from the module.
 
 ### Magnetic Sense
 

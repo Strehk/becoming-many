@@ -5,7 +5,7 @@
  * Boundary: Level files contain authored data; modules own content definitions and resources.
  */
 
-import { Color, type Matrix4 } from "three";
+import { Color, type Matrix4, Vector3 } from "three";
 import type { BenchmarkRun } from "../benchmark/benchmark-run";
 import { createDesktopControls } from "../control/desktop-controls";
 import {
@@ -21,6 +21,7 @@ import {
   narrationCueAt,
   type ShowLevelName,
 } from "../dramaturgy/narration-schedule";
+import { PIECE_PASSAGES } from "../dramaturgy/piece-schedule";
 import { createShowClock, type ShowClock } from "../dramaturgy/show-clock";
 import {
   levelTransitionAt,
@@ -33,6 +34,12 @@ import {
   type AirParticlesParameters,
   createAirParticlesModule,
 } from "../modules/air-particles/air-particles";
+import {
+  type AnimalPassagesModuleHandle,
+  createAnimalPassagesModule,
+  loadPassageResources,
+  type PassageResources,
+} from "../modules/animal-passages/animal-passages";
 import {
   type AnimalBodiesObserver,
   type AnimalsModuleHandle,
@@ -257,6 +264,8 @@ interface LoadedLevelAssets {
   readonly vegetation: GltfAssets;
   readonly rocks: GltfAssets;
   readonly animals: GltfAssets;
+  /** Passage models and routes; only a show crosses animals, so only a show loads them. */
+  readonly passages: PassageResources | undefined;
 }
 
 interface LevelSetup {
@@ -306,7 +315,7 @@ export async function startLevel(
     throw new Error("Missing level container element");
   }
 
-  const assets = await loadLevelAssets(level);
+  const assets = await loadLevelAssets(level, options.show !== undefined);
   // The World Runtime calls its setup synchronously, before it returns, so the
   // handle is always in hand by the time this function continues.
   let running: RunningLevel | undefined;
@@ -493,6 +502,9 @@ function createShow(
     followViewDistance(showTimeSeconds);
     followBackground(showTimeSeconds);
     followSenses(showTimeSeconds);
+    // Passages read the same instant as the senses they announce, so an
+    // animal crossing a cue boundary stays in step with the fade under it.
+    reach.followPassages?.(showTimeSeconds);
   }
 
   function followViewDistance(showTimeSeconds: number): void {
@@ -656,6 +668,8 @@ interface ShowWorldReach {
   };
   /** Keeps the opaque sky dome on the live background while it lerps. */
   readonly setSkyBackground?: (background: Color) => void;
+  /** Places the authored animal crossings; composed only for a show. */
+  readonly followPassages?: (showTimeSeconds: number) => void;
 }
 
 interface ComposedWorld {
@@ -695,6 +709,7 @@ function createConfiguredModules(setup: LevelSetup): ComposedWorld {
   );
   const connections = createConnectionsWeb(setup, animals);
   const motion = createMotionSense(setup);
+  const passages = createAnimalPassages(setup);
 
   add(
     "terrain",
@@ -716,6 +731,9 @@ function createConfiguredModules(setup: LevelSetup): ComposedWorld {
   add("motion", motion?.module);
   add("magneticSky", magnetic?.module);
   add("connections", connections?.module);
+  // Ungated: a passage crosses *between* senses, so no single sense strength
+  // may put it away. The schedule alone decides when its animal is in the air.
+  add(undefined, passages?.module);
 
   return {
     modules,
@@ -725,10 +743,44 @@ function createConfiguredModules(setup: LevelSetup): ComposedWorld {
       thermal,
       magnetic,
       connections,
+      passages,
       structureFade,
       animalsFade,
     }),
   };
+}
+
+/**
+ * The authored animal crossings. Only a show has them: they are placed by the
+ * schedule, and a static run has no show time to place them against.
+ */
+function createAnimalPassages(
+  setup: LevelSetup,
+): AnimalPassagesModuleHandle | undefined {
+  const resources = setup.assets.passages;
+  if (!setup.forShow || !resources) return undefined;
+
+  const { world } = setup;
+  const heading = new Vector3();
+  return createAnimalPassagesModule({
+    scene: world.scene,
+    viewpoint: world.viewpoint,
+    worldSurface: setup.worldSurface,
+    schedule: PIECE_PASSAGES,
+    resources,
+    // The rig's yaw is where the visitor is travelling, which is what a route
+    // entering behind them is turned against. The camera under it is head
+    // pose and would swing the whole route with a glance.
+    readViewHeadingRadians: () => {
+      world.viewerRig.updateWorldMatrix(true, false);
+      heading.set(0, 0, -1).applyQuaternion(world.viewerRig.quaternion);
+      // The yaw that turns −Z onto this heading. Both components are negated
+      // because forward is −Z: reading the raw components instead answers a
+      // half turn away, which sends a route authored to cross in front of the
+      // visitor out behind them.
+      return Math.atan2(-heading.x, -heading.z);
+    },
+  });
 }
 
 /**
@@ -743,6 +795,7 @@ interface ComposedSenseHandles {
   readonly thermal: ThermalPerceptionEffects | undefined;
   readonly magnetic: MagneticSenseModuleHandle | undefined;
   readonly connections: ConnectionsModuleHandle | undefined;
+  readonly passages: AnimalPassagesModuleHandle | undefined;
   readonly structureFade: WorldFadeEffect | undefined;
   readonly animalsFade: WorldFadeEffect | undefined;
 }
@@ -765,6 +818,7 @@ function composeShowReach(
       animals: handles.animalsFade,
     },
     setSkyBackground: handles.magnetic?.setSkyBackground,
+    followPassages: handles.passages?.followShowTime,
   };
 }
 
@@ -1167,8 +1221,11 @@ function activateModules(
   }
 }
 
-async function loadLevelAssets(level: LevelPreset): Promise<LoadedLevelAssets> {
-  const [vegetation, rocks, animals] = await Promise.all([
+async function loadLevelAssets(
+  level: LevelPreset,
+  forShow: boolean,
+): Promise<LoadedLevelAssets> {
+  const [vegetation, rocks, animals, passages] = await Promise.all([
     loadGltfAssets(
       level.vegetation
         ? createStaticAssetRequests(VEGETATION_DEFINITION.assets)
@@ -1182,9 +1239,10 @@ async function loadLevelAssets(level: LevelPreset): Promise<LoadedLevelAssets> {
         ? createStaticAssetRequests(ANIMALS_DEFINITION.species)
         : [],
     ),
+    forShow ? loadPassageResources(PIECE_PASSAGES) : undefined,
   ]);
 
-  return { vegetation, rocks, animals };
+  return { vegetation, rocks, animals, passages };
 }
 
 function createStaticAssetRequests(

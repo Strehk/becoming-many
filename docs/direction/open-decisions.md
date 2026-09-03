@@ -30,6 +30,13 @@ show in-process and commands it through one typed actions contract — see
 localhost WebSocket broker. That is a direct-call surface with one owner on
 each side, not an in-process bus: no topics, no registration, no lookup.
 
+**Extended (2026-09-03).** One-shot staged moments — the animal passages — are
+placed as a second facet of the same baked schedule and read by a pure
+show-time lookup, not by a trigger channel. See
+[An Animal Passage Is Scheduled Data, Not a Triggered Event](../architecture-decisions.md).
+That removes the last concrete consumer the pre-import command bus was
+proposed for.
+
 Still open:
 
 - The pre-import draft's in-process **command bus** and **perf router**. Neither
