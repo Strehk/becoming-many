@@ -35,22 +35,19 @@ export interface SnakesDefinition {
 export const SNAKES_DEFINITION: SnakesDefinition = {
   seed: 8123, // Keeps snake placement stable across levels and runs.
   chunkLevel: 2,
-  /*
-   * Against three-metre grass and ten-metre trees, a grass snake's metre and a
-   * half is a thread on the floor that nobody flying will ever pick out. These
-   * are the snakes of a world where a blade of grass stands over a deer.
-   */
-  lengthMeters: { minimum: 3.2, maximum: 5 },
+  // A large snake, and no larger: what makes one findable from the air is the
+  // heat it carries, not the size it is blown up to.
+  lengthMeters: { minimum: 1.6, maximum: 2.4 },
   // Eleven rings carry the wave without stepping, and six sides read as round
   // at the distance a flying visitor ever sees a snake from. Together they are
   // 120 triangles, against the 57,600 the authored tube shipped as.
   ringCount: 11,
   sideCount: 6,
   girthProfile: [0.55, 0.95, 1, 0.98, 0.97, 0.96, 0.94, 0.88, 0.74, 0.5, 0.12],
-  bodyRadiusMeters: 0.2,
+  bodyRadiusMeters: 0.085,
   // Its own length in about four seconds, as a snake moves.
-  crawlSpeedMetersPerSecond: 1.05,
-  crawlDistanceMeters: 34,
+  crawlSpeedMetersPerSecond: 0.52,
+  crawlDistanceMeters: 30,
   /*
    * Every ground but water. The meadow is where a snake belongs and the one
    * place it cannot be seen: grass covers it completely and stands three

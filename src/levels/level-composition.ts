@@ -219,7 +219,7 @@ function createConfiguredModules(setup: LevelSetup): ComposedWorld {
   add(undefined, createGrassClipmap(setup, echoDepth, thermal, structureFade));
   add("echo", createVegetation(setup, echoDepth, thermal, structureFade));
   add("echo", createRocks(setup, echoDepth, thermal, structureFade));
-  add("thermal", createSnakes(setup, echoDepth, thermal, structureFade));
+  add("thermal", createSnakes(setup, echoDepth, structureFade));
   add("thermal", animals?.module);
   add("motion", motion?.module);
   add("magnetic", magnetic?.module);
@@ -583,7 +583,6 @@ function createVegetation(
 function createSnakes(
   setup: LevelSetup,
   echoDepth: EchoDepthEffect | undefined,
-  thermal: ThermalPerceptionEffects | undefined,
   worldFade: WorldFadeEffect | undefined,
 ): WorldModule | undefined {
   const preset = setup.level.snakes;
@@ -594,7 +593,7 @@ function createSnakes(
     viewpoint: setup.world.viewpoint,
     preset,
     worldSurface: setup.worldSurface,
-    effects: buildSurfaceEffects(worldFade, thermal?.rocks, echoDepth),
+    effects: buildSurfaceEffects(worldFade, undefined, echoDepth),
   });
 }
 

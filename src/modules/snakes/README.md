@@ -12,10 +12,10 @@ wave running down it.
 
 ## Size
 
-Three to five metres. A grass snake's metre and a half is the honest length
-and the wrong one here: this world grows three-metre grass and ten-metre
-trees, so at that size a body on the ground is a thread nobody flying will
-ever pick out. The snakes are scaled to the world rather than to the animal.
+A large snake, and no larger: one and a half to two and a half metres. What
+makes one findable from the air is the heat it carries, not the size it is
+blown up to — an earlier pass grew them to five metres and they were still
+missed, because the problem was never the size.
 
 ## The body is rebuilt, not loaded
 
@@ -47,13 +47,19 @@ instead of wagging. A whole pool of snakes is one draw call and one uniform.
 - A snake walks its way and starts it again, so it never crawls out of the
   country its place was accepted in.
 
-## Which sense reveals them
+## Which sense reveals them, and why they are warm
 
-Snakes join the world at the **Thermal** cue, beside the walking population.
-A cold body is the one thing a heat view would physically not show, so this
-is a dramaturgical placement rather than a physical one: it is where the piece
-wants them. The ground they cross still colours them like the rocks around
-them, through the same echo ramp and world fade.
+Snakes join the world at the **Thermal** cue, beside the walking population,
+and they are the one surface here that deliberately skips the ground's heat
+ramp.
+
+Read as ground, a snake took the palette's cold stops and lay invisibly blue
+on blue ground — cold-blooded, correct, and impossible to find. But a snake
+does not stay at the ground's temperature: it takes its warmth from the sun,
+which is the whole reason it lies out in the open at all. A basking body is
+among the warmest things on a meadow and the one thermography finds first.
+So a snake is authored at the palette's hot stop and left there, while the
+echo ramp still carries it into the haze with distance.
 
 ## Deliberately absent
 

@@ -9,19 +9,24 @@ import type { SnakesPreset } from "../../modules/snakes/snakes";
 
 export const SNAKES: SnakesPreset = {
   /*
-   * Ten places offered per 64-metre cell. The ground refuses every one that
-   * would lay a body through a wood or down a bank, so what is left is the
-   * open country carrying as much snake as it can hold — a test value, and a
-   * deliberately loud one.
+   * Three places offered per 64-metre cell. The ground refuses the ones that
+   * would run down a bank or across water, which leaves a handful crossing
+   * the country around a visitor at any moment: met now and then rather than
+   * everywhere underfoot.
    */
-  candidatesPerCell: 10,
+  candidatesPerCell: 3,
   /*
    * Test value: every place the ground accepts carries a snake, which is far
    * more snake than a meadow holds — it is here so a run-through finds one
    * while the crawl is being judged. A quiet landscape is a fraction of this.
    */
   crawlingShare: 1,
-  // Darker than the grass it crosses and lighter than a trunk, so a body
-  // moving through the meadow is read as movement rather than as shadow.
-  color: 0x2b2b2b,
+  /*
+   * The palette's hot stop, the same one the bird traces take once the heat
+   * view is open. A snake takes its warmth from the sun rather than from
+   * itself, which is exactly why it lies out in the open to gather it — a
+   * basking body is among the warmest things on a meadow, and the one the
+   * ground's own cold makes unmistakable.
+   */
+  color: 0xfb5f16,
 };
