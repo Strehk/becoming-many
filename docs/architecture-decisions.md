@@ -21,6 +21,22 @@ This file records decisions that constrain current and upcoming work.
   `three/webgpu`, TSL, or WGSL code paths; TSL reference material is rewritten
   as GLSL when extracted.
 
+### Windows PCVR Delivery (2026-09-02)
+
+- This repository delivers one installation topology: the Three.js/WebXR
+  application renders on a Windows station PC, SteamVR provides the PC VR
+  runtime, and PICO Business Streaming carries the session over wired USB to a
+  PICO headset.
+- The headset is a streamed display and tracking endpoint. Standalone PICO
+  execution, native Android code, and parallel mobile profiles are outside this
+  repository.
+- A later standalone PICO edition belongs in a separate reduced fork. Shared
+  Experience code therefore remains separable from PC-only operator and
+  diagnostic composition, without speculative adapters or feature flags.
+- Acceptance measures the complete rendering, encoding, transport, decoding,
+  and presentation chain on a pinned hardware and software matrix. Desktop and
+  headless results remain diagnostic evidence only.
+
 ### One Composition Root and Render Loop
 
 - `src/main.ts` only selects level data and starts the Level Runtime.
@@ -516,10 +532,11 @@ and the whole wire (`station-protocol.ts`, `station-link.ts`,
   at `/config`, liveness at `/health` (socket counts gone). The M5 host is
   applied by the one page: deployment config when set (read-only), else the
   browser-remembered host.
-- **A server socket will return, but not this one.** The headset agent
-  ([Headset](direction/headset.md)) is an Android-to-server connection for
-  telemetry and see-through switching — a different wire with a different
-  peer, to be designed against that need rather than revived from this one.
+- **Do not reserve a replacement wire.** PICO Business Streaming owns the
+  headset transport. Add a narrow Windows-side adapter only after a concrete
+  operator requirement proves that the product's built-in controls and
+  diagnostics are insufficient; do not revive the broker or add an Android
+  agent speculatively.
 
 ### The Render Context Is XR-Compatible From Creation (2026-09-02)
 
