@@ -18,7 +18,10 @@ import {
 } from "three";
 import type { GLTF } from "three/addons/loaders/GLTFLoader.js";
 import { createAnimalSurfaceAlignment } from "../../src/modules/animals/animal-surface-orientation";
-import { createAnimalsModule } from "../../src/modules/animals/animals";
+import {
+  type AnimalBody,
+  createAnimalsModule,
+} from "../../src/modules/animals/animals";
 import type { AnimalsDefinition } from "../../src/modules/animals/animals-definition";
 import type { GltfAssets } from "../../src/utils/asset-loader/gltf-assets";
 import type { SensedMaterial } from "../../src/utils/asset-loader/material-effect";
@@ -29,6 +32,9 @@ import type { ZoneId } from "../../src/world-surface/zone-settings";
 // These modules never read the view distance; the value only completes the
 // contract. It matches the Three.js default far plane.
 const DEFAULT_VIEW_DISTANCE_METERS = 2_000;
+const ANGLE_TOLERANCE_RADIANS = 1e-10;
+const EXPECTED_TURN_SPEED_RADIANS_PER_SECOND = 2.2;
+const POSITION_TOLERANCE_METERS = 1e-6;
 
 const LAND_ZONES: readonly ZoneId[] = [
   "meadow",
@@ -188,6 +194,88 @@ test("Animals occupy separate territories around the player", () => {
   module.unload();
 });
 
+test("Animals turn continuously and independently of frame rate at habitat boundaries", () => {
+  const thirtyFps = simulateBlockedBoundaryTurn(30);
+  const ninetyFps = simulateBlockedBoundaryTurn(90);
+
+  expect(thirtyFps.headingChangeRadians).toBeCloseTo(
+    EXPECTED_TURN_SPEED_RADIANS_PER_SECOND,
+    10,
+  );
+  expect(ninetyFps.headingChangeRadians).toBeCloseTo(
+    thirtyFps.headingChangeRadians,
+    10,
+  );
+  expect(thirtyFps.maximumStepRadians).toBeCloseTo(
+    EXPECTED_TURN_SPEED_RADIANS_PER_SECOND / 30,
+    10,
+  );
+  expect(ninetyFps.maximumStepRadians).toBeCloseTo(
+    EXPECTED_TURN_SPEED_RADIANS_PER_SECOND / 90,
+    10,
+  );
+  expect(thirtyFps.finalBody.x).toBeCloseTo(thirtyFps.initialBody.x, 10);
+  expect(thirtyFps.finalBody.z).toBeCloseTo(thirtyFps.initialBody.z, 10);
+  expect(ninetyFps.finalBody.x).toBeCloseTo(ninetyFps.initialBody.x, 10);
+  expect(ninetyFps.finalBody.z).toBeCloseTo(ninetyFps.initialBody.z, 10);
+  expect(thirtyFps.finalZone).toBe("meadow");
+  expect(ninetyFps.finalZone).toBe("meadow");
+});
+
+test("Animals resume movement after turning toward an allowed zone", () => {
+  const deltaSeconds = 1 / 60;
+  const requiredTurnRadians =
+    EXPECTED_TURN_SPEED_RADIANS_PER_SECOND * deltaSeconds * 2;
+  let boundaryOrigin: Pick<AnimalBody, "x" | "z"> | undefined;
+  let initialHeadingRadians: number | undefined;
+  const worldSurface: WorldSurface = {
+    ...createFlatSurface(),
+    zoneAt: (worldX, worldZ) => {
+      if (!boundaryOrigin || initialHeadingRadians === undefined) {
+        return "meadow";
+      }
+
+      const offsetX = worldX - boundaryOrigin.x;
+      const offsetZ = worldZ - boundaryOrigin.z;
+      if (Math.hypot(offsetX, offsetZ) <= POSITION_TOLERANCE_METERS) {
+        return "meadow";
+      }
+
+      const candidateHeadingRadians = Math.atan2(offsetX, offsetZ);
+      const turnRadians = Math.atan2(
+        Math.sin(candidateHeadingRadians - initialHeadingRadians),
+        Math.cos(candidateHeadingRadians - initialHeadingRadians),
+      );
+      return turnRadians >= requiredTurnRadians - ANGLE_TOLERANCE_RADIANS
+        ? "meadow"
+        : "water";
+    },
+  };
+  const { bodies, module } = createSingleAnimalHarness(worldSurface);
+  const initialBody = getLatestAnimalBody(bodies);
+  boundaryOrigin = initialBody;
+  initialHeadingRadians = initialBody.headingRadians;
+
+  module.update?.(deltaSeconds);
+  module.update?.(deltaSeconds);
+  const turnedBody = getLatestAnimalBody(bodies);
+  expect(turnedBody.x).toBeCloseTo(initialBody.x, 10);
+  expect(turnedBody.z).toBeCloseTo(initialBody.z, 10);
+  expect(turnedBody.headingRadians - initialBody.headingRadians).toBeCloseTo(
+    requiredTurnRadians,
+    10,
+  );
+
+  module.update?.(deltaSeconds);
+  const movingBody = getLatestAnimalBody(bodies);
+  expect(
+    Math.hypot(movingBody.x - initialBody.x, movingBody.z - initialBody.z),
+  ).toBeGreaterThan(0);
+  expect(movingBody.headingRadians).toBeCloseTo(turnedBody.headingRadians, 10);
+  expect(worldSurface.zoneAt(movingBody.x, movingBody.z)).toBe("meadow");
+  module.unload();
+});
+
 test("Animals expose the visible actor positions within their budget", () => {
   const scene = new Scene();
   const viewerPosition = new Vector3();
@@ -261,6 +349,85 @@ function createAnimalAssets(): GltfAssets {
     ["deer", createAnimalGltf()],
     ["fox", createAnimalGltf()],
   ]);
+}
+
+function createSingleAnimalHarness(worldSurface: WorldSurface) {
+  const bodies: AnimalBody[] = [];
+  const handle = createAnimalsModule({
+    scene: new Scene(),
+    viewpoint: {
+      worldPosition: new Vector3(),
+      viewDistanceMeters: DEFAULT_VIEW_DISTANCE_METERS,
+    },
+    definition: {
+      ...DEFINITION,
+      species: [{ ...createSpecies("deer"), count: 1 }],
+    },
+    preset: PRESET,
+    assets: createAnimalAssets(),
+    worldSurface,
+    onBodiesUpdated: (visibleBodies) => {
+      const body = visibleBodies[0];
+      if (!body) throw new Error("Expected one visible animal body");
+      bodies.push({ ...body });
+    },
+  });
+
+  handle.module.load();
+  handle.module.activate();
+  handle.module.update?.(0);
+  return { bodies, module: handle.module };
+}
+
+function simulateBlockedBoundaryTurn(updateCount: number) {
+  let boundaryOrigin: Pick<AnimalBody, "x" | "z"> | undefined;
+  const worldSurface: WorldSurface = {
+    ...createFlatSurface(),
+    zoneAt: (worldX, worldZ) => {
+      if (!boundaryOrigin) return "meadow";
+      const distanceFromOrigin = Math.hypot(
+        worldX - boundaryOrigin.x,
+        worldZ - boundaryOrigin.z,
+      );
+      return distanceFromOrigin <= POSITION_TOLERANCE_METERS
+        ? "meadow"
+        : "water";
+    },
+  };
+  const { bodies, module } = createSingleAnimalHarness(worldSurface);
+  const initialBody = getLatestAnimalBody(bodies);
+  boundaryOrigin = initialBody;
+
+  const deltaSeconds = 1 / updateCount;
+  for (let updateIndex = 0; updateIndex < updateCount; updateIndex++) {
+    module.update?.(deltaSeconds);
+  }
+
+  const finalBody = getLatestAnimalBody(bodies);
+  const maximumStepRadians = bodies.reduce((maximumStep, body, index) => {
+    const previousBody = bodies[index - 1];
+    if (!previousBody) return maximumStep;
+    return Math.max(
+      maximumStep,
+      body.headingRadians - previousBody.headingRadians,
+    );
+  }, 0);
+  const finalZone = worldSurface.zoneAt(finalBody.x, finalBody.z);
+  module.unload();
+
+  return {
+    initialBody,
+    finalBody,
+    finalZone,
+    headingChangeRadians: finalBody.headingRadians - initialBody.headingRadians,
+    maximumStepRadians,
+  };
+}
+
+function getLatestAnimalBody(bodies: readonly AnimalBody[]): AnimalBody {
+  const body = bodies.at(-1);
+  if (!body) throw new Error("Expected an observed animal body");
+  return body;
 }
 
 function createAnimalGltf(): GLTF {

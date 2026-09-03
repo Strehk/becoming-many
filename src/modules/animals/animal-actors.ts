@@ -37,7 +37,7 @@ import type {
 } from "./animals-definition";
 
 const HOME_SEARCH_STEP_METERS = 12;
-const TURN_RADIANS = 2.2;
+const TURN_SPEED_RADIANS_PER_SECOND = 2.2;
 const FULL_CIRCLE_RADIANS = Math.PI * 2;
 const TERRITORY_MIN_RADIUS_RATIO = 0.35;
 const TERRITORY_MAX_RADIUS_RATIO = 0.75;
@@ -510,7 +510,7 @@ function moveActor(
       population.worldSurface.zoneAt(nextX, nextZ),
     )
   ) {
-    actor.headingRadians += TURN_RADIANS;
+    actor.headingRadians += TURN_SPEED_RADIANS_PER_SECOND * deltaSeconds;
     return;
   }
 
