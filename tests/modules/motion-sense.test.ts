@@ -7,12 +7,20 @@
 
 import { describe, expect, test } from "bun:test";
 import {
+  BoxGeometry,
   BufferAttribute,
+  Group,
+  InstancedMesh,
+  Matrix4,
+  Mesh,
+  MeshBasicMaterial,
   Points,
   type PointsMaterial,
   Scene,
   Vector3,
 } from "three";
+import type { GLTF } from "three/examples/jsm/loaders/GLTFLoader.js";
+import { createBirdBodies } from "../../src/modules/motion-sense/bird-bodies";
 import { createBirdFlocks } from "../../src/modules/motion-sense/bird-flocks";
 import { createFlySwarms } from "../../src/modules/motion-sense/fly-swarms";
 import { createMotionSenseModule } from "../../src/modules/motion-sense/motion-sense";
@@ -435,6 +443,89 @@ describe("Swarm shape", () => {
   });
 });
 
+describe("Bird bodies", () => {
+  const APPEARANCE = { lengthMeters: 0.26, color: 0x171717 };
+
+  const createBodies = (scene: Scene, birdCount: number) =>
+    createBirdBodies({
+      scene,
+      asset: createBirdGltf(),
+      appearance: APPEARANCE,
+      birdCount,
+      effects: [],
+    });
+
+  test("flies the whole pool as one instanced draw", () => {
+    const scene = new Scene();
+    const bodies = createBodies(scene, 4);
+    const mesh = scene.children[0];
+    if (!(mesh instanceof InstancedMesh)) throw new Error("Expected one pool");
+
+    expect(mesh.count).toBe(4);
+    expect(mesh.visible).toBe(false);
+    bodies.setVisible(true);
+    expect(mesh.visible).toBe(true);
+
+    bodies.dispose();
+    expect(scene.children).toHaveLength(0);
+  });
+
+  test("scales the model onto the authored length and marks its wings", () => {
+    const scene = new Scene();
+    const bodies = createBodies(scene, 1);
+    const mesh = scene.children[0];
+    if (!(mesh instanceof InstancedMesh)) throw new Error("Expected one pool");
+
+    mesh.geometry.computeBoundingBox();
+    const bounds = mesh.geometry.boundingBox;
+    if (!bounds) throw new Error("Expected measurable bounds");
+    expect(bounds.max.z - bounds.min.z).toBeCloseTo(APPEARANCE.lengthMeters, 5);
+
+    // The signed span drives the beat, so it has to reach a wingtip at one
+    // and stay inside the wings everywhere else.
+    const span = mesh.geometry.getAttribute("birdWingSpan");
+    let widest = 0;
+    for (let vertex = 0; vertex < span.count; vertex += 1) {
+      widest = Math.max(widest, Math.abs(span.getX(vertex)));
+    }
+    expect(widest).toBeCloseTo(1, 5);
+    bodies.dispose();
+  });
+
+  test("places every body where the flock says it flies", () => {
+    const scene = new Scene();
+    const bodies = createBodies(scene, 2);
+    const mesh = scene.children[0];
+    if (!(mesh instanceof InstancedMesh)) throw new Error("Expected one pool");
+
+    const stride = MOTION_SENSE_SETTINGS.birdBodyValuesPerBird;
+    const stream = new Float32Array(2 * stride);
+    stream.set([3, 14, -7, Math.PI / 2, 0.5], 0);
+    stream.set([-2, 11, 5, 0, -1], stride);
+    bodies.update(stream);
+
+    const placement = new Matrix4();
+    const position = new Vector3();
+    mesh.getMatrixAt(0, placement);
+    position.setFromMatrixPosition(placement);
+    expect(position.toArray()).toEqual([3, 14, -7]);
+
+    // A quarter turn about up: the bird's own +z now points along world +x.
+    const facing = new Vector3(0, 0, 1).transformDirection(placement);
+    expect(facing.x).toBeCloseTo(1, 5);
+    expect(facing.z).toBeCloseTo(0, 5);
+
+    mesh.getMatrixAt(1, placement);
+    position.setFromMatrixPosition(placement);
+    expect(position.toArray()).toEqual([-2, 11, 5]);
+
+    const beats = mesh.geometry.getAttribute("birdBeat");
+    expect(beats.getX(0)).toBeCloseTo(0.5, 5);
+    expect(beats.getX(1)).toBeCloseTo(-1, 5);
+    bodies.dispose();
+  });
+});
+
 describe("Bird flocks", () => {
   const createBirds = () =>
     createBirdFlocks({
@@ -470,6 +561,51 @@ describe("Bird flocks", () => {
     expect(wingDistance).toBeCloseTo(
       MOTION_SENSE_SETTINGS.birdWingSpanMeters / 2,
     );
+  });
+
+  test("streams one body per bird, on the trace it prints", () => {
+    const birds = createBirds();
+    const parameters = createBirdParameters();
+    for (let step = 0; step < 30; step += 1) birds.update(1 / 90, 0, 0);
+
+    const points = birds.getWorldPositions();
+    const bodies = birds.getBodyStream();
+    const birdCount = parameters.flockCount * parameters.birdsPerFlock;
+    expect(bodies).toHaveLength(
+      birdCount * MOTION_SENSE_SETTINGS.birdBodyValuesPerBird,
+    );
+
+    for (let bird = 0; bird < birdCount; bird += 1) {
+      const body = bird * MOTION_SENSE_SETTINGS.birdBodyValuesPerBird;
+      const point = bird * MOTION_SENSE_SETTINGS.birdPointsPerBird * 3;
+      // A body stands exactly where the trace says the bird is; anything else
+      // would draw a bird beside its own trail.
+      expect(bodies[body]).toBe(points[point]);
+      expect(bodies[body + 1]).toBe(points[point + 1]);
+      expect(bodies[body + 2]).toBe(points[point + 2]);
+      expect(Math.abs(bodies[body + 4] ?? 2)).toBeLessThanOrEqual(1);
+    }
+  });
+
+  test("faces every body along the ring it flies", () => {
+    const birds = createBirds();
+    for (let step = 0; step < 30; step += 1) birds.update(1 / 90, 0, 0);
+    const before = birds.getBodyStream().slice();
+    for (let step = 0; step < 30; step += 1) birds.update(1 / 90, 0, 0);
+    const after = birds.getBodyStream();
+
+    // The heading is the direction the first bird actually travelled in;
+    // anything else would fly the pool sideways along its own ring.
+    const travelled = Math.atan2(
+      (after[0] ?? 0) - (before[0] ?? 0),
+      (after[2] ?? 0) - (before[2] ?? 0),
+    );
+    const heading = after[3] ?? 0;
+    const difference = Math.atan2(
+      Math.sin(travelled - heading),
+      Math.cos(travelled - heading),
+    );
+    expect(Math.abs(difference)).toBeLessThan(0.2);
   });
 
   test("keeps every bird on its air ring above the sampled ground", () => {
@@ -829,4 +965,19 @@ function getSwarmCentroids(
       z: sumZ / swarms.fliesPerSwarm,
     };
   });
+}
+
+/** A bird-shaped stand-in: two metres of span, one of length, facing +z. */
+function createBirdGltf(): GLTF {
+  const scene = new Group();
+  scene.add(new Mesh(new BoxGeometry(2, 0.2, 1), new MeshBasicMaterial()));
+  return {
+    animations: [],
+    asset: {},
+    cameras: [],
+    parser: {} as GLTF["parser"],
+    scene,
+    scenes: [scene],
+    userData: {},
+  };
 }

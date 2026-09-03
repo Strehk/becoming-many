@@ -33,6 +33,16 @@ export const level: LevelPreset = {
         ...sharedMotionSenseBirds.appearance,
         trailColor: 0xfb5f16,
       },
+      // New in level 05: the flocks get bodies. Movement without a body is
+      // what level 04 is about, so the birds fly it as pure trace; the heat
+      // view is the first sense that shows a warm body, and it shows theirs.
+      // A blackbird's length, and the fur color the walking animals carry,
+      // because a bird crossing the ring above stays outside the 35 m heat
+      // view and reads in the echo palette like an unwarmed animal does.
+      body: {
+        lengthMeters: 0.26,
+        color: 0x171717,
+      },
     },
   },
   // New in level 05: warm bodies against the carried grayscale world. Fur

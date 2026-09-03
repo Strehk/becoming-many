@@ -79,6 +79,14 @@ export const MOTION_SENSE_SETTINGS = {
   birdFlapAmplitudeMeters: 0.28, // Vertical wingtip travel per flap.
   birdFlapFrequency: { minHertz: 4, maxHertz: 8 }, // Per-bird deterministic flap rate.
   birdPointsPerBird: 3, // Body plus two wingtips; the whole trace of one bird.
+  birdBodyValuesPerBird: 5, // Where a bird is, which way it faces, where its wings stand.
+  // How far a wing swings from level, in radians, at the top and bottom of a
+  // beat. The printed wingtip trace keeps its own metres: the trace is what
+  // the sense shows, and the body only has to agree with it, not derive it.
+  birdWingBeatRadians: 0.75,
+  // Where the wing stops being body: below this share of the half span a
+  // vertex is fuselage and stays put, above it the beat takes over smoothly.
+  birdWingRootShare: 0.22,
 } as const;
 
 /** Level-authored sense strength, swarm pool, appearance, and trail values. */
@@ -143,7 +151,23 @@ export interface MotionSenseParameters {
     /** Flock centre height above the sampled ground. */
     readonly flightHeightMeters: number;
     readonly appearance: MotionTrailAppearance;
+
+    /**
+     * The bodies flying the flock, or absent for flocks that stay pure trace.
+     * The Motion Perception level authors none: movement without a body is
+     * what that world state is about. Later levels carry bodies, and a show
+     * only shows them once the heat view opens.
+     */
+    readonly body?: BirdBodyAppearance;
   };
+}
+
+/** How the bird bodies of one level look and how large they fly. */
+export interface BirdBodyAppearance {
+  /** Beak-to-tail length in metres; the model is scaled onto it. */
+  readonly lengthMeters: number;
+  /** Body tone. Outside the heat view's reach a bird sits in the echo palette. */
+  readonly color: number;
 }
 
 /** The per-source trail appearance shared by the fly and bird trail rings. */

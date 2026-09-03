@@ -299,10 +299,11 @@ test("Thermal Level layers heat onto the carried Motion world", () => {
   expect(thermalPreset.terrain).toEqual(motionLevel.terrain);
   expect(thermalPreset.vegetation).toEqual(motionLevel.vegetation);
   expect(thermalPreset.rocks).toEqual(motionLevel.rocks);
-  // The one authored deviation from the carried Motion world: a bird is a warm
-  // body, so a heat view prints its trace in the palette's hot stop instead of
-  // the cold accent the pale world reads it as. Everything else about the
-  // flocks carries over, and the cold-blooded flies keep their own colors.
+  // Two authored deviations from the carried Motion world, both because a bird
+  // is a warm body: the heat view prints its trace in the palette's hot stop
+  // instead of the cold accent the pale world reads it as, and it is the first
+  // sense to put a body on that trace at all. Everything else about the flocks
+  // carries over, and the cold-blooded flies keep their own colors.
   const carriedMotion = motionLevel.motion;
   const thermalMotion = thermalPreset.motion;
   if (!carriedMotion?.birds) throw new Error("Motion Level must author birds");
@@ -311,10 +312,19 @@ test("Thermal Level layers heat onto the carried Motion world", () => {
     ...carriedMotion,
     birds: undefined,
   });
-  expect({ ...thermalMotion.birds, appearance: undefined }).toEqual({
+  expect({
+    ...thermalMotion.birds,
+    appearance: undefined,
+    body: undefined,
+  }).toEqual({
     ...carriedMotion.birds,
     appearance: undefined,
+    body: undefined,
   });
+  // Movement without a body is what Motion Perception is about: the flocks
+  // fly it as pure trace and only the heat view reveals what flies them.
+  expect(carriedMotion.birds.body).toBeUndefined();
+  expect(thermalMotion.birds.body?.lengthMeters).toBeGreaterThan(0);
   expect({ ...thermalMotion.birds.appearance, trailColor: 0 }).toEqual({
     ...carriedMotion.birds.appearance,
     trailColor: 0,

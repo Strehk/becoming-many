@@ -36,3 +36,14 @@ homes. An Android headset agent or technician CLI remains unapproved.
 Add either only when a tested installation requirement cannot be met by the
 current runtime and normal device tooling. Split new code by runtime boundary,
 keep its protocol narrow, and record how it degrades when unavailable.
+
+## 4. Provenance of the Carried-Over Models
+
+The models carried over from `Strehk/uni-becoming-many` — the flock bird today,
+the passage bird and bat on the branch that stages them — arrive with no author
+and no licence recorded, and their manifests say so in place of a claim. Every
+other asset in `public/` names Quaternius and CC0-1.0.
+
+Decide before release, not before use: name the author and licence of each
+carried-over file in its manifest, or replace the file. An installation that
+shows a model it cannot account for is the risk being tracked here.

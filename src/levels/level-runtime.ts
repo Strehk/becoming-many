@@ -62,6 +62,7 @@ import {
   type MagneticSenseModuleHandle,
   type MagneticSenseParameters,
 } from "../modules/magnetic-sense/magnetic-sense";
+import { BIRD_BODY_ASSET } from "../modules/motion-sense/bird-bodies";
 import {
   createMotionSenseModule,
   type MotionSenseModuleHandle,
@@ -258,6 +259,7 @@ interface LoadedLevelAssets {
   readonly vegetation: GltfAssets;
   readonly rocks: GltfAssets;
   readonly animals: GltfAssets;
+  readonly birds: GltfAssets;
 }
 
 interface LevelSetup {
@@ -542,9 +544,12 @@ function createShow(
       reach.senses[sense]?.(strengths[sense]);
     }
     // Structure rides the sense that introduces it: surfaces condense with
-    // the depth response, the animal population with the heat view.
+    // the depth response, the animal population with the heat view. The birds
+    // already fly the sky from Motion Perception on; the heat view is what
+    // puts a body on the trace.
     reach.worldFades.structure?.setPresence(strengths.echo);
     reach.worldFades.animals?.setPresence(strengths.thermal);
+    reach.setBirdBodyPresence?.(strengths.thermal);
 
     for (const [gate, module] of reach.gates) {
       if (strengths[GATE_SENSE[gate]] > 0) world.modules.activate(module);
@@ -667,6 +672,13 @@ interface ShowWorldReach {
    * credits are not a sense, and the panel costs no draw while hidden.
    */
   readonly setEndCreditsPresence?: (presence: number) => void;
+
+  /**
+   * Reveals the bird bodies with the heat view. Not a sense of its own: the
+   * flocks fly from Motion Perception on either way, and what changes at the
+   * Thermal cue is only whether the bodies flying them can be seen.
+   */
+  readonly setBirdBodyPresence?: (presence: number) => void;
 }
 
 interface ComposedWorld {
@@ -716,7 +728,7 @@ function createConfiguredModules(setup: LevelSetup): ComposedWorld {
     scent?.observeActorBodies,
   );
   const connections = createConnectionsWeb(setup, animals);
-  const motion = createMotionSense(setup);
+  const motion = createMotionSense(setup, animalsFade);
 
   add(
     "terrain",
@@ -791,6 +803,7 @@ function composeShowReach(
     },
     setSkyBackground: handles.magnetic?.setSkyBackground,
     setEndCreditsPresence: handles.endCredits?.setPresence,
+    setBirdBodyPresence: handles.motion?.setBodyPresence,
   };
 }
 
@@ -877,9 +890,21 @@ function createThermalEffects(
 /** Skip the sense entirely at intensity zero so its GPU work never runs. */
 function createMotionSense(
   setup: LevelSetup,
+  animalsFade: WorldFadeEffect | undefined,
 ): MotionSenseModuleHandle | undefined {
   const parameters = setup.level.motion;
   if (!parameters || parameters.intensity === 0) return undefined;
+
+  // The bodies belong to the warm population rather than to the motion
+  // sense: they ride the animals' World Fade, so a show condenses them out
+  // of the haze with the heat view that reveals them. They fly the flock's
+  // rings well beyond the heat view's reach, so like an unwarmed animal they
+  // keep the echo palette their colour is authored in.
+  const asset = setup.assets.birds.get(BIRD_BODY_ASSET.id);
+  const birdBody =
+    parameters.birds?.body && asset
+      ? { asset, effects: animalsFade ? [animalsFade] : [] }
+      : undefined;
 
   return createMotionSenseModule({
     scene: setup.world.scene,
@@ -887,6 +912,7 @@ function createMotionSense(
     parameters,
     groundYAt: setup.worldSurface.groundYAt,
     zoneAt: setup.worldSurface.zoneAt,
+    birdBody,
   });
 }
 
@@ -1203,7 +1229,7 @@ function activateModules(
 }
 
 async function loadLevelAssets(level: LevelPreset): Promise<LoadedLevelAssets> {
-  const [vegetation, rocks, animals] = await Promise.all([
+  const [vegetation, rocks, animals, birds] = await Promise.all([
     loadGltfAssets(
       level.vegetation
         ? createStaticAssetRequests(VEGETATION_DEFINITION.assets)
@@ -1217,9 +1243,10 @@ async function loadLevelAssets(level: LevelPreset): Promise<LoadedLevelAssets> {
         ? createStaticAssetRequests(ANIMALS_DEFINITION.species)
         : [],
     ),
+    loadGltfAssets(level.motion?.birds?.body ? [BIRD_BODY_ASSET] : []),
   ]);
 
-  return { vegetation, rocks, animals };
+  return { vegetation, rocks, animals, birds };
 }
 
 function createStaticAssetRequests(

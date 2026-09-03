@@ -34,18 +34,31 @@ interface BirdFlocksOptions {
 }
 
 /**
- * Pure data actor: no scene object exists because the bird bodies stay
- * invisible. The position stream feeds one Motion Trail ring through the
- * module's `MotionPointSource` seam.
+ * Pure data actor: the flock owns no scene object. Its point stream feeds one
+ * Motion Trail ring through the module's `MotionPointSource` seam, and its
+ * body stream places whatever chooses to fly the same flight — the trace is
+ * authored here, a body only follows it.
  */
 export interface BirdFlocks {
   /** Tightly packed world xyz triples of every bird point; stable identity. */
   readonly getWorldPositions: () => Float32Array;
+
+  /**
+   * Where every bird is and how it flies, five values each: world x, y, z,
+   * the heading in radians, and the beat as a sine between −1 and 1. Stable
+   * identity, rewritten in place every update.
+   */
+  readonly getBodyStream: () => Float32Array;
   readonly update: (
     deltaSeconds: number,
     playerX: number,
     playerZ: number,
   ) => void;
+}
+
+/** Count the birds one parameter block flies. */
+export function getBirdCount(birds: BirdParameters): number {
+  return birds.flockCount * birds.birdsPerFlock;
 }
 
 /** Count the trail points one bird parameter block produces. */
@@ -66,6 +79,9 @@ export function createBirdFlocks(options: BirdFlocksOptions): BirdFlocks {
   const flockFirstBird = createFlockFirstBirds(flockSizes);
   const worldPositions = new Float32Array(
     getBirdPointCount(birds) * COMPONENTS_PER_VALUE,
+  );
+  const bodyStream = new Float32Array(
+    birdCount * MOTION_SENSE_SETTINGS.birdBodyValuesPerBird,
   );
   const scatterOffsets = new Float32Array(birdCount * COMPONENTS_PER_VALUE);
   const flapFrequencies = new Float32Array(birdCount);
@@ -113,6 +129,7 @@ export function createBirdFlocks(options: BirdFlocksOptions): BirdFlocks {
         orbitAngle: orbitAngles[flockIndex] ?? 0,
         elapsedSeconds,
         worldPositions,
+        bodyStream,
         scatterOffsets,
         flapFrequencies,
         flapPhases,
@@ -123,6 +140,7 @@ export function createBirdFlocks(options: BirdFlocksOptions): BirdFlocks {
 
   return {
     getWorldPositions: () => worldPositions,
+    getBodyStream: () => bodyStream,
     update: (deltaSeconds, playerX, playerZ) => {
       if (deltaSeconds <= 0) return;
 
@@ -232,6 +250,7 @@ interface FlockWriteInput {
   readonly orbitAngle: number;
   readonly elapsedSeconds: number;
   readonly worldPositions: Float32Array;
+  readonly bodyStream: Float32Array;
   readonly scatterOffsets: Float32Array;
   readonly flapFrequencies: Float32Array;
   readonly flapPhases: Float32Array;
@@ -264,7 +283,17 @@ function writeFlockPositions(input: FlockWriteInput): void {
     const flapTime =
       input.elapsedSeconds * (input.flapFrequencies[birdIndex] ?? 6) * TAU +
       (input.flapPhases[birdIndex] ?? 0);
-    const flapLift = Math.sin(flapTime) * settings.birdFlapAmplitudeMeters;
+    const flapSine = Math.sin(flapTime);
+    const flapLift = flapSine * settings.birdFlapAmplitudeMeters;
+
+    // The heading is the orbit tangent, which is where the wingtips already
+    // sit: one bearing serves the trace and every body flying it.
+    const bodyOffset = birdIndex * settings.birdBodyValuesPerBird;
+    input.bodyStream[bodyOffset] = bodyX;
+    input.bodyStream[bodyOffset + 1] = bodyY;
+    input.bodyStream[bodyOffset + 2] = bodyZ;
+    input.bodyStream[bodyOffset + 3] = Math.atan2(headingX, headingZ);
+    input.bodyStream[bodyOffset + 4] = flapSine;
 
     const pointOffset =
       birdIndex * settings.birdPointsPerBird * COMPONENTS_PER_VALUE;

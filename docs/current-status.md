@@ -53,7 +53,9 @@ issue and a bounded implementation.
   system.
 - Echolocation: terrain, vegetation, rocks, distance-based material effects,
   and the narrative grass clipmap.
-- Motion: bounded fly and bird point actors with GPU-aged motion trails.
+- Motion: bounded fly and bird point actors with GPU-aged motion trails. The
+  flocks fly as pure trace; from Thermal on they also carry bodies, drawn as
+  one instanced pool whose wings beat in the vertex shader.
 - Thermal: a viewer-centred false-colour material effect across terrain,
   vegetation, rocks, and animals.
 - Magnetic: one opaque camera-following sky dome; it does not patch terrain or
