@@ -10,7 +10,6 @@ import "./style.css";
 import { createBenchmarkRun } from "./benchmark/benchmark-run";
 import { isBenchmarkProfileName } from "./benchmark/benchmark-settings";
 import { showHeadsetDiagnostics } from "./dev/headset-diagnostics";
-import { mountRehearsalTransport } from "./dev/rehearsal-transport";
 import { resolveNarrationLanguage } from "./dramaturgy/narration-catalog";
 import { PIECE_SCHEDULE } from "./dramaturgy/piece-schedule";
 import type { ShowClock } from "./dramaturgy/show-clock";
@@ -39,8 +38,8 @@ declare global {
 }
 
 // Runtime request, not authored configuration. The default page plays the
-// piece with the schedule as the world authority, started on load and driven
-// from the rehearsal transport bar. `?level=<name>` opens one preset for
+// piece with the schedule as the world authority, started on load. The
+// console-exposed clock remains the minimal rehearsal control. `?level=<name>` opens one preset for
 // development instead — no show — `?benchmark[=<profile>]` replays the fixed
 // measurement route, `?language=<de|en>` arms the narration language, and
 // `?m5=<host>` polls a tilt controller directly for development.
@@ -96,19 +95,9 @@ const level = await startLevel(
 window.showClock = level.show?.clock;
 
 if (level.show) {
-  // The rehearsal page starts the piece by itself: a run-through begins at
-  // the top without anyone reaching for the console, and the transport bar
-  // is there to hold, scrub, and jump once it runs. Show time still waits on
-  // the audio timebase, which a browser keeps suspended until the first
-  // gesture in this window — so the piece opens the moment the page is
-  // touched, not silently behind a suspended context.
+  // The rehearsal page starts the piece by itself. Show time still waits on
+  // the audio timebase when the browser suspends audio until the first gesture.
   level.show.clock.play();
-
-  mountRehearsalTransport({
-    container: document.body,
-    schedule: PIECE_SCHEDULE,
-    clock: level.show.clock,
-  });
 }
 
 mountVrEntryButton(document.body, level.xr);

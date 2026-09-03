@@ -28,7 +28,7 @@ is authoritative in `script/en.md` and `script/de.md`.
 ## Presentation Flow
 
 The default page starts the complete show and waits for a user gesture when the
-browser has suspended audio. The rehearsal transport can hold, seek, or jump.
+browser has suspended audio.
 The conductor page provides the same show in an operator-facing station window,
 with transport, language, reset, headset entry, controller setup, and technical
 status.
