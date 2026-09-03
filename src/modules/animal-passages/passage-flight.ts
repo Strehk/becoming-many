@@ -37,6 +37,21 @@ const LOOK_AHEAD_SECONDS = 0.08;
 const LOOK_BACK_SECONDS = 0.14;
 /** Fraction of the approach curve used to read its final tangent. */
 const APPROACH_TANGENT_SPAN = 0.035;
+/** The axis every route frame is yawed about. */
+const UP = new Vector3(0, 1, 0);
+/** Metres out and metres up at each control point of the departure curve. */
+const EXIT_METERS = [0, 4, 11, 24, 55];
+const EXIT_RISE = [0, 0.12, 0.35, 0.72, 1.05];
+/*
+ * How much of an authored bearing change is done by each control point. The
+ * first leg holds the heading the route ended on, so the departure leaves
+ * exactly tangent and there is no kink at the hand-off; the turn is then
+ * banked across the rest, on course by the middle of the exit and holding it
+ * for as long as the body is still in sight. Turning inside the first leg
+ * hinges visibly — the bird's course change is most of a half turn, and a
+ * half turn taken in four metres is not flight.
+ */
+const EXIT_TURN_FRACTION = [0, 0, 0.4, 0.8, 1];
 
 export interface PassageFlightOptions {
   readonly definition: PassageFlightDefinition;
@@ -46,7 +61,7 @@ export interface PassageFlightOptions {
   readonly animations: readonly AnimationClip[];
   readonly viewpoint: Viewpoint;
   readonly groundYAt: WorldSurface["groundYAt"];
-  /** The direction the visitor is travelling, for routes that face them. */
+  /** The direction the visitor is travelling, for a frame that follows them. */
   readonly readViewHeadingRadians: () => number;
 }
 
@@ -61,7 +76,7 @@ export interface PassageFlight {
    * and scrubbing lands mid-route rather than restarting the flight.
    */
   readonly applyProgress: (progress: number) => void;
-  /** Face the route the way the visitor is travelling. Called on entry. */
+  /** Turn the route frame to its bearing. Called once as the animal enters. */
   readonly anchor: () => void;
   readonly dispose: () => void;
 }
@@ -278,7 +293,12 @@ export function createPassageFlight(
     blendRouteEntry(timeSeconds);
   }
 
-  /** The departure: a curve continuing the route's closing heading outward. */
+  /**
+   * The departure: a curve leaving on the route's closing heading, banking
+   * onto the authored bearing where the passage has one. The turn is spread
+   * across the first stretch rather than taken at the hand-off, so the animal
+   * comes onto course the way a flying body does instead of hinging.
+   */
   function getExitCurve(): CatmullRomCurve3 {
     if (exitCurve) return exitCurve;
 
@@ -287,26 +307,48 @@ export function createPassageFlight(
     const forward = new Vector3(0, 1, 0)
       .applyQuaternion(carrier.quaternion)
       .normalize();
-    const lift = new Vector3(0, 1, 0);
-    const outward = (metres: number, rise: number): Vector3 =>
-      start
-        .clone()
-        .addScaledVector(forward, metres)
-        .addScaledVector(lift, rise);
+    const turnRadians = departureTurnRadians(forward);
 
-    exitCurve = new CatmullRomCurve3(
-      [
-        start,
-        outward(4, 0.12),
-        outward(11, 0.35),
-        outward(24, 0.72),
-        outward(55, 1.05),
-      ],
-      false,
-      "centripetal",
-      0.2,
-    );
+    // Walked rather than fanned from one origin: each leg leaves along the
+    // heading reached so far, which is what makes the path a turn.
+    const point = start.clone();
+    const points = [start.clone()];
+    const leg = new Vector3();
+    for (let index = 1; index < EXIT_METERS.length; index += 1) {
+      const turned = EXIT_TURN_FRACTION[index] ?? 1;
+      leg
+        .copy(forward)
+        .applyAxisAngle(UP, turnRadians * turned)
+        .multiplyScalar(
+          (EXIT_METERS[index] ?? 0) - (EXIT_METERS[index - 1] ?? 0),
+        );
+      point.add(leg);
+      point.y += (EXIT_RISE[index] ?? 0) - (EXIT_RISE[index - 1] ?? 0);
+      points.push(point.clone());
+    }
+
+    exitCurve = new CatmullRomCurve3(points, false, "centripetal", 0.2);
     return exitCurve;
+  }
+
+  /**
+   * How far the departure turns, taking the shorter way round. Zero for a
+   * passage with no authored bearing, so its exit runs straight on as before.
+   * The bearing is a compass direction, so it is read in the route frame the
+   * exit is built in rather than in world space.
+   */
+  function departureTurnRadians(forward: Vector3): number {
+    const bearing = definition.departureBearingRadians;
+    if (bearing === undefined) return 0;
+
+    const frameYaw =
+      definition.frameYaw.kind === "world"
+        ? definition.frameYaw.radians
+        : options.readViewHeadingRadians();
+    const target = bearing - frameYaw;
+    const current = Math.atan2(forward.x, forward.z);
+    // Wrap into (−π, π] so a turn never takes the long way round.
+    return ((target - current + Math.PI * 3) % (Math.PI * 2)) - Math.PI;
   }
 
   function applyExitAt(timeSeconds: number): void {
@@ -335,13 +377,15 @@ export function createPassageFlight(
     durationSeconds,
 
     anchor: (): void => {
-      heading.identity();
-      if (definition.alignToViewHeading) {
-        heading.setFromAxisAngle(
-          new Vector3(0, 1, 0),
-          options.readViewHeadingRadians(),
-        );
-      }
+      // Turning the frame rather than the route keeps the entry, the route,
+      // and the departure in one piece: the tuned shape and its distances to
+      // the visitor are untouched, and only its compass direction changes.
+      heading.setFromAxisAngle(
+        UP,
+        definition.frameYaw.kind === "viewHeading"
+          ? options.readViewHeadingRadians()
+          : definition.frameYaw.radians,
+      );
       // The exit grows out of wherever the route ends over this ground, so it
       // is rebuilt per crossing rather than kept from the one before.
       exitCurve = undefined;

@@ -58,8 +58,23 @@ the approach speed into a cruise so it still finishes on its authored length.
 The route frame follows `viewpoint.worldPosition` every frame. A crossing
 authored around where the visitor is would otherwise be left behind within
 seconds of gliding. Only the bat's route turns to the visitor's heading, once,
-as it enters; the bird's keeps a fixed world rotation, because it is the
-world's bird and not the visitor's.
+as it enters; the bird's keeps fixed world axes, because it is the world's bird
+and not the visitor's.
+
+## The departure can carry a bearing
+
+The authored route is the sweep: the bird passes between four and a half and
+fifteen metres away across a 204-degree bow, which is what makes the crossing
+land whichever way the visitor happens to be flying. That shape is left alone.
+
+The *exit* is different — it was always procedural, never authored in Blender —
+so a passage may give it a compass bearing. The bird has one, because the sense
+it announces is the one migratory birds navigate by: its authored track ends
+running very nearly due south, and the exit banks from that heading onto north
+across its first stretch. The first leg holds the arriving heading exactly, so
+the hand-off has no kink; taking most of a half turn inside four metres would
+read as a hinge rather than as flight. Passages without a bearing, the bat
+among them, leave straight on as before.
 
 ## Not decorated by the senses
 
