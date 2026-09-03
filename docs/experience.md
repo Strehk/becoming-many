@@ -21,6 +21,7 @@ The current typed schedule lasts 8 minutes 41 seconds:
 | 4:39 | Magnetic | directional sky perception |
 | 5:35 | Connections | the layered network synthesis |
 | 7:26 | White World | return |
+| 8:36 | White World | end credits |
 
 Cue timings are authored in `src/dramaturgy/piece-schedule.ts`; narration text
 is authoritative in `script/en.md` and `script/de.md`.
@@ -49,7 +50,8 @@ remain in [direction](direction/README.md).
 - Connections reveals a pulsing network between world anchors.
 
 The finale layers these signals deliberately. The return removes them until the
-visitor reaches White World again.
+visitor reaches White World again, where the end credits fade in over the last
+German lines and hold until the experience is restarted.
 
 ## Input and Audio
 

@@ -18,10 +18,7 @@ import {
 } from "three";
 import type { GLTF } from "three/addons/loaders/GLTFLoader.js";
 import { createAnimalSurfaceAlignment } from "../../src/modules/animals/animal-surface-orientation";
-import {
-  type AnimalBody,
-  createAnimalsModule,
-} from "../../src/modules/animals/animals";
+import { createAnimalsModule } from "../../src/modules/animals/animals";
 import type { AnimalsDefinition } from "../../src/modules/animals/animals-definition";
 import type { GltfAssets } from "../../src/utils/asset-loader/gltf-assets";
 import type { SensedMaterial } from "../../src/utils/asset-loader/material-effect";
@@ -32,9 +29,6 @@ import type { ZoneId } from "../../src/world-surface/zone-settings";
 // These modules never read the view distance; the value only completes the
 // contract. It matches the Three.js default far plane.
 const DEFAULT_VIEW_DISTANCE_METERS = 2_000;
-const ANGLE_TOLERANCE_RADIANS = 1e-10;
-const EXPECTED_TURN_SPEED_RADIANS_PER_SECOND = 2.2;
-const POSITION_TOLERANCE_METERS = 1e-6;
 
 const LAND_ZONES: readonly ZoneId[] = [
   "meadow",
@@ -50,6 +44,16 @@ const DEFINITION: AnimalsDefinition = {
   species: [createSpecies("deer"), createSpecies("fox")],
 };
 
+const MEADOW_ISLAND_RADIUS_METERS = 25;
+/* Long enough that the body meets the island edge and turns on it. */
+const FRAME_RATE_PROBE_SECONDS = 60;
+/*
+ * Two frame rates stagger where a turn begins by up to a frame, never how
+ * fast it is walked, so a minute of arcs ends this close and no further.
+ */
+const FRAME_RATE_HEADING_TOLERANCE_RADIANS = 0.05;
+const FRAME_RATE_POSITION_TOLERANCE_METERS = 0.5;
+
 const PRESET = {
   colors: {
     furColor: 0x886644,
@@ -58,6 +62,56 @@ const PRESET = {
     featureColor: 0x111111,
   },
 } as const;
+
+test("Animals fade in when they take a visible slot", () => {
+  const scene = new Scene();
+  const viewpoint: Viewpoint = {
+    worldPosition: new Vector3(),
+    viewDistanceMeters: DEFAULT_VIEW_DISTANCE_METERS,
+  };
+  const { module } = createAnimalsModule({
+    scene,
+    viewpoint,
+    definition: DEFINITION,
+    preset: PRESET,
+    assets: createAnimalAssets(),
+    worldSurface: createFlatSurface(),
+  });
+
+  module.load();
+  module.activate();
+  const population = scene.children[0];
+  if (!(population instanceof Group)) throw new Error("Expected animal Group");
+
+  const arrival: number[] = [];
+  for (let step = 0; step < 90; step += 1) {
+    module.update?.(1 / 60);
+    arrival.push(readVisibleOpacity(population));
+  }
+
+  // It arrives over time rather than between two frames, and it is drawn all
+  // the way through: an actor that only appeared once it was solid would be
+  // the pop this fade exists to remove.
+  expect(arrival[0]).toBeLessThan(0.2);
+  expect(arrival.at(-1)).toBe(1);
+  expect(arrival.indexOf(1)).toBeGreaterThan(5);
+  for (let frame = 1; frame < arrival.length; frame += 1) {
+    expect(arrival[frame] ?? 0).toBeGreaterThanOrEqual(arrival[frame - 1] ?? 0);
+  }
+
+  // The materials stay transparent for the whole loaded lifetime, so the fade
+  // never asks the patched shader to recompile.
+  const transparency: boolean[] = [];
+  population.traverse((object) => {
+    if (object instanceof Mesh && !Array.isArray(object.material)) {
+      transparency.push(object.material.transparent);
+    }
+  });
+  expect(transparency).not.toHaveLength(0);
+  expect(transparency.every((transparent) => transparent)).toBe(true);
+
+  module.unload();
+});
 
 test("Animals animate only the nearest bounded population", () => {
   const scene = new Scene();
@@ -177,7 +231,9 @@ test("Animals occupy separate territories around the player", () => {
 
   module.load();
   module.activate();
-  module.update?.(0);
+  // Long enough for the arrival fade to finish: an actor taking a visible
+  // slot fades in rather than appearing complete in one frame.
+  module.update?.(1);
 
   const population = scene.children[0];
   if (!(population instanceof Group)) throw new Error("Expected animal Group");
@@ -191,88 +247,6 @@ test("Animals occupy separate territories around the player", () => {
   expect(new Set(occupiedDirections).size).toBe(4);
   expect(new Set(occupiedZones).size).toBe(4);
   expect(population.children.every(({ visible }) => visible)).toBe(true);
-  module.unload();
-});
-
-test("Animals turn continuously and independently of frame rate at habitat boundaries", () => {
-  const thirtyFps = simulateBlockedBoundaryTurn(30);
-  const ninetyFps = simulateBlockedBoundaryTurn(90);
-
-  expect(thirtyFps.headingChangeRadians).toBeCloseTo(
-    EXPECTED_TURN_SPEED_RADIANS_PER_SECOND,
-    10,
-  );
-  expect(ninetyFps.headingChangeRadians).toBeCloseTo(
-    thirtyFps.headingChangeRadians,
-    10,
-  );
-  expect(thirtyFps.maximumStepRadians).toBeCloseTo(
-    EXPECTED_TURN_SPEED_RADIANS_PER_SECOND / 30,
-    10,
-  );
-  expect(ninetyFps.maximumStepRadians).toBeCloseTo(
-    EXPECTED_TURN_SPEED_RADIANS_PER_SECOND / 90,
-    10,
-  );
-  expect(thirtyFps.finalBody.x).toBeCloseTo(thirtyFps.initialBody.x, 10);
-  expect(thirtyFps.finalBody.z).toBeCloseTo(thirtyFps.initialBody.z, 10);
-  expect(ninetyFps.finalBody.x).toBeCloseTo(ninetyFps.initialBody.x, 10);
-  expect(ninetyFps.finalBody.z).toBeCloseTo(ninetyFps.initialBody.z, 10);
-  expect(thirtyFps.finalZone).toBe("meadow");
-  expect(ninetyFps.finalZone).toBe("meadow");
-});
-
-test("Animals resume movement after turning toward an allowed zone", () => {
-  const deltaSeconds = 1 / 60;
-  const requiredTurnRadians =
-    EXPECTED_TURN_SPEED_RADIANS_PER_SECOND * deltaSeconds * 2;
-  let boundaryOrigin: Pick<AnimalBody, "x" | "z"> | undefined;
-  let initialHeadingRadians: number | undefined;
-  const worldSurface: WorldSurface = {
-    ...createFlatSurface(),
-    zoneAt: (worldX, worldZ) => {
-      if (!boundaryOrigin || initialHeadingRadians === undefined) {
-        return "meadow";
-      }
-
-      const offsetX = worldX - boundaryOrigin.x;
-      const offsetZ = worldZ - boundaryOrigin.z;
-      if (Math.hypot(offsetX, offsetZ) <= POSITION_TOLERANCE_METERS) {
-        return "meadow";
-      }
-
-      const candidateHeadingRadians = Math.atan2(offsetX, offsetZ);
-      const turnRadians = Math.atan2(
-        Math.sin(candidateHeadingRadians - initialHeadingRadians),
-        Math.cos(candidateHeadingRadians - initialHeadingRadians),
-      );
-      return turnRadians >= requiredTurnRadians - ANGLE_TOLERANCE_RADIANS
-        ? "meadow"
-        : "water";
-    },
-  };
-  const { bodies, module } = createSingleAnimalHarness(worldSurface);
-  const initialBody = getLatestAnimalBody(bodies);
-  boundaryOrigin = initialBody;
-  initialHeadingRadians = initialBody.headingRadians;
-
-  module.update?.(deltaSeconds);
-  module.update?.(deltaSeconds);
-  const turnedBody = getLatestAnimalBody(bodies);
-  expect(turnedBody.x).toBeCloseTo(initialBody.x, 10);
-  expect(turnedBody.z).toBeCloseTo(initialBody.z, 10);
-  expect(turnedBody.headingRadians - initialBody.headingRadians).toBeCloseTo(
-    requiredTurnRadians,
-    10,
-  );
-
-  module.update?.(deltaSeconds);
-  const movingBody = getLatestAnimalBody(bodies);
-  expect(
-    Math.hypot(movingBody.x - initialBody.x, movingBody.z - initialBody.z),
-  ).toBeGreaterThan(0);
-  expect(movingBody.headingRadians).toBeCloseTo(turnedBody.headingRadians, 10);
-  expect(worldSurface.zoneAt(movingBody.x, movingBody.z)).toBe("meadow");
   module.unload();
 });
 
@@ -332,6 +306,117 @@ test("Animals align their up axis with the local surface slope", () => {
   expect(actorForward.dot(expectedSurfaceForward)).toBeGreaterThan(0.999);
 });
 
+test("Animals lean onto an arc at a zone edge instead of pivoting", () => {
+  const scene = new Scene();
+  const viewpoint: Viewpoint = {
+    worldPosition: new Vector3(),
+    viewDistanceMeters: DEFAULT_VIEW_DISTANCE_METERS,
+  };
+  const species = {
+    ...createSpecies("deer"),
+    count: 1,
+    heightMeters: 1.4,
+    speedMetersPerSecond: 0.65,
+    allowedZones: ["meadow"] as const,
+  };
+  const headings: number[] = [];
+  const bodyPath: { x: number; z: number }[] = [];
+  const { module } = createAnimalsModule({
+    scene,
+    viewpoint,
+    definition: {
+      ...DEFINITION,
+      maxVisible: 1,
+      // Inside the island, so the actor is placed on ground it may stand on.
+      activeRadiusMeters: MEADOW_ISLAND_RADIUS_METERS,
+      species: [species],
+    },
+    preset: PRESET,
+    assets: createAnimalAssets(),
+    worldSurface: createIslandSurface(MEADOW_ISLAND_RADIUS_METERS),
+    onBodiesUpdated: (bodies) => {
+      const body = bodies[0];
+      if (!body) return;
+
+      headings.push(body.headingRadians);
+      bodyPath.push({ x: body.x, z: body.z });
+    },
+  });
+
+  module.load();
+  module.activate();
+  const stepSeconds = 1 / 60;
+  for (let step = 0; step < 7_200; step += 1) module.update?.(stepSeconds);
+
+  // The turning circle is authored in body heights, so the fastest the
+  // heading may move is the speed over that radius.
+  const turnRateRadiansPerSecond =
+    species.speedMetersPerSecond / (species.heightMeters * 2.5);
+  const largestStep = turnRateRadiansPerSecond * stepSeconds * 1.0001;
+  let turningFrames = 0;
+  for (let frame = 1; frame < headings.length; frame += 1) {
+    const change = Math.abs(
+      Math.atan2(
+        Math.sin((headings[frame] ?? 0) - (headings[frame - 1] ?? 0)),
+        Math.cos((headings[frame] ?? 0) - (headings[frame - 1] ?? 0)),
+      ),
+    );
+    expect(change).toBeLessThanOrEqual(largestStep);
+    if (change > 0) turningFrames += 1;
+  }
+
+  // It has to have met the edge and turned there, and it has to have kept
+  // walking through the turn rather than standing still to make it.
+  expect(turningFrames).toBeGreaterThan(0);
+  let walkingFrames = 0;
+  for (let frame = 1; frame < bodyPath.length; frame += 1) {
+    const from = bodyPath[frame - 1];
+    const to = bodyPath[frame];
+    if (!from || !to) continue;
+    if (Math.hypot(to.x - from.x, to.z - from.z) > 1e-9) walkingFrames += 1;
+  }
+  expect(walkingFrames).toBeGreaterThan((bodyPath.length - 1) * 0.9);
+
+  // And it never left the one zone it is allowed to stand in.
+  for (const { x, z } of bodyPath) {
+    expect(Math.hypot(x, z)).toBeLessThanOrEqual(MEADOW_ISLAND_RADIUS_METERS);
+  }
+
+  module.unload();
+});
+
+test("Animals walk the same arc whatever the frame rate", () => {
+  const thirtyFps = walkOnIsland(30);
+  const ninetyFps = walkOnIsland(90);
+
+  // A turn authored per frame rather than per second walks a different path
+  // at every frame rate, and a headset holds no single one. The same minute
+  // of walking, stepped thirty times a second and ninety, has to leave the
+  // body on the same ground facing the same way.
+  expect(thirtyFps.turnedRadians).toBeGreaterThan(1);
+  expect(
+    Math.abs(
+      shortestAngle(ninetyFps.headingRadians - thirtyFps.headingRadians),
+    ),
+  ).toBeLessThan(FRAME_RATE_HEADING_TOLERANCE_RADIANS);
+  expect(
+    Math.hypot(ninetyFps.x - thirtyFps.x, ninetyFps.z - thirtyFps.z),
+  ).toBeLessThan(FRAME_RATE_POSITION_TOLERANCE_METERS);
+});
+
+/** The opacity of the actors currently drawn; zero when none is. */
+function readVisibleOpacity(population: Group): number {
+  let highest = 0;
+  population.traverse((object) => {
+    if (!(object instanceof Mesh) || !object.visible) return;
+    if (Array.isArray(object.material)) return;
+    if (!object.parent?.visible) return;
+
+    highest = Math.max(highest, object.material.opacity);
+  });
+  return highest;
+}
+
 function createSpecies(id: string) {
   return {
     id,
@@ -349,85 +434,6 @@ function createAnimalAssets(): GltfAssets {
     ["deer", createAnimalGltf()],
     ["fox", createAnimalGltf()],
   ]);
-}
-
-function createSingleAnimalHarness(worldSurface: WorldSurface) {
-  const bodies: AnimalBody[] = [];
-  const handle = createAnimalsModule({
-    scene: new Scene(),
-    viewpoint: {
-      worldPosition: new Vector3(),
-      viewDistanceMeters: DEFAULT_VIEW_DISTANCE_METERS,
-    },
-    definition: {
-      ...DEFINITION,
-      species: [{ ...createSpecies("deer"), count: 1 }],
-    },
-    preset: PRESET,
-    assets: createAnimalAssets(),
-    worldSurface,
-    onBodiesUpdated: (visibleBodies) => {
-      const body = visibleBodies[0];
-      if (!body) throw new Error("Expected one visible animal body");
-      bodies.push({ ...body });
-    },
-  });
-
-  handle.module.load();
-  handle.module.activate();
-  handle.module.update?.(0);
-  return { bodies, module: handle.module };
-}
-
-function simulateBlockedBoundaryTurn(updateCount: number) {
-  let boundaryOrigin: Pick<AnimalBody, "x" | "z"> | undefined;
-  const worldSurface: WorldSurface = {
-    ...createFlatSurface(),
-    zoneAt: (worldX, worldZ) => {
-      if (!boundaryOrigin) return "meadow";
-      const distanceFromOrigin = Math.hypot(
-        worldX - boundaryOrigin.x,
-        worldZ - boundaryOrigin.z,
-      );
-      return distanceFromOrigin <= POSITION_TOLERANCE_METERS
-        ? "meadow"
-        : "water";
-    },
-  };
-  const { bodies, module } = createSingleAnimalHarness(worldSurface);
-  const initialBody = getLatestAnimalBody(bodies);
-  boundaryOrigin = initialBody;
-
-  const deltaSeconds = 1 / updateCount;
-  for (let updateIndex = 0; updateIndex < updateCount; updateIndex++) {
-    module.update?.(deltaSeconds);
-  }
-
-  const finalBody = getLatestAnimalBody(bodies);
-  const maximumStepRadians = bodies.reduce((maximumStep, body, index) => {
-    const previousBody = bodies[index - 1];
-    if (!previousBody) return maximumStep;
-    return Math.max(
-      maximumStep,
-      body.headingRadians - previousBody.headingRadians,
-    );
-  }, 0);
-  const finalZone = worldSurface.zoneAt(finalBody.x, finalBody.z);
-  module.unload();
-
-  return {
-    initialBody,
-    finalBody,
-    finalZone,
-    headingChangeRadians: finalBody.headingRadians - initialBody.headingRadians,
-    maximumStepRadians,
-  };
-}
-
-function getLatestAnimalBody(bodies: readonly AnimalBody[]): AnimalBody {
-  const body = bodies.at(-1);
-  if (!body) throw new Error("Expected an observed animal body");
-  return body;
 }
 
 function createAnimalGltf(): GLTF {
@@ -455,6 +461,79 @@ function createFlatSurface(): WorldSurface {
       forestRegionValue: 0,
     }),
     zoneAt: () => "meadow",
+  };
+}
+
+interface IslandWalk {
+  readonly headingRadians: number;
+  readonly turnedRadians: number;
+  readonly x: number;
+  readonly z: number;
+}
+
+/** Where one deer stands after walking the island at this frame rate. */
+function walkOnIsland(framesPerSecond: number): IslandWalk {
+  let latest: IslandWalk | undefined;
+  const { module } = createAnimalsModule({
+    scene: new Scene(),
+    viewpoint: {
+      worldPosition: new Vector3(),
+      viewDistanceMeters: DEFAULT_VIEW_DISTANCE_METERS,
+    },
+    definition: {
+      ...DEFINITION,
+      maxVisible: 1,
+      // Inside the island, so the actor is placed on ground it may stand on.
+      activeRadiusMeters: MEADOW_ISLAND_RADIUS_METERS,
+      species: [
+        {
+          ...createSpecies("deer"),
+          count: 1,
+          heightMeters: 1.4,
+          speedMetersPerSecond: 0.65,
+          allowedZones: ["meadow"],
+        },
+      ],
+    },
+    preset: PRESET,
+    assets: createAnimalAssets(),
+    worldSurface: createIslandSurface(MEADOW_ISLAND_RADIUS_METERS),
+    onBodiesUpdated: (bodies) => {
+      const body = bodies[0];
+      if (!body) return;
+      const turnedThisFrame = latest
+        ? Math.abs(shortestAngle(body.headingRadians - latest.headingRadians))
+        : 0;
+      latest = {
+        headingRadians: body.headingRadians,
+        turnedRadians: (latest?.turnedRadians ?? 0) + turnedThisFrame,
+        x: body.x,
+        z: body.z,
+      };
+    },
+  });
+
+  module.load();
+  module.activate();
+  const stepSeconds = 1 / framesPerSecond;
+  const steps = Math.round(FRAME_RATE_PROBE_SECONDS * framesPerSecond);
+  for (let step = 0; step < steps; step += 1) module.update?.(stepSeconds);
+  module.unload();
+  if (!latest) throw new Error("Expected an observed animal body");
+  return latest;
+}
+
+/** The signed way round from one angle to another, never the long way. */
+function shortestAngle(radians: number): number {
+  return Math.atan2(Math.sin(radians), Math.cos(radians));
+}
+
+/** One round meadow in conifer forest: walking straight always finds an edge. */
+function createIslandSurface(radiusMeters: number): WorldSurface {
+  return {
+    ...createFlatSurface(),
+    zoneAt: (worldX, worldZ) =>
+      Math.hypot(worldX, worldZ) <= radiusMeters ? "meadow" : "coniferForest",
   };
 }
 

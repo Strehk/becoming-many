@@ -32,6 +32,11 @@ import type { NarrationSchedule } from "./narration-schedule";
  */
 export const PIECE_SCHEDULE: NarrationSchedule = {
   durationSeconds: 521, // Last cue, its longer recording, and slot margin.
+  // The return recording ends at 515.6 s in English and 519.9 s in German, so
+  // the panel comes up just after the English last word and over the final
+  // German lines. Four seconds of fade puts it at full opacity at 520 s, a
+  // second before the clock clamps and holds it there.
+  creditsAtSeconds: 516,
   narration: [
     // Five seconds of lead-in before the first word; every later cue carries
     // that offset, so the slots below are unchanged by it.

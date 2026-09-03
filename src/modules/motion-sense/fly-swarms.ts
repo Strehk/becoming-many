@@ -20,7 +20,9 @@ import {
   type MotionSenseParameters,
 } from "./motion-sense-settings";
 import {
+  type AnchorSurface,
   createSwarmAnchors,
+  placeSwarmAnchor,
   placeSwarmAnchors,
   type SwarmAnchor,
   settleAnchorGround,
@@ -127,8 +129,15 @@ export function createFlySwarms(options: FlySwarmsOptions): FlySwarms {
     COMPONENTS_PER_VALUE,
   );
   positionAttribute.setUsage(DynamicDrawUsage);
+  // Every swarm starts fully arrived: the first placement happens before the
+  // first frame, where there is nothing to see it move.
+  const flyArrival = new Float32Array(flyCount).fill(1);
+  const arrivalAttribute = new BufferAttribute(flyArrival, 1);
+  arrivalAttribute.setUsage(DynamicDrawUsage);
+  const swarmMoves = createSwarmMoves(swarmCount);
   const geometry = new BufferGeometry();
   geometry.setAttribute("position", positionAttribute);
+  geometry.setAttribute("flyArrival", arrivalAttribute);
   const points = new Points(
     geometry,
     createFlySwarmMaterial(parameters.appearance, options.senseFadeUniform),
@@ -164,11 +173,20 @@ export function createFlySwarms(options: FlySwarmsOptions): FlySwarms {
         anchorEpoch += 1;
         anchorOrigin.x = playerX;
         anchorOrigin.z = playerZ;
-        placeSwarmAnchors(anchors, options, anchorEpoch, playerX, playerZ);
-        writeWorldPositions(options, state, positionAttribute);
+        // Nothing moves here: each swarm is asked to leave, and it moves
+        // itself once its own specks have shrunk away.
+        startSwarmMoves(swarmMoves, anchorEpoch, playerX, playerZ);
       }
       if (deltaSeconds <= 0) return;
 
+      if (advanceSwarmMoves(swarmMoves, options, anchors, deltaSeconds)) {
+        writeFlyArrival(
+          swarmMoves,
+          fliesPerSwarm,
+          flyArrival,
+          arrivalAttribute,
+        );
+      }
       elapsedSeconds += deltaSeconds;
       integrateBoids(options, state, deltaSeconds, elapsedSeconds);
       writeWorldPositions(options, state, positionAttribute);
@@ -178,6 +196,110 @@ export function createFlySwarms(options: FlySwarmsOptions): FlySwarms {
       points.material.dispose();
     },
   };
+}
+
+/**
+ * One swarm's arrival and the move it owes. A swarm relocated in place would
+ * be seen doing it, so it shrinks its specks away first, moves while none of
+ * it is on screen, and swells back at the new ring.
+ */
+interface SwarmMove {
+  /** 0 gone, 1 fully there; the flies of this swarm scale by it. */
+  arrival: number;
+  target: number;
+
+  /** Stagger before this swarm begins to leave, so they take turns. */
+  holdSeconds: number;
+
+  /** The epoch and player pose the pending placement must be made at. */
+  pendingEpoch: number;
+  pendingX: number;
+  pendingZ: number;
+}
+
+function createSwarmMoves(swarmCount: number): SwarmMove[] {
+  return Array.from({ length: swarmCount }, () => ({
+    arrival: 1,
+    target: 1,
+    holdSeconds: 0,
+    pendingEpoch: -1,
+    pendingX: 0,
+    pendingZ: 0,
+  }));
+}
+
+/** Ask every swarm to leave, one after another, and remember where to. */
+function startSwarmMoves(
+  moves: readonly SwarmMove[],
+  epoch: number,
+  playerX: number,
+  playerZ: number,
+): void {
+  moves.forEach((move, swarmIndex) => {
+    move.target = 0;
+    move.holdSeconds =
+      swarmIndex * MOTION_SENSE_SETTINGS.swarmFadeStaggerSeconds;
+    move.pendingEpoch = epoch;
+    move.pendingX = playerX;
+    move.pendingZ = playerZ;
+  });
+}
+
+/**
+ * Carry every swarm along its move and report whether any arrival changed.
+ * A swarm makes its pending placement in the frame its specks reach nothing,
+ * and turns straight back around: what the traveler sees is a cloud thinning
+ * out and another one thickening somewhere else.
+ */
+function advanceSwarmMoves(
+  moves: readonly SwarmMove[],
+  surface: AnchorSurface,
+  anchors: readonly SwarmAnchor[],
+  deltaSeconds: number,
+): boolean {
+  const step = deltaSeconds / MOTION_SENSE_SETTINGS.swarmFadeSeconds;
+  let changed = false;
+
+  moves.forEach((move, swarmIndex) => {
+    if (move.holdSeconds > 0) {
+      move.holdSeconds -= deltaSeconds;
+      return;
+    }
+    if (move.arrival === move.target) return;
+
+    move.arrival =
+      Math.abs(move.target - move.arrival) <= step
+        ? move.target
+        : move.arrival + Math.sign(move.target - move.arrival) * step;
+    changed = true;
+    if (move.pendingEpoch < 0 || move.arrival > 0) return;
+
+    placeSwarmAnchor(
+      anchors,
+      swarmIndex,
+      surface,
+      move.pendingEpoch,
+      move.pendingX,
+      move.pendingZ,
+    );
+    move.pendingEpoch = -1;
+    move.target = 1;
+  });
+  return changed;
+}
+
+/** Spread each swarm's arrival across the flies that belong to it. */
+function writeFlyArrival(
+  moves: readonly SwarmMove[],
+  fliesPerSwarm: number,
+  flyArrival: Float32Array,
+  arrivalAttribute: BufferAttribute,
+): void {
+  moves.forEach((move, swarmIndex) => {
+    const first = swarmIndex * fliesPerSwarm;
+    flyArrival.fill(move.arrival, first, first + fliesPerSwarm);
+  });
+  arrivalAttribute.needsUpdate = true;
 }
 
 interface FlyBuffers {

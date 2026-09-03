@@ -128,7 +128,12 @@ function loadMotionSense(
       source: birdFlocks,
       trail: createMotionTrailBuffer({
         pointCount: getBirdPointCount(parameters.birds),
-        trail: parameters.trail,
+        // The flocks' own ring depth; everything else about a trail — its
+        // expansion, its motion gain, its fade — is one shared behavior.
+        trail: {
+          ...parameters.trail,
+          lifetimeFrames: parameters.birds.trailLifetimeFrames,
+        },
         appearance: parameters.birds.appearance,
         intensity: parameters.intensity,
         senseFadeUniform,

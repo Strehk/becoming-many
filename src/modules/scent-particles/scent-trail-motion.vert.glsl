@@ -23,7 +23,7 @@ attribute float scentVisible;
 
 const float SCENT_TAU = 6.2831853;
 // Matches the plant layer, so both drift on one breath of air.
-const float SCENT_DRIFT_RATE = 0.7330383;
+const float SCENT_DRIFT_RATE = 0.5235988;
 const float SCENT_TRAIL_FADE_IN = 0.06;
 const float SCENT_TRAIL_HOLD = 0.5;
 const float SCENT_MINIMUM_VISIBLE_SCALE = 0.01;

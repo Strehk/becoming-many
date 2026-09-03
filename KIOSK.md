@@ -6,7 +6,9 @@ Context: A station PC runs the station server and shows the conductor page,
 Responsibility: Give the launch command, name the flags that matter and why,
   and state the limits of what a browser can lock down.
 Boundary: What the process serves is station/README.md; where the page comes
-  from and why it must be http://localhost is docs/direction/deployment.md.
+  from and why it must be http://localhost is docs/direction/deployment.md;
+  how an installed station keeps the window open unattended is
+  watchdog/README.md.
 -->
 
 # Kiosk browser setup
@@ -28,8 +30,17 @@ M5 over plain HTTP.
 
 ## Station PC (Windows)
 
-[station/start-kiosk.bat](station/start-kiosk.bat) runs the command from one
-double-click: it finds an installed Chromium browser, waits for the station
+An installed station does not use the launcher below. It runs the window under
+the Artcom Watchdog, from [watchdog/kiosk.yaml](watchdog/kiosk.yaml), which
+waits for `/health`, opens the window with `--kiosk` rather than `--app`, and
+marks the dedicated kiosk window as topmost. It also reopens Chrome after a
+crash or a stray `Alt+F4` — see
+[watchdog/README.md](watchdog/README.md), including how to stop it when
+servicing the machine. The flags there and the flags here must stay in step.
+
+[station/start-kiosk.bat](station/start-kiosk.bat) is the unsupervised
+launcher, for rehearsals and for a technician who wants a window they can get
+out of. It runs the command from one double-click: it finds an installed Chromium browser, waits for the station
 server to answer `/health` so the window never opens on an error page, and
 opens the window. The per-station values — URL, window position and size —
 are the `set` lines at the top of the file; `BM_BROWSER` forces a specific
@@ -108,7 +119,8 @@ An app window removes the UI to navigate away. It is not a lock:
 
 The real lock is `--kiosk` in place of `--app`, which removes the window frame
 and every exit but `Alt+F4` — at the cost of forcing fullscreen, which is fine
-for a single station window.
+for a single station window. That is what an installed station runs, and the
+kiosk watchdog closes the `Alt+F4` gap by reopening the window.
 
 Two things no browser flag covers: the station PC needs a power plan that never
 sleeps or blanks the display, and starting the headset stream needs a real

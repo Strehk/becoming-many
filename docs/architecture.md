@@ -118,8 +118,9 @@ builds `SHOW_LEVEL`, the full layered composition without the test overlay.
 
 The default page creates that composition once. `PIECE_SCHEDULE` and the show
 clock select the current authored world state, drive sense intensities and
-background transitions, and synchronize narration. A requested standalone
-level or benchmark does not start a show.
+background transitions, synchronize narration, and fade in the end credits at
+the authored `creditsAtSeconds`. A requested standalone level or benchmark does
+not start a show, so neither builds the credits panel.
 
 ## Station and Control Boundaries
 

@@ -7,7 +7,8 @@ details.
 
 The core experience is largely implemented. The default browser page starts the
 complete 8:41 show, layers the seven narrative world states, plays synchronized
-English or German narration, and returns to White World. The project is now in
+English or German narration, returns to White World, and closes on the end
+credits. The project is now in
 a stabilization and refinement phase rather than an MVP construction phase.
 
 Current priorities are measured performance, stability, code cleanup, and
@@ -37,7 +38,9 @@ issue and a bounded implementation.
 - `level-runtime.ts` composes sparse typed presets, shared resources, controls,
   narration, and enabled modules.
 - The show clock is the authority for narration, world-state selection,
-  transitions, and sense intensity.
+  transitions, sense intensity, and end-credit presence.
+- The End Credits module fades one canvas-textured plane in at 8:36 and holds it
+  while the clock is clamped, until staff restart the experience.
 - Fixed chunk windows and the bounded `StreamQueue` recycle module-owned
   resources as the viewer moves.
 - GLTF assets are loaded once before the world starts; concrete modules retain
@@ -77,7 +80,7 @@ issue and a bounded implementation.
 
 Verified on 2026-09-03 for this documentation branch:
 
-- `bun test`: 366 passed, 0 failed across 50 files.
+- `bun test`: 371 passed, 0 failed across 50 files.
 - `bun run check`: passed.
 - `bun run lint`: passed.
 - `bun run build`: passed with existing Vite warnings about one extensionless

@@ -37,10 +37,42 @@ import type {
 } from "./animals-definition";
 
 const HOME_SEARCH_STEP_METERS = 12;
-const TURN_SPEED_RADIANS_PER_SECOND = 2.2;
+const TURN_RADIANS = 2.2;
+/*
+ * An animal turns on an arc, not on the spot. The radius is authored in body
+ * heights rather than in metres so a stag sweeps wide and a rat turns tight,
+ * and the angular rate follows from it and the animal's own speed — which is
+ * what a turning circle is. Turning at one authored rate instead gave every
+ * species a radius under half a metre: the body did swing round rather than
+ * snap, but it pivoted almost in place, which is not how a walking animal
+ * changes direction.
+ */
+const TURN_RADII_PER_BODY_HEIGHT = 2.5;
+/*
+ * How far ahead the way is read, in turning radii, plus a step of margin. A
+ * turn started at the edge itself cannot be walked out before crossing it,
+ * because completing one carries the body up to a full radius further on. Read
+ * this far ahead and the animal leans away from ground it may not enter while
+ * still walking, so the edge turns it rather than stopping it.
+ */
+const TURN_LOOKAHEAD_RADII = 1.5;
+const TURN_LOOKAHEAD_MARGIN_METERS = 1;
+/* Below this the turn is walked out, and the animal may aim a new one. */
+const TURN_SETTLED_RADIANS = 0.05;
 const FULL_CIRCLE_RADIANS = Math.PI * 2;
 const TERRITORY_MIN_RADIUS_RATIO = 0.35;
 const TERRITORY_MAX_RADIUS_RATIO = 0.75;
+/*
+ * Only the nearest few actors of the population are drawn, and which few that
+ * is changes as the traveler moves and turns: an actor taking a slot used to
+ * arrive complete between two frames, which reads as an animal popping into
+ * the distance. It fades in over this instead, and an actor losing its slot
+ * fades back out, so the bounded set changes without anything appearing.
+ * Under a second, or a body would visibly ghost while it walked.
+ */
+const APPEARANCE_FADE_SECONDS = 0.8;
+/* Below this an actor holds no slot and is worth nothing to draw. */
+const MINIMUM_APPEARANCE = 0.002;
 
 export interface AnimalActors {
   readonly group: Group;
@@ -57,6 +89,19 @@ interface AnimalActor {
   readonly species: AnimalSpeciesDefinition;
   hasHabitat: boolean;
   headingRadians: number;
+
+  /** Where the body is turning to; the heading follows it at a bounded rate. */
+  targetHeadingRadians: number;
+
+  /** Whether this actor holds one of the bounded visible slots this frame. */
+  selected: boolean;
+
+  /**
+   * How far this actor has arrived, 0..1. It drives material opacity, and the
+   * root stays in the scene until it reaches zero, so an actor that loses its
+   * slot walks out of sight instead of vanishing between two frames.
+   */
+  appearance: number;
 }
 
 interface AnimalPlan {
@@ -161,10 +206,27 @@ export function updateAnimalActors(
 
   showNearestActors(population, viewpoint);
   for (const actor of population.actors) {
+    updateActorAppearance(actor, deltaSeconds);
     if (!actor.root.visible) continue;
     population.alignToSurface(actor.root, actor.headingRadians);
     actor.mixer.update(deltaSeconds);
   }
+}
+
+/**
+ * Carry one actor toward being there or being gone. A body that is on its way
+ * out keeps walking and keeps its slot in the scene until it is invisible, so
+ * the fade is the animal leaving rather than a frame in which it is dropped.
+ */
+function updateActorAppearance(actor: AnimalActor, deltaSeconds: number): void {
+  const target = actor.selected ? 1 : 0;
+  const step = deltaSeconds / APPEARANCE_FADE_SECONDS;
+  actor.appearance =
+    Math.abs(target - actor.appearance) <= step
+      ? target
+      : actor.appearance + Math.sign(target - actor.appearance) * step;
+  actor.root.visible = actor.appearance > MINIMUM_APPEARANCE;
+  for (const material of actor.materials) material.opacity = actor.appearance;
 }
 
 /**
@@ -279,6 +341,12 @@ function createAnimalActor(
       const replacements = sources.map((source) =>
         createUnlitMaterial(source, getAnimalColor(colors, source.name)),
       );
+      // Transparent for the whole loaded lifetime, at full opacity whenever
+      // an actor is fully there. Toggling the flag with the fade would
+      // recompile the patched shader twice per appearance, which is a hitch
+      // on the headset; a handful of actors in the transparent pass is not.
+      // They keep writing depth, so nothing behind one shows through it.
+      for (const material of replacements) material.transparent = true;
       if (effectsFor) {
         // Every mesh sits under its own rig transform, so each one carries
         // its own route from mesh space into the shared body space.
@@ -312,6 +380,8 @@ function createAnimalActor(
     );
   }
   mixer.clipAction(clip).play();
+  const startHeadingRadians =
+    getCellRandom(593, actorIndex, 0, 0) * Math.PI * 2;
 
   return {
     root,
@@ -319,7 +389,10 @@ function createAnimalActor(
     materials,
     species,
     hasHabitat: false,
-    headingRadians: getCellRandom(593, actorIndex, 0, 0) * Math.PI * 2,
+    headingRadians: startHeadingRadians,
+    targetHeadingRadians: startHeadingRadians,
+    selected: false,
+    appearance: 0,
   };
 }
 
@@ -351,6 +424,10 @@ function placeActor(
   actor.hasHabitat = point !== undefined;
   if (!point) return;
 
+  // A placed actor is somewhere else than it was. Starting it over at nothing
+  // means it fades in where it now stands rather than crossing the world in
+  // one frame if it happens to hold a visible slot.
+  actor.appearance = 0;
   actor.root.position.set(
     point.x,
     options.worldSurface.surfaceYAt(point.x, point.z),
@@ -499,21 +576,27 @@ function moveActor(
   actor: AnimalActor,
   deltaSeconds: number,
 ): void {
+  turnTowardTarget(actor, deltaSeconds);
+
+  // Aim one turn and let the body walk it out. Aiming again every frame the
+  // way ahead stays blocked would push the target away from a heading that is
+  // still catching up with it, and the animal would spin.
+  if (!canWalkTo(population, actor, getLookaheadMeters(actor))) {
+    if (isTurnSettled(actor)) {
+      actor.targetHeadingRadians = actor.headingRadians + TURN_RADIANS;
+    }
+  }
+
+  // The lookahead turns the animal in time in open country. Where it cannot —
+  // a zone narrower than one turning circle — this is what still keeps the
+  // body inside its own habitat, at the cost of standing while it turns.
   const distance = actor.species.speedMetersPerSecond * deltaSeconds;
+  if (!canWalkTo(population, actor, distance)) return;
+
   const nextX =
     actor.root.position.x + Math.sin(actor.headingRadians) * distance;
   const nextZ =
     actor.root.position.z + Math.cos(actor.headingRadians) * distance;
-
-  if (
-    !actor.species.allowedZones.includes(
-      population.worldSurface.zoneAt(nextX, nextZ),
-    )
-  ) {
-    actor.headingRadians += TURN_SPEED_RADIANS_PER_SECOND * deltaSeconds;
-    return;
-  }
-
   actor.root.position.set(
     nextX,
     population.worldSurface.surfaceYAt(nextX, nextZ),
@@ -521,11 +604,64 @@ function moveActor(
   );
 }
 
+/** Whether the ground this far along the current heading may be entered. */
+function canWalkTo(
+  population: AnimalActors,
+  actor: AnimalActor,
+  distanceMeters: number,
+): boolean {
+  const worldX =
+    actor.root.position.x + Math.sin(actor.headingRadians) * distanceMeters;
+  const worldZ =
+    actor.root.position.z + Math.cos(actor.headingRadians) * distanceMeters;
+  return actor.species.allowedZones.includes(
+    population.worldSurface.zoneAt(worldX, worldZ),
+  );
+}
+
+/** The arc one species turns on, in metres: a stag sweeps, a rat pivots. */
+function getTurnRadiusMeters(actor: AnimalActor): number {
+  return actor.species.heightMeters * TURN_RADII_PER_BODY_HEIGHT;
+}
+
+function getLookaheadMeters(actor: AnimalActor): number {
+  return (
+    getTurnRadiusMeters(actor) * TURN_LOOKAHEAD_RADII +
+    TURN_LOOKAHEAD_MARGIN_METERS
+  );
+}
+
+/** Advance the heading toward the aimed one by at most this frame's turn. */
+function turnTowardTarget(actor: AnimalActor, deltaSeconds: number): void {
+  const difference = shortestAngle(
+    actor.targetHeadingRadians - actor.headingRadians,
+  );
+  // The rate is the speed over the turning radius, so the body walks an arc
+  // of that radius however fast its species moves.
+  const step =
+    (actor.species.speedMetersPerSecond / getTurnRadiusMeters(actor)) *
+    deltaSeconds;
+  actor.headingRadians +=
+    Math.abs(difference) <= step ? difference : Math.sign(difference) * step;
+}
+
+function isTurnSettled(actor: AnimalActor): boolean {
+  const difference = shortestAngle(
+    actor.targetHeadingRadians - actor.headingRadians,
+  );
+  return Math.abs(difference) <= TURN_SETTLED_RADIANS;
+}
+
+/** The signed way round from one angle to another, never the long way. */
+function shortestAngle(radians: number): number {
+  return Math.atan2(Math.sin(radians), Math.cos(radians));
+}
+
 function showNearestActors(
   population: AnimalActors,
   viewpoint: Viewpoint,
 ): void {
-  for (const actor of population.actors) actor.root.visible = false;
+  for (const actor of population.actors) actor.selected = false;
   if (!population.group.visible) return;
 
   showNearestActorPerDirection(population, viewpoint);
@@ -548,7 +684,7 @@ function showNearestActorPerDirection(
       directionIndex,
       population.parameters.maxVisible,
     );
-    if (nearest) nearest.root.visible = true;
+    if (nearest) nearest.selected = true;
   }
 }
 
@@ -557,13 +693,13 @@ function fillRemainingVisibleSlots(
   viewpoint: Viewpoint,
 ): void {
   let visibleCount = population.actors.filter(
-    ({ root }) => root.visible,
+    ({ selected }) => selected,
   ).length;
 
   while (visibleCount < population.parameters.maxVisible) {
     const nearest = findNearestHiddenActor(population.actors, viewpoint);
     if (!nearest) return;
-    nearest.root.visible = true;
+    nearest.selected = true;
     visibleCount += 1;
   }
 }
@@ -578,7 +714,7 @@ function findNearestHiddenActor(
   let nearestDistance = Number.POSITIVE_INFINITY;
 
   for (const actor of actors) {
-    if (!actor.hasHabitat || actor.root.visible) continue;
+    if (!actor.hasHabitat || actor.selected) continue;
     if (!isInDirection(actor, viewpoint, directionIndex, directionCount))
       continue;
     const distance = actor.root.position.distanceToSquared(

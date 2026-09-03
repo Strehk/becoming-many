@@ -118,6 +118,11 @@ export const THERMAL_PERCEPTION_SETTINGS = {
     // while the shaded stem below sits on the flat lower half and is carried
     // down toward violet rather than pulled up with the crown.
     vegetationPivot: 0.56,
+    // Undergrowth clusters low, beside the grass it stands in rather than
+    // with the canopy above it, so its pivot follows it there: the little
+    // warmth a bush holds in its middle gets the steep part of the curve
+    // instead of being pulled up toward the trees.
+    undergrowthPivot: 0.34,
     rockPivot: 0.28,
     actorPivot: 0.75,
   },
@@ -170,6 +175,7 @@ export interface ThermalPaletteColors {
 export interface ThermalSurfaceWarmth {
   /** How far each surface's contrast curve is applied, 0..1. */
   readonly vegetationContrast: number;
+  readonly undergrowthContrast: number;
   readonly rockContrast: number;
   readonly grassContrast: number;
   readonly vegetationWarmth: number;
@@ -177,6 +183,21 @@ export interface ThermalSurfaceWarmth {
   readonly vegetationHeightWarmthPerMeter: number;
   readonly vegetationAxisWarmthPerMeter: number;
   readonly vegetationTextureWarmth: number;
+
+  /**
+   * Undergrowth: the bushes, authored apart from the plants that carry a
+   * canopy. A plant's warmth is its base shed by distance from its own foot,
+   * so a bush a metre tall and a metre across sheds almost nothing over its
+   * own size and reads at very nearly its base everywhere — a solid warm blob
+   * under the canopy's values, however those values are tuned. As substance a
+   * bush is nearer the meadow it stands in than the wood above it, so it is
+   * authored up from the grass with only its middle allowed to hold heat.
+   */
+  readonly undergrowthWarmth: number;
+  readonly undergrowthWarmthSpread: number;
+  readonly undergrowthHeightWarmthPerMeter: number;
+  readonly undergrowthAxisWarmthPerMeter: number;
+  readonly undergrowthTextureWarmth: number;
   readonly rockWarmth: number;
   readonly rockWarmthSpread: number;
   readonly rockHeightWarmthPerMeter: number;
@@ -251,6 +272,7 @@ export interface ThermalPerceptionParameters {
   readonly bands: {
     readonly terrain: ThermalWarmthBand;
     readonly vegetation: ThermalWarmthBand;
+    readonly undergrowth: ThermalWarmthBand;
     readonly rocks: ThermalWarmthBand;
     readonly grass: ThermalWarmthBand;
     readonly animals: ThermalWarmthBand;

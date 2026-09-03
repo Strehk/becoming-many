@@ -1,0 +1,28 @@
+watchdogConfig:
+  logConfig:
+    logfile: C:/becoming-many/watchdog/logs/steamvr.log
+    logger: rotating
+
+  hideConsoleWindow: false
+  restartApp: true
+  watchFrequency: 2
+
+  udpControl:
+    commands:
+      - systemHalt: halt
+      - systemReboot: reboot
+      - restartApplication: restart
+      - stopApplication: stop
+      - startApplication: start
+    port: 2346
+    returnmessage: true
+    statusReport:
+      runtimeStatus: status
+
+  application:
+    binary: "C:/Program Files (x86)/SteamVR/bin/win64/vrmonitor.exe"
+    directory: "C:/Program Files (x86)/SteamVR/bin/win64"
+    # start-station.bat owns cold-start spacing between applications.
+    waitDuringStartup: 0
+    waitDuringRestart: 10
+
