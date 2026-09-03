@@ -11,7 +11,7 @@
 
 watchdogConfig:
   logConfig:
-    logfile: C:/Watchdog/logs/kiosk.log
+    logfile: C:/becoming-many/watchdog/logs/kiosk.log
     logger: rotating
 
   restartApp: true
@@ -23,7 +23,7 @@ watchdogConfig:
   # can see. Wait for /health first. The script gives up after five minutes and
   # opens anyway, so a technician gets an error page to read instead of a black
   # screen to guess at.
-  preAppLaunchCommand: 'cmd /c "C:\Watchdog\bin\wait-health.bat http://localhost/health 300"'
+  preAppLaunchCommand: 'cmd /c "C:\becoming-many\watchdog\bin\wait-health.bat http://localhost/health 300"'
 
   udpControl:
     commands:
@@ -47,7 +47,7 @@ watchdogConfig:
       # window and ignores every flag below. It lives beside the other watchdog
       # runtime state rather than in the compose checkout, and it is kept -- the
       # HTTP cache in it is what saves refetching the world assets on restart.
-      - --user-data-dir=C:\Watchdog\run\kiosk-station
+      - --user-data-dir=C:\becoming-many\watchdog\run\kiosk-station
       # The real lock. No frame, no address bar, no tab strip; Alt+F4 is the
       # only way out, and this watchdog undoes that within seconds. See the
       # README for how to stop it when servicing the machine.

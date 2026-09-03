@@ -52,24 +52,58 @@ cold container start to every restart.
 
 ## Install
 
-Copy this folder to `C:\Watchdog` on the station PC and put the Watchdog v0.3.0
-binary beside the configs:
+Keep the repository at `C:\becoming-many` and run the tracked configs and
+scripts directly from its `watchdog` folder. A symbolic link supplies the
+installed Artcom Watchdog v0.3.0 binary under the name the startup script
+expects; another puts the tracked startup script in the station user's Startup
+folder. No copied config directory or `C:\Watchdog` junction is needed.
+
+Install Watchdog at `C:\Program Files\Watchdog`, then run these commands from an
+elevated PowerShell window:
+
+```powershell
+New-Item -ItemType SymbolicLink `
+  -Path 'C:\becoming-many\watchdog\Watchdog.exe' `
+  -Target 'C:\Program Files\Watchdog\bin\Watchdog.exe'
+
+# Start the station when the current station user signs in.
+$startupFolder = [Environment]::GetFolderPath(
+  [Environment+SpecialFolder]::Startup
+)
+New-Item -ItemType SymbolicLink `
+  -Path (Join-Path $startupFolder 'start-station.bat') `
+  -Target 'C:\becoming-many\watchdog\start-station.bat'
+```
+
+Creating the symbolic link requires an elevated shell unless Windows Developer
+Mode is enabled. Run the commands as the station account that will sign in,
+because the Startup folder is per user. Each link path must be absent before its
+command runs. If Watchdog was installed elsewhere, adjust the target of the
+`Watchdog.exe` link. Open `shell:startup` from the Run dialog to inspect the
+resulting startup link.
+
+The resulting paths are:
 
 ```text
-C:\Watchdog\
-  Watchdog.exe
-  start-station.bat
-  docker.yaml  station.yaml  steamvr.yaml  pico.yaml  kiosk.yaml
-  bin\  docker-up.bat  poll-health.bat  wait-health.bat
-  logs\   created on first start
-  run\    heartbeat file and the kiosk browser profile
 C:\becoming-many\
   docker-compose.yml
   .env
+  watchdog\
+    Watchdog.exe                     link to the installed binary
+    start-station.bat
+    docker.yaml  station.yaml  steamvr.yaml  pico.yaml  kiosk.yaml
+    bin\  docker-up.bat  poll-health.bat  wait-health.bat
+    logs\   created on first start
+    run\    heartbeat file and the kiosk browser profile
+<current user's Startup folder>\
+  start-station.bat                  link to the tracked startup script
 ```
 
-The configs carry absolute paths. If either root moves, the paths in the
-`.yaml` files and `PROJECT_DIR` at the top of `bin\docker-up.bat` move with it.
+`Watchdog.exe`, `logs\`, and `run\` are ignored by Git. The configs carry the
+fixed checkout path. If the repository moves, update the paths in the `.yaml`
+files and `bin\poll-health.bat`, update `PROJECT_DIR` at the top of
+`bin\docker-up.bat`, and recreate the startup link. If the Watchdog install
+moves, recreate the executable link.
 
 Then:
 
@@ -80,11 +114,18 @@ Then:
 3. Check the two installed paths in `docker.yaml` and `kiosk.yaml` against the
    machine — Chrome in particular is also found at `Program Files (x86)` and
    under `%LOCALAPPDATA%`.
-4. Put a shortcut to `start-station.bat` in the Startup folder
-   (`shell:startup` in the Run dialog), so a power-on brings the station up.
+4. Check that `shell:startup` contains the `start-station.bat` symbolic link, so
+   signing in after a power-on brings the station up.
 
-`start-station.bat` launches one minimised Watchdog per config and exits; the
-five windows stay in the taskbar and the logs land in `C:\Watchdog\logs`.
+`start-station.bat` starts Docker Desktop and PICO Business Streaming first,
+waits 30 seconds, starts SteamVR, waits another 15 seconds, then starts the
+kiosk. The station-health poller starts in the initial group because it is
+independent of the VR chain. These pauses only space out process startup; the
+individual application configs add no cold-start delay of their own.
+`docker-up.bat` still waits for the Docker engine and the kiosk still waits for
+`/health` rather than assuming either is ready. The five windows stay in the
+taskbar and the logs land in
+`C:\becoming-many\watchdog\logs`.
 
 ## Operating it
 
@@ -111,8 +152,8 @@ version an exhibition is running.
 
 ## Reading the logs
 
-One rotating log per watchdog in `C:\Watchdog\logs`. The scripts prefix their
-own lines, so the story of a cold start reads as `[docker-up] engine answered
-after 45s`, then `[docker-up] station stack is up`, then `[wait-health] station
-answered after 12s`. A restart loop shows as repeated `[poll-health] no answer
-from http://localhost/health` before each bring-up.
+One rotating log per watchdog in `C:\becoming-many\watchdog\logs`. The scripts
+prefix their own lines, so the story of a cold start reads as `[docker-up]
+engine answered after 45s`, then `[docker-up] station stack is up`, then
+`[wait-health] station answered after 12s`. A restart loop shows as repeated
+`[poll-health] no answer from http://localhost/health` before each bring-up.

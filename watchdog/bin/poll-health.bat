@@ -20,7 +20,7 @@ set "HEARTBEAT_FILE=%~2"
 set "INTERVAL=%~3"
 
 if "%HEALTH_URL%"=="" set "HEALTH_URL=http://localhost/health"
-if "%HEARTBEAT_FILE%"=="" set "HEARTBEAT_FILE=C:\Watchdog\run\station.hb"
+if "%HEARTBEAT_FILE%"=="" set "HEARTBEAT_FILE=C:\becoming-many\watchdog\run\station.hb"
 if "%INTERVAL%"=="" set "INTERVAL=10"
 
 for %%F in ("%HEARTBEAT_FILE%") do if not exist "%%~dpF" mkdir "%%~dpF"

@@ -13,7 +13,7 @@
 
 watchdogConfig:
   logConfig:
-    logfile: C:/Watchdog/logs/docker.log
+    logfile: C:/becoming-many/watchdog/logs/docker.log
     logger: rotating
 
   restartApp: true
@@ -25,7 +25,7 @@ watchdogConfig:
   # waits for `docker info` instead of guessing; this delay only keeps it from
   # spinning through the first half minute.
   postAppLaunchDelay: 30
-  postAppLaunchCommand: 'cmd /c "C:\Watchdog\bin\docker-up.bat"'
+  postAppLaunchCommand: 'cmd /c "C:\becoming-many\watchdog\bin\docker-up.bat"'
 
   udpControl:
     commands:

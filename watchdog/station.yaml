@@ -12,7 +12,7 @@
 
 watchdogConfig:
   logConfig:
-    logfile: C:/Watchdog/logs/station.log
+    logfile: C:/becoming-many/watchdog/logs/station.log
     logger: rotating
 
   restartApp: true
@@ -21,7 +21,7 @@ watchdogConfig:
 
   # The recovery itself. Every launch of the poller -- the first one, and every
   # one the heartbeat timeout below forces -- brings the stack up again.
-  preAppLaunchCommand: 'cmd /c "C:\Watchdog\bin\docker-up.bat"'
+  preAppLaunchCommand: 'cmd /c "C:\becoming-many\watchdog\bin\docker-up.bat"'
 
   udpControl:
     commands:
@@ -39,17 +39,17 @@ watchdogConfig:
     # Launched through cmd.exe: a .bat is a script for the command interpreter,
     # not an image Windows can start on its own.
     binary: C:/Windows/System32/cmd.exe
-    directory: C:/Watchdog
+    directory: C:/becoming-many/watchdog
     arguments:
       - /c
-      - 'C:\Watchdog\bin\poll-health.bat'
+      - 'C:\becoming-many\watchdog\bin\poll-health.bat'
       - http://localhost/health
-      - 'C:\Watchdog\run\station.hb'
+      - 'C:\becoming-many\watchdog\run\station.hb'
       - "10"
     waitDuringStartup: 0
     waitDuringRestart: 5
     heartbeat:
-      heartbeatFile: C:/Watchdog/run/station.hb
+      heartbeatFile: C:/becoming-many/watchdog/run/station.hb
       # Six missed ten-second beats: about a minute of a dead station before
       # the stack is brought back up. Short enough that a visitor waits rather
       # than leaves, long enough to sit out a container restart.

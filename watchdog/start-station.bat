@@ -27,8 +27,8 @@ if not exist "%WATCHDOG_EXE%" (
   echo Watchdog.exe is not next to this script.
   echo Expected: %WATCHDOG_EXE%
   echo.
-  echo Copy the repository's watchdog\ folder plus the Artcom Watchdog v0.3.0
-  echo binary into C:\Watchdog, then run this again. See README.md.
+  echo Link the installed Watchdog binary here as Watchdog.exe, as described
+  echo in README.md, then run this again.
   pause
   exit /b 1
 )
@@ -43,23 +43,35 @@ rem Docker Desktop first: it carries the compose bring-up, and everything the
 rem station serves waits behind its engine.
 call :watch docker "Docker Desktop"
 
+rem Start Business Streaming alongside Docker Desktop, before SteamVR.
+call :watch pico "PICO Business Streaming"
+
 rem The health poller. Its own bring-up covers the case where Docker Desktop was
-rem already running and docker.yaml therefore had nothing to launch.
+rem already running and docker.yaml therefore had nothing to launch. It is
+rem independent of the timed VR application chain.
 call :watch station "station health"
 
-rem The VR chain. Neither depends on the station server, but SteamVR must be up
-rem before the PICO streaming client looks for it.
+call :wait 30 "SteamVR"
 call :watch steamvr "SteamVR"
-call :watch pico "PICO streaming"
 
-rem The kiosk window last. It waits for /health on its own before opening, so
-rem this ordering is for the logs, not for correctness.
+rem The kiosk window comes last. It waits for /health on its own before opening,
+rem so the final delay spaces out startup rather than replacing that check.
+call :wait 15 "the kiosk window"
 call :watch kiosk "kiosk window"
 
 echo.
 echo All watchdogs started. Each runs in its own minimised window; logs are in
 echo %WATCHDOG_DIR%\logs.
 exit /b 0
+
+rem ---------------------------------------------------------------------------
+rem :wait <seconds> <name of next application>
+rem ---------------------------------------------------------------------------
+:wait
+set /a "WAIT_PINGS=%~1+1" >nul
+echo Waiting %~1s before starting %~2 ...
+ping -n %WAIT_PINGS% 127.0.0.1 >nul
+goto :eof
 
 rem ---------------------------------------------------------------------------
 rem :watch <config-name> <window title>

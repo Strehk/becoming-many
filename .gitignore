@@ -39,6 +39,11 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 *.local
 !.env.example
 
+# station Watchdog install and runtime state
+watchdog/Watchdog.exe
+watchdog/logs/
+watchdog/run/
+
 # benchmark artifacts
 benchmark-results
 .certs
