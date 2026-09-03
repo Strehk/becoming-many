@@ -39,9 +39,29 @@ export interface PassageFlightDefinition {
   readonly flapTimeScale: number;
   /** Minimum height above ground; zero leaves the route untouched. */
   readonly groundClearanceMeters: number;
-  /** Turn the whole route to the visitor's heading as the animal enters. */
-  readonly alignToViewHeading: boolean;
+  readonly frameYaw: PassageFrameYaw;
+  /**
+   * The compass bearing the departure turns onto, in radians clockwise from
+   * north. Omit to leave on the route's own closing heading, which is what an
+   * animal without a compass meaning does. The turn is a bank across the exit,
+   * not a snap at the hand-off.
+   */
+  readonly departureBearingRadians?: number;
 }
+
+/**
+ * Which way the whole route frame is turned as the animal enters — the entry
+ * points, the route, and the departure together, so the tuned shape is
+ * untouched and only its compass direction changes.
+ *
+ * `viewHeading` turns it to the way the visitor is travelling, for a crossing
+ * that has to arrive from behind them wherever they happen to be pointed.
+ * `world` holds an authored bearing regardless of the view, for one that means
+ * something on the compass.
+ */
+export type PassageFrameYaw =
+  | { readonly kind: "viewHeading" }
+  | { readonly kind: "world"; readonly radians: number };
 
 /*
  * The bat's route was authored travelling in one direction and is turned so it
@@ -89,17 +109,23 @@ export const BAT_PASSAGE: PassageFlightDefinition = {
   flapClipName: "Armature.001Action",
   flapTimeScale: 1,
   groundClearanceMeters: 0.45,
-  alignToViewHeading: true,
+  frameYaw: { kind: "viewHeading" },
 };
 
 /**
- * The bird, before Magnetic Field Perception. It begins behind the visitor,
- * sweeps around their right side, and joins the authored circling route on a
- * tangent-matched arc in front of them. The route keeps a fixed world rotation
- * rather than following the view: it is the world's bird, not the visitor's.
+ * The bird, before Magnetic Field Perception. It joins the authored route on a
+ * tangent-matched entry arc and sweeps a 204-degree bow around the visitor at
+ * between four and a half and fifteen metres — close enough and wide enough
+ * that the crossing is seen rather than missed. The route keeps fixed world
+ * axes rather than following the view: it is the world's bird, not the
+ * visitor's, and the sweep is left exactly where it was tuned.
  *
- * Every phase runs two and a half times as long as the first version that
- * read well, which is where the slow, wide sweep comes from.
+ * Only the departure carries a compass meaning. The sense this announces is
+ * the one migratory birds navigate by, and the authored track ends running
+ * very nearly due south, so the exit banks onto north over its first stretch
+ * and the bird leaves on the bearing the sense is about. North is +Z with no
+ * declination, as `magnetic-sense.ts` has the field axis. The exit was always
+ * procedural — no authored route data is touched by this.
  */
 export const BIRD_PASSAGE: PassageFlightDefinition = {
   passageId: "bird",
@@ -123,7 +149,8 @@ export const BIRD_PASSAGE: PassageFlightDefinition = {
   flapClipName: "ArmatureAction",
   flapTimeScale: 1,
   groundClearanceMeters: 0,
-  alignToViewHeading: false,
+  frameYaw: { kind: "world", radians: 0 },
+  departureBearingRadians: 0,
 };
 
 /** Every animal that crosses on a flown route. */
