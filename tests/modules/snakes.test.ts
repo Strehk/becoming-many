@@ -60,7 +60,7 @@ describe("the rebuilt snake body", () => {
 });
 
 describe("Snakes", () => {
-  test("crawls only where the ground is open and level", () => {
+  test("crawls on every ground but water, and never up a bank", () => {
     const scene = new Scene();
     const module = createSnakesModule({
       scene,
@@ -73,6 +73,8 @@ describe("Snakes", () => {
     if (!(mesh instanceof InstancedMesh)) throw new Error("Expected one pool");
     expect(mesh.count).toBeGreaterThan(0);
 
+    // The wood carries no grass at all, which is the ground a crossing reads
+    // on: in a meadow the three-metre blades close over a snake entirely.
     const woodedScene = new Scene();
     const wooded = createSnakesModule({
       scene: woodedScene,
@@ -84,8 +86,21 @@ describe("Snakes", () => {
     const woodedMesh = woodedScene.children[0];
     if (!(woodedMesh instanceof InstancedMesh))
       throw new Error("Expected one pool");
-    // A snake crossing a wood would be laid through the trunks it cannot see.
-    expect(woodedMesh.count).toBe(0);
+    expect(woodedMesh.count).toBeGreaterThan(0);
+
+    // Water is the one ground a body is never laid on.
+    const waterScene = new Scene();
+    const overWater = createSnakesModule({
+      scene: waterScene,
+      viewpoint: { worldPosition: new Vector3(), viewDistanceMeters: 64 },
+      preset: PRESET,
+      worldSurface: createFlatSurface("water"),
+    });
+    overWater.load();
+    const waterMesh = waterScene.children[0];
+    if (!(waterMesh instanceof InstancedMesh))
+      throw new Error("Expected one pool");
+    expect(waterMesh.count).toBe(0);
   });
 
   test("carries every snake along its own way over time", () => {

@@ -10,6 +10,13 @@ Boundary: Level density lives in the authored preset; the ground facts in World 
 Snakes crossing the open ground, each one a body lying on the surface with a
 wave running down it.
 
+## Size
+
+Three to five metres. A grass snake's metre and a half is the honest length
+and the wrong one here: this world grows three-metre grass and ten-metre
+trees, so at that size a body on the ground is a thread nobody flying will
+ever pick out. The snakes are scaled to the world rather than to the animal.
+
 ## The body is rebuilt, not loaded
 
 The authored model was one rigid tube of **57,600 triangles**, fifty-seven
@@ -30,9 +37,13 @@ instead of wagging. A whole pool of snakes is one draw call and one uniform.
   so the same landscape carries the same snakes in every run. How many places
   a cell offers is a level value, because how much snake a world holds is a
   question for the piece rather than for the module.
-- A candidate is refused unless the **whole way** it would crawl stays in
-  meadow or shrub slope and the ground along it never falls further than a
-  body can follow. A snake laid through a wood would be laid through trunks.
+- A candidate is refused unless the **whole way** it would crawl stays out of
+  water and the ground along it never falls further than a body can follow.
+- The meadow is where a snake belongs and the one place it cannot be seen:
+  grass covers it completely and stands three metres tall, which closes over
+  a body on the ground entirely. The wood carries no grass at all and the
+  slope only half, so those are the grounds a crossing actually reads on. A
+  snake is met at the edge of the trees, which is where one is met.
 - A snake walks its way and starts it again, so it never crawls out of the
   country its place was accepted in.
 
