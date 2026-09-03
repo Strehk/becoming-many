@@ -40,8 +40,8 @@ the browser Test UI.
 separate construction-only `ShowComposition` loaded once for the complete
 show. `show-levels.ts` owns the narrow presentation states the running show can
 change. The bare `src/main.ts` route starts that show; `?level=<name>` and
-matching path names select one showless development preset, and a benchmark is
-also showless.
+matching path names enter through `src/test-main.ts` and select one showless
+development preset. Benchmarks use that Test entry too.
 
 An unknown requested name warns and falls back to Connections. That fallback is
 for explicit development selection, not the behavior of the bare show route.
@@ -55,6 +55,7 @@ frame coordination. It:
 - applies the initial static or show presentation before module loading;
 - loads and activates the configured module list;
 - connects the selected desktop or M5 flight source;
+- accepts entry-owned Test UI metrics and overlay creation only when requested;
 - delegates optional show time, narration, transitions, and sense fades to
   `show-runtime.ts`;
 - returns the narrow `RunningLevel` command/query surface used by pages.
