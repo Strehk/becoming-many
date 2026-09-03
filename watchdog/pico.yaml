@@ -1,0 +1,24 @@
+watchdogConfig:
+  logConfig:
+    logfile: C:/Watchdog/logs/pico.log
+    logger: rotating
+
+  restartApp: true
+  watchFrequency: 2
+  hideConsoleWindow: false
+
+  udpControl:
+    commands:
+      - systemHalt: halt
+      - systemReboot: reboot
+      - restartApplication: restart
+      - stopApplication: stop
+      - startApplication: start
+    port: 2347
+    returnmessage: true
+
+  application:
+    binary: "C:/Program Files/PICO Business Streaming/PICOBusinessStreaming.exe"
+    directory: "C:/Program Files/PICO Business Streaming"
+    waitDuringStartup: 5
+    waitDuringRestart: 5
