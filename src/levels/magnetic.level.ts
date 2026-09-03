@@ -19,7 +19,7 @@ export const level: LevelPreset = {
   // north point and a mirrored one at the southern counter-pole; the module
   // owns every shape and motion value, the preset only the axis and palette.
   magnetic: {
-    // Full sense strength until a dramaturgy driver exists.
+    // Full strength in a standalone level; the show drives this at runtime.
     intensity: 1,
     fieldDirectionDegreesFromNorth: 0,
     // The inclination the previous version last had authored.

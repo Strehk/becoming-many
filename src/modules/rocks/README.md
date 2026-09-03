@@ -7,7 +7,7 @@ It consumes World Surface facts and owns its rock resources. Surface
 generation, world streaming, and the global render loop remain outside this
 module.
 
-## Current MVP
+## Current Behavior
 
 - `rocks-definition.ts` owns the seed, candidate spacing, four CC0 GLBs,
   authored sizes, and weighted variants. Level Runtime loads them only when a

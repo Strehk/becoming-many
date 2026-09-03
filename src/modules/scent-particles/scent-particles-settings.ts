@@ -11,7 +11,7 @@ export const SCENT_PARTICLES_SETTINGS = {
   chunkLevel: 2, // Selects 64-metre chunks, the grid Vegetation is placed on.
   preloadLayerCount: 1, // Prepares one chunk layer beyond the visible radius.
   animationLoopSeconds: 60, // Bounds the time uniform; rise durations must divide it evenly.
-  defaultIntensity: 1, // Full sense strength until a dramaturgy driver exists.
+  defaultIntensity: 1, // Full strength unless a running show supplies its fade.
 } as const;
 
 /**

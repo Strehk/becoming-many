@@ -91,9 +91,11 @@ from this page; glanceable and never fed into steering.
   only page-held position is the operator's own while scrubbing, which wins
   over the clock until the drag ends.
 
-## Not here yet
+## Remaining Direction
 
-The session state machine and M5 and headset telemetry are planned and
-deliberately absent. [Open Decision 2](../../docs/direction/open-decisions.md)
-still owns the state machine; this page commands the show clock, not session
-phases.
+The page reports its current XR session state and detailed M5 state, but it has
+no headset battery/worn telemetry, passthrough control, or installation session
+state machine. Those additions remain dependent on the delivery-platform and
+session decisions in
+[Installation Direction](../../docs/direction/README.md). This page currently
+commands the show clock and viewer lifecycle, not venue session phases.

@@ -1,35 +1,32 @@
-# Deployment: Two Stations at the Futurium
+# Deployment Direction
 
-Decided in the design session of 2026-08-21. Hardware items still carry spikes —
-see [Quality and Operations](quality-operations.md).
+## Current
 
-**Two identical, fully independent stations.** Each station:
+The repository builds one station container containing the static browser
+pages and a Bun server. The server exposes `/health` and `/config`; the
+Conductor page hosts and controls the show in-process. Per-station values are
+provided through environment variables for M5 host, expected device id, station
+name, and port. A Windows kiosk launcher is present.
 
-- **ICAROS flight rig** with the **M5StickS3** mounted on it (built-in front
-  buttons only; no external wiring).
-- **Station PC** (Windows, VR-ready) with the **operator page on its second
-  monitor**. Staff operate locally; no staff tablets, no remote operation.
-- **PICO 4 Enterprise** headset. The enterprise OS matters: it allows the
-  on-device APIs in [Headset](headset.md).
-- The two stations **share only the network**. There is no central server;
-  station identity (which M5, which rig profile, which room) is local config.
+The current package can run as one independent station. It has not completed a
+Futurium venue acceptance test.
 
-How the rendered experience reaches the headset — standalone on the headset vs
-PC-VR streaming — is [Open Decision 1](open-decisions.md).
+## Planned
 
-On the PC-VR path, one property simplifies everything: the page is served from
-**`http://localhost`** on the station PC — a secure context (WebXR works) with
-no mixed-content blocking, so plain `http://` polling of LAN devices is
-allowed. TLS on embedded devices, relay processes, and BLE all lose their
-reason to exist.
+The intended installation consists of two identical independent stations. Each
+has an ICAROS rig, its own M5StickS3, a station PC, a local operator display,
+and a PICO 4 Enterprise headset. Stations share network infrastructure but no
+show state or central runtime service.
 
-## Open venue items
+Local station identity and hardware binding remain local deployment facts. A
+failure at one station must not stop the other.
 
-1. **Network control.** Assumed: a network we control (own router, DHCP
-   reservations for the M5s). House-IT client isolation would break M5→PC
-   traffic — rule this out with the venue early.
-2. **Station PC spec** — needed to set the station performance budget.
-3. **Exact headset edition and versions.** Enterprise SDK APIs and streaming
-   features bind to the tested matrix (device model, PICO OS, TobService and
-   streaming-client versions). Confirm the Futurium units before the headset
-   spike.
+## Open
+
+- Final delivery path: standalone PICO or wired Windows PCVR.
+- Exact station PC, headset edition, OS, browser/runtime, streaming-client, and
+  driver versions.
+- Venue network behavior, including client isolation and stable addressing.
+- Recovery procedure and acceptance results for repeated sessions.
+
+These are evidence tasks, not reasons to add a generic coordination service.

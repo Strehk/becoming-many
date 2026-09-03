@@ -6,6 +6,10 @@ Boundary: Measurements are desktop Chromium evidence and do not constitute physi
 
 # Browser Performance Audit — 2026-08-24
 
+Historical desktop evidence. This audit describes the revision measured on its
+date, not the current complete show. Use [performance.md](performance.md) and
+current issues for active targets and conclusions.
+
 ## Executive Summary
 
 The current Test Level is **not ready for the stable 90 FPS PICO 4 target**.

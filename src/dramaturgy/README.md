@@ -46,11 +46,11 @@ headroom between the two. It is the one place slot arithmetic lives, so the
 guarantee the tests enforce and the timeline the conductor draws are the same
 calculation.
 
-`piece-schedule.ts` is the authored data for the main show. It opens on five
+`piece-schedule.ts` is the authored data for the 8:41 main show. It opens on five
 seconds of silence before the first word, so the visitor is flying before a
 voice arrives. That lead-in needs no mechanism — `narrationCueAt` answers
-nothing before the first cue, so it is simply the gap in front of `prologue`. A tutorial schedule
-will sit beside it. Schedules are typed TypeScript data files, never JSON, per
+nothing before the first cue, so it is simply the gap in front of `prologue`.
+No tutorial schedule is currently implemented. Schedules are typed TypeScript data files, never JSON, per
 the repository's configuration rule, and there is **one schedule authority
 total**.
 
@@ -63,13 +63,12 @@ instant — it never retriggers a file.
 `level-runtime.ts` composes the two halves; this folder never imports
 `src/sound`, and `src/sound` never decides when a cue plays.
 
-## Not here yet
+## Deliberately Absent
 
-Authored keyframed envelopes, the session state machine, per-sense audio beds,
-and module preloading around cues are planned and deliberately absent. The
-derived ramp in `show-levels.ts` is the first form of the per-sense intensity
-signal; authored curves replace it as a sibling schedule field when the
-authoring loop exists (`docs/direction/dramaturgy-audio.md`).
+Authored keyframed envelopes, an installation session state machine, and
+per-sense audio beds are absent. The current derived ramp in `show-levels.ts`
+is the complete implemented intensity signal. Add authored curves or a tutorial
+only when a concrete product issue requires them.
 
 The conductor page (`src/conductor`) reads this folder to draw and scrub the
 schedule. It is a consumer, never an author: cue times change by editing the

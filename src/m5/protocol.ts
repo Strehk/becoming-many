@@ -16,8 +16,8 @@ export const M5_FIRMWARE_VERSION = "0.3.2-bm-http";
 /**
  * `GET /state` on port 80 is the one polled endpoint; everything the device
  * knows arrives in each response. The firmware samples every 50ms, so polling
- * faster only re-reads the same snapshot. The polling adapter adds its own
- * constants when it lands — until then this comment is the reference.
+ * faster only re-reads the same snapshot. The polling adapter owns its cadence
+ * and staleness settings.
  *
  * Pitch and roll are already normalized, axis-mapped,
  * and calibrated on the device (-1..1), so every client agrees on zero.

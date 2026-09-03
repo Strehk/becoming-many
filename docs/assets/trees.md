@@ -1,29 +1,19 @@
 # Tree and Shrub Assets
 
-The vegetation source set contains eight CC0 GLBs from Quaternius. They cover
-individual conifers, conifer packs, birches, general trees, dead trees, bushes,
-and flowering bushes.
+`public/trees` contains eight Quaternius CC0 GLBs from Poly Pizza. Source pages,
+download URLs, checksums, mesh names, geometry counts, and texture counts are
+recorded in `public/trees/manifest.json`.
 
-## Current Runtime Status
+## Current Runtime Use
 
-The files and manifest exist under `public/trees`. Every level that renders
-Vegetation loads seven conifer variants, five deciduous variants, three birch
-variants, two dead-tree variants, Bush, and Bush with Flowers. Shared source
-URLs are loaded only once, so the four added conifers and the two added
-deciduous crowns come out of `pine-trees-01.glb` and `trees.glb`, which were
-already being fetched, and cost no additional transfer.
+Vegetation definitions select individual conifer, deciduous, birch, dead-tree,
+bush, and flowering-bush objects from these files. Shared URLs are fetched once
+per preload request. Multi-part objects remain complete and become compact
+instanced mesh parts; source groups containing multiple trees are not treated as
+one placement unit.
 
-`birch-trees.glb` and `dead-trees.glb` are the only newly fetched files. They
-were brought in for silhouette variety: the source crowns are low-poly solids
-drawn with an unlit material, so a stand built from few variants reads as one
-constructed shape repeated. Both carry fewer triangles per instance than the
-deciduous trees whose share they take, so the mix does not raise the visible
-triangle count that
-[the 2026-08-24 performance audit](../performance-audit-2026-08-24.md) records
-as the dominant bottleneck. It does raise the startup transfer by about 6.9 MB
-against the roughly 19.4 MB that audit measured, which lands on the same
-document's P2 finding that startup waits for all enabled assets. Dropping
-either file from `variantsByZone` reverses that cost on its own.
+The shipping GLBs remain their source-quality versions. No current physical
+PICO measurement has justified a derived mesh or texture optimization set.
 
 ## Inventory
 
@@ -38,21 +28,12 @@ either file from `variantsByZone` reverses that cost on its own.
 | Bush | [Poly Pizza](https://poly.pizza/m/EoTERLq3z2) | `bush.glb` | 1 | 900 | 1 | 1 |
 | Bush with Flowers | [Poly Pizza](https://poly.pizza/m/U1ymDy8tbY) | `bush-with-flowers.glb` | 1 | 1,368 | 2 | 2 |
 
-All models are by Quaternius and published under CC0. The GLBs are stored as source files and are not yet PICO-optimized.
-
 ## Runtime Rules
 
-- Treat each configured named object as a model, not as a scene to clone.
-- Configure one tree object per variant. Multi-tree source groups are not valid
-  placement units because every trunk needs its own terrain sample.
-- Preserve every Mesh below a named Group and instance each model part.
-- Normalize native model units through authored target heights in metres.
-- Compact accepted placements so unused pool capacity produces no vertex work.
-- Convert embedded textures to the selected runtime format only after PICO measurement.
-- Do not create per-tree materials, textures, or scene graphs in the streaming hot path.
-- Use shader-based wind or compact instance data for motion; these sources contain no skeletal animation clips.
-- Unload complete vegetation sets through the module lifecycle.
-
-The manifest records source URLs, checksums, mesh names, geometry counts, and
-texture counts. It is stored at
-[`public/trees/manifest.json`](../../public/trees/manifest.json).
+- Treat each configured named object as one model, not as a scene to clone.
+- Preserve every Mesh below a named Group and its authored local transform.
+- Normalize source units through authored target heights in metres.
+- Compact accepted placements so rejected pool capacity is not drawn.
+- Keep asset loading outside the streaming hot path.
+- Any optimized derivative must preserve provenance, selected objects, material
+  roles, and visual acceptance.

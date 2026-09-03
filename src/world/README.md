@@ -1,156 +1,63 @@
+<!--
+Purpose: Document the permanent World Runtime and bounded scheduling contracts.
+Context: Content modules share one renderer, viewpoint, chunk grid, and stream budget.
+Responsibility: Explain ownership and invariants under src/world.
+Boundary: Content lives in src/modules; input in src/control; facts in src/world-surface.
+-->
+
 # World
 
-This folder contains the permanent World Engine infrastructure. It owns the
-single render loop, WebXR integration, logical world coordinates, module
-lifecycle, the shared chunk grid, and the bounded scheduling used by streamed
-content.
+This folder owns permanent execution infrastructure: the single render loop,
+WebXR integration, viewer rig, module lifecycle, aligned chunk grid, global wind,
+and bounded stream queue.
 
-Unloadable experience content belongs in `../modules`. Input and navigation
-belong in `../control`. The World Engine coordinates those systems without
-knowing whether a chunk contains particles, terrain, vegetation, or animals.
-The deterministic physical surface belongs in `../world-surface`; it has no runtime
-lifecycle and does not enter the World Engine.
-
-`wind.ts` is the single source for the global wind: its mean direction,
-strength, and speed, plus how far the direction swings and how deeply the
-strength gusts. `getWorldWind(seconds)` samples the wind blowing at one
-moment. It is a pure function of time, so the world keeps no wind state and
-every consumer sampling the same second gets the same wind; consumers advance
-their own clock and wrap it with `wrapWindSeconds`, where the sample repeats
-exactly. Every wind-reactive component reads this file instead of defining
-component-local wind values.
-
-Grass still samples the mean direction once when its material is created, so
-it does not yet follow the turn. That is a gap rather than a second wind: no
-narrative level renders grass at present, and wiring its uniform to the turn
-is a change to the Grass module that should be measured with it.
-
-## Runtime responsibilities
-
-`world-settings.ts` keeps the permanent renderer and stream-queue tuning values
-in one editable place. `world-runtime.ts` consumes those settings while creating
-the Three.js scene, viewer rig and child camera, renderer, module runtime, and
-stream queue. Navigation moves the rig; desktop look and WebXR own the camera's
-local pose. The rig publishes their combined world-space viewpoint before
-modules update.
-
-The renderer settings are the attributes of the one WebGL2 context, which
-`world-runtime.ts` creates itself and passes to `WebGLRenderer` alongside its
-canvas. They include `xrCompatible: true`: a context that is XR-compatible from
-creation spares Three.js the `makeXRCompatible()` call it would otherwise make
-while adopting a session the headset already presents, and therefore spares the
-world the context loss a runtime on another adapter answers with. A lost
-context is reported on the console, because the silent rebuild that follows the
-restore otherwise looks like a page reload.
+`world-runtime.ts` creates one XR-compatible WebGL2 renderer, scene, rig with a
+child camera, module runtime, and stream queue. Desktop look or headset tracking
+owns the camera's local pose; navigation moves the rig. Modules receive the
+combined world-space viewpoint.
 
 Every frame follows one order:
 
 ```text
-update navigation
-→ let active modules request work
-→ process a bounded amount of streaming work
+update time and navigation
+→ update active modules
+→ advance bounded streaming work
 → render once
 ```
 
-`module-runtime.ts` controls complete module lifecycles:
+`module-runtime.ts` owns the lifecycle
+`load → activate → update → deactivate → unload`. Loading creates fixed CPU/GPU
+resources; streaming recycles them. Modules never create animation loops.
 
-```text
-load → activate → update → deactivate → unload
-```
+## Spatial Windows
 
-This is intentionally separate from chunk streaming. Loading a module creates
-its fixed CPU and GPU resource pools. Streaming only recycles those resources
-while the loaded module follows the player.
+`chunk-system.ts` defines an aligned X/Z grid and `volume-chunk-window.ts`
+extends it through Y. Chunk sizes are power-of-two multiples of the 16-metre
+base. Each window maps absolute coordinates onto a fixed slot pool and reports
+only changed assignments.
 
-## One aligned chunk grid
+Assignments carry revisions. A producer checks that its revision remains
+current before publishing delayed work, preventing a recycled slot from
+receiving stale content.
 
-`chunk-system.ts` provides the shared sizes and flat surface window;
-`volume-chunk-window.ts` extends the same grid through Y. The base chunk is 16
-metres wide. Larger levels double that size:
+## Stream Queue
 
-```text
-level 0:  16 m
-level 1:  32 m
-level 2:  64 m
-level 3: 128 m
-```
+`stream-queue.ts` advances cooperative jobs within one shared frame budget.
+Every job receives at most one step per update, and a stable resource key lets
+newer pending work replace older work for the same slot. JavaScript cannot be
+interrupted mid-step, so producers keep each step small.
 
-Because every size is a power-of-two multiple of 16 metres, flat surface chunks
-and volumetric chunks still meet on shared world-grid lines. The grid never
-depends on travel direction or loading order.
+The only shared priority is the current Terrain-before-dependent-content rule.
+There is no generic dependency graph, worker pool, asset prefetcher, or adaptive
+quality framework.
 
-## What a chunk window means
+## Wind
 
-The conceptual world is infinite, but the device can hold only finite
-resources. `ChunkWindow` keeps a finite X/Z square for surface content.
-`VolumeChunkWindow` applies the same slot-recycling logic to an X/Y/Z cube for
-content such as Air Particles.
+`wind.ts` is the single deterministic source of global wind direction and
+strength over time. Scent and other dynamic consumers sample it; the legacy
+Grass material currently samples only the mean direction. Aligning every
+consumer with the time-varying sample is tracked in issue #28.
 
-Its radius is configurable:
-
-```text
-chunks per side = radius × 2 + 1
-surface slots   = chunks per side²
-volume slots    = chunks per side³
-```
-
-A radius of 1 produces 3×3 surface chunks with 9 slots or 3×3×3 volume chunks
-with 27 slots. The radius must cover the visible distance plus enough
-preparation space for the module's streaming work.
-
-The slot count remains fixed after creation. Crossing a chunk boundary does
-not grow the world or recreate the pool. Modulo arithmetic maps only the new
-edge or square face onto slots that left the opposite side.
-
-## Assignments and revisions
-
-Both window types return only changed assignments. Each assignment tells a
-module:
-
-- which fixed resource slot to reuse
-- which absolute chunk coordinates it now represents
-- where that chunk begins in world space
-- which revision currently owns the slot
-
-The revision protects delayed work. If generation takes several frames and
-the slot is reassigned before it finishes, the window's `isCurrent()` returns
-false. The obsolete result is discarded instead of overwriting newer content.
-
-The chunk window still creates no Three.js objects and generates no content.
-It only describes where fixed module resources belong.
-
-## Repeated and generated content
-
-Every module consumes the same assignments but chooses one of two simple uses:
-
-1. **Repeat:** Build local content once and place it at every assigned origin.
-   No implemented module currently needs this mode.
-2. **Generate:** Derive content deterministically from the world seed,
-   absolute world coordinates, and write it into the assigned slot. Terrain
-   samples World Surface ground heights; Air Particles hash X/Y/Z coordinates.
-
-Keeping this decision inside each module prevents particle or terrain branches
-from entering the shared chunk system.
-
-## Bounded stream queue
-
-`stream-queue.ts` spreads procedural work across frames. Modules submit small,
-cooperative jobs. The queue advances each pending job at most once per frame
-and stops starting work when the shared deadline is reached.
-
-Jobs use a stable resource-slot key. Newer work for the same key replaces the
-older pending job. Every job also exposes `isCurrent()`, allowing recycled or
-unloaded module work to disappear before it mutates resources.
-
-One small dependency priority keeps recycled support coherent: pending Terrain
-rows finish before ordinary content jobs advance. Vegetation and Rocks can
-therefore never publish an incoming chunk before its ground exists.
-
-The queue can stop before starting another step, but JavaScript cannot be
-interrupted while a step is already running. A module must therefore divide
-generation into genuinely small operations rather than submit one complete
-landscape chunk as a single step.
-
-The MVP deliberately has no worker pool, general asset-streaming framework,
-runtime quality adaptation, or distance-based priority system. Those additions
-need measured PICO evidence.
+World Runtime does not know whether a slot contains terrain, particles, grass,
+or another feature. Each consumer owns generation, resources, rendering, and
+disposal.

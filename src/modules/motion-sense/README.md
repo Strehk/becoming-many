@@ -44,7 +44,7 @@ and raw GLSL ES 3.00 files.
 
 ## Per-frame cost is bounded uploads plus uniforms
 
-The rendering-constraints rule "CPU sets up, GPU animates" is honoured by
+The performance rule "CPU sets up, GPU animates" is honoured by
 splitting the work: the boid simulation is irreducibly CPU (like Animals)
 but bounded by the authored pool, and the trail ring stores only immutable
 spawn-time attributes. Each frame the CPU writes exactly one ring slot and
@@ -76,6 +76,5 @@ wing-vertex sampling is recorded in
 - Trail length is authored in rendered frames for bm-base parity; a
   fixed-cadence spawn accumulator is the known fix for frame-rate
   dependence.
-- The path-flyby swarm event from bm-base is blocked on the runtime
-  coordination decision (`docs/direction/open-decisions.md` §2); the
-  current swarms are persistent and statically authored.
+- The current swarms are persistent and statically authored. A path-flyby event
+  would be a new product feature and needs its own issue and capacity budget.

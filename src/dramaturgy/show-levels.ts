@@ -45,8 +45,7 @@ export const SHOW_LEVEL_SENSES: Record<ShowLevelName, readonly ShowSense[]> = {
  * How long a sense takes to reach its new strength after a cue boundary. One
  * shared dramaturgy constant: each fade starts exactly at its cue's
  * `atSeconds`, so the sense grows in under the narration that names it.
- * Authored keyframed envelopes are the planned evolution of this ramp
- * (docs/direction/dramaturgy-audio.md); they replace it, not extend it.
+ * This derived ramp is the current complete intensity model.
  */
 export const SENSE_FADE_SECONDS = 4;
 
