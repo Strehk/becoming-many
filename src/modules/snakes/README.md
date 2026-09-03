@@ -27,7 +27,9 @@ instead of wagging. A whole pool of snakes is one draw call and one uniform.
 ## Where a snake crawls
 
 - Each 64-metre cell offers candidate places drawn from its own coordinates,
-  so the same landscape carries the same snakes in every run.
+  so the same landscape carries the same snakes in every run. How many places
+  a cell offers is a level value, because how much snake a world holds is a
+  question for the piece rather than for the module.
 - A candidate is refused unless the **whole way** it would crawl stays in
   meadow or shrub slope and the ground along it never falls further than a
   body can follow. A snake laid through a wood would be laid through trunks.
@@ -36,9 +38,11 @@ instead of wagging. A whole pool of snakes is one draw call and one uniform.
 
 ## Which sense reveals them
 
-A snake is a cold body: the heat view is the one sense that would *not* show
-it, which is why snakes belong to the world echolocation opens rather than to
-the warm population the Thermal cue reveals.
+Snakes join the world at the **Thermal** cue, beside the walking population.
+A cold body is the one thing a heat view would physically not show, so this
+is a dramaturgical placement rather than a physical one: it is where the piece
+wants them. The ground they cross still colours them like the rocks around
+them, through the same echo ramp and world fade.
 
 ## Deliberately absent
 

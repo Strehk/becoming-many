@@ -219,7 +219,7 @@ function createConfiguredModules(setup: LevelSetup): ComposedWorld {
   add(undefined, createGrassClipmap(setup, echoDepth, thermal, structureFade));
   add("echo", createVegetation(setup, echoDepth, thermal, structureFade));
   add("echo", createRocks(setup, echoDepth, thermal, structureFade));
-  add("echo", createSnakes(setup, echoDepth, thermal, structureFade));
+  add("thermal", createSnakes(setup, echoDepth, thermal, structureFade));
   add("thermal", animals?.module);
   add("motion", motion?.module);
   add("magnetic", magnetic?.module);
@@ -575,9 +575,10 @@ function createVegetation(
 }
 
 /**
- * A snake is a cold body: the heat view is the one sense that would not show
- * it, so it belongs to the world echolocation opens rather than to the warm
- * population. It takes the same senses the ground it crosses takes.
+ * Snakes join the world at the Thermal cue, beside the walking population.
+ * A cold body is the one thing a heat view would not show, so this is a
+ * dramaturgical placement rather than a physical one: it is where the piece
+ * wants them, and the ground they cross still colours them like the rocks.
  */
 function createSnakes(
   setup: LevelSetup,

@@ -62,11 +62,11 @@ issue and a bounded implementation.
 - White World: atmosphere through background, fog, and Air Particles.
 - Scent: deterministic plant and animal scent sources plus one bounded points
   system.
-- Echolocation: terrain, vegetation, rocks, snakes crossing the open ground,
-  distance-based material effects, and the narrative grass clipmap.
+- Echolocation: terrain, vegetation, rocks, distance-based material effects,
+  and the narrative grass clipmap.
 - Motion: bounded fly and bird point actors with GPU-aged motion trails.
 - Thermal: a viewer-centred false-colour material effect across terrain,
-  vegetation, rocks, and animals.
+  vegetation, rocks, and animals, and the snakes crossing the open ground.
 - Magnetic: one opaque camera-following sky dome; it does not patch terrain or
   other module materials.
 - Connections: a worker-generated, fixed-pool mycelium network connected to

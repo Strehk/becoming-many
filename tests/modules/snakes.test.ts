@@ -13,7 +13,7 @@ import { SNAKES_DEFINITION } from "../../src/modules/snakes/snakes-definition";
 import type { WorldSurface } from "../../src/world-surface/world-surface";
 import type { ZoneId } from "../../src/world-surface/zone-settings";
 
-const PRESET = { crawlingShare: 1, color: 0x2b2b2b };
+const PRESET = { candidatesPerCell: 4, crawlingShare: 1, color: 0x2b2b2b };
 
 describe("the rebuilt snake body", () => {
   test("lays every ring along a unit body and marks where it sits", () => {

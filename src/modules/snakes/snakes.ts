@@ -50,6 +50,12 @@ const WAVE_LENGTHS = 1.35;
 const WAVE_SPEED = 0.9;
 
 export interface SnakesPreset {
+  /**
+   * How many places one 64-metre cell offers. The ground refuses most of
+   * them, so this is the coarse knob on how much snake a landscape holds and
+   * the crawling share is the fine one.
+   */
+  readonly candidatesPerCell: number;
   /** How many of the offered places carry a snake, 0..1. */
   readonly crawlingShare: number;
   /** Skin tone; the senses recolour it from here like any other surface. */
@@ -117,7 +123,7 @@ function loadSnakes(state: SnakesState, options: SnakesModuleOptions): void {
     level: SNAKES_DEFINITION.chunkLevel,
     radius,
   });
-  const capacity = chunkWindow.slotCount * SNAKES_DEFINITION.candidatesPerCell;
+  const capacity = chunkWindow.slotCount * options.preset.candidatesPerCell;
 
   const timeUniform = { value: 0 };
   const geometry = createSnakeGeometry();
@@ -196,7 +202,7 @@ function gatherSnakes(
 
     for (
       let candidate = 0;
-      candidate < SNAKES_DEFINITION.candidatesPerCell;
+      candidate < options.preset.candidatesPerCell;
       candidate += 1
     ) {
       const channel = candidate * RANDOM_VALUES_PER_CANDIDATE;

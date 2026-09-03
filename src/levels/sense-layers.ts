@@ -53,11 +53,12 @@ export const MOTION_LAYER: Pick<WorldComposition, "motion"> = {
 
 export const THERMAL_LAYER: Pick<
   WorldComposition,
-  "motion" | "animals" | "thermal"
+  "motion" | "animals" | "thermal" | "snakes"
 > = {
   motion: HEAT_MOTION_SENSE,
   animals: WARM_ANIMALS,
   thermal: THERMAL_PERCEPTION,
+  snakes: SNAKES,
 };
 
 export const MAGNETIC_LAYER: Pick<WorldComposition, "magnetic"> = {

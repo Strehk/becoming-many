@@ -11,7 +11,6 @@ export interface SnakesDefinition {
   readonly seed: number;
   /** Candidates are drawn per cell of this level; 2 is the 64-metre cell. */
   readonly chunkLevel: 2;
-  readonly candidatesPerCell: number;
   readonly lengthMeters: { readonly minimum: number; readonly maximum: number };
   /** Rings along the body and sides around it; the whole cost of one snake. */
   readonly ringCount: number;
@@ -36,9 +35,6 @@ export interface SnakesDefinition {
 export const SNAKES_DEFINITION: SnakesDefinition = {
   seed: 8123, // Keeps snake placement stable across levels and runs.
   chunkLevel: 2,
-  // Test value: two tries per 64-metre cell puts a snake in reach often
-  // enough to find one while flying. A quieter landscape would offer one.
-  candidatesPerCell: 2,
   lengthMeters: { minimum: 1.1, maximum: 1.8 },
   // Eleven rings carry the wave without stepping, and six sides read as round
   // at the distance a flying visitor ever sees a snake from. Together they are
