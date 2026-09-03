@@ -26,8 +26,14 @@ export interface SnakesDefinition {
   readonly crawlSpeedMetersPerSecond: number;
   /** How far a snake crawls before it starts its way again. */
   readonly crawlDistanceMeters: number;
-  /** Ground a snake crosses; the whole path must stay inside it. */
-  readonly zones: readonly ZoneId[];
+  /**
+   * How readily each ground carries a snake, as a weight between zero and
+   * one. Zero refuses it outright; the whole path must stay on ground that
+   * carries some weight. Weights rather than a plain list, because where a
+   * snake *belongs* and where a crossing can be *seen* are not the same
+   * place, and the piece needs both to be true at once.
+   */
+  readonly zoneWeights: Partial<Record<ZoneId, number>>;
   /** How far the ground may fall along the path before a place is refused. */
   readonly maximumGroundFallMeters: number;
 }
@@ -49,12 +55,19 @@ export const SNAKES_DEFINITION: SnakesDefinition = {
   crawlSpeedMetersPerSecond: 0.52,
   crawlDistanceMeters: 30,
   /*
-   * Every ground but water. The meadow is where a snake belongs and the one
-   * place it cannot be seen: grass covers it completely and stands three
-   * metres tall. The wood carries no grass at all and the slope only half, so
-   * those are the grounds a crossing actually reads on — a snake is met at
-   * the edge of the trees, which is where one is met.
+   * Every ground but water, weighted by what a crossing reads on. The meadow
+   * is where a snake belongs and the one place it cannot be seen: grass
+   * covers it completely and stands three metres tall, so it keeps a snake
+   * without ever showing one. The wood carries no grass but a canopy over it,
+   * which leaves a body readable from below and at the treeline. The open
+   * slope carries only half the grass and no canopy at all, and is the one
+   * ground a snake is met on from the air — so it carries most of them.
    */
-  zones: ["meadow", "shrubSlope", "coniferForest", "deciduousForest"],
+  zoneWeights: {
+    meadow: 0.18,
+    coniferForest: 0.55,
+    deciduousForest: 0.55,
+    shrubSlope: 1,
+  },
   maximumGroundFallMeters: 3,
 };

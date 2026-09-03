@@ -34,13 +34,14 @@ import slitherShader from "./snake-slither.vert.glsl?raw";
 import { SNAKES_DEFINITION } from "./snakes-definition";
 
 const SLITHER_CACHE_KEY = "snake-slither-v1";
-const RANDOM_VALUES_PER_CANDIDATE = 6;
+const RANDOM_VALUES_PER_CANDIDATE = 7;
 const RANDOM_OFFSET_X = 0;
 const RANDOM_OFFSET_Z = 1;
 const RANDOM_LENGTH = 2;
 const RANDOM_HEADING = 3;
 const RANDOM_PHASE = 4;
 const RANDOM_CRAWLS = 5;
+const RANDOM_GROUND = 6;
 
 const UP = new Vector3(0, 1, 0);
 /** How much of its own length a snake swings sideways at the tail. */
@@ -223,17 +224,16 @@ function gatherSnakes(
       const heading = draw(RANDOM_HEADING) * Math.PI * 2;
       const headingX = Math.sin(heading);
       const headingZ = Math.cos(heading);
-      if (
-        !isGroundCrawlable(
-          startX,
-          startZ,
-          headingX,
-          headingZ,
-          options.worldSurface,
-        )
-      ) {
-        continue;
-      }
+      const groundWeight = readGroundWeight(
+        startX,
+        startZ,
+        headingX,
+        headingZ,
+        options.worldSurface,
+      );
+      // The weakest ground the way crosses decides it, so a crossing is never
+      // accepted on the strength of the end it started at.
+      if (groundWeight <= 0 || draw(RANDOM_GROUND) >= groundWeight) continue;
 
       const { minimum, maximum } = SNAKES_DEFINITION.lengthMeters;
       stream.crawling.push({
@@ -297,35 +297,39 @@ function placeSnakes(
 }
 
 /**
- * Whether a body may lie along this way: every step of it in open country,
- * and the ground never falling further than a snake can follow.
+ * How readily this way carries a body, or zero when it refuses one: every
+ * step of it on ground that carries snakes at all, and the ground never
+ * falling further than one can follow. The weakest ground along the way is
+ * what the whole way is worth.
  */
-function isGroundCrawlable(
+function readGroundWeight(
   startX: number,
   startZ: number,
   headingX: number,
   headingZ: number,
   worldSurface: WorldSurface,
-): boolean {
+): number {
   const steps = 4;
   let lowest = Number.POSITIVE_INFINITY;
   let highest = Number.NEGATIVE_INFINITY;
+  let weakest = 1;
 
   for (let step = 0; step <= steps; step += 1) {
     const along = (step / steps) * SNAKES_DEFINITION.crawlDistanceMeters;
     const worldX = startX + headingX * along;
     const worldZ = startZ + headingZ * along;
-    if (
-      !SNAKES_DEFINITION.zones.includes(worldSurface.zoneAt(worldX, worldZ))
-    ) {
-      return false;
-    }
+    const zone = worldSurface.zoneAt(worldX, worldZ);
+    const weight = SNAKES_DEFINITION.zoneWeights[zone] ?? 0;
+    if (weight <= 0) return 0;
+    weakest = Math.min(weakest, weight);
 
     const groundY = worldSurface.groundYAt(worldX, worldZ);
     lowest = Math.min(lowest, groundY);
     highest = Math.max(highest, groundY);
   }
-  return highest - lowest <= SNAKES_DEFINITION.maximumGroundFallMeters;
+  if (highest - lowest > SNAKES_DEFINITION.maximumGroundFallMeters) return 0;
+
+  return weakest;
 }
 
 function createSnakeMaterial(

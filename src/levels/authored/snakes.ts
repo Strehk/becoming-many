@@ -9,12 +9,13 @@ import type { SnakesPreset } from "../../modules/snakes/snakes";
 
 export const SNAKES: SnakesPreset = {
   /*
-   * Three places offered per 64-metre cell. The ground refuses the ones that
-   * would run down a bank or across water, which leaves a handful crossing
-   * the country around a visitor at any moment: met now and then rather than
-   * everywhere underfoot.
+   * Fourteen places offered per 64-metre cell. Most are refused: by water, by a
+   * bank too steep to follow, and by the weight of the ground itself, which
+   * keeps the meadow from swallowing most of the population where nobody can
+   * see it. What is left is a handful crossing the country around a visitor
+   * at any moment — met now and then rather than everywhere underfoot.
    */
-  candidatesPerCell: 3,
+  candidatesPerCell: 14,
   /*
    * Test value: every place the ground accepts carries a snake, which is far
    * more snake than a meadow holds — it is here so a run-through finds one

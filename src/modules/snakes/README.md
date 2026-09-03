@@ -39,11 +39,17 @@ instead of wagging. A whole pool of snakes is one draw call and one uniform.
   question for the piece rather than for the module.
 - A candidate is refused unless the **whole way** it would crawl stays out of
   water and the ground along it never falls further than a body can follow.
-- The meadow is where a snake belongs and the one place it cannot be seen:
-  grass covers it completely and stands three metres tall, which closes over
-  a body on the ground entirely. The wood carries no grass at all and the
-  slope only half, so those are the grounds a crossing actually reads on. A
-  snake is met at the edge of the trees, which is where one is met.
+- Ground carries a weight rather than a yes or no, because where a snake
+  *belongs* and where a crossing can be *seen* are not the same place. The
+  meadow keeps a snake without ever showing one: its grass covers it fully
+  and stands three metres tall. The wood carries no grass but a canopy above
+  it, so a body there reads from below and at the treeline. The open slope
+  carries half the grass and no canopy, and is the one ground a snake is met
+  on from the air — so it carries the most.
+- Left unweighted, the population followed the landscape: three in five
+  snakes lay in meadow, where nobody would ever find one. Weighted, seven
+  snakes are within seventy metres of a flight at a time and half of them on
+  ground the grass does not close over.
 - A snake walks its way and starts it again, so it never crawls out of the
   country its place was accepted in.
 
