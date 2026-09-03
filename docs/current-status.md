@@ -519,6 +519,13 @@ gesture in the window.
   module's `MotionPointSource` seam and prints into its own trail ring;
   bird bodies render nothing (perception-only actors, three points per
   bird with a deterministic wing flap).
+- Level 05 repaints one thing in the carried Motion world: the bird traces
+  take the thermal palette's hot stop instead of the pale world's cold cyan
+  accent, because a heat view that prints a warm body in the cold accent says
+  the opposite of what the sense is for. The flies keep their indigo — an
+  insect carries no warmth of its own. The flock block is authored as its own
+  shared value so level 05 composes it rather than restating it, and the
+  carried-preset test now pins that one deviation instead of full equality.
 - Five flocks now circle instead of three, and each draws its own size around
   the authored average rather than holding it exactly: the drawn sizes are
   normalized back onto `flockCount x birdsPerFlock`, so the pool, its buffers,
@@ -530,6 +537,24 @@ gesture in the window.
   its trail had drawn it.
 - Everything that moves runs seven percent slower than first authored: the
   four walking species, the fly speed multiplier, and the bird orbit speed.
+- Plants read cooler than they did: `vegetationWarmth` went from 0.84 to 0.76
+  and the vegetation band ceiling from 0.86 to 0.82, which is below the ramp's
+  orange stop. A plant's warmth is its base shed by distance from its own
+  foot, so the base alone decides how warm the plant is, and at 0.84 the
+  contrast curve carried a trunk foot to the full orange this level reserves
+  for a living body. Bushes gained the most: a metre-tall plant sheds almost
+  nothing over its own size and reads at very nearly the base everywhere, so
+  the base is the only lever that can cool one.
+- Bushes are therefore no longer drawn with the canopy's heat values at all.
+  Plants come in two statures — `canopy` and `undergrowth` — and Vegetation
+  asks for material effects per stature, once per model at load, instead of
+  once for the whole layer. Thermal Perception answers with a second surface
+  set (`undergrowthWarmth` 0.42 against the grass's 0.34, steeper per-metre
+  falloffs, the grass's texture and contrast, a band of 0 to 0.6 that stops
+  below the ramp's magenta stop). A bush now reads as the meadow it stands in
+  at two thicknesses, warmest in its middle, where under the canopy's values
+  it was a solid orange body. Every other sense answers the same for both
+  statures, so nothing else in the world changed.
 - Fly swarms no longer relocate where the traveler can see it. Crossing the
   eighty-metre travel threshold now only asks each swarm to leave: a swarm
   shrinks its specks away over a per-fly `flyArrival` attribute, makes its

@@ -1045,7 +1045,16 @@ function createVegetation(
     assets: setup.assets.vegetation,
     streamQueue: setup.world.streamQueue,
     worldSurface: setup.worldSurface,
-    effects: buildSurfaceEffects(worldFade, thermal?.vegetation, echoDepth),
+    // Asked per stature: heat reads a bush as its own substance, nearer the
+    // meadow it stands in than the wood above it, because a plant sheds its
+    // warmth over its own metres and a bush has too few to shed any. Every
+    // other sense answers the same for both.
+    effectsFor: (stature) =>
+      buildSurfaceEffects(
+        worldFade,
+        stature === "undergrowth" ? thermal?.undergrowth : thermal?.vegetation,
+        echoDepth,
+      ),
   });
 }
 
