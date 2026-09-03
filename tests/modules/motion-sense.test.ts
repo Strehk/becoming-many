@@ -608,6 +608,40 @@ describe("Bird flocks", () => {
     expect(Math.abs(difference)).toBeLessThan(0.2);
   });
 
+  // The bug this guards: the flock's anchor drifts after the traveller, so a
+  // bearing taken from the orbit tangent alone flies the whole flock sideways
+  // across its own path the moment someone moves.
+  test("faces every body along its travel while the traveller moves", () => {
+    const birds = createBirds();
+    let playerX = 0;
+    for (let step = 0; step < 120; step += 1) {
+      playerX += 5 / 90;
+      birds.update(1 / 90, playerX, 0);
+    }
+
+    const before = birds.getBodyStream().slice();
+    for (let step = 0; step < 30; step += 1) {
+      playerX += 5 / 90;
+      birds.update(1 / 90, playerX, 0);
+    }
+    const after = birds.getBodyStream();
+    const stride = MOTION_SENSE_SETTINGS.birdBodyValuesPerBird;
+
+    for (let bird = 0; bird < 6; bird += 1) {
+      const offset = bird * stride;
+      const travelled = Math.atan2(
+        (after[offset] ?? 0) - (before[offset] ?? 0),
+        (after[offset + 2] ?? 0) - (before[offset + 2] ?? 0),
+      );
+      const heading = after[offset + 3] ?? 0;
+      const difference = Math.atan2(
+        Math.sin(travelled - heading),
+        Math.cos(travelled - heading),
+      );
+      expect(Math.abs(difference)).toBeLessThan(0.35);
+    }
+  });
+
   test("keeps every bird on its air ring above the sampled ground", () => {
     const birds = createBirds();
     const parameters = createBirdParameters();
