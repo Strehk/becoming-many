@@ -44,6 +44,13 @@ const RANDOM_CRAWLS = 5;
 const RANDOM_GROUND = 6;
 
 const UP = new Vector3(0, 1, 0);
+/*
+ * How far into its own square a candidate may be jittered. Keeping a margin
+ * at the edges is what stops two snakes of neighbouring squares from meeting
+ * at the line between them.
+ */
+const JITTER_EDGE = 0.2;
+const JITTER_SPAN = 0.6;
 /** How much of its own length a snake swings sideways at the tail. */
 const WAVE_AMPLITUDE_SHARE = 0.09;
 /** Waves standing in the body at once, and how fast they run down it. */
@@ -219,8 +226,21 @@ function gatherSnakes(
       // that survived the refusal crawling in step with its neighbours.
       if (draw(RANDOM_CRAWLS) >= options.preset.crawlingShare) continue;
 
-      const startX = cell.originX + draw(RANDOM_OFFSET_X) * chunkSize;
-      const startZ = cell.originZ + draw(RANDOM_OFFSET_Z) * chunkSize;
+      // Each candidate keeps its own square of the cell and is jittered
+      // inside it. Drawing freely across the whole cell let a dozen snakes
+      // land on top of each other while the rest of it stayed empty.
+      const lattice = Math.ceil(Math.sqrt(options.preset.candidatesPerCell));
+      const squareSize = chunkSize / lattice;
+      const squareX = candidate % lattice;
+      const squareZ = Math.floor(candidate / lattice);
+      const startX =
+        cell.originX +
+        (squareX + JITTER_EDGE + draw(RANDOM_OFFSET_X) * JITTER_SPAN) *
+          squareSize;
+      const startZ =
+        cell.originZ +
+        (squareZ + JITTER_EDGE + draw(RANDOM_OFFSET_Z) * JITTER_SPAN) *
+          squareSize;
       const heading = draw(RANDOM_HEADING) * Math.PI * 2;
       const headingX = Math.sin(heading);
       const headingZ = Math.cos(heading);

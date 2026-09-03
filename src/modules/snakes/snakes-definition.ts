@@ -53,7 +53,9 @@ export const SNAKES_DEFINITION: SnakesDefinition = {
   bodyRadiusMeters: 0.085,
   // Its own length in about four seconds, as a snake moves.
   crawlSpeedMetersPerSecond: 0.52,
-  crawlDistanceMeters: 30,
+  // Short enough that a snake stays in the square it was offered: a long way
+  // let two of them crawl into each other from opposite squares.
+  crawlDistanceMeters: 13,
   /*
    * Every ground but water, weighted by what a crossing reads on. The meadow
    * is where a snake belongs and the one place it cannot be seen: grass

@@ -37,6 +37,12 @@ instead of wagging. A whole pool of snakes is one draw call and one uniform.
   so the same landscape carries the same snakes in every run. How many places
   a cell offers is a level value, because how much snake a world holds is a
   question for the piece rather than for the module.
+- The places are a lattice, not a scatter: each candidate keeps its own square
+  of the cell and is jittered inside it, with a margin at the edges. Drawn
+  freely across the whole cell, a dozen snakes landed on top of each other
+  while the rest of the cell stayed empty. A snake also crawls a short way
+  now — thirteen metres rather than thirty — because a long one let two of
+  them crawl into each other from opposite squares.
 - A candidate is refused unless the **whole way** it would crawl stays out of
   water and the ground along it never falls further than a body can follow.
 - Ground carries a weight rather than a yes or no, because where a snake
@@ -48,9 +54,10 @@ instead of wagging. A whole pool of snakes is one draw call and one uniform.
   on from the air — so it carries the most.
 - Left unweighted, the population followed the landscape: three in five
   snakes lay in meadow, where nobody would ever find one. Weighted, and at
-  the density the piece currently carries, about seventeen snakes are within
-  seventy metres of a flight at a time and nine of them on ground the grass
-  does not close over.
+  the density the piece currently carries, about eight snakes are within
+  seventy metres of a flight at a time and five of them on ground the grass
+  does not close over, with twenty metres between a snake and its nearest
+  neighbour.
 - A snake walks its way and starts it again, so it never crawls out of the
   country its place was accepted in.
 
