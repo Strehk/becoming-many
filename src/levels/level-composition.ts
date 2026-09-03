@@ -42,6 +42,8 @@ import {
 import { createRockConnectionSource } from "../modules/rocks/rock-nodes";
 import { createRocksModule } from "../modules/rocks/rocks";
 import { ROCKS_DEFINITION } from "../modules/rocks/rocks-definition";
+import { createRuinsModule } from "../modules/ruins/ruins";
+import { RUINS_DEFINITION } from "../modules/ruins/ruins-definition";
 import { createScentConnectionSource } from "../modules/scent-particles/scent-emitter-anchors";
 import {
   createScentParticlesModule,
@@ -88,6 +90,7 @@ export interface LoadedLevelAssets {
   readonly vegetation: GltfAssets;
   readonly rocks: GltfAssets;
   readonly animals: GltfAssets;
+  readonly ruins: GltfAssets;
 }
 
 interface LevelSetup {
@@ -218,6 +221,7 @@ function createConfiguredModules(setup: LevelSetup): ComposedWorld {
   add(undefined, createGrassClipmap(setup, echoDepth, thermal, structureFade));
   add("echo", createVegetation(setup, echoDepth, thermal, structureFade));
   add("echo", createRocks(setup, echoDepth, thermal, structureFade));
+  add("echo", createRuins(setup, echoDepth, thermal, structureFade));
   add("thermal", animals?.module);
   add("motion", motion?.module);
   add("magnetic", magnetic?.module);
@@ -572,6 +576,26 @@ function createVegetation(
   });
 }
 
+/** A ruin is stone: it takes the same senses the rocks around it take. */
+function createRuins(
+  setup: LevelSetup,
+  echoDepth: EchoDepthEffect | undefined,
+  thermal: ThermalPerceptionEffects | undefined,
+  worldFade: WorldFadeEffect | undefined,
+): WorldModule | undefined {
+  const preset = setup.level.ruins;
+  if (!preset) return undefined;
+
+  return createRuinsModule({
+    scene: setup.world.scene,
+    viewpoint: setup.world.viewpoint,
+    preset,
+    assets: setup.assets.ruins,
+    worldSurface: setup.worldSurface,
+    effects: buildSurfaceEffects(worldFade, thermal?.rocks, echoDepth),
+  });
+}
+
 function createRocks(
   setup: LevelSetup,
   echoDepth: EchoDepthEffect | undefined,
@@ -687,7 +711,7 @@ function hasVisibleSurface(level: WorldComposition): boolean {
 export async function loadLevelAssets(
   level: WorldComposition,
 ): Promise<LoadedLevelAssets> {
-  const [vegetation, rocks, animals] = await Promise.all([
+  const [vegetation, rocks, animals, ruins] = await Promise.all([
     loadGltfAssets(
       level.vegetation
         ? createStaticAssetRequests(VEGETATION_DEFINITION.assets)
@@ -701,9 +725,10 @@ export async function loadLevelAssets(
         ? createStaticAssetRequests(ANIMALS_DEFINITION.species)
         : [],
     ),
+    loadGltfAssets(level.ruins ? [RUINS_DEFINITION.asset] : []),
   ]);
 
-  return { vegetation, rocks, animals };
+  return { vegetation, rocks, animals, ruins };
 }
 
 function createStaticAssetRequests(

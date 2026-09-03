@@ -62,8 +62,8 @@ issue and a bounded implementation.
 - White World: atmosphere through background, fog, and Air Particles.
 - Scent: deterministic plant and animal scent sources plus one bounded points
   system.
-- Echolocation: terrain, vegetation, rocks, distance-based material effects,
-  and the narrative grass clipmap.
+- Echolocation: terrain, vegetation, rocks, ruined temples on level meadow,
+  distance-based material effects, and the narrative grass clipmap.
 - Motion: bounded fly and bird point actors with GPU-aged motion trails.
 - Thermal: a viewer-centred false-colour material effect across terrain,
   vegetation, rocks, and animals.

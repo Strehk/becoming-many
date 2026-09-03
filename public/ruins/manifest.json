@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "author": "Becoming Many project",
+  "license": "UNRECORDED",
+  "note": "Authored for this piece and handed over as an FBX; no author or licence was recorded with it. Author and licence need confirming before release \u2014 see docs/direction/open-decisions.md.",
+  "assets": [
+    {
+      "id": "temple-ruin",
+      "file": "/ruins/temple-ruin.glb",
+      "sourceFile": "ruins_tempel_bissel_kaputt.fbx",
+      "sha256": "54cc8b5d58ebc49b15cf7fddec8491838cbd6a6b6d85d2814dc67a3557a4bb1a",
+      "preparation": "The authored FBX is a cell fracture: 132 separate meshes, which would be 132 draw calls for every ruin standing. They are merged into one geometry with one material, and the FBX materials are dropped because the senses colour every surface from the level palette anyway.",
+      "metrics": {
+        "bytes": 829384,
+        "meshes": 1,
+        "materials": 1,
+        "triangles": 8627,
+        "estimatedDrawCalls": 1,
+        "animations": 0
+      },
+      "modelSpace": {
+        "up": "+y",
+        "sizeMeters": [11.8, 7.7, 19.9]
+      }
+    }
+  ]
+}

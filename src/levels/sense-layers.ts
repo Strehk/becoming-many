@@ -13,6 +13,7 @@ import { GRASS_CLIPMAP } from "./authored/grass-clipmap";
 import { MAGNETIC_SENSE } from "./authored/magnetic-sense";
 import { HEAT_MOTION_SENSE, MOTION_SENSE } from "./authored/motion-sense";
 import { ROCKS } from "./authored/rocks";
+import { RUINS } from "./authored/ruins";
 import { SCENT_PARTICLES } from "./authored/scent-particles";
 import { ZONE_TERRAIN } from "./authored/terrain";
 import { THERMAL_PERCEPTION } from "./authored/thermal-perception";
@@ -36,13 +37,14 @@ export const SCENT_LAYER: Pick<WorldComposition, "scentParticles"> = {
 
 export const ECHO_LAYER: Pick<
   WorldComposition,
-  "echoDepth" | "terrain" | "grassClipmap" | "vegetation" | "rocks"
+  "echoDepth" | "terrain" | "grassClipmap" | "vegetation" | "rocks" | "ruins"
 > = {
   echoDepth: ECHO_DEPTH,
   terrain: ZONE_TERRAIN,
   grassClipmap: GRASS_CLIPMAP,
   vegetation: VEGETATION,
   rocks: ROCKS,
+  ruins: RUINS,
 };
 
 export const MOTION_LAYER: Pick<WorldComposition, "motion"> = {
