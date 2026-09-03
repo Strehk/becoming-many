@@ -12,7 +12,7 @@ not create a separate render loop or import other concrete content modules.
   habitat, movement, and visibility budget. The level uses `animals: true` to
   enable that complete definition.
 - Each species defines a small clone count, target metre height, and allowed
-  zones. The current four species produce ten actors.
+  zones. The current four species produce twenty actors.
 - Homes are chosen deterministically in separate angular territories around
   the camera and use `surfaceYAt()`. Species are interleaved between territories,
   and each actor chooses the nearest point allowed for its species.
@@ -27,7 +27,10 @@ not create a separate render loop or import other concrete content modules.
   movement heading.
 - Visible actors are selected from separate directions before vacant slots are
   filled by distance. Only those actors advance animation mixers; the current
-  definition limits that set to four.
+  definition limits that set to six. The pool is deliberately larger than the
+  set: which species fills a slot is decided by which actor is nearest, so a
+  wider pool is what keeps a flight meeting a fox rather than the same deer
+  again.
 - Selection and being drawn are separate: an actor that takes a slot fades in
   over its material opacity, and one that loses a slot fades out and keeps
   walking until it is invisible. Arriving complete in one frame read as an
