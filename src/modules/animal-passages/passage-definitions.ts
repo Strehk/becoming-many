@@ -112,51 +112,9 @@ export const BAT_PASSAGE: PassageFlightDefinition = {
   frameYaw: { kind: "viewHeading" },
 };
 
-/**
- * The bird, before Magnetic Field Perception. It joins the authored route on a
- * tangent-matched entry arc and sweeps a 204-degree bow around the visitor at
- * between four and a half and fifteen metres — close enough and wide enough
- * that the crossing is seen rather than missed. The route keeps fixed world
- * axes rather than following the view: it is the world's bird, not the
- * visitor's, and the sweep is left exactly where it was tuned.
- *
- * Only the departure carries a compass meaning. The sense this announces is
- * the one migratory birds navigate by, and the authored track ends running
- * very nearly due south, so the exit banks onto north over its first stretch
- * and the bird leaves on the bearing the sense is about. North is +Z with no
- * declination, as `magnetic-sense.ts` has the field axis. The exit was always
- * procedural — no authored route data is touched by this.
- */
-export const BIRD_PASSAGE: PassageFlightDefinition = {
-  passageId: "bird",
-  modelUrl: "/passages/bird.glb",
-  routeUrl: "/passages/bird-route.fbx",
-  wingspanMeters: 1.65,
-  routeDurationSeconds: 7.5,
-  approachDurationSeconds: 6,
-  approachPoints: [
-    new Vector3(0.8, 0.25, 6.2),
-    new Vector3(4.2, 0.75, 2.4),
-    new Vector3(3.3, 1.15, -2.8),
-  ],
-  exitDurationSeconds: 12,
-  routeScaleToMeters: 0.00125,
-  routeRotation: new Quaternion(),
-  routeStart: new Vector3(-3.264, 0.0, -5.478),
-  // The model's head faces −Z in the file.
-  modelForward: new Vector3(0, 0, -1),
-  modelRollOffsetRadians: Math.PI,
-  flapClipName: "ArmatureAction",
-  flapTimeScale: 1,
-  groundClearanceMeters: 0,
-  frameYaw: { kind: "world", radians: 0 },
-  departureBearingRadians: 0,
-};
-
 /** Every animal that crosses as a body flying an authored route. */
 export const PASSAGE_FLIGHTS: readonly PassageFlightDefinition[] = [
   BAT_PASSAGE,
-  BIRD_PASSAGE,
 ];
 
 /**

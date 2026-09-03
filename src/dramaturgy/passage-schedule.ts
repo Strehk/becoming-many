@@ -7,12 +7,12 @@
 
 /**
  * The animals that cross the show. Each is named after the sense it announces:
- * the bat before Echolocation, the mosquitoes before Motion Perception, the
- * bird before Magnetic Field Perception — the three levels `docs/experience.md`
- * gives an animal as inspiration. Scent, Thermal, and Connections carry no
- * passage; that is authored absence, not an omission.
+ * the bat before Echolocation and the mosquitoes before Motion Perception, two
+ * of the levels `docs/experience.md` gives an animal as inspiration. Scent,
+ * Thermal, Magnetic, and Connections carry no passage; that is authored
+ * absence, not an omission.
  */
-export type PassageId = "bat" | "mosquitoes" | "bird";
+export type PassageId = "bat" | "mosquitoes";
 
 /** One authored crossing placed on the show timeline. */
 export interface AnimalPassage {

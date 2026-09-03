@@ -20,7 +20,7 @@ import { SENSE_FADE_SECONDS } from "../../src/dramaturgy/show-levels";
 const SCHEDULE: PassageSchedule = {
   passages: [
     { passageId: "bat", atSeconds: 100, durationSeconds: 10 },
-    { passageId: "bird", atSeconds: 200, durationSeconds: 20 },
+    { passageId: "mosquitoes", atSeconds: 200, durationSeconds: 20 },
   ],
 };
 
@@ -43,13 +43,15 @@ describe("passageProgressAt", () => {
   });
 
   test("answers nothing for a passage the schedule does not carry", () => {
-    expect(passageProgressAt(SCHEDULE, "mosquitoes", 105)).toBeUndefined();
+    expect(
+      passageProgressAt({ passages: [] }, "mosquitoes", 105),
+    ).toBeUndefined();
   });
 
   test("keeps each passage to its own window", () => {
-    expect(passageProgressAt(SCHEDULE, "bird", 105)).toBeUndefined();
+    expect(passageProgressAt(SCHEDULE, "mosquitoes", 105)).toBeUndefined();
     expect(passageProgressAt(SCHEDULE, "bat", 205)).toBeUndefined();
-    expect(passageProgressAt(SCHEDULE, "bird", 210)).toBeCloseTo(0.5, 10);
+    expect(passageProgressAt(SCHEDULE, "mosquitoes", 210)).toBeCloseTo(0.5, 10);
   });
 
   /*
@@ -84,7 +86,7 @@ describe("validatePassageSchedule", () => {
       validatePassageSchedule({
         passages: [
           { passageId: "bat", atSeconds: 10, durationSeconds: 10 },
-          { passageId: "bird", atSeconds: 15, durationSeconds: 10 },
+          { passageId: "mosquitoes", atSeconds: 15, durationSeconds: 10 },
         ],
       }),
     ).toThrow(RangeError);
@@ -96,11 +98,15 @@ describe("the piece's passages", () => {
     expect(() => validatePassageSchedule(PIECE_PASSAGES)).not.toThrow();
   });
 
-  test("carry one animal for each sense that names one", () => {
+  /*
+   * Magnetic Field Perception is deliberately absent: the bird that announced
+   * it is out, and nothing crosses ahead of that cue until something is found
+   * that carries a bearing better than one animal leaving on it.
+   */
+  test("carry one animal for each sense a crossing announces", () => {
     expect(PIECE_PASSAGES.passages.map(({ passageId }) => passageId)).toEqual([
       "bat",
       "mosquitoes",
-      "bird",
     ]);
   });
 
@@ -119,7 +125,6 @@ describe("the piece's passages", () => {
     const announced: Record<string, string> = {
       bat: "echo",
       mosquitoes: "motion",
-      bird: "magnetic",
     };
 
     for (const passage of PIECE_PASSAGES.passages) {

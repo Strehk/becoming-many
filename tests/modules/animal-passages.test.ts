@@ -9,7 +9,6 @@ import { describe, expect, test } from "bun:test";
 import { Vector3 } from "three";
 import { PIECE_PASSAGES } from "../../src/dramaturgy/piece-schedule";
 import {
-  BIRD_PASSAGE,
   MOSQUITO_PASSAGE,
   PASSAGE_FLIGHTS,
   type PassageFlightDefinition,
@@ -120,38 +119,6 @@ describe("the authored passages", () => {
       expect(definition.wingspanMeters).toBeGreaterThan(0);
       expect(definition.exitDurationSeconds).toBeGreaterThan(0);
       expect(definition.modelForward.length()).toBeCloseTo(1, 10);
-    }
-  });
-
-  /*
-   * The bird announces the sense migratory birds navigate by, so its departure
-   * has to mean something: it leaves due north. North is +Z with no
-   * declination, as the Magnetic Sense field axis has it, and the route frame
-   * holds world axes — so the authored bearing is read straight as a compass
-   * direction. Its sweep around the visitor is deliberately left alone.
-   */
-  test("send the bird away due north without turning its sweep", () => {
-    expect(BIRD_PASSAGE.departureBearingRadians).toBe(0);
-    expect(BIRD_PASSAGE.frameYaw).toEqual({ kind: "world", radians: 0 });
-
-    const north = new Vector3(
-      Math.sin(BIRD_PASSAGE.departureBearingRadians ?? 0),
-      0,
-      Math.cos(BIRD_PASSAGE.departureBearingRadians ?? 0),
-    );
-    expect(north.z).toBeCloseTo(1, 10);
-    expect(north.x).toBeCloseTo(0, 10);
-  });
-
-  /*
-   * Only the bird carries a compass meaning. The bat crosses low and leaves on
-   * whatever heading its route ends with, which is what an animal without one
-   * does — giving it a bearing would be inventing dramaturgy.
-   */
-  test("leave every other passage on its own closing heading", () => {
-    for (const definition of PASSAGE_FLIGHTS) {
-      if (definition.passageId === "bird") continue;
-      expect(definition.departureBearingRadians).toBeUndefined();
     }
   });
 

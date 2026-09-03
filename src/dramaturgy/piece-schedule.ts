@@ -62,16 +62,19 @@ export const PIECE_SCHEDULE: NarrationSchedule = {
 const PASSAGE_LEAD_SECONDS = 6;
 
 /**
- * The three animals that cross the piece, each entering before the cue that
+ * The two animals that cross the piece, each entering before the cue that
  * opens the sense named after it: the bat before Echolocation, the mosquitoes
- * before Motion Perception, the bird before Magnetic Field Perception.
+ * before Motion Perception. Magnetic Field Perception is deliberately left
+ * without one — what announced it was a single bird leaving due north, and
+ * one animal pointing is a thin way to carry a sense that is about a bearing.
+ * The cue opens with nothing crossing ahead of it until something is found
+ * that carries the direction.
  *
  * Every duration is the authored route's own length plus its exit, carried
  * unchanged from the routes these passages were tuned against — the bat's
- * 10.4-second track plus a six-second exit, the mosquito track at the half
- * speed it was played back at, the bird's approach, route, and long exit.
- * Editing a start time is editing one number here; the durations belong to the
- * routes and should follow them.
+ * 10.4-second track plus a six-second exit, and the mosquito track at the
+ * half speed it was played back at. Editing a start time is editing one
+ * number here; the durations belong to the routes and should follow them.
  *
  * The mosquitoes keep the same six-second lead as the others even though what
  * they leave behind is motion trails, which is the Motion Perception sense's
@@ -92,12 +95,6 @@ export const PIECE_PASSAGES: PassageSchedule = {
       passageId: "mosquitoes",
       atSeconds: 167 - PASSAGE_LEAD_SECONDS,
       durationSeconds: 15,
-    },
-    // Enters at 273, gone by 298.5 — the magnetic cue opens at 279.
-    {
-      passageId: "bird",
-      atSeconds: 279 - PASSAGE_LEAD_SECONDS,
-      durationSeconds: 25.5,
     },
   ],
 };
