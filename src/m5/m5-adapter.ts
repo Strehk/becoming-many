@@ -4,15 +4,17 @@
  *   (or a ?m5 request) names the host, and an empty host means no device.
  * Responsibility: Own the poll lifecycle; everything derived from the
  *   payloads lives in control-source.ts.
- * Boundary: This is an untested IO shell by repo convention — keep logic out
- *   of it; the shared fetch loop lives in state-polling.ts.
+ * Boundary: Parsing and steering policy stay in the existing control source.
  */
 
 import type { ControlFrame } from "./control-frame";
-import { createControlSource, type M5DeviceState } from "./control-source";
+import {
+  type ControlSource,
+  createControlSource,
+  type M5DeviceState,
+} from "./control-source";
 import { M5_SETTINGS } from "./m5-settings";
-import type { M5State } from "./protocol";
-import { createStatePoller } from "./state-polling";
+import { type M5State, parseM5State } from "./protocol";
 
 export interface M5OperatorStatus {
   readonly state: M5DeviceState;
@@ -45,39 +47,60 @@ export interface M5Adapter {
 
 /** `expectedDeviceId` overrides the authored default when the deployment names one. */
 export function createM5Adapter(expectedDeviceId?: string): M5Adapter {
-  const source = createControlSource(expectedDeviceId);
-  const poller = createStatePoller(
-    M5_SETTINGS.pollIntervalMilliseconds,
-    (state) => source.pushState(state, Date.now()),
-  );
-  let hasHost = false;
+  let source: ControlSource | undefined;
+  let stopPolling: (() => void) | undefined;
+
+  function setHost(host: string): void {
+    stopPolling?.();
+    stopPolling = undefined;
+    source = undefined;
+    const trimmed = host.trim();
+    if (!trimmed) return;
+
+    const currentSource = createControlSource(expectedDeviceId);
+    source = currentSource;
+    const lifetime = new AbortController();
+    const origin = trimmed.includes("://") ? trimmed : `http://${trimmed}`;
+    const stateUrl = `${origin.replace(/\/$/, "")}/state`;
+    let isFetchInFlight = false;
+
+    const poll = async (): Promise<void> => {
+      if (isFetchInFlight || lifetime.signal.aborted) return;
+      isFetchInFlight = true;
+      const signal = AbortSignal.any([
+        lifetime.signal,
+        AbortSignal.timeout(M5_SETTINGS.staleAfterMilliseconds),
+      ]);
+      try {
+        const response = await fetch(stateUrl, { signal });
+        if (!response.ok) return;
+        const state = parseM5State(await response.text());
+        if (state && !signal.aborted)
+          currentSource.pushState(state, Date.now());
+      } catch {
+        // Failed or timed-out polls become stale at the control source.
+      } finally {
+        isFetchInFlight = false;
+      }
+    };
+
+    const timer = setInterval(
+      () => void poll(),
+      M5_SETTINGS.pollIntervalMilliseconds,
+    );
+    stopPolling = () => {
+      lifetime.abort();
+      clearInterval(timer);
+    };
+    void poll();
+  }
 
   return {
-    setHost(host) {
-      hasHost = host.trim().length > 0;
-      poller.watch(host);
-    },
-
-    readFrame() {
-      if (!hasHost) return undefined;
-      return source.readFrame(Date.now());
-    },
-
-    readLatestState() {
-      if (!hasHost) return undefined;
-      return source.readLatestState(Date.now());
-    },
-
-    readOperatorStatus() {
-      if (!hasHost) return { state: "off" };
-      const report = source.readDeviceReport(Date.now());
-      return {
-        state: report.state,
-        quality: report.quality,
-        hasFirmwareMismatch: report.hasFirmwareMismatch,
-      };
-    },
-
-    unload: poller.stop,
+    setHost,
+    readFrame: () => source?.readFrame(Date.now()),
+    readLatestState: () => source?.readLatestState(Date.now()),
+    readOperatorStatus: () =>
+      source?.readDeviceReport(Date.now()) ?? { state: "off" },
+    unload: () => setHost(""),
   };
 }

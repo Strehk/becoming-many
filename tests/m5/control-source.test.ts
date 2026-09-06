@@ -8,8 +8,9 @@
  * Boundary: The individual pipeline stages have their own tests.
  */
 
-import { describe, expect, it } from "bun:test";
+import { describe, expect, it, spyOn } from "bun:test";
 import { createControlSource } from "../../src/m5/control-source";
+import { createM5Adapter } from "../../src/m5/m5-adapter";
 import { M5_FIRMWARE_VERSION, type M5State } from "../../src/m5/protocol";
 
 const BASE_STATE: M5State = {
@@ -52,16 +53,44 @@ describe("control source", () => {
     expect(source.readFrame(77).buttonDown).toBe(false);
   });
 
-  it("reads counters on the first poll as history, not as presses", () => {
-    const source = createControlSource();
-    source.pushState(
-      state({ buttonPressCount: 12, buttonReleaseCount: 12 }),
-      0,
-    );
-
-    const frame = source.readFrame(10);
-    expect(frame.buttonDown).toBe(false);
-    expect(frame.buttonUp).toBe(false);
+  it("resets host history and ignores a late response without blocking the next host", async () => {
+    const lateResponse = Promise.withResolvers<Response>();
+    const fetchMock = spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce(Response.json(state({ pitch: 0.4 })))
+      .mockReturnValueOnce(lateResponse.promise)
+      .mockResolvedValueOnce(
+        Response.json(
+          state({ pitch: -0.4, buttonPressCount: 12, buttonReleaseCount: 12 }),
+        ),
+      );
+    const adapter = createM5Adapter(BASE_STATE.deviceId);
+    try {
+      adapter.setHost("first.local");
+      await Bun.sleep(0);
+      expect(adapter.readFrame()?.pitch).toBeCloseTo(0.25);
+      adapter.setHost("hanging.local");
+      expect(adapter.readFrame()?.quality).toBe(0);
+      expect(adapter.readLatestState()).toBeUndefined();
+      adapter.setHost("next.local");
+      expect(fetchMock).toHaveBeenCalledTimes(3);
+      expect(fetchMock.mock.calls[1]?.[1]?.signal?.aborted).toBe(true);
+      await Bun.sleep(0);
+      const frame = adapter.readFrame();
+      expect(frame?.pitch).toBeCloseTo(-0.25);
+      expect(frame?.buttonDown).toBe(false);
+      expect(frame?.buttonUp).toBe(false);
+      lateResponse.resolve(
+        Response.json(state({ pitch: 0.8, buttonPressCount: 13 })),
+      );
+      await Bun.sleep(0);
+      expect(adapter.readLatestState()?.pitch).toBe(-0.4);
+      adapter.setHost("");
+      expect(adapter.readFrame()).toBeUndefined();
+      expect(adapter.readOperatorStatus()).toEqual({ state: "off" });
+    } finally {
+      adapter.unload();
+      fetchMock.mockRestore();
+    }
   });
 
   it("goes neutral once polls stop, still delivering a pending edge", () => {

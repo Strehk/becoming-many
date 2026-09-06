@@ -1,6 +1,6 @@
 # Current Development Status
 
-As-built snapshot: 2026-09-06, checkpoint `feb7e28` plus the #32 zero-response Thermal correction on `david_refactor`.
+As-built snapshot: 2026-09-06, checkpoint `49f48ac` plus the #17 M5 host-lifetime correction on `david_refactor`.
 Dated measurement packets retain the earlier exact identities they tested;
 the current checkout is the authority for runtime details.
 
