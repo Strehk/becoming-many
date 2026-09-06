@@ -60,8 +60,6 @@ export interface ConnectionWeb {
   readonly nodePositionAttribute: BufferAttribute;
   readonly nodeColorAttribute: BufferAttribute;
   readonly nodeWeightAttribute: BufferAttribute;
-  /** Nearest-node hysteresis memory, one slot per animal link row. */
-  readonly animalTargetNodes: Int32Array;
 }
 
 /** Allocate both fixed-capacity render objects for the loaded lifetime. */
@@ -69,11 +67,9 @@ export function createConnectionWeb(
   uniforms: Record<string, { value: unknown }>,
   layout: WebPoolLayout,
 ): ConnectionWeb {
-  const { animalLinkCapacity, nodeSlotCapacity, edgeSlotCapacity } =
-    MYCELIUM_SETTINGS;
+  const { nodeSlotCapacity, edgeSlotCapacity } = MYCELIUM_SETTINGS;
   const nodeCapacity = layout.gatherSlotCount * nodeSlotCapacity;
-  const edgeCapacity =
-    animalLinkCapacity + layout.buildSlotCount * edgeSlotCapacity;
+  const edgeCapacity = layout.buildSlotCount * edgeSlotCapacity;
 
   const edgeGeometry = new InstancedBufferGeometry();
   // position.x carries the along-cord progress, position.y the ribbon side.
@@ -136,9 +132,6 @@ export function createConnectionWeb(
     nodePositionAttribute,
     nodeColorAttribute,
     nodeWeightAttribute,
-    animalTargetNodes: new Int32Array(
-      MYCELIUM_SETTINGS.animalLinkCapacity,
-    ).fill(-1),
   };
 }
 
@@ -191,9 +184,8 @@ export function writeSlotEdges(
   styles: readonly (WebSourceStyle | undefined)[],
   uploadSeconds: number,
 ): void {
-  const { animalLinkCapacity, edgeSlotCapacity } = MYCELIUM_SETTINGS;
-  const firstRow =
-    animalLinkCapacity + result.buildSlotIndex * edgeSlotCapacity;
+  const { edgeSlotCapacity } = MYCELIUM_SETTINGS;
+  const firstRow = result.buildSlotIndex * edgeSlotCapacity;
   const startArray = web.edgeStartAttribute.array as Float32Array;
   const endArray = web.edgeEndAttribute.array as Float32Array;
   const colorArray = web.edgeColorAttribute.array as Float32Array;
@@ -236,83 +228,6 @@ export function writeSlotEdges(
   }
 
   markEdgeRangeChanged(web, firstRow, edgeSlotCapacity);
-}
-
-/**
- * Retarget the bounded animal links to the currently visible actors. Nearest
- * nodes keep their previous target within the hysteresis factor so links do
- * not flicker; unused rows collapse to degenerate cords.
- */
-export function updateAnimalLinks(
-  web: ConnectionWeb,
-  actorPositions: Float32Array,
-  animalStyle: WebSourceStyle,
-  uploadSeconds: number,
-): void {
-  const { animalLinkCapacity, animalLinkHysteresis } = MYCELIUM_SETTINGS;
-  const nodePositions = web.nodePositionAttribute.array as Float32Array;
-  const nodeWeights = web.nodeWeightAttribute.array as Float32Array;
-  const actorCount = Math.min(
-    Math.floor(actorPositions.length / 3),
-    animalLinkCapacity,
-  );
-
-  for (let row = 0; row < animalLinkCapacity; row += 1) {
-    const actorX = actorPositions[row * 3] ?? 0;
-    const actorY = actorPositions[row * 3 + 1] ?? 0;
-    const actorZ = actorPositions[row * 3 + 2] ?? 0;
-    const nearestNode =
-      row >= actorCount
-        ? -1
-        : findNearestNode(nodePositions, nodeWeights, actorX, actorY, actorZ);
-    if (nearestNode < 0) {
-      web.animalTargetNodes[row] = -1;
-      collapseEdgeRow(web, row);
-      continue;
-    }
-
-    const previousNode = web.animalTargetNodes[row] ?? -1;
-    const targetNode =
-      previousNode >= 0 &&
-      (nodeWeights[previousNode] ?? EMPTY_NODE_WEIGHT) >= 0 &&
-      nodeDistanceSquared(
-        nodePositions,
-        previousNode,
-        actorX,
-        actorY,
-        actorZ,
-      ) <=
-        nodeDistanceSquared(
-          nodePositions,
-          nearestNode,
-          actorX,
-          actorY,
-          actorZ,
-        ) *
-          animalLinkHysteresis ** 2
-        ? previousNode
-        : nearestNode;
-    web.animalTargetNodes[row] = targetNode;
-
-    writeEdgeEndpoint(web.edgeStartAttribute, row, nodePositions, targetNode);
-    const endArray = web.edgeEndAttribute.array as Float32Array;
-    endArray[row * 3] = actorX;
-    endArray[row * 3 + 1] = actorY;
-    endArray[row * 3 + 2] = actorZ;
-    const colorArray = web.edgeColorAttribute.array as Float32Array;
-    colorArray[row * 3] = animalStyle.color.r;
-    colorArray[row * 3 + 1] = animalStyle.color.g;
-    colorArray[row * 3 + 2] = animalStyle.color.b;
-    (web.edgeWeightAttribute.array as Float32Array)[row] = animalStyle.weight;
-    (web.edgePhaseAttribute.array as Float32Array)[row] =
-      row / animalLinkCapacity;
-    // A live link follows its animal, so it is never new: stamping it in the
-    // past keeps it out of the fade the streamed cords use.
-    (web.edgeUploadAttribute.array as Float32Array)[row] =
-      uploadSeconds - MYCELIUM_SETTINGS.edgeFadeSeconds;
-  }
-
-  markEdgeRangeChanged(web, 0, animalLinkCapacity);
 }
 
 export function disposeConnectionWeb(web: ConnectionWeb): void {
@@ -400,62 +315,6 @@ function createDynamicAttribute(
   );
   attribute.setUsage(DynamicDrawUsage);
   return attribute;
-}
-
-function writeEdgeEndpoint(
-  attribute: InstancedBufferAttribute,
-  row: number,
-  nodePositions: Float32Array,
-  node: number,
-): void {
-  const array = attribute.array as Float32Array;
-  const nodeOffset = node * COMPONENTS_PER_VALUE;
-  array[row * 3] = nodePositions[nodeOffset] ?? 0;
-  array[row * 3 + 1] = nodePositions[nodeOffset + 1] ?? 0;
-  array[row * 3 + 2] = nodePositions[nodeOffset + 2] ?? 0;
-}
-
-function collapseEdgeRow(web: ConnectionWeb, row: number): void {
-  const startArray = web.edgeStartAttribute.array as Float32Array;
-  const endArray = web.edgeEndAttribute.array as Float32Array;
-  for (let component = 0; component < 3; component += 1) {
-    startArray[row * 3 + component] = 0;
-    endArray[row * 3 + component] = 0;
-  }
-}
-
-/** Nearest filled node row across the whole pool; unfilled rows are skipped. */
-function findNearestNode(
-  nodePositions: Float32Array,
-  nodeWeights: Float32Array,
-  x: number,
-  y: number,
-  z: number,
-): number {
-  let nearest = -1;
-  let nearestDistance = Number.POSITIVE_INFINITY;
-  for (let node = 0; node < nodeWeights.length; node += 1) {
-    if ((nodeWeights[node] ?? EMPTY_NODE_WEIGHT) < 0) continue;
-    const distance = nodeDistanceSquared(nodePositions, node, x, y, z);
-    if (distance >= nearestDistance) continue;
-    nearest = node;
-    nearestDistance = distance;
-  }
-  return nearest;
-}
-
-function nodeDistanceSquared(
-  nodePositions: Float32Array,
-  node: number,
-  x: number,
-  y: number,
-  z: number,
-): number {
-  const offset = node * COMPONENTS_PER_VALUE;
-  const deltaX = (nodePositions[offset] ?? 0) - x;
-  const deltaY = (nodePositions[offset + 1] ?? 0) - y;
-  const deltaZ = (nodePositions[offset + 2] ?? 0) - z;
-  return deltaX * deltaX + deltaY * deltaY + deltaZ * deltaZ;
 }
 
 /** Deterministic pulse phase from quantized world endpoints, stable across rebuilds. */

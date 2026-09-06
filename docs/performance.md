@@ -67,6 +67,15 @@ concretely verified scene as the new reference; exhaustive reconstruction of
 historical triangles is unnecessary. The existing numerical candidate is not
 approved. Preserve the previous failures/comparisons before any explicit update.
 
+#80 retires four unauthored animal-edge rows: Connections quick triangles change
+from 3,759,816 to 3,759,752, and full triangles from 4,042,554 to 4,042,490.
+Other counters and streaming records are unchanged; three comparable headed
+before/after runs show no repeatable percentile slowdown. This is a capacity
+removal, not a measured speedup or Windows-PCVR acceptance. Exact runs and the
+static-buffer equivalence proof live in [#80](https://github.com/Strehk/becoming-many/issues/80).
+The old #78 candidate remains historical, unapplied and unapproved; future
+reference review must include this separately explained change.
+
 These counters include degenerate triangles emitted by shader-culling paths and
 therefore overstate visible grass geometry. The full-profile baseline has not
 yet been accepted.

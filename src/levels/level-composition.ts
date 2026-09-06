@@ -20,7 +20,6 @@ import {
 import { MOSQUITO_PASSAGE } from "../modules/animal-passages/passage-definitions";
 import {
   type AnimalBodiesObserver,
-  type AnimalsModuleHandle,
   createAnimalsModule,
 } from "../modules/animals/animals";
 import { ANIMALS_DEFINITION } from "../modules/animals/animals-definition";
@@ -210,7 +209,7 @@ function createConfiguredModules(setup: LevelSetup): ComposedWorld {
     animalsFade,
     scent?.observeActorBodies,
   );
-  const connections = createConnectionsWeb(setup, animals);
+  const connections = createConnectionsWeb(setup);
   const motion = createMotionSense(setup);
   const passages = createAnimalPassages(setup);
   const passageSwarm = createPassageSwarm(setup, passages);
@@ -231,7 +230,7 @@ function createConfiguredModules(setup: LevelSetup): ComposedWorld {
   add(undefined, createGrassClipmap(setup, echoDepth, thermal, structureFade));
   add("echo", createVegetation(setup, echoDepth, thermal, structureFade));
   add("echo", createRocks(setup, echoDepth, thermal, structureFade));
-  add("thermal", animals?.module);
+  add("thermal", animals);
   add("motion", motion?.module);
   add("magnetic", magnetic?.module);
   add("connections", connections?.module);
@@ -308,7 +307,6 @@ function composeShowReach(
  */
 function createConnectionsWeb(
   setup: LevelSetup,
-  animals: AnimalsModuleHandle | undefined,
 ): ConnectionsModuleHandle | undefined {
   const parameters = setup.level.connections;
   if (!parameters || parameters.intensity === 0) return undefined;
@@ -328,14 +326,6 @@ function createConnectionsWeb(
   if (level.rocks && parameters.sources.rocks) {
     staticSources.push(createRockConnectionSource(level.rocks, worldSurface));
   }
-  const animalSource =
-    animals && parameters.sources.animals
-      ? {
-          sourceClass: "animals" as const,
-          getWorldPositions: animals.getVisibleWorldPositions,
-        }
-      : undefined;
-
   // What already covers this level's ground, straight from the module that
   // grows it: bare surface everywhere the level authors no grass at all.
   const groundCoverAt = setup.level.grassClipmap
@@ -349,7 +339,6 @@ function createConnectionsWeb(
     streamQueue: setup.world.streamQueue,
     worldSurface,
     staticSources,
-    animalSource,
     groundCoverAt,
   });
 }
@@ -689,7 +678,7 @@ function createAnimals(
   thermal: ThermalPerceptionEffects | undefined,
   worldFade: WorldFadeEffect | undefined,
   scentActors: AnimalBodiesObserver | undefined,
-): AnimalsModuleHandle | undefined {
+): WorldModule | undefined {
   if (!setup.level.animals) return undefined;
 
   // One effect per animated mesh: the body matrix lets the heat view fall

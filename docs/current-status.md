@@ -1,6 +1,6 @@
 # Current Development Status
 
-As-built snapshot: 2026-09-06, source checkpoint `3cb862e` on `david_refactor`.
+As-built snapshot: 2026-09-06, source checkpoint `3cb862e` plus the #80 removal on `david_refactor`.
 Dated measurement packets retain the earlier exact identities they tested;
 the current checkout is the authority for runtime details.
 
@@ -16,8 +16,8 @@ Current priorities are measured performance, stability, code cleanup, and
 issue fixes. The approved target is Windows-PCVR over USB-C with stable 90 Hz
 on the actual installation. Tutorial and credits are required; remaining content
 and operation decisions are tracked in the roadmap. Complete visitor teardown
-and fresh startup, explicit levels and animal-connection removal are approved
-direction, not implemented behavior. Small additions remain issue-backed.
+and fresh startup and explicit levels are approved direction, not yet implemented.
+The #80 animal-connection removal is implemented below. Small additions remain issue-backed.
 
 ## Runnable Surfaces
 
@@ -74,7 +74,9 @@ direction, not implemented behavior. Small additions remain issue-backed.
 - Magnetic: one opaque camera-following sky dome; it does not patch terrain or
   other module materials.
 - Connections: a worker-generated, fixed-pool mycelium network connected to
-  deterministic and live world anchors.
+  four fixed anchor classes: vegetation (including bushes), rocks, forest-clearing
+  points and soil. The unauthored moving-animal link path is removed under #80;
+  animal animation and Scent/Thermal body observations remain.
 - Animal passages: three animals cross the show on routes carried over from the
   predecessor project — the bat, the mosquito swarm, and the bird — each
   entering six seconds before the cue that opens the sense it announces, and

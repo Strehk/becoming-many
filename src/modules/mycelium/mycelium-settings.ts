@@ -31,7 +31,6 @@ export const MYCELIUM_SETTINGS = {
   // own spanning tree plus the neighbour links it claims.
   nodeSlotCapacity: 192,
   edgeSlotCapacity: 384,
-  animalLinkCapacity: 4, // Mirrors the Animals visibility budget.
   // Depth of the root system. World anchors hang just under their own object
   // so a tree meets its roots; seeded soil points spread down through the
   // profile, biased shallow so the mat thins with depth rather than filling a
@@ -65,9 +64,6 @@ export const MYCELIUM_SETTINGS = {
   knotSpacingMeters: 2.5,
   nodeBaseSizeMeters: 0.22,
   nodePixelScale: 300, // Perspective point attenuation numerator.
-  // Keep a retargeted animal link while its node stays within this factor of
-  // the nearest one, so links do not flicker between equidistant nodes.
-  animalLinkHysteresis: 1.25,
   // Proximity growth, the grass field's density rejection read backwards: the
   // topology is seeded once at full density and stays put, while each cord and
   // node carries a stable threshold and comes out once the density its own
@@ -110,7 +106,6 @@ export interface ConnectionSourceStyle {
 export interface ConnectionsSources {
   readonly vegetation?: ConnectionSourceStyle;
   readonly scentEmitters?: ConnectionSourceStyle;
-  readonly animals?: ConnectionSourceStyle;
   readonly rocks?: ConnectionSourceStyle;
   /** The seeded underground mat the world anchors hang in. */
   readonly soil?: ConnectionSourceStyle;

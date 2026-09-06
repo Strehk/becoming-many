@@ -69,7 +69,7 @@ test("Animals fade in when they take a visible slot", () => {
     worldPosition: new Vector3(),
     viewDistanceMeters: DEFAULT_VIEW_DISTANCE_METERS,
   };
-  const { module } = createAnimalsModule({
+  const module = createAnimalsModule({
     scene,
     viewpoint,
     definition: DEFINITION,
@@ -120,7 +120,7 @@ test("Animals animate only the nearest bounded population", () => {
     worldPosition: viewerPosition,
     viewDistanceMeters: DEFAULT_VIEW_DISTANCE_METERS,
   };
-  const { module } = createAnimalsModule({
+  const module = createAnimalsModule({
     scene,
     viewpoint,
     definition: DEFINITION,
@@ -153,7 +153,7 @@ test("Animals decorate every actor material with supplied effects", () => {
   };
   const decoratedMaterials: SensedMaterial[] = [];
   const bodyMatrices: Matrix4[] = [];
-  const { module } = createAnimalsModule({
+  const module = createAnimalsModule({
     scene,
     viewpoint,
     definition: DEFINITION,
@@ -210,7 +210,7 @@ test("Animals occupy separate territories around the player", () => {
     worldPosition: viewerPosition,
     viewDistanceMeters: DEFAULT_VIEW_DISTANCE_METERS,
   };
-  const { module } = createAnimalsModule({
+  const module = createAnimalsModule({
     scene,
     viewpoint,
     definition: {
@@ -250,47 +250,6 @@ test("Animals occupy separate territories around the player", () => {
   module.unload();
 });
 
-test("Animals expose the visible actor positions within their budget", () => {
-  const scene = new Scene();
-  const viewerPosition = new Vector3();
-  const viewpoint: Viewpoint = {
-    worldPosition: viewerPosition,
-    viewDistanceMeters: DEFAULT_VIEW_DISTANCE_METERS,
-  };
-  const handle = createAnimalsModule({
-    scene,
-    viewpoint,
-    definition: DEFINITION,
-    preset: PRESET,
-    assets: createAnimalAssets(),
-    worldSurface: createFlatSurface(),
-  });
-
-  expect(handle.getVisibleWorldPositions()).toHaveLength(0);
-
-  handle.module.load();
-  handle.module.activate();
-  handle.module.update?.(0.25);
-
-  const positions = handle.getVisibleWorldPositions();
-  expect(positions.length / 3).toBeLessThanOrEqual(DEFINITION.maxVisible);
-  expect(positions).toHaveLength(3);
-
-  const population = scene.children[0];
-  if (!(population instanceof Group)) throw new Error("Expected animal Group");
-  const visibleActor = population.children.find(({ visible }) => visible);
-  if (!visibleActor) throw new Error("Expected one visible actor");
-  // The packed buffer stores 32-bit floats of the 64-bit actor positions.
-  expect(positions[0] ?? 0).toBeCloseTo(visibleActor.position.x, 4);
-  expect(positions[1] ?? 0).toBeCloseTo(visibleActor.position.y, 4);
-  expect(positions[2] ?? 0).toBeCloseTo(visibleActor.position.z, 4);
-
-  handle.module.deactivate();
-  handle.module.update?.(0.25);
-  expect(handle.getVisibleWorldPositions()).toHaveLength(3);
-  handle.module.unload();
-});
-
 test("Animals align their up axis with the local surface slope", () => {
   const actor = new Group();
   const expectedSurfaceNormal = new Vector3(0, 1, -0.5).normalize();
@@ -321,7 +280,7 @@ test("Animals lean onto an arc at a zone edge instead of pivoting", () => {
   };
   const headings: number[] = [];
   const bodyPath: { x: number; z: number }[] = [];
-  const { module } = createAnimalsModule({
+  const module = createAnimalsModule({
     scene,
     viewpoint,
     definition: {
@@ -474,7 +433,7 @@ interface IslandWalk {
 /** Where one deer stands after walking the island at this frame rate. */
 function walkOnIsland(framesPerSecond: number): IslandWalk {
   let latest: IslandWalk | undefined;
-  const { module } = createAnimalsModule({
+  const module = createAnimalsModule({
     scene: new Scene(),
     viewpoint: {
       worldPosition: new Vector3(),

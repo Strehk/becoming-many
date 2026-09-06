@@ -29,7 +29,6 @@ import {
 import type { Viewpoint } from "../../world/viewer-rig";
 import type { WorldSurface } from "../../world-surface/world-surface";
 import type {
-  ConnectionActorSource,
   ConnectionNodeSource,
   ConnectionSourceClass,
 } from "../connection-nodes";
@@ -42,7 +41,6 @@ import {
   createConnectionWeb,
   disposeConnectionWeb,
   getNodeSlotOffset,
-  updateAnimalLinks,
   type WebSourceStyle,
   writeSlotEdges,
   writeSlotNodes,
@@ -57,7 +55,6 @@ import {
 
 export type { ConnectionsParameters } from "./mycelium-settings";
 
-const ANIMAL_CLASS_INDEX = 2;
 const COMPONENTS_PER_VALUE = 3;
 const EMPTY_TOPOLOGY = {
   edgeCount: 0,
@@ -72,7 +69,6 @@ const EMPTY_TOPOLOGY = {
 const SOURCE_CLASS_ORDER: readonly ConnectionSourceClass[] = [
   "vegetation",
   "scentEmitters",
-  "animals",
   "rocks",
   "soil",
 ];
@@ -97,8 +93,6 @@ export interface ConnectionsOptions {
   readonly worldSurface: WorldSurface;
   /** Wired by the composition root for every enabled static source class. */
   readonly staticSources: readonly ConnectionNodeSource[];
-  /** Live animal positions; present only when animals participate. */
-  readonly animalSource?: ConnectionActorSource;
   /**
    * How much of the ground something else already grows on. Wired by the
    * composition root from whatever covers this level's surface, so the
@@ -350,16 +344,6 @@ function updateWeb(
     stream.admissionRetryJobs[slot] = undefined;
   }
   postReadyBuilds(stream);
-
-  const animalStyle = styles[ANIMAL_CLASS_INDEX];
-  if (options.animalSource && animalStyle) {
-    updateAnimalLinks(
-      stream.web,
-      options.animalSource.getWorldPositions(),
-      animalStyle,
-      state.clockSeconds,
-    );
-  }
 }
 
 /**

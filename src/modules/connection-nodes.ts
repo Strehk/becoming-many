@@ -1,7 +1,7 @@
 /**
  * Purpose: Share the contract for world elements joining the Connections web.
  * Context: Several modules expose deterministic anchors; Mycelium consumes them.
- * Responsibility: Type static per-chunk anchor sources and live actor sources.
+ * Responsibility: Type deterministic per-chunk anchor sources.
  * Boundary: Anchor generation stays in each provider; topology stays in Mycelium.
  */
 
@@ -9,7 +9,6 @@
 export type ConnectionSourceClass =
   | "vegetation"
   | "scentEmitters"
-  | "animals"
   | "rocks"
   | "soil";
 
@@ -29,11 +28,4 @@ export interface ConnectionNodeSource {
     chunkSizeMeters: number,
     pushAnchor: PushConnectionAnchor,
   ) => void;
-}
-
-/** Live world positions of a bounded moving population. */
-export interface ConnectionActorSource {
-  readonly sourceClass: ConnectionSourceClass;
-  /** Tightly packed world xyz triples of the currently visible actors. */
-  readonly getWorldPositions: () => Float32Array;
 }

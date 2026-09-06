@@ -503,7 +503,6 @@ test("Connections Level owns its complete connected-world startup recipe", () =>
   // part of it.
   const sources = Object.values(connections.sources);
   expect(sources).toHaveLength(4);
-  expect(connections.sources.animals).toBeUndefined();
   for (const source of sources) {
     expect(connectionsPalette).toContain(source.nodeColor);
     expect(source.weight).toBeGreaterThan(0);

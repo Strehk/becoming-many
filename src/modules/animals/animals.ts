@@ -18,7 +18,6 @@ import {
   type AnimalActors,
   createAnimalActors,
   disposeAnimalActors,
-  getVisibleActorPositions,
   readVisibleAnimalBodies,
   updateAnimalActors,
 } from "./animal-actors";
@@ -86,34 +85,18 @@ interface AnimalsState {
   readonly bodies: MutableAnimalBody[];
 }
 
-/** The world module plus the live positions other senses may consume. */
-export interface AnimalsModuleHandle {
-  readonly module: WorldModule;
-  /** Tightly packed world xyz triples of the currently visible actors. */
-  readonly getVisibleWorldPositions: () => Float32Array;
-}
-
 export function createAnimalsModule(
   options: AnimalsModuleOptions,
-): AnimalsModuleHandle {
+): WorldModule {
   validateAnimalsDefinition(options.definition);
   const state: AnimalsState = { population: undefined, bodies: [] };
-  const packedPositions = new Float32Array(options.definition.maxVisible * 3);
 
   return {
-    module: {
-      load: () => loadAnimals(state, options),
-      activate: () => setAnimalsVisible(state, true),
-      update: (deltaSeconds) => updateAnimals(state, options, deltaSeconds),
-      deactivate: () => setAnimalsVisible(state, false),
-      unload: () => unloadAnimals(state, options.scene, options.assets),
-    },
-    getVisibleWorldPositions: () => {
-      const actorCount = state.population
-        ? getVisibleActorPositions(state.population, packedPositions)
-        : 0;
-      return packedPositions.subarray(0, actorCount * 3);
-    },
+    load: () => loadAnimals(state, options),
+    activate: () => setAnimalsVisible(state, true),
+    update: (deltaSeconds) => updateAnimals(state, options, deltaSeconds),
+    deactivate: () => setAnimalsVisible(state, false),
+    unload: () => unloadAnimals(state, options.scene, options.assets),
   };
 }
 

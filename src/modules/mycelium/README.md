@@ -95,15 +95,13 @@ ground ever runs that ramp. The stamp rides a second, unwrapped clock: the pulse
 time wraps every minute, and a stamp compared against a wrapped clock would make
 a cord vanish for the rest of the loop.
 
-Node anchors enter through the shared `ConnectionNodeSource` /
-`ConnectionActorSource` contracts in `src/modules/connection-nodes.ts`.
-Providers (vegetation, rocks, scent particles) replay their own
-deterministic placement math; this module never imports a sibling. The
-live-actor contract stays in place for a level that wants moving bodies in
-the web, but level 07 authors no animal source: a root system is what
-stands still and grows. The soil
-mat in `soil-nodes.ts` is the module's own content and satisfies the same
-contract, so it joins the gather through the one path every anchor takes.
+Node anchors enter through `ConnectionNodeSource` in
+`src/modules/connection-nodes.ts`: Vegetation supplies trees and bushes, Rocks
+supplies fixed rock placements, and `scentEmitters` names fixed forest-clearing
+points that no longer emit scent. The soil mat in `soil-nodes.ts` is Mycelium's
+own content and joins the same gather path. Providers replay deterministic
+placement; this module never imports a sibling. Animals do not join the web,
+and every edge row belongs to a static build slot.
 
 The related [Wurzeln project](https://github.com/dweigend/wurzeln) is the
 source of the topology, the density, and the buried mat. Its

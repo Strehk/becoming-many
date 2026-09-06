@@ -7,6 +7,7 @@
 
 import { expect, spyOn, test } from "bun:test";
 import {
+  Color,
   InstancedBufferGeometry,
   Mesh,
   Points,
@@ -14,10 +15,7 @@ import {
   type ShaderMaterial,
   Vector3,
 } from "three";
-import type {
-  ConnectionActorSource,
-  ConnectionNodeSource,
-} from "../../src/modules/connection-nodes";
+import type { ConnectionNodeSource } from "../../src/modules/connection-nodes";
 import {
   type ConnectionsParameters,
   createConnectionsModule,
@@ -28,6 +26,11 @@ import {
   type ChunkTopology,
   type TopologyNodes,
 } from "../../src/modules/mycelium/network-topology";
+import {
+  createConnectionWeb,
+  disposeConnectionWeb,
+  writeSlotEdges,
+} from "../../src/modules/mycelium/network-web";
 import type {
   ConnectionTopologyRequest,
   ConnectionTopologyResult,
@@ -209,7 +212,6 @@ const PARAMETERS: ConnectionsParameters = {
   pulseSpeedMetersPerSecond: 1.5,
   sources: {
     vegetation: { nodeColor: 0xa5bdc3, weight: 1 },
-    animals: { nodeColor: 0xe39e54, weight: 0.5 },
   },
   colors: {
     depthColor: 0x292e55,
@@ -258,13 +260,6 @@ function createFakeVegetationSource(): ConnectionNodeSource {
   };
 }
 
-function createFakeAnimalSource(positions: number[]): ConnectionActorSource {
-  return {
-    sourceClass: "animals",
-    getWorldPositions: () => Float32Array.from(positions),
-  };
-}
-
 function createEdgeResult(
   buildSlotIndex: number,
   revision: number,
@@ -284,8 +279,8 @@ function createEdgeResult(
 }
 
 function createWebHarness(
-  animalSource?: ConnectionActorSource,
   createTopologyPort?: () => TopologyPort,
+  parameters: ConnectionsParameters = PARAMETERS,
 ) {
   const scene = new Scene();
   const viewerPosition = new Vector3();
@@ -299,14 +294,18 @@ function createWebHarness(
   );
   const fakePort = createFakeTopologyPort();
   const { module, setIntensity, terrain } = createConnectionsModule(
-    PARAMETERS,
+    parameters,
     {
       scene,
       viewpoint,
       streamQueue,
       worldSurface: WORLD_SURFACE,
-      staticSources: [createFakeVegetationSource()],
-      animalSource,
+      staticSources: (["vegetation", "scentEmitters", "rocks"] as const)
+        .filter((sourceClass) => parameters.sources[sourceClass])
+        .map((sourceClass) => ({
+          ...createFakeVegetationSource(),
+          sourceClass,
+        })),
       groundCoverAt: () => 0,
       createTopologyPort: createTopologyPort ?? (() => fakePort.port),
     },
@@ -342,6 +341,91 @@ function createWebHarness(
 
 const BUILD_SLOT_COUNT = (MYCELIUM_SETTINGS.buildChunkRadius * 2 + 1) ** 2;
 const GATHER_SLOT_COUNT = (MYCELIUM_SETTINGS.gatherChunkRadius * 2 + 1) ** 2;
+
+test.each([0, BUILD_SLOT_COUNT - 1])(
+  "Connections edge slot %d stays inside its exact pool range",
+  (buildSlotIndex) => {
+    const web = createConnectionWeb(
+      {},
+      { gatherSlotCount: GATHER_SLOT_COUNT, buildSlotCount: BUILD_SLOT_COUNT },
+    );
+    const capacity = MYCELIUM_SETTINGS.edgeSlotCapacity;
+    expect(web.edges.geometry.instanceCount).toBe(BUILD_SLOT_COUNT * capacity);
+    writeSlotEdges(
+      web,
+      {
+        ...createEdgeResult(buildSlotIndex, 1, [], []),
+        edgeCount: capacity + 1,
+        edgeStarts: new Float32Array((capacity + 1) * 3).fill(1),
+        edgeEnds: new Float32Array((capacity + 1) * 3).fill(2),
+      },
+      [],
+      1,
+    );
+    const first = buildSlotIndex * capacity * 3;
+    const last = first + capacity * 3;
+    for (const [attribute, coordinate] of [
+      [web.edgeStartAttribute, 1],
+      [web.edgeEndAttribute, 2],
+    ] as const) {
+      const positions = Array.from(attribute.array);
+      expect(positions).toHaveLength(BUILD_SLOT_COUNT * capacity * 3);
+      expect(
+        positions.slice(first, last).every((value) => value === coordinate),
+      ).toBe(true);
+      expect(
+        [...positions.slice(0, first), ...positions.slice(last)].every(
+          (value) => value === 0,
+        ),
+      ).toBe(true);
+    }
+    disposeConnectionWeb(web);
+  },
+);
+
+test("Connections retain all four fixed-source colors and weights through node and edge publication", () => {
+  const sources = {
+    vegetation: { nodeColor: 0xa5bdc3, weight: 1 },
+    scentEmitters: { nodeColor: 0xd06780, weight: 0.75 },
+    rocks: { nodeColor: 0x292e55, weight: 0.5 },
+    soil: { nodeColor: 0xf2e3d3, weight: 0.25 },
+  };
+  const harness = createWebHarness(undefined, { ...PARAMETERS, sources });
+  harness.module.load();
+  const request = harness.fakePort.requests[0];
+  if (!request) throw new Error("Expected a topology request");
+  expect(Array.from(request.own.classIndices.slice(0, 4))).toEqual([
+    0, 1, 2, 3,
+  ]);
+  harness.fakePort.respond({
+    ...createEdgeResult(request.buildSlotIndex, request.revision, [], []),
+    edgeCount: 4,
+    edgeStarts: new Float32Array(12).fill(1),
+    edgeEnds: new Float32Array(12).fill(2),
+    edgeHubClasses: request.own.classIndices.slice(0, 4),
+    edgeWeights: request.own.weights.slice(0, 4),
+  });
+  const nodes = harness.findNodes().geometry;
+  const edges = harness.findEdges().geometry;
+  const firstEdge = request.buildSlotIndex * MYCELIUM_SETTINGS.edgeSlotCapacity;
+  for (const [index, style] of Object.values(sources).entries()) {
+    const color = new Color(style.nodeColor).toArray();
+    expect(
+      Array.from(
+        nodes.getAttribute("nodeColor").array.slice(index * 3, index * 3 + 3),
+      ),
+    ).toEqual(Array.from(Float32Array.from(color)));
+    expect(nodes.getAttribute("nodeWeight").array[index]).toBe(style.weight);
+    const edge = firstEdge + index;
+    expect(
+      Array.from(
+        edges.getAttribute("edgeColor").array.slice(edge * 3, edge * 3 + 3),
+      ),
+    ).toEqual(Array.from(Float32Array.from(color)));
+    expect(edges.getAttribute("edgeWeight").array[edge]).toBe(style.weight);
+  }
+  harness.module.unload();
+});
 
 test("Connections reject an invalid preset", () => {
   expect(createWebHarness().module).toBeDefined(); // Valid baseline.
@@ -417,9 +501,7 @@ test("Connections build every resident chunk on its own request", () => {
       [4, 5, 6],
     ),
   );
-  const firstRow =
-    MYCELIUM_SETTINGS.animalLinkCapacity +
-    request.buildSlotIndex * MYCELIUM_SETTINGS.edgeSlotCapacity;
+  const firstRow = request.buildSlotIndex * MYCELIUM_SETTINGS.edgeSlotCapacity;
   const startArray = edges.geometry.getAttribute("edgeStart")
     .array as Float32Array;
   expect(startArray[firstRow * 3] ?? 0).toBeCloseTo(1, 5);
@@ -686,7 +768,7 @@ test("Connections reject replies from an unloaded worker after reloading the sam
   const oldPort = createFakeTopologyPort();
   const newPort = createFakeTopologyPort();
   let loadCount = 0;
-  const harness = createWebHarness(undefined, () =>
+  const harness = createWebHarness(() =>
     loadCount++ === 0 ? oldPort.port : newPort.port,
   );
   harness.module.load();
@@ -698,7 +780,6 @@ test("Connections reject replies from an unloaded worker after reloading the sam
   expect(newRequest?.revision).toBe(oldRequest.revision);
   const starts = harness.findEdges().geometry.getAttribute("edgeStart").array;
   const firstRow =
-    MYCELIUM_SETTINGS.animalLinkCapacity +
     oldRequest.buildSlotIndex * MYCELIUM_SETTINGS.edgeSlotCapacity;
   const oldResult = createEdgeResult(
     oldRequest.buildSlotIndex,
@@ -739,42 +820,9 @@ test("Connections discard a reply for ground the visitor already left", () => {
       [8, 8, 8],
     ),
   );
-  const firstRow =
-    MYCELIUM_SETTINGS.animalLinkCapacity +
-    request.buildSlotIndex * MYCELIUM_SETTINGS.edgeSlotCapacity;
+  const firstRow = request.buildSlotIndex * MYCELIUM_SETTINGS.edgeSlotCapacity;
   const startArray = edges.geometry.getAttribute("edgeStart")
     .array as Float32Array;
   expect(startArray[firstRow * 3] ?? 0).toBe(0);
-  module.unload();
-});
-
-test("Connections link visible animals to their nearest web node", () => {
-  const actorX = 9;
-  const actorZ = 7;
-  const harness = createWebHarness(createFakeAnimalSource([actorX, 5, actorZ]));
-  const { module } = harness;
-
-  module.load();
-  module.activate();
-  module.update?.(0.016);
-  const edges = harness.findEdges();
-  const startArray = edges.geometry.getAttribute("edgeStart")
-    .array as Float32Array;
-  const endArray = edges.geometry.getAttribute("edgeEnd").array as Float32Array;
-  const colorArray = edges.geometry.getAttribute("edgeColor")
-    .array as Float32Array;
-
-  // The nearest fake anchor to the actor is the chunk (0,0) node at (8,·,8).
-  expect(startArray[0] ?? 0).toBeCloseTo(8, 5);
-  expect(startArray[2] ?? 0).toBeCloseTo(8, 5);
-  expect(endArray[0] ?? 0).toBeCloseTo(actorX, 5);
-  expect(endArray[2] ?? 0).toBeCloseTo(actorZ, 5);
-  expect(colorArray[0] ?? 0).toBeGreaterThan(0);
-
-  // Unused animal rows collapse to degenerate cords.
-  for (let row = 1; row < MYCELIUM_SETTINGS.animalLinkCapacity; row += 1) {
-    expect(startArray[row * 3] ?? -1).toBe(0);
-    expect(endArray[row * 3] ?? -1).toBe(0);
-  }
   module.unload();
 });
