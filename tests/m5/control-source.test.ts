@@ -34,9 +34,12 @@ function state(overrides: Partial<M5State> = {}): M5State {
 
 describe("control source", () => {
   it("derives both edges from a press-and-release between two polls", () => {
-    const source = createControlSource();
+    const source = createControlSource(BASE_STATE.deviceId);
     source.pushState(state(), 0);
-    source.pushState(state({ buttonPressCount: 1, buttonReleaseCount: 1 }), 50);
+    source.pushState(
+      state({ seq: 2, buttonPressCount: 1, buttonReleaseCount: 1 }),
+      50,
+    );
 
     const frame = source.readFrame(60);
     expect(frame.buttonDown).toBe(true);
@@ -44,9 +47,12 @@ describe("control source", () => {
   });
 
   it("delivers a latched edge exactly once across many render frames", () => {
-    const source = createControlSource();
+    const source = createControlSource(BASE_STATE.deviceId);
     source.pushState(state(), 0);
-    source.pushState(state({ buttonPressCount: 1, buttonPressed: true }), 50);
+    source.pushState(
+      state({ seq: 2, buttonPressCount: 1, buttonPressed: true }),
+      50,
+    );
 
     expect(source.readFrame(55).buttonDown).toBe(true);
     expect(source.readFrame(66).buttonDown).toBe(false);
@@ -93,20 +99,23 @@ describe("control source", () => {
     }
   });
 
-  it("goes neutral once polls stop, still delivering a pending edge", () => {
-    const source = createControlSource();
+  it("discards pending edges once polls become stale", () => {
+    const source = createControlSource(BASE_STATE.deviceId);
     source.pushState(state({ pitch: 0.4 }), 0);
-    source.pushState(state({ pitch: 0.4, buttonPressCount: 1 }), 50);
+    source.pushState(state({ seq: 2, pitch: 0.4, buttonPressCount: 1 }), 50);
 
     const staleFrame = source.readFrame(50 + 1_001);
     expect(staleFrame.quality).toBe(0);
     expect(staleFrame.pitch).toBe(0);
-    expect(staleFrame.buttonDown).toBe(true);
+    expect(staleFrame.buttonDown).toBe(false);
     expect(source.readDeviceReport(50 + 1_001).state).toBe("connecting");
+    expect(source.readLatestState(50 + 1_001)).toBeUndefined();
+    source.pushState(state({ seq: 3, buttonPressCount: 12 }), 1_052);
+    expect(source.readFrame(1_053).buttonDown).toBe(false);
   });
 
   it("eases a live pose up from neutral instead of snapping", () => {
-    const source = createControlSource();
+    const source = createControlSource(BASE_STATE.deviceId);
     source.pushState(state({ pitch: 0.4 }), 0);
 
     // One smoothing step: 0.625 of the way from 0 toward 0.4.
@@ -114,52 +123,53 @@ describe("control source", () => {
     expect(source.readDeviceReport(10)).toEqual({
       state: "live",
       quality: 1,
-      hasFirmwareMismatch: false,
     });
   });
 
-  it("never steers from a wrong device and reports it", () => {
-    const source = createControlSource("bm-station-a-m5");
-    source.pushState(state({ deviceId: "bm-station-b-m5", pitch: 0.5 }), 0);
-
-    const frame = source.readFrame(10);
-    expect(frame.quality).toBe(0);
-    expect(frame.pitch).toBe(0);
-    expect(source.readDeviceReport(10).state).toBe("wrong-device");
-  });
+  it.each([
+    ["missing-id", {}, ""],
+    ["wrong-device", { deviceId: "other-rig" }, BASE_STATE.deviceId],
+    ["incompatible-firmware", { firmwareVersion: "old" }, BASE_STATE.deviceId],
+    ["uncalibrated", { isCalibrated: false }, BASE_STATE.deviceId],
+    ["stalled", { seq: 2 }, BASE_STATE.deviceId],
+    ["stalled", { seq: 1 }, BASE_STATE.deviceId],
+    ["stalled", { seq: 1, uptimeMs: 10 }, BASE_STATE.deviceId],
+  ] as const)(
+    "neutralizes %s and recovers without old edges",
+    (reason, rejected, expectedId) => {
+      const source = createControlSource(expectedId);
+      source.pushState(state({ pitch: 0.4 }), 0);
+      source.pushState(state({ seq: 2, pitch: 0.4, buttonPressCount: 1 }), 50);
+      for (let poll = 0; poll < 3; poll++) {
+        source.pushState(state({ seq: 3, ...rejected }), 60 + poll);
+        const frame = source.readFrame(65);
+        expect(frame.quality).toBe(0);
+        expect(frame.buttonDown).toBe(false);
+        expect(source.readLatestState(65)).toBeUndefined();
+        expect(source.readDeviceReport(65)).toEqual({
+          state: reason,
+          quality: 0,
+        });
+      }
+      source.pushState(
+        state({ seq: "uptimeMs" in rejected ? rejected.seq : 2 }),
+        66,
+      );
+      expect(source.readFrame(67).quality).toBe(0);
+      source.pushState(state({ seq: 4, pitch: 0.4, buttonPressCount: 12 }), 70);
+      const recovered = source.readFrame(75);
+      expect(recovered.pitch).toBeCloseTo(expectedId ? 0.25 : 0);
+      expect(recovered.buttonDown).toBe(false);
+    },
+  );
 
   it("hands a glanceable reader the newest poll without eating an edge", () => {
-    const source = createControlSource();
+    const source = createControlSource(BASE_STATE.deviceId);
     source.pushState(state(), 0);
-    source.pushState(state({ pitch: 0.4, buttonPressCount: 1 }), 50);
+    source.pushState(state({ seq: 2, pitch: 0.4, buttonPressCount: 1 }), 50);
 
     expect(source.readLatestState(60)?.pitch).toBe(0.4);
     // The raw poll, not the smoothed frame — and the press still arrives.
     expect(source.readFrame(60).buttonDown).toBe(true);
-  });
-
-  it("offers no state to a glanceable reader once polls go stale", () => {
-    const source = createControlSource();
-    source.pushState(state({ pitch: 0.4 }), 0);
-
-    expect(source.readLatestState(1_001)).toBeUndefined();
-  });
-
-  it("offers no state to a glanceable reader from a wrong device", () => {
-    const source = createControlSource("bm-station-a-m5");
-    source.pushState(state({ deviceId: "bm-station-b-m5", pitch: 0.5 }), 0);
-
-    expect(source.readLatestState(10)).toBeUndefined();
-  });
-
-  it("flags a firmware mismatch while continuing to steer", () => {
-    const source = createControlSource();
-    source.pushState(state({ firmwareVersion: "9.9.9-other" }), 0);
-
-    expect(source.readDeviceReport(10)).toEqual({
-      state: "live",
-      quality: 1,
-      hasFirmwareMismatch: true,
-    });
   });
 });

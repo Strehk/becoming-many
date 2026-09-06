@@ -8,8 +8,7 @@
 
 /**
  * Must match `FirmwareVersion` in `firmware/m5/src/main.cpp`. A client that
- * sees a different value warns the operator instead of guessing at payload
- * compatibility.
+ * sees a different value rejects steering and reports the incompatibility.
  */
 export const M5_FIRMWARE_VERSION = "0.3.2-bm-http";
 

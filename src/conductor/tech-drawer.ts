@@ -179,18 +179,14 @@ function frameText(
 }
 
 /**
- * The raw device reading the plain Controller tile summarizes: state, sample
- * quality, and the firmware-mismatch flag a drifted flash carries.
+ * The Controller tile shows the rejection reason or live sample quality.
  */
 function m5Text(status: M5OperatorStatus | undefined): string {
   if (status === undefined || status.state === "off") return "—";
 
-  const mismatchSuffix = status.hasFirmwareMismatch ? " · fw!" : "";
-  if (status.state === "wrong-device") return `wrong device${mismatchSuffix}`;
-  if (status.state === "connecting") return `connecting${mismatchSuffix}`;
+  if (status.state !== "live") return status.state.replaceAll("-", " ");
 
-  const quality = status.quality?.toFixed(2) ?? "?";
-  return `live · q${quality}${mismatchSuffix}`;
+  return `live · q${status.quality.toFixed(2)}`;
 }
 
 const CLOSE_ICON_SVG = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="5" y1="5" x2="19" y2="19"></line><line x1="19" y1="5" x2="5" y2="19"></line></svg>`;

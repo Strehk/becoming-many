@@ -16,9 +16,7 @@ export const M5_SETTINGS = {
   pollIntervalMilliseconds: 167,
   // No accepted poll for this long means the device is gone: steer nothing.
   staleAfterMilliseconds: 1_000,
-  // The deviceId every payload must carry. Empty accepts any device; a set
-  // value turns a neighbour rig's frames into an operator-visible warning,
-  // never silent steering.
+  // A configured matching identity is required before any device may steer.
   expectedDeviceId: "",
 
   // Resuming from quality 0 at or beyond this deflection is an unsafe pose,

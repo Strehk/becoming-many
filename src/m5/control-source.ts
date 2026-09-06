@@ -21,23 +21,29 @@ import { M5_FIRMWARE_VERSION, type M5State } from "./protocol";
 import { deriveControlFrame } from "./state-frames";
 
 /** Operator-facing device state read by the page that owns the adapter. */
-export type M5DeviceState = "off" | "connecting" | "live" | "wrong-device";
+type M5DeviceState =
+  | "connecting"
+  | "live"
+  | "missing-id"
+  | "wrong-device"
+  | "incompatible-firmware"
+  | "uncalibrated"
+  | "stalled";
 
 export interface M5DeviceReport {
-  readonly state: Exclude<M5DeviceState, "off">;
+  readonly state: M5DeviceState;
   readonly quality: number;
-  readonly hasFirmwareMismatch: boolean;
 }
 
 export interface ControlSource {
-  /** Feed one parsed poll result. Wrong-device states never steer. */
+  /** Accept only identified, compatible, calibrated and advancing samples. */
   readonly pushState: (state: M5State, nowMilliseconds: number) => void;
   /** Read the frame for this render frame. Consumes pending button edges. */
   readonly readFrame: (nowMilliseconds: number) => ControlFrame;
   readonly readDeviceReport: (nowMilliseconds: number) => M5DeviceReport;
   /**
    * The newest accepted poll, for a glanceable second reader. Undefined while
-   * stale or wrong-device. It consumes no edges, which is what lets a view
+   * stale or rejected. It consumes no edges, which is what lets a view
    * other than the frame body read the device without stealing a press.
    */
   readonly readLatestState: (nowMilliseconds: number) => M5State | undefined;
@@ -54,29 +60,55 @@ export function createControlSource(
   let lastAcceptedAtMilliseconds: number | null = null;
   let pendingButtonDown = false;
   let pendingButtonUp = false;
-  let isWrongDevice = false;
-  let hasFirmwareMismatch = false;
+  let deviceState: M5DeviceReport["state"] = expectedDeviceId.trim()
+    ? "connecting"
+    : "missing-id";
 
-  const isStale = (nowMilliseconds: number): boolean =>
-    lastAcceptedAtMilliseconds === null ||
-    nowMilliseconds - lastAcceptedAtMilliseconds >
+  const isLive = (nowMilliseconds: number): boolean =>
+    deviceState === "live" &&
+    lastAcceptedAtMilliseconds !== null &&
+    nowMilliseconds - lastAcceptedAtMilliseconds <=
       M5_SETTINGS.staleAfterMilliseconds;
 
   return {
     pushState(state, nowMilliseconds) {
-      hasFirmwareMismatch = state.firmwareVersion !== M5_FIRMWARE_VERSION;
+      const wasLive = isLive(nowMilliseconds);
+      deviceState = "live";
+      if (!expectedDeviceId.trim()) deviceState = "missing-id";
+      else if (state.deviceId !== expectedDeviceId)
+        deviceState = "wrong-device";
+      else if (state.firmwareVersion !== M5_FIRMWARE_VERSION)
+        deviceState = "incompatible-firmware";
+      else if (!state.isCalibrated) deviceState = "uncalibrated";
+      else if (
+        previousState &&
+        (state.seq <= previousState.seq ||
+          state.uptimeMs < previousState.uptimeMs)
+      )
+        deviceState = "stalled";
 
-      // A wrong or unknown device is an operator-visible warning — never
-      // silent steering by the neighbour rig. Its counters are not tracked
-      // either, so its button cannot fire edges.
-      isWrongDevice =
-        expectedDeviceId.length > 0 && state.deviceId !== expectedDeviceId;
-      if (isWrongDevice) {
-        return;
+      if (!wasLive || deviceState !== "live") {
+        currentFrame = smoother.apply(
+          neutralizer.apply(createNeutralControl(), nowMilliseconds),
+        );
+        pendingButtonDown = false;
+        pendingButtonUp = false;
       }
 
-      const derived = deriveControlFrame(previousState, state);
-      previousState = state;
+      const derived = deriveControlFrame(
+        wasLive ? previousState : undefined,
+        state,
+      );
+      // Only an uptime reset establishes a lower sequence baseline. Replayed
+      // or frozen counters must not lower the last accepted sequence.
+      if (
+        deviceState === "live" ||
+        (deviceState === "stalled" &&
+          previousState &&
+          state.uptimeMs < previousState.uptimeMs)
+      )
+        previousState = state;
+      if (deviceState !== "live") return;
       lastAcceptedAtMilliseconds = nowMilliseconds;
 
       const safe = protectControl(currentFrame, derived);
@@ -91,17 +123,12 @@ export function createControlSource(
     },
 
     readFrame(nowMilliseconds) {
-      const base = isStale(nowMilliseconds)
-        ? createNeutralControl()
-        : currentFrame;
-
-      // Consume-on-read: an edge latched between polls is delivered exactly
-      // once, even when the render loop runs many frames per poll — or when
-      // the device went stale right after the press.
+      const live = isLive(nowMilliseconds);
+      // Only trusted, fresh edges reach the single reader, exactly once.
       const frame: ControlFrame = {
-        ...base,
-        buttonDown: pendingButtonDown,
-        buttonUp: pendingButtonUp,
+        ...(live ? currentFrame : createNeutralControl()),
+        buttonDown: live && pendingButtonDown,
+        buttonUp: live && pendingButtonUp,
       };
       pendingButtonDown = false;
       pendingButtonUp = false;
@@ -109,16 +136,14 @@ export function createControlSource(
     },
 
     readLatestState(nowMilliseconds) {
-      if (isWrongDevice || isStale(nowMilliseconds)) return undefined;
-      return previousState;
+      return isLive(nowMilliseconds) ? previousState : undefined;
     },
 
     readDeviceReport(nowMilliseconds) {
-      const stale = isStale(nowMilliseconds);
+      const live = isLive(nowMilliseconds);
       return {
-        state: isWrongDevice ? "wrong-device" : stale ? "connecting" : "live",
-        quality: stale ? 0 : currentFrame.quality,
-        hasFirmwareMismatch,
+        state: deviceState === "live" && !live ? "connecting" : deviceState,
+        quality: live ? currentFrame.quality : 0,
       };
     },
   };

@@ -11,17 +11,12 @@ import type { ControlFrame } from "./control-frame";
 import {
   type ControlSource,
   createControlSource,
-  type M5DeviceState,
+  type M5DeviceReport,
 } from "./control-source";
 import { M5_SETTINGS } from "./m5-settings";
 import { type M5State, parseM5State } from "./protocol";
 
-export interface M5OperatorStatus {
-  readonly state: M5DeviceState;
-  /** Present while polling: the live quality, 0 while connecting. */
-  readonly quality?: number;
-  readonly hasFirmwareMismatch?: boolean;
-}
+export type M5OperatorStatus = M5DeviceReport | { readonly state: "off" };
 
 export interface M5Adapter {
   /** Start polling `host` (hostname, host:port, or full origin); "" stops. */

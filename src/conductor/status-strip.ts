@@ -76,16 +76,15 @@ function headsetReading(xr: XrSessionState): ReadingText {
 
 /**
  * An absent adapter means a benchmark build; `off` means no host is set —
- * both read as "no device", which is a normal state, not a fault. A firmware
- * mismatch reads as "Check" so a drifted flash never hides behind a green OK;
- * the mismatch itself is spelled out in the technician drawer.
+ * both read as "no device", which is a normal state, not a fault. A
+ * rejected sample reads as "Check"; the technician drawer names the reason.
  */
 function controllerReading(status: M5OperatorStatus | undefined): ReadingText {
   if (status === undefined || status.state === "off") return ["—", "idle"];
   if (status.state === "wrong-device") return ["Check", "alarm"];
   if (status.state === "connecting") return ["Connecting", "warn"];
 
-  return status.hasFirmwareMismatch ? ["Check", "warn"] : ["OK", "live"];
+  return status.state === "live" ? ["OK", "live"] : ["Check", "warn"];
 }
 
 /** The acceptance target from docs/performance.md is a stable 90 FPS. */

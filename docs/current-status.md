@@ -1,6 +1,6 @@
 # Current Development Status
 
-As-built snapshot: 2026-09-06, checkpoint `49f48ac` plus the #17 M5 host-lifetime correction on `david_refactor`.
+As-built snapshot: 2026-09-07, checkpoint `eec55bd` plus the #18 M5 eligibility correction on `david_refactor`.
 Dated measurement packets retain the earlier exact identities they tested;
 the current checkout is the authority for runtime details.
 
@@ -94,9 +94,9 @@ The #80 animal-connection removal is implemented below. Small additions remain i
 ## Controls, Audio, and Station
 
 - Desktop pointer-lock flight and WebXR flight use the same viewer rig.
-- M5 state polling, smoothing, safety checks, auto-neutralization, and flight
-  mapping are implemented. Host reset isolation and stricter device/liveness
-  handling remain open issues.
+- M5 host lifetimes are isolated. Steering requires a configured matching ID,
+  compatible firmware, calibration and fresh advancing samples. Rejection
+  neutralizes input and names its reason; physical acceptance remains open.
 - Narration uses typed schedules and one audio timebase. Browser audio suspension
   stops show time until a gesture wakes the context.
 - The drone organ in `sound/drone-organ/` plays under the show: nine Tone.js

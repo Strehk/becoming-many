@@ -197,10 +197,9 @@ The Conductor imports the public level/runtime contracts and commands the show
 through `src/conductor/show-actions.ts`. It reads a snapshot each frame rather
 than holding a second copy of show time.
 
-The M5 boundary treats HTTP payloads as untrusted. `src/m5` parses control
-frames, applies smoothing and safety rules, and exposes a small adapter to the
-composition root. Remaining host-reset, liveness, identity, and calibration
-gaps are tracked issues.
+The M5 adapter owns one cancellable host lifetime. ControlSource owns the shared
+identity/firmware/calibration/sequence/freshness gate for steering, preview and
+operator status. Rejected samples are neutral and cannot publish old button edges.
 
 Deployment settings supplied by the Bun server are parsed by
 `src/station/deployment-config.ts`. A configured fact is deployment authority;
