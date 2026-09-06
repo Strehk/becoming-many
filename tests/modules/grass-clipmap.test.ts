@@ -27,6 +27,7 @@ import {
   type GrassClipmapPreset,
 } from "../../src/modules/grass-clipmap/grass-clipmap-settings";
 import { createGrassHeightField } from "../../src/modules/grass-clipmap/grass-height-field";
+import { createWorldFade } from "../../src/modules/world-fade/world-fade";
 import type {
   SensedMaterial,
   UnlitMaterialEffect,
@@ -222,9 +223,11 @@ test("a sense reaches every blade material and takes the lighting with it", () =
   const scene = new Scene();
   const viewerPosition = new Vector3();
   const patched: SensedMaterial[] = [];
+  const fade = createWorldFade();
   const effect: UnlitMaterialEffect = {
     applyTo: (material) => {
       patched.push(material);
+      fade.applyTo(material);
     },
   };
   const module = createGrassClipmapModule({
@@ -245,7 +248,17 @@ test("a sense reaches every blade material and takes the lighting with it", () =
   for (const material of patched) {
     // The sense owns the color, so the lighting block is compiled out rather
     // than computed and discarded.
-    expect((material as ShaderMaterial).defines?.GRASS_LIT).toBe(0);
+    const blade = material as ShaderMaterial;
+    expect(blade.defines?.GRASS_LIT).toBe(0);
+    const shader = {
+      uniforms: { ...blade.uniforms },
+      vertexShader: blade.vertexShader,
+      fragmentShader: blade.fragmentShader,
+    } as Parameters<ShaderMaterial["onBeforeCompile"]>[0];
+    blade.onBeforeCompile(shader, undefined as never);
+    expect(shader.vertexShader).not.toContain("#include <begin_vertex>");
+    expect(shader.fragmentShader).toContain("applyWorldFade(diffuseColor.rgb)");
+    expect(shader.uniforms.worldFadePresence).toBeDefined();
   }
 
   module.unload();

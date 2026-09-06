@@ -11,15 +11,15 @@ in the [workflow](refactor-workflow.md), [test plan](refactor-test-plan.md) and
 | Field | Current state |
 | --- | --- |
 | Branch / integration | `david_refactor` only; the user explicitly authorized focused local commits and continued issue work. Push, main and extra branches remain unauthorized. |
-| Implemented | Previous blocks including #12/#74/#39 accepted. After opening the application in Chrome, the user confirmed on 2026-09-06 that it looks good and requested continuation. New block #80 → #73 → #20: 2/3 source changes implemented. #80 awaits cumulative review; #73 has an unresolved Show-clock verification failure; #20 is paused. |
-| User feedback | Latest response accepts the presented browser/block review at `43133d7` (application unchanged from `3cb862e`, source digest `6d937a09592c5f147e5a9f10aa4eb956b0652ca5aedfbbc93a4867e7ac9ea6d5`). This is a global human confirmation, not a new record of individual scripted gestures or hardware measurements. |
-| Current work | #12/#74/#39 are technically complete and now human accepted. Their retained final evidence: 484 tests, typecheck/lint/build/diff, zero boundary violations, production smoke 14/14. All nine quick counter/streaming records match #82; seven #78 references remain unchanged failures. #80 now removes the whole unused animal-link path: production logic −215, configuration −5, tests +6. 485 tests/26,660 assertions pass; type/lint/build/diff and zero boundaries pass, smoke 14/14. All nine quick reports preserve previous counters/queue except the explained Connections −64 triangles. Three full before/after runs show no repeatable timing regression; fixed ground view and normalized pool attributes agree. #73 removes 271 production lines and 39 exclusive test lines. Direct start/frame and World-owned preparation preserve ordering; 483 tests/26,657 assertions, type/lint/build/diff and boundaries pass. Smoke 14/14 and all nine counter/streaming records match #80. One Motion transition stalled Show time (+0.725 seconds in 10 seconds) while 599 frames continued; 14 other observations passed. Three initial instrumented Motion repetitions and 29 further fresh-context probes did not reproduce it; both audio clocks advanced and no extra pause was recorded. The unchanged f951ee0 snapshot also passed 16 transitions. A later diagnostic observer passed eight observations before interruption. These do not explain the original failure. #73 remains under investigation; #20 is paused. |
-| Next gate | Cumulative human behavior/architecture/size review after at most three new implemented issues (#80/#73/#20), or an earlier visible/decision gate. Independent prior-wave review found application/Station/Vite −26 lines, tests +98, one obsolete file removed, no new owner/dependency. No physical or numerical-reference acceptance is inferred. |
+| Implemented | Previous blocks including #12/#74/#39 accepted. Current block #80 → #73 → #20: 3/3 source changes implemented; cumulative review is due. #80 and #20 are locally verified; #73 retains its unresolved Show-clock observation. |
+| User feedback | On 2026-09-06 the user accepted the presented Chrome application at clean `483bf9b` and explicitly requested continued issue work with delegation, size checks and readability audits. This is global browser feedback, not a record of individual gestures, listening, hardware results or explicit acceptance of the unexplained clock failure. |
+| Current work | #80 removes the unused animal-link capability; #73 flattens startup/frame coordination; #20 rejects missing active shader anchors at the existing patch owner. Production −473, configuration −5, tests +24 across the block; no new files/dependencies/owners, three files removed. #20 adds 13 production lines for a necessary compile-time bug fix. Final gates: 487 tests/26,704 assertions, type/lint/build/diff, zero boundaries, smoke 14/14; all nine counters/queue records match #73, with seven inherited #78 reference failures. Normal EN transitions pass 16/16. The earlier #73 Motion observation (+0.725 Show seconds in 10 seconds while 599 frames continued) remains unexplained; these later passes do not resolve it. Exact identities, results and size review live in [#20](https://github.com/Strehk/becoming-many/issues/20) and [#73](https://github.com/Strehk/becoming-many/issues/73). |
+| Next gate | Cumulative human behavior, architecture and size review for #80/#73/#20 before another implementation. The latest user feedback covers the presented #80/#73 candidate, not #20 or explicit acceptance of the clock uncertainty. Physical and numerical-reference acceptance remain separate. |
 | Acceptance audit | At clean `2db5755`, independent source/history review found no introduced architecture blocker: existing owners retain one loop/clock/queue; #77 removes the old import route, #79 bounds dispatch history, #82 rejects stale work and removes four redundant staging parameters. Existing startup/disposal gaps remain #73/#9; open target decisions remain open. Application TypeScript +65 lines, test TypeScript +1,300, documentation +1,766, JSON evidence +5,702, reference candidate +74, configuration +91: total +8,998 against `9bfb84b`. This is a qualified technical pass, not human or milestone acceptance. |
 | Verified application evidence | Historical final EN/DE each521s without unexpected errors; smoke14/14; repeatable counters/queue, but seven stored #78 references still fail. Exact tested identities and limits are in [evidence](evidence/README.md). |
-| Analyzer delta | After #73, Fallow remains exit 1: 4 dead-code, 11 clone groups, 24 health findings. The extra `ModuleRuntime.load` finding is false positive: `startLevel` directly calls it before activation; no suppression or wrapper was added. New test-only findings are five repeated assertions at distinct legacy-load/post-submit-reload boundaries and estimated CRAP for `checkFlash` (CC7/cognitive5). Independent review retained these meaningful checks without a helper or suppression. Real boundary violations: 0. Older 10/24 and 10/22 results remain historical. |
+| Analyzer delta | After #20, Fallow remains unchanged at exit 1: 4 dead-code, 11 clone groups, 24 health findings. The extra `ModuleRuntime.load` finding is false positive: `startLevel` directly calls it before activation; no suppression or wrapper was added. New test-only findings are five repeated assertions at distinct legacy-load/post-submit-reload boundaries and estimated CRAP for `checkFlash` (CC7/cognitive5). Independent review retained these meaningful checks without a helper or suppression. Real boundary violations: 0. Older 10/24 and 10/22 results remain historical. |
 | Correction verification | 482 tests / 26,639 assertions / 64 files; typecheck, lint, build, real boundaries and diff pass. Smoke 14/14; eight sought cues × first/repeat = 16 transition observations pass. A thrown pageerror in generated `dist/test.html` makes the same smoke fail: 11 affected routes red, three untouched green, 11 failure trace/image pairs; artifact restored byte-for-byte. Logs: `benchmark-results/lean-refactor-20260906T062328Z`. These are functional correction checks, not new performance or full-show measurements. |
-| Open acceptance | Current #12/#74/#39 human block review is accepted. Original #75 strict-start cause and #83 automated rejection remain unresolved historical observations; exact #78 reference and complete M0 acceptance remain open. |
+| Open acceptance | #80/#73 presented browser feedback accepted; #73 technical verification remains unresolved. #80 physical acceptance, original #75 strict-start cause, #83 automated rejection, exact #78 reference and complete M0 acceptance remain open. |
 | Decisions / current work | Binding decisions are recorded in `43133d7`; #85 owns explicit levels. #80 fixed anchor inventory preserves vegetation including bushes, rocks, fixed forest-clearing points and soil. Only moving-animal links are retired. Concrete restart/level-show/bank/content choices remain open. |
 | External | Actual Windows-PCVR USB-C 90 Hz including transport/headset, M5/ICAROS and venue stations remain unaccepted. Basic #42 commissioning and #54 inventory move early; they do not wait on #14. |
 
@@ -30,18 +30,26 @@ placement was [authorized before implementation](https://github.com/Strehk/becom
 
 ## Human Review
 
-On 2026-09-06, after the application was opened in Chrome, the user confirmed
-that the presented application looks good and requested continuation. This
-accepts the #12/#74/#39 browser/block review at `43133d7`; application code and
-its retained evidence remain at `3cb862e`. No fresh per-action test record,
-physical result or numerical reference approval is invented from this response.
+On 2026-09-06 the user accepted the displayed production application at clean
+`483bf9b` and explicitly requested continuation. No individual action, listening
+result or hardware test is inferred from this global feedback.
 
-The local block is #80 → #73 → #20, now at 2/3 source changes implemented. #80 is technically verified; #73
-verification is blocked by the unexplained Show-clock observation; #20 is paused. Prepare
-an earlier human check while the unexplained failure remains open: select Motion
-in the production show, play/listen for at least ten seconds, then Hold/Play
-and repeat. Note whether the clock and audio stop without a pause action.
-The user has not yet accepted this candidate or the remaining uncertainty.
+The current block #80 → #73 → #20 has three source changes implemented.
+#73 stays open: its isolated Show-clock failure is unexplained and the user has
+not explicitly accepted that uncertainty. Independent #20 is locally verified.
+The cumulative 3/3 review is now due before another implementation:
+
+1. In the production Show, compare Echo, Thermal and Finale: terrain, plants
+   and the fixed root web remain visible with the expected sense appearance.
+2. Select Motion, play/listen for ten seconds, then Hold/Play and repeat;
+   report any uncommanded time/audio stop rather than inferring its absence.
+3. Switch EN/DE and resume; verify the selected narration and transport state.
+4. Open the Test level: grass and desktop flight still work. This is not a
+   headset, complete visitor restart or numerical-reference acceptance.
+
+Readability review: Runtime tells startup and input/Show/frame coordination;
+World owns preparation and render; the old forwarding chain and unused animal
+link capability are gone. #20 only validates at the existing compile hook.
 The current New visitor action remains a time/position reset, not complete Run
 termination; #9 and its concrete operating proposal still own that target.
 The exact #78 candidate remains unapplied; Windows-PCVR USB-C 90 Hz and full
@@ -52,7 +60,7 @@ live issues and [evidence index](evidence/README.md).
 
 All stages use the same three-implemented-issue cumulative human gate. An issue
 may prepare a concrete proposal or gather read-only evidence while implementation
-waits for its actual dependency. The previous 3/3 gate is accepted; count the new block from zero. Early physical commissioning is not deferred until the last milestone.
+waits for its actual dependency. The previous block is accepted; the current block is at its 3/3 gate. Early physical commissioning is not deferred until the last milestone.
 
 | Milestone | Ordered scope | Gate |
 | --- | --- | --- |
@@ -75,12 +83,12 @@ actively consumed Material override and its compatibility evidence.
 
 | Work | Smallest scope / prerequisite |
 | --- | --- |
-| Current human gate | #12/#74/#39 accepted after the browser review; new block has two source changes (#80/#73); #73 verification is unresolved and #20 is paused. |
+| Current human gate | #80/#73/#20 source changes implemented; cumulative 3/3 review due. Presented #80/#73 browser state accepted; #73 technical verification remains unresolved. |
 | #42 + #54, start early | Obtain the actual Windows/GPU/driver/browser/XR/streaming/USB/headset matrix and reproduce entry/re-entry/audio/operator behavior with existing tools. Basic commissioning does not require #14; later diagnostic detail can use it. No Mac substitute for physical results. |
 | #78, bounded investigation | Fix a camera pose and comparable conditions, identify intended scene/available contents, repeat counters and explain significant differences. Then propose the exact checked reference. No exhaustive historical-triangle archaeology and no automatic baseline update. |
 | #80, technically implemented | Remove animal–Mycelium producers, projections, contracts, wiring, reserved pool ranges, settings and exclusive tests together. First enumerate existing fixed anchor classes. Preserve animal animation/movement and Scent/Thermal data; no other content removal. |
 | #73, source implemented; verification blocked | Flatten startup at existing Runtime/Composition owners, retaining one frame order and directly readable start/frame/end. This simplification alone does not claim complete teardown. |
-| #20, after #73 | Tighten the existing shader-patch boundary without adding a new effect framework. Ends the next three-issue local block. |
+| #20, locally verified | Active anchors fail explicitly before partial mutation; valid shader output is unchanged. Await cumulative 3/3 review; #73 clock investigation stays open. |
 | #9 | Use #73's direct startup. Present the smallest visitor restart sequence using #42 evidence before selecting its mechanism. Prepare owner-local cleanup, failed/cancelled starts and late results; only expose complete termination once every child/source lifetime is covered. A reload candidate is not approved automatically. |
 | #16 | Reconcile the partly implemented cold-transition work first. Use one preparation/resource/background strategy and preserve the world during a visit. Measure first/repeated transitions; coordinate #9 lifetimes and #85 configuration, no per-level workaround. |
 | #14 | Keep probes/renderers out of normal Experience operation. Diagnosis owns measurement/display; World exposes existing renderer facts by small reads. Can prepare this owner-local separation before #9, but complete cleanup acceptance depends on #9. Startup failures stay visible. |

@@ -1,14 +1,14 @@
 /**
- * Purpose: Patch three.js built-in shaders with one sense effect's GLSL.
+ * Purpose: Patch built-in and module-owned shaders with one sense effect's GLSL.
  * Context: Every material effect injects the same way; the wrap logic must live once.
  * Responsibility: Wrap onBeforeCompile, merge uniforms, inject at anchors, extend the cache key.
- * Boundary: Effects own their GLSL, uniforms, and validation; materials stay with their modules.
+ * Boundary: Effects own GLSL, uniforms, and parameter validation; this hook validates injection anchors.
  *
  * Anchor ordering: every patch keeps the anchor text in its replacement and
  * String.replace hits the first occurrence, so a patch applied LATER injects its
  * call line BEFORE an earlier patch's line. The FIRST-applied effect therefore
  * executes LAST and wins the final `diffuseColor`. Consumers order their effect
- * lists with the winning effect first (see the push sites in level-runtime).
+ * lists with the winning effect first (see the push sites in level-composition).
  */
 
 import type { SensedMaterial } from "./material-effect";
@@ -46,6 +46,19 @@ export function applyShaderPatch(
 
   material.onBeforeCompile = (shader, renderer) => {
     compileBaseMaterial(shader, renderer);
+    // Check the whole patch before changing any uniforms or shader source.
+    for (const [stage, anchor, injection] of [
+      ["vertexShader", THREE_COMMON_SHADER, patch.vertexHeader],
+      ["vertexShader", patch.vertexAnchor, patch.vertexCall],
+      ["fragmentShader", THREE_COMMON_SHADER, patch.fragmentHeader],
+      ["fragmentShader", THREE_COLOR_FRAGMENT, patch.colorFragmentCall],
+    ] as const) {
+      if (injection && !shader[stage].includes(anchor)) {
+        throw new Error(
+          `Material "${material.name || material.type}" cannot apply "${patch.cacheKey}": missing ${stage} anchor "${anchor}"`,
+        );
+      }
+    }
     Object.assign(shader.uniforms, patch.uniforms);
     shader.vertexShader = shader.vertexShader
       .replace(

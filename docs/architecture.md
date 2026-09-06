@@ -119,6 +119,10 @@ receive it as a read-only contract.
 - self-contained perception rendering: Magnetic Sense, which owns only its sky
   dome and does not patch sibling materials.
 
+Shared material patches validate every active injection anchor after the base
+compile hook, before changing their own uniforms or source. Invalid shaders fail
+with material, effect, stage and anchor; fragment-only effects remain supported.
+
 Concrete modules do not import siblings. Cross-module information uses narrow
 contracts such as `WorldSurface`, `UnlitMaterialEffect`, `MotionPointSource`,
 `ScentSource`, and `ConnectionNodeSource`; the composition root performs the

@@ -32,8 +32,15 @@ const PARAMETERS: EchoDepthParameters = {
 test("Echo Depth injects one view-distance ramp into both stages", () => {
   const effect = createEchoDepth(PARAMETERS);
   const material = new MeshBasicMaterial({ color: 0x0d1730 });
+  material.onBeforeCompile = (shader) => {
+    shader.fragmentShader = `#include <common>\n${shader.fragmentShader}`;
+  };
   effect.applyTo(material);
   const shader = createBasicShaderSource();
+  shader.fragmentShader = shader.fragmentShader.replace(
+    "#include <common>",
+    "",
+  );
 
   material.onBeforeCompile(shader, undefined as never);
 
@@ -95,6 +102,35 @@ test("Echo Depth preserves the Zone Visualizer as its base color", () => {
     `${baseCacheKey}:echo-depth-v2`,
   );
 });
+
+test.each([
+  ["vertexShader", "#include <common>"],
+  ["vertexShader", "#include <project_vertex>"],
+  ["fragmentShader", "#include <common>"],
+  ["fragmentShader", "#include <color_fragment>"],
+] as const)(
+  "Echo Depth rejects missing %s anchor %s without partial changes",
+  (stage, anchor) => {
+    const material = new MeshBasicMaterial();
+    material.name = stage === "vertexShader" ? "test surface" : "";
+    const shader = createBasicShaderSource();
+    const afterBase = {
+      ...shader,
+      [stage]: shader[stage].replace(anchor, ""),
+      uniforms: { baseUniform: { value: 1 } },
+    };
+    material.onBeforeCompile = (compiled) => {
+      compiled[stage] = afterBase[stage];
+      compiled.uniforms.baseUniform = afterBase.uniforms.baseUniform;
+    };
+    createEchoDepth(PARAMETERS).applyTo(material);
+
+    expect(() => material.onBeforeCompile(shader, undefined as never)).toThrow(
+      `Material "${material.name || material.type}" cannot apply "echo-depth-v2": missing ${stage} anchor "${anchor}"`,
+    );
+    expect(shader).toEqual(afterBase);
+  },
+);
 
 test("Echo Depth rejects an out-of-range intensity", () => {
   expect(() =>

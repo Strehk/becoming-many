@@ -15,6 +15,7 @@ import {
   type GrassPreset,
   initializeGrassChunks,
 } from "../../src/modules/grass/grass-field";
+import { createWorldFade } from "../../src/modules/world-fade/world-fade";
 import { StreamQueue } from "../../src/world/stream-queue";
 import type { Viewpoint } from "../../src/world/viewer-rig";
 import { WORLD_WIND } from "../../src/world/wind";
@@ -171,7 +172,7 @@ test("Grass opens its own material-effect hook to a sense", () => {
     chunkSize: 16,
     chunkSlotCount: 1,
     worldSurface: createFlatSurface(() => "meadow"),
-    effects: [createEchoDepth(ECHO_DEPTH)],
+    effects: [createWorldFade(), createEchoDepth(ECHO_DEPTH)],
   });
   const material = field.mesh.material;
   const shader = createGrassShaderSource(material);
@@ -195,6 +196,13 @@ test("Grass opens its own material-effect hook to a sense", () => {
   // One shared uniform set, so a future intensity driver reaches grass too.
   expect(shader.uniforms.echoIntensity?.value).toBe(1);
   expect(shader.uniforms.grassTipColor).toBeDefined();
+  expect(shader.vertexShader).not.toContain("#include <begin_vertex>");
+  expect(shader.uniforms.worldFadePresence).toBeDefined();
+  expect(
+    shader.fragmentShader.indexOf("applyWorldFade(diffuseColor.rgb)"),
+  ).toBeGreaterThan(
+    shader.fragmentShader.indexOf("applyEchoDepth(diffuseColor.rgb)"),
+  );
   disposeGrassField(field);
 });
 

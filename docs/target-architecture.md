@@ -162,7 +162,7 @@ narration, organ, passage or credit panel. A configured M5 selects glider
 control; otherwise desktop input is available. That explanation should not
 require opening each module's resource implementation.
 
-**Removed in #73 working tree (technical verification unresolved; cumulative review pending):** `startLevel → startWorld → setupWorld → setupLevel →
+**Removed in #73 (technical verification unresolved; presented browser accepted):** `startLevel → startWorld → setupWorld → setupLevel →
 prepareLevelComposition → composeLevel → createConfiguredModules →
 composeShowReach`, followed by result forwarding back through `{running,
 update}`. `createOptionalShow`, `createLevelControls` and `createLevelUpdate`
@@ -582,7 +582,7 @@ remove old consumers, obsolete tests and documentation with the replaced path.
 | Current structure | Proven problem | Action | Target owner | Old path eliminated | Dependency / proof |
 | --- | --- | --- | --- | --- | --- |
 | `src/conductor/show-actions.ts` | One adapter forwards commands and uniquely owns reset | Delete file | Existing Show commands and Run visitor restart | `createShowActions`, UI reset sequences, second command route | D2; migrate panels, keys and rehearsal console |
-| `src/control/flight-control-source.ts` | Only Run consumes this stateless `readFrame → if → delegate` factory | Delete file, retain behavior | Run's local frame selects; existing controls perform movement | Factory plus `FlightControlSource`, `DesktopFlightSource`, `M5FlightSource` | #73 implemented; input/benchmark probes pass; cumulative review pending |
+| `src/control/flight-control-source.ts` | Only Run consumes this stateless `readFrame → if → delegate` factory | Delete file, retain behavior | Run's local frame selects; existing controls perform movement | Factory plus `FlightControlSource`, `DesktopFlightSource`, `M5FlightSource` | #73 implemented; input/benchmark probes pass; presented browser accepted |
 | `src/control/flight-reset.ts` | Only Run uses its two transform assignments | Remove wrapper when the fresh-run sequence establishes required initialization | Existing Run startup/restart | Imported reset wrapper; reset-only visitor semantics | D1/D2; concrete restart gate first, preserve local head pose |
 | `src/levels/show-renderer-preparation.ts` | Only Run passes World resources through `ShowRenderWorld` | Delete file, retain operations | Existing World closure | `ShowRenderWorld`, separate preparation wrapper/import | #73 implemented; unchanged preparation and failure restoration verified |
 | `src/levels/sense-layers.ts` | Recipe membership and named heat variant depend on spreads | Delete after concrete level-to-show proposal | Explicit independent level settings and module defaults | Layer objects, imports and spread-order dependency | D3/#85; compare effective settings and remove indirection; explicit configuration growth allowed |
