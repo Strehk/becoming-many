@@ -51,14 +51,19 @@ export interface OrganTimeline {
  */
 export const STEP_LOOKAHEAD_SECONDS = 0.15;
 
+// Tone 14.8.49 Source.start requires GT(next, previous); its comparison uses
+// one microsecond. Reject overlapping dispatches without changing note times.
+const MINIMUM_AUDIO_START_SEPARATION_SECONDS = 1e-6;
+
 interface Track {
   readonly sequencer: StepSequencer;
   readonly visit: (stepIndex: number, stepShowTimeSeconds: number) => void;
   isActive: boolean;
 }
 
+/** An unavailable audio clock means its output context is not running. */
 export function createOrganTimeline(
-  readAudioTimeSeconds: () => number,
+  readAudioTimeSeconds: () => number | undefined,
   lookaheadSeconds = STEP_LOOKAHEAD_SECONDS,
 ): OrganTimeline {
   const tracks = new Set<Track>();
@@ -72,9 +77,12 @@ export function createOrganTimeline(
     follow: (clock): void => {
       if (!clock.isPlaying || !(clock.timeScale > 0)) return;
 
+      const nextAudioTimeSeconds = readAudioTimeSeconds();
+      if (nextAudioTimeSeconds === undefined) return;
+
       showTimeSeconds = clock.showTimeSeconds;
       timeScale = clock.timeScale;
-      audioTimeSeconds = readAudioTimeSeconds();
+      audioTimeSeconds = nextAudioTimeSeconds;
       for (const track of tracks) {
         if (!track.isActive) continue;
         track.sequencer.advance(showTimeSeconds, lookaheadSeconds, track.visit);
@@ -88,14 +96,24 @@ export function createOrganTimeline(
       return {
         addSteps: (stepSeconds, fire): StepTrack => {
           const sequencer = createStepSequencer(stepSeconds);
+          // Show seeks and audio suspension do not retract future steps already
+          // handed to the voice. Keep this frontier across lane reactivation.
+          let lastDispatchedAudioTimeSeconds = Number.NEGATIVE_INFINITY;
           const track: Track = {
             sequencer,
             visit: (stepIndex, stepShowTimeSeconds): void => {
-              fire(
-                stepIndex,
+              const nextAudioTimeSeconds =
                 audioTimeSeconds +
-                  (stepShowTimeSeconds - showTimeSeconds) / timeScale,
-              );
+                (stepShowTimeSeconds - showTimeSeconds) / timeScale;
+              if (
+                nextAudioTimeSeconds <=
+                lastDispatchedAudioTimeSeconds +
+                  MINIMUM_AUDIO_START_SEPARATION_SECONDS
+              ) {
+                return;
+              }
+              fire(stepIndex, nextAudioTimeSeconds);
+              lastDispatchedAudioTimeSeconds = nextAudioTimeSeconds;
             },
             isActive,
           };

@@ -9,7 +9,7 @@
  *   stands is decided by the show; how a voice sounds is decided by the voice.
  */
 
-import { getListener, now } from "tone";
+import { getContext, getListener } from "tone";
 import type { DroneOrganFrame, DroneOrganOptions } from "./drone-organ";
 import {
   DRONE_ORGAN_COMPOSITION,
@@ -72,10 +72,12 @@ export interface OrganRuntime {
 export function startOrganRuntime(options: DroneOrganOptions): OrganRuntime {
   const composition = DRONE_ORGAN_COMPOSITION;
   const engine = createOrganEngine(composition, options.pulseSeconds);
-  // Steps are placed against Tone's `now()`, which already stands its own
-  // lookahead past the hardware clock, so a step at the near edge of the
-  // window is still scheduled ahead of the audio thread.
-  const timeline = createOrganTimeline(now);
+  // The Show timebase can keep running while Tone is suspended. Only plan
+  // notes when this output context runs; its now() includes the audio lookahead.
+  const audioContext = getContext();
+  const timeline = createOrganTimeline(() =>
+    audioContext.state === "running" ? audioContext.now() : undefined,
+  );
   const listener = getListener();
   const nearest: AnchorPoint = { x: 0, y: 0, z: 0 };
   // The pose the listener currently stands at, so a visitor holding still —
