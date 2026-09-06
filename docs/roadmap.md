@@ -100,7 +100,7 @@ do not authorize silently choosing an operation or architecture to meet ten.
 
 | Work | Smallest scope / prerequisite |
 | --- | --- |
-| Current human gate | Continuation after the concrete #80/#73/#20 report is authorized at `0a746e7`; next block 1/3, #27 locally verified. Cumulative review follows at most #27/#26/#32. Individual listening/device acceptance and #73 technical verification remain unresolved. |
+| Current human gate | Current #27/#26/#32 block is 3/3, with #32 committed at `b1b9a63`. Cumulative review is due before another implementation. Individual listening/device acceptance and #73 technical verification remain unresolved. |
 | #42 + #54, start early | Obtain the actual Windows/GPU/driver/browser/XR/streaming/USB/headset matrix and reproduce entry/re-entry/audio/operator behavior with existing tools. Basic commissioning does not require #14; later diagnostic detail can use it. No Mac substitute for physical results. |
 | #78, bounded investigation | Fix a camera pose and comparable conditions, identify intended scene/available contents, repeat counters and explain significant differences. Then propose the exact checked reference. No exhaustive historical-triangle archaeology and no automatic baseline update. |
 | #80, technically implemented | Remove animal–Mycelium producers, projections, contracts, wiring, reserved pool ranges, settings and exclusive tests together. First enumerate existing fixed anchor classes. Preserve animal animation/movement and Scent/Thermal data; no other content removal. |
