@@ -77,24 +77,23 @@ silently expand the current block. #13’s migration/removal stage precedes
 do not require #13 to close before implementing its dependent corrections. #22 remains closed not planned: retain the
 actively consumed Material override and its compatibility evidence.
 
-### Next-session target: ten issues
+### Active goal: prepare the opening tutorial
 
-The user requests at least ten resolved issues. The following ten candidates
-preserve actual dependencies while advancing independent performance work.
-An implementation, proposal or pending physical acceptance is not a closed
-issue. Do not manufacture changes, split issues for the count, or waive gates.
+Resolve the important prerequisites so the existing system can host the opening
+tutorial. Tutorial content and implementation (#50), and unrelated product
+additions, are outside this goal. Do not count proposals or pending acceptance
+as resolved issues. Every implementation block must reduce production code.
 
-| Block | Ordered candidates | Outcome and prerequisite |
+| Priority | Existing issues | Readiness requirement |
 | --- | --- | --- |
-| 1 | #27 → #26 → #32 | Narrow existing Scent contracts, remove synchronous queue bypass, then measure Thermal's current cost. #26/#32 retain physical 90 Hz acceptance. |
-| 2 | #17 → #18 → #38 | Reset the entire host-bound M5 lifetime, validate one input stream, then simplify the flight boundary. Confirm physical axis/polarity before changing its semantics. |
-| 3 | #25 → #13 → #72 | Reconcile only remaining ambiguous names after #38; remove legacy Grass completely; compare Clipmap bounds correctness/cost. Do not force a rename if earlier changes retire its purpose. #13 migration can unlock #72 before final physical acceptance. |
-| 4 | #71 | Let existing World Surface own continuous zone weights; remove competing hard visual-density branches. Depends on Clipmap migration and retains visual/performance acceptance. |
+| 1 | #17 → #18 → #38; #25 only if still needed | One validated flight-input path with complete host replacement and clear ownership. |
+| 2 | #9, #16, #14, #85 | Complete Run lifetime, one prepared world, bounded diagnostics and explicit level/show construction. Restart and level/show proposals precede their dependent implementation. |
+| 3 | #35 → #36, #42/#54 → #46 | Shared commands and a validated visitor start/calibration flow. Obtain Windows-PCVR operating facts early. |
+| 4 | #73, #26/#32 and relevant rendering blockers | Resolve clock uncertainty and verify target installation performance; local browser checks alone are insufficient. |
 
-Review after each block of at most three implementations. Prepare #42/#54's
-physical inventory and #9/#85's concrete restart/level-show proposals alongside
-read-only work. These unresolved dependencies can limit actual closures; they
-do not authorize silently choosing an operation or architecture to meet ten.
+The current 3/3 human review remains due. Until it is provided, prepare concrete
+proposals and investigate dependencies without starting another implementation.
+Keep the tutorial's content, duration, audio rights and learning tasks open.
 
 ## Immediate Work and Dependencies
 

@@ -73,14 +73,12 @@ Every implementation ends with these questions, answered briefly in its issue:
   tests/test tools, and documentation/measurement artifacts, including untracked
   files. Did states, forwarding, dependencies and required file jumps decrease?
 
-Structural refactors should leave less production logic and fewer connections
-and concepts. Explain production growth before completion: a necessary bug fix
-can justify it; a claimed simplification with more structure must be reworked
-or explicitly decided. More explicit level parameters are allowed when they
-replace indirect configuration, scripts or wiring; name those deletions and
-compare effective settings. Use `test.level.ts` as the readability reference.
-Dense code, weak names and moved files do not count as removal. Use the existing
-issue review and human gates; add no audit framework or mandatory report file.
+Each refactor block must reduce production code, states and indirection while
+preserving readability and verified behavior. Necessary bug-fix additions must
+be offset by real removal in that block; growth is an unmet refactor outcome.
+Count authored configuration too, and report tests and documentation separately.
+Remove superseded paths and exclusive tests together. Moving, minifying or
+hiding code outside the count is not removal. Use `test.level.ts` as the reference.
 
 Fallow supplements review: distinguish inherited findings from regressions,
 prove new boundary rules with a temporary violation, then remove that fixture.

@@ -20,7 +20,7 @@ These standards guide readable code; they do not require new infrastructure.
   redundant arguments before inventing an options object or another interface.
 - A structural refactor should remove obsolete concepts and paths, not merely
   move or rename them. Replace implementation, consumers, contracts, settings
-  and exclusive tests together. Necessary bug-fix growth needs a concrete reason.
+  and exclusive tests together. Each block must leave the system smaller.
 - Preserve clear formatting. Minifying, packing statements or moving files
   outside the count is not simplification.
 
