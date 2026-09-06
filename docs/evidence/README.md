@@ -1,0 +1,26 @@
+# Refactor Evidence
+
+Dated results belong to the issue that produced them. Current readiness and
+human decisions live only in the [roadmap](../roadmap.md).
+
+| Packet | Scope |
+| --- | --- |
+| [#75](issue-75/README.md) | Original tooling gates, smoke, all-level replay, sought transitions and failed English attempt |
+| [#77](issue-77/README.md) | Type-only contract relocation, identical build manifest, boundary proof |
+| [#78](issue-78/README.md) | Historical counter attribution and unapproved reference diff |
+| [#79](issue-79/README.md) | Audio diagnosis/correction, before/after rendering and ordinary final EN/DE |
+| [#82](issue-82/README.md) | Gather recovery, regression proof, rendering comparison and failed pointer-lock view |
+
+JSON packets keep records under their original report names. References resolve
+through [run-contexts.json](run-contexts.json): `identityRef` supplies revision,
+source/diff hashes, the shared host and one exact `dirtyFiles` set; `rendererRef`
+supplies the actual GPU descriptor; `messageRef` plus `count` preserves repeated
+warnings in order; `displayRef` supplies the observed display description.
+All individual performance, counter and streaming values remain in their runs.
+This is a data index, not a new generator or application format.
+
+Only the oversized exception lexical dump was reduced to the full error stack,
+exact scheduling times, relevant state timeline/context and raw capture hash.
+Other records reconstruct to their previous values using the shared metadata.
+Original full captures remain in ignored `benchmark-results/`; essential facts
+are retained here. These records are evidence, not integration or acceptance.

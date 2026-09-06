@@ -4,10 +4,21 @@ The current `src/` and `public/` trees define the running system. Documentation
 separates verified implementation, forward work, installation direction, and
 dated evidence.
 
+## Refactor Workstream
+
+- [Target Architecture](target-architecture.md) — binding target responsibilities,
+  direct start/frame/end flows, deletion ledger and explicitly open decisions.
+
+- [Roadmap](roadmap.md) — the binding plan, resume checkpoint, issue order,
+  M0 checklist, and milestones; start here after context compression.
+- [Refactor Workflow](refactor-workflow.md) — mandatory issue execution,
+  architecture reviews, human gates, GitHub feedback, and completion records.
+- [Refactor Test Plan](refactor-test-plan.md) — local gates, browser scenarios,
+  performance comparisons and evidence rules.
+
 ## Current System
 
-- [Current Status](current-status.md) — concise implementation and verification
-  snapshot.
+- [Current Status](current-status.md) — implemented behavior; readiness and verification history live elsewhere.
 - [Architecture](architecture.md) — runtime composition, ownership, lifecycle,
   and contracts.
 - [Architecture Decisions](architecture-decisions.md) — current decisions that
@@ -22,7 +33,6 @@ dated evidence.
   cross-module contracts.
 - [Platforms](platforms.md) — browser, station, PICO, and PCVR status.
 - [Performance](performance.md) — accepted evidence, targets, and open risks.
-- [Roadmap](roadmap.md) — remaining issue-backed work only.
 
 ## Installation Direction
 
@@ -32,6 +42,9 @@ planned, or open. Open decisions remain in
 [Open Decisions](direction/open-decisions.md) and must not be resolved silently.
 
 ## Evidence and References
+
+- [Refactor Evidence](evidence/README.md) — dated results and shared run metadata,
+  with individual measurements retained under their originating issue.
 
 - [Browser Performance Audit — 2026-08-24](performance-audit-2026-08-24.md)
   preserves its dated desktop measurements.

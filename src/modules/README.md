@@ -1,6 +1,6 @@
 <!--
 Purpose: Document ownership rules for unloadable world and perception modules.
-Context: Level Runtime composes enabled features over permanent World infrastructure.
+Context: Level Composition constructs enabled features over permanent World infrastructure.
 Responsibility: Summarize current module categories and cross-module contracts.
 Boundary: Concrete modules do not import siblings or own the global render loop.
 -->
@@ -29,7 +29,7 @@ dispose everything they create.
 
 ## Boundaries
 
-Concrete modules never import siblings. Level Runtime wires narrow neutral
+Concrete modules never import siblings. Level Composition wires narrow neutral
 contracts for world facts, material effects, live bodies, motion positions,
 scent sources, and connection nodes. Consumer-specific placement, rendering,
 settings, capacity, and disposal remain with the consumer.

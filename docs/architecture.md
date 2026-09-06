@@ -119,6 +119,23 @@ contracts such as `WorldSurface`, `UnlitMaterialEffect`, `MotionPointSource`,
 `ScentSource`, and `ConnectionNodeSource`; the composition root performs the
 wiring in `src/levels/level-composition.ts`.
 
+Under #77, the unchanged `TerrainMaterialEffect` contract now lives beside the
+semantically distinct `UnlitMaterialEffect` in the existing shared material-effect
+file. Terrain, Mycelium and Level Composition import it directly; the old Terrain
+export is removed without a shim. The early #11 gate reports zero boundary
+violations and still rejects an intentional sibling import. Browser/counter
+verification is complete: smoke passes, counters match both prior runs, and
+all 106 production files are byte-identical. See [#77 evidence](evidence/issue-77/README.md).
+Human package acceptance remains pending.
+
+Mycelium retains rejected gather jobs only until the existing StreamQueue
+accepts them, bounded by its current gather-window capacity. Reassignment clears
+old node/edge ranges immediately; queued work and worker replies validate the
+exact owning stream as well as slot revision. This preserves the existing
+queue/worker owners and prevents old work surviving unload/reload. The focused
+[#82 evidence](evidence/issue-82/README.md) does not claim full application
+lifecycle acceptance.
+
 ## Levels and Show
 
 Files in `src/levels/*.level.ts` are typed startup recipes: each owns its

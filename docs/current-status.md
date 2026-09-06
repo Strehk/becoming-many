@@ -1,7 +1,8 @@
 # Current Development Status
 
-Snapshot: 2026-09-03. The current checkout is the authority for all runtime
-details.
+As-built snapshot: 2026-09-06, source checkpoint `5856c35` on `david_refactor`.
+Dated measurement packets retain the earlier exact identities they tested;
+the current checkout is the authority for runtime details.
 
 ## Product State
 
@@ -108,40 +109,23 @@ issue and a bounded implementation.
 - The Bun station server serves `dist/`, `/config`, and `/health`; it carries no
   show state. Docker packaging and a Windows kiosk launcher are present.
 
-## Verification Snapshot
+## Refactor Changes in the Current Checkout
 
-Verified on 2026-09-03 after the animal passages joined the drone organ on the
-show clock:
+- `TerrainMaterialEffect` is shared by Terrain, Mycelium and Composition from
+  the existing material-effect contract file; concrete sibling imports are gone.
+- The organ dispatches no steps when Tone time is unavailable. Tracks retain
+  callback-dispatch timestamps across suspension/seek to avoid scheduling into
+  previously dispatched time ranges. A callback may be silent; this is not
+  an audible-note history. Show and Tone retain their separate contexts.
+- Mycelium keeps rejected gather jobs only until the existing queue admits them,
+  bounded by its gather window. Reassignment clears stale GPU rows, and jobs/
+  replies validate the owning stream as well as the slot revision.
+- Browser smoke and ordinary-show observation reuse Bun/Playwright/Station;
+  unexpected benchmark browser failures now fail the run. Shared frame-summary
+  mechanics remain in the existing benchmark owner.
 
-- `bun test`: 481 passed, 0 failed across 69 files.
-- `bun run check`: passed.
-- `bun run lint`: passed.
-- `bun run build`: passed with existing Vite warnings about one extensionless
-  config import and a large output chunk.
-- `bunx fallow`: found no dead files or exports. The remaining unused dependency
-  override, duplication, complexity, and hotspot findings are tracked as
-  cleanup issues; Fallow is not currently clean.
-
-The deterministic benchmark has accepted renderer-counter baselines, but its
-frame times are machine-specific. The grass clipmap and the complete current
-show have not been accepted on a physical PICO 4. Wired Windows/SteamVR/PICO
-startup also remains unverified.
-
-## Remaining Work
-
-The authoritative work list is the repository's open GitHub issues, summarized
-in [roadmap.md](roadmap.md). The largest risks are:
-
-- physical PICO performance and transition spikes, including the drone
-  organ's unmeasured audio cost;
-- PCVR startup and delivery-platform validation;
-- diagnostics, lifecycle, M5, and shader-patch robustness;
-- remaining module-ownership cleanup;
-- measured removal or consolidation of redundant runtime paths.
-
-After this entry-point change, the next dependency-aware engineering sequence
-is #16, #35, then #11. The reasons and completion boundaries are recorded in
-[roadmap.md](roadmap.md); detailed acceptance criteria remain in the issues.
-
-README-only folders under `src/modules` and `src/utils` are reserved extension
-boundaries. They are intentionally retained and do not claim an implementation.
+See [architecture](architecture.md) for ownership, [performance](performance.md)
+for measurement interpretation and [issue evidence](evidence/README.md) for dated
+verification. The [roadmap](roadmap.md) alone records current readiness, review
+accounting, decisions and the next issue. README-only extension boundaries remain
+reserved and do not claim implemented functionality.

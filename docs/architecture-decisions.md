@@ -60,9 +60,18 @@ history belongs in Git; unresolved product and deployment questions belong in
   responsibilities.
 - Narrative senses layer in one composition. The show gates and fades their
   runtime intensities instead of rebuilding the world at every cue.
-- Grass Clipmap is the narrative grass path from Echolocation onward. The older
-  Grass module remains only until current measurements support one owner; the
-  choice is tracked in issue #13.
+- Confirmed 2026-09-05 in [target D5](target-architecture.md#d5--clipmap-only-world-surface-owns-all-zone-transitions):
+  Grass Clipmap is the sole target renderer for Show and all Grass-bearing
+  diagnostic levels. #13 migrates Test/Design Test and removes the complete legacy
+  implementation, contracts, configuration, loading path and exclusive tests.
+  Migration and performance/PICO acceptance remain outstanding; owner selection
+  is settled.
+- World Surface owns zone conditions, thresholds and shared continuous transition
+  weights. Grass Clipmap, Vegetation and Rocks derive their coverage/density from
+  those weights under #71; genuine habitat exclusions retain hard classification
+  from the same conditions. No consumer-local zone authority is permitted.
+  Vegetation footprint representation and #72's precise culling correction remain
+  open as specified in target D5.
 - Magnetic Sense is self-contained and sky-only. It does not patch Terrain,
   Grass, or other module materials.
 - Connections topology is generated in a module-owned worker and published into

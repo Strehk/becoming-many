@@ -7,9 +7,10 @@ read it too.
 
 - **Becoming Many** is a speculative VR experience about layered, non-human
   perception. See [README.md](README.md) for the concept.
-- The core experience and its level sequence are largely implemented. Current
-  work focuses on measured performance improvements, stability, code cleanup,
-  and issue fixes.
+- The core experience and its level sequence are largely implemented. Treat
+  this entire workstream as a controlled refactor: consolidate ownership,
+  preserve clear contracts, and fix causes inside the responsible component.
+  Behavior changes remain explicitly identified as bug fixes or features.
 - Small product additions remain possible when they answer a concrete current
   need, have a dedicated issue, and can be delivered as a small testable step.
 - `src/` and `public/` are the source of truth. The current as-built state is
@@ -20,26 +21,42 @@ read it too.
 
 ## Language
 
+Chat with the user in German.
+
 Everything committed to this repository is written in English: code,
 identifiers, file names, comments, commit messages, documentation, and log
 output. German is limited to experience content such as `script/de.md`,
 narration assets, and audience-facing copy.
 
-## Working Method
+## Branch Protection
 
-- Work on one issue at a time. Before changing code, verify that the issue still
-  describes the current checkout, reproduce the problem where possible, and
-  identify the smallest complete fix.
-- Follow [docs/engineering-standards.md](docs/engineering-standards.md). Prefer
-  removal, reuse, and simplification before adding abstractions or dependencies.
-- Keep changes focused. Do not combine unrelated cleanup with an issue fix.
-- Ask when work depends on an unwritten or open decision. Do not hide product or
-  architecture choices inside implementation details.
-- Update affected documentation and issue descriptions when code changes make
-  them stale. Keep current facts, plans, and historical evidence separate.
-- Finish each change with its relevant verification gates passing, or state
-  exactly what remains unverified.
-- Develop on feature branches. Do not commit or push unless asked.
+- Work exclusively on the `david_refactor` branch. Before any file change,
+  commit, pull, rebase, merge, or push, verify that `git branch --show-current`
+  returns `david_refactor`; stop immediately if it does not.
+- Never check out, modify, merge into, rebase, commit to, or push to `main`. All work,
+  commits, pulls, rebases, and pushes for this refactor target
+  `origin/david_refactor` only.
+- Do not create or use additional feature branches. Do not commit or push unless
+  explicitly authorized. Preserve existing local changes.
+
+## Required Reading
+
+The linked workflow and test plan are mandatory, including after context
+compression. Keep procedures and checklists in those documents, not here.
+
+- [Target Architecture](docs/target-architecture.md): binding refactor direction and
+  deletion ledger. Explicitly open decisions remain open; implementation and human
+  acceptance follow the roadmap gates.
+- [Refactor Workflow](docs/refactor-workflow.md): issue execution, architecture
+  review, human gates, GitHub feedback, and completion rules.
+- [Refactor Test Plan](docs/refactor-test-plan.md): local checks, browser
+  acceptance, performance comparisons, and evidence requirements.
+- [Roadmap](docs/roadmap.md): resume checkpoint, M0 preparation, ordered issues,
+  milestones, and external dependencies. Start at its resume checkpoint.
+- [Engineering Standards](docs/engineering-standards.md),
+  [Architecture](docs/architecture.md), and
+  [Architecture Decisions](docs/architecture-decisions.md): implementation
+  rules and confirmed ownership boundaries.
 
 ## Architecture Boundaries
 
@@ -48,7 +65,10 @@ narration assets, and audience-facing copy.
   through narrow TypeScript contracts.
 - Concrete modules never import sibling modules. Extend an existing boundary
   instead of reaching around it or creating a parallel runtime.
-- Keep one Three.js render loop. The creator of a resource disposes it.
+- Keep one renderer, one Three.js render loop, and one show-time authority per
+  running application. The creator of a resource disposes it.
+- Confirmed architecture boundaries are binding. Do not silently change them,
+  add competing owners, or conceal a workaround behind a new abstraction.
 - Keep runtime work and memory bounded through fixed capacities, pooling,
   recycling, and frame-budgeted jobs.
 - All authored configuration is typed TypeScript. JSON under `public/` records
@@ -57,17 +77,14 @@ narration assets, and audience-facing copy.
 - README-only source folders are reserved extension boundaries. Keep their
   READMEs until that product area is either implemented or explicitly retired.
 
-## Toolchain and Verification
+## Toolchain
 
 - Bun manages packages and tests; Vite builds the application; Biome checks
   formatting and lint; Fallow reports export, dependency, duplication, and
   complexity findings.
 - Development commands: `bun run dev`, `bun run station`, and
   `docker compose up -d --build` for a complete station container.
-- Before checkpoints and commits, run `bun test`, `bun run check`,
-  `bun run lint`, `bun run build`, and `bunx fallow`.
-- `bun run benchmark` replays a deterministic browser route after a current
-  build. It is separate from the standard test suite.
+- Verification commands and their required cadence live in the test plan.
 
 ## Performance
 
