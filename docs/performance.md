@@ -110,7 +110,7 @@ Each report counts every interval above its90 Hz/11.111 ms reference. On this
 60 Hz desktop those are not missed headset frames. External RAF intervals are
 not GPU duration or physical PICO acceptance. Fifteen responses/eight narration
 files and ten construction warnings per language do not prove audible output;
-human listening remains pending.
+human listening was subsequently accepted on 2026-09-06 (see the roadmap).
 
 The [#79 Echo proxy](evidence/issue-79/README.md#rendering-proxy-beforeafter-the-audio-correction)
 and [#82 Connections comparison](evidence/issue-82/README.md#production-browser-and-rendering-comparison)
@@ -121,9 +121,11 @@ Seven quick references remain failing and unchanged pending explicit #78 review.
 
 The original #75 strict-start exception remains unassigned despite the separately
 proved/corrected suspended-Tone defect and passing final shows. The additional
-pointer-lock ground-view attempt failed separately under #83: it is an unresolved
-visual-validation limitation, not a proven rendering defect or timing regression.
-Physical PICO, human visual/audio and M0 acceptance remain open.
+automated pointer-lock ground-view attempt failed separately under #83. The later
+human Chrome look/relock and Connections view passed; the automated rejection
+remains unexplained, without a proven rendering defect or timing regression.
+The user accepted the presented human visual/audio checks on 2026-09-06.
+Physical PICO, exact #78 reference and complete M0 acceptance remain open.
 
 ## Open Measurement Work
 

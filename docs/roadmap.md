@@ -11,15 +11,15 @@ are not implementation approval. Live issues own acceptance criteria.
 | Field | Current state |
 | --- | --- |
 | Branch / integration | `david_refactor` only; the user explicitly authorized focused local commits and continued issue work. Push, main and extra branches remain unauthorized. |
-| Implemented | Historical block #21/early #11/#75:3 stages; authorized continuation #77/#79/#82:3 implementations. No fictitious review/reset of either count. |
-| User feedback | The user challenged documentation/test growth and authorized this size-reduction correction with explicit refactor rules. This is real corrective feedback on the current block, not M0 or audible-output acceptance. |
-| Current work | #83 bounded diagnosis completed at clean `307b435`; installed Chrome still rejects pointer lock. Await actual human click → look → Escape → relock comparison ([result](https://github.com/Strehk/becoming-many/issues/83#issuecomment-5557756330)). No source correction or cause assigned. #22 closed not planned after read-only reconciliation; no dependency change or implementation-count increment. |
-| Next gate | The user requested completion of this block's acceptance. Independent technical review is complete; actual human mouse/visual/listening observations, cumulative approval and the exact #78 reference decision are still required. The request alone supplies no test observation or baseline decision. Do not begin M1 or reset review counts yet. |
+| Implemented | Historical #21/early #11/#75 and #77/#79/#82 blocks reviewed. After the independent review and prepared human checks, the user confirmed all presented behavior works and authorized commits and the next wave. New wave count: 0/3, ordered #12 → #74 → #39. |
+| User feedback | On 2026-09-06 the user confirmed all three presented browser checks work: mouse look/Escape/relock, Connections movement/standstill, and Echo pause/backward seek/resume with EN/DE listening. This accepts the reviewed local behavior at `0e064cb` (application unchanged from `2db5755`). No physical-device result or exact numerical reference approval was reported. |
+| Current work | Record and commit human acceptance, then execute the explicitly authorized independent local wave #12 → #74 → #39. #83 human input now passes; the prior automated rejection remains preserved without an assigned cause. #22 remains closed not planned. |
+| Next gate | The user explicitly authorized the next wave after accepting the presented block. This scoped continuation proceeds while #78 remains open and its baseline unchanged; it does not declare complete M0/reference acceptance. Next cumulative human review after #12/#74/#39, before further implementation. |
 | Acceptance audit | At clean `2db5755`, independent source/history review found no introduced architecture blocker: existing owners retain one loop/clock/queue; #77 removes the old import route, #79 bounds dispatch history, #82 rejects stale work and removes four redundant staging parameters. Existing startup/disposal gaps remain #73/#9; open target decisions remain open. Application TypeScript +65 lines, test TypeScript +1,300, documentation +1,766, JSON evidence +5,702, reference candidate +74, configuration +91: total +8,998 against `9bfb84b`. This is a qualified technical pass, not human or milestone acceptance. |
 | Verified application evidence | Historical final EN/DE each521s without unexpected errors; smoke14/14; repeatable counters/queue, but seven stored #78 references still fail. Exact tested identities and limits are in [evidence](evidence/README.md). |
 | Analyzer delta | Fallow 3.21/3.22 remains exit 1: 3 dead-code, 10 clone groups, 24 health findings. The +2 health entries follow deliberate inlining in smoke `main`/`runSmokeRoute`; independent review found the same necessary error paths and no owner violation. No suppression or performance exception. Older 22-health measurements remain historical. |
 | Correction verification | 482 tests / 26,639 assertions / 64 files; typecheck, lint, build, real boundaries and diff pass. Smoke 14/14; eight sought cues × first/repeat = 16 transition observations pass. A thrown pageerror in generated `dist/test.html` makes the same smoke fail: 11 affected routes red, three untouched green, 11 failure trace/image pairs; artifact restored byte-for-byte. Logs: `benchmark-results/lean-refactor-20260906T062328Z`. These are functional correction checks, not new performance or full-show measurements. |
-| Open acceptance | Original #75 strict-start cause unassigned despite a distinct #79 fix; #83 automated rejection reproduced; native human comparison and effective ground view remain unverified; actual listening/visual review, explicit #78 reference approval and M0 acceptance remain open. |
+| Open acceptance | Human browser/visual/listening and cumulative block review are accepted. Original #75 strict-start cause remains unassigned despite a distinct #79 fix; the #83 automated failure remains historical evidence. Exact #78 reference approval and complete M0 acceptance remain open. |
 | External | Physical PICO 90 Hz, M5/ICAROS, Windows PCVR and venue stations remain unaccepted |
 
 After compression: branch/status, AGENTS, linked rules, this checkpoint, then the
@@ -35,16 +35,16 @@ source at `2db5755` has digest
 `d901a111db0408b048439e2ea0a0ddd689570590d79eb200cdf602a34ff6db1a`, unchanged from
 the prior functional checks and #83 probe. Later acceptance-record edits are
 documentation only; historical measurements retain their own identities.
-Use `/test.html?level=test`, `/test.html?level=connections`, then
-`/conductor.html` for the actions below. Record actual observations before closing
-the corresponding issue; no new automated replay is needed for this audit.
+The user subsequently confirmed every presented action below works and requested
+commits and the next issue wave. This records human acceptance on the unchanged
+application at `0e064cb`; no new automated measurement is claimed.
 
 | Action | Concrete observation / code |
 | --- | --- |
-| Test initial scene and actual canvas/mouse input | Compare startup view; pointer lock previously failed under #83. A requested look is not a moved camera. #77: existing material-effect contract and Terrain/Mycelium callers. |
-| Connections move, then stand still, only after input works | Inspect ground/network continuity and stale content. #82: `mycelium.ts` and existing regressions; no full-topology claim from fixed counters. |
-| Echo Play/Hold/short backward seek/resume | Listen for recurring organ without overlap. #79: `organ-runtime.ts`, `organ-timeline.ts`, existing tests; callback dispatch may be silent. |
-| EN/DE change and Play | Correct narration and organ without overlap; automated responses/clock progress do not replace hearing. |
+| Test initial scene and actual canvas/mouse input | Accepted by the user: startup view and actual mouse look/Escape/relock. Prior automated #83 failure remains recorded. #77: existing material-effect contract and Terrain/Mycelium callers. |
+| Connections move, then stand still, only after input works | Accepted by the user: ground/network continuity during movement and standstill. #82: `mycelium.ts` and existing regressions; no full-topology claim from fixed counters. |
+| Echo Play/Hold/short backward seek/resume | Accepted by the user: recurring organ through pause/backward seek/resume, without unintended overlap. #79: `organ-runtime.ts`, `organ-timeline.ts`, existing tests; callback dispatch may be silent. |
+| EN/DE change and Play | Accepted by the user: correct EN/DE narration and organ without unintended overlap. |
 
 Review the [exact #78 candidate](evidence/issue-78/quick-reference-candidate.diff)
 with its [attribution and uncertainty](evidence/issue-78/README.md). Full context/
@@ -63,7 +63,9 @@ New visitor reuses the world, not complete Run dispose/start.
 | M5 | #50 → #47 → #48 → #49 → #51 after decisions | Tutorial/encounters/credits/full experience |
 | M6 | #42/#54 and integration handover | Both real stations, recovery, exact proposed commit set |
 
-No milestone is accepted. [Tracker#76](https://github.com/Strehk/becoming-many/issues/76)
+The local human block review is accepted; no complete milestone or numerical
+reference acceptance is inferred. The next local wave is explicitly authorized
+with #78 retained open. [Tracker#76](https://github.com/Strehk/becoming-many/issues/76)
 and [milestones](https://github.com/Strehk/becoming-many/milestones) mirror this plan.
 M0 accepts only early stages of #11/#21; #11 stays open for M2, avoiding a circular
 gate. #42 can proceed after #14 when its real hardware exists; collect #54 inventory
@@ -124,7 +126,8 @@ Decision=explicit product/ownership choice first.
    (**Decision/Mixed**): reconcile the direct-branch workflow, then establish
    the evidence format before performance-sensitive changes.
 2. Complete the remaining M0 checklist above through separately scoped issues,
-   including the early stage of #11. Human M0 acceptance gates the sequence below.
+   including the early stage of #11. Complete M0 acceptance normally gates the sequence below; the user explicitly
+   authorized the first local wave after the human block review, with #78 still open.
 
 ### 2. Independent local cleanup and contracts
 
