@@ -31,8 +31,10 @@ The smoke checks `/health` and `/config`, all four HTML entries, all nine level
 paths from the level-name catalog, and a query-selected level. Readiness means
 finished startup and a usable canvas, rather than HTTP success alone. Rehearsal
 and Conductor checks cover audio wake, play, pause, language selection, cue seek,
-reset, and a second play. Flash checks stop at the ready interface and disabled
-device commands; they do not open serial ports or write device settings.
+reset, and a second play. Flash checks readiness, removes legacy stored passwords,
+and submits synthetic credentials through an isolated in-memory serial port.
+Only SSID/device ID survive reload; the password reaches the simulated port but
+never storage or the page log. No physical serial port or device is accessed.
 The report records whether Conductor required a wake gesture; an already
 running audio context legitimately skips its hidden wake overlay.
 

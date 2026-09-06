@@ -2,7 +2,7 @@
  * Purpose: Verify production entries and operator controls in a real browser.
  * Context: Contract tests cannot prove that built pages render and respond.
  * Responsibility: Exercise existing controls and retain evidence of failures.
- * Boundary: The station is started separately; no device writes or timing claims.
+ * Boundary: The station is started separately; no physical device writes or timing claims.
  */
 
 import assert from "node:assert/strict";
@@ -405,5 +405,78 @@ async function checkFlash(page: Page): Promise<void> {
       .getByRole("button", { name: "Connect console", exact: true })
       .count(),
     1,
+  );
+
+  const storageKey = "bm-m5-flash-setup";
+  const station = { ssid: "smoke-wifi", deviceId: "smoke-m5" };
+  const password = "synthetic-smoke-password";
+  for (const [legacy, expected] of [
+    [JSON.stringify({ ...station, password, obsolete: password }), station],
+    [`{"password":"${password}"`, null],
+  ] as const) {
+    await page.evaluate(
+      ({ storageKey, legacy }) => localStorage.setItem(storageKey, legacy),
+      { storageKey, legacy },
+    );
+    await page.reload({ waitUntil: "load" });
+    assert.equal(await page.locator('[name="password"]').inputValue(), "");
+    assert.equal(
+      await page.locator('[name="ssid"]').inputValue(),
+      expected?.ssid ?? "",
+    );
+    assert.equal(
+      await page.locator('[name="deviceId"]').inputValue(),
+      expected?.deviceId ?? "",
+    );
+    assert.equal(
+      await page.evaluate((key) => localStorage.getItem(key), storageKey),
+      expected ? JSON.stringify(expected) : null,
+    );
+  }
+
+  const serialWrites = await page.evaluateHandle(() => {
+    const writes: string[] = [];
+    Object.defineProperty(navigator, "serial", {
+      value: {
+        requestPort: async () => ({
+          open: () => Promise.resolve(),
+          readable: new ReadableStream<Uint8Array>(),
+          writable: new WritableStream<Uint8Array>({
+            write(chunk) {
+              writes.push(new TextDecoder().decode(chunk));
+            },
+          }),
+        }),
+      },
+    });
+    return writes;
+  });
+  await page
+    .getByRole("button", { name: "Connect console", exact: true })
+    .click();
+  await page.locator('[name="ssid"]').fill(station.ssid);
+  await page.locator('[name="deviceId"]').fill(station.deviceId);
+  await page.locator('[name="password"]').fill(password);
+  await page
+    .getByRole("button", { name: "Send configuration", exact: true })
+    .click();
+  await page.waitForFunction((writes) => writes.length === 1, serialWrites);
+  assert.deepEqual(await serialWrites.jsonValue(), [
+    `${JSON.stringify({ type: "configure", ssid: station.ssid, password, deviceId: station.deviceId })}\n`,
+  ]);
+  const log = await page.locator(".flash__log").innerText();
+  assert(log.includes("[redacted]"));
+  assert.equal(log.includes(password), false);
+  assert.equal(
+    await page.evaluate((key) => localStorage.getItem(key), storageKey),
+    JSON.stringify(station),
+  );
+  await serialWrites.dispose();
+  await page.reload({ waitUntil: "load" });
+  assert.equal(await page.locator('[name="password"]').inputValue(), "");
+  assert.equal(await page.locator('[name="ssid"]').inputValue(), station.ssid);
+  assert.equal(
+    await page.locator('[name="deviceId"]').inputValue(),
+    station.deviceId,
   );
 }

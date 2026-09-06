@@ -3,7 +3,7 @@
  * Context: Reached at /flash.html on localhost or another secure context; Web
  *   Serial needs Chrome or Edge.
  * Responsibility: Render the flashing button, the setup form, and the device
- *   log; remember the last-used station credentials in localStorage.
+ *   log; remember only the last-used SSID and device ID in localStorage.
  * Boundary: Flashing is esp-web-tools' job; the serial channel is
  *   serial-setup.ts; the wire contract is src/m5/protocol.ts.
  */
@@ -20,14 +20,12 @@ import {
 } from "./serial-setup";
 
 const MANIFEST_URL = "/firmware/manifest.json";
-// The last-used credentials are a technician convenience on the station
-// machine, not authored configuration — hence localStorage, not a settings file.
+// Remember non-secret technician inputs; the password lasts only this visit.
 const STORAGE_KEY = "bm-m5-flash-setup";
 const LOG_LINE_LIMIT = 300;
 
 interface StoredSetup {
   readonly ssid: string;
-  readonly password: string;
   readonly deviceId: string;
 }
 
@@ -101,11 +99,11 @@ function renderPage(): string {
   `;
 }
 
-// --- Setup form with remembered credentials --------------------------------
+// --- Setup form with remembered station identity ---------------------------
 
 interface SetupForm {
   readonly element: HTMLFormElement;
-  read(): StoredSetup;
+  read(): StoredSetup & { readonly password: string };
 }
 
 function bindSetupForm(container: Element): SetupForm {
@@ -113,14 +111,13 @@ function bindSetupForm(container: Element): SetupForm {
   const stored = loadStoredSetup();
   if (stored) {
     fieldOf(element, "ssid").value = stored.ssid;
-    fieldOf(element, "password").value = stored.password;
     fieldOf(element, "deviceId").value = stored.deviceId;
   }
 
   return {
     element,
     read() {
-      const setup: StoredSetup = {
+      const setup = {
         ssid: fieldOf(element, "ssid").value.trim(),
         password: fieldOf(element, "password").value,
         deviceId: fieldOf(element, "deviceId").value.trim(),
@@ -134,23 +131,26 @@ function bindSetupForm(container: Element): SetupForm {
 function loadStoredSetup(): StoredSetup | null {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return null;
+    if (raw === null) return null;
+    // Remove legacy secrets even when parsing fails or storage cannot be rewritten.
+    localStorage.removeItem(STORAGE_KEY);
     const parsed: unknown = JSON.parse(raw);
     if (typeof parsed !== "object" || parsed === null) return null;
     const record = parsed as Record<string, unknown>;
-    return {
+    const setup: StoredSetup = {
       ssid: typeof record.ssid === "string" ? record.ssid : "",
-      password: typeof record.password === "string" ? record.password : "",
       deviceId: typeof record.deviceId === "string" ? record.deviceId : "",
     };
+    saveStoredSetup(setup);
+    return setup;
   } catch {
     return null;
   }
 }
 
-function saveStoredSetup(setup: StoredSetup): void {
+function saveStoredSetup({ ssid, deviceId }: StoredSetup): void {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(setup));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ ssid, deviceId }));
   } catch {
     // Private windows may refuse storage; the form still works for this visit.
   }
@@ -186,7 +186,9 @@ function bindSerialConsole(
 
   const send = async (command: M5SerialCommand): Promise<void> => {
     if (!channel) return;
-    log.append(`→ ${JSON.stringify(command)}`);
+    log.append(
+      `→ ${JSON.stringify(command.type === "configure" ? { ...command, password: "[redacted]" } : command)}`,
+    );
     try {
       await channel.send(command);
     } catch (error) {
