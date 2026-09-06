@@ -10,6 +10,11 @@ import type { BenchmarkReport } from "../../src/benchmark/benchmark-report";
 import { benchmarkFrameCount } from "../../src/benchmark/benchmark-run";
 import type { BenchmarkProfileName } from "../../src/benchmark/benchmark-settings";
 import type { LevelName } from "../../src/levels/level-catalog";
+import {
+  collectBrowserErrors,
+  readRenderingInfo,
+  readRunIdentity,
+} from "../browser/browser-evidence";
 import type { BenchmarkConditions, LevelFailure } from "./benchmark-artifact";
 import {
   describeLevelProgress,
@@ -45,10 +50,12 @@ export interface BrowserRunResult {
 export async function runLevelsInBrowser(
   request: BrowserRunRequest,
 ): Promise<BrowserRunResult> {
+  const identity = readRunIdentity();
   announceRun(request);
 
   const browser = await launchBrowser(request.isHeaded);
   const reports: BenchmarkReport[] = [];
+  const renderers: BenchmarkConditions["renderers"][number][] = [];
   const failures: LevelFailure[] = [];
   // Wall-clock cost of the levels already finished, which is the only basis
   // this run has for estimating the levels it has not started.
@@ -63,8 +70,10 @@ export async function runLevelsInBrowser(
       );
 
       const outcome = await runOneLevel(browser, request, levelName);
-      if ("report" in outcome) reports.push(outcome.report);
-      else failures.push(outcome.failure);
+      if ("report" in outcome) {
+        reports.push(outcome.report);
+        renderers.push({ levelName, ...outcome.rendering });
+      } else failures.push(outcome.failure);
 
       finishedMilliseconds.push(Date.now() - levelStartedAt);
       announceLevelEnd(request, finishedMilliseconds, index);
@@ -73,7 +82,11 @@ export async function runLevelsInBrowser(
     console.log(
       `Ran ${request.levelNames.length} level(s) in ${formatDuration(Date.now() - startedAt)}.`,
     );
-    return { reports, failures, conditions: describeRun(request, browser) };
+    return {
+      reports,
+      failures,
+      conditions: { ...describeRun(request, browser), identity, renderers },
+    };
   } finally {
     await browser.close();
   }
@@ -108,7 +121,10 @@ function announceLevelEnd(
 }
 
 type LevelOutcome =
-  | { readonly report: BenchmarkReport }
+  | {
+      readonly report: BenchmarkReport;
+      readonly rendering: Awaited<ReturnType<typeof readRenderingInfo>>;
+    }
   | { readonly failure: LevelFailure };
 
 /** One level that cannot finish must not discard the levels that did. */
@@ -118,7 +134,7 @@ async function runOneLevel(
   levelName: LevelName,
 ): Promise<LevelOutcome> {
   try {
-    return { report: await replayLevel(browser, request, levelName) };
+    return await replayLevel(browser, request, levelName);
   } catch (error) {
     const reason = error instanceof Error ? error.message : String(error);
     console.error(`  failed: ${reason}`);
@@ -130,7 +146,10 @@ async function replayLevel(
   browser: Browser,
   request: BrowserRunRequest,
   levelName: LevelName,
-): Promise<BenchmarkReport> {
+): Promise<{
+  report: BenchmarkReport;
+  rendering: Awaited<ReturnType<typeof readRenderingInfo>>;
+}> {
   const context = await browser.newContext({
     viewport: VIEWPORT_BY_PROFILE[request.profileName],
     deviceScaleFactor: 1,
@@ -139,7 +158,7 @@ async function replayLevel(
   context.setDefaultNavigationTimeout(request.levelTimeoutMilliseconds);
 
   const page = await context.newPage();
-  page.on("pageerror", (error) => console.error(`  page error: ${error}`));
+  const errors = collectBrowserErrors(page);
 
   try {
     await page.goto(
@@ -150,7 +169,9 @@ async function replayLevel(
 
     const report = await page.evaluate(() => window.benchmarkReport);
     if (!report) throw new Error(`No report produced for level ${levelName}`);
-    return report;
+    const rendering = await readRenderingInfo(page);
+    if (errors.length > 0) throw new Error(errors.join("; "));
+    return { report, rendering };
   } finally {
     // Never let a close error replace the failure that caused it.
     await context.close().catch(() => undefined);
@@ -218,7 +239,7 @@ function launchBrowser(isHeaded: boolean): Promise<Browser> {
 function describeRun(
   request: BrowserRunRequest,
   browser: Browser,
-): BenchmarkConditions {
+): Omit<BenchmarkConditions, "identity" | "renderers"> {
   return {
     profileName: request.profileName,
     generatedAt: new Date().toISOString(),
@@ -230,6 +251,6 @@ function describeRun(
 
 function describeRendering(isHeaded: boolean): string {
   return isHeaded
-    ? "headed Chromium on this machine's GPU"
-    : "headless Chromium with SwiftShader software rendering";
+    ? "headed Chromium; actual renderer recorded per level"
+    : "headless Chromium with software fallback enabled; actual renderer recorded per level";
 }

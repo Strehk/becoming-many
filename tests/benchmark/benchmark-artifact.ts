@@ -7,6 +7,10 @@
 
 import type { BenchmarkReport } from "../../src/benchmark/benchmark-report";
 import { BENCHMARK_SETTINGS } from "../../src/benchmark/benchmark-settings";
+import type {
+  readRenderingInfo,
+  readRunIdentity,
+} from "../browser/browser-evidence";
 
 /** Everything about a run that changes its numbers and is not in the report. */
 export interface BenchmarkConditions {
@@ -15,6 +19,10 @@ export interface BenchmarkConditions {
   readonly viewport: { readonly width: number; readonly height: number };
   readonly rendering: string;
   readonly browserVersion: string;
+  readonly identity: ReturnType<typeof readRunIdentity>;
+  readonly renderers: readonly (Awaited<
+    ReturnType<typeof readRenderingInfo>
+  > & { readonly levelName: string })[];
 }
 
 /** A level that produced no report; listed so a partial run cannot read as complete. */
@@ -95,6 +103,14 @@ function renderConditions(conditions: BenchmarkConditions): string {
     `- Viewport: ${conditions.viewport.width}x${conditions.viewport.height} at device scale 1`,
     `- Rendering: ${conditions.rendering}`,
     `- Browser: Chromium ${conditions.browserVersion}`,
+    `- Revision: ${conditions.identity.revision}`,
+    `- Source SHA-256: ${conditions.identity.sourceDigest}`,
+    `- Local diff SHA-256: ${conditions.identity.diffDigest}`,
+    `- Machine: ${conditions.identity.platform}; ${conditions.identity.cpu}; Bun ${conditions.identity.bunVersion}`,
+    ...conditions.renderers.map(
+      (gpu) =>
+        `- ${gpu.levelName} renderer: ${gpu.vendor}; ${gpu.renderer}; software: ${gpu.softwareRendering ?? "unknown"}`,
+    ),
     `- Warmup: ${BENCHMARK_SETTINGS.warmupFrames} discarded frames`,
     `- Stream steps per frame: ${BENCHMARK_SETTINGS.streamStepsPerFrame}`,
   ].join("\n");

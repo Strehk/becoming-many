@@ -15,7 +15,7 @@ bun run build
 bun run benchmark                                   # every level, full profile
 bun run benchmark --profile quick --level magnetic  # one level, coarse replay
 bun run benchmark --skip-level test                 # every level but that one
-bun run benchmark --headed                          # measure on a real GPU
+bun run benchmark --headed                          # request a visible browser; inspect recorded GPU
 bun run benchmark --help                            # the flags, without a run
 ```
 
@@ -24,7 +24,7 @@ bun run benchmark --help                            # the flags, without a run
 | `--profile <full\|quick>` | Replay density. `full` is the 90 Hz replay; `quick` is coarser and faster. |
 | `--level <name>` | Repeatable. Defaults to every level in the catalog. |
 | `--skip-level <name>` | Repeatable. Leaves a level out, and wins over `--level`. |
-| `--headed` | Use this machine's GPU. Headless falls back to SwiftShader software rendering. |
+| `--headed` | Request a visible browser. Inspect the recorded renderer; headed mode alone is not GPU proof. |
 | `--out <dir>` | Artifact directory. Defaults to `benchmark-results/`. |
 | `--timeout <seconds>` | Per-level cap. Defaults to 600. |
 | `--check` | Fail when counters differ from the accepted baseline. |
@@ -64,6 +64,11 @@ in density — but enough to decide whether to wait.
 
 Each run writes `<profile>.md` — the readable report, with the run conditions
 that make its numbers meaningful — and `<profile>.json` with every raw value.
+The conditions include revision, source/local-diff digests, OS/CPU, browser,
+and the actual existing WebGL renderer per measured level. Browser exceptions,
+console errors, failed requests/responses, and context loss invalidate that
+level; no successful report is accepted after an unexpected error.
+
 Both are gitignored; commit a report into `docs/` only when it is evidence
 worth keeping.
 
@@ -94,3 +99,8 @@ same machine.
 
 `benchmark-route.test.ts` and `benchmark-report.test.ts` cover the pure route
 and summary logic under `bun test` and need no browser.
+
+For error-strict local acceptance, use the running production station through
+`--base-url http://localhost:4180`. The current Vite `/config` proxy can return
+500 when its station is absent (tracked by #74); this is a failed run, not an
+allowlisted error. See [browser checks](../browser/README.md).

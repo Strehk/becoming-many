@@ -66,7 +66,10 @@ export function summarizeBenchmark(
     profileName,
     frames: samples.length,
     counters: summarizeCounters(samples),
-    timing: summarizeTiming(samples, frameBudgetMilliseconds),
+    timing: summarizeFrameTimes(
+      samples.map((sample) => sample.frameMilliseconds),
+      frameBudgetMilliseconds,
+    ),
     streaming: summarizeStreaming(samples),
   };
 }
@@ -83,21 +86,25 @@ function summarizeCounters(
   };
 }
 
-function summarizeTiming(
-  samples: readonly BenchmarkFrameSample[],
+/** Shared timing statistics for deterministic replay and real-show observations. */
+export function summarizeFrameTimes(
+  intervalsMilliseconds: readonly number[],
   frameBudgetMilliseconds: number,
 ): BenchmarkTiming {
-  const sorted = samples
-    .map((sample) => sample.frameMilliseconds)
-    .sort((first, second) => first - second);
+  const sorted = [...intervalsMilliseconds].sort(
+    (first, second) => first - second,
+  );
 
   return {
     medianMilliseconds: percentile(sorted, 0.5),
     p95Milliseconds: percentile(sorted, 0.95),
     p99Milliseconds: percentile(sorted, 0.99),
     maxMilliseconds: sorted.at(-1) ?? 0,
-    missedFrames: countMissed(samples, frameBudgetMilliseconds),
-    longestMissedRunFrames: longestMissedRun(samples, frameBudgetMilliseconds),
+    missedFrames: countMissed(intervalsMilliseconds, frameBudgetMilliseconds),
+    longestMissedRunFrames: longestMissedRun(
+      intervalsMilliseconds,
+      frameBudgetMilliseconds,
+    ),
   };
 }
 
@@ -114,24 +121,24 @@ function summarizeStreaming(
 }
 
 function countMissed(
-  samples: readonly BenchmarkFrameSample[],
+  intervalsMilliseconds: readonly number[],
   budgetMilliseconds: number,
 ): number {
-  return samples.filter(
-    (sample) => sample.frameMilliseconds > budgetMilliseconds,
+  return intervalsMilliseconds.filter(
+    (interval) => interval > budgetMilliseconds,
   ).length;
 }
 
 /** A single long spike reads differently from many consecutive dropped frames. */
 function longestMissedRun(
-  samples: readonly BenchmarkFrameSample[],
+  intervalsMilliseconds: readonly number[],
   budgetMilliseconds: number,
 ): number {
   let longest = 0;
   let current = 0;
 
-  for (const sample of samples) {
-    current = sample.frameMilliseconds > budgetMilliseconds ? current + 1 : 0;
+  for (const interval of intervalsMilliseconds) {
+    current = interval > budgetMilliseconds ? current + 1 : 0;
     longest = Math.max(longest, current);
   }
   return longest;
