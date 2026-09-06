@@ -46,7 +46,8 @@ The #80 animal-connection removal is implemented below. Small additions remain i
 - `level-runtime.ts` owns startup and frame coordination;
   `level-composition.ts` owns assets, World Surface creation, concrete module
   construction, and cross-module wiring. `show-runtime.ts` owns show following,
-  and `flight-control-source.ts` owns desktop/M5 arbitration.
+  while Runtime selects desktop/M5 input directly in its local frame. World
+  owns the stopped renderer, GPU preparation and subsequent loop start.
 - Static presentation or the schedule's opening show state is applied before
   modules size their fixed spatial windows.
 - Test UI metrics are supplied only by the Test and Conductor entries. The

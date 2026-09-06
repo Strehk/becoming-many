@@ -19,7 +19,7 @@ frame while an M5 host is configured — a quality-0 frame is neutral steering,
 so a dropped poll continues the glide and gentle descent. Keyboard movement
 returns when the host is cleared; the frames come from `src/m5`.
 
-`flight-control-source.ts` owns the one runtime choice between those adapters:
+The local frame in `src/levels/level-runtime.ts` selects the input directly:
 an available M5 frame has exclusive control for that frame; otherwise desktop
 input updates the same viewer rig.
 

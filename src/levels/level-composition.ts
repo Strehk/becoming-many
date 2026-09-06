@@ -28,10 +28,7 @@ import {
   createEchoDepth,
   type EchoDepthEffect,
 } from "../modules/echo-depth/echo-depth";
-import {
-  createEndCreditsPanel,
-  type EndCreditsPanelHandle,
-} from "../modules/end-credits/end-credits-panel";
+import { createEndCreditsPanel } from "../modules/end-credits/end-credits-panel";
 import { createGrassClipmapModule } from "../modules/grass-clipmap/grass-clipmap";
 import { getGrassZoneCoverage } from "../modules/grass-clipmap/grass-height-field";
 import {
@@ -147,24 +144,6 @@ export function composeLevel(options: LevelCompositionOptions): ComposedLevel {
     worldSurface,
     testModules: options.testModules,
   };
-  const configured = createConfiguredModules(setup);
-
-  return {
-    worldSurface,
-    modules: configured.modules,
-    reach: configured.reach,
-    hasGround:
-      options.level.invisibleGround === true ||
-      hasVisibleSurface(options.level),
-  };
-}
-
-interface ComposedWorld {
-  readonly modules: readonly WorldModule[];
-  readonly reach: ShowWorldReach;
-}
-
-function createConfiguredModules(setup: LevelSetup): ComposedWorld {
   const modules: WorldModule[] = [];
   const gates = new Map<ShowSense, WorldModule[]>();
   const add = (
@@ -243,60 +222,27 @@ function createConfiguredModules(setup: LevelSetup): ComposedWorld {
   add(undefined, endCredits?.module);
 
   return {
+    worldSurface,
     modules,
-    reach: composeShowReach(gates, {
-      scent,
-      motion,
-      thermal,
-      magnetic,
-      connections,
-      passages,
-      structureFade,
-      animalsFade,
-      endCredits,
-    }),
-  };
-}
-
-/**
- * Everything with a runtime driver, as composed — present when created. Echo
- * is absent by design: its ramp needs no fade because the surfaces it
- * decorates already dissolve through the World Fade, which rides the echo
- * strength itself.
- */
-interface ComposedSenseHandles {
-  readonly scent: ScentParticlesModuleHandle | undefined;
-  readonly motion: MotionSenseModuleHandle | undefined;
-  readonly thermal: ThermalPerceptionEffects | undefined;
-  readonly magnetic: MagneticSenseModuleHandle | undefined;
-  readonly connections: ConnectionsModuleHandle | undefined;
-  readonly passages: AnimalPassagesModuleHandle | undefined;
-  readonly structureFade: WorldFadeEffect | undefined;
-  readonly animalsFade: WorldFadeEffect | undefined;
-  readonly endCredits: EndCreditsPanelHandle | undefined;
-}
-
-function composeShowReach(
-  gates: ReadonlyMap<ShowSense, readonly WorldModule[]>,
-  handles: ComposedSenseHandles,
-): ShowWorldReach {
-  return {
-    gates,
-    senses: {
-      scent: handles.scent?.setIntensity,
-      motion: handles.motion?.setIntensity,
-      thermal: handles.thermal?.setIntensity,
-      magnetic: handles.magnetic?.setIntensity,
-      connections: handles.connections?.setIntensity,
+    hasGround:
+      options.level.invisibleGround === true ||
+      hasVisibleSurface(options.level),
+    reach: {
+      gates,
+      // Echo surfaces already dissolve through their world fade.
+      senses: {
+        scent: scent?.setIntensity,
+        motion: motion?.setIntensity,
+        thermal: thermal?.setIntensity,
+        magnetic: magnetic?.setIntensity,
+        connections: connections?.setIntensity,
+      },
+      worldFades: { structure: structureFade, animals: animalsFade },
+      setSkyBackground: magnetic?.setSkyBackground,
+      setEndCreditsPresence: endCredits?.setPresence,
+      followPassages: passages?.followShowTime,
+      readMotionActorCenters: motion?.readActorCenters,
     },
-    worldFades: {
-      structure: handles.structureFade,
-      animals: handles.animalsFade,
-    },
-    setSkyBackground: handles.magnetic?.setSkyBackground,
-    setEndCreditsPresence: handles.endCredits?.setPresence,
-    followPassages: handles.passages?.followShowTime,
-    readMotionActorCenters: handles.motion?.readActorCenters,
   };
 }
 

@@ -162,7 +162,7 @@ narration, organ, passage or credit panel. A configured M5 selects glider
 control; otherwise desktop input is available. That explanation should not
 require opening each module's resource implementation.
 
-**Observed detour:** `startLevel → startWorld → setupWorld → setupLevel →
+**Removed in #73 working tree (technical verification unresolved; cumulative review pending):** `startLevel → startWorld → setupWorld → setupLevel →
 prepareLevelComposition → composeLevel → createConfiguredModules →
 composeShowReach`, followed by result forwarding back through `{running,
 update}`. `createOptionalShow`, `createLevelControls` and `createLevelUpdate`
@@ -277,11 +277,10 @@ not evidence that these ownership and physical operation obligations are met.
 **Need/owner:** all entries need predictable start, failure and end. Level
 Runtime owns the sequence; World owns rendering; Run owns loaded GLTF sources.
 
-**Observed:** [startWorld](../src/world/world-runtime.ts) returns `Promise<void>`
-and calls `setupWorld`; [startLevel](../src/levels/level-runtime.ts) captures its
-result in `let running`. Neither offers disposal. `9abde94` separated concrete
-construction and introduced asynchronous preparation; neither requires this
-return-channel inversion.
+**As implemented in #73:** [startLevel](../src/levels/level-runtime.ts)
+loads sources, creates a stopped World, composes and prepares it, then starts
+its loop and directly returns the running level. The old callback/captured-result
+channel is gone. Full disposal and the concrete restart operation remain #9.
 
 **Confirmed direction:** `startLevel` directly constructs, prepares, starts and
 releases World through a stopped handle. Its adjacent local frame and end functions
@@ -485,8 +484,8 @@ bounded resources; Show owns time; entries own diagnostics.
 
 **Confirmed:** retain ModuleRuntime, rig/camera separation, fixed slots and the
 Mycelium worker. Resource existence, intensity and active updates are different
-facts. Retain the operations in [renderer preparation](../src/levels/show-renderer-preparation.ts),
-colocated inside World;
+facts. Retain the operations in [renderer preparation](../src/world/world-runtime.ts),
+now colocated inside World by #73;
 all-modules-always-active, cue-by-cue rebuilding and a universal intensity
 lifecycle are not simpler equivalent alternatives.
 
@@ -583,9 +582,9 @@ remove old consumers, obsolete tests and documentation with the replaced path.
 | Current structure | Proven problem | Action | Target owner | Old path eliminated | Dependency / proof |
 | --- | --- | --- | --- | --- | --- |
 | `src/conductor/show-actions.ts` | One adapter forwards commands and uniquely owns reset | Delete file | Existing Show commands and Run visitor restart | `createShowActions`, UI reset sequences, second command route | D2; migrate panels, keys and rehearsal console |
-| `src/control/flight-control-source.ts` | Only Run consumes this stateless `readFrame → if → delegate` factory | Delete file, retain behavior | Run's local frame selects; existing controls perform movement | Factory plus `FlightControlSource`, `DesktopFlightSource`, `M5FlightSource` | D1; preserve benchmark/no-device/stale-device semantics in caller tests |
+| `src/control/flight-control-source.ts` | Only Run consumes this stateless `readFrame → if → delegate` factory | Delete file, retain behavior | Run's local frame selects; existing controls perform movement | Factory plus `FlightControlSource`, `DesktopFlightSource`, `M5FlightSource` | #73 implemented; input/benchmark probes pass; cumulative review pending |
 | `src/control/flight-reset.ts` | Only Run uses its two transform assignments | Remove wrapper when the fresh-run sequence establishes required initialization | Existing Run startup/restart | Imported reset wrapper; reset-only visitor semantics | D1/D2; concrete restart gate first, preserve local head pose |
-| `src/levels/show-renderer-preparation.ts` | Only Run passes World resources through `ShowRenderWorld` | Delete file, retain operations | Existing World closure | `ShowRenderWorld`, separate preparation wrapper/import | D1/D6; same compile, offscreen render, target restoration and release |
+| `src/levels/show-renderer-preparation.ts` | Only Run passes World resources through `ShowRenderWorld` | Delete file, retain operations | Existing World closure | `ShowRenderWorld`, separate preparation wrapper/import | #73 implemented; unchanged preparation and failure restoration verified |
 | `src/levels/sense-layers.ts` | Recipe membership and named heat variant depend on spreads | Delete after concrete level-to-show proposal | Explicit independent level settings and module defaults | Layer objects, imports and spread-order dependency | D3/#85; compare effective settings and remove indirection; explicit configuration growth allowed |
 | `src/modules/grass/`, `GrassPreset`, `WorldComposition.grass`, two diagnostic `grass` recipes; Composition/Test loader legacy factory and import; `tests/modules/grass.test.ts` | Duplicate renderer and diagnostic-only construction path | Confirmed: delete legacy implementation and exclusive consumers; migrate recipes | Existing Grass Clipmap for Show/Test/Design Test | `createGrass`, `CreateLegacyGrass`, `createLegacyGrass`, legacy shaders/config/loading and exclusive test cases | D5/#13: owner decided; preserve shared effects and Zone Visualizer loading. #40 becomes unnecessary; #71/#72 and Windows-PCVR acceptance remain |
 
@@ -593,9 +592,9 @@ remove old consumers, obsolete tests and documentation with the replaced path.
 
 | Current structure | Proven problem | Action | Target owner | Old path eliminated | Dependency / proof |
 | --- | --- | --- | --- | --- | --- |
-| `level-runtime.ts`: `setupLevel`, `LevelUpdate`, `prepareLevelComposition`, its private `LevelCompositionOptions`, `PreparedLevelComposition` | Packages and returns one start's existing variables through callbacks | Delete local chain | Direct `startLevel` sequence | `{running, update}`, captured `running`, skipped-setup guard; World `SetupWorld`/`setupWorld` | D1; cancellation, partial failure and all entries |
-| Same file: `createOptionalShow`/`OptionalShowOptions`, `createLevelControls`/`LevelControls`, `createLevelUpdate`/`LevelFrameOptions` | Repeated optional checks and one-consumer option packages obscure order | Inline choices; delete packages | Adjacent startup and named local frame | Repeated Show/benchmark checks, control factory wrapping and copied frame dependencies | D1; input/show order stays explicit |
-| `level-composition.ts`: `createConfiguredModules`, `ComposedWorld`, `composeShowReach`, `ComposedSenseHandles` | Each helper has only its preceding local caller | Consolidate in existing function | `composeLevel` | Intermediate construction results and handle repackaging | Keep real `ComposedLevel`/`ShowWorldReach` contracts and local material/provider algorithms |
+| `level-runtime.ts`: `setupLevel`, `LevelUpdate`, `prepareLevelComposition`, its private `LevelCompositionOptions`, `PreparedLevelComposition` | Packages and returns one start's existing variables through callbacks | Delete local chain | Direct `startLevel` sequence | `{running, update}`, captured `running`, skipped-setup guard; World `SetupWorld`/`setupWorld` | #73 implemented; preparation failure blocks start; full cancellation/lifetime remains #9 |
+| Same file: `createOptionalShow`/`OptionalShowOptions`, `createLevelControls`/`LevelControls`, `createLevelUpdate`/`LevelFrameOptions` | Repeated optional checks and one-consumer option packages obscure order | Inline choices; delete packages | Adjacent startup and named local frame | Repeated Show/benchmark checks, control factory wrapping and copied frame dependencies | #73 implemented; input/show order preserved |
+| `level-composition.ts`: `createConfiguredModules`, `ComposedWorld`, `composeShowReach`, `ComposedSenseHandles` | Each helper has only its preceding local caller | Consolidate in existing function | `composeLevel` | Intermediate construction results and handle repackaging | #73 implemented; real contracts and local domain algorithms retained |
 | `RunningLevel.readFrameMetrics`, closure, `FrameMetricsRecorder.read`, Run's metrics type export | Entry sends its own sampler in and reads it back through Run | Delete round trip | Existing entry sampler | Run metrics getter and duplicate type ownership | Test/Conductor read `sampler.read()` directly; frame input remains |
 | `LevelTestOverlay`, `TestOverlayFactory`, `OptionalTestOverlayOptions`, `createOptionalTestOverlay`, `request.testOverlay`, Run's overlay update | UI creation/lifetime hidden inside runtime setup | Delete runtime path | Test entry | Factory injection and UI frame forwarding | Existing World provides counters; entry owns DOM and cleanup |
 | `ConductorState.isScrubbing` and its assignment | No reader; type and writing only | Delete without replacement | No owner needed | Unused flag | Keep used `scrubSeconds`, gesture `wasPlaying` and UI render caches |

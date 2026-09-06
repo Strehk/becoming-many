@@ -11,6 +11,7 @@ import {
   Scene,
   Timer,
   WebGLRenderer,
+  WebGLRenderTarget,
 } from "three";
 import { ModuleRuntime } from "./module-runtime";
 import { StreamQueue } from "./stream-queue";
@@ -48,7 +49,7 @@ export interface WorldFrame {
  * Replaces the wall clock and observes finished frames so a measurement run
  * depends on the frame index alone. Absent during normal interactive use.
  */
-export interface FrameControl {
+interface FrameControl {
   readonly fixedDeltaSeconds: number;
 
   /**
@@ -62,15 +63,127 @@ export interface FrameControl {
   readonly afterFrame: (frame: WorldFrame) => boolean;
 }
 
-export type WorldUpdate = (deltaSeconds: number) => void;
-type SetupWorld = (
-  context: WorldContext,
-) => WorldUpdate | undefined | Promise<WorldUpdate | undefined>;
-
-export interface WorldStartOptions {
-  readonly setupWorld?: SetupWorld;
+interface WorldOptions {
   readonly frameControl?: FrameControl;
   readonly viewPitchAssistDegrees?: number;
+}
+
+/** Create the stopped world; its caller prepares content before starting frames. */
+export function createWorld(
+  container: HTMLElement,
+  options: WorldOptions = {},
+): WorldContext & {
+  readonly prepareRenderer: () => Promise<void>;
+  readonly start: (updateWorld: (deltaSeconds: number) => void) => void;
+} {
+  const { frameControl, viewPitchAssistDegrees = 0 } = options;
+  const scene = new Scene();
+  const viewer = createViewerRig(viewPitchAssistDegrees);
+  // One indivisible act: `WebGLRenderer.render` skips its own camera matrix
+  // update once the camera has a parent, so a rig that never reaches the scene
+  // graph freezes the view with nothing raised and every test still green.
+  scene.add(viewer.group);
+  const camera = viewer.camera;
+  const renderer = createWorldRenderer();
+  const timer = new Timer();
+  const modules = new ModuleRuntime();
+  const streamQueue = new StreamQueue(
+    WORLD_RUNTIME_SETTINGS.streamQueue,
+    frameControl?.readStreamTimeMilliseconds,
+  );
+
+  container.replaceChildren(renderer.domElement);
+  const xr = createXrSessionControl(renderer);
+  timer.connect(document);
+
+  return {
+    scene,
+    camera,
+    viewerRig: viewer.group,
+    viewpoint: viewer.viewpoint,
+    renderer,
+    modules,
+    streamQueue,
+    xr,
+    prepareRenderer,
+    start,
+  };
+
+  // Keep resizing and the visible loop after successful level preparation.
+  function start(updateWorld: (deltaSeconds: number) => void): void {
+    resizeRenderer();
+    new ResizeObserver(resizeRenderer).observe(container);
+
+    let frameIndex = 0;
+
+    // Three.js owns the single loop so it can support WebXR later without replacement.
+    renderer.setAnimationLoop((time) => {
+      timer.update(time);
+      const deltaSeconds = frameControl
+        ? frameControl.fixedDeltaSeconds
+        : timer.getDelta();
+
+      updateWorld(deltaSeconds);
+      // Navigation has moved the rig and nothing refreshes world matrices until
+      // the render call. Publishing here, once, is what lets every module in
+      // this frame window its content around where the visitor actually is.
+      // The eye carries the head pose from the previous frame, because the
+      // session writes it inside `render` — centimetres against chunks tens of
+      // metres wide, and the price of having exactly one update point.
+      viewer.publish();
+      modules.update(deltaSeconds);
+      streamQueue.update();
+      renderer.render(scene, camera);
+
+      if (!frameControl) return;
+
+      const frame: WorldFrame = {
+        frameIndex,
+        timeMilliseconds: time,
+        renderer,
+        streamQueue,
+      };
+      frameIndex += 1;
+      if (!frameControl.afterFrame(frame)) renderer.setAnimationLoop(null);
+    });
+  }
+
+  /** Finish shader compilation and first-use uploads without advancing the run. */
+  async function prepareRenderer(): Promise<void> {
+    await renderer.compileAsync(scene, camera);
+    const previousTarget = renderer.getRenderTarget();
+    const previousCubeFace = renderer.getActiveCubeFace();
+    const previousMipmapLevel = renderer.getActiveMipmapLevel();
+    const target = new WebGLRenderTarget(1, 1);
+    target.texture.colorSpace = renderer.outputColorSpace;
+
+    try {
+      renderer.setRenderTarget(target);
+      renderer.render(scene, camera);
+    } finally {
+      renderer.setRenderTarget(
+        previousTarget,
+        previousCubeFace,
+        previousMipmapLevel,
+      );
+      target.dispose();
+    }
+  }
+
+  // The canvas fills its container, so the show page's full-window root and
+  // the conductor page's small stage view share one sizing rule. While an XR
+  // session presents, Three.js manages the drawing buffer itself.
+  function resizeRenderer(): void {
+    if (renderer.xr.isPresenting) return;
+
+    const width = container.clientWidth;
+    const height = container.clientHeight;
+    if (width === 0 || height === 0) return;
+
+    renderer.setSize(width, height, false);
+    camera.aspect = width / height;
+    camera.updateProjectionMatrix();
+  }
 }
 
 /**
@@ -99,92 +212,5 @@ function createWorldRenderer(): WebGLRenderer {
     ...WORLD_RUNTIME_SETTINGS.renderer,
     canvas,
     context,
-  });
-}
-
-export async function startWorld(
-  container: HTMLElement,
-  options: WorldStartOptions = {},
-): Promise<void> {
-  const { setupWorld, frameControl, viewPitchAssistDegrees = 0 } = options;
-  const scene = new Scene();
-  const viewer = createViewerRig(viewPitchAssistDegrees);
-  // One indivisible act: `WebGLRenderer.render` skips its own camera matrix
-  // update once the camera has a parent, so a rig that never reaches the scene
-  // graph freezes the view with nothing raised and every test still green.
-  scene.add(viewer.group);
-  const camera = viewer.camera;
-  const renderer = createWorldRenderer();
-  const timer = new Timer();
-  const modules = new ModuleRuntime();
-  const streamQueue = new StreamQueue(
-    WORLD_RUNTIME_SETTINGS.streamQueue,
-    frameControl?.readStreamTimeMilliseconds,
-  );
-
-  container.replaceChildren(renderer.domElement);
-  const xr = createXrSessionControl(renderer);
-  timer.connect(document);
-
-  const updateWorld = await setupWorld?.({
-    scene,
-    camera,
-    viewerRig: viewer.group,
-    viewpoint: viewer.viewpoint,
-    renderer,
-    modules,
-    streamQueue,
-    xr,
-  });
-
-  // The canvas fills its container, so the show page's full-window root and
-  // the conductor page's small stage view share one sizing rule. While an XR
-  // session presents, Three.js manages the drawing buffer itself.
-  function resizeRenderer(): void {
-    if (renderer.xr.isPresenting) return;
-
-    const width = container.clientWidth;
-    const height = container.clientHeight;
-    if (width === 0 || height === 0) return;
-
-    renderer.setSize(width, height, false);
-    camera.aspect = width / height;
-    camera.updateProjectionMatrix();
-  }
-
-  resizeRenderer();
-  new ResizeObserver(resizeRenderer).observe(container);
-
-  let frameIndex = 0;
-
-  // Three.js owns the single loop so it can support WebXR later without replacement.
-  renderer.setAnimationLoop((time) => {
-    timer.update(time);
-    const deltaSeconds = frameControl
-      ? frameControl.fixedDeltaSeconds
-      : timer.getDelta();
-
-    updateWorld?.(deltaSeconds);
-    // Navigation has moved the rig and nothing refreshes world matrices until
-    // the render call. Publishing here, once, is what lets every module in
-    // this frame window its content around where the visitor actually is.
-    // The eye carries the head pose from the previous frame, because the
-    // session writes it inside `render` — centimetres against chunks tens of
-    // metres wide, and the price of having exactly one update point.
-    viewer.publish();
-    modules.update(deltaSeconds);
-    streamQueue.update();
-    renderer.render(scene, camera);
-
-    if (!frameControl) return;
-
-    const frame: WorldFrame = {
-      frameIndex,
-      timeMilliseconds: time,
-      renderer,
-      streamQueue,
-    };
-    frameIndex += 1;
-    if (!frameControl.afterFrame(frame)) renderer.setAnimationLoop(null);
   });
 }

@@ -47,14 +47,21 @@ for explicit development selection, not the behavior of the bare show route.
 `level-preset.ts` owns the data contracts. `level-runtime.ts` owns startup and
 frame coordination. It:
 
-- starts the permanent World Runtime;
+- creates the stopped World Runtime after loading required assets;
 - applies the initial static or show presentation before module loading;
 - loads and activates the configured module list;
-- connects the selected desktop or M5 flight source;
+- awaits World-owned shader compilation and first-use uploads for a show;
+- connects desktop and M5 input, selecting exactly one source per frame;
 - accepts entry-owned Test UI metrics and overlay creation only when requested;
 - delegates optional show time, narration, transitions, sense fades, and the
   drone organ's per-frame contract to `show-runtime.ts`;
-- returns the narrow `RunningLevel` command/query surface used by pages.
+- starts the World loop only after preparation and returns the narrow
+  `RunningLevel` command/query surface used by pages.
+
+Its local frame reads metrics, benchmark placement or live input, Show updates,
+height limits and Test UI in order. World then publishes the viewpoint, updates
+modules and streaming, renders, and reports the finished benchmark frame.
+Existing flight reset remains unchanged pending the separate fresh-run gate.
 
 `level-composition.ts` loads the required GLTF assets, creates the shared World
 Surface, constructs the concrete modules, orders material effects, and wires

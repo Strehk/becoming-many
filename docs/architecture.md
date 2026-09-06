@@ -26,10 +26,12 @@ show state.
 `src/levels/level-runtime.ts` is the startup and frame-coordination root. A
 static request contains one independent `LevelPreset`; a show request contains
 the separate construction-only `ShowComposition` and narrow `ShowLevelState`
-map. The runtime loads the required assets, starts `src/world/world-runtime.ts`,
+map. The runtime loads the required assets, creates a stopped World in
+`src/world/world-runtime.ts`,
 applies the opening presentation, delegates concrete construction to
 `src/levels/level-composition.ts`, activates the returned module list, and
-connects controls and optional show following. Presentation is applied before
+awaits World-owned GPU preparation for Show, connects controls and optional
+show following, then starts the single loop. Presentation is applied before
 any module derives a fixed spatial window from the camera.
 
 Test UI sampling and overlay creation are entry-owned optional dependencies.
@@ -39,8 +41,9 @@ presets that author them; the rehearsal show does not fetch those chunks.
 The single frame loop is owned by World Runtime:
 
 ```text
-timer and viewer rig
-→ controls and show state
+timer
+→ level frame: input, show, ground constraints and optional Test UI
+→ publish the viewer viewpoint
 → active module updates
 → bounded stream-queue work
 → one render
