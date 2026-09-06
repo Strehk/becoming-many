@@ -26,8 +26,8 @@ wrong-device and firmware-mismatch warnings).
 ## Endpoints
 
 - `/conductor.html` — the station window, served from `dist/` (run
-  `bun run build` first; in development the pages come from `bun run dev`
-  instead, which proxies `/config` here). `/` stays the bare rehearsal page.
+  `bun run build` first). Development uses `bun run dev` independently with
+  empty deployment defaults. `/` stays the bare rehearsal page.
 - `/test.html` and named paths such as `/echo` — standalone development levels,
   benchmarks, and opt-in diagnostics.
 - `/health` — liveness JSON: status and uptime. It reports the process, never

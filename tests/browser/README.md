@@ -27,6 +27,12 @@ alternative. Each route gets a fresh context at 1280 × 720 and device scale 1.
 Choose a new output directory per run; the final report refuses to overwrite
 existing evidence. The runner does not start or stop a server.
 
+For independent Vite development, start only `bun run dev`, then use its printed
+URL with `bun run test:browser --dev --base-url http://localhost:5173`.
+The explicit `--dev` flag skips only the Station `/health` and `/config` checks;
+all browser scenarios and error checks remain active. It also supports Vite
+preview. The report records this mode; production Station checks stay the default.
+
 The smoke checks `/health` and `/config`, all four HTML entries, all nine level
 paths from the level-name catalog, and a query-selected level. Readiness means
 finished startup and a usable canvas, rather than HTTP success alone. Rehearsal

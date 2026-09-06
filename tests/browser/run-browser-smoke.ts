@@ -1,8 +1,8 @@
 /**
- * Purpose: Verify production entries and operator controls in a real browser.
+ * Purpose: Verify browser entries and operator controls in a real browser.
  * Context: Contract tests cannot prove that built pages render and respond.
  * Responsibility: Exercise existing controls and retain evidence of failures.
- * Boundary: The station is started separately; no physical device writes or timing claims.
+ * Boundary: The server is started separately; no physical device writes or timing claims.
  */
 
 import assert from "node:assert/strict";
@@ -32,6 +32,7 @@ const { values } = parseArgs({
     "base-url": { type: "string", default: "http://localhost:4180" },
     out: { type: "string", default: `benchmark-results/browser/${Date.now()}` },
     headless: { type: "boolean", default: false },
+    dev: { type: "boolean", default: false },
   },
 });
 const baseUrl = new URL(values["base-url"]).origin;
@@ -55,8 +56,10 @@ async function main(): Promise<void> {
   let browser: Browser | undefined;
   try {
     browser = await chromium.launch({ headless: values.headless });
-    await checkStationHealth();
-    await checkStationConfig();
+    if (!values.dev) {
+      await checkStationHealth();
+      await checkStationConfig();
+    }
     const routes = [
       "/",
       "/test.html",
@@ -92,6 +95,7 @@ async function main(): Promise<void> {
       baseUrl,
       browserVersion,
       headless: values.headless,
+      dev: values.dev,
       viewport: VIEWPORT,
       deviceScaleFactor: 1,
       results,

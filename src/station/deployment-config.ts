@@ -51,9 +51,9 @@ function readEntry(
 }
 
 /**
- * Fetches the station server's /config. In development Vite proxies the path
- * to the server; with nothing answering, the page runs exactly as before —
- * deployment config is an overlay, never a requirement.
+ * Fetches the station server's /config. Vite development and preview have no
+ * deployment endpoint; their fallback response yields an empty config.
+ * Deployment config is an overlay, never a requirement.
  */
 export async function loadDeploymentConfig(): Promise<DeploymentConfig> {
   try {

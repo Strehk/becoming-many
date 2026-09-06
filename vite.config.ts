@@ -1,6 +1,5 @@
 import { defineConfig, type Plugin } from "vite";
 import { levelNameFromPath } from "./src/levels/level-names.ts";
-import { STATION_SETTINGS } from "./src/station/station-settings";
 
 function rewriteLevelRequest(request: { url?: string }): void {
   if (!request.url) return;
@@ -27,16 +26,6 @@ const levelEntryRoutes: Plugin = {
   },
 };
 
-// The pages reach the station server through their own origin (/config); in
-// development that server is the separate `bun run station` process, so Vite
-// forwards the path. With no server running the proxy errors and the pages
-// fail soft, exactly as they do in production.
-const stationProxy = {
-  "/config": {
-    target: `http://localhost:${STATION_SETTINGS.port}`,
-  },
-} as const;
-
 export default defineConfig({
   plugins: [levelEntryRoutes],
   build: {
@@ -54,11 +43,9 @@ export default defineConfig({
   server: {
     host: true,
     allowedHosts: ["dev.strehk.eu", "dev.e.strehk.eu"],
-    proxy: stationProxy,
   },
   preview: {
     host: true,
     allowedHosts: ["dev.strehk.eu", "dev.e.strehk.eu"],
-    proxy: stationProxy,
   },
 });

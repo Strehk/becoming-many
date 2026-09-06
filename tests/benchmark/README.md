@@ -100,7 +100,7 @@ same machine.
 `benchmark-route.test.ts` and `benchmark-report.test.ts` cover the pure route
 and summary logic under `bun test` and need no browser.
 
-For error-strict local acceptance, use the running production station through
-`--base-url http://localhost:4180`. The current Vite `/config` proxy can return
-500 when its station is absent (tracked by #74); this is a failed run, not an
-allowlisted error. See [browser checks](../browser/README.md).
+The default Vite preview runs independently with empty deployment defaults.
+To test production deployment facts, use the running station through
+`--base-url http://localhost:4180`. Both modes retain strict browser-error
+checks. See [browser checks](../browser/README.md).
