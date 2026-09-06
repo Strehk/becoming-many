@@ -14,7 +14,8 @@ are not implementation approval. Live issues own acceptance criteria.
 | Implemented | Historical block #21/early #11/#75:3 stages; authorized continuation #77/#79/#82:3 implementations. No fictitious review/reset of either count. |
 | User feedback | The user challenged documentation/test growth and authorized this size-reduction correction with explicit refactor rules. This is real corrective feedback on the current block, not M0 or audible-output acceptance. |
 | Current work | #83 bounded diagnosis completed at clean `307b435`; installed Chrome still rejects pointer lock. Await actual human click → look → Escape → relock comparison ([result](https://github.com/Strehk/becoming-many/issues/83#issuecomment-5557756330)). No source correction or cause assigned. #22 closed not planned after read-only reconciliation; no dependency change or implementation-count increment. |
-| Next gate | The latest instruction authorizes this continuation without claiming the overdue human review occurred or resetting historical counts. Actual listening/visual and M0 acceptance remain pending; #78 still requires explicit reference approval. |
+| Next gate | The user requested completion of this block's acceptance. Independent technical review is complete; actual human mouse/visual/listening observations, cumulative approval and the exact #78 reference decision are still required. The request alone supplies no test observation or baseline decision. Do not begin M1 or reset review counts yet. |
+| Acceptance audit | At clean `2db5755`, independent source/history review found no introduced architecture blocker: existing owners retain one loop/clock/queue; #77 removes the old import route, #79 bounds dispatch history, #82 rejects stale work and removes four redundant staging parameters. Existing startup/disposal gaps remain #73/#9; open target decisions remain open. Application TypeScript +65 lines, test TypeScript +1,300, documentation +1,766, JSON evidence +5,702, reference candidate +74, configuration +91: total +8,998 against `9bfb84b`. This is a qualified technical pass, not human or milestone acceptance. |
 | Verified application evidence | Historical final EN/DE each521s without unexpected errors; smoke14/14; repeatable counters/queue, but seven stored #78 references still fail. Exact tested identities and limits are in [evidence](evidence/README.md). |
 | Analyzer delta | Fallow 3.21/3.22 remains exit 1: 3 dead-code, 10 clone groups, 24 health findings. The +2 health entries follow deliberate inlining in smoke `main`/`runSmokeRoute`; independent review found the same necessary error paths and no owner violation. No suppression or performance exception. Older 22-health measurements remain historical. |
 | Correction verification | 482 tests / 26,639 assertions / 64 files; typecheck, lint, build, real boundaries and diff pass. Smoke 14/14; eight sought cues × first/repeat = 16 transition observations pass. A thrown pageerror in generated `dist/test.html` makes the same smoke fail: 11 affected routes red, three untouched green, 11 failure trace/image pairs; artifact restored byte-for-byte. Logs: `benchmark-results/lean-refactor-20260906T062328Z`. These are functional correction checks, not new performance or full-show measurements. |
@@ -28,8 +29,15 @@ placement was [authorized before implementation](https://github.com/Strehk/becom
 
 ## Human Review
 
-Review at `http://localhost:4180/conductor.html` once the local Station is running.
-Use the Test and Connections routes for the first two actions.
+The production Station was restarted for this acceptance review at
+`http://localhost:4180`; the Test route was opened in ordinary Chrome. The reviewed
+source at `2db5755` has digest
+`d901a111db0408b048439e2ea0a0ddd689570590d79eb200cdf602a34ff6db1a`, unchanged from
+the prior functional checks and #83 probe. Later acceptance-record edits are
+documentation only; historical measurements retain their own identities.
+Use `/test.html?level=test`, `/test.html?level=connections`, then
+`/conductor.html` for the actions below. Record actual observations before closing
+the corresponding issue; no new automated replay is needed for this audit.
 
 | Action | Concrete observation / code |
 | --- | --- |
