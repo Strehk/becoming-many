@@ -1,7 +1,7 @@
-// Purpose: Model intentional project export conventions for Fallow.
-// Context: Every level preset exposes the same named `level` contract.
-// Responsibility: Exclude that deliberate namespace pattern from duplicate-export findings.
-// Boundary: Production code and architecture rules remain outside analyzer configuration.
+// Purpose: Enforce confirmed ownership boundaries and intentional export conventions.
+// Context: The refactor keeps one runtime and isolates concrete content modules.
+// Responsibility: Detect forbidden imports without suppressing inherited violations.
+// Boundary: Import rules do not prove lifecycle, behavior, or performance correctness.
 {
   "$schema": "https://raw.githubusercontent.com/fallow-rs/fallow/main/schema.json",
   "ignoreExports": [
@@ -9,5 +9,94 @@
       "file": "src/levels/*.level.ts",
       "exports": ["level"]
     }
-  ]
+  ],
+  "boundaries": {
+    "zones": [
+      // Specific data files precede the broader startup/composition owner.
+      {
+        "name": "presets",
+        "patterns": [
+          "src/levels/*.level.ts",
+          "src/levels/sense-layers.ts",
+          "src/levels/show-composition.ts"
+        ]
+      },
+      {
+        "name": "authored-data",
+        "patterns": ["src/levels/authored/**", "src/levels/level-preset.ts"]
+      },
+      { "name": "levels", "patterns": ["src/levels/**"] },
+      // Shared contracts/mechanics are not concrete child modules.
+      { "name": "modules", "autoDiscover": ["src/modules"] },
+      { "name": "module-contracts", "patterns": ["src/modules/*.ts"] },
+      { "name": "world", "patterns": ["src/world/**"] },
+      { "name": "world-surface", "patterns": ["src/world-surface/**"] },
+      { "name": "control", "patterns": ["src/control/**"] },
+      { "name": "m5", "patterns": ["src/m5/**"] },
+      { "name": "utils", "patterns": ["src/utils/**"] },
+      { "name": "dramaturgy", "patterns": ["src/dramaturgy/**"] },
+      { "name": "sound", "patterns": ["src/sound/**"] },
+      { "name": "station", "patterns": ["src/station/**"] },
+      { "name": "benchmark", "patterns": ["src/benchmark/**"] },
+      { "name": "test-ui", "patterns": ["src/test-ui/**"] },
+      {
+        "name": "browser-pages",
+        "patterns": [
+          "src/main.ts",
+          "src/test-main.ts",
+          "src/conductor/**",
+          "src/flash/**",
+          "src/dev/**"
+        ]
+      }
+    ],
+    "rules": [
+      { "from": "presets", "allow": ["authored-data"] },
+      {
+        "from": "authored-data",
+        "allow": [],
+        "allowTypeOnly": ["modules", "module-contracts"]
+      },
+      {
+        "from": "modules",
+        "allow": [
+          "module-contracts",
+          "world",
+          "world-surface",
+          "utils",
+          "dramaturgy"
+        ]
+      },
+      {
+        "from": "module-contracts",
+        "allow": ["world", "world-surface", "utils"]
+      },
+      { "from": "world", "allow": ["utils"] },
+      { "from": "world-surface", "allow": [] },
+      { "from": "control", "allow": ["m5", "world", "world-surface", "utils"] },
+      { "from": "m5", "allow": ["utils"] },
+      { "from": "utils", "allow": [] },
+      { "from": "dramaturgy", "allow": ["utils"] },
+      { "from": "sound", "allow": ["dramaturgy", "utils"] },
+      { "from": "station", "allow": ["utils"] },
+      {
+        "from": "levels",
+        "allow": [
+          "presets",
+          "authored-data",
+          "modules",
+          "module-contracts",
+          "world",
+          "world-surface",
+          "control",
+          "m5",
+          "utils",
+          "dramaturgy",
+          "sound"
+        ],
+        // Existing in-page route contract; no benchmark execution imports.
+        "allowTypeOnly": ["benchmark"]
+      }
+    ]
+  }
 }
