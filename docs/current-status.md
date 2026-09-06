@@ -1,6 +1,6 @@
 # Current Development Status
 
-As-built snapshot: 2026-09-06, checkpoint `c38a867` plus the #27 Scent contract correction on `david_refactor`.
+As-built snapshot: 2026-09-06, checkpoint `b30964c` plus the #26 bounded Scent streaming correction on `david_refactor`.
 Dated measurement packets retain the earlier exact identities they tested;
 the current checkout is the authority for runtime details.
 
@@ -66,7 +66,8 @@ The #80 animal-connection removal is implemented below. Small additions remain i
 
 - White World: atmosphere through background, fog, and Air Particles.
 - Scent: deterministic plant and animal scent sources plus one bounded points
-  system.
+  system. Reassigned plant slots stay hidden until bounded queued work completes;
+  queue rejection no longer triggers a synchronous fill.
 - Echolocation: terrain, vegetation, rocks, distance-based material effects,
   and the narrative grass clipmap.
 - Motion: bounded fly and bird point actors with GPU-aged motion trails.

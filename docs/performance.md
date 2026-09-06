@@ -80,6 +80,20 @@ These counters include degenerate triangles emitted by shader-culling paths and
 therefore overstate visible grass geometry. The full-profile baseline has not
 yet been accepted.
 
+#26 removes synchronous Scent fills after queue rejection and stores binary
+visibility in one byte rather than four (75% less for this attribute only).
+Three headed full-profile runs before/final on Chromium 151, Metal M2 Max,
+1280 × 720, AC power and awake display retain identical counters and queue
+records. Median/p95 remain 0.1/2.4 ms; p99 is 2.6/2.5/2.5 before and 2.5 in
+all final runs. Maximum intervals remain 848.7/953.2/928.8 ms before versus
+839.8/855.1/840.2 ms final. A diagnostic places one long gap outside captured
+World JavaScript callbacks; its native/browser cause remains unknown. Initial
+queue-only percentile increases and the subsequent interleaved comparisons
+are retained in [#26](https://github.com/Strehk/becoming-many/issues/26).
+This fixes queue behavior without demonstrating stable installation 90 Hz.
+Density and occluder tuning remain open; plant capacity is derived from the
+shared placement grid, so reducing it independently would discard valid plants.
+
 ## Dated Evidence
 
 - The [2026-08-24 browser audit](performance-audit-2026-08-24.md) measured an

@@ -97,7 +97,9 @@ load → activate → update → deactivate → unload
 `src/world/chunk-system.ts` and `volume-chunk-window.ts` map an infinite logical
 grid onto fixed recyclable slots. `stream-queue.ts` advances cooperative jobs
 within one shared frame budget and rejects stale work by stable resource keys
-and assignment revisions.
+and assignment revisions. Scent retains rejected jobs in its fixed slots; invalid
+assignments become invisible immediately and only complete current writes publish.
+There is no synchronous fill after queue rejection.
 
 `src/world/wind.ts` provides deterministic global wind samples. Consumers own
 their visual response but do not define competing global wind state.

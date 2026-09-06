@@ -28,6 +28,7 @@ import {
   createScentChunkWriter,
   createScentParticleField,
   disposeScentParticleField,
+  hideScentParticleSlot,
   initializeScentParticleSlots,
   type ScentParticleField,
   uploadScentParticleSlot,
@@ -60,14 +61,12 @@ export interface ScentParticlesModuleOptions {
   readonly maxActorCount?: number;
 }
 
-/** The world module plus the sink live actors report their bodies into. */
-
 interface ScentParticleStream {
   readonly chunkWindow: ChunkWindow;
   readonly particleField: ScentParticleField;
 
-  /** One stable queue key per reusable slot replaces obsolete pending work. */
-  readonly slotJobKeys: readonly object[];
+  /** Stable queue keys retain rejected work until the queue accepts it. */
+  readonly slots: readonly { pendingJob: StreamJob | undefined }[];
 }
 
 /** The current stream identity also invalidates delayed jobs after unloading. */
@@ -88,7 +87,6 @@ interface ScentParticlesState {
   active: boolean;
 }
 
-/** The module beside its runtime sense driver. */
 /** The module beside its runtime sense driver and its live-actor sink. */
 export interface ScentParticlesModuleHandle {
   readonly module: WorldModule;
@@ -203,15 +201,18 @@ function updateScentParticles(
     viewpoint.worldPosition.z,
   );
 
-  // Most frames return no assignments. After a boundary crossing, only the
-  // recycled edge enters the shared frame-budgeted queue.
+  // Reassigned slots cannot display their old content while work waits.
   for (const assignment of changedAssignments) {
-    const job = createChunkMoveJob(state, stream, assignment);
-    if (!job) continue;
-    if (streamQueue.enqueue(job)) continue;
+    hideScentParticleSlot(stream.particleField, assignment.slotIndex);
+    const slot = stream.slots[assignment.slotIndex];
+    if (slot) slot.pendingJob = createChunkMoveJob(state, stream, assignment);
+  }
 
-    // Keeping coverage is preferable if the queue reaches defensive capacity.
-    writeScentSlotSynchronously(stream.particleField, assignment);
+  // Retry from the fixed slot pool, including frames without new assignments.
+  for (const slot of stream.slots) {
+    if (!slot.pendingJob) continue;
+    if (!streamQueue.enqueue(slot.pendingJob)) break;
+    slot.pendingJob = undefined;
   }
 }
 
@@ -249,7 +250,7 @@ function createChunkMoveJob(
   stream: ScentParticleStream,
   assignment: ChunkAssignment,
 ): StreamJob | undefined {
-  const jobKey = stream.slotJobKeys[assignment.slotIndex];
+  const jobKey = stream.slots[assignment.slotIndex];
   if (!jobKey) return undefined;
 
   // A dense forest chunk holds thousands of particles, so the write is spent
@@ -275,18 +276,6 @@ function createChunkMoveJob(
       return done;
     },
   };
-}
-
-/** Spend a whole slot at once; only the queue guard reaches this path. */
-function writeScentSlotSynchronously(
-  field: ScentParticleField,
-  assignment: ChunkAssignment,
-): void {
-  const writer = createScentChunkWriter(assignment);
-  while (!writeNextScentStep(field, writer)) {
-    // The bounded steps exist for the frame budget, not for correctness.
-  }
-  uploadScentParticleSlot(field, assignment.slotIndex);
 }
 
 function setScentParticlesVisible(
@@ -342,7 +331,9 @@ function createScentParticleStream(
     chunkSize,
     chunkSlotCount: chunkWindow.slotCount,
   });
-  const slotJobKeys = Array.from({ length: chunkWindow.slotCount }, () => ({}));
+  const slots = Array.from({ length: chunkWindow.slotCount }, () => ({
+    pendingJob: undefined,
+  }));
 
-  return { chunkWindow, particleField, slotJobKeys };
+  return { chunkWindow, particleField, slots };
 }

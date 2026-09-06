@@ -358,6 +358,120 @@ test("one show fade dims both layers of the sense at once", () => {
 });
 
 describe("Scent Particles streaming", () => {
+  test.each([0, 2])(
+    "retries rejected slots and replaces stale work after %i steps",
+    (stepsBeforeReassignment) => {
+      const scene = new Scene();
+      const worldPosition = new Vector3();
+      const defaults = createScentParameters();
+      const particlesPerPlant = 128;
+      const parameters = {
+        ...defaults,
+        plants: {
+          ...defaults.plants,
+          conifer: { ...defaults.plants.conifer, particlesPerPlant },
+          bush: { ...defaults.plants.bush, particlesPerPlant },
+        },
+      };
+      const source = createTestPlantSource();
+      const particlesPerSlot =
+        particlesPerPlant * source.maxPlantsPerChunk(TEST_CHUNK_SIZE);
+      const gatheredChunks: number[] = [];
+      const plantSource: PlantScentSource = {
+        ...source,
+        appendChunkPlants: (chunkX, chunkZ, chunkSize, pushPlant) => {
+          gatheredChunks.push(chunkX);
+          if (chunkX !== 7)
+            source.appendChunkPlants(chunkX, chunkZ, chunkSize, pushPlant);
+        },
+      };
+      let blocked = true;
+      const streamQueue = new StreamQueue(
+        { budgetMilliseconds: 1, capacity: 1 },
+        () => 0,
+      );
+      streamQueue.enqueue({
+        key: {},
+        isCurrent: () => blocked,
+        runStep: () => false,
+      });
+      const { module } = createScentParticlesModule({
+        scene,
+        viewpoint: { worldPosition, viewDistanceMeters: 0 },
+        parameters,
+        plantSource,
+        streamQueue,
+      });
+      module.load();
+      const points = scene.children[0];
+      if (!(points instanceof Points)) throw new Error("Expected Points");
+      const position = points.geometry.getAttribute("position");
+      const visibility = points.geometry.getAttribute("scentVisible");
+      const initialPositions = position.array.slice();
+      gatheredChunks.length = 0;
+
+      // Rejection hides only the recycled edge and never generates particles.
+      worldPosition.x = TEST_CHUNK_SIZE;
+      for (let frame = 0; frame < 10; frame++) {
+        module.update?.(1 / 90);
+        streamQueue.update();
+      }
+      expect(gatheredChunks).toEqual([]);
+      expect(position.array).toEqual(initialPositions);
+      expect(position).toHaveProperty("version", 0);
+      expect(visibility.array.slice(0, particlesPerSlot)).toEqual(
+        new Uint8Array(particlesPerSlot).fill(1),
+      );
+      expect(
+        visibility.array.slice(2 * particlesPerSlot, 3 * particlesPerSlot),
+      ).toEqual(new Uint8Array(particlesPerSlot));
+      expect(visibility.updateRanges).toHaveLength(3);
+
+      // Replace rejected work, then admit it without another boundary crossing.
+      worldPosition.x = 4 * TEST_CHUNK_SIZE;
+      module.update?.(1 / 90);
+      blocked = false;
+      module.update?.(1 / 90);
+      for (let step = 0; step < stepsBeforeReassignment; step++)
+        streamQueue.update();
+      expect(gatheredChunks).toEqual(stepsBeforeReassignment === 0 ? [] : [3]);
+      expect(visibility.array.every((value: number) => value === 0)).toBe(true);
+      expect(position).toHaveProperty("version", 0);
+
+      // Even a partially written old assignment must never become visible.
+      worldPosition.x = 7 * TEST_CHUNK_SIZE;
+      module.update?.(1 / 90);
+      gatheredChunks.length = 0;
+      for (let frame = 0; frame < 32; frame++) {
+        streamQueue.update();
+        module.update?.(1 / 90);
+      }
+      expect(streamQueue.size).toBe(0);
+      expect(gatheredChunks.sort()).toEqual([6, 6, 6, 7, 7, 7, 8, 8, 8]);
+      expect(visibility.array.slice(0, particlesPerSlot)).toEqual(
+        new Uint8Array(particlesPerSlot).fill(1),
+      );
+      expect(
+        visibility.array.slice(particlesPerSlot, 2 * particlesPerSlot),
+      ).toEqual(new Uint8Array(particlesPerSlot));
+      expect(position.getX(0)).toBeGreaterThan(6 * TEST_CHUNK_SIZE);
+
+      // Unload invalidates both admitted and rejected jobs before a new field.
+      worldPosition.x += 3 * TEST_CHUNK_SIZE;
+      module.update?.(1 / 90);
+      streamQueue.update();
+      module.unload();
+      module.load();
+      gatheredChunks.length = 0;
+      module.update?.(1 / 90);
+      streamQueue.update();
+      expect(streamQueue.size).toBe(0);
+      expect(gatheredChunks).toEqual([]);
+      expect(scene.children[0]).not.toBe(points);
+      module.unload();
+    },
+  );
+
   test("keeps one fixed draw while recycling chunk edges", () => {
     const scene = new Scene();
     const viewerPosition = new Vector3();
