@@ -5,7 +5,7 @@
  * Boundary: Soil placement has its own test; worker messaging is exercised through a fake port.
  */
 
-import { expect, test } from "bun:test";
+import { expect, spyOn, test } from "bun:test";
 import {
   InstancedBufferGeometry,
   Mesh,
@@ -283,7 +283,10 @@ function createEdgeResult(
   };
 }
 
-function createWebHarness(animalSource?: ConnectionActorSource) {
+function createWebHarness(
+  animalSource?: ConnectionActorSource,
+  createTopologyPort?: () => TopologyPort,
+) {
   const scene = new Scene();
   const viewerPosition = new Vector3();
   const viewpoint: Viewpoint = {
@@ -305,7 +308,7 @@ function createWebHarness(animalSource?: ConnectionActorSource) {
       staticSources: [createFakeVegetationSource()],
       animalSource,
       groundCoverAt: () => 0,
-      createTopologyPort: () => fakePort.port,
+      createTopologyPort: createTopologyPort ?? (() => fakePort.port),
     },
   );
 
@@ -489,6 +492,232 @@ test("Connections rebuild only the chunks that entered the window", () => {
   const chunksPerSide = MYCELIUM_SETTINGS.buildChunkRadius * 2 + 1;
   expect(fakePort.requests).toHaveLength(chunksPerSide);
   module.unload();
+});
+
+test("Connections recover rejected gathers after the queue drains without more movement", () => {
+  const { module, viewerPosition, streamQueue, fakePort } = createWebHarness();
+  module.load();
+  module.activate();
+  expect(fakePort.requests).toHaveLength(BUILD_SLOT_COUNT);
+  fakePort.requests.length = 0;
+
+  // The harness queue holds 64 still-current foreign jobs. They complete only
+  // when the shared queue runs, so no entering gather can be admitted yet.
+  const queueCapacity = 64;
+  for (let blocker = 0; blocker < queueCapacity; blocker += 1) {
+    expect(
+      streamQueue.enqueue({
+        key: {},
+        isCurrent: () => true,
+        runStep: () => true,
+      }),
+    ).toBe(true);
+  }
+  const enqueue = spyOn(streamQueue, "enqueue");
+
+  try {
+    const chunkSize = 16;
+    viewerPosition.set(chunkSize + 1, 0, 0);
+    module.update?.(0.016);
+    const rejectedGatherCount = enqueue.mock.results.filter(
+      (result) => result.type === "return" && result.value === false,
+    ).length;
+    expect(rejectedGatherCount).toBeGreaterThan(0);
+    expect(streamQueue.size).toBe(queueCapacity);
+    expect(fakePort.requests).toHaveLength(0);
+
+    streamQueue.update();
+    expect(streamQueue.size).toBe(0);
+    const recoveryFrames = GATHER_SLOT_COUNT + 4;
+    for (let frame = 0; frame < recoveryFrames; frame += 1) {
+      module.update?.(0.016);
+      streamQueue.update();
+    }
+
+    const expectedBuilds = MYCELIUM_SETTINGS.buildChunkRadius * 2 + 1;
+    console.info(
+      "Rejected gather recovery:",
+      JSON.stringify({
+        rejectedGatherCount,
+        recoveryFrames,
+        stationaryX: viewerPosition.x,
+        queuedJobsAfterRecovery: streamQueue.size,
+        expectedBuilds,
+        actualBuilds: fakePort.requests.length,
+      }),
+    );
+    expect(fakePort.requests).toHaveLength(expectedBuilds);
+    for (const request of fakePort.requests) {
+      // The entering column is chunk x=3. Each request must carry its real
+      // centre anchor and all eight neighbours, not an empty placeholder.
+      expect(request.own.nodeCount).toBe(1);
+      expect(request.own.positions[0]).toBe(3 * chunkSize + chunkSize / 2);
+      expect(request.halo.nodeCount).toBe(8);
+    }
+  } finally {
+    enqueue.mockRestore();
+    module.unload();
+  }
+});
+
+test("Connections recover only the latest assignments as queue capacity returns gradually", () => {
+  const { module, viewerPosition, streamQueue, fakePort } = createWebHarness();
+  module.load();
+  fakePort.requests.length = 0;
+
+  // Three slots become available; the remaining foreign work stays queued.
+  for (let blocker = 0; blocker < 64; blocker += 1) {
+    expect(
+      streamQueue.enqueue({
+        key: {},
+        isCurrent: () => true,
+        runStep: () => blocker < 3,
+      }),
+    ).toBe(true);
+  }
+  for (const x of [17, 129, 241]) {
+    viewerPosition.x = x;
+    module.update?.(0.016);
+  }
+  expect(fakePort.requests).toHaveLength(0);
+  streamQueue.update();
+  expect(streamQueue.size).toBe(61);
+  for (let frame = 0; frame < GATHER_SLOT_COUNT; frame += 1) {
+    module.update?.(0.016);
+    streamQueue.update();
+  }
+
+  expect(fakePort.requests).toHaveLength(BUILD_SLOT_COUNT);
+  const ownAnchors = new Set<string>();
+  for (const request of fakePort.requests) {
+    expect(request.own.nodeCount).toBe(1);
+    const ownX = request.own.positions[0] ?? 0;
+    const ownZ = request.own.positions[2] ?? 0;
+    ownAnchors.add(`${ownX},${ownZ}`);
+    expect(ownX).toBeGreaterThanOrEqual(216);
+    expect(ownX).toBeLessThanOrEqual(280);
+    expect(request.halo.nodeCount).toBe(8);
+    const neighbours = new Set(
+      Array.from({ length: request.halo.nodeCount }, (_, node) => {
+        const deltaX = (request.halo.positions[node * 3] ?? 0) - ownX;
+        const deltaZ = (request.halo.positions[node * 3 + 2] ?? 0) - ownZ;
+        return `${deltaX},${deltaZ}`;
+      }),
+    );
+    expect(neighbours).toEqual(
+      new Set([
+        "-16,-16",
+        "0,-16",
+        "16,-16",
+        "-16,0",
+        "16,0",
+        "-16,16",
+        "0,16",
+        "16,16",
+      ]),
+    );
+  }
+  expect(ownAnchors.size).toBe(BUILD_SLOT_COUNT);
+  expect(streamQueue.size).toBe(61);
+  module.unload();
+});
+
+test("Connections clear recycled GPU rows before gathering and reject the old replies", () => {
+  const harness = createWebHarness();
+  const { module, viewerPosition, fakePort } = harness;
+  module.load();
+  const oldReplies = fakePort.requests.map((request) =>
+    createEdgeResult(
+      request.buildSlotIndex,
+      request.revision,
+      [1, 2, 3],
+      [4, 5, 6],
+    ),
+  );
+  for (const result of oldReplies) fakePort.respond(result);
+  const edgeStarts = harness
+    .findEdges()
+    .geometry.getAttribute("edgeStart").array;
+  const edgeEnds = harness.findEdges().geometry.getAttribute("edgeEnd").array;
+  const nodeWeights = harness.findNodes().geometry.getAttribute("nodeWeight")
+    .array as Float32Array;
+  expect(Array.from(edgeStarts).some((coordinate) => coordinate !== 0)).toBe(
+    true,
+  );
+  expect(Array.from(nodeWeights).filter((weight) => weight >= 0)).toHaveLength(
+    GATHER_SLOT_COUNT,
+  );
+
+  // None of the old window remains; the queue has not gathered its replacement.
+  viewerPosition.x = 241;
+  module.update?.(0.016);
+  expect(Array.from(nodeWeights).every((weight) => weight < 0)).toBe(true);
+  expect(Array.from(edgeStarts).every((coordinate) => coordinate === 0)).toBe(
+    true,
+  );
+  expect(Array.from(edgeEnds).every((coordinate) => coordinate === 0)).toBe(
+    true,
+  );
+  for (const result of oldReplies) fakePort.respond(result);
+  expect(Array.from(edgeStarts).every((coordinate) => coordinate === 0)).toBe(
+    true,
+  );
+  module.unload();
+});
+
+test("Connections never gather into disposed resources after unload", () => {
+  const harness = createWebHarness();
+  const { module, viewerPosition, streamQueue } = harness;
+  module.load();
+  const weights = harness.findNodes().geometry.getAttribute("nodeWeight");
+  viewerPosition.x = 17;
+  module.update?.(0.016);
+  expect(streamQueue.size).toBeGreaterThan(0);
+  module.unload();
+  const versionAtUnload = weights.version;
+  const weightsAtUnload = Array.from(weights.array);
+  streamQueue.update();
+  expect(streamQueue.size).toBe(0);
+  expect(weights.version).toBe(versionAtUnload);
+  expect(Array.from(weights.array)).toEqual(weightsAtUnload);
+});
+
+test("Connections reject replies from an unloaded worker after reloading the same chunks", () => {
+  const oldPort = createFakeTopologyPort();
+  const newPort = createFakeTopologyPort();
+  let loadCount = 0;
+  const harness = createWebHarness(undefined, () =>
+    loadCount++ === 0 ? oldPort.port : newPort.port,
+  );
+  harness.module.load();
+  const oldRequest = oldPort.requests[0];
+  if (!oldRequest) throw new Error("Expected the old worker request");
+  harness.module.unload();
+  harness.module.load();
+  const newRequest = newPort.requests[0];
+  expect(newRequest?.revision).toBe(oldRequest.revision);
+  const starts = harness.findEdges().geometry.getAttribute("edgeStart").array;
+  const firstRow =
+    MYCELIUM_SETTINGS.animalLinkCapacity +
+    oldRequest.buildSlotIndex * MYCELIUM_SETTINGS.edgeSlotCapacity;
+  const oldResult = createEdgeResult(
+    oldRequest.buildSlotIndex,
+    oldRequest.revision,
+    [9, 9, 9],
+    [8, 8, 8],
+  );
+  oldPort.respond(oldResult);
+  expect(starts[firstRow * 3]).toBe(0);
+  newPort.respond(
+    createEdgeResult(
+      oldRequest.buildSlotIndex,
+      oldRequest.revision,
+      [1, 2, 3],
+      [4, 5, 6],
+    ),
+  );
+  expect(starts[firstRow * 3]).toBe(1);
+  harness.module.unload();
 });
 
 test("Connections discard a reply for ground the visitor already left", () => {

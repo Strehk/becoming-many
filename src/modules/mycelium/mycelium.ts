@@ -59,6 +59,14 @@ export type { ConnectionsParameters } from "./mycelium-settings";
 
 const ANIMAL_CLASS_INDEX = 2;
 const COMPONENTS_PER_VALUE = 3;
+const EMPTY_TOPOLOGY = {
+  edgeCount: 0,
+  droppedEdgeCount: 0,
+  edgeStarts: new Float32Array(0),
+  edgeEnds: new Float32Array(0),
+  edgeWeights: new Float32Array(0),
+  edgeHubClasses: new Uint8Array(0),
+};
 
 /** Fixed class order mapping packed class indices to preset styles. */
 const SOURCE_CLASS_ORDER: readonly ConnectionSourceClass[] = [
@@ -122,6 +130,8 @@ interface WebStream {
   readonly topologyPort: TopologyPort;
   /** One stable stream-job key per gather slot, as the grass field keeps. */
   readonly slotJobKeys: readonly object[];
+  /** Only jobs still awaiting queue admission; accepted jobs belong to the queue. */
+  readonly admissionRetryJobs: (StreamJob | undefined)[];
   /** The assignment each build slot is waiting to have topology for. */
   readonly buildAssignments: (ChunkAssignment | undefined)[];
   /** 1 while a build slot still needs its topology request posted. */
@@ -261,19 +271,19 @@ function loadWeb(
   const topologyPort = options.createTopologyPort
     ? options.createTopologyPort()
     : createTopologyWorkerPort();
-  const staging = createNodeStaging(gatherWindow.slotCount);
   const stream: WebStream = {
-    staging,
+    staging: createNodeStaging(gatherWindow.slotCount),
     gatherWindow,
     buildWindow,
     web,
     topologyPort,
     slotJobKeys: Array.from({ length: gatherWindow.slotCount }, () => ({})),
+    admissionRetryJobs: Array.from({ length: gatherWindow.slotCount }),
     buildAssignments: Array.from({ length: buildWindow.slotCount }),
     buildPending: new Uint8Array(buildWindow.slotCount),
   };
   topologyPort.setResultHandler((result) =>
-    publishTopologyResult(state, styles, result),
+    publishTopologyResult(state, stream, styles, result),
   );
   state.currentStream = stream;
 
@@ -281,13 +291,13 @@ function loadWeb(
   // first cords appear when the worker replies a few frames later.
   const { x, z } = options.viewpoint.worldPosition;
   for (const assignment of gatherWindow.update(x, z)) {
-    gatherSlot(stream, staging, styles, options, assignment);
+    gatherSlot(stream, styles, options, assignment);
   }
   for (const assignment of buildWindow.update(x, z)) {
     stream.buildAssignments[assignment.slotIndex] = assignment;
     stream.buildPending[assignment.slotIndex] = 1;
   }
-  postReadyBuilds(stream, staging);
+  postReadyBuilds(stream);
 }
 
 function updateWeb(
@@ -302,15 +312,44 @@ function updateWeb(
   const { x, z } = options.viewpoint.worldPosition;
   for (const assignment of stream.gatherWindow.update(x, z)) {
     staging.isGathered[assignment.slotIndex] = 0;
-    options.streamQueue.enqueue(
-      createGatherJob(stream, staging, styles, options, assignment),
+    writeSlotNodes(
+      stream.web,
+      assignment.slotIndex,
+      EMPTY_TOPOLOGY.edgeStarts,
+      EMPTY_TOPOLOGY.edgeHubClasses,
+      0,
+      styles,
+    );
+    stream.admissionRetryJobs[assignment.slotIndex] = createGatherJob(
+      state,
+      stream,
+      styles,
+      options,
+      assignment,
     );
   }
   for (const assignment of stream.buildWindow.update(x, z)) {
     stream.buildAssignments[assignment.slotIndex] = assignment;
     stream.buildPending[assignment.slotIndex] = 1;
+    writeSlotEdges(
+      stream.web,
+      {
+        ...EMPTY_TOPOLOGY,
+        buildSlotIndex: assignment.slotIndex,
+        revision: assignment.revision,
+      },
+      styles,
+      state.clockSeconds,
+    );
   }
-  postReadyBuilds(stream, staging);
+  // Retain rejected work across stationary frames without rebuilding its job.
+  for (let slot = 0; slot < stream.admissionRetryJobs.length; slot += 1) {
+    const job = stream.admissionRetryJobs[slot];
+    if (!job) continue;
+    if (!options.streamQueue.enqueue(job)) break;
+    stream.admissionRetryJobs[slot] = undefined;
+  }
+  postReadyBuilds(stream);
 
   const animalStyle = styles[ANIMAL_CLASS_INDEX];
   if (options.animalSource && animalStyle) {
@@ -328,8 +367,8 @@ function updateWeb(
  * pending gather, so rapid boundary crossings collapse into the latest state.
  */
 function createGatherJob(
+  state: MyceliumState,
   stream: WebStream,
-  staging: NodeStaging,
   styles: readonly (WebSourceStyle | undefined)[],
   options: ConnectionsOptions,
   assignment: ChunkAssignment,
@@ -340,9 +379,11 @@ function createGatherJob(
     // queue runs surface work first and the mat not at all while it lasts, so
     // entering ground arrived after the visitor had already walked onto it.
     priority: SURFACE_STREAM_PRIORITY,
-    isCurrent: () => stream.gatherWindow.isCurrent(assignment),
+    isCurrent: () =>
+      state.currentStream === stream &&
+      stream.gatherWindow.isCurrent(assignment),
     runStep: () => {
-      gatherSlot(stream, staging, styles, options, assignment);
+      gatherSlot(stream, styles, options, assignment);
       return true;
     },
   };
@@ -351,11 +392,11 @@ function createGatherJob(
 /** Write one chunk's anchors into its own node range, GPU side and mirror. */
 function gatherSlot(
   stream: WebStream,
-  staging: NodeStaging,
   styles: readonly (WebSourceStyle | undefined)[],
   options: ConnectionsOptions,
   assignment: ChunkAssignment,
 ): void {
+  const { staging } = stream;
   const { nodeSlotCapacity } = MYCELIUM_SETTINGS;
   const chunkSize = getChunkSize(MYCELIUM_SETTINGS.chunkLevel);
   const firstNode = getNodeSlotOffset(assignment.slotIndex);
@@ -417,17 +458,13 @@ function gatherSlot(
 }
 
 /** Post every build slot whose own chunk and eight neighbours are gathered. */
-function postReadyBuilds(stream: WebStream, staging: NodeStaging): void {
+function postReadyBuilds(stream: WebStream): void {
+  const { staging } = stream;
   for (let slot = 0; slot < stream.buildPending.length; slot += 1) {
     if (stream.buildPending[slot] !== 1) continue;
     const assignment = stream.buildAssignments[slot];
     if (!assignment) continue;
-    const ownSlot = readySlotFor(
-      stream,
-      staging,
-      assignment.chunkX,
-      assignment.chunkZ,
-    );
+    const ownSlot = readySlotFor(stream, assignment.chunkX, assignment.chunkZ);
     if (ownSlot < 0) continue;
 
     const haloSlots: number[] = [];
@@ -435,7 +472,6 @@ function postReadyBuilds(stream: WebStream, staging: NodeStaging): void {
     for (const [offsetX, offsetZ] of NEIGHBOUR_OFFSETS) {
       const slotIndex = readySlotFor(
         stream,
-        staging,
         assignment.chunkX + offsetX,
         assignment.chunkZ + offsetZ,
       );
@@ -462,10 +498,10 @@ function postReadyBuilds(stream: WebStream, staging: NodeStaging): void {
 /** The gather slot holding this chunk with current nodes, or -1. */
 function readySlotFor(
   stream: WebStream,
-  staging: NodeStaging,
   chunkX: number,
   chunkZ: number,
 ): number {
+  const { staging } = stream;
   const slotIndex = stream.gatherWindow.slotIndexFor(chunkX, chunkZ);
   if (staging.isGathered[slotIndex] !== 1) return -1;
   if (staging.gatheredChunkX[slotIndex] !== chunkX) return -1;
@@ -518,11 +554,11 @@ function collectSlotNodes(
 
 function publishTopologyResult(
   state: MyceliumState,
+  stream: WebStream,
   styles: readonly (WebSourceStyle | undefined)[],
   result: ConnectionTopologyResult,
 ): void {
-  const stream = state.currentStream;
-  if (!stream) return;
+  if (state.currentStream !== stream) return;
   // A reassigned slot means the visitor walked away from that ground before
   // its cords were ready; its own newer request will arrive.
   const assignment = stream.buildAssignments[result.buildSlotIndex];
