@@ -6,6 +6,7 @@
  */
 
 import type { Scene } from "three";
+import type { TerrainMaterialEffect } from "../../utils/asset-loader/material-effect";
 import {
   type ChunkAssignment,
   ChunkWindow,
@@ -25,7 +26,6 @@ import {
   disposeTerrainGeometry,
   initializeTerrainChunks,
   type TerrainGeometry,
-  type TerrainMaterialEffect,
   type TerrainPresentation,
   writeNextTerrainRow,
 } from "./terrain-geometry";

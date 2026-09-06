@@ -5,8 +5,8 @@
  * Boundary: The terrain module keeps its material, geometry, and colors; only alpha changes.
  */
 
+import type { TerrainMaterialEffect } from "../../utils/asset-loader/material-effect";
 import { applyShaderPatch } from "../../utils/asset-loader/material-shader-patch";
-import type { TerrainMaterialEffect } from "../terrain/terrain-geometry";
 import { MYCELIUM_SETTINGS } from "./mycelium-settings";
 import fragmentShader from "./soil-opening.frag.glsl?raw";
 import vertexShader from "./soil-opening.vert.glsl?raw";

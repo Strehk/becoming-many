@@ -18,3 +18,8 @@ Rocks. Modules write accepted model matrices into fixed chunk slots. Publishing
 compacts all completed slots at most once per module frame, so unused capacity
 remains allocated but is not drawn. Zone rules, density, candidates, and
 streaming decisions do not live here.
+
+`material-effect.ts` owns the distinct shared `UnlitMaterialEffect` and
+`TerrainMaterialEffect` contracts. Terrain effects retain their narrow material
+input and optional frame, warmth, and ground-cover samplers; concrete modules
+implement them and keep their own resources and lifecycle.

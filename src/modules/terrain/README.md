@@ -18,7 +18,9 @@ attribute and all zone sampling from Terrain.
 
 `terrain.ts` owns lifecycle, one `ChunkWindow`, queue jobs, and the fixed mesh
 pool. `terrain-geometry.ts` owns Three.js geometry, row sampling, atomic chunk
-publication, bounds, and disposal.
+publication, bounds, and disposal. Shared `TerrainMaterialEffect` lives in
+[`material-effect.ts`](../../utils/asset-loader/material-effect.ts); effects
+consume that contract directly without importing Terrain implementation code.
 
 Adding `terrain` to a level enables the module. Its only direct geometry
 parameter is `opacity`, following Three.js semantics from `0` (invisible) to

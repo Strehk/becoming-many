@@ -60,10 +60,7 @@ import {
 import { createGroundOccluder } from "../modules/terrain/ground-occluder";
 import { createTerrainModule } from "../modules/terrain/terrain";
 import { createTerrainColors } from "../modules/terrain/terrain-colors";
-import type {
-  TerrainMaterialEffect,
-  TerrainPresentation,
-} from "../modules/terrain/terrain-geometry";
+import type { TerrainPresentation } from "../modules/terrain/terrain-geometry";
 import {
   createThermalPerception,
   type ThermalPerceptionEffects,
@@ -81,7 +78,10 @@ import {
   type GltfAssets,
   loadGltfAssets,
 } from "../utils/asset-loader/gltf-assets";
-import type { UnlitMaterialEffect } from "../utils/asset-loader/material-effect";
+import type {
+  TerrainMaterialEffect,
+  UnlitMaterialEffect,
+} from "../utils/asset-loader/material-effect";
 import type { WorldModule } from "../world/module-runtime";
 import type { WorldContext } from "../world/world-runtime";
 import { WORLD_SURFACE_SETTINGS } from "../world-surface/surface-settings";

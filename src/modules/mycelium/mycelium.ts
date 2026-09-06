@@ -13,6 +13,7 @@
  */
 
 import { Color, type Scene } from "three";
+import type { TerrainMaterialEffect } from "../../utils/asset-loader/material-effect";
 import { isNormalized, isPositiveFinite } from "../../utils/number-ranges";
 import {
   type ChunkAssignment,
@@ -32,7 +33,6 @@ import type {
   ConnectionNodeSource,
   ConnectionSourceClass,
 } from "../connection-nodes";
-import type { TerrainMaterialEffect } from "../terrain/terrain-geometry";
 import {
   type ConnectionsParameters,
   MYCELIUM_SETTINGS,

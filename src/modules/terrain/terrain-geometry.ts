@@ -14,6 +14,7 @@ import {
   MeshBasicMaterial,
   PlaneGeometry,
 } from "three";
+import type { TerrainMaterialEffect } from "../../utils/asset-loader/material-effect";
 import type { ChunkAssignment } from "../../world/chunk-system";
 import type { WorldSurface } from "../../world-surface/world-surface";
 
@@ -59,26 +60,6 @@ export interface TerrainPresentation {
    * the resolution a drawn surface needs.
    */
   readonly segmentsPerSide?: number;
-}
-
-export interface TerrainMaterialEffect {
-  readonly applyTo: (material: MeshBasicMaterial) => void;
-  readonly update?: (deltaSeconds: number) => void;
-
-  /** Declaring a sampler makes Terrain stream a per-vertex warmth attribute. */
-  readonly warmthAt?: (
-    worldX: number,
-    worldZ: number,
-    groundYMeters: number,
-  ) => number;
-
-  /**
-   * Declaring a sampler makes Terrain stream a per-vertex ground-cover
-   * attribute: how much of this surface something else already grows on. An
-   * effect that treats covered and bare ground differently reads it instead of
-   * deriving zones in GLSL, which would duplicate the zone thresholds.
-   */
-  readonly coverAt?: (worldX: number, worldZ: number) => number;
 }
 
 export interface TerrainGeometry {
