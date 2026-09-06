@@ -32,5 +32,6 @@ curve editor, or UI-heavy audio engine is outside the current need.
 - Final narration recordings and authored cue timing may still be tuned by ear.
 - Installation volume, headphones, ambience, and operator adjustment need venue
   acceptance.
-- A separate tutorial is not implemented and should be added only if visitor
-  testing demonstrates a need.
+- Tutorial and credits are required. Consolidate existing implementations under
+  the one show clock. #50/#51 must present concrete content, duration, audio-use
+  rights, start behavior and credit-motion proposals before implementation.

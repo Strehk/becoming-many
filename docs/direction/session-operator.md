@@ -6,7 +6,7 @@
 provides:
 
 - show play/hold, seeking, cue jumps, rehearsal speeds, and current/next cue;
-- language selection and a between-visitors restart;
+- language selection and a between-visitors time/position reset;
 - flight reset and WebXR entry;
 - M5 host configuration, preview, and status;
 - sound, picture, controller, and headset status summaries;
@@ -19,10 +19,16 @@ render pass.
 
 ## Planned
 
-An installation session model may add explicit boarding, active-show, return,
-and safety-exit phases. It should be the smallest state machine that real staff
-procedures require. Staff must see why a required device acknowledgement is
-missing and retain a documented manual fallback.
+Show owns playback, language and time commands; the existing Runtime owns full
+visitor termination and fresh startup. All surfaces share those commands and own
+only presentation/input. Remove forwarding-only adapters and duplicate rules;
+no command bus, UI state store or extra coordinator.
+
+Present the smallest concrete operator sequence for boarding, start, restart and
+safety exit before implementation. Validate a full-page reload candidate on
+Windows-PCVR, including XR termination/re-entry and audio permission. It is not
+yet selected. Staff must see meaningful start failures and missing device
+acknowledgements; no new phase machine is authorized merely by this requirement.
 
 Language should be fixed before a visitor begins. Passthrough and headset state
 belong to this session flow only after the delivery-platform tests establish a
@@ -30,7 +36,7 @@ controllable mechanism.
 
 ## Open
 
-- Whether a tutorial is a separate phase or unnecessary after visitor testing.
+- Required tutorial: concrete content, timing, audio rights and start behavior.
 - Which device confirmations must block start versus warn and permit override.
 - Exact reset, safety exit, and recovery behavior at the venue.
 

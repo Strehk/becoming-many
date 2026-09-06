@@ -7,28 +7,24 @@ Boundary: Runtime mechanisms and concrete content implementations live elsewhere
 
 # Levels
 
-This folder owns the authored configuration blocks, the sense layers built from
-them, the typed standalone level presets, the preloaded show composition,
-concrete world construction, and the runtime that turns either request into one
-running world.
+This folder owns typed level configuration, concrete world construction and the
+existing runtime that turns a static or show request into one world.
 
-Every `*.level.ts` exports one data-only `LevelPreset`: its own presentation
-values followed by the sense layers it carries, spread in ladder order. Omitted
-layers are intentionally off. The narrative names remain ordered as:
+D3/#85 requires explicit, independently readable TypeScript levels following
+`test.level.ts`. An absent module is not requested; omitted optional settings use
+its documented defaults; invalid required settings fail during preparation.
+Before migration, review the smallest mapping into one prepared show world and
+compare effective settings. Remove layer spreads, hidden override order and
+exclusive helpers/tests together. See the binding
+[target architecture](../../docs/target-architecture.md).
+
+The current implementation still uses `authored/` blocks and `sense-layers.ts`,
+including a thermal motion override. This is the migration source, not the rule
+for new configuration. Narrative names remain ordered as:
 
 ```text
 white-world → scent → echo → motion → thermal → magnetic → connections
 ```
-
-`authored/` holds each configuration block exactly once, typed against the
-module contract it configures. `sense-layers.ts` groups those blocks into one
-layer per sense. A level names layers, never another level, so the ordering is
-the experience and not code inheritance — and a retune of a sense is one edit
-that reaches every level carrying it. Layers only add keys, with one named
-exception: the thermal layer carries `HEAT_MOTION_SENSE`, the motion sense with
-its bird trail repainted, defined beside the base value it deviates from.
-Scent's invisible plants take their placement from `authored/vegetation.ts`,
-so a trail a traveler follows in Scent rises where Echo later shows a plant.
 
 `test.level.ts` and `designTest.level.ts` are diagnostic/integration presets,
 not narrative states. The Test preset still uses the older Grass module and

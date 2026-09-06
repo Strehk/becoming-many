@@ -28,11 +28,12 @@ implementation steps. Test counts and coverage percentages are not goals.
 | --- | --- |
 | Documentation/evidence only | Lint, links, JSON validity and preservation of essential values/identities; no application build or browser replay without a behavior/configuration change |
 | Application/runtime/configuration | Focused tests, repository gates, production browser smoke and affected interactions |
-| Shared ownership/async work | Current consumers, invalid states, unload/restart, late results and failure/recovery |
+| Explicit level migration | Compare effective settings and module membership; verify absent modules, module defaults and clear preparation failures for missing/invalid required settings |
+| Shared ownership/async work | Current consumers, failed/cancelled start, full end/fresh start, late results and long-running visitor cycles |
 | Browser/test tooling | Its affected scenarios and failure detection; preserve independent application evidence when its inputs are unchanged |
 | Rendering, audio, streaming or scheduling behavior/cost | Relevant before/after counters, comparable headed timings and normal-show checks |
 | Milestone | Integrated browser/counter checks, full EN/DE show, cumulative architecture review and human acceptance |
-| Physical-device behavior | The named PICO/M5/Windows/venue matrix in the issue; desktop simulation is insufficient |
+| Physical-device behavior | Actual Windows-PCVR installation over USB-C, headset and M5/venue matrix; Mac simulation is insufficient |
 
 For application work, run repository gates after implementation/simplification,
 not after every edit. Before an authorized checkpoint/commit, run the complete
@@ -64,7 +65,9 @@ Existing commands and supported scenarios live in
 - Smoke must exercise ready states, not only HTTP 200: `/`, `/test.html`,
   `/conductor.html`, `/flash.html` and the named level routes.
 - Check real controls where affected: audio wake, play/hold/resume, cue seek,
-  EN/DE, reset and second visitor. A reset retaining World is not Run disposal.
+  EN/DE and fresh visitor restart. All surfaces must use the same Show commands
+  and Runtime restart policy. Existing time/position reset evidence is not
+  complete end/fresh-start acceptance.
 - Fail on unexpected exceptions, request/asset failures, shader/context loss.
   Negative scenarios assert their exact expected failure; no broad allowlist.
 - Verify station `/config` and `/health` where relevant. Flash smoke does not
@@ -74,6 +77,17 @@ Existing commands and supported scenarios live in
   a screenshot after failed input is not proof of the intended view.
 - Capture traces/screenshots in separate functional/diagnostic runs, not timing
   runs. Human review records visible and audible behavior on the exact candidate.
+- Verify many successive visitors, failed/cancelled starts and late assets,
+  workers/audio/XR results: no old run may publish into its successor; shared
+  source assets remain valid until their final borrower ends. During one visit,
+  the prepared world persists and transitions use the common bounded preparation
+  strategy. Compare first/repeated transitions and sustained resource behavior.
+- Before choosing page reload for restart, test the actual Windows-PCVR USB-C
+  flow: XR termination/re-entry, audio gesture and operator steps. Present that
+  concrete operating choice before implementation; automatic VR return is unproved.
+- Normal Experience operation has no extra GPU probe or renderer. Diagnostic
+  surfaces own measurement; verify visible operating state and startup failures
+  survive the separation, without routing UI metrics through Runtime.
 
 ## Performance comparisons
 
@@ -107,8 +121,16 @@ of the exact reference change, including understood workload differences.
 Cold-transition checks compare first and repeated activation in a fresh context;
 profiling identifies linking/uploads separately. Long-session and disposal
 claims require their relevant repeated/sustained cases. Target 90 Hz acceptance
-requires a physical PICO and the actual host/compositor/transport setup. Desktop
-results do not authorize a fallback quality or refresh-rate decision.
+requires the actual Windows-PCVR installation, USB-C transfer and headset,
+including host/compositor/encode/decode. Mac browser runs detect regressions;
+they do not authorize a fallback quality or refresh-rate decision. Standalone
+PICO belongs to a later separate project, not this acceptance matrix.
+
+For #78, bound the investigation to a defined camera pose, intended scene and
+available content, repeatable counters and understandable relevant differences.
+Do not reconstruct every historical triangle. Propose the concretely verified
+scene as the reference afterward; the existing numerical candidate remains
+unapproved. Preserve old failures/comparisons and await exact update approval.
 
 ## Failure and retention
 

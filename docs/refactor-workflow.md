@@ -40,9 +40,11 @@ Do not add another plan, status ledger or completion template.
 
 1. Read the live issue, comments, prerequisites, relevant code/tests and Git
    history. Reconcile stale claims against the checkout before implementation.
-2. State the owner, behavior, smallest complete change and paths to remove.
-   Resolve any dependent open decision. Check installed-library documentation
-   before library-specific work; use Context7 first when available.
+2. Before substantial work, state what becomes simpler, what disappears, which
+   existing owner keeps the responsibility, and why any added structure is needed.
+   Resolve dependent open decisions with a concrete result, recommendation and
+   consequences. Routine implementation choices need no extra gate. Check library
+   documentation before library-specific work; use Context7 first when available.
 3. Capture the relevant baseline from this branch. Identify the source revision
    and dirty diff, not just HEAD. Apply the test plan according to actual risk.
 4. Implement at the existing owner. Remove replaced code, contracts, settings,
@@ -58,7 +60,8 @@ Do not add another plan, status ledger or completion template.
 
 Every implementation ends with these questions, answered briefly in its issue:
 
-- Is responsibility clearer, and can start, one frame and end be read directly?
+- Is responsibility clearer, and can start, one frame, end and visitor restart
+  be read directly at their existing owner?
 - Which obsolete paths, states, wrappers, contracts and tests actually disappear?
 - Is every new file, abstraction, dependency and persistent state necessary for
   a current behavior? Reuse/direct code comes before another owner or interface.
@@ -66,15 +69,18 @@ Every implementation ends with these questions, answered briefly in its issue:
   it separately? Do similar operations truly share semantics and lifetime?
 - Does the retained test suite protect current behavior rather than the old
   implementation? Apply the test plan's deletion rules.
-- What grew or shrank in application code, tests, documentation and artifacts,
-  including untracked files? Explain net growth and remove incidental bulk.
+- Report growth/removal separately for production logic, explicit configuration,
+  tests/test tools, and documentation/measurement artifacts, including untracked
+  files. Did states, forwarding, dependencies and required file jumps decrease?
 
-For structural refactors, removal and fewer concepts are the default outcome.
-A necessary correctness fix can grow; explain why the smaller alternative is
-insufficient. Do not game line counts with minification, dense code or moved
-files. Do not create a size-reporting framework or a mandatory report file.
-Readable code and useful evidence matter more than an arbitrary negative total.
-Use `test.level.ts` as a reference for direct authored configuration.
+Structural refactors should leave less production logic and fewer connections
+and concepts. Explain production growth before completion: a necessary bug fix
+can justify it; a claimed simplification with more structure must be reworked
+or explicitly decided. More explicit level parameters are allowed when they
+replace indirect configuration, scripts or wiring; name those deletions and
+compare effective settings. Use `test.level.ts` as the readability reference.
+Dense code, weak names and moved files do not count as removal. Use the existing
+issue review and human gates; add no audit framework or mandatory report file.
 
 Fallow supplements review: distinguish inherited findings from regressions,
 prove new boundary rules with a temporary violation, then remove that fixture.
@@ -88,7 +94,7 @@ approval for the concrete owner/consumer/removal proposal unless already given.
 | --- | --- |
 | Every issue | Code/architecture review and applicable verification |
 | Visible behavior | Prepared human browser check; required device checks remain separate |
-| Three implemented issues or milestone boundary, whichever comes first | Cumulative human code/architecture review before another implementation |
+| Three implemented issues or milestone boundary, whichever comes first | Cumulative human behavior, architecture and size review before another implementation |
 | Open structural or product choice | Decision before dependent implementation |
 | M0 and later milestones | Integrated behavior, ownership, measurement/evidence review |
 
@@ -97,6 +103,11 @@ roadmap alone records the count and last actual review. Prepare three to five
 concrete actions in a visible production browser, with expected behavior and
 remaining uncertainties. Record the actual response and tested state; silence,
 a request to correct review findings, or a successful test is not acceptance.
+New owners/abstractions, unplanned content changes and unjustified growth need
+an explicit decision unless already approved. Basic Windows-PCVR startup and
+visitor restart must be investigated early enough to inform dependent designs.
+Present the concrete restart operation before implementation; page reload is
+a candidate to validate on Windows-PCVR, not assumed automatic XR re-entry.
 
 ## Evidence, feedback and integration
 

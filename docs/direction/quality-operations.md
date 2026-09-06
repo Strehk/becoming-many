@@ -27,7 +27,7 @@ intervention, and confirm resource counts return to a stable range.
 
 ## Open
 
-- Final standalone-versus-PCVR profile and budgets.
+- Measured Windows-PCVR USB-C 90-Hz frame/transport evidence on the actual matrix.
 - Whether PR CI is worth adding for the existing static gates.
 - Automated firmware artifact production and version matching.
 - Exact soak duration and venue sign-off procedure.

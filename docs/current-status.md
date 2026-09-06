@@ -1,6 +1,6 @@
 # Current Development Status
 
-As-built snapshot: 2026-09-06, source checkpoint `5856c35` on `david_refactor`.
+As-built snapshot: 2026-09-06, source checkpoint `3cb862e` on `david_refactor`.
 Dated measurement packets retain the earlier exact identities they tested;
 the current checkout is the authority for runtime details.
 
@@ -13,8 +13,11 @@ credits. The project is now in
 a stabilization and refinement phase rather than an MVP construction phase.
 
 Current priorities are measured performance, stability, code cleanup, and
-issue fixes. Small product additions remain possible when they have a concrete
-issue and a bounded implementation.
+issue fixes. The approved target is Windows-PCVR over USB-C with stable 90 Hz
+on the actual installation. Tutorial and credits are required; remaining content
+and operation decisions are tracked in the roadmap. Complete visitor teardown
+and fresh startup, explicit levels and animal-connection removal are approved
+direction, not implemented behavior. Small additions remain issue-backed.
 
 ## Runnable Surfaces
 
@@ -103,7 +106,7 @@ issue and a bounded implementation.
   Tone.js loads through a dynamic import so benchmarks and bare level pages
   build no audio graph. Its cost is measured on desktop Chromium only (about
   0.1 ms median per update with all layers open); the four `AudioWorklet`
-  Freeverb rooms are unmeasured on the PICO.
+  Freeverb rooms are unmeasured on the target Windows-PCVR installation.
 - The conductor page provides transport, timeline, language, session reset,
   WebXR entry, M5 controls, status, and technician-only details.
 - The Bun station server serves `dist/`, `/config`, and `/health`; it carries no

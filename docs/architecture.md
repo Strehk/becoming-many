@@ -1,7 +1,9 @@
 # Architecture
 
 This document describes the current implementation. Product direction and open
-deployment choices live under [direction](direction/README.md).
+operational choices live under [direction](direction/README.md). The binding
+[target architecture](target-architecture.md) specifies approved changes that are
+not yet implemented. Windows-PCVR over USB-C is the installation target.
 
 ## Runtime Surfaces
 
@@ -139,6 +141,11 @@ lifecycle acceptance.
 
 ## Levels and Show
 
+The current layer-based implementation below is scheduled for replacement by
+D3: independent explicit TypeScript levels, with module-owned defaults. The
+smallest level/show construction solution must be reviewed before that migration;
+it must preserve one prepared world per visit.
+
 Files in `src/levels/*.level.ts` are typed startup recipes: each owns its
 presentation values and spreads the sense layers up to its rung, in ladder
 order. The layers live in `src/levels/sense-layers.ts` and are built from the
@@ -167,6 +174,11 @@ onto audio time each frame. Tone.js arrives through a dynamic import inside
 see [Architecture Decisions](architecture-decisions.md).
 
 ## Station and Control Boundaries
+
+The current forwarding and reset paths described here remain implementation
+debt under D1/D2: Show must own shared playback/language/time commands, and the
+existing Runtime must own complete visitor termination and fresh startup. Today
+a time/position reset does not establish that lifecycle.
 
 The Conductor imports the public level/runtime contracts and commands the show
 through `src/conductor/show-actions.ts`. It reads a snapshot each frame rather

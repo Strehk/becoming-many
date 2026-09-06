@@ -1,18 +1,21 @@
 # Performance
 
-Performance is the primary product requirement. Stable physical-headset output
-is the authority; desktop and deterministic runs are regression instruments.
+Performance is the primary product requirement. Stable output on the actual
+Windows-PCVR installation is the authority; Mac browser and deterministic runs
+are development/regression instruments.
 
 ## Targets
 
-- Primary: stable 90 Hz, an 11.11 ms frame interval, on PICO 4.
-- Candidate fallback: stable 72 Hz, a 13.89 ms frame interval, only when
-  explicitly accepted from physical measurements.
-- The application must leave time for the browser or XR host, compositor,
-  audio, streaming, and—on PCVR—encode, transport, and decode.
+- Stable 90 Hz, an 11.11 ms frame interval, on Windows-PCVR over USB-C,
+  including the actual headset, host/compositor, encode, transfer and decode.
+- The application must leave time for browser/XR host, compositor, audio and
+  bounded streaming. A different refresh target needs a new explicit decision.
+- Standalone PICO belongs to a separate project after this PC installation;
+  do not add speculative standalone paths here.
 
-No current physical PICO 4 acceptance is recorded for the complete show or the
-narrative Grass Clipmap. Wired Windows/SteamVR/PICO startup is also unresolved.
+The complete show and narrative Grass Clipmap have no current installation
+acceptance. Basic Windows-PCVR startup and the fresh-visitor operating flow need
+early physical validation, including any proposed page reload and XR re-entry.
 
 ## Current Structure
 
@@ -37,6 +40,12 @@ budget. Thermal fragment work, physical first-use validation, Grass ownership,
 redundant diagnostics, and complete-show transitions remain active performance
 concerns.
 
+The confirmed target keeps the prepared world throughout a visit, with one
+preparation/resource/background-work strategy for quiet transitions. Between
+visitors the old run ends fully and a fresh one starts. Failed starts and late
+asynchronous work follow the same resource ownership; sustained visitor cycles
+must prove stability. Normal operation adds no diagnostic GPU probes/renderers.
+
 ## Deterministic Benchmark
 
 `bun run benchmark` replays an authored route after `bun run build`. It replaces
@@ -51,6 +60,12 @@ with deterministic equivalents. Consequently:
 The [exact stored/current counter comparison](evidence/issue-78/README.md)
 records all nine levels and the seven failing references. Repeated headed runs
 agree, including the after-#82 run; the production baseline remains unchanged.
+
+#78 now uses a bounded comparison of a defined pose, intended scene, available
+content and repeatable counters. Explain relevant differences, then propose the
+concretely verified scene as the new reference; exhaustive reconstruction of
+historical triangles is unnecessary. The existing numerical candidate is not
+approved. Preserve the previous failures/comparisons before any explicit update.
 
 These counters include degenerate triangles emitted by shader-culling paths and
 therefore overstate visible grass geometry. The full-profile baseline has not
@@ -136,7 +151,7 @@ renderer counters, queue depth, and streaming drain. Still needed are:
 - physical first-use transition and shader-compilation cost;
 - stale job and long-flight memory behavior;
 - module load, activation, deactivation, and unload cost;
-- physical PICO frame timing for the complete show;
+- actual Windows-PCVR/headset frame timing for the complete show;
 - PCVR render, encode, USB transport, decode, and end-to-end latency.
 
 The relevant issues are grouped under Performance in

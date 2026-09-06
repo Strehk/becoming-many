@@ -24,26 +24,21 @@ history belongs in Git; unresolved product and deployment questions belong in
   it is not a parallel runtime.
 - Concrete content modules never import sibling modules. Level Composition
   connects them through small directional contracts.
-- Every authored block exists once, in `src/levels/authored/`, typed against
-  the module contract it configures. `src/levels/sense-layers.ts` groups those
-  blocks into one layer per sense of the ladder. A standalone `LevelPreset` is
-  its own presentation values plus the layers up to its rung, spread in ladder
-  order; `ShowComposition.world` is the spread of every layer. A change to a
-  block therefore reaches every level that carries that sense, which is what
-  "senses layer, never swap" means. `ShowComposition` and `ShowLevelState` are
-  separate contracts because they have different lifecycles and consumers.
-- Layers only add keys, with one named exception: `THERMAL_LAYER.motion` is
-  `HEAT_MOTION_SENSE`, derived beside `MOTION_SENSE` with the bird trail
-  repainted, so the deviation is one greppable value rather than a nested
-  override inside a level. The opening show state is still applied before
-  view-dependent resources are allocated.
-- The design stays simple: there is no preset inheritance, deep merge, module
-  registry, dependency-injection container, or second runtime. A level file
-  says which senses it carries; the values live where the sense is authored.
-- The execution path is directly traceable: a static request points to one
-  `LevelPreset`; a show request points to one `ShowComposition` and one state
-  map; Level Composition constructs the world; Level Runtime starts and updates
-  it; Show Runtime follows the schedule.
+- Confirmed 2026-09-06, D3: level files state their modules and desired settings
+  explicitly and independently, using `test.level.ts` as the reading model.
+  Remove layer spreads, inheritance, hidden overrides and exclusively required
+  helpers. This supersedes the old `authored/` plus `sense-layers.ts` convention.
+- Missing module means absent from that level. A present module uses its
+  documented module-owned defaults for omitted optional settings. Missing
+  required or invalid settings fail clearly during preparation before the visit.
+  No generic deep merge or silent repair. Technical defaults live once at modules.
+- More explicit configuration is allowed when it replaces real indirection.
+  Before D3's rewrite, present the smallest direct mapping into one prepared
+  Show world, with no second contradictory Show configuration or repeated
+  resource teardown. Compare effective settings and remove replaced consumers
+  and exclusive tests in the same step.
+- Startup and the local frame/end remain directly readable at existing owners.
+  No registry, dependency-injection container, helper chain or second runtime.
 - World facts flow from `WorldSurface` and permanent world contracts into
   modules. Modules do not mutate those facts.
 - Material effects cross module boundaries through the shared shader-patch
@@ -64,19 +59,27 @@ history belongs in Git; unresolved product and deployment questions belong in
   Grass Clipmap is the sole target renderer for Show and all Grass-bearing
   diagnostic levels. #13 migrates Test/Design Test and removes the complete legacy
   implementation, contracts, configuration, loading path and exclusive tests.
-  Migration and performance/PICO acceptance remain outstanding; owner selection
+  Migration and actual Windows-PCVR/USB-C acceptance remain outstanding; owner selection
   is settled.
 - World Surface owns zone conditions, thresholds and shared continuous transition
   weights. Grass Clipmap, Vegetation and Rocks derive their coverage/density from
   those weights under #71; genuine habitat exclusions retain hard classification
   from the same conditions. No consumer-local zone authority is permitted.
-  Vegetation footprint representation and #72's precise culling correction remain
-  open as specified in target D5.
+  Vegetation owns one plant-placement decision shared by rendering, scent and
+  Mycelium. Remove separate riverbank checks and stand-in footprints. Prefer a
+  ground-distance rule independent of loaded models; per-species distances
+  belong to existing definitions. Before changing appearance, decide the actual
+  distance and crown overhang from a small comparable riverbank. #72's precise
+  culling correction remains a separate focused comparison.
 - Magnetic Sense is self-contained and sky-only. It does not patch Terrain,
   Grass, or other module materials.
 - Connections topology is generated in a module-owned worker and published into
   fixed render pools. Providers expose anchors through contracts rather than
-  module imports.
+  module imports. D4 retirement is approved: Mycelium connects trees and fixed
+  world points, never animals. Remove animal-only position projections,
+  contracts, wiring, reserved buffers, settings and tests; preserve movement,
+  animation and animal body information needed by scent/heat. Describe current
+  fixed anchor classes before any further content removal.
 
 ## Show, Input, and Station
 
@@ -95,8 +98,14 @@ history belongs in Git; unresolved product and deployment questions belong in
   standalone levels, benchmarks, headset diagnostics, and direct-M5 requests.
 - The viewer rig owns locomotion while the camera owns local desktop-look or
   headset pose. Desktop and M5 controls move the same rig.
-- The conductor is one station window that hosts the show in-process. Its panels
-  command a typed actions surface and do not maintain an independent clock.
+- D2: all interfaces call the same domain commands. Show owns playback,
+  language and time; existing Run owns complete visitor restart; UI owns only
+  presentation/input. Remove forwarding adapters, duplicate reset/language/play
+  rules and competing UI state. No command bus or generic control framework.
+- Tutorial and credits are required. Complete/consolidate existing owners;
+  there is no second tutorial, credits or time system. Concrete content,
+  duration, audio rights, start interaction and credits movement need small
+  proposals before their implementation.
 - The Bun station server serves files, health, and deployment facts. It carries
   no show transport or session state.
 - Browser pages validate deployment and controller data at their boundaries.
@@ -123,12 +132,66 @@ history belongs in Git; unresolved product and deployment questions belong in
 - Organ voices fade on the score's derived ramp, the same ramp a sense fades
   on. A voice at zero strength puts its lane to sleep and schedules nothing.
 
+## Complete Visitor Lifetime and Diagnostics
+
+- D1 direction is confirmed: keep start, frame, end and restart directly readable
+  in existing Level Runtime. Retain one prepared world within a visit; end that
+  run completely and construct a fresh run between visitors. Time/position reset
+  alone is insufficient.
+- Preparation, resource use and bounded background work share one strategy at
+  existing owners. No per-level transition workaround, uncontrolled rebuild or
+  extensive first-use work during transitions.
+- The creator owns complete release. Run owns loaded source assets and keeps
+  them valid until every borrower has ended. Failed/cancelled starts and late
+  asynchronous results obey the same lifetime; no partial disposal promise.
+- Full page reload is a simple restart candidate to evaluate, not an approved
+  implementation. Present the concrete operating sequence before changing it;
+  verify Windows-PCVR/USB-C XR termination/re-entry, audio permission and the
+  visitor/operator flow. Never assume automatic XR restart after reload.
+- D6: diagnostic entries own measurement/display. Normal Experience operation
+  creates no extra GPU probe, probe renderer or expensive diagnostic measurement.
+  World provides necessary existing facts through small read-only access;
+  remove Runtime round trips for the UI's own measurements. Preserve visible
+  operating states and understandable startup failures.
+
 ## Performance Evidence
 
-- Stable 90 Hz on physical PICO 4 is the primary target. A measured 72 Hz mode
-  may be accepted only as an explicit fallback.
+- The installation runs on a Windows PC with VR transmission over USB-C. Stable
+  90 Hz must be proved on the actual PC, transport and headset. Prioritize basic
+  PCVR operation and restart validation early enough to inform architecture.
+- Standalone PICO belongs to another project after the PC version is complete.
+  Add no speculative standalone path or automatic lower-rate substitute.
 - Deterministic benchmark counters detect rendering changes; their frame times
   are comparable only on the same machine and rendering path.
-- Desktop results and static gates do not constitute headset or PCVR acceptance.
+- Mac browser results and static gates are development/regression evidence,
+  not actual Windows-PCVR acceptance.
+- #78 uses a bounded fixed-pose/conditions investigation of intended scene,
+  available content and repeatable counters. Explain relevant differences and
+  propose the checked scene as the replacement reference. The existing numeric
+  candidate is not approved; keep old failures/comparisons and never overwrite
+  a reference merely to pass. Exhaustive historical triangle reconstruction
+  is not required.
 - A performance regression blocks completion until removed or explicitly
   accepted with measured evidence.
+
+## Simplicity and Decision Gates
+
+- Before a substantial change, name what becomes simpler, what disappears,
+  which existing owner retains responsibility and why any new structure is
+  necessary. Structural simplification normally reduces production logic,
+  dependencies, states, forwarding and required file jumps.
+- Report production logic, explicit configuration, tests/tooling and
+  documentation/measurement artifacts separately in the existing issue review.
+  More production logic needs a concrete explanation; a claimed simplification
+  with more structure must be revised or explicitly decided. Clear explicit
+  level parameters are allowed only with real removal and setting comparison.
+- Remove replaced implementations, contracts, settings and exclusive tests in
+  the same change. Keep tests only while they protect relevant current risks;
+  retire temporary probes after preserving essential findings, never to hide
+  failures. No additional audit infrastructure or line-count gaming.
+- After at most three implemented issues, perform cumulative human behavior,
+  architecture and size review. Routine choices are autonomous. New owners,
+  abstractions, unplanned content and unexplained growth need a conscious
+  decision. Remaining gates are concrete proposals with consequences, as mapped
+  in the [target architecture](target-architecture.md#10-decisions-issuepr-evidence-and-critical-review)
+  and [roadmap](roadmap.md); confirmed direction is not proof of implementation.

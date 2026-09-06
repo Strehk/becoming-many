@@ -22,14 +22,16 @@ their tunable values.
 
 ## Layering Rule
 
-Each narrative preset carries the prior preset and adds its own layer. The
-default show creates the Connections union once, without the development
-overlay. The show clock then gates modules and blends sense intensities,
-background, and solid-world fade. Flight position is retained throughout.
+The current presets spread shared sense layers; the show prepares their union
+once and gates intensities, background and solid-world fade using the show clock.
+Flight position remains continuous.
 
-This makes the narrative claim structural: senses accumulate rather than swap.
-It also means a change to an early preset can affect every later state and must
-be verified across the chain.
+D3 replaces layer spreads and hidden override order with explicit independent
+TypeScript levels, following `test.level.ts`. Missing module means absent; missing
+optional setting uses its documented module default; invalid or missing required
+settings fail during preparation. A reviewed direct construction plan must preserve
+one prepared world per visit, compare effective settings and avoid a second show
+configuration. Senses still accumulate; resources do not rebuild at every cue.
 
 ## Current Presets
 
@@ -64,6 +66,6 @@ their source files.
 
 All levels share the project performance gate in
 [performance.md](../performance.md). Benchmark counters describe what is drawn;
-physical PICO measurements decide acceptance. Visual references under
+actual Windows-PCVR USB-C measurements decide 90-Hz acceptance. Visual references under
 `docs/moodboards` remain direction, while colors and tunables actually used by
 the application live in typed level and module settings.

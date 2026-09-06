@@ -13,6 +13,9 @@ Futurium venue acceptance test.
 
 ## Planned
 
+Windows-PCVR over USB-C is confirmed. Standalone PICO belongs to a later separate
+project; no alternative standalone path is planned here.
+
 The intended installation consists of two identical independent stations. Each
 has an ICAROS rig, its own M5StickS3, a station PC, a local operator display,
 and a PICO 4 Enterprise headset. Stations share network infrastructure but no
@@ -23,7 +26,6 @@ failure at one station must not stop the other.
 
 ## Open
 
-- Final delivery path: standalone PICO or wired Windows PCVR.
 - Exact station PC, headset edition, OS, browser/runtime, streaming-client, and
   driver versions.
 - Venue network behavior, including client isolation and stable addressing.

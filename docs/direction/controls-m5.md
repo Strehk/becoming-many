@@ -28,8 +28,8 @@ monotonic button counters.
 - Changing the host does not yet fully isolate old in-flight polls (#17).
 - Sequence, calibration, firmware, liveness, and wrong-device behavior need a
   stricter enforcement policy (#18 and #38).
-- The setup page currently persists and may expose Wi-Fi credentials; issue #12
-  makes that unacceptable behavior explicit.
+- #12 now keeps passwords transient and redacts logs; its current wave awaits
+  cumulative human review. Physical flash/setup acceptance remains separate.
 - The firmware binary is built manually; release automation and physical
   flash/setup acceptance are not recorded.
 

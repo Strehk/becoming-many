@@ -12,8 +12,8 @@ These standards guide readable code; they do not require new infrastructure.
 - Apply KISS, YAGNI and Separation of Concerns. Keep construction, live state,
   domain algorithms, UI and external data access distinct without forwarding
   layers that merely repackage the same arguments or results.
-- Keep start, frame and end directly readable in existing owners. Do not move
-  small private functions into files just to reduce function/file length.
+- Keep start, frame, end and visitor restart directly readable in existing
+  owners. Do not move small private functions into files just to reduce length.
 - Introduce a shared abstraction only when current consumers have the same
   semantics and lifetime, and it reduces the work needed to understand them.
 - Do not retain two states for one fact. Derive facts from their owner; remove
@@ -38,7 +38,14 @@ These standards guide readable code; they do not require new infrastructure.
 - Derive a type from its authoritative settings value when no independent
   contract exists. Otherwise annotate with the existing shared contract.
 - Put tunable settings near the top and briefly describe their effect/units.
-  Keep level recipes sparse and data-only; do not copy a preset into consumers.
+  Level recipes explicitly name their modules and desired settings; remove
+  layer spreads, inheritance and hidden override order. Extra configuration
+  lines are justified by removed indirection and unchanged effective settings.
+- An absent module is not requested; an omitted optional setting uses that
+  module's documented default. Missing/invalid required settings fail clearly
+  during preparation before the visit. Technical defaults belong once to the
+  module, without deep merges or silent repair. Propose the smallest direct
+  recipe/show relationship before migration; no competing show configuration.
 
 ## Boundaries and lifetime
 
@@ -46,6 +53,15 @@ These standards guide readable code; they do not require new infrastructure.
   modules do not import siblings; Composition connects directional contracts.
 - The creator owns release. Borrowers do not dispose shared source assets.
   Account for partial startup, cancellation, late async publication and reload.
+- Keep the prepared world throughout one visit. End it fully between visitors
+  and create a fresh run; time/position reset alone is insufficient. Preparation
+  and bounded background work share one strategy, not level-specific workarounds.
+- Show owns playback/language/time; Runtime owns visitor restart. Surfaces own
+  input/display and use those same commands, without forwarding-only adapters,
+  repeated reset rules, command buses or extra UI stores.
+- Diagnostic surfaces own measurement/display. World exposes needed existing
+  renderer facts read-only; normal operation adds no probe renderer or expensive
+  diagnostic measurement. Keep operating state and clear startup errors visible.
 - Keep runtime work and memory bounded through existing capacities, pools,
   recycled buffers and frame-budgeted work. Avoid new coordination mechanisms
   when existing queue, lifecycle or assignment contracts serve the need.
@@ -63,7 +79,7 @@ These standards guide readable code; they do not require new infrastructure.
 - Keep Three.js addon imports under `three/addons/...`; examples are focused
   implementation references, not a reason to introduce their entire architecture.
 - Reuse geometry/material/texture resources and release owned GPU resources,
-  observers and listeners. Prioritize draw calls, shader/mobile cost,
+  observers and listeners. Prioritize draw calls, shader cost on the target installation,
   transparency, allocations and bounded per-frame work before clever tuning.
 - Validate performance through the [test plan](refactor-test-plan.md). Physical
   acceptance and measured exceptions are not inferred from a desktop pass.

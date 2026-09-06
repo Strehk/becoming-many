@@ -1,41 +1,32 @@
 # Open Decisions
 
-These choices require discussion or physical evidence before implementation
-commits to a path. Current code and engineering standards remain authoritative
-until a decision is recorded here and in the affected canonical documents.
+The [target architecture](../target-architecture.md) and [confirmed decisions](../architecture-decisions.md)
+record the approved direction. This document lists only remaining choices;
+[roadmap](../roadmap.md) owns execution order and current acceptance.
 
-## 1. Final Delivery Platform
+| Decision | Concrete proposal and evidence required | Blocks |
+| --- | --- | --- |
+| Visitor restart and operator sequence | Evaluate a full-page reload on Windows-PCVR over USB-C: XR termination/re-entry, audio permission, staff actions and failure recovery. Recommend the smallest working sequence. Complete old-run termination and fresh startup are mandatory; reload is not yet selected. | #9 restart implementation; #46 visitor handoff; final #36 operations |
+| Independent level/show construction | Present the smallest direct way for explicit TypeScript levels to prepare one world per visit without a contradictory second configuration. Compare current effective settings, document module defaults and preparation errors; remove layer/spread helpers together. | D3 level migration; coordinate preparation with #16 |
+| Vegetation ground clearance | Show the same small bank area using one model-independent ground-distance rule. Recommend a distance and whether crown overhang is allowed; species-specific distances belong to existing definitions only when necessary. Vegetation alone owns acceptance. | #81 visible placement change; subsequent #41 consolidation |
+| Benchmark reference | #78 uses a defined pose, intended scene/assets, repeated counters and a bounded explanation of significant differences. Propose the exact checked scene/reference afterward; the existing candidate is not approved. | Reference update and complete M0 acceptance |
+| Required tutorial | Present content, duration, audio-use rights and start/input behavior using existing show ownership. Whether a tutorial is needed is settled. | #50 final implementation after #46 flow |
+| Required credits | Present final copy/order, longest-language duration, audio-use rights, start and flight behavior. Consolidate existing credits under the show clock. | #51 completion |
+| Animal motion and encounters | Reconcile current #29 arc/lookahead behavior; for #47–#49 propose course-relative versus gaze-guaranteed passages, cue overlap and approved Bat asset. | Only those motion/encounter changes |
+| Physical operation | Exact Windows/GPU/driver/browser/XR/streaming/cable/headset matrix, M5 polarity/calibration, safety/see-through procedures, venue network and recovery duration. | #42/#33/#18/#38/#46/#54 physical acceptance |
 
-Choose between standalone PICO WebXR and wired Windows PCVR only after both
-relevant paths have been tested on the intended hardware matrix.
+Windows-PCVR over USB-C is decided, with stable 90 Hz measured across the actual
+installation. Standalone PICO is a later separate project. Do not reopen a platform
+contest or prebuild standalone paths. Early #42/#54 evidence informs restart;
+basic commissioning does not depend on completing #14's diagnostic cleanup.
 
-Acceptance evidence must cover complete-show frame timing, startup, tracking,
-audio, M5 connectivity, repeated-session recovery, operator workflow, and—on
-PCVR—render/encode/USB/decode latency. Wireless streaming is not the current
-installation baseline.
+D1/D2/D6 lifecycle, shared commands and diagnostic separation are approved.
+D3 explicit levels and D4 animal–Mycelium removal are approved. D4 must inventory
+existing fixed anchor classes before removing anything beyond animal links;
+animal animation, movement, Scent and Thermal information remain intact.
 
-Until decided, mobile-first PICO 4 performance rules remain the stricter design
-constraint.
-
-## 2. Passthrough and Session Flow
-
-The Conductor and show clock are implemented; an installation session state
-machine and passthrough onboarding/offboarding are not. Decide after the
-delivery-platform test establishes which headset state changes can be commanded
-and confirmed.
-
-The smallest candidate is a local Conductor-owned phase model around boarding,
-active show, return, and safety exit. Do not introduce a global event bus,
-service locator, remote operator service, or second schedule authority. One-shot
-staged moments — the animal passages — are scheduled data read by a show-time
-lookup, so they are not an argument for a trigger channel; see
-[An Animal Passage Is Scheduled Data, Not a Triggered Event](../architecture-decisions.md).
-
-## 3. Additional Installation Runtimes
-
-Browser source, Bun station server, M5 firmware, and the flash page have stable
-homes. An Android headset agent or technician CLI remains unapproved.
-
-Add either only when a tested installation requirement cannot be met by the
-current runtime and normal device tooling. Split new code by runtime boundary,
-keep its protocol narrow, and record how it degrades when unavailable.
+No additional runtime, command bus, UI state store, general world-object manager
+or audit framework is authorized. An Android agent or technician CLI needs a
+concrete unmet requirement and a separate owner/consumer/removal decision. Routine
+implementation choices remain with the implementer; new ownership, unexplained
+production growth and unplanned content changes require a concrete proposal.

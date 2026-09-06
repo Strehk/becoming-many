@@ -1,48 +1,40 @@
 # Platforms
 
-## Current Browser Runtime
+## Confirmed Installation Target
 
-The same Vite/Three.js/WebGL2 application runs on desktop and through WebXR.
-Desktop uses pointer-lock and keyboard controls; immersive sessions use one
-user-triggered VR entry and the existing render loop. The WebGL context is
-created XR-compatible.
+Windows-PCVR over USB-C is the delivery platform. Target stable 90 Hz on the
+actual Windows PC, XR runtime, streaming/USB transport and headset together.
+Standalone PICO belongs to a separate project after the PC version is complete;
+do not add a second deployment or rendering path in anticipation.
 
-The implementation contains no current passthrough or `immersive-ar` flow.
+Mac browser testing remains the local development and regression path. Neither
+its refresh rate nor deterministic counters prove Windows-PCVR acceptance.
 
-## Current Station Runtime
+## Current Runtime
 
-The station package consists of one browser window and one small Bun server:
+The Vite/Three.js/WebGL2 application uses one renderer and render loop for desktop
+and user-triggered WebXR. Desktop uses pointer-lock and keyboard flight; the
+viewer rig preserves local headset pose. The context is created XR-compatible.
+There is no implemented passthrough or `immersive-ar` flow.
 
-- `/conductor.html` hosts the show and operator controls in-process;
-- the server serves the built files plus `/config` and `/health`;
-- Docker packaging, an explicit release-image update path, and a Windows kiosk
-  launcher are present;
-- an optional M5 simulator supports development without hardware.
+The station has one browser window and a Bun server: Conductor hosts the show;
+the server serves files, `/config` and `/health`. Docker packaging, a release-image
+update path, a Windows kiosk launcher and an optional M5 simulator exist. Their
+presence does not establish reliable installation operation.
 
-This is implemented deployment infrastructure, not proof of venue reliability.
-Recovery, session-state, telemetry, and security work remains issue-backed.
+## Early Physical Validation
 
-## Standalone PICO
+[#42](https://github.com/Strehk/becoming-many/issues/42) owns basic Windows-PCVR
+startup and diagnosis. Begin with existing tooling; do not wait for a diagnostic
+refactor to collect the exact hardware/software/cable matrix. Distinguish app,
+WebXR host, XR runtime, streaming, cable and headset failures before fixing code.
 
-PICO 4 remains the primary performance target. WebXR entry and rig locomotion
-are implemented and covered by automated contract tests, but the complete
-current show has no recorded physical PICO 4 performance acceptance. XR flight
-also requires final device validation.
+Evaluate full-page reload as a simple visitor restart candidate: XR exit,
+re-entry, audio permission and operator actions must work on the actual setup.
+Present the concrete sequence and implications before selecting it. A reload is
+not assumed to resume VR automatically. Full teardown, failed/cancelled startup
+cleanup and fresh visitors remain required whichever mechanism is selected.
 
-Target-device evidence must record headset model, browser/runtime version,
-refresh rate, level or route, frame timing, and observed recovery behavior.
-
-## Windows PCVR
-
-Wired Windows/SteamVR/PICO delivery remains an open validation path. Current
-code does not establish that the station can start and present reliably through
-PICO Business Streaming. Issue #42 owns physical reproduction and diagnosis;
-the result must distinguish application, WebXR host, SteamVR, streaming, cable,
-and headset failures before choosing a fix.
-
-## Open Delivery Decision
-
-The installation still needs measured evidence before choosing standalone PICO
-or Windows PCVR as its final delivery baseline. That decision and the associated
-passthrough question are tracked in
-[direction/open-decisions.md](direction/open-decisions.md).
+Record complete-show frame and transport evidence, repeated-visitor recovery,
+and meaningful visible failures. Exact passthrough, safety-exit and venue choices
+remain in [open decisions](direction/open-decisions.md); platform selection does not.

@@ -1,42 +1,33 @@
-# Target Architecture — First Strategic Draft
+# Target Architecture
 
 ## 1. Status and scope
 
-**Authority update, 2026-09-05:** the user has made this document binding for
-the refactor. Its explicitly open decisions remain open, and existing roadmap,
-verification and human acceptance gates still apply. The draft labels below
-preserve the distinction between observed implementation, target direction and
-approval still required; this update does not record M0 acceptance.
+**Binding decisions, 2026-09-06:** D1/D2/D3/D4/D6 direction, Vegetation's shared
+placement ownership, required tutorial/credits and Windows-PCVR over USB-C are
+confirmed. D5's Clipmap-only renderer and central World Surface zone weights
+remain confirmed. These decisions replace the earlier optional directions;
+implementation and acceptance follow the [roadmap](roadmap.md), not this
+historical investigation's issue order.
 
-First discussion draft, 2026-09-05, based on `david_refactor` at
-`9bfb84b5699a210e78ec81a295a2b028907af726` **plus the existing local M0 changes**:
-workflow, standards, roadmap/status/performance documentation, Fallow rules,
-package commands, benchmark/browser tooling and retained issue-75 evidence.
-Those changes are preserved. This document authorizes no implementation or Git
-operation; the [roadmap checkpoint](roadmap.md) and pending human M0 review remain.
+The target is a readable, smaller system at existing owners: fewer production
+paths, dependencies, states and necessary file jumps. Remove replaced code,
+contracts, configuration and exclusive tests together. Moving or compressing
+code is not removal. No extra coordinator, forwarding layer or audit system.
 
-**Observed** identifies code or dated evidence; **Recommend** identifies this
-target; **Open** identifies required decisions or measurements. Current
-[architecture decisions](architecture-decisions.md) remain binding until their
-explicit replacement is approved. **Confirmed by the user on 2026-09-05:**
-Clipmap is the only target Grass renderer; World Surface owns zone conditions,
-thresholds and continuous transition weights shared by Grass, Vegetation and
-Rocks. D5 records this decision and its full legacy removal. Renderer selection
-is settled; performance/PICO acceptance and implementation remain outstanding.
-The original draft investigation updated only this document and left the
-confirmed-decisions file unchanged. The subsequent binding reconciliation
-updated [architecture decisions](architecture-decisions.md), the
-[workflow](refactor-workflow.md) and [roadmap](roadmap.md) to match confirmed
-direction while preserving open choices. The objective is to remove ownership
-gaps and unused capabilities while retaining the mechanisms that bound one world.
+**Confirmed** names direction; **Observed** names code or dated evidence;
+**Open** names a concrete remaining choice, never permission to silently choose.
+Restart operation (including a possible page reload), direct level-to-show
+construction, riverbank clearance/overhang and tutorial/credits details need
+small reviewable proposals before their dependent changes. None of these gates
+reopens the confirmed owner decisions. Review at most three implemented issues
+before the next cumulative human behavior, architecture and size check.
 
-The live investigation read all **52 issues (41 open, 11 closed), all 17
-comments**, the five user-authored PRs and six relevant open PRs. This corrects
-the roadmap's older 36-open count for this investigation only. Section 10
-synthesizes these inputs; neither an issue nor an unmerged PR proves the current
-implementation. That original investigation changed no GitHub records; the
-subsequent binding reconciliation updated the affected issues and tracker and
-recorded the focused follow-ups #80 and #81.
+The original 2026-09-05 investigation used `9bfb84b` plus local M0 work and read
+52 issues, 17 comments and relevant PRs. Its implementation observations and
+measurements below remain historical evidence, not today's issue status or
+proof of acceptance. Current state belongs in the roadmap and live issues.
+Branch protection remains `david_refactor` only; no additional branch or implied
+Git authorization. See [confirmed decisions](architecture-decisions.md).
 
 ## 2. Necessary capabilities and non-goals
 
@@ -44,10 +35,12 @@ The application must support:
 
 - One independently configured static level, including the diagnostic Test
   level and deterministic benchmark entry.
-- One complete 8:41 show with accumulated senses, scheduled animal passages,
-  English/German narration, organ and closing credits in one preloaded world.
+- One show with accumulated senses, scheduled animal passages, English/German
+  narration, organ, tutorial and closing credits in one prepared world per visit.
+  The current 8:41 schedule is observed; tutorial/credits timing remains a decision.
 - Rehearsal controls or an in-process Conductor, with pause, seek, language
-  selection and a deliberate, paused start for the next visitor.
+  selection and a complete end followed by a fresh run for the next visitor.
+  The concrete restart/start interaction is still to be approved.
 - Desktop flight or validated M5 flight through the same locomotion rig,
   while WebXR or desktop look retains ownership of local head pose.
 - Failure recovery and complete disposal, including partially completed
@@ -57,9 +50,14 @@ The application must support:
 
 No plugin system, editor, multiplayer, remote command broker, generic service
 container, automatic quality governor or second runtime is needed. Two stations
-do not share show state. Passthrough, tutorial, encounter retiming and delivery
-platform remain [product decisions](direction/open-decisions.md), not implicit
-architecture requirements. Existing diagnostic routes remain real consumers.
+do not share show state. The platform is a Windows PC transmitting VR over
+USB-C, targeting stable 90 Hz on the actual PC/transport/headset installation.
+Standalone PICO belongs to a separate later project: add no speculative path.
+Mac browser runs detect development regressions, not platform acceptance.
+Passthrough, encounter retiming and concrete tutorial/credits semantics remain
+[product decisions](direction/open-decisions.md). Tutorial and credits are
+required; this does not approve passthrough or encounter changes.
+Existing diagnostic routes remain real consumers.
 
 ## 3. Target structure
 
@@ -108,7 +106,7 @@ output against a separate Tone context. Entry-owned DOM refresh is not rendering
 
 **“Run” is the existing `startLevel` invocation and returned handle, not a new
 ApplicationRun file, class or coordinator.** The target adds no runtime owner.
-Keep start, its frame function, reset and end together in `level-runtime.ts`;
+Keep start, its frame function, restart and end together in `level-runtime.ts`;
 keep concrete construction and its return mapping together in
 `level-composition.ts`. Arrange private functions below the public story, in
 reading order. A private function is not a reason for another file.
@@ -126,7 +124,7 @@ not counted as deleting its capability.
 | Existing responsibility | Owned state/resources | Inputs and actual consumers | Calls, end and exclusion |
 | --- | --- | --- | --- |
 | **Entry** (`main.ts`, `test-main.ts`, Conductor) | DOM, bindings, drag/render caches, optional sampler, pending-start cancellation | Request/deployment facts; commands and observations for panels | Starts/cancels/ends one Run; releases its own UI. No show-time or reset policy. |
-| **Run** (`level-runtime.ts`) | Child references, startup/closing state, source GLTF assets | Discriminated request; commands, cancellation and complete `dispose()` for Entry | Direct startup, input selection, local frame/reset/end. No concrete content algorithms or second loop. |
+| **Run** (`level-runtime.ts`) | Child references, startup/closing state, source GLTF assets | Discriminated request; commands, cancellation and complete `dispose()` for Entry | Direct startup, input selection, local frame/restart/end. No concrete content algorithms or second loop. |
 | **Composition** (`level-composition.ts`) | No persistent owner state | Recipes, World, borrowed assets → Surface, ordered modules and ShowWorldReach | Called once by Run; factories clean partial failure. No transport, registry or coordinator object. |
 | **World** (`world-runtime.ts`) | Renderer/context, scene, rig/camera, Timer, XR/resize listeners, ModuleRuntime and StreamQueue | Run's frame function; viewpoint and execution for modules; optional benchmark FrameControl | Run starts it last/stops it first. Owns preparation, render and final release. No level policy or show clock. |
 | **Flight controls** (`control/`) | Desktop capture and input-specific navigation state | Selected desktop/M5 input → rig locomotion; Surface-based limits | Created/reset/disposed by Run; capture and movement math remain local. No protocol parsing or headset-pose overwrite. |
@@ -141,7 +139,8 @@ not counted as deleting its capability.
 connects real composed setters/providers to Show. Plant scent and root anchors
 have different output contracts but one plant-placement owner. Animal body
 observations still feed scent/heat; only the additional live-root-web contract
-is proposed for retirement. No universal module or provider API replaces them.
+is confirmed for complete retirement. No universal module or provider API
+replaces them.
 
 ## 5. Complete target flows
 
@@ -205,11 +204,18 @@ actual routes and bundle boundaries.
 
 ### Show start and one frame
 
-Use the same Run path with the complete `ShowComposition`, not a runtime union
-of static presets. Apply schedule time zero before pool allocation, load once,
-retain World's preparation operation, create Show/audio followers and apply initial
-gates before the first visible frame. Rehearsal requests play; Conductor holds.
-Audio suspension still prevents Show's timebase from advancing.
+Use one Run and one prepared world throughout the visit. Before D3's rewrite,
+present the smallest direct mapping from independently readable levels into
+that one Show construction and schedule; do not preselect a second authored
+Show configuration or cue-by-cue world reconstruction. Preserve effective
+settings, including the opening state before pool allocation.
+
+Preparation, first use and bounded background work follow one strategy at the
+existing World/Run owners. No per-level transition workaround or uncontrolled
+rebuild; measure first/repeated transitions. The current entries differ in
+initial playback (Rehearsal plays, Conductor holds); the next visitor's explicit
+start operation remains a decision. Audio suspension still prevents Show's
+timebase from advancing.
 
 Preserve the current dependency order:
 
@@ -233,11 +239,17 @@ not a rendered snapshot. Seek changes the one clock; next update derives fades
 and passage position without replaying events. Language change pauses once,
 unloads old narration and rearms the selected language at the same time.
 
-Run's `restartExperience` pauses, seeks zero, resets rig locomotion and
-reconciles followers before rendering. Retain world, language, rehearsal rate,
-M5 connection/calibration as today. Clearing transient desktop input is a
-proposed reset bug fix. Fresh headset calibration (#46) needs a separate
-approved rule; it cannot be achieved by overwriting local camera pose.
+The existing Runtime owns the complete visitor restart: end the old run and
+prepare a fresh run. Retaining the old world by seeking zero and resetting
+position is insufficient. UI invokes that same command rather than defining
+its own sequence. The world remains prepared only within one visit.
+
+**Open before implementation:** present the concrete restart operation,
+including retained operator choices, input/calibration handling and the next
+start gesture. Compare full page reload as the simple alternative on actual
+Windows-PCVR: XR end, re-entry, audio permission and operator flow must work.
+Never assume XR automatically resumes after reload. Fresh headset calibration
+(#46) remains a concrete physical decision; do not overwrite local head pose.
 
 ### End, cancelled start and failed start
 
@@ -255,7 +267,8 @@ A failing factory cleans its partial construction; Composition releases earlier
 handles if a later factory fails. A failing module `load()` cleans allocations
 not yet registered in ModuleRuntime. Failure during preparation or Show creation
 uses Run's same reverse cleanup. Late workers, XR adoption and audio imports
-cannot reattach to a closed Run. Reload remains a technician action, not cleanup.
+cannot reattach to a closed Run. Full page reload is an allowed restart candidate,
+not evidence that these ownership and physical operation obligations are met.
 
 ## 6. Strategic decisions
 
@@ -270,20 +283,21 @@ result in `let running`. Neither offers disposal. `9abde94` separated concrete
 construction and introduced asynchronous preparation; neither requires this
 return-channel inversion.
 
-**Recommend:** World returns a stopped handle. `startLevel` directly constructs,
-prepares, starts and releases it. Its adjacent local frame and end functions
+**Confirmed direction:** `startLevel` directly constructs, prepares, starts and
+releases World through a stopped handle. Its adjacent local frame and end functions
 use those resources directly. Delete the setup/optional-show/frame option
 packages and return-channel helpers listed in §8. `composeLevel` likewise owns
 the construction sequence and final mapping without intermediate wrappers.
 
 Select benchmark, M5 or desktop directly in that frame function; retain capture
-and movement math in their current control files. Put the two-instruction rig
-reset beside the existing reset command. Move compile/offscreen/restore/dispose
+and movement math in their current control files. Any necessary rig initialization
+belongs locally in the reviewed fresh-run sequence; preserving the old reset
+command is not a target requirement. Move compile/offscreen/restore/dispose
 operations unchanged into World, where the renderer lives. This removes three
 one-consumer files without removing their behavior or creating new services.
-Frame arbitration moves from its control wrapper to existing Run coordination;
-this boundary choice requires approval. Composition and ModuleRuntime retain
-their different construction/lifecycle responsibilities.
+Frame arbitration belongs to existing Run coordination; preparation belongs to
+World. These owner directions are confirmed. Composition and ModuleRuntime
+retain their different construction/lifecycle responsibilities.
 
 Run owns the source assets it loads; modules borrow them and own their
 derivatives. Remove module-side `disposeGltfAssets` in the same ownership
@@ -292,14 +306,16 @@ transfer. Shared source geometry must outlive all borrowers, consistent with
 Audit actual image/decoder resources too; moving the existing disposer is not
 proof of completeness. No reference counter is needed for one Run lifetime.
 
-**Approval/risk/proof:** approve this public startup and asset-ownership change.
-Verify the complete start/cancel/failure/dispose/restart flow in §5, including
-late loads and audio. No partially implemented end contract counts as disposal.
+**Remaining gate/proof:** approve the small concrete visitor-restart operation
+before implementing it, with early Windows-PCVR/USB-C evidence for reload, XR
+re-entry and audio wake. Verify §5's complete start/cancel/failure/dispose/restart
+flow, late loads and repeated visitors. No partial end contract counts as
+complete disposal; no reset-only shortcut or transition-specific workaround.
 
 ### D2 — Commands and device state belong to their operational owners
 
-**Need/owner:** Show owns transport/language, Run owns combined visitor reset,
-M5 owns device validity, and entries own presentation, gestures and reload.
+**Need/owner:** Show owns transport/language, Run owns complete visitor restart,
+M5 owns device validity, and entries own presentation and gestures.
 
 **Observed:** [createShowActions](../src/conductor/show-actions.ts) forwards clock
 methods but uniquely defines reset. UI repeats the pause already performed by
@@ -308,7 +324,7 @@ Show's language setter. Conductor and
 DOM/snapshot state can determine commands. `9982d18` already removed the remote
 broker; `fd48b27` deliberately changed visitor reset to hold at zero.
 
-**Recommend:** expose commands on Show/Run and let UI types select those methods.
+**Confirmed:** expose commands on Show/Run and let UI types select those methods.
 Remove the forwarding adapter, UI reset sequences, repeated pause and stale-state
 command decisions. Migrate the real `window.showClock` headset-console consumer
 before removing mutable-clock exposure. Keep the fullscreen/headset rehearsal
@@ -327,32 +343,38 @@ old-host publication and single-valued `controllerType`; consolidate axis
 meaning at flight conversion after physical polarity is confirmed. Neutral
 steering still means glide, not automatic keyboard takeover or a safety hold.
 
-**Approval/risk/proof:** approve command/console ownership changes; test both
-entries through scrub/cancel, language and visitor reset. Device policy needs
-wrong-host/late-response checks and physical evidence. Input clearing and XR
-calibration are identified behavior changes, not consequences of renaming.
+**Proof:** migrate every UI and console consumer to those same commands; test
+scrub/cancel, language and the approved complete visitor restart. Device policy
+needs wrong-host/late-response checks and physical evidence. Input clearing and
+XR calibration remain explicit parts of the restart proposal, not renaming.
 
-### D3 — Prefer explicit recipes over layer spreads; an independent choice
+### D3 — Explicit, independently readable TypeScript levels
 
-**Need/owner:** recipes should show module membership directly while shared
-`authored/` blocks own tuning once. [test.level.ts](../src/levels/test.level.ts)
-achieves direct typed configuration; its 180 m range, colors/densities and
-legacy Grass are diagnostic choices, not target defaults.
+**Confirmed, [#85](https://github.com/Strehk/becoming-many/issues/85):** each level
+states its modules and desired settings directly,
+following [test.level.ts](../src/levels/test.level.ts). Remove layer spreads,
+inheritance, hidden override ordering and helpers used only for that indirection.
+Technical defaults live once with each module; independent levels must not
+require tracing a layer catalog to understand the intended result.
 
-**Observed:** `35b13e6` introduced inheritance; `9abde94` replaced it with copied
-recipes; `8119bea` correctly restored single-copy values through authored blocks
-and [sense-layers.ts](../src/levels/sense-layers.ts). The named Thermal motion
-variant remains selected by spread order; shared values are not mutated.
+- An absent module is not part of that level.
+- A present module with an omitted optional setting uses its documented default.
+- A missing required setting or invalid setting fails clearly during preparation,
+  before the visit. No silent repair or generic deep merge.
 
-**Recommend:** explicit properties such as `motion: HEAT_MOTION_SENSE`; remove
-layer objects, spread-order dependencies and their tests. Repeated membership
-is preferable here to indirect membership; do not repeat tuning values. Retain
-separate `LevelPreset`, `ShowComposition` and `ShowLevelState` lifecycles.
+**Observed history:** `35b13e6` introduced inheritance; `9abde94` replaced it with
+copied recipes; `8119bea` introduced shared authored blocks and
+[sense-layers.ts](../src/levels/sense-layers.ts). These historical conventions no
+longer constrain the confirmed target. Retain independent contracts only when
+they have actual different consumers/lifetimes, not to preserve old indirection.
 
-**Approval/risk/proof:** this replaces a confirmed convention and adds repeated
-property/import lines. Keeping layers is a viable alternative; D3 does not gate
-ownership work. If approved, compare all resolved recipes, including invisible
-plants and the heat variant, before deleting every layer consumer.
+**Open before the rewrite:** present the smallest direct level-to-show solution
+that prepares one world per visit without a second contradictory Show recipe.
+Compare all effective settings, including invisible plants and Thermal motion,
+then remove every replaced layer consumer and exclusive tests atomically.
+More explicit configuration lines are allowed when they improve reading and
+replace helpers, hidden relationships and logic. Report that category separately
+from production logic; preserving needless indirection to save literals fails D3.
 
 ### D4 — Retire the unauthored moving-animal Connections capability
 
@@ -366,15 +388,17 @@ content but reserved the machinery for hypothetical levels.
 The additional Animals position projection, `ConnectionActorSource`, composition
 branch, `updateAnimalLinks`, hysteresis and reserved edge rows remain.
 
-**Recommend:** delete this entire producer-to-consumer capability (exact list
+**Confirmed:** delete this entire producer-to-consumer capability (exact list
 in §8), preserving static topology, worker and `AnimalBodiesObserver`. Keeping
 an unused port also keeps its buffers, algorithms and tests without serving a
 current requirement.
 
-**Approval/risk/proof:** explicitly approve retirement; it was a deliberate
-reserve, not an accidental dead export. Prove static topology/edge indexing and
-Connections output survive the changed pool layout. This is the preferred
-bounded pilot after existing gates. Smaller capacity is no speedup claim.
+**Scope/proof:** retirement is approved. Before any further content removal,
+briefly identify which current fixed anchor classes constitute trees and fixed
+world points. Animal animation/movement and body observations for scent/heat
+remain. Prove static topology, edge indexing and Connections output survive the
+changed pool layout. Do not hide other content changes inside this retirement.
+Smaller reserved capacity alone is no measured speedup.
 
 ### D5 — Clipmap only; World Surface owns all zone transitions
 
@@ -427,15 +451,21 @@ smoothing cannot fix missing meshes, and culling changes cannot fix zone seams.
 The bounds-versus-disabled-culling choice needs a focused correctness/cost
 comparison; it does not reopen the renderer choice.
 
-**Remaining placement recommendation:** Vegetation should also own one accepted
-placement projected into rendering, scent and Connections. Its
-[vegetation-scent.ts](../src/modules/vegetation/vegetation-scent.ts) and
-[vegetation-nodes.ts](../src/modules/vegetation/vegetation-nodes.ts) repeat a
-2.5 m river-footprint stand-in while rendering uses scaled model footprints.
-Remove these competing acceptance approximations through one pure Vegetation
-function. Compare a common conservative radius first; if visually unsuitable,
-use verified model-specific facts with Vegetation-owned provenance. This
-footprint choice is separate from the now-confirmed zone-weight ownership.
+**Confirmed Vegetation placement ownership:** Vegetation owns one decision
+about which plant exists at which position. Rendering, scent and Mycelium use
+that same decision. World Surface supplies terrain, river and zone facts;
+there is no second plant inventory or world-object manager.
+
+Observed `vegetation-scent.ts` and `vegetation-nodes.ts` use a 2.5 m river
+stand-in while rendering uses scaled model footprints. Delete those separate
+riverbank tests and approximations together. Prefer a simple ground-clearance
+rule independent of loaded 3D models; species-specific distances, if needed,
+belong to existing Vegetation definitions.
+
+**Open before changing appearance:** compare one small fixed riverbank region;
+propose its ground distance and whether overhanging crowns are allowed. Obtain
+that concrete visual decision before replacing existing placement. Owner and
+shared-rule direction are settled; numerical distance and overhang are not.
 
 **Acceptance and remaining decisions:** no further approval or renderer contest
 is needed for Clipmap ownership, central zone weights or legacy retirement.
@@ -443,18 +473,17 @@ Validate all migrated entries and the Test-level reading flow. Compare weights
 at identical world coordinates and coverage/density across meadow/forest/slope/
 water boundaries; retain intended habitat exclusions. Check #72 separately at
 fixed grazing views, terrain extrema and changing XR viewpoints. Record changed
-appearance/counters explicitly, then obtain performance and physical PICO 90 Hz
-acceptance. Measurements can require corrections or explicit regression
-acceptance; they do not authorize legacy reintroduction. Vegetation footprint
-representation remains open. This decision does not authorize implementation
-in this documentation task.
+appearance/counters explicitly, then obtain stable 90 Hz evidence on the actual
+Windows-PCVR/USB-C/headset installation. Measurements can require corrections or explicit regression
+acceptance; they do not authorize legacy reintroduction. Vegetation ground
+distance and crown-overhang acceptance remain open before its visual change.
 
 ### D6 — Keep demonstrated technical boundaries; remove owner-level bypasses
 
 **Need/owner:** World owns one renderer/loop and shared work queue; modules own
 bounded resources; Show owns time; entries own diagnostics.
 
-**Recommend:** retain ModuleRuntime, rig/camera separation, fixed slots and the
+**Confirmed:** retain ModuleRuntime, rig/camera separation, fixed slots and the
 Mycelium worker. Resource existence, intensity and active updates are different
 facts. Retain the operations in [renderer preparation](../src/levels/show-renderer-preparation.ts),
 colocated inside World;
@@ -482,8 +511,11 @@ keep only the optional frame input. Put the metrics type with its existing
 sampler. No new observation contract file is needed. The root has no sampler;
 Conductor already reads every 500 ms.
 
-**Approval/risk/proof:** approve the diagnostic/lifecycle boundary changes.
-Keep pre-renderer startup errors visible. Measure preparation, audio and Scent's
+**Confirmed diagnostic separation:** ordinary Experience operation has no extra
+GPU probes, probe renderers or expensive diagnostic measurements. Diagnostic
+entries own measurement/display and read only necessary existing World facts.
+Remove UI-metrics round trips through Run. Keep necessary operator state and
+pre-renderer startup errors visible. Measure preparation, audio and Scent's
 queue-bypass removal as specified below; diagnostic relocation promises no
 unmeasured frame improvement.
 
@@ -510,29 +542,39 @@ unmeasured frame improvement.
   contexts or collect detailed profiles. Operator status remains useful;
   expensive measurements stay explicit and outside timing runs.
 
-[Retained evidence](evidence/issue-75/README.md) has passing static/smoke checks,
+**Historical initial M0 evidence:** [issue-75](evidence/issue-75/README.md) recorded
+passing static/smoke checks,
 inherited Fallow findings, seven failing quick references and large deterministic
 Scent maxima. Deterministic runs replace clock/stream deadlines and exclude audio.
 Real-time Echo reaches 132.4 ms on first crossing versus 17.7 ms on repeat;
 English full playback failed with an audio scheduling exception, and German
 was not run. [Earlier upload comparisons](performance.md) support preparation,
-not completeness. No physical PICO acceptance is recorded.
+not completeness. Later evidence and acceptance status live in the roadmap;
+these old failures are not erased. Physical Windows-PCVR acceptance is separate.
 
 | Decision requiring evidence | Smallest later experiment before broad acceptance |
 | --- | --- |
 | Preparation or stream-step changes | Fresh versus repeated Echo crossing; isolate upload/link diagnosis separately. For Scent, force enqueue rejection and verify bounded retry, valid slot revisions and no synchronous fill. Then compare relevant counters and repeated timings under the test plan. |
-| Confirmed Clipmap migration; #71/#72 | Compare migrated Show/Test/Design Test at fixed routes and authored conditions. For #71, sample shared weights and derived coverage/density at the same boundary coordinates. For #72, compare conservative bounds versus disabled incorrect CPU culling at grazing/extreme-height views, then measure cost. Repeated performance and physical PICO acceptance remain required; renderer ownership is settled. |
-| Vegetation placement facts | Compare accepted candidate IDs, scales and river margins for a small riverbank region across renderer, Scent and Connections. Verify model changes cannot stale the facts. |
-| Organ context lifetime and #79 | Start → gesture → audible rooms → seek/rate/pause → dispose → start, plus dispose during dynamic import. Investigate the scheduling exception separately; then complete EN/DE and PICO audio/frame acceptance. |
+| Confirmed Clipmap migration; #71/#72 | Compare migrated Show/Test/Design Test at fixed routes and authored conditions. For #71, sample shared weights and derived coverage/density at the same boundary coordinates. For #72, compare conservative bounds versus disabled incorrect CPU culling at grazing/extreme-height views, then measure cost. Repeated performance and actual Windows-PCVR/USB-C acceptance remain required; renderer ownership is settled. |
+| Vegetation placement facts | Compare accepted candidate IDs, scales and river margins for a small riverbank region across renderer, Scent and Connections. Use the preferred model-independent ground distance and decide crown overhang before visual replacement. |
+| Organ context lifetime and #79 | Start → gesture → audible rooms → seek/rate/pause → dispose → start, plus dispose during dynamic import. Investigate the scheduling exception separately; then complete EN/DE and actual Windows-PCVR audio/frame acceptance. |
 | Scrub throttling / diagnostics | Repeated pointer drag with audio, or diagnostics off/on at the same route; compare useful behavior and work. Do not delete a throttle based only on its old transport origin. |
 
-No automatic quality reduction or unmeasured speedup is proposed. A 72 Hz
-fallback, rendering-path change or measured regression needs explicit acceptance.
+Stable 90 Hz on actual Windows-PCVR over USB-C is the target; Mac measurements
+are regression evidence only. No automatic quality reduction, standalone path
+or lower-rate substitute is authorized.
+
+For #78, use a bounded investigation: fixed camera/conditions, intended scene
+and available content, repeatable counters and an understandable explanation
+of relevant differences. Do not reconstruct every historical triangle. Propose
+the actually checked scene as the replacement reference afterward; the existing
+numeric candidate is not approved. Preserve old failure/comparison evidence and
+never overwrite a reference merely to turn a check green.
 
 ## 8. Deletion ledger
 
-These are concrete proposed deletions, not work already performed. Whole-file
-removal, behavior retirement and local simplification are distinguished. No
+These are concrete removal obligations; consult live issues for completion.
+Whole-file removal, behavior retirement and local simplification are distinguished. No
 line/file quota justifies deleting needed behavior. Each implementation must
 remove old consumers, obsolete tests and documentation with the replaced path.
 
@@ -540,12 +582,12 @@ remove old consumers, obsolete tests and documentation with the replaced path.
 
 | Current structure | Proven problem | Action | Target owner | Old path eliminated | Dependency / proof |
 | --- | --- | --- | --- | --- | --- |
-| `src/conductor/show-actions.ts` | One adapter forwards commands and uniquely owns reset | Delete file | Existing Show/Run commands; entry reload | `createShowActions`, UI reset sequences, second command route | D2; migrate panels, keys and rehearsal console |
+| `src/conductor/show-actions.ts` | One adapter forwards commands and uniquely owns reset | Delete file | Existing Show commands and Run visitor restart | `createShowActions`, UI reset sequences, second command route | D2; migrate panels, keys and rehearsal console |
 | `src/control/flight-control-source.ts` | Only Run consumes this stateless `readFrame → if → delegate` factory | Delete file, retain behavior | Run's local frame selects; existing controls perform movement | Factory plus `FlightControlSource`, `DesktopFlightSource`, `M5FlightSource` | D1; preserve benchmark/no-device/stale-device semantics in caller tests |
-| `src/control/flight-reset.ts` | Only Run uses its two transform assignments | Delete file, retain behavior | Existing Run reset command/private function | Imported reset wrapper | D1/D2; reset preserves local head pose |
+| `src/control/flight-reset.ts` | Only Run uses its two transform assignments | Remove wrapper when the fresh-run sequence establishes required initialization | Existing Run startup/restart | Imported reset wrapper; reset-only visitor semantics | D1/D2; concrete restart gate first, preserve local head pose |
 | `src/levels/show-renderer-preparation.ts` | Only Run passes World resources through `ShowRenderWorld` | Delete file, retain operations | Existing World closure | `ShowRenderWorld`, separate preparation wrapper/import | D1/D6; same compile, offscreen render, target restoration and release |
-| `src/levels/sense-layers.ts` | Recipe membership and named heat variant depend on spreads | Delete after convention decision | Explicit recipe properties referencing authored blocks | Layer objects, imports and spread-order dependency | D3; equal resolved recipes, no copied tuning |
-| `src/modules/grass/`, `GrassPreset`, `WorldComposition.grass`, two diagnostic `grass` recipes; Composition/Test loader legacy factory and import; `tests/modules/grass.test.ts` | Duplicate renderer and diagnostic-only construction path | Confirmed: delete legacy implementation and exclusive consumers; migrate recipes | Existing Grass Clipmap for Show/Test/Design Test | `createGrass`, `CreateLegacyGrass`, `createLegacyGrass`, legacy shaders/config/loading and exclusive test cases | D5/#13: owner decided; preserve shared effects and Zone Visualizer loading. #40 becomes unnecessary; #71/#72 and PICO acceptance remain |
+| `src/levels/sense-layers.ts` | Recipe membership and named heat variant depend on spreads | Delete after concrete level-to-show proposal | Explicit independent level settings and module defaults | Layer objects, imports and spread-order dependency | D3/#85; compare effective settings and remove indirection; explicit configuration growth allowed |
+| `src/modules/grass/`, `GrassPreset`, `WorldComposition.grass`, two diagnostic `grass` recipes; Composition/Test loader legacy factory and import; `tests/modules/grass.test.ts` | Duplicate renderer and diagnostic-only construction path | Confirmed: delete legacy implementation and exclusive consumers; migrate recipes | Existing Grass Clipmap for Show/Test/Design Test | `createGrass`, `CreateLegacyGrass`, `createLegacyGrass`, legacy shaders/config/loading and exclusive test cases | D5/#13: owner decided; preserve shared effects and Zone Visualizer loading. #40 becomes unnecessary; #71/#72 and Windows-PCVR acceptance remain |
 
 ### Functions, contracts and state removed inside retained files
 
@@ -563,7 +605,7 @@ remove old consumers, obsolete tests and documentation with the replaced path.
 | Old-host M5 source state, late polling publication, `controllerType` and compensating axis mappings | Device state survives its valid lifetime | Replace/reset at existing owner | Existing M5 adapter and flight conversion | Superseded device state and discriminator | #17/#18/#38; one edge consumer, physical polarity |
 | Hard density/coverage branches in `getGrassZoneCoverage` and `selectStaticPlacement`; any module-local zone thresholds/transition math | Consumers derive abrupt visual responses independently; continuous weights absent from WorldSurface | Replace with shared continuous query; delete superseded visual branches | Existing World Surface owns conditions/thresholds/weights; Grass/Vegetation/Rocks own derived content responses | Parallel transition calculation and hard switches used only for coverage/density | Confirmed D5/#71; identical-coordinate agreement, genuine habitat exclusions retained |
 | Clipmap `createLevel` bounding sphere in `grass-clipmap-field.ts` | Bounds do not establish conservative coverage of shader-displaced grass | Replace incorrect bounds or disable incorrect CPU mesh culling | Existing Clipmap geometry/mesh owner | False rejection path; no culling wrapper or service | D5/#72; fixed-view correctness and cost comparison, separate from #71 |
-| Vegetation river-footprint stand-ins and separate acceptance predicates | Rendered plants, scent and anchors disagree | Consolidate after comparison | Pure Vegetation acceptance | Independent placement approximations | D5; common radius first, otherwise verified model facts |
+| Vegetation river-footprint stand-ins and separate acceptance predicates | Rendered plants, scent and anchors disagree | Consolidate after comparison | Pure Vegetation acceptance | Independent placement approximations | D5/#81; shared model-independent ground rule; approve distance and crown overhang at a fixed riverbank |
 | Scent `writeScentSlotSynchronously` after enqueue failure | Queue exhaustion bypasses bounded work | Delete fallback | Scent retry/slot validity; existing queue | Synchronous frame fill on queue rejection | #26; bounded retry and no stale publication |
 | Terrain's old `TerrainMaterialEffect` export/import route | Mycelium imports a sibling implementation | Relocate unchanged; delete old route | Existing shared effect boundary | Old export and imports, no shim | #77; this type move alone is not strategic deletion |
 
@@ -584,7 +626,10 @@ wrapping retained old paths is not completion.
 ## 9. Migration and architectural acceptance
 
 These are candidate change units, **not a replacement roadmap or permission to
-start them**. Existing M0 review, #77/#79/#78 and issue prerequisites remain.
+start them**. Actual roadmap gates, review counts and issue prerequisites remain.
+Prioritize basic Windows-PCVR/USB-C operation and visitor-restart validation
+early enough to inform lifecycle implementation; do not postpone them until a
+finished desktop architecture or add a standalone path.
 Every implemented unit removes its replaced paths in the same change; no
 parallel runtime or permanent compatibility adapter is proposed.
 
@@ -592,11 +637,12 @@ parallel runtime or permanent compatibility adapter is proposed.
    authored absence, remove producer/contract/pool branches together, preserve
    static topology and body observers. Test edge slot indexing and fixed
    Connections output; explain counter changes rather than updating baselines
-   automatically. Obtain a scoped issue before implementation.
+   automatically. Use #80 and first document the existing fixed anchor classes.
 2. **Direct-start unit (#73):** replace the callback return channel for all
    entries together. Flatten the local setup/optional-show/frame chain and
-   Composition's result packaging; remove the one-consumer input-selection,
-   reset and preparation files by placing their behavior at the named owners.
+   Composition's result packaging; remove the one-consumer input-selection and
+   preparation files by placing their behavior at the named owners. Rig setup
+   follows the reviewed fresh-run design, not preservation of the old reset API.
    Retain frame order. This limited change
    alone makes no new disposal/restart guarantee and introduces no second API.
 3. **Prepare child lifetimes:** in bounded owner-specific changes, make World,
@@ -619,20 +665,22 @@ parallel runtime or permanent compatibility adapter is proposed.
    shared weights and delete their superseded density/coverage branches together.
    Fix #72 independently inside Clipmap; compare conservative bounds with
    disabling incorrect CPU culling. Each unit receives its own visual/performance
-   evidence; integrated physical PICO acceptance remains required. Separately
-   settle Vegetation footprint acceptance and consolidate its projections.
+   evidence; actual Windows-PCVR/USB-C acceptance remains required. Separately
+   decide Vegetation ground distance/crown overhang and consolidate placement.
    Reassess shared Rocks/Vegetation mechanics afterward; no generic runtime.
 
-D3 is an independent optional unit after approval: replace every layer consumer
-with explicit references, compare resolved recipes and remove `sense-layers.ts`
-in the same change. It does not block the pilot or lifecycle work. No temporary
-compatibility bridge is needed for these same-repository consumers.
+D3 is confirmed. Before rewriting recipes, present the small direct level-to-show
+construction, then compare effective settings and remove layer consumers,
+`sense-layers.ts` and exclusively required helpers/tests in the same change.
+Explicit parameters may grow while logic and relationships shrink. No temporary
+compatibility bridge or second Show configuration.
 
 M5 host-lifetime invalidation, sample validity and axis conversion remain the
 separate #17/#18/#38 units, removing each replaced state/mapping path with its
 consumers. Scent's queue bypass is a separate measured #26 unit: remove the
 synchronous fallback together with bounded retry and slot-validity handling.
-Neither belongs inside a UI cleanup or waits on optional recipe changes.
+Neither belongs inside a UI cleanup or waits on the independent recipe
+implementation.
 
 The Test-level reading check in §5 is a gate: the reviewer must explain startup,
 one frame and end from the main story without chasing forwarding-only helpers.
@@ -640,8 +688,8 @@ Keep owner-local operations together; measure success by deleted dependencies,
 state and alternate paths, not by multiplying smaller files.
 
 Human acceptance walks a static start/end, a Show frame/seek and a language/
-visitor reset. For each, identify acquisitions, one authority per state,
-retained behavior and every deleted consumer path. Inspect D4's full deletion
+complete visitor restart. For each, identify acquisitions, one authority per
+state, retained behavior and every deleted consumer path. Inspect D4's full deletion
 and D5's producer agreement; compare diagram, contracts and migration with the
 candidate. A new generic abstraction must not merely replace the removed one.
 
@@ -652,16 +700,29 @@ supplement this walkthrough; they cannot prove that a capability is needed.
 
 ## 10. Decisions, issue/PR evidence and critical review
 
-Human approval is required for D1/D2's startup, asset and command ownership,
-D3's optional replacement of the confirmed layer convention, and D4's explicit
-capability retirement/pilot. D5's Clipmap-only ownership, complete legacy removal
-and central zone-weight ownership are now approved. Vegetation footprint
-representation, #72's precise correction and performance/PICO acceptance remain
-open; they do not reopen the Grass owner decision. D6's diagnostic API changes follow those
-lifecycle decisions; performance-dependent changes remain measured proposals.
-The newer deletion-ledger proposal also explicitly moves frame input selection
-to Run and GPU preparation into World. It is a design recommendation, not
-approval to change the currently confirmed boundaries.
+D1/D2/D3/D4/D6 and D5 direction are confirmed. Remaining gates attach only to
+their actual dependent work:
+
+| Remaining decision | Before which change | Concrete proposal/evidence |
+| --- | --- | --- |
+| Visitor restart, including page reload | Complete restart implementation in existing Run | Early Windows-PCVR/USB-C test of XR end/re-entry, audio wake and next-visitor operation; no automatic-XR assumption |
+| Direct independent levels feeding one Show | D3 recipe rewrite | Small direct construction preserving one prepared world and effective settings |
+| Vegetation distance and crown overhang | Placement replacement under #81 | One comparable riverbank; shared model-independent ground rule |
+| Exact benchmark reference | #78 update | Bounded fixed-scene investigation, repeatable counters and explained differences; current numeric candidate remains unapproved |
+| Tutorial/credits details | Their concrete content, timing and control changes | Required features; propose content, duration, audio rights, start behavior and movement during credits using existing owners |
+| Clipmap culling correction | #72 implementation | Focused bounds-versus-disabled-culling comparison; no new culling owner |
+
+Routine implementation choices are autonomous. Additional owners/abstractions,
+unplanned content changes or unexplained production-logic growth need a
+conscious decision. The existing issue review records what becomes simpler,
+what disappears, which current owner retains responsibility and why any extra
+structure is necessary. After each issue separate production logic, explicit
+configuration, tests/tooling and documentation/measurement artifacts. Structural
+simplification normally reduces logic and concepts; otherwise revise it or
+present the concrete exception. Explicit configuration is the allowed exception
+only with actual removal and effective-setting comparison. Keep relevant tests;
+retire temporary/replaced tests after preserving essential findings, never to
+conceal a failed result. No new audit infrastructure.
 
 ### What the complete issue review changes
 
@@ -691,11 +752,12 @@ Three unresolved flow choices deserve explicit human decisions:
   Choose to adapt/replace the existing passages or reject those requirements.
   Never retain two encounter systems. Bat meshes and swarm trails still need
   different render mechanisms.
-- **Tutorial/credits (#50/#51):** a tutorial requiring neutral input and no
-  timeout conflicts with the conditional tutorial direction. Credits already
-  exist, but current 516-second onset precedes the longest Return ending around
-  519.8 seconds; holding locomotion while keeping head tracking is also open.
-  Decide these semantics and platform/passthrough (#42) before adding phases.
+- **Tutorial/credits (#50/#51):** both are required. Consolidate and complete
+  existing implementations; no second timeline. Propose content, duration,
+  audio-use rights, start interaction and credits movement. Current credits
+  start at 516 seconds before the longest Return ending around 519.8 seconds;
+  resolve that overlap explicitly. Platform is Windows-PCVR over USB-C;
+  passthrough and the concrete experience semantics remain separate decisions.
 
 ### Lessons from the user's PRs and pending integration
 
@@ -723,7 +785,7 @@ approved target requirements:
 | [#68](https://github.com/Strehk/becoming-many/pull/68) | Passage-local exit fading has the right owner; transparent route fades need not become the same mechanism as opaque World Fade. Verify sorting/cost and the actual exit. |
 | [#70](https://github.com/Strehk/becoming-many/pull/70) | If Bird passage removal is approved, also remove its now-unused approach/compass-exit options and unreferenced assets. Keep route retiming, which Bat still uses. Removing only the schedule row leaves the old capability behind. |
 
-### Independent critical review
+### Historical independent critical review
 
 The independent review tested a smaller alternative retaining the current
 layers and small World/Composition/ModuleRuntime mechanisms while removing only
@@ -731,20 +793,19 @@ unused capability and lifetime/command indirection. Those retained mechanisms
 have distinct current responsibilities; collapsing them into one large loop or
 adding a universal intensity/module API was rejected.
 
-| Critical objection | Resolution in this draft |
+| Historical objection | Resolution / superseding decision |
 | --- | --- |
 | Migration promised World restart before audio/input/assets could end | Direct-start simplification now makes no disposal promise. The first public Run disposal is a complete vertical lifetime; child preparation precedes it. |
 | No way to stop startup before its handle returned | Entry owns cancellation from the start; late resources cannot publish a Run and must be released. |
 | Asset borrowing and cleanup guarantees were ambiguous | Run owns sources; modules own their allocations. Constructor failure, load failure and source-resource audit are separate obligations. |
-| Footprint metadata could create another truth | Compare one shared conservative radius first; model-specific facts need Vegetation-owned provenance and consistency checks. |
+| Footprint metadata could create another truth | The confirmed target now prefers model-independent ground clearance owned by Vegetation; distance and crown overhang need the small riverbank decision. |
 | M5 invalidation left old button/state behavior unspecified | Whole device-lifetime reset, no edges from invalid samples, one edge-consuming flight reader are explicit. |
-| Layer deletion was presented as necessary ownership work | D3 remains the recommended readability option, but is independent and can be declined without weakening lifecycle/command/retirement decisions. |
+| Layer deletion was presented as necessary ownership work | Historically optional; superseded by the confirmed D3 decision above. Concrete level-to-show construction still precedes the rewrite. |
 
 D4 survived the counterproposal: keeping a port for a hypothetical level also
 keeps its packed buffer, dynamic links, capacities and tests without serving
-current content. Retirement still needs a human decision; it is not an already
-approved deletion. The review did not constitute product or implementation
-acceptance.
+current content. The 2026-09-06 D4 decision now authorizes its retirement;
+the historical review itself did not constitute implementation acceptance.
 
 A second independent review applied the Test-level reading check. It confirmed
 the local setup/result/metrics detours and rejected new M5-lifetime, diagnostics
@@ -753,7 +814,8 @@ and exact local contracts. World, Composition, input math and content algorithms
 retain their meaningful boundaries; the narrative sequence is made local.
 Shared scrub remains conditional on replacing both implementations simply.
 
-Document-only verification: repository `bun run lint` passed without fixes.
+Original draft verification (historical): repository `bun run lint` passed
+without fixes.
 Local links, Markdown table/fence structure, Mermaid node/edge structure and
 whitespace were checked without new files or dependencies. No local Mermaid
 parser was available, so rendered diagram validation remains unclaimed. Existing

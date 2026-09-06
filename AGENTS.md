@@ -90,10 +90,12 @@ compression. Keep procedures and checklists in those documents, not here.
 
 - Performance is the primary product requirement. Follow
   [docs/performance.md](docs/performance.md).
-- Target stable 90 Hz on a physical PICO 4. Desktop and deterministic benchmark
-  results detect regressions but do not prove headset acceptance.
+- Target stable 90 Hz on the actual Windows-PCVR installation over USB-C,
+  including transport and headset. Mac browser and deterministic benchmark
+  results detect regressions but do not prove installation acceptance. Standalone
+  PICO belongs to a later separate project; do not build paths for it here.
 - Prefer the simplest GPU-friendly path: shared resources, low draw-call count,
-  minimal opaque mobile-first shaders, bounded streaming, LOD, culling, and
+  minimal low-cost opaque shaders, bounded streaming, LOD, culling, and
   explicit disposal.
 - A measured performance regression blocks completion until removed or
   explicitly accepted with evidence.

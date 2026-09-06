@@ -24,13 +24,15 @@ required, keep it narrow:
 
 ## Open
 
-The final path depends on real hardware tests:
+Windows-PCVR over USB-C is selected; standalone PICO is outside this project.
+Prioritize #42 before committing to a visitor restart mechanism. On the actual
+Windows/browser/XR/streaming/cable/headset matrix, establish:
 
-1. Does standalone browser/WebXR meet performance and operations needs?
-2. Does wired PICO Business Streaming expose a reliable VR and see-through
-   workflow on the exact station matrix?
-3. If neither path supplies the required control, is a small device-side agent
-   justified?
+1. Reliable initial XR entry and full-show 90-Hz delivery.
+2. XR termination, re-entry and audio permission after a candidate page reload,
+   with a concrete operator sequence; automatic VR restart is not assumed.
+3. Available see-through and safety-exit procedures. Additional device-side code
+   remains a separate decision only if normal tooling cannot meet a proven need.
 
 Do not assume vendor capability from a different PICO model or software
 version. Record the complete tested matrix. A native host or agent is justified
