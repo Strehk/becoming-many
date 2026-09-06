@@ -11,16 +11,16 @@ in the [workflow](refactor-workflow.md), [test plan](refactor-test-plan.md) and
 | Field | Current state |
 | --- | --- |
 | Branch / integration | `david_refactor` only; the user explicitly authorized focused local commits and continued issue work. Push, main and extra branches remain unauthorized. |
-| Implemented | Historical #21/early #11/#75 and #77/#79/#82 blocks reviewed. After the independent review and prepared human checks, the user confirmed all presented behavior works and authorized commits and the next wave. New wave count: 3/3 (#12/#74/#39); cumulative human review now due. |
-| User feedback | On 2026-09-06 the user confirmed all three presented browser checks work: mouse look/Escape/relock, Connections movement/standstill, and Echo pause/backward seek/resume with EN/DE listening. This accepts the reviewed local behavior at `0e064cb` (application unchanged from `2db5755`). No physical-device result or exact numerical reference approval was reported. |
-| Current work | Human acceptance committed as `2c8bdaa`. #12 removes persisted/restored passwords and redacts logs; independent review, 482 tests/static gates and headed smoke 14/14 pass. Its regression fails on the old application (Flash only, 13 other routes pass). #74 removes the development proxy and unused port wrapper; 482 tests/static gates, development and production smoke each 14/14, and empty/configured Station browser checks pass. #39 removes the second World modulo implementation; 484 tests, typecheck/lint/build/diff, zero boundary violations and production smoke 14/14 pass. All nine quick counter/streaming records match retained #82 exactly; `--check` still fails only the seven unchanged #78 references. Wave complete technically; await cumulative human review before the reordered next local block #80 → #73 → #20. #83 human input now passes; the prior automated rejection remains preserved without an assigned cause. #22 remains closed not planned. |
-| Next gate | The user explicitly authorized the next wave after accepting the presented block. This scoped continuation proceeds while #78 remains open and its baseline unchanged; it does not declare complete M0/reference acceptance. Cumulative human review of #12/#74/#39 is now due before further implementation. Independent cumulative review passes: application/Station/Vite net −26 lines, test TypeScript +98, one obsolete file deleted, no new files/dependencies/runtime owners. |
+| Implemented | Previous blocks including #12/#74/#39 accepted. After opening the application in Chrome, the user confirmed on 2026-09-06 that it looks good and requested continuation. New block #80 → #73 → #20: 0/3 implemented; #80 starts next. |
+| User feedback | Latest response accepts the presented browser/block review at `43133d7` (application unchanged from `3cb862e`, source digest `6d937a09592c5f147e5a9f10aa4eb956b0652ca5aedfbbc93a4867e7ac9ea6d5`). This is a global human confirmation, not a new record of individual scripted gestures or hardware measurements. |
+| Current work | #12/#74/#39 are technically complete and now human accepted. Their retained final evidence: 484 tests, typecheck/lint/build/diff, zero boundary violations, production smoke 14/14. All nine quick counter/streaming records match #82; seven #78 references remain unchanged failures. Begin #80 complete animal–Mycelium retirement, then #73 direct startup and #20 material contract. |
+| Next gate | Cumulative human behavior/architecture/size review after at most three new implemented issues (#80/#73/#20), or an earlier visible/decision gate. Independent prior-wave review found application/Station/Vite −26 lines, tests +98, one obsolete file removed, no new owner/dependency. No physical or numerical-reference acceptance is inferred. |
 | Acceptance audit | At clean `2db5755`, independent source/history review found no introduced architecture blocker: existing owners retain one loop/clock/queue; #77 removes the old import route, #79 bounds dispatch history, #82 rejects stale work and removes four redundant staging parameters. Existing startup/disposal gaps remain #73/#9; open target decisions remain open. Application TypeScript +65 lines, test TypeScript +1,300, documentation +1,766, JSON evidence +5,702, reference candidate +74, configuration +91: total +8,998 against `9bfb84b`. This is a qualified technical pass, not human or milestone acceptance. |
 | Verified application evidence | Historical final EN/DE each521s without unexpected errors; smoke14/14; repeatable counters/queue, but seven stored #78 references still fail. Exact tested identities and limits are in [evidence](evidence/README.md). |
 | Analyzer delta | After #12, Fallow remains exit 1: 3 dead-code, 11 clone groups, 25 health findings. New test-only findings are five repeated assertions at distinct legacy-load/post-submit-reload boundaries and estimated CRAP for `checkFlash` (CC7/cognitive5). Independent review retained these meaningful checks without a helper or suppression. Real boundary violations: 0. Older 10/24 and 10/22 results remain historical. |
 | Correction verification | 482 tests / 26,639 assertions / 64 files; typecheck, lint, build, real boundaries and diff pass. Smoke 14/14; eight sought cues × first/repeat = 16 transition observations pass. A thrown pageerror in generated `dist/test.html` makes the same smoke fail: 11 affected routes red, three untouched green, 11 failure trace/image pairs; artifact restored byte-for-byte. Logs: `benchmark-results/lean-refactor-20260906T062328Z`. These are functional correction checks, not new performance or full-show measurements. |
-| Open acceptance | The previous block’s human browser/visual/listening and cumulative review are accepted; current #12/#74/#39 review remains due. Original #75 strict-start cause remains unassigned despite a distinct #79 fix; the #83 automated failure remains historical evidence. Exact #78 reference approval and complete M0 acceptance remain open. |
-| Decisions / current work | D1/D2/D3/D4/D6, one Vegetation placement owner, Windows-PCVR USB-C and required tutorial/credits are confirmed on 2026-09-06. Canonical documents and live issues replace contrary statements. This is not implementation or acceptance of the current 3/3 wave. #85 owns D3; concrete remaining decisions are listed below. |
+| Open acceptance | Current #12/#74/#39 human block review is accepted. Original #75 strict-start cause and #83 automated rejection remain unresolved historical observations; exact #78 reference and complete M0 acceptance remain open. |
+| Decisions / current work | Binding decisions are recorded in `43133d7`; #85 owns explicit levels. #80 fixed anchor inventory preserves vegetation including bushes, rocks, fixed forest-clearing points and soil. Only moving-animal links are retired. Concrete restart/level-show/bank/content choices remain open. |
 | External | Actual Windows-PCVR USB-C 90 Hz including transport/headset, M5/ICAROS and venue stations remain unaccepted. Basic #42 commissioning and #54 inventory move early; they do not wait on #14. |
 
 After compression: branch/status, AGENTS, linked rules, this checkpoint, then the
@@ -30,40 +30,30 @@ placement was [authorized before implementation](https://github.com/Strehk/becom
 
 ## Human Review
 
-The user accepted the previous block on 2026-09-06 at `0e064cb` and authorized
-this wave. The current #12/#74/#39 wave is technically complete and awaits its
-own cumulative review. Production Station is available at `http://localhost:4180`.
-The tested source digest is
-`6d937a09592c5f147e5a9f10aa4eb956b0652ca5aedfbbc93a4867e7ac9ea6d5`;
-subsequent checkpoint edits are documentation only. Live issues retain the
-commands, exact identities and essential results; raw output stays ignored.
+On 2026-09-06, after the application was opened in Chrome, the user confirmed
+that the presented application looks good and requested continuation. This
+accepts the #12/#74/#39 browser/block review at `43133d7`; application code and
+its retained evidence remain at `3cb862e`. No fresh per-action test record,
+physical result or numerical reference approval is invented from this response.
 
-| Action | Expected behavior / review |
-| --- | --- |
-| Open `/flash.html`, then reload | Familiar setup interface; password field stays empty. SSID/device identity may be remembered. Automated real-form/isolated-port checks prove legacy-secret removal, unchanged serial delivery and redacted logging; no physical flashing is requested. |
-| Conductor wake, Play/Hold, EN/DE and New visitor | Controls remain usable; new visitor returns to paused time zero. Development and configured production were checked separately under #74. |
-| Test/Connections: move, then stand still | Existing scene/streaming behavior remains intact. #39 changes only where the identical slot arithmetic is defined. |
-| Review the three focused changes | Passwords are transient at Flash; Station owns its port; both chunk windows reuse one existing World function. No new owner or dependency. Application/Station/Vite −26 lines; purposeful test TypeScript +98. |
-
-The [exact #78 candidate](evidence/issue-78/quick-reference-candidate.diff) remains
-unapplied; [historical attribution and uncertainty](evidence/issue-78/README.md)
-remain open despite matching current counters. Actual Windows-PCVR USB-C 90 Hz and full
-Run disposal are not established by this wave. D4/#80 removal is now authorized,
-but the cumulative human gate remains: do not start the next implementation
-before reviewing #12/#74/#39. The current New visitor action above remains only
-a time/position reset; it does not meet the newly confirmed full restart target.
+The next local block is #80 → #73 → #20, starting at 0/3 implemented. Prepare
+its new human checks from the actual changes and preserve the three-issue gate.
+The current New visitor action remains a time/position reset, not complete Run
+termination; #9 and its concrete operating proposal still own that target.
+The exact #78 candidate remains unapplied; Windows-PCVR USB-C 90 Hz and full
+Run disposal remain unaccepted. Essential previous measurements stay in their
+live issues and [evidence index](evidence/README.md).
 
 ## Milestones and Ordered Work
 
 All stages use the same three-implemented-issue cumulative human gate. An issue
 may prepare a concrete proposal or gather read-only evidence while implementation
-waits for its actual dependency. No new production code crosses the current 3/3
-gate. Early physical commissioning is not deferred until the last milestone.
+waits for its actual dependency. The previous 3/3 gate is accepted; count the new block from zero. Early physical commissioning is not deferred until the last milestone.
 
 | Milestone | Ordered scope | Gate |
 | --- | --- | --- |
 | M0 | Retain #21/early #11/#75/#77/#79/#82 evidence; bounded #78 reference investigation | Exact inspected reference proposal and complete M0 acceptance remain open |
-| M1 | Review implemented #12/#74/#39; next local block #80 → #73 → #20; #27 before #26 | Human 3/3 review before new code, then next cumulative review after #80/#73/#20 |
+| M1 | Accepted #12/#74/#39; next local block #80 → #73 → #20; #27 before #26 | Next cumulative review after at most #80/#73/#20 |
 | M2 | Early #42 commissioning + #54 inventory; #9 lifecycle and #16 preparation; #14 diagnostics; #85 explicit levels; #35 → #36 shared UI ownership; final #11 | Concrete restart and level/show proposals first; dependent lifecycle and physical checks below |
 | M3 | #17 → #18 → #38 → #25; #46 visitor handoff → #33 physical flight | Actual Windows-PCVR/M5 calibration and operator acceptance |
 | M4 | #26, #32; #13 → #72 → #71 → #81 → #41; verify #40 retirement and #28 final wind consumers | Comparable local evidence, bank-view choice, Windows-PCVR USB-C 90 Hz |
@@ -81,10 +71,10 @@ actively consumed Material override and its compatibility evidence.
 
 | Work | Smallest scope / prerequisite |
 | --- | --- |
-| Current human gate | Review #12/#74/#39 using the prepared actions above. User decisions about future architecture do not count as this behavior review. |
+| Current human gate | #12/#74/#39 accepted after the browser review; new block starts at 0/3. |
 | #42 + #54, start early | Obtain the actual Windows/GPU/driver/browser/XR/streaming/USB/headset matrix and reproduce entry/re-entry/audio/operator behavior with existing tools. Basic commissioning does not require #14; later diagnostic detail can use it. No Mac substitute for physical results. |
 | #78, bounded investigation | Fix a camera pose and comparable conditions, identify intended scene/available contents, repeat counters and explain significant differences. Then propose the exact checked reference. No exhaustive historical-triangle archaeology and no automatic baseline update. |
-| #80, next local issue after gate | Remove animal–Mycelium producers, projections, contracts, wiring, reserved pool ranges, settings and exclusive tests together. First enumerate existing fixed anchor classes. Preserve animal animation/movement and Scent/Thermal data; no other content removal. |
+| #80, active next local issue | Remove animal–Mycelium producers, projections, contracts, wiring, reserved pool ranges, settings and exclusive tests together. First enumerate existing fixed anchor classes. Preserve animal animation/movement and Scent/Thermal data; no other content removal. |
 | #73, after #80 | Flatten startup at existing Runtime/Composition owners, retaining one frame order and directly readable start/frame/end. This simplification alone does not claim complete teardown. |
 | #20, after #73 | Tighten the existing shader-patch boundary without adding a new effect framework. Ends the next three-issue local block. |
 | #9 | Use #73's direct startup. Present the smallest visitor restart sequence using #42 evidence before selecting its mechanism. Prepare owner-local cleanup, failed/cancelled starts and late results; only expose complete termination once every child/source lifetime is covered. A reload candidate is not approved automatically. |
