@@ -27,15 +27,13 @@ export interface TerrainPreset {
 }
 
 /** Immutable module and asset choices used to construct one world. */
-export interface WorldComposition {
+export type WorldComposition = {
   readonly invisibleGround?: true;
-  readonly invisibleVegetation?: StaticPopulationPreset;
   readonly airParticles?: AirParticlesParameters;
   readonly scentParticles?: ScentParticlesParameters;
   readonly terrain?: TerrainPreset;
   readonly grass?: GrassPreset;
   readonly grassClipmap?: GrassClipmapPreset;
-  readonly vegetation?: VegetationPreset;
   readonly rocks?: RocksPreset;
   readonly animals?: AnimalsPreset;
   readonly echoDepth?: EchoDepthParameters;
@@ -43,15 +41,24 @@ export interface WorldComposition {
   readonly thermal?: ThermalPerceptionParameters;
   readonly magnetic?: MagneticSenseParameters;
   readonly connections?: ConnectionsParameters;
-}
+} & (
+  | {
+      readonly vegetation?: VegetationPreset;
+      readonly invisibleVegetation?: never;
+    }
+  | {
+      readonly vegetation?: never;
+      readonly invisibleVegetation?: StaticPopulationPreset;
+    }
+);
 
 /** A complete standalone startup recipe used by development routes and benchmarks. */
-export interface LevelPreset extends WorldComposition {
+export type LevelPreset = WorldComposition & {
   readonly backgroundColor: number;
   readonly viewDistance: number;
   readonly testUi?: true;
   readonly maximumGroundClearanceMeters: number;
-}
+};
 
 /** The construction-only world preloaded once for a running show. */
 export interface ShowComposition {

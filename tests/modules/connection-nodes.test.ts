@@ -180,9 +180,9 @@ test("Scent sources are the very plants the web links, not a second world", () =
         chunkX,
         chunkZ,
         64,
-        (worldX, groundY, worldZ, heightMeters, groupIndex) => {
+        (worldX, groundY, worldZ, heightMeters, groupId) => {
           expect(heightMeters).toBeGreaterThan(0);
-          expect(scentSource.groupIds[groupIndex]).toBeDefined();
+          expect(scentSource.groupIds).toContain(groupId);
           plants.push({ worldX, worldY: groundY, worldZ });
         },
       );

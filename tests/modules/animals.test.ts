@@ -20,6 +20,7 @@ import type { GLTF } from "three/addons/loaders/GLTFLoader.js";
 import { createAnimalSurfaceAlignment } from "../../src/modules/animals/animal-surface-orientation";
 import { createAnimalsModule } from "../../src/modules/animals/animals";
 import type { AnimalsDefinition } from "../../src/modules/animals/animals-definition";
+import type { AnimalSpeciesId } from "../../src/modules/scent-sources";
 import type { GltfAssets } from "../../src/utils/asset-loader/gltf-assets";
 import type { SensedMaterial } from "../../src/utils/asset-loader/material-effect";
 import type { Viewpoint } from "../../src/world/viewer-rig";
@@ -376,7 +377,7 @@ function readVisibleOpacity(population: Group): number {
   return highest;
 }
 
-function createSpecies(id: string) {
+function createSpecies(id: AnimalSpeciesId) {
   return {
     id,
     url: `/animals/${id}.glb`,

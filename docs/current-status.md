@@ -1,6 +1,6 @@
 # Current Development Status
 
-As-built snapshot: 2026-09-06, source checkpoint `483bf9b` plus the #20 shader contract correction on `david_refactor`.
+As-built snapshot: 2026-09-06, checkpoint `c38a867` plus the #27 Scent contract correction on `david_refactor`.
 Dated measurement packets retain the earlier exact identities they tested;
 the current checkout is the authority for runtime details.
 

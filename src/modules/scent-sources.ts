@@ -38,12 +38,12 @@ export type PushScentPlant = (
   groundY: number,
   worldZ: number,
   heightMeters: number,
-  groupIndex: number,
+  groupId: PlantScentGroupId,
 ) => void;
 
 /** A deterministic per-chunk plant population exposed to the scent sense. */
 export interface PlantScentSource {
-  /** Group order; every pushed `groupIndex` indexes this list. */
+  /** Groups emitted by this source; bounds its palette and particle capacity. */
   readonly groupIds: readonly PlantScentGroupId[];
 
   /**
@@ -62,6 +62,9 @@ export interface PlantScentSource {
   ) => void;
 }
 
+/** The current animal vocabulary shared by bodies and scent signatures. */
+export type AnimalSpeciesId = "deer" | "stag" | "fox" | "rat";
+
 /**
  * Where one live scent-emitting actor stands this frame. The scent sense
  * prints from these positions; it never holds the actor itself.
@@ -71,7 +74,7 @@ export interface ScentActorBody {
   readonly y: number;
   readonly z: number;
   readonly heightMeters: number;
-  readonly speciesId: string;
+  readonly speciesId: AnimalSpeciesId;
 }
 
 /** Report the currently emitting actors after every world update. */

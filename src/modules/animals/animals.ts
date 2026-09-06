@@ -14,6 +14,7 @@ import type { UnlitMaterialEffect } from "../../utils/asset-loader/material-effe
 import type { WorldModule } from "../../world/module-runtime";
 import type { Viewpoint } from "../../world/viewer-rig";
 import type { WorldSurface } from "../../world-surface/world-surface";
+import type { AnimalSpeciesId } from "../scent-sources";
 import {
   type AnimalActors,
   createAnimalActors,
@@ -55,7 +56,7 @@ export interface AnimalBody {
   readonly heightMeters: number;
 
   /** Which species stands here; senses that differ per species need it. */
-  readonly speciesId: string;
+  readonly speciesId: AnimalSpeciesId;
 }
 
 /** The writable form the module refills in place each frame. */

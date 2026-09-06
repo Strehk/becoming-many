@@ -128,6 +128,10 @@ contracts such as `WorldSurface`, `UnlitMaterialEffect`, `MotionPointSource`,
 `ScentSource`, and `ConnectionNodeSource`; the composition root performs the
 wiring in `src/levels/level-composition.ts`.
 
+Scent providers name plant groups and animal species through the existing shared
+contract; only the Scent field maps groups to its GPU palette. World recipes
+exclude simultaneous visible and invisible vegetation at the type boundary.
+
 Under #77, the unchanged `TerrainMaterialEffect` contract now lives beside the
 semantically distinct `UnlitMaterialEffect` in the existing shared material-effect
 file. Terrain, Mycelium and Level Composition import it directly; the old Terrain

@@ -34,6 +34,7 @@ import {
 } from "../../src/modules/scent-particles/scent-trail-field";
 import type {
   PlantScentSource,
+  PushScentPlant,
   ScentActorBody,
 } from "../../src/modules/scent-sources";
 import { StreamQueue } from "../../src/world/stream-queue";
@@ -44,6 +45,12 @@ const PLANTS_PER_TEST_CHUNK = 3;
 const CONIFER_PARTICLES = 4;
 const BUSH_PARTICLES = 2;
 const TEST_PLANT_HEIGHT_METERS = 8;
+
+// @ts-expect-error Providers must name a group rather than send a palette index.
+const invalidPlantGroup: Parameters<PushScentPlant>[4] = 0;
+// @ts-expect-error Actor bodies use the current shared species vocabulary.
+const invalidSpecies: ScentActorBody["speciesId"] = "unicorn";
+void [invalidPlantGroup, invalidSpecies];
 
 describe("Scent Particles material", () => {
   test("patches life-cycle motion, size fade, and the circle shape", () => {
@@ -309,7 +316,7 @@ describe("Scent Particles trail layer", () => {
     );
 
     const cursorBefore = field.printCursor;
-    printScentTrail(field, [{ ...body, speciesId: "unicorn" }], 1, 1);
+    printScentTrail(field, [{ ...body, speciesId: "rat" }], 1, 1);
     expect(field.printCursor).toBe(cursorBefore);
 
     disposeScentTrailField(field);
@@ -578,7 +585,7 @@ function createTestPlantSource(): PlantScentSource {
           Math.sin(worldX * 0.05 + worldZ * 0.03),
           worldZ,
           TEST_PLANT_HEIGHT_METERS,
-          plantIndex === 1 ? 1 : 0,
+          plantIndex === 1 ? "bush" : "conifer",
         );
       }
     },

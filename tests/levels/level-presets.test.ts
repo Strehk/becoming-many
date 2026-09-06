@@ -10,12 +10,18 @@ import {
   HEAT_MOTION_SENSE,
   MOTION_SENSE,
 } from "../../src/levels/authored/motion-sense";
-import { VEGETATION_PLACEMENT } from "../../src/levels/authored/vegetation";
+import {
+  VEGETATION,
+  VEGETATION_PLACEMENT,
+} from "../../src/levels/authored/vegetation";
 import { level as connectionsLevel } from "../../src/levels/connections.level";
 import { level as designTestLevel } from "../../src/levels/designTest.level";
 import { level as echoLevel } from "../../src/levels/echo.level";
 import { LEVEL_CATALOG } from "../../src/levels/level-catalog";
-import type { LevelPreset } from "../../src/levels/level-preset";
+import type {
+  LevelPreset,
+  WorldComposition,
+} from "../../src/levels/level-preset";
 import { level as magneticLevel } from "../../src/levels/magnetic.level";
 import { level as motionLevel } from "../../src/levels/motion.level";
 import { level as scentLevel } from "../../src/levels/scent.level";
@@ -27,6 +33,13 @@ import { MYCELIUM_SETTINGS } from "../../src/modules/mycelium/mycelium-settings"
 import { THERMAL_PERCEPTION_SETTINGS } from "../../src/modules/thermal-perception/thermal-perception-settings";
 import { BASE_CHUNK_SIZE } from "../../src/world/chunk-system";
 import { WORLD_WIND } from "../../src/world/wind";
+
+// @ts-expect-error A world cannot request visible and invisible vegetation together.
+const invalidVegetation: WorldComposition = {
+  vegetation: VEGETATION,
+  invisibleVegetation: VEGETATION,
+};
+void invalidVegetation;
 
 test("every level authors the current terrain-relative flight ceiling", () => {
   for (const preset of Object.values(LEVEL_CATALOG)) {

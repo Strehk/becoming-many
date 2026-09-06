@@ -249,7 +249,7 @@ export function readVisibleAnimalBodies(
         z: 0,
         headingRadians: 0,
         heightMeters: 0,
-        speciesId: "",
+        speciesId: actor.species.id,
       };
       bodies[count] = body;
     }

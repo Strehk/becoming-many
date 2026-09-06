@@ -5,7 +5,7 @@
  * Boundary: Geometry, materials, shaders, lifecycle, and stream scheduling stay elsewhere.
  */
 
-import type { PlantScentGroupId } from "../scent-sources";
+import type { AnimalSpeciesId, PlantScentGroupId } from "../scent-sources";
 
 export const SCENT_PARTICLES_SETTINGS = {
   chunkLevel: 2, // Selects 64-metre chunks, the grid Vegetation is placed on.
@@ -52,7 +52,9 @@ export interface AnimalScentSignature {
 /** The scent trail live actors leave behind them. */
 export interface AnimalScentParameters {
   /** Keyed by the species ids of the Animals definition. */
-  readonly signatures: Readonly<Record<string, AnimalScentSignature>>;
+  readonly signatures: Readonly<
+    Partial<Record<AnimalSpeciesId, AnimalScentSignature>>
+  >;
 
   /** Prints per animal per second; with the lifetime this sizes the ring. */
   readonly printsPerSecond: number;

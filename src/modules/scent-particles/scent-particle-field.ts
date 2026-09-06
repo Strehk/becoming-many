@@ -14,7 +14,7 @@ import {
   type PointsMaterial,
 } from "three";
 import type { ChunkAssignment } from "../../world/chunk-system";
-import type { PlantScentSource } from "../scent-sources";
+import type { PlantScentGroupId, PlantScentSource } from "../scent-sources";
 import {
   createScentParticleMaterial,
   type ScentParticleMaterial,
@@ -177,7 +177,7 @@ interface ScentPlantRecord {
   groundY: number;
   worldZ: number;
   heightMeters: number;
-  groupIndex: number;
+  groupId: PlantScentGroupId;
 }
 
 /**
@@ -236,7 +236,8 @@ export function writeNextScentStep(
     writer.nextPlant += 1;
     if (!plant) continue;
 
-    const signature = field.signatures[plant.groupIndex];
+    const groupIndex = field.plantSource.groupIds.indexOf(plant.groupId);
+    const signature = field.signatures[groupIndex];
     if (!signature) continue;
     const nextCursor = writer.particleCursor + signature.particlesPerPlant;
 
@@ -247,7 +248,7 @@ export function writeNextScentStep(
 
     writePlantParticles(field, writer.assignment, {
       signature,
-      groupIndex: plant.groupIndex,
+      groupIndex,
       plantIndex: writer.nextPlant - 1,
       firstParticleIndex: writer.particleCursor,
       worldX: plant.worldX,
@@ -286,13 +287,13 @@ function gatherChunkPlants(
     assignment.chunkX,
     assignment.chunkZ,
     field.chunkSize,
-    (worldX, groundY, worldZ, heightMeters, groupIndex) => {
+    (worldX, groundY, worldZ, heightMeters, groupId) => {
       writer.plants.push({
         worldX,
         groundY,
         worldZ,
         heightMeters,
-        groupIndex,
+        groupId,
       });
     },
   );

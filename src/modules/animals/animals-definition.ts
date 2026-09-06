@@ -6,9 +6,10 @@
  */
 
 import type { ZoneId } from "../../world-surface/zone-settings";
+import type { AnimalSpeciesId } from "../scent-sources";
 
 export interface AnimalSpeciesDefinition {
-  readonly id: string;
+  readonly id: AnimalSpeciesId;
   readonly url: string;
   readonly count: number;
   readonly heightMeters: number;

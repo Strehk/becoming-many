@@ -20,6 +20,7 @@ import {
 } from "./scent-particle-material";
 import type {
   AnimalScentParameters,
+  AnimalScentSignature,
   ScentParticlesParameters,
 } from "./scent-particles-settings";
 import {
@@ -130,16 +131,16 @@ export function createScentTrailField({
   // them every frame for one draw call that is already small.
   points.frustumCulled = false;
 
-  const speciesIds = Object.keys(animals.signatures);
+  const signatures = Object.entries(animals.signatures);
 
   return {
     points,
     material,
     animals,
     capacity,
-    speciesColors: createSpeciesColors(animals, speciesIds),
+    speciesColors: createSpeciesColors(signatures),
     colorIndexBySpecies: new Map(
-      speciesIds.map((speciesId, index) => [speciesId, index]),
+      signatures.map(([speciesId], index) => [speciesId, index]),
     ),
     printedPositions,
     printedColors,
@@ -294,16 +295,14 @@ function getPrintScatter(
 
 /** Convert the authored species signatures once into working-color triples. */
 function createSpeciesColors(
-  animals: AnimalScentParameters,
-  speciesIds: readonly string[],
+  signatures: readonly (readonly [string, AnimalScentSignature | undefined])[],
 ): Float32Array {
   const speciesColors = new Float32Array(
-    speciesIds.length * COMPONENTS_PER_VALUE,
+    signatures.length * COMPONENTS_PER_VALUE,
   );
   const converter = new Color();
 
-  speciesIds.forEach((speciesId, speciesIndex) => {
-    const signature = animals.signatures[speciesId];
+  signatures.forEach(([, signature], speciesIndex) => {
     if (!signature) return;
     converter.set(signature.color);
     const valueOffset = speciesIndex * COMPONENTS_PER_VALUE;
