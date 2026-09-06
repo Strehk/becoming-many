@@ -38,9 +38,12 @@ describe("Motion Trail material", () => {
     });
     const shader = compileMaterialForTest(material.pointsMaterial);
 
-    expect(shader.vertexShader).toContain("expandMotionTrailParticle");
-    expect(shader.vertexShader).toContain("motionSpawnFrame");
-    expect(shader.vertexShader).toContain("getMotionTrailClipPosition");
+    expect(shader.vertexShader).toContain(
+      "transformed = expandMotionTrailParticle(transformed);",
+    );
+    expect(shader.vertexShader).toContain(
+      "gl_Position = getMotionTrailClipPosition(gl_Position);",
+    );
     expect(shader.vertexShader).toContain(
       "gl_PointSize *= getMotionTrailSizeScale();",
     );

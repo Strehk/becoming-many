@@ -1,7 +1,7 @@
 /**
- * Purpose: Verify the authored levels, their sense layers, and the separate show composition.
+ * Purpose: Verify effective level contents, authored values, and the show composition.
  * Context: Each level is presentation plus the layers up to its rung; the show is the whole ladder.
- * Responsibility: Lock layer presence per level, the one authored deviation, and authored values.
+ * Responsibility: Preserve world membership and content relationships without requiring shared objects.
  * Boundary: Runtime construction and rendering are tested separately.
  */
 
@@ -47,6 +47,36 @@ test("every level authors the current terrain-relative flight ceiling", () => {
   }
 });
 
+test("each world component appears only in its intended levels", () => {
+  const expectedLevels = [
+    [
+      "airParticles",
+      "white-world scent echo motion thermal magnetic connections test design-test",
+    ],
+    ["invisibleGround", "scent"],
+    ["invisibleVegetation", "scent"],
+    ["scentParticles", "scent echo motion thermal magnetic connections"],
+    ["echoDepth", "echo motion thermal magnetic connections"],
+    ["terrain", "echo motion thermal magnetic connections test design-test"],
+    ["grassClipmap", "echo motion thermal magnetic connections"],
+    ["vegetation", "echo motion thermal magnetic connections test design-test"],
+    ["rocks", "echo motion thermal magnetic connections test design-test"],
+    ["motion", "motion thermal magnetic connections"],
+    ["animals", "thermal magnetic connections test design-test"],
+    ["thermal", "thermal magnetic connections"],
+    ["magnetic", "magnetic connections test"],
+    ["connections", "connections"],
+    ["grass", "test design-test"],
+  ] as const;
+
+  for (const [component, expected] of expectedLevels) {
+    const configuredLevels = Object.entries(LEVEL_CATALOG)
+      .filter(([, level]) => level[component] !== undefined)
+      .map(([name]) => name);
+    expect(configuredLevels.sort()).toEqual(expected.split(" ").sort());
+  }
+});
+
 test("Test owns its diagnostic world values independently", () => {
   const testPreset: LevelPreset = testLevel;
   const whiteWorldPreset: LevelPreset = whiteWorld;
@@ -77,48 +107,8 @@ test("Test owns its diagnostic world values independently", () => {
   });
   expect(testPreset.animals?.colors.featureColor).toBe(0x292929);
   expect(testPreset.testUi).toBe(true);
-  expect(testPreset.airParticles).not.toBe(whiteWorldPreset.airParticles);
-  expect(testPreset.vegetation?.instancesPerHectareByZone).not.toBe(
-    scentLevel.invisibleVegetation?.instancesPerHectareByZone,
-  );
-  expect(whiteWorldPreset.terrain).toBeUndefined();
-  expect(whiteWorldPreset.vegetation).toBeUndefined();
-  expect(whiteWorldPreset.rocks).toBeUndefined();
-  expect(whiteWorldPreset.animals).toBeUndefined();
+  expect(testPreset.airParticles).not.toEqual(whiteWorldPreset.airParticles);
   expect(whiteWorldPreset.testUi).toBeUndefined();
-  expect(whiteWorldPreset.scentParticles).toBeUndefined();
-  expect(whiteWorldPreset.invisibleGround).toBeUndefined();
-  expect(testPreset.scentParticles).toBeUndefined();
-  expect(designTestLevel.scentParticles).toBeUndefined();
-  expect(testPreset.echoDepth).toBeUndefined();
-  expect(whiteWorldPreset.echoDepth).toBeUndefined();
-  expect(designTestLevel.echoDepth).toBeUndefined();
-  expect(scentLevel.echoDepth).toBeUndefined();
-  expect(testPreset.motion).toBeUndefined();
-  expect(whiteWorldPreset.motion).toBeUndefined();
-  expect(designTestLevel.motion).toBeUndefined();
-  expect(scentLevel.motion).toBeUndefined();
-  expect(echoLevel.motion).toBeUndefined();
-  expect(testPreset.thermal).toBeUndefined();
-  expect(whiteWorldPreset.thermal).toBeUndefined();
-  expect(designTestLevel.thermal).toBeUndefined();
-  expect(scentLevel.thermal).toBeUndefined();
-  expect(echoLevel.thermal).toBeUndefined();
-  expect(motionLevel.thermal).toBeUndefined();
-  expect(whiteWorldPreset.magnetic).toBeUndefined();
-  expect(designTestLevel.magnetic).toBeUndefined();
-  expect(scentLevel.magnetic).toBeUndefined();
-  expect(echoLevel.magnetic).toBeUndefined();
-  expect(motionLevel.magnetic).toBeUndefined();
-  expect(thermalLevel.magnetic).toBeUndefined();
-  expect(testPreset.connections).toBeUndefined();
-  expect(whiteWorldPreset.connections).toBeUndefined();
-  expect(designTestLevel.connections).toBeUndefined();
-  expect(scentLevel.connections).toBeUndefined();
-  expect(echoLevel.connections).toBeUndefined();
-  expect(motionLevel.connections).toBeUndefined();
-  expect(thermalLevel.connections).toBeUndefined();
-  expect(magneticLevel.connections).toBeUndefined();
 });
 
 test("the show composition contains construction data only", () => {
@@ -129,13 +119,6 @@ test("the show composition contains construction data only", () => {
   expect(presentation.viewDistance).toBeUndefined();
   expect(presentation.maximumGroundClearanceMeters).toBeUndefined();
   expect(presentation.testUi).toBeUndefined();
-  expect(composition.airParticles).toBeDefined();
-  expect(composition.scentParticles).toBeDefined();
-  expect(composition.echoDepth).toBeDefined();
-  expect(composition.motion).toBeDefined();
-  expect(composition.thermal).toBeDefined();
-  expect(composition.magnetic).toBeDefined();
-  expect(composition.connections).toBeDefined();
 
   // "Senses layer, never swap": the show's union is the last rung of the
   // ladder with the presentation stripped, and nothing more or less. Spelled
@@ -166,19 +149,11 @@ test("Echo Level owns a complete depth-world startup recipe", () => {
   expect(echoPreset.testUi).toBe(true);
   expect(terrain.opacity).toBe(1);
   expect(terrain.presentation).toBeUndefined();
-  // Grass grows from here down the narrative chain, through the clipmap
-  // field. The older `grass` module stays parked: it is the same question
-  // about cost under the heat view, and only one of the two can answer it.
-  expect(echoPreset.grass).toBeUndefined();
   expect(echoPreset.grassClipmap?.tuftsPerSquareMeter).toBeGreaterThan(0);
   expect(echoPreset.grassClipmap?.bladeHeightMeters).toBeGreaterThan(0);
   // The blades author no look of their own beyond a base gradient: the
   // senses take their color, exactly as they take every other surface.
   expect(echoPreset.grassClipmap?.colors.rootColor).toBeDefined();
-  expect(echoPreset.animals).toBeUndefined();
-  expect(echoPreset.airParticles).toBeDefined();
-  expect(echoPreset.scentParticles).toBeDefined();
-  expect(echoPreset.invisibleGround).toBeUndefined();
 
   expect(echoDepth.intensity).toBe(1);
   expect(echoDepth.nearDistanceMeters).toBeLessThan(
@@ -214,22 +189,13 @@ test("Scent Level owns its complete invisible source world", () => {
   expect(scentPreset.backgroundColor).toBe(whiteWorld.backgroundColor);
   expect(scentPreset.airParticles).toEqual(whiteWorld.airParticles);
   expect(scentPreset.invisibleGround).toBe(true);
-  expect(scentPreset.terrain).toBeUndefined();
-  expect(scentPreset.grass).toBeUndefined();
-  // Grass starts at echolocation, not before it.
-  expect(scentPreset.grassClipmap).toBeUndefined();
-  expect(scentPreset.rocks).toBeUndefined();
-  expect(scentPreset.animals).toBeUndefined();
 
-  // Level 02 keeps every source object invisible, so its plants exist only
-  // as the population the scent radiates from.
-  expect(scentPreset.vegetation).toBeUndefined();
   // The unseen plants stand exactly where Echo will later show them, so a
   // trail a traveler follows in Scent rises from a plant they can see later.
-  expect(scentPreset.invisibleVegetation?.instancesPerHectareByZone).toBe(
+  expect(scentPreset.invisibleVegetation?.instancesPerHectareByZone).toEqual(
     VEGETATION_PLACEMENT,
   );
-  expect(echoLevel.vegetation?.instancesPerHectareByZone).toBe(
+  expect(echoLevel.vegetation?.instancesPerHectareByZone).toEqual(
     VEGETATION_PLACEMENT,
   );
 
@@ -298,16 +264,6 @@ test("Motion Level owns its complete motion-world startup recipe", () => {
   if (!motion) throw new Error("Motion Level must author the motion sense");
 
   expect(motionPreset.testUi).toBe(true);
-  expect(motionPreset.airParticles).toBeDefined();
-  expect(motionPreset.scentParticles).toBeDefined();
-  expect(motionPreset.echoDepth).toBeDefined();
-  expect(motionPreset.terrain).toBeDefined();
-  expect(motionPreset.vegetation).toBeDefined();
-  expect(motionPreset.rocks).toBeDefined();
-  expect(motionPreset.grass).toBeUndefined();
-  expect(motionPreset.grassClipmap).toBeDefined();
-  expect(motionPreset.animals).toBeUndefined();
-  expect(motionPreset.invisibleGround).toBeUndefined();
 
   expect(motion.intensity).toBe(1);
   expect(motion.swarms.swarmCount).toBeGreaterThan(0);
@@ -319,7 +275,7 @@ test("Motion Level owns its complete motion-world startup recipe", () => {
   expect(motion.trail.density).toBeLessThanOrEqual(1);
 
   // Motion carries the base sense; only the heat rungs above repaint it.
-  expect(motion).toBe(MOTION_SENSE);
+  expect(motion).toEqual(MOTION_SENSE);
   // Bird traces use the cyan accent reserved for them in the 04 palette.
   expect(motion.birds?.appearance.trailColor).toBe(0x10bedb);
   expect(motion.birds?.flockCount).toBeGreaterThan(0);
@@ -345,13 +301,6 @@ test("Thermal Level owns its complete heat-world startup recipe", () => {
   if (!animals) throw new Error("Thermal Level must author warm animals");
 
   expect(thermalPreset.testUi).toBe(true);
-  expect(thermalPreset.airParticles).toBeDefined();
-  expect(thermalPreset.scentParticles).toBeDefined();
-  expect(thermalPreset.echoDepth).toBeDefined();
-  expect(thermalPreset.terrain).toBeDefined();
-  expect(thermalPreset.vegetation).toBeDefined();
-  expect(thermalPreset.rocks).toBeDefined();
-  expect(thermalPreset.motion).toBeDefined();
   // A bird is a warm body, so the heat view prints its trace in the palette's
   // hot stop instead of the cold accent the pale world reads it as. The
   // cold-blooded flies keep their own colors: a swarm printed warm would be
@@ -359,7 +308,7 @@ test("Thermal Level owns its complete heat-world startup recipe", () => {
   const thermalMotion = thermalPreset.motion;
   if (!thermalMotion?.birds) throw new Error("Thermal Level must carry birds");
   // The thermal layer is spread after the motion layer, so its motion wins.
-  expect(thermalMotion).toBe(HEAT_MOTION_SENSE);
+  expect(thermalMotion).toEqual(HEAT_MOTION_SENSE);
   expect(thermalMotion.birds.appearance.trailColor).toBe(
     thermal.colors.hotColor,
   );
@@ -367,9 +316,6 @@ test("Thermal Level owns its complete heat-world startup recipe", () => {
   expect(thermalMotion.birds.appearance.trailColor).not.toBe(
     motionLevel.motion?.birds?.appearance.trailColor,
   );
-  expect(thermalPreset.grass).toBeUndefined();
-  expect(thermalPreset.grassClipmap).toBeDefined();
-  expect(thermalPreset.invisibleGround).toBeUndefined();
 
   expect(thermal.intensity).toBe(1);
   expect(Object.values(thermal.colors)).toEqual(thermalPalette);
@@ -441,18 +387,6 @@ test("Magnetic Level owns its complete field-world startup recipe", () => {
   }
 
   expect(magneticPreset.testUi).toBe(true);
-  expect(magneticPreset.airParticles).toBeDefined();
-  expect(magneticPreset.scentParticles).toBeDefined();
-  expect(magneticPreset.echoDepth).toBeDefined();
-  expect(magneticPreset.terrain).toBeDefined();
-  expect(magneticPreset.vegetation).toBeDefined();
-  expect(magneticPreset.rocks).toBeDefined();
-  expect(magneticPreset.animals).toBeDefined();
-  expect(magneticPreset.motion).toBeDefined();
-  expect(magneticPreset.thermal).toBeDefined();
-  expect(magneticPreset.grass).toBeUndefined();
-  expect(magneticPreset.grassClipmap).toBeDefined();
-  expect(magneticPreset.invisibleGround).toBeUndefined();
 
   expect(magnetic.intensity).toBe(1);
   // The field axis: north as authored, tilted above the horizon so the
@@ -480,19 +414,6 @@ test("Connections Level owns its complete connected-world startup recipe", () =>
   }
 
   expect(connectionsPreset.testUi).toBe(true);
-  expect(connectionsPreset.airParticles).toBeDefined();
-  expect(connectionsPreset.scentParticles).toBeDefined();
-  expect(connectionsPreset.echoDepth).toBeDefined();
-  expect(connectionsPreset.terrain).toBeDefined();
-  expect(connectionsPreset.vegetation).toBeDefined();
-  expect(connectionsPreset.rocks).toBeDefined();
-  expect(connectionsPreset.animals).toBeDefined();
-  expect(connectionsPreset.motion).toBeDefined();
-  expect(connectionsPreset.thermal).toBeDefined();
-  expect(connectionsPreset.magnetic).toBeDefined();
-  expect(connectionsPreset.grass).toBeUndefined();
-  expect(connectionsPreset.grassClipmap).toBeDefined();
-  expect(connectionsPreset.invisibleGround).toBeUndefined();
 
   expect(connections.intensity).toBe(1);
   // Reach before density: the root mat is carried at the experiment's density,

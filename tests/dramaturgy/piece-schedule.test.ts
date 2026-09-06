@@ -33,10 +33,6 @@ describe("the piece schedule", () => {
     );
   });
 
-  test("starts at or after the beginning of the show", () => {
-    expect(CUES[0]?.atSeconds).toBeGreaterThanOrEqual(0);
-  });
-
   test("opens on a lead-in before the first word", () => {
     expect(CUES[0]?.atSeconds).toBe(LEAD_IN_SECONDS);
   });

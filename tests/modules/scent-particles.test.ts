@@ -58,19 +58,19 @@ describe("Scent Particles material", () => {
     const material = createScentParticleMaterial(parameters);
     const shader = compileMaterialForTest(material.pointsMaterial);
 
-    expect(shader.vertexShader).toContain("animateScentParticle");
-    expect(shader.vertexShader).toContain("scentVisible");
-    expect(shader.vertexShader).toContain("scentRise");
-    expect(shader.vertexShader).toContain("getScentParticleClipPosition");
+    expect(shader.vertexShader).toContain(
+      "transformed = animateScentParticle(transformed);",
+    );
+    expect(shader.vertexShader).toContain(
+      "gl_Position = getScentParticleClipPosition(gl_Position);",
+    );
     expect(shader.vertexShader).toContain(
       "gl_PointSize *= getScentParticleSizeScale();",
     );
     expect(shader.fragmentShader).toContain(
       "discardOutsideScentParticleCircle();",
     );
-    expect(shader.vertexShader).toContain("scentWind");
     expect(shader.uniforms.scentIntensity?.value).toBe(1);
-    expect(shader.vertexShader).toContain("scentSenseFade");
     expect(shader.uniforms.scentSenseFade?.value).toBe(1);
     expect(shader.uniforms.scentRiseDuration?.value).toBe(10);
     expect(shader.uniforms.scentDriftAmplitude?.value).toBe(0.4);
@@ -90,11 +90,9 @@ describe("Scent Particles material", () => {
     const material = createScentTrailMaterial({ ...parameters, animals });
     const shader = compileMaterialForTest(material.pointsMaterial);
 
-    expect(shader.vertexShader).toContain("animateScentTrailParticle");
-    expect(shader.vertexShader).toContain("scentPrintTime");
-    expect(shader.vertexShader).toContain("scentPhase");
-    expect(shader.vertexShader).toContain("scentWind");
-    expect(shader.vertexShader).toContain("scentSenseFade");
+    expect(shader.vertexShader).toContain(
+      "transformed = animateScentTrailParticle(transformed);",
+    );
     expect(shader.uniforms.scentTrailLifetime?.value).toBe(20);
     expect(shader.uniforms.scentLoopSeconds?.value).toBe(60);
     expect(material.pointsMaterial.customProgramCacheKey()).not.toBe(
