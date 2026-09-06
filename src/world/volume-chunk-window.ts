@@ -5,7 +5,7 @@
  * Boundary: Content generation, rendering resources, and frame scheduling stay elsewhere.
  */
 
-import { type ChunkLevel, getChunkSize } from "./chunk-system";
+import { type ChunkLevel, getChunkSize, positiveModulo } from "./chunk-system";
 
 const NO_VOLUME_CHANGES: readonly VolumeChunkAssignment[] = [];
 
@@ -222,8 +222,4 @@ function getVolumeSlotIndex(
   const slotsPerLayer = chunksPerSide ** 2;
 
   return slotLayer * slotsPerLayer + slotRow * chunksPerSide + slotColumn;
-}
-
-function positiveModulo(value: number, divisor: number): number {
-  return ((value % divisor) + divisor) % divisor;
 }

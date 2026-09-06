@@ -11,10 +11,10 @@ are not implementation approval. Live issues own acceptance criteria.
 | Field | Current state |
 | --- | --- |
 | Branch / integration | `david_refactor` only; the user explicitly authorized focused local commits and continued issue work. Push, main and extra branches remain unauthorized. |
-| Implemented | Historical #21/early #11/#75 and #77/#79/#82 blocks reviewed. After the independent review and prepared human checks, the user confirmed all presented behavior works and authorized commits and the next wave. New wave count: 2/3 (#12/#74); #39 next. |
+| Implemented | Historical #21/early #11/#75 and #77/#79/#82 blocks reviewed. After the independent review and prepared human checks, the user confirmed all presented behavior works and authorized commits and the next wave. New wave count: 3/3 (#12/#74/#39); cumulative human review now due. |
 | User feedback | On 2026-09-06 the user confirmed all three presented browser checks work: mouse look/Escape/relock, Connections movement/standstill, and Echo pause/backward seek/resume with EN/DE listening. This accepts the reviewed local behavior at `0e064cb` (application unchanged from `2db5755`). No physical-device result or exact numerical reference approval was reported. |
-| Current work | Human acceptance committed as `2c8bdaa`. #12 removes persisted/restored passwords and redacts logs; independent review, 482 tests/static gates and headed smoke 14/14 pass. Its regression fails on the old application (Flash only, 13 other routes pass). #74 removes the development proxy and unused port wrapper; 482 tests/static gates, development and production smoke each 14/14, and empty/configured Station browser checks pass. Next #39. #83 human input now passes; the prior automated rejection remains preserved without an assigned cause. #22 remains closed not planned. |
-| Next gate | The user explicitly authorized the next wave after accepting the presented block. This scoped continuation proceeds while #78 remains open and its baseline unchanged; it does not declare complete M0/reference acceptance. Next cumulative human review after #12/#74/#39, before further implementation. |
+| Current work | Human acceptance committed as `2c8bdaa`. #12 removes persisted/restored passwords and redacts logs; independent review, 482 tests/static gates and headed smoke 14/14 pass. Its regression fails on the old application (Flash only, 13 other routes pass). #74 removes the development proxy and unused port wrapper; 482 tests/static gates, development and production smoke each 14/14, and empty/configured Station browser checks pass. #39 removes the second World modulo implementation; 484 tests, typecheck/lint/build/diff, zero boundary violations and production smoke 14/14 pass. All nine quick counter/streaming records match retained #82 exactly; `--check` still fails only the seven unchanged #78 references. Wave complete technically; await human review before #20/#27 and decision-bound #29. #83 human input now passes; the prior automated rejection remains preserved without an assigned cause. #22 remains closed not planned. |
+| Next gate | The user explicitly authorized the next wave after accepting the presented block. This scoped continuation proceeds while #78 remains open and its baseline unchanged; it does not declare complete M0/reference acceptance. Cumulative human review of #12/#74/#39 is now due before further implementation. Independent cumulative review passes: application/Station/Vite net −26 lines, test TypeScript +98, one obsolete file deleted, no new files/dependencies/runtime owners. |
 | Acceptance audit | At clean `2db5755`, independent source/history review found no introduced architecture blocker: existing owners retain one loop/clock/queue; #77 removes the old import route, #79 bounds dispatch history, #82 rejects stale work and removes four redundant staging parameters. Existing startup/disposal gaps remain #73/#9; open target decisions remain open. Application TypeScript +65 lines, test TypeScript +1,300, documentation +1,766, JSON evidence +5,702, reference candidate +74, configuration +91: total +8,998 against `9bfb84b`. This is a qualified technical pass, not human or milestone acceptance. |
 | Verified application evidence | Historical final EN/DE each521s without unexpected errors; smoke14/14; repeatable counters/queue, but seven stored #78 references still fail. Exact tested identities and limits are in [evidence](evidence/README.md). |
 | Analyzer delta | After #12, Fallow remains exit 1: 3 dead-code, 11 clone groups, 25 health findings. New test-only findings are five repeated assertions at distinct legacy-load/post-submit-reload boundaries and estimated CRAP for `checkFlash` (CC7/cognitive5). Independent review retained these meaningful checks without a helper or suppression. Real boundary violations: 0. Older 10/24 and 10/22 results remain historical. |
@@ -29,27 +29,26 @@ placement was [authorized before implementation](https://github.com/Strehk/becom
 
 ## Human Review
 
-The production Station was restarted for this acceptance review at
-`http://localhost:4180`; the Test route was opened in ordinary Chrome. The reviewed
-source at `2db5755` has digest
-`d901a111db0408b048439e2ea0a0ddd689570590d79eb200cdf602a34ff6db1a`, unchanged from
-the prior functional checks and #83 probe. Later acceptance-record edits are
-documentation only; historical measurements retain their own identities.
-The user subsequently confirmed every presented action below works and requested
-commits and the next issue wave. This records human acceptance on the unchanged
-application at `0e064cb`; no new automated measurement is claimed.
+The user accepted the previous block on 2026-09-06 at `0e064cb` and authorized
+this wave. The current #12/#74/#39 wave is technically complete and awaits its
+own cumulative review. Production Station is available at `http://localhost:4180`.
+The tested source digest is
+`6d937a09592c5f147e5a9f10aa4eb956b0652ca5aedfbbc93a4867e7ac9ea6d5`;
+subsequent checkpoint edits are documentation only. Live issues retain the
+commands, exact identities and essential results; raw output stays ignored.
 
-| Action | Concrete observation / code |
+| Action | Expected behavior / review |
 | --- | --- |
-| Test initial scene and actual canvas/mouse input | Accepted by the user: startup view and actual mouse look/Escape/relock. Prior automated #83 failure remains recorded. #77: existing material-effect contract and Terrain/Mycelium callers. |
-| Connections move, then stand still, only after input works | Accepted by the user: ground/network continuity during movement and standstill. #82: `mycelium.ts` and existing regressions; no full-topology claim from fixed counters. |
-| Echo Play/Hold/short backward seek/resume | Accepted by the user: recurring organ through pause/backward seek/resume, without unintended overlap. #79: `organ-runtime.ts`, `organ-timeline.ts`, existing tests; callback dispatch may be silent. |
-| EN/DE change and Play | Accepted by the user: correct EN/DE narration and organ without unintended overlap. |
+| Open `/flash.html`, then reload | Familiar setup interface; password field stays empty. SSID/device identity may be remembered. Automated real-form/isolated-port checks prove legacy-secret removal, unchanged serial delivery and redacted logging; no physical flashing is requested. |
+| Conductor wake, Play/Hold, EN/DE and New visitor | Controls remain usable; new visitor returns to paused time zero. Development and configured production were checked separately under #74. |
+| Test/Connections: move, then stand still | Existing scene/streaming behavior remains intact. #39 changes only where the identical slot arithmetic is defined. |
+| Review the three focused changes | Passwords are transient at Flash; Station owns its port; both chunk windows reuse one existing World function. No new owner or dependency. Application/Station/Vite −26 lines; purposeful test TypeScript +98. |
 
-Review the [exact #78 candidate](evidence/issue-78/quick-reference-candidate.diff)
-with its [attribution and uncertainty](evidence/issue-78/README.md). Full context/
-late-import disposal remains #9/D6; D4/#80 animal retirement is unapproved.
-New visitor reuses the world, not complete Run dispose/start.
+The [exact #78 candidate](evidence/issue-78/quick-reference-candidate.diff) remains
+unapplied; [historical attribution and uncertainty](evidence/issue-78/README.md)
+remain open despite matching current counters. Physical PICO 90 Hz and full
+Run disposal are not established by this wave. D4/#80 and other open target
+choices remain unapproved. Do not start #20 before this cumulative review.
 
 ## Milestones and Ordered Work
 

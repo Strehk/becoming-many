@@ -222,6 +222,7 @@ function getSlotIndex(
   return slotRow * chunksPerSide + slotColumn;
 }
 
-function positiveModulo(value: number, divisor: number): number {
+/** Wrap a chunk coordinate into the non-negative range of a fixed window. */
+export function positiveModulo(value: number, divisor: number): number {
   return ((value % divisor) + divisor) % divisor;
 }

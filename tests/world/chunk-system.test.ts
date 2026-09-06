@@ -65,16 +65,24 @@ describe("ChunkWindow", () => {
     expect(outgoingChunk && chunkWindow.isCurrent(outgoingChunk)).toBe(false);
   });
 
-  test("keeps origins aligned in negative world space", () => {
-    const chunkWindow = createWindow(1, 1);
-    const assignments = chunkWindow.update(-0.1, -0.1);
-    const centerChunk = assignments.find(
-      ({ chunkX, chunkZ }) => chunkX === -1 && chunkZ === -1,
-    );
+  test.each([
+    [-0.1, -1],
+    [64.1, 2],
+  ])(
+    "wraps aligned chunks at world position %d",
+    (worldPosition, chunkCoordinate) => {
+      const chunkWindow = createWindow(1, 1);
+      const assignments = chunkWindow.update(worldPosition, worldPosition);
+      const centerChunk = assignments.find(
+        ({ chunkX, chunkZ }) =>
+          chunkX === chunkCoordinate && chunkZ === chunkCoordinate,
+      );
 
-    expect(centerChunk?.originX).toBe(-32);
-    expect(centerChunk?.originZ).toBe(-32);
-  });
+      expect(centerChunk?.originX).toBe(chunkCoordinate * 32);
+      expect(centerChunk?.originZ).toBe(chunkCoordinate * 32);
+      expect(centerChunk?.slotIndex).toBe(8);
+    },
+  );
 });
 
 function createWindow(level: 0 | 1 | 2 | 3, radius: number): ChunkWindow {

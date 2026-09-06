@@ -48,18 +48,31 @@ describe("VolumeChunkWindow", () => {
     expect(outgoingVolume && window.isCurrent(outgoingVolume)).toBe(false);
   });
 
-  test("keeps all origins aligned below world zero", () => {
-    const window = new VolumeChunkWindow({ level: 1, radius: 1 });
-    const assignments = window.update(-0.1, -0.1, -0.1);
-    const centerVolume = assignments.find(
-      ({ chunkX, chunkY, chunkZ }) =>
-        chunkX === -1 && chunkY === -1 && chunkZ === -1,
-    );
+  test.each([
+    [-0.1, -1],
+    [64.1, 2],
+  ])(
+    "wraps aligned volumes at world position %d",
+    (worldPosition, chunkCoordinate) => {
+      const window = new VolumeChunkWindow({ level: 1, radius: 1 });
+      const assignments = window.update(
+        worldPosition,
+        worldPosition,
+        worldPosition,
+      );
+      const centerVolume = assignments.find(
+        ({ chunkX, chunkY, chunkZ }) =>
+          chunkX === chunkCoordinate &&
+          chunkY === chunkCoordinate &&
+          chunkZ === chunkCoordinate,
+      );
 
-    expect(centerVolume?.originX).toBe(-32);
-    expect(centerVolume?.originY).toBe(-32);
-    expect(centerVolume?.originZ).toBe(-32);
-  });
+      expect(centerVolume?.originX).toBe(chunkCoordinate * 32);
+      expect(centerVolume?.originY).toBe(chunkCoordinate * 32);
+      expect(centerVolume?.originZ).toBe(chunkCoordinate * 32);
+      expect(centerVolume?.slotIndex).toBe(26);
+    },
+  );
 });
 
 function createWindow(): VolumeChunkWindow {
