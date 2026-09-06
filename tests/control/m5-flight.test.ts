@@ -40,53 +40,42 @@ describe("m5 flight", () => {
     );
   });
 
-  test("roll yaws the heading without banking or pitching the view", () => {
-    const rig = new Group();
+  test.each([-0.5, 0.5])(
+    "roll %s yaws exactly and holds a level heading",
+    (roll) => {
+      const rig = new Group();
 
-    applyM5Flight(rig, liveFrame({ roll: 0.5 }), 1);
+      applyM5Flight(rig, liveFrame({ roll }), 1);
 
-    const forward = flightForward(rig);
-    // The heading turned out of the -Z axis but stayed level.
-    expect(Math.abs(forward.x)).toBeGreaterThan(0.01);
-    expect(forward.y).toBeCloseTo(0);
-    // No banking: the rig's up stays world-up.
-    const up = new Vector3(0, 1, 0).applyQuaternion(rig.quaternion);
-    expect(up.x).toBeCloseTo(0);
-    expect(up.y).toBeCloseTo(1);
-    expect(up.z).toBeCloseTo(0);
-  });
+      const forward = flightForward(rig);
+      const yawRadians = roll * FLIGHT_SETTINGS.yawRateRadiansPerSecond;
+      expect(forward.x).toBeCloseTo(-Math.sin(yawRadians));
+      expect(forward.z).toBeCloseTo(-Math.cos(yawRadians));
+      expect(forward.y).toBeCloseTo(0);
+      // No banking: the rig's up stays world-up.
+      const up = new Vector3(0, 1, 0).applyQuaternion(rig.quaternion);
+      expect(up.x).toBeCloseTo(0);
+      expect(up.y).toBeCloseTo(1);
+      expect(up.z).toBeCloseTo(0);
+      applyM5Flight(rig, liveFrame(), 1);
+      expect(flightForward(rig).distanceTo(forward)).toBeCloseTo(0);
+    },
+  );
 
-  test("pull-back climbs without pitching the view", () => {
-    const rig = new Group();
+  test.each([-0.5, 0.5])(
+    "pitch %s changes altitude without pitching the view",
+    (pitch) => {
+      const rig = new Group();
 
-    // Negative frame pitch is pull-back after the single polarity flip.
-    applyM5Flight(rig, liveFrame({ pitch: -0.5 }), 1);
+      applyM5Flight(rig, liveFrame({ pitch }), 1);
 
-    expect(rig.position.y).toBeGreaterThan(0);
-    const forward = flightForward(rig);
-    expect(forward.y).toBeCloseTo(0);
-  });
-
-  test("push-forward adds to the configured descent bias", () => {
-    const rig = new Group();
-
-    applyM5Flight(rig, liveFrame({ pitch: 0.5 }), 1);
-
-    expect(rig.position.y).toBeCloseTo(
-      -FLIGHT_SETTINGS.climbRateMetersPerSecond * 0.5 -
-        FLIGHT_SETTINGS.neutralDescentMetersPerSecond,
-    );
-  });
-
-  test("heading persists after the roll returns to zero", () => {
-    const rig = new Group();
-
-    applyM5Flight(rig, liveFrame({ roll: 0.5 }), 1);
-    const turnedForward = flightForward(rig);
-    applyM5Flight(rig, liveFrame(), 1);
-
-    expect(flightForward(rig).x).toBeCloseTo(turnedForward.x);
-  });
+      expect(rig.position.y).toBeCloseTo(
+        -pitch * FLIGHT_SETTINGS.climbRateMetersPerSecond -
+          FLIGHT_SETTINGS.neutralDescentMetersPerSecond,
+      );
+      expect(flightForward(rig).y).toBeCloseTo(0);
+    },
+  );
 });
 
 function flightForward(rig: Group): Vector3 {

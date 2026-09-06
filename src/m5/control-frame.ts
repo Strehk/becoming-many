@@ -9,9 +9,9 @@
 
 /** Normalized controller state. The only controller shape that leaves the adapter. */
 export interface ControlFrame {
-  /** Forward/backward inclination, -1..1. Positive climbs. */
+  /** Forward-positive inclination, -1..1, preserving M5State.pitch. */
   readonly pitch: number;
-  /** Left/right inclination, -1..1. */
+  /** Right-positive inclination, -1..1, preserving M5State.roll. */
   readonly roll: number;
   /** Signal strength, 0..1. **0 means "neutral", not "broken"** — see `createNeutralControl`. */
   readonly quality: number;
@@ -20,7 +20,6 @@ export interface ControlFrame {
   readonly buttonDown: boolean;
   /** True on the single frame the button came back up. */
   readonly buttonUp: boolean;
-  readonly controllerType: "m5";
 }
 
 /**
@@ -37,6 +36,5 @@ export function createNeutralControl(): ControlFrame {
     buttonPressed: false,
     buttonDown: false,
     buttonUp: false,
-    controllerType: "m5",
   };
 }

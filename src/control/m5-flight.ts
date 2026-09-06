@@ -21,6 +21,7 @@ interface FlightTransform {
 
 const WORLD_UP = new Vector3(0, 1, 0);
 const LOCAL_FORWARD = new Vector3(0, 0, -1);
+const MINIMUM_PLANAR_DIRECTION_LENGTH = 1e-6;
 const yawStep = new Quaternion();
 const glideDirection = new Vector3();
 
@@ -29,11 +30,9 @@ export function applyM5Flight(
   frame: ControlFrame,
   deltaSeconds: number,
 ): void {
-  // Steering polarity, fixed once here for every source that may join later:
-  // the rig reads inverted on both axes against the frame convention, so
-  // pull-back climbs and lean-left turns left. The axes are not swapped.
-  const steeringPitch = -frame.pitch;
-  const steeringRoll = -frame.roll;
+  // Map the calibrated M5 axes once: negative pitch climbs; positive roll
+  // increases world-up yaw. The physical axis convention belongs to M5State.
+  const climbInput = -frame.pitch;
 
   // Yaw about world-up, never a tilted local axis: the heading persists after
   // the roll returns to zero and the horizon can never bank. Pre-multiplying
@@ -41,7 +40,7 @@ export function applyM5Flight(
   // independent on the child camera.
   yawStep.setFromAxisAngle(
     WORLD_UP,
-    -steeringRoll * FLIGHT_SETTINGS.yawRateRadiansPerSecond * deltaSeconds,
+    frame.roll * FLIGHT_SETTINGS.yawRateRadiansPerSecond * deltaSeconds,
   );
   flight.quaternion.premultiply(yawStep);
 
@@ -50,7 +49,7 @@ export function applyM5Flight(
   glideDirection.copy(LOCAL_FORWARD).applyQuaternion(flight.quaternion);
   glideDirection.y = 0;
   const planarLength = glideDirection.length();
-  if (planarLength > 1e-6) {
+  if (planarLength > MINIMUM_PLANAR_DIRECTION_LENGTH) {
     glideDirection.divideScalar(planarLength);
     flight.position.addScaledVector(
       glideDirection,
@@ -58,8 +57,8 @@ export function applyM5Flight(
     );
   }
 
-  const verticalSpeed =
-    steeringPitch * FLIGHT_SETTINGS.climbRateMetersPerSecond -
+  const verticalSpeedMetersPerSecond =
+    climbInput * FLIGHT_SETTINGS.climbRateMetersPerSecond -
     FLIGHT_SETTINGS.neutralDescentMetersPerSecond;
-  flight.position.y += verticalSpeed * deltaSeconds;
+  flight.position.y += verticalSpeedMetersPerSecond * deltaSeconds;
 }

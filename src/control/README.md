@@ -14,8 +14,8 @@ surface, while each level authors its own optional maximum.
 
 `m5-flight.ts` applies an M5 ControlFrame as ICAROS glider flight: constant
 forward glide, roll yaws the heading about world-up (the horizon never banks),
-and pitch climbs or descends around the configured downward bias. It runs every
-frame while an M5 host is configured — a quality-0 frame is neutral steering,
+and negative pitch climbs against the downward bias. Positive roll adds world-up
+yaw; physical rig polarity still needs acceptance. With a host, quality 0 is neutral,
 so a dropped poll continues the glide and gentle descent. Keyboard movement
 returns when the host is cleared; the frames come from `src/m5`.
 

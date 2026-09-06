@@ -1,6 +1,6 @@
 # Current Development Status
 
-As-built snapshot: 2026-09-07, checkpoint `eec55bd` plus the #18 M5 eligibility correction on `david_refactor`.
+As-built snapshot: 2026-09-07, checkpoint `b3eeea3` plus the #38 control-boundary simplification on `david_refactor`.
 Dated measurement packets retain the earlier exact identities they tested;
 the current checkout is the authority for runtime details.
 

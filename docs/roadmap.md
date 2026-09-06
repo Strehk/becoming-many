@@ -6,16 +6,16 @@ in the [workflow](refactor-workflow.md), [test plan](refactor-test-plan.md) and
 [target architecture](target-architecture.md) includes the binding decisions of
 2026-09-06; only its explicitly remaining operational/content choices are open. Live issues own acceptance criteria.
 
-## Resume Checkpoint — 2026-09-06
+## Resume Checkpoint — 2026-09-07
 
 | Field | Current state |
 | --- | --- |
 | Branch / integration | `david_refactor` only; the user explicitly authorized focused local commits and continued issue work. Push, main and extra branches remain unauthorized. |
-| Implemented | Checkpoint `49f48ac` preserves the state before tutorial-readiness work. Previous #27/#26/#32 block is committed; new #17 → #18 → #38 block: 2/3 implemented. #17 is closed at `eec55bd`; #18 has one shared eligibility rule and awaits physical acceptance. #38 is next. |
+| Implemented | Checkpoint `49f48ac` preserves the state before tutorial-readiness work. Previous #27/#26/#32 block is committed; new #17 → #18 → #38 block: 3/3 technically implemented. #17 is closed at `eec55bd`; #18 is committed at `b3eeea3`; #18/#38 await physical acceptance and cumulative review. |
 | User feedback | After the concrete block report and code-count review, the user explicitly requested a checkpoint and pragmatic continued work with fewer checks, YAGNI and the binding target architecture. This authorizes continuation; it is not listening, physical 90 Hz or #73 uncertainty acceptance. |
 | Previous block evidence | #80/#73/#20: production −473, configuration −5, tests +24; no new files/dependencies/owners, three files removed. #20 adds 13 production lines for compile-time validation. Final gates: 487 tests/26,704 assertions, type/lint/build/diff, zero boundaries, smoke 14/14; all nine counters/queue records match #73, with seven inherited #78 reference failures. EN transitions pass 16/16. The earlier #73 Motion observation (+0.725 Show seconds in ten seconds while 599 frames continued) remains unexplained. Exact identities and limits live in [#20](https://github.com/Strehk/becoming-many/issues/20) and [#73](https://github.com/Strehk/becoming-many/issues/73). |
-| Next gate | Cumulative review after at most #17/#18/#38. Concrete restart and level/show choices remain open before their dependent implementation. |
-| Current work | #17/#18 production −24 lines; separate poller, copied status contract and warning-only flags removed. #18: 490 tests, type/lint/build and independent review pass; Fallow unchanged. Browser verifies missing identity, live matching device, wrong-device rejection, recovery and clear. No GPU/flight math change or hardware acceptance. |
+| Next gate | Cumulative review of #17/#18/#38 before another implementation. Concrete restart and level/show choices remain open before their dependent implementation. |
+| Current work | #17/#18/#38 production −28 lines, tests +28; separate poller, copied status contract, warning-only flags, unused controller tag and double roll negation removed. Final 490 tests, type/lint/build and independent review pass; Fallow unchanged. M5 browser evidence stays in the issues. Flight equations and GPU work unchanged; physical acceptance remains open. |
 | Acceptance audit | At clean `2db5755`, independent source/history review found no introduced architecture blocker: existing owners retain one loop/clock/queue; #77 removes the old import route, #79 bounds dispatch history, #82 rejects stale work and removes four redundant staging parameters. Existing startup/disposal gaps remain #73/#9; open target decisions remain open. Application TypeScript +65 lines, test TypeScript +1,300, documentation +1,766, JSON evidence +5,702, reference candidate +74, configuration +91: total +8,998 against `9bfb84b`. This is a qualified technical pass, not human or milestone acceptance. |
 | Verified application evidence | Historical final EN/DE each521s without unexpected errors; smoke14/14; repeatable counters/queue, but seven stored #78 references still fail. Exact tested identities and limits are in [evidence](evidence/README.md). |
 | Analyzer delta | After #26, Fallow exits 1: 4 dead-code, 11 clone groups, 26 health findings. Two additional estimated-CRAP findings cover bounded retry and its regression scenario; independent review retains the necessary branches without suppression. The extra `ModuleRuntime.load` finding is false positive: `startLevel` directly calls it before activation; no suppression or wrapper was added. New test-only findings are five repeated assertions at distinct legacy-load/post-submit-reload boundaries and estimated CRAP for `checkFlash` (CC7/cognitive5). Independent review retained these meaningful checks without a helper or suppression. Real boundary violations: 0. Older 10/24 and 10/22 results remain historical. |
@@ -32,8 +32,8 @@ placement was [authorized before implementation](https://github.com/Strehk/becom
 ## Human Review
 
 After the #27/#26/#32 report and code-count review, the user requested a
-checkpoint and pragmatic continuation. `49f48ac` is that checkpoint. The next
-cumulative review follows at most #17/#18/#38. This does not establish physical,
+checkpoint and pragmatic continuation. `49f48ac` is that checkpoint. The #17/#18/#38 block is implemented; cumulative human review is due before
+another implementation. This does not establish physical,
 listening or unresolved #73 clock acceptance.
 
 Readability review: Runtime tells startup and input/Show/frame coordination;
@@ -50,7 +50,7 @@ live issues and [evidence index](evidence/README.md).
 All stages use the same three-implemented-issue cumulative human gate. An issue
 may prepare a concrete proposal or gather read-only evidence while implementation
 waits for its actual dependency. Continuation after the previous 3/3 block is
-authorized; the new #17/#18/#38 block is at 2/3. Early physical commissioning is not
+authorized; the new #17/#18/#38 block is at its 3/3 review gate. Early physical commissioning is not
 deferred until the last milestone.
 
 | Milestone | Ordered scope | Gate |
@@ -84,15 +84,15 @@ as resolved issues. Every implementation block must reduce production code.
 | 3 | #35 → #36, #42/#54 → #46 | Shared commands and a validated visitor start/calibration flow. Obtain Windows-PCVR operating facts early. |
 | 4 | #73, #26/#32 and relevant rendering blockers | Resolve clock uncertainty and verify target installation performance; local browser checks alone are insufficient. |
 
-Continue the authorized #17/#18/#38 block; prepare concrete restart and
-level/show proposals before their dependent changes.
+After cumulative review, reassess #25 against the simplified control boundary;
+prepare concrete restart and level/show proposals before dependent changes.
 Keep the tutorial's content, duration, audio rights and learning tasks open.
 
 ## Immediate Work and Dependencies
 
 | Work | Smallest scope / prerequisite |
 | --- | --- |
-| Current human gate | Pragmatic continuation authorized after the checkpoint request; current block #17/#18/#38 is 2/3. Next cumulative review follows at most three implementations. Separate physical, listening and #73 uncertainty gates stay open. |
+| Current human gate | Pragmatic continuation authorized after the checkpoint request; current block #17/#18/#38 is 3/3. Cumulative review is due before another implementation. Separate physical, listening and #73 uncertainty gates stay open. |
 | #42 + #54, start early | Obtain the actual Windows/GPU/driver/browser/XR/streaming/USB/headset matrix and reproduce entry/re-entry/audio/operator behavior with existing tools. Basic commissioning does not require #14; later diagnostic detail can use it. No Mac substitute for physical results. |
 | #78, bounded investigation | Fix a camera pose and comparable conditions, identify intended scene/available contents, repeat counters and explain significant differences. Then propose the exact checked reference. No exhaustive historical-triangle archaeology and no automatic baseline update. |
 | #80, technically implemented | Remove animal–Mycelium producers, projections, contracts, wiring, reserved pool ranges, settings and exclusive tests together. First enumerate existing fixed anchor classes. Preserve animal animation/movement and Scent/Thermal data; no other content removal. |

@@ -32,6 +32,5 @@ export function deriveControlFrame(
     buttonUp:
       previous !== undefined &&
       next.buttonReleaseCount > previous.buttonReleaseCount,
-    controllerType: "m5",
   };
 }
