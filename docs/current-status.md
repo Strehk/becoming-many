@@ -1,6 +1,6 @@
 # Current Development Status
 
-As-built snapshot: 2026-09-06, checkpoint `b30964c` plus the #26 bounded Scent streaming correction on `david_refactor`.
+As-built snapshot: 2026-09-06, checkpoint `feb7e28` plus the #32 zero-response Thermal correction on `david_refactor`.
 Dated measurement packets retain the earlier exact identities they tested;
 the current checkout is the authority for runtime details.
 
@@ -72,7 +72,8 @@ The #80 animal-connection removal is implemented below. Small additions remain i
   and the narrative grass clipmap.
 - Motion: bounded fly and bird point actors with GPU-aged motion trails.
 - Thermal: a viewer-centred false-colour material effect across terrain,
-  vegetation, rocks, and animals.
+  vegetation, rocks, and animals. Actor surfaces skip incoming body-heat work
+  because their existing response is zero.
 - Magnetic: one opaque camera-following sky dome; it does not patch terrain or
   other module materials.
 - Connections: a worker-generated, fixed-pool mycelium network connected to

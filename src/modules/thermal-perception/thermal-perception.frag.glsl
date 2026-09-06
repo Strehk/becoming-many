@@ -111,6 +111,9 @@ float thermalTextureField(vec3 samplePosition) {
  * ground.
  */
 float thermalRadiatedWarmth(float shapeOffsetMeters) {
+  if (thermalHeatResponse == 0.0) {
+    return 0.0;
+  }
   float radiated = 0.0;
   for (int index = 0; index < THERMAL_HEAT_SOURCES; index++) {
     if (index >= thermalHeatCount) {

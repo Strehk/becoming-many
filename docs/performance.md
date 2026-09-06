@@ -94,6 +94,15 @@ This fixes queue behavior without demonstrating stable installation 90 Hz.
 Density and occluder tuning remain open; plant capacity is derived from the
 shared placement grid, so reducing it independently would discard valid plants.
 
+#32 skips the existing body-heat loop for actor surfaces with zero response.
+No shader variant, palette or octave setting changes. Three initial and three
+interleaved headed full-profile pairs retain all counters (102 draws, 3,887,930
+triangles, 14 programs) and queue records. Interleaved p95 is 2.8/2.7/2.7 ms
+before and 2.8/2.8/2.7 ms after; p99 is 3.3/3.1/3.1 versus 3.2/3.1/3.0 ms.
+Timing distributions overlap; no stable speedup is established. Initial and
+interleaved variability, source identities and open tuning/device criteria are
+retained in [#32](https://github.com/Strehk/becoming-many/issues/32).
+
 ## Dated Evidence
 
 - The [2026-08-24 browser audit](performance-audit-2026-08-24.md) measured an

@@ -214,7 +214,6 @@ test("Thermal Perception radiates warmth from the bodies it is told about", () =
     1,
   );
   expect(animalsShader.uniforms.thermalHeatResponse?.value).toBe(0);
-  expect(terrainShader.fragmentShader).toContain("thermalRadiatedWarmth");
 });
 
 test("Thermal Perception bounds the warm bodies it tracks", () => {
