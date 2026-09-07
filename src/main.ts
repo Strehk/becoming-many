@@ -11,8 +11,8 @@ import { resolveNarrationLanguage } from "./dramaturgy/narration-catalog";
 import { PIECE_SCHEDULE } from "./dramaturgy/piece-schedule";
 import type { ShowClock } from "./dramaturgy/show-clock";
 import { SHOW_LEVEL_STATES } from "./dramaturgy/show-levels";
+import { level as connectionsLevel } from "./levels/connections.level";
 import { startLevel } from "./levels/level-runtime";
-import { SHOW_COMPOSITION } from "./levels/show-composition";
 import { loadDeploymentConfig } from "./station/deployment-config";
 import { mountVrEntryButton } from "./world/vr-entry-button";
 
@@ -40,7 +40,7 @@ const deployment = await loadDeploymentConfig();
 
 const level = await startLevel(document.querySelector(".app"), {
   kind: "show",
-  composition: SHOW_COMPOSITION,
+  preset: connectionsLevel,
   show: {
     schedule: PIECE_SCHEDULE,
     language: resolveNarrationLanguage(request.get("language")),

@@ -1,6 +1,6 @@
 /**
  * Purpose: Define the authored contracts used to construct standalone levels and shows.
- * Context: Static presets, show composition, and live show state have different lifecycles.
+ * Context: One preset constructs the world; live show state controls its presentation.
  * Responsibility: Describe presentation and immutable world-construction data without runtime ownership.
  * Boundary: This file contains types only and creates no browser or Three.js resources.
  */
@@ -52,17 +52,10 @@ export type WorldComposition = {
     }
 );
 
-/** A complete standalone startup recipe used by development routes and benchmarks. */
+/** A complete world recipe used by standalone routes, benchmarks and the Show. */
 export type LevelPreset = WorldComposition & {
   readonly backgroundColor: number;
   readonly viewDistance: number;
   readonly testUi?: true;
   readonly maximumGroundClearanceMeters: number;
 };
-
-/** The construction-only world preloaded once for a running show. */
-export interface ShowComposition {
-  readonly world: WorldComposition;
-  /** Haze baked into surface and sky materials before live state following. */
-  readonly materialHazeColor: number;
-}

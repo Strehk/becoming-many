@@ -11,11 +11,11 @@ in the [workflow](refactor-workflow.md), [test plan](refactor-test-plan.md) and
 | Field | Current state |
 | --- | --- |
 | Branch / integration | `david_refactor` only; the user explicitly authorized focused local commits and continued issue work. Push, main and extra branches remain unauthorized. |
-| Implemented | Checkpoint `49f48ac` preserves the state before tutorial-readiness work. Previous #27/#26/#32 block is committed; #17 → #18 → #38 block accepted at `1434f45`. New block #25 → #85: 1/3 implemented; #25 narrows the Conductor field to `activeLevel`, #85 is next. #17 is closed at `eec55bd`; #18 is committed at `b3eeea3`; #18/#38 still await physical acceptance. |
+| Implemented | Checkpoint `49f48ac` preserves the state before tutorial-readiness work. Previous #27/#26/#32 block is committed; #17 → #18 → #38 block accepted at `1434f45`. New block #25 → #85: 2/3 implemented; #25 clarifies `activeLevel`; #85 removes layers and duplicate Show construction. #9 resource lifetime is next. #17 is closed at `eec55bd`; #18 is committed at `b3eeea3`; #18/#38 still await physical acceptance. |
 | User feedback | On 2026-09-07 the user said the prepared result looked good and requested continuation, accepting the #17/#18/#38 block and the presented #85 composition proposal. Physical 90 Hz, calibration and #73 uncertainty remain unaccepted. |
 | Previous block evidence | #80/#73/#20: production −473, configuration −5, tests +24; no new files/dependencies/owners, three files removed. #20 adds 13 production lines for compile-time validation. Final gates: 487 tests/26,704 assertions, type/lint/build/diff, zero boundaries, smoke 14/14; all nine counters/queue records match #73, with seven inherited #78 reference failures. EN transitions pass 16/16. The earlier #73 Motion observation (+0.725 Show seconds in ten seconds while 599 frames continued) remains unexplained. Exact identities and limits live in [#20](https://github.com/Strehk/becoming-many/issues/20) and [#73](https://github.com/Strehk/becoming-many/issues/73). |
 | Next gate | Agent-led cumulative review after three implementations, then continue autonomously. #85 construction is decided; concrete visitor restart remains open. |
-| Current work | #17/#18/#38 production −28 lines, tests +28; separate poller, copied status contract, warning-only flags, unused controller tag and double roll negation removed. Final 490 tests, type/lint/build and independent review pass; Fallow unchanged. M5 browser evidence stays in the issues. Flight equations and GPU work unchanged; physical acceptance remains open. |
+| Current work | #25 is committed at `6eb0636` (production −1). #85 removes four files, production/configuration −86 and tests −13; all nine effective presets and Show settings match before/after. Motion now rejects invalid intensity at its factory. Final evidence and remaining scope live in GitHub. Next: #9 complete resource ownership without selecting the open visitor restart operation. |
 | Acceptance audit | At clean `2db5755`, independent source/history review found no introduced architecture blocker: existing owners retain one loop/clock/queue; #77 removes the old import route, #79 bounds dispatch history, #82 rejects stale work and removes four redundant staging parameters. Existing startup/disposal gaps remain #73/#9; open target decisions remain open. Application TypeScript +65 lines, test TypeScript +1,300, documentation +1,766, JSON evidence +5,702, reference candidate +74, configuration +91: total +8,998 against `9bfb84b`. This is a qualified technical pass, not human or milestone acceptance. |
 | Verified application evidence | Historical final EN/DE each521s without unexpected errors; smoke14/14; repeatable counters/queue, but seven stored #78 references still fail. Exact tested identities and limits are in [evidence](evidence/README.md). |
 | Analyzer delta | After #26, Fallow exits 1: 4 dead-code, 11 clone groups, 26 health findings. Two additional estimated-CRAP findings cover bounded retry and its regression scenario; independent review retains the necessary branches without suppression. The extra `ModuleRuntime.load` finding is false positive: `startLevel` directly calls it before activation; no suppression or wrapper was added. New test-only findings are five repeated assertions at distinct legacy-load/post-submit-reload boundaries and estimated CRAP for `checkFlash` (CC7/cognitive5). Independent review retained these meaningful checks without a helper or suppression. Real boundary violations: 0. Older 10/24 and 10/22 results remain historical. |
@@ -40,7 +40,7 @@ must not be reported as verified. See the [workflow](refactor-workflow.md).
 
 The user accepted the prepared #17/#18/#38 block at `1434f45` and requested
 continuation with the presented #85 proposal. `49f48ac` remains the earlier
-checkpoint. New block is at 1/3 after #25; physical, listening and unresolved #73
+checkpoint. New block is at 2/3 after #25/#85; physical, listening and unresolved #73
 clock acceptance remain separate.
 
 Readability review: Runtime tells startup and input/Show/frame coordination;
@@ -90,7 +90,7 @@ as resolved issues. Every implementation block must reduce production code.
 | 3 | #35 → #36, #42/#54 → #46 | Shared commands and a validated visitor start/calibration flow. Obtain Windows-PCVR operating facts early. |
 | 4 | #73, #26/#32 and relevant rendering blockers | Resolve clock uncertainty and verify target installation performance; local browser checks alone are insufficient. |
 
-Implement the narrowed #25, then the approved #85 construction/layer removal.
+#25 is complete; finish #85 verification, then work on #9 resource ownership.
 Prepare the concrete visitor restart before dependent changes.
 Keep the tutorial's content, duration, audio rights and learning tasks open.
 

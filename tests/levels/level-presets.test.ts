@@ -1,6 +1,6 @@
 /**
- * Purpose: Verify effective level contents, authored values, and the show composition.
- * Context: Each level is presentation plus the layers up to its rung; the show is the whole ladder.
+ * Purpose: Verify effective level contents and authored values.
+ * Context: Every level explicitly selects its modules; Show uses the Connections recipe.
  * Responsibility: Preserve world membership and content relationships without requiring shared objects.
  * Boundary: Runtime construction and rendering are tested separately.
  */
@@ -25,7 +25,6 @@ import type {
 import { level as magneticLevel } from "../../src/levels/magnetic.level";
 import { level as motionLevel } from "../../src/levels/motion.level";
 import { level as scentLevel } from "../../src/levels/scent.level";
-import { SHOW_COMPOSITION } from "../../src/levels/show-composition";
 import { level as testLevel } from "../../src/levels/test.level";
 import { level as thermalLevel } from "../../src/levels/thermal.level";
 import { level as whiteWorld } from "../../src/levels/white-world.level";
@@ -109,28 +108,6 @@ test("Test owns its diagnostic world values independently", () => {
   expect(testPreset.testUi).toBe(true);
   expect(testPreset.airParticles).not.toEqual(whiteWorldPreset.airParticles);
   expect(whiteWorldPreset.testUi).toBeUndefined();
-});
-
-test("the show composition contains construction data only", () => {
-  const composition = SHOW_COMPOSITION.world;
-  const presentation = composition as LevelPreset;
-
-  expect(presentation.backgroundColor).toBeUndefined();
-  expect(presentation.viewDistance).toBeUndefined();
-  expect(presentation.maximumGroundClearanceMeters).toBeUndefined();
-  expect(presentation.testUi).toBeUndefined();
-
-  // "Senses layer, never swap": the show's union is the last rung of the
-  // ladder with the presentation stripped, and nothing more or less. Spelled
-  // out separately in show-composition.ts, so this pins the two together.
-  const {
-    backgroundColor: _background,
-    viewDistance: _viewDistance,
-    maximumGroundClearanceMeters: _clearance,
-    testUi: _testUi,
-    ...lastRung
-  } = connectionsLevel;
-  expect(composition).toEqual(lastRung);
 });
 
 test("Echo Level owns a complete depth-world startup recipe", () => {

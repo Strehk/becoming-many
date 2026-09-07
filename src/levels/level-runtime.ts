@@ -24,7 +24,7 @@ import {
   loadLevelAssets,
   type TestLevelModules,
 } from "./level-composition";
-import type { LevelPreset, ShowComposition } from "./level-preset";
+import type { LevelPreset } from "./level-preset";
 import {
   createShowRuntime,
   type RunningShow,
@@ -75,6 +75,7 @@ export interface RunningLevel {
 }
 
 interface CommonLevelRequest {
+  readonly preset: LevelPreset;
   readonly m5ExpectedDeviceId?: string;
   /** Entry-owned sampling used by Test UI or the Conductor status strip. */
   readonly frameMetrics?: FrameMetricsRecorder;
@@ -86,17 +87,15 @@ interface CommonLevelRequest {
 
 export interface StaticLevelRequest extends CommonLevelRequest {
   readonly kind: "static";
-  readonly preset: LevelPreset;
   readonly benchmark?: BenchmarkRun;
 }
 
 export interface ShowLevelRequest extends CommonLevelRequest {
   readonly kind: "show";
-  readonly composition: ShowComposition;
   readonly show: ShowRequest;
 }
 
-/** A run is either one standalone preset or one preloaded show composition. */
+/** Both run modes construct one preset; Show adds its timeline and live states. */
 export type LevelStartRequest = StaticLevelRequest | ShowLevelRequest;
 
 export async function startLevel(
@@ -107,8 +106,7 @@ export async function startLevel(
     throw new Error("Missing level container element");
   }
 
-  const level =
-    request.kind === "static" ? request.preset : request.composition.world;
+  const level = request.preset;
   const assets = await loadLevelAssets(level, request.kind === "show");
   const benchmark = request.kind === "static" ? request.benchmark : undefined;
   const world = createWorld(container, {
@@ -124,10 +122,7 @@ export async function startLevel(
     world,
     level,
     assets,
-    materialHazeColor:
-      request.kind === "static"
-        ? request.preset.backgroundColor
-        : request.composition.materialHazeColor,
+    materialHazeColor: level.backgroundColor,
     forShow: request.kind === "show",
     testModules: request.testModules,
   });

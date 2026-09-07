@@ -363,7 +363,7 @@ require tracing a layer catalog to understand the intended result.
 
 **Observed history:** `35b13e6` introduced inheritance; `9abde94` replaced it with
 copied recipes; `8119bea` introduced shared authored blocks and
-[sense-layers.ts](../src/levels/sense-layers.ts). These historical conventions no
+`sense-layers.ts`. These historical conventions no
 longer constrain the confirmed target. Retain independent contracts only when
 they have actual different consumers/lifetimes, not to preserve old indirection.
 
@@ -383,7 +383,7 @@ and heat through body observations.
 
 **Observed:** `a7d148e` added live animal links; `88a2179` removed them from
 content but reserved the machinery for hypothetical levels.
-[Authored Connections](../src/levels/authored/connections.ts) and
+[Connections recipe](../src/levels/connections.level.ts) and
 [preset tests](../tests/levels/level-presets.test.ts) confirm absence today.
 The additional Animals position projection, `ConnectionActorSource`, composition
 branch, `updateAnimalLinks`, hysteresis and reserved edge rows remain.
@@ -586,7 +586,7 @@ remove old consumers, obsolete tests and documentation with the replaced path.
 | `src/control/flight-control-source.ts` | Only Run consumes this stateless `readFrame → if → delegate` factory | Delete file, retain behavior | Run's local frame selects; existing controls perform movement | Factory plus `FlightControlSource`, `DesktopFlightSource`, `M5FlightSource` | #73 implemented; input/benchmark probes pass; presented browser accepted |
 | `src/control/flight-reset.ts` | Only Run uses its two transform assignments | Remove wrapper when the fresh-run sequence establishes required initialization | Existing Run startup/restart | Imported reset wrapper; reset-only visitor semantics | D1/D2; concrete restart gate first, preserve local head pose |
 | `src/levels/show-renderer-preparation.ts` | Only Run passes World resources through `ShowRenderWorld` | Delete file, retain operations | Existing World closure | `ShowRenderWorld`, separate preparation wrapper/import | #73 implemented; unchanged preparation and failure restoration verified |
-| `src/levels/sense-layers.ts` | Recipe membership and named heat variant depend on spreads | Delete after concrete level-to-show proposal | Explicit independent level settings and module defaults | Layer objects, imports and spread-order dependency | D3/#85; compare effective settings and remove indirection; explicit configuration growth allowed |
+| `sense-layers.ts`, `show-composition.ts`, authored Terrain/Connections forwarding files | Layer membership, hidden warm variant and duplicate Show recipe | Removed in #85 | Explicit module keys and the Connections preset for Show | Layer objects, spreads, duplicate Show type/request and exclusive test | All nine effective presets and Show settings preserved; shared content parameters retained |
 | `src/modules/grass/`, `GrassPreset`, `WorldComposition.grass`, two diagnostic `grass` recipes; Composition/Test loader legacy factory and import; `tests/modules/grass.test.ts` | Duplicate renderer and diagnostic-only construction path | Confirmed: delete legacy implementation and exclusive consumers; migrate recipes | Existing Grass Clipmap for Show/Test/Design Test | `createGrass`, `CreateLegacyGrass`, `createLegacyGrass`, legacy shaders/config/loading and exclusive test cases | D5/#13: owner decided; preserve shared effects and Zone Visualizer loading. #40 becomes unnecessary; #71/#72 and Windows-PCVR acceptance remain |
 
 ### Functions, contracts and state removed inside retained files

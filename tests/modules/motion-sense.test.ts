@@ -15,7 +15,10 @@ import {
 } from "three";
 import { createBirdFlocks } from "../../src/modules/motion-sense/bird-flocks";
 import { createFlySwarms } from "../../src/modules/motion-sense/fly-swarms";
-import { createMotionSenseModule } from "../../src/modules/motion-sense/motion-sense";
+import {
+  createMotionSenseModule,
+  type MotionSenseModuleOptions,
+} from "../../src/modules/motion-sense/motion-sense";
 import {
   MOTION_SENSE_SETTINGS,
   type MotionSenseParameters,
@@ -568,20 +571,27 @@ describe("Bird flocks", () => {
 });
 
 describe("Motion Sense module", () => {
-  test("keeps two fixed draws through the whole lifecycle", () => {
+  test("rejects invalid intensity and keeps two fixed draws through the lifecycle", () => {
     const scene = new Scene();
     const viewerPosition = new Vector3();
     const viewpoint: Viewpoint = {
       worldPosition: viewerPosition,
       viewDistanceMeters: 128,
     };
-    const { module } = createMotionSenseModule({
+    const options: MotionSenseModuleOptions = {
       scene,
       viewpoint,
       parameters: createMotionParameters(),
       groundYAt: () => 0,
       zoneAt: () => "meadow",
-    });
+    };
+    expect(() =>
+      createMotionSenseModule({
+        ...options,
+        parameters: createMotionParameters({ intensity: 2 }),
+      }),
+    ).toThrow(new RangeError("Motion intensity must be between zero and one"));
+    const { module } = createMotionSenseModule(options);
 
     module.load();
     expect(scene.children).toHaveLength(2);

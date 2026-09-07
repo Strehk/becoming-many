@@ -7,7 +7,7 @@
 
 import type { MotionSenseParameters } from "../../modules/motion-sense/motion-sense";
 
-/** Typed on its own so the heat variant below can rebuild it without a guard. */
+/** Bird movement shared by the cool and warm appearances. */
 const BIRDS: NonNullable<MotionSenseParameters["birds"]> = {
   flockCount: 5,
   birdsPerFlock: 12,
@@ -50,12 +50,20 @@ export const MOTION_SENSE: MotionSenseParameters = {
  * and its trace takes the palette's hot stop. The flies keep their own colors.
  */
 export const HEAT_MOTION_SENSE: MotionSenseParameters = {
-  ...MOTION_SENSE,
+  intensity: MOTION_SENSE.intensity,
+  swarms: MOTION_SENSE.swarms,
+  appearance: MOTION_SENSE.appearance,
+  trail: MOTION_SENSE.trail,
   birds: {
-    ...BIRDS,
+    flockCount: BIRDS.flockCount,
+    birdsPerFlock: BIRDS.birdsPerFlock,
+    flightSpeedMetersPerSecond: BIRDS.flightSpeedMetersPerSecond,
+    trailLifetimeFrames: BIRDS.trailLifetimeFrames,
+    flightHeightMeters: BIRDS.flightHeightMeters,
     appearance: {
-      ...BIRDS.appearance,
       trailColor: 0xfb5f16,
+      trailSizeMeters: BIRDS.appearance.trailSizeMeters,
+      trailOpacity: BIRDS.appearance.trailOpacity,
     },
   },
 };

@@ -1,13 +1,14 @@
 /**
  * Purpose: Define the independent Scent startup preset.
  * Context: Direct routes and benchmarks can start this world without earlier levels.
- * Responsibility: Own the presentation of Scent, its invisible source world, and the layers it carries.
+ * Responsibility: Own the presentation of Scent, its invisible source world, and its modules.
  * Boundary: This file contains data only and creates no runtime resources.
  */
 
+import { AIR_PARTICLES } from "./authored/air-particles";
+import { SCENT_PARTICLES } from "./authored/scent-particles";
 import { VEGETATION_PLACEMENT } from "./authored/vegetation";
 import type { LevelPreset } from "./level-preset";
-import { SCENT_LAYER, WHITE_WORLD_LAYER } from "./sense-layers";
 
 export const level: LevelPreset = {
   backgroundColor: 0xffffff,
@@ -20,6 +21,6 @@ export const level: LevelPreset = {
   invisibleVegetation: {
     instancesPerHectareByZone: VEGETATION_PLACEMENT,
   },
-  ...WHITE_WORLD_LAYER,
-  ...SCENT_LAYER,
+  airParticles: AIR_PARTICLES,
+  scentParticles: SCENT_PARTICLES,
 };

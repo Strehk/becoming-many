@@ -13,8 +13,8 @@ import {
 } from "../dramaturgy/narration-catalog";
 import type { NarrationSchedule } from "../dramaturgy/narration-schedule";
 import { SHOW_LEVEL_STATES } from "../dramaturgy/show-levels";
+import { level as connectionsLevel } from "../levels/connections.level";
 import { type FrameMetrics, startLevel } from "../levels/level-runtime";
-import { SHOW_COMPOSITION } from "../levels/show-composition";
 import type { RunningShow } from "../levels/show-runtime";
 import type { DeploymentConfig } from "../station/deployment-config";
 import { FrameMetricsSampler } from "../test-ui/frame-metrics";
@@ -78,7 +78,7 @@ export async function startConductorPage({
   const frameMetrics = new FrameMetricsSampler();
   const level = await startLevel(stageMount, {
     kind: "show",
-    composition: SHOW_COMPOSITION,
+    preset: connectionsLevel,
     show: { schedule, language, states: SHOW_LEVEL_STATES },
     frameMetrics,
     m5ExpectedDeviceId: deployment.m5DeviceId,

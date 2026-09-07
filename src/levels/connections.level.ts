@@ -1,31 +1,63 @@
 /**
  * Purpose: Define the independent Connections startup preset.
  * Context: Direct routes and benchmarks can start this world without earlier levels.
- * Responsibility: Own the presentation of Connections and name the layers it carries.
+ * Responsibility: Own the presentation of Connections and name its modules explicitly.
  * Boundary: This file contains data only and creates no runtime resources.
  */
 
+import { AIR_PARTICLES } from "./authored/air-particles";
+import { WARM_ANIMALS } from "./authored/animals";
+import { ECHO_DEPTH } from "./authored/echo-depth";
+import { GRASS_CLIPMAP } from "./authored/grass-clipmap";
+import { MAGNETIC_SENSE } from "./authored/magnetic-sense";
+import { HEAT_MOTION_SENSE } from "./authored/motion-sense";
+import { ROCKS } from "./authored/rocks";
+import { SCENT_PARTICLES } from "./authored/scent-particles";
+import { THERMAL_PERCEPTION } from "./authored/thermal-perception";
+import { VEGETATION } from "./authored/vegetation";
 import type { LevelPreset } from "./level-preset";
-import {
-  CONNECTIONS_LAYER,
-  ECHO_LAYER,
-  MAGNETIC_LAYER,
-  MOTION_LAYER,
-  SCENT_LAYER,
-  THERMAL_LAYER,
-  WHITE_WORLD_LAYER,
-} from "./sense-layers";
 
 export const level: LevelPreset = {
   backgroundColor: 0xf7f7f7,
   viewDistance: 128,
   maximumGroundClearanceMeters: 50,
   testUi: true,
-  ...WHITE_WORLD_LAYER,
-  ...SCENT_LAYER,
-  ...ECHO_LAYER,
-  ...MOTION_LAYER,
-  ...THERMAL_LAYER,
-  ...MAGNETIC_LAYER,
-  ...CONNECTIONS_LAYER,
+  airParticles: AIR_PARTICLES,
+  scentParticles: SCENT_PARTICLES,
+  echoDepth: ECHO_DEPTH,
+  terrain: { opacity: 1 },
+  grassClipmap: GRASS_CLIPMAP,
+  vegetation: VEGETATION,
+  rocks: ROCKS,
+  motion: HEAT_MOTION_SENSE,
+  animals: WARM_ANIMALS,
+  thermal: THERMAL_PERCEPTION,
+  magnetic: MAGNETIC_SENSE,
+  connections: {
+    intensity: 1,
+    webRadiusMeters: 30,
+    pulseSpeedMetersPerSecond: 1.5,
+    sources: {
+      vegetation: {
+        nodeColor: 0xa5bdc3,
+        weight: 1,
+      },
+      scentEmitters: {
+        nodeColor: 0xd06780,
+        weight: 1,
+      },
+      rocks: {
+        nodeColor: 0x292e55,
+        weight: 0.25,
+      },
+      soil: {
+        nodeColor: 0xf2e3d3,
+        weight: 0.2,
+      },
+    },
+    colors: {
+      depthColor: 0x683b5a,
+      pulseColor: 0xe39e54,
+    },
+  },
 };

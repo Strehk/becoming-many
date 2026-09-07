@@ -24,9 +24,8 @@ show state.
 ## Composition and Frame Flow
 
 `src/levels/level-runtime.ts` is the startup and frame-coordination root. A
-static request contains one independent `LevelPreset`; a show request contains
-the separate construction-only `ShowComposition` and narrow `ShowLevelState`
-map. The runtime loads the required assets, creates a stopped World in
+static request contains one independent `LevelPreset`; a Show uses the Connections
+preset plus its narrow `ShowLevelState` map. The runtime loads the required assets, creates a stopped World in
 `src/world/world-runtime.ts`,
 applies the opening presentation, delegates concrete construction to
 `src/levels/level-composition.ts`, activates the returned module list, and
@@ -154,20 +153,14 @@ lifecycle acceptance.
 
 ## Levels and Show
 
-The current layer-based implementation below is scheduled for replacement by
-D3: independent explicit TypeScript levels, with module-owned defaults. The
-smallest level/show construction solution must be reviewed before that migration;
-it must preserve one prepared world per visit.
+Each `src/levels/*.level.ts` recipe lists its module keys explicitly. Shared
+content parameters in `authored/` retain one copy of repeated palettes, scent
+signatures and placement settings; no layer object determines membership or
+silently overrides Motion. Thermal and later levels select the warm variant
+directly. Test and Design Test retain their independent diagnostic values.
 
-Files in `src/levels/*.level.ts` are typed startup recipes: each owns its
-presentation values and spreads the sense layers up to its rung, in ladder
-order. The layers live in `src/levels/sense-layers.ts` and are built from the
-authored blocks in `src/levels/authored/`, where every configuration value
-exists once. A level names layers, never another level. `test` and
-`design-test` remain diagnostic presets with values of their own.
-
-`show-composition.ts` spreads every layer into the complete module and asset
-union the default page creates once. `SHOW_LEVEL_STATES` contains only presentation facts
+The Show constructs the Connections preset once, using its background for
+material haze. `SHOW_LEVEL_STATES` contains only presentation facts
 that can change while that world is running. `PIECE_SCHEDULE` and the show
 clock select those states, drive sense intensities and background transitions,
 synchronize narration, and fade in the end credits at the authored

@@ -10,17 +10,14 @@ Boundary: Runtime mechanisms and concrete content implementations live elsewhere
 This folder owns typed level configuration, concrete world construction and the
 existing runtime that turns a static or show request into one world.
 
-D3/#85 requires explicit, independently readable TypeScript levels following
-`test.level.ts`. An absent module is not requested; omitted optional settings use
-its documented defaults; invalid required settings fail during preparation.
-Before migration, review the smallest mapping into one prepared show world and
-compare effective settings. Remove layer spreads, hidden override order and
-exclusive helpers/tests together. See the binding
-[target architecture](../../docs/target-architecture.md).
+Each typed level lists its module keys explicitly, following `test.level.ts`.
+Shared content in `authored/` keeps repeated palettes, scent signatures and plant
+placement consistent. Thermal levels choose the warm Motion variant explicitly;
+there are no layer spreads or hidden overrides. Required fields are typed;
+optional defaults and runtime parameter checks belong to the concrete module.
+See the [target architecture](../../docs/target-architecture.md).
 
-The current implementation still uses `authored/` blocks and `sense-layers.ts`,
-including a thermal motion override. This is the migration source, not the rule
-for new configuration. Narrative names remain ordered as:
+Narrative names remain ordered as:
 
 ```text
 white-world → scent → echo → motion → thermal → magnetic → connections
@@ -32,10 +29,9 @@ the browser Test UI.
 
 ## Catalog and Entries
 
-`level-catalog.ts` names only standalone presets. `show-composition.ts` owns the
-separate construction-only `ShowComposition` loaded once for the complete
-show. `show-levels.ts` owns the narrow presentation states the running show can
-change. The bare `src/main.ts` route starts that show; `?level=<name>` and
+`level-catalog.ts` names standalone presets. The Show uses the Connections
+preset for its once-prepared world; changing these module parameters affects both
+runs. `show-levels.ts` owns the presentation states the running Show can change. The bare `src/main.ts` route starts that show; `?level=<name>` and
 matching path names enter through `src/test-main.ts` and select one showless
 development preset. Benchmarks use that Test entry too.
 
@@ -74,8 +70,8 @@ wiring.
 
 During a show, the schedule selects a `ShowLevelState` and drives module
 activation, sense intensity, background blending, and World Fade without
-recreating the composition. Static `LevelPreset` objects are not read by the
-show. The opening show state is applied before modules size fixed spatial
+recreating the composition or rereading the construction preset. The opening
+show state is applied before modules size fixed spatial
 windows; later states remain driven by the same schedule and state map. Flight
 remains constrained against the shared surface through White World and every
 transition.

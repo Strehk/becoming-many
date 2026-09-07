@@ -6,6 +6,7 @@
  */
 
 import type { Scene } from "three";
+import { isNormalized } from "../../utils/number-ranges";
 import type { WorldModule } from "../../world/module-runtime";
 import type { Viewpoint } from "../../world/viewer-rig";
 import type { WorldSurface } from "../../world-surface/world-surface";
@@ -82,6 +83,9 @@ const NO_CENTERS = new Float32Array(0);
 export function createMotionSenseModule(
   options: MotionSenseModuleOptions,
 ): MotionSenseModuleHandle {
+  if (!isNormalized(options.parameters.intensity)) {
+    throw new RangeError("Motion intensity must be between zero and one");
+  }
   const senseFadeUniform = { value: 1 };
   const state: MotionSenseState = { currentResources: undefined };
 

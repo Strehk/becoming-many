@@ -1,6 +1,6 @@
 # Current Development Status
 
-As-built snapshot: 2026-09-07, checkpoint `b3eeea3` plus the #38 control-boundary simplification on `david_refactor`.
+As-built snapshot: 2026-09-07, checkpoint `76c370d` plus the #85 explicit-level simplification on `david_refactor`.
 Dated measurement packets retain the earlier exact identities they tested;
 the current checkout is the authority for runtime details.
 
@@ -38,11 +38,9 @@ The #80 animal-connection removal is implemented below. Small additions remain i
 - A viewer rig owns locomotion while the camera retains desktop-look or headset
   pose. Flight is clamped against the shared world surface and authored height
   limits.
-- Typed `LevelPreset` files own their presentation and spread the sense layers
-  of `sense-layers.ts`, which are built from the single-copy authored blocks in
-  `src/levels/authored/`. The separate `ShowComposition` spreads every layer to
-  preload the show world once, while `ShowLevelState` contains only live
-  presentation changes.
+- Typed `LevelPreset` files explicitly select their modules and shared authored
+  content. The Show constructs the Connections preset once; `ShowLevelState`
+  retains live presentation. Layer spreads and the separate Show recipe are gone.
 - `level-runtime.ts` owns startup and frame coordination;
   `level-composition.ts` owns assets, World Surface creation, concrete module
   construction, and cross-module wiring. `show-runtime.ts` owns show following,
