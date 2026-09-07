@@ -5,9 +5,9 @@
  * Boundary: Visual fidelity and target-device performance require runtime acceptance.
  */
 
-import { expect, test } from "bun:test";
+import { expect, spyOn, test } from "bun:test";
 import {
-  type DataTexture,
+  DataTexture,
   DataUtils,
   type Group,
   type Mesh,
@@ -219,50 +219,73 @@ test("the blade shaders carry the anchors a sense patches at", () => {
   module.unload();
 });
 
-test("a sense reaches every blade material and takes the lighting with it", () => {
-  const scene = new Scene();
-  const viewerPosition = new Vector3();
-  const patched: SensedMaterial[] = [];
-  const fade = createWorldFade();
-  const effect: UnlitMaterialEffect = {
-    applyTo: (material) => {
-      patched.push(material);
-      fade.applyTo(material);
-    },
-  };
-  const module = createGrassClipmapModule({
-    ...createModuleOptions(scene, viewerPosition),
-    effects: [effect],
-  });
+test.each([false, true])(
+  "blade materials remain owned when sense application fails: %s",
+  (fails) => {
+    const scene = new Scene();
+    const viewerPosition = new Vector3();
+    const patched: SensedMaterial[] = [];
+    let disposed = 0;
+    const fade = createWorldFade();
+    const effect: UnlitMaterialEffect = {
+      applyTo: (material) => {
+        patched.push(material);
+        material.addEventListener("dispose", () => disposed++);
+        if (fails && patched.length === 2) throw new Error("Effect failed");
+        fade.applyTo(material);
+      },
+    };
+    const module = createGrassClipmapModule({
+      ...createModuleOptions(scene, viewerPosition),
+      effects: [effect],
+    });
 
-  module.load();
-  // Every tier and every allocation step of every level, or a chunk would
-  // swap to a material the sense never saw.
-  const stepCount =
-    GRASS_CLIPMAP_SETTINGS.density.stepsUp +
-    GRASS_CLIPMAP_SETTINGS.density.stepsDown +
-    1;
-  expect(patched).toHaveLength(
-    GRASS_CLIPMAP_SETTINGS.layout.levels * 3 * stepCount,
-  );
-  for (const material of patched) {
-    // The sense owns the color, so the lighting block is compiled out rather
-    // than computed and discarded.
-    const blade = material as ShaderMaterial;
-    expect(blade.defines?.GRASS_LIT).toBe(0);
-    const shader = {
-      uniforms: { ...blade.uniforms },
-      vertexShader: blade.vertexShader,
-      fragmentShader: blade.fragmentShader,
-    } as Parameters<ShaderMaterial["onBeforeCompile"]>[0];
-    blade.onBeforeCompile(shader, undefined as never);
-    expect(shader.vertexShader).not.toContain("#include <begin_vertex>");
-    expect(shader.fragmentShader).toContain("applyWorldFade(diffuseColor.rgb)");
-    expect(shader.uniforms.worldFadePresence).toBeDefined();
-  }
+    if (fails) {
+      const textureDispose = spyOn(DataTexture.prototype, "dispose");
+      try {
+        expect(() => module.load()).toThrow("Effect failed");
+        expect(disposed).toBe(2);
+        expect(textureDispose).toHaveBeenCalledTimes(1);
+        expect(scene.children).toHaveLength(0);
+        module.unload();
+        expect(disposed).toBe(2);
+      } finally {
+        textureDispose.mockRestore();
+      }
+      return;
+    }
 
-  module.unload();
-});
+    module.load();
+    // Every tier and every allocation step of every level, or a chunk would
+    // swap to a material the sense never saw.
+    const stepCount =
+      GRASS_CLIPMAP_SETTINGS.density.stepsUp +
+      GRASS_CLIPMAP_SETTINGS.density.stepsDown +
+      1;
+    expect(patched).toHaveLength(
+      GRASS_CLIPMAP_SETTINGS.layout.levels * 3 * stepCount,
+    );
+    for (const material of patched) {
+      // The sense owns the color, so the lighting block is compiled out rather
+      // than computed and discarded.
+      const blade = material as ShaderMaterial;
+      expect(blade.defines?.GRASS_LIT).toBe(0);
+      const shader = {
+        uniforms: { ...blade.uniforms },
+        vertexShader: blade.vertexShader,
+        fragmentShader: blade.fragmentShader,
+      } as Parameters<ShaderMaterial["onBeforeCompile"]>[0];
+      blade.onBeforeCompile(shader, undefined as never);
+      expect(shader.vertexShader).not.toContain("#include <begin_vertex>");
+      expect(shader.fragmentShader).toContain(
+        "applyWorldFade(diffuseColor.rgb)",
+      );
+      expect(shader.uniforms.worldFadePresence).toBeDefined();
+    }
+
+    module.unload();
+  },
+);
 
 test("a refused refill is retried instead of latching forever", () => {
   const scene = new Scene();

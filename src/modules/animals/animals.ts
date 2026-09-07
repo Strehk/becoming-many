@@ -6,10 +6,7 @@
  */
 
 import type { Matrix4, Scene } from "three";
-import {
-  disposeGltfAssets,
-  type GltfAssets,
-} from "../../utils/asset-loader/gltf-assets";
+import type { GltfAssets } from "../../utils/asset-loader/gltf-assets";
 import type { UnlitMaterialEffect } from "../../utils/asset-loader/material-effect";
 import type { WorldModule } from "../../world/module-runtime";
 import type { Viewpoint } from "../../world/viewer-rig";
@@ -97,7 +94,7 @@ export function createAnimalsModule(
     activate: () => setAnimalsVisible(state, true),
     update: (deltaSeconds) => updateAnimals(state, options, deltaSeconds),
     deactivate: () => setAnimalsVisible(state, false),
-    unload: () => unloadAnimals(state, options.scene, options.assets),
+    unload: () => unloadAnimals(state, options.scene),
   };
 }
 
@@ -169,16 +166,11 @@ function setAnimalsVisible(state: AnimalsState, visible: boolean): void {
   if (state.population) state.population.group.visible = visible;
 }
 
-function unloadAnimals(
-  state: AnimalsState,
-  scene: Scene,
-  assets: GltfAssets,
-): void {
+function unloadAnimals(state: AnimalsState, scene: Scene): void {
   const population = state.population;
   if (!population) return;
 
   state.population = undefined;
   scene.remove(population.group);
   disposeAnimalActors(population);
-  disposeGltfAssets(assets);
 }

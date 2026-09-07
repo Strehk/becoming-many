@@ -17,6 +17,7 @@ import { resolveStreamButton } from "./stream-button";
 
 export interface SessionBarOptions {
   readonly parent: HTMLElement;
+  readonly signal: AbortSignal;
   readonly actions: ShowActions;
   readonly xr: XrSessionControl;
   readonly onToggleTechDrawer: () => void;
@@ -24,6 +25,7 @@ export interface SessionBarOptions {
 
 export function createSessionBar({
   parent,
+  signal,
   actions,
   xr,
   onToggleTechDrawer,
@@ -55,6 +57,7 @@ export function createSessionBar({
     "New visitor",
     "Tap again to reset",
     () => actions.restartExperience(),
+    signal,
   );
   restartButton.classList.add("conductor__restart-button");
 

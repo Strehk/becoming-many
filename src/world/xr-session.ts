@@ -19,6 +19,8 @@ export interface XrSessionControl {
   readonly start: () => Promise<void>;
   /** End the active session; resolves once it has ended. No session is fine. */
   readonly stop: () => Promise<void>;
+  /** End this owner, including pending session requests and every listener. */
+  readonly unload: () => Promise<void>;
   /** Calls the observer immediately and on every change; returns unsubscribe. */
   readonly subscribe: (observer: (state: XrSessionState) => void) => () => void;
 }
@@ -34,17 +36,23 @@ export function createXrSessionControl(
 
   const observers = new Set<(state: XrSessionState) => void>();
   let availability: XrAvailability = "unknown";
-  let isSessionActive = false;
+  let pendingStart: Promise<void> | undefined;
+  let stopping: Promise<void> | undefined;
+  let unloading: Promise<void> | undefined;
 
   function notify(): void {
-    const state: XrSessionState = { availability, isSessionActive };
+    if (unloading) return;
+    const state: XrSessionState = {
+      availability,
+      isSessionActive: renderer.xr.isPresenting,
+    };
     for (const observer of observers) {
       observer(state);
     }
   }
 
   function setAvailability(next: XrAvailability): void {
-    if (next === availability) return;
+    if (unloading || next === availability) return;
 
     availability = next;
     console.info(`XR: immersive-vr is ${next}.`);
@@ -70,57 +78,82 @@ export function createXrSessionControl(
   checkAvailability();
   navigator.xr?.addEventListener("devicechange", checkAvailability);
 
-  renderer.xr.addEventListener("sessionstart", () => {
-    isSessionActive = true;
-    console.info("XR: the renderer is presenting to the headset.");
-    notify();
-  });
-  renderer.xr.addEventListener("sessionend", () => {
-    isSessionActive = false;
-    console.info("XR: the session ended.");
-    notify();
-  });
+  renderer.xr.addEventListener("sessionstart", notify);
+  renderer.xr.addEventListener("sessionend", notify);
 
   return {
-    start: async (): Promise<void> => {
-      if (renderer.xr.getSession() || !navigator.xr) return;
-
-      console.info("XR: requesting an immersive-vr session.");
-      const session = await navigator.xr.requestSession(
-        "immersive-vr",
-        SESSION_INIT,
-      );
-
-      // The runtime presents this session from here on, and shows the visitor
-      // a black room until something draws into it. A renderer that cannot
-      // adopt it must therefore not leave it open: without this the headset
-      // stays black until the page dies, while the page itself looks idle.
-      console.info("XR: session granted; handing it to the renderer.");
-      try {
-        await renderer.xr.setSession(session);
-      } catch (reason) {
-        console.error("XR: the renderer could not adopt the session.", reason);
-        // Ending a doomed session can fail in its own right; the refusal above
-        // is the reason worth reporting.
-        await session.end().catch(() => undefined);
-        throw reason;
+    start: (): Promise<void> => {
+      if (unloading || stopping) {
+        return Promise.reject(new Error("XR control is ending"));
       }
+      if (pendingStart) return pendingStart;
+      if (renderer.xr.getSession() || !navigator.xr) return Promise.resolve();
+      pendingStart = startSession(navigator.xr).finally(() => {
+        pendingStart = undefined;
+      });
+      return pendingStart;
     },
-
-    stop: async (): Promise<void> => {
-      const session = renderer.xr.getSession();
-      if (!session) return;
-
-      console.info("XR: ending the session.");
-      await session.end();
+    stop,
+    unload: (): Promise<void> => {
+      if (unloading) return unloading;
+      unloading = stop();
+      navigator.xr?.removeEventListener("devicechange", checkAvailability);
+      renderer.xr.removeEventListener("sessionstart", notify);
+      renderer.xr.removeEventListener("sessionend", notify);
+      observers.clear();
+      return unloading;
     },
 
     subscribe: (observer) => {
+      if (unloading) return () => {};
       observers.add(observer);
-      observer({ availability, isSessionActive });
+      observer({ availability, isSessionActive: renderer.xr.isPresenting });
       return () => {
         observers.delete(observer);
       };
     },
   };
+
+  async function startSession(system: XRSystem): Promise<void> {
+    const session = await system.requestSession("immersive-vr", SESSION_INIT);
+    if (unloading || stopping) {
+      await session.end();
+      return;
+    }
+    try {
+      await renderer.xr.setSession(session);
+    } catch (reason) {
+      try {
+        await session.end();
+      } catch (endError) {
+        throw new AggregateError(
+          [reason, endError],
+          "XR adoption and cleanup failed",
+        );
+      }
+      throw reason;
+    }
+  }
+
+  function stop(): Promise<void> {
+    if (stopping) return stopping;
+    stopping = (async () => {
+      // setSession cannot be cancelled halfway through Three.js adoption.
+      // Wait before ending it, so it cannot attach after the owner has ended.
+      const started = await Promise.allSettled([pendingStart]);
+      const session = renderer.xr.getSession();
+      const errors: unknown[] = [];
+      const result = started[0];
+      if (result?.status === "rejected") errors.push(result.reason);
+      try {
+        await session?.end();
+      } catch (error) {
+        errors.push(error);
+      }
+      if (errors.length) throw new AggregateError(errors, "XR stop failed");
+    })().finally(() => {
+      stopping = undefined;
+    });
+    return stopping;
+  }
 }

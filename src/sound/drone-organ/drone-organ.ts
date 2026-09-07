@@ -48,7 +48,7 @@ export interface DroneOrgan {
   readonly update: (frame: DroneOrganFrame) => void;
 
   /** Part of the explicit lifecycle; the organ owns every node it built. */
-  readonly unload: () => void;
+  readonly unload: () => Promise<void>;
 }
 
 /**
@@ -60,23 +60,26 @@ export interface DroneOrgan {
  */
 export function createDroneOrgan(options: DroneOrganOptions): DroneOrgan {
   let runtime: OrganRuntime | undefined;
-  let isUnloaded = false;
-
-  void import("./organ-runtime").then(({ startOrganRuntime }) => {
-    if (isUnloaded) return;
-
-    runtime = startOrganRuntime(options);
-  });
+  const cancellation = new AbortController();
+  let unloading: Promise<void> | undefined;
+  const loading = import("./organ-runtime").then(
+    async ({ startOrganRuntime }) => {
+      runtime = await startOrganRuntime(options, cancellation.signal);
+    },
+  );
+  // Observe a failed lazy start immediately; unload still returns that failure.
+  void loading.catch((error: unknown) =>
+    console.error("Organ startup failed", error),
+  );
 
   return {
     update: (frame): void => {
-      runtime?.update(frame);
+      if (!cancellation.signal.aborted) runtime?.update(frame);
     },
-
-    unload: (): void => {
-      isUnloaded = true;
-      runtime?.dispose();
-      runtime = undefined;
+    unload: (): Promise<void> => {
+      cancellation.abort();
+      unloading ??= loading.then(() => runtime?.unload());
+      return unloading;
     },
   };
 }

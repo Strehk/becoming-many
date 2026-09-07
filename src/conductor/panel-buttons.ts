@@ -31,8 +31,12 @@ export function createConfirmButton(
   labelText: string,
   armedLabelText: string,
   onConfirm: () => void,
+  signal: AbortSignal,
 ): HTMLButtonElement {
   let disarmTimer: ReturnType<typeof setTimeout> | undefined;
+  signal.addEventListener("abort", () => clearTimeout(disarmTimer), {
+    once: true,
+  });
 
   function disarm(button: HTMLButtonElement): void {
     clearTimeout(disarmTimer);

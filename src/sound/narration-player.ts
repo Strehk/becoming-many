@@ -42,8 +42,36 @@ export function createNarrationPlayer({
   cueIds,
 }: NarrationPlayerOptions): NarrationPlayer {
   const elements = new Map<NarrationCueId, HTMLAudioElement>();
-  for (const cueId of cueIds) {
-    elements.set(cueId, createCueElement(cueId, language));
+  let isUnloaded = false;
+  function unload(): void {
+    isUnloaded = true;
+    const errors: unknown[] = [];
+    for (const element of elements.values()) {
+      try {
+        element.pause();
+        element.removeAttribute("src");
+        element.load();
+      } catch (error) {
+        errors.push(error);
+      }
+    }
+    elements.clear();
+    if (errors.length)
+      throw new AggregateError(errors, "Narration cleanup failed");
+  }
+  try {
+    for (const cueId of cueIds)
+      elements.set(cueId, createCueElement(cueId, language));
+  } catch (error) {
+    try {
+      unload();
+    } catch (cleanupError) {
+      throw new AggregateError(
+        [error, cleanupError],
+        "Narration startup failed",
+      );
+    }
+    throw error;
   }
 
   let activeCueId: NarrationCueId | undefined;
@@ -57,7 +85,7 @@ export function createNarrationPlayer({
   }
 
   function reportBlockedPlayback(): void {
-    if (hasReportedBlockedPlayback) return;
+    if (isUnloaded || hasReportedBlockedPlayback) return;
 
     hasReportedBlockedPlayback = true;
     console.warn("Narration stays blocked until the page receives a gesture.");
@@ -91,15 +119,7 @@ export function createNarrationPlayer({
       });
     },
 
-    unload(): void {
-      for (const element of elements.values()) {
-        element.pause();
-        element.removeAttribute("src");
-        element.load();
-      }
-      elements.clear();
-      activeCueId = undefined;
-    },
+    unload,
   };
 }
 

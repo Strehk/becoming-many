@@ -143,36 +143,33 @@ export function createAnimalActors(
 ): AnimalActors {
   const group = new Group();
   group.name = "Animals";
-  const actors = createConfiguredActors(options, group);
-  const alignToSurface = createAnimalSurfaceAlignment(options.worldSurface);
-
-  return {
+  const actors: AnimalActor[] = [];
+  const population: AnimalActors = {
     group,
     actors,
     parameters: options.parameters,
     worldSurface: options.worldSurface,
-    alignToSurface,
+    alignToSurface: createAnimalSurfaceAlignment(options.worldSurface),
   };
-}
-
-function createConfiguredActors(
-  options: CreateAnimalActorsOptions,
-  group: Group,
-): AnimalActor[] {
   const animalPlans = createAnimalPlans(options.parameters.species);
-
-  return animalPlans.map((plan, actorIndex) => {
-    const actor = createAnimalActor(
-      options.assets,
-      options.colors,
-      options.effectsFor,
-      plan,
-      actorIndex,
-    );
-    placeActor(actor, options, actorIndex, animalPlans.length);
-    group.add(actor.root);
-    return actor;
-  });
+  try {
+    for (const [actorIndex, plan] of animalPlans.entries()) {
+      const actor = createAnimalActor(
+        options.assets,
+        options.colors,
+        options.effectsFor,
+        plan,
+        actorIndex,
+      );
+      actors.push(actor);
+      placeActor(actor, options, actorIndex, animalPlans.length);
+      group.add(actor.root);
+    }
+    return population;
+  } catch (error) {
+    disposeAnimalActors(population);
+    throw error;
+  }
 }
 
 /** Interleave species so neighbouring territories do not contain one species only. */
@@ -265,17 +262,21 @@ export function readVisibleAnimalBodies(
 }
 
 export function disposeAnimalActors(population: AnimalActors): void {
-  const skeletons = new Set<SkinnedMesh["skeleton"]>();
-  for (const actor of population.actors) {
-    actor.mixer.stopAllAction();
-    actor.mixer.uncacheRoot(actor.root);
-    for (const material of actor.materials) material.dispose();
-    actor.root.traverse((object) => {
-      if (object instanceof SkinnedMesh) skeletons.add(object.skeleton);
-    });
-  }
-  for (const skeleton of skeletons) skeleton.dispose();
+  for (const actor of population.actors) disposeAnimalActor(actor);
   population.group.clear();
+}
+
+function disposeAnimalActor(
+  actor: Pick<AnimalActor, "root" | "mixer" | "materials">,
+): void {
+  actor.mixer.stopAllAction();
+  actor.mixer.uncacheRoot(actor.root);
+  for (const material of actor.materials) material.dispose();
+  const skeletons = new Set<SkinnedMesh["skeleton"]>();
+  actor.root.traverse((object) => {
+    if (object instanceof SkinnedMesh) skeletons.add(object.skeleton);
+  });
+  for (const skeleton of skeletons) skeleton.dispose();
 }
 
 /**
@@ -300,55 +301,6 @@ function createAnimalActor(
 ): AnimalActor {
   const { species } = plan;
   const asset = getAnimalAsset(assets, species.id);
-  const model = clone(asset.scene);
-  // Measure before decorating: an effect may need the body the material
-  // belongs to, and the bounds also fix the scale that follows.
-  model.updateMatrixWorld(true);
-  const bounds = new Box3().setFromObject(model);
-  const sourceHeight = bounds.max.y - bounds.min.y;
-  if (!Number.isFinite(sourceHeight) || sourceHeight <= 0) {
-    throw new Error(`Animal has no measurable height: ${species.id}`);
-  }
-  const toBodySpace = createBodySpaceMatrix(bounds, sourceHeight);
-  const materials: Material[] = [];
-  model.traverse((object) => {
-    if (object instanceof Mesh) {
-      const sources = Array.isArray(object.material)
-        ? object.material
-        : [object.material];
-      const replacements = sources.map((source) =>
-        createUnlitMaterial(source, getAnimalColor(colors, source.name)),
-      );
-      // Transparent for the whole loaded lifetime, at full opacity whenever
-      // an actor is fully there. Toggling the flag with the fade would
-      // recompile the patched shader twice per appearance, which is a hitch
-      // on the headset; a handful of actors in the transparent pass is not.
-      // They keep writing depth, so nothing behind one shows through it.
-      for (const material of replacements) material.transparent = true;
-      if (effectsFor) {
-        // Every mesh sits under its own rig transform, so each one carries
-        // its own route from mesh space into the shared body space.
-        const bodyMatrix = toBodySpace.clone().multiply(object.matrixWorld);
-        applyMaterialEffects(effectsFor(bodyMatrix), replacements);
-      }
-      object.material = Array.isArray(object.material)
-        ? replacements
-        : (replacements[0] ?? object.material);
-      materials.push(...replacements);
-    }
-    if (object instanceof SkinnedMesh) {
-      // Animated limbs can leave the static glTF bounds. Only the nearest
-      // bounded actors render, so disabling per-part culling is predictable.
-      object.frustumCulled = false;
-    }
-  });
-  model.position.y -= bounds.min.y;
-  const root = new Group();
-  root.name = `Animal:${species.id}:${actorIndex}`;
-  root.scale.setScalar(species.heightMeters / sourceHeight);
-  root.add(model);
-
-  const mixer = new AnimationMixer(root);
   const clip = asset.animations.find(
     ({ name }) => name === species.walkAnimation,
   );
@@ -357,21 +309,75 @@ function createAnimalActor(
       `GLTF animation not found: ${species.id}/${species.walkAnimation}`,
     );
   }
-  mixer.clipAction(clip).play();
-  const startHeadingRadians =
-    getCellRandom(593, actorIndex, 0, 0) * Math.PI * 2;
+  const model = clone(asset.scene);
+  const root = new Group();
+  root.add(model);
+  const mixer = new AnimationMixer(root);
+  const materials: Material[] = [];
+  try {
+    // Measure before decorating: an effect may need the body the material
+    // belongs to, and the bounds also fix the scale that follows.
+    model.updateMatrixWorld(true);
+    const bounds = new Box3().setFromObject(model);
+    const sourceHeight = bounds.max.y - bounds.min.y;
+    if (!Number.isFinite(sourceHeight) || sourceHeight <= 0) {
+      throw new Error(`Animal has no measurable height: ${species.id}`);
+    }
+    const toBodySpace = createBodySpaceMatrix(bounds, sourceHeight);
+    model.traverse((object) => {
+      if (object instanceof Mesh) {
+        const sources = Array.isArray(object.material)
+          ? object.material
+          : [object.material];
+        const replacements = sources.map((source) =>
+          createUnlitMaterial(source, getAnimalColor(colors, source.name)),
+        );
+        // Transparent for the whole loaded lifetime, at full opacity whenever
+        // an actor is fully there. Toggling the flag with the fade would
+        // recompile the patched shader twice per appearance, which is a hitch
+        // on the headset; a handful of actors in the transparent pass is not.
+        // They keep writing depth, so nothing behind one shows through it.
+        for (const material of replacements) material.transparent = true;
+        materials.push(...replacements);
+        if (effectsFor) {
+          // Every mesh sits under its own rig transform, so each one carries
+          // its own route from mesh space into the shared body space.
+          const bodyMatrix = toBodySpace.clone().multiply(object.matrixWorld);
+          applyMaterialEffects(effectsFor(bodyMatrix), replacements);
+        }
+        object.material = Array.isArray(object.material)
+          ? replacements
+          : (replacements[0] ?? object.material);
+      }
+      if (object instanceof SkinnedMesh) {
+        // Animated limbs can leave the static glTF bounds. Only the nearest
+        // bounded actors render, so disabling per-part culling is predictable.
+        object.frustumCulled = false;
+      }
+    });
+    model.position.y -= bounds.min.y;
+    root.name = `Animal:${species.id}:${actorIndex}`;
+    root.scale.setScalar(species.heightMeters / sourceHeight);
 
-  return {
-    root,
-    mixer,
-    materials,
-    species,
-    hasHabitat: false,
-    headingRadians: startHeadingRadians,
-    targetHeadingRadians: startHeadingRadians,
-    selected: false,
-    appearance: 0,
-  };
+    mixer.clipAction(clip).play();
+    const startHeadingRadians =
+      getCellRandom(593, actorIndex, 0, 0) * Math.PI * 2;
+
+    return {
+      root,
+      mixer,
+      materials,
+      species,
+      hasHabitat: false,
+      headingRadians: startHeadingRadians,
+      targetHeadingRadians: startHeadingRadians,
+      selected: false,
+      appearance: 0,
+    };
+  } catch (error) {
+    disposeAnimalActor({ root, mixer, materials });
+    throw error;
+  }
 }
 
 function getAnimalColor(colors: AnimalColors, materialName: string): number {

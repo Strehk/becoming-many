@@ -70,7 +70,7 @@ import {
   type WorldFadeEffect,
 } from "../modules/world-fade/world-fade";
 import {
-  type GltfAssetRequest,
+  disposeGltfAssets,
   type GltfAssets,
   loadGltfAssets,
 } from "../utils/asset-loader/gltf-assets";
@@ -145,6 +145,7 @@ export function composeLevel(options: LevelCompositionOptions): ComposedLevel {
     testModules: options.testModules,
   };
   const modules: WorldModule[] = [];
+  const createdModules = new Set<WorldModule>();
   const gates = new Map<ShowSense, WorldModule[]>();
   const add = (
     gate: ShowSense | undefined,
@@ -152,6 +153,7 @@ export function composeLevel(options: LevelCompositionOptions): ComposedLevel {
   ): void => {
     if (!module) return;
     modules.push(module);
+    createdModules.add(module);
     if (!gate) return;
 
     const gatedModules = gates.get(gate);
@@ -159,91 +161,120 @@ export function composeLevel(options: LevelCompositionOptions): ComposedLevel {
     else gates.set(gate, [module]);
   };
 
-  // World fades exist only for a show: a static run never fades, so its
-  // materials skip the extra fragment mix entirely.
-  const structureFade = setup.forShow ? createWorldFade() : undefined;
-  const animalsFade = setup.forShow ? createWorldFade() : undefined;
-  // The credits close a show. A development preset and the benchmark route
-  // never reach an ending, so neither builds the panel or its texture.
-  const endCredits = setup.forShow
-    ? createEndCreditsPanel({
-        scene: setup.world.scene,
-        viewpoint: setup.world.viewpoint,
-        viewerRig: setup.world.viewerRig,
-        viewPitchDegrees: FLIGHT_SETTINGS.viewPitchAssistDegrees,
-        definition: END_CREDITS,
-      })
-    : undefined;
+  try {
+    // World fades exist only for a show: a static run never fades, so its
+    // materials skip the extra fragment mix entirely.
+    const structureFade = setup.forShow ? createWorldFade() : undefined;
+    const animalsFade = setup.forShow ? createWorldFade() : undefined;
+    // The credits close a show. A development preset and the benchmark route
+    // never reach an ending, so neither builds the panel or its texture.
+    const endCredits = setup.forShow
+      ? createEndCreditsPanel({
+          scene: setup.world.scene,
+          viewpoint: setup.world.viewpoint,
+          viewerRig: setup.world.viewerRig,
+          viewPitchDegrees: FLIGHT_SETTINGS.viewPitchAssistDegrees,
+          definition: END_CREDITS,
+        })
+      : undefined;
 
-  const echoDepth = createEchoDepthEffect(setup.level);
-  const thermal = createThermalEffects(setup);
-  const magnetic = createMagneticSky(setup);
-  // Scent is created before Animals so the actors can report their bodies
-  // into its trail ring, and it is added before them so it updates first and
-  // the clock their prints are stamped with is already the current one.
-  const scent = createScentParticles(setup);
-  const animals = createAnimals(
-    setup,
-    thermal,
-    animalsFade,
-    scent?.observeActorBodies,
-  );
-  const connections = createConnectionsWeb(setup);
-  const motion = createMotionSense(setup);
-  const passages = createAnimalPassages(setup);
-  const passageSwarm = createPassageSwarm(setup, passages);
+    if (endCredits) createdModules.add(endCredits.module);
 
-  add(
-    "echo",
-    createTerrain(
+    const echoDepth = createEchoDepthEffect(setup.level);
+    const thermal = createThermalEffects(setup);
+    const magnetic = createMagneticSky(setup);
+    if (magnetic) createdModules.add(magnetic.module);
+    // Scent is created before Animals so the actors can report their bodies
+    // into its trail ring, and it is added before them so it updates first and
+    // the clock their prints are stamped with is already the current one.
+    const scent = createScentParticles(setup);
+    if (scent) createdModules.add(scent.module);
+    const animals = createAnimals(
       setup,
-      echoDepth,
       thermal,
-      structureFade,
-      connections?.terrain,
-    ),
-  );
-  add(undefined, createAirParticles(setup));
-  add("scent", scent?.module);
-  add(undefined, createGrass(setup, echoDepth, thermal, structureFade));
-  add(undefined, createGrassClipmap(setup, echoDepth, thermal, structureFade));
-  add("echo", createVegetation(setup, echoDepth, thermal, structureFade));
-  add("echo", createRocks(setup, echoDepth, thermal, structureFade));
-  add("thermal", animals);
-  add("motion", motion?.module);
-  add("magnetic", magnetic?.module);
-  add("connections", connections?.module);
-  // Ungated: a passage crosses *between* senses, so no single sense strength
-  // may put it away. The schedule alone decides when its animal is in the air.
-  // The swarm passage is the sharpest case — it announces the very sense whose
-  // gate would otherwise be holding it shut while it crosses.
-  add(undefined, passages?.module);
-  add(undefined, passageSwarm);
-  add(undefined, endCredits?.module);
+      animalsFade,
+      scent?.observeActorBodies,
+    );
+    if (animals) createdModules.add(animals);
+    const connections = createConnectionsWeb(setup);
+    if (connections) createdModules.add(connections.module);
+    const motion = createMotionSense(setup);
+    if (motion) createdModules.add(motion.module);
+    const passages = createAnimalPassages(setup);
+    if (passages) createdModules.add(passages.module);
+    const passageSwarm = createPassageSwarm(setup, passages);
+    if (passageSwarm) createdModules.add(passageSwarm);
 
-  return {
-    worldSurface,
-    modules,
-    hasGround:
-      options.level.invisibleGround === true ||
-      hasVisibleSurface(options.level),
-    reach: {
-      gates,
-      // Echo surfaces already dissolve through their world fade.
-      senses: {
-        scent: scent?.setIntensity,
-        motion: motion?.setIntensity,
-        thermal: thermal?.setIntensity,
-        magnetic: magnetic?.setIntensity,
-        connections: connections?.setIntensity,
+    add(
+      "echo",
+      createTerrain(
+        setup,
+        echoDepth,
+        thermal,
+        structureFade,
+        connections?.terrain,
+      ),
+    );
+    add(undefined, createAirParticles(setup));
+    add("scent", scent?.module);
+    add(undefined, createGrass(setup, echoDepth, thermal, structureFade));
+    add(
+      undefined,
+      createGrassClipmap(setup, echoDepth, thermal, structureFade),
+    );
+    add("echo", createVegetation(setup, echoDepth, thermal, structureFade));
+    add("echo", createRocks(setup, echoDepth, thermal, structureFade));
+    add("thermal", animals);
+    add("motion", motion?.module);
+    add("magnetic", magnetic?.module);
+    add("connections", connections?.module);
+    // Ungated: a passage crosses *between* senses, so no single sense strength
+    // may put it away. The schedule alone decides when its animal is in the air.
+    // The swarm passage is the sharpest case — it announces the very sense whose
+    // gate would otherwise be holding it shut while it crosses.
+    add(undefined, passages?.module);
+    add(undefined, passageSwarm);
+    add(undefined, endCredits?.module);
+
+    return {
+      worldSurface,
+      modules,
+      hasGround:
+        options.level.invisibleGround === true ||
+        hasVisibleSurface(options.level),
+      reach: {
+        gates,
+        // Echo surfaces already dissolve through their world fade.
+        senses: {
+          scent: scent?.setIntensity,
+          motion: motion?.setIntensity,
+          thermal: thermal?.setIntensity,
+          magnetic: magnetic?.setIntensity,
+          connections: connections?.setIntensity,
+        },
+        worldFades: { structure: structureFade, animals: animalsFade },
+        setSkyBackground: magnetic?.setSkyBackground,
+        setEndCreditsPresence: endCredits?.setPresence,
+        followPassages: passages?.followShowTime,
+        readMotionActorCenters: motion?.readActorCenters,
       },
-      worldFades: { structure: structureFade, animals: animalsFade },
-      setSkyBackground: magnetic?.setSkyBackground,
-      setEndCreditsPresence: endCredits?.setPresence,
-      followPassages: passages?.followShowTime,
-      readMotionActorCenters: motion?.readActorCenters,
-    },
-  };
+    };
+  } catch (error) {
+    const errors: unknown[] = [error];
+    for (const module of [...createdModules].reverse()) {
+      try {
+        module.unload();
+      } catch (cleanupError) {
+        errors.push(cleanupError);
+      }
+    }
+    if (errors.length > 1)
+      throw new AggregateError(
+        errors,
+        "Composition construction and cleanup failed",
+      );
+    throw error;
+  }
 }
 
 /**
@@ -701,29 +732,51 @@ function hasVisibleSurface(level: WorldComposition): boolean {
 export async function loadLevelAssets(
   level: WorldComposition,
   forShow: boolean,
+  signal?: AbortSignal,
 ): Promise<LoadedLevelAssets> {
-  const [vegetation, rocks, animals, passages] = await Promise.all([
+  const [vegetation, rocks, animals, passages] = await Promise.allSettled([
     loadGltfAssets(
-      level.vegetation
-        ? createStaticAssetRequests(VEGETATION_DEFINITION.assets)
-        : [],
+      level.vegetation ? VEGETATION_DEFINITION.assets : [],
+      signal,
     ),
-    loadGltfAssets(
-      level.rocks ? createStaticAssetRequests(ROCKS_DEFINITION.assets) : [],
-    ),
-    loadGltfAssets(
-      level.animals
-        ? createStaticAssetRequests(ANIMALS_DEFINITION.species)
-        : [],
-    ),
-    forShow ? loadPassageResources(PIECE_PASSAGES) : undefined,
+    loadGltfAssets(level.rocks ? ROCKS_DEFINITION.assets : [], signal),
+    loadGltfAssets(level.animals ? ANIMALS_DEFINITION.species : [], signal),
+    forShow ? loadPassageResources(PIECE_PASSAGES, signal) : undefined,
   ]);
 
-  return { vegetation, rocks, animals, passages };
-}
-
-function createStaticAssetRequests(
-  assets: readonly { readonly id: string; readonly url: string }[],
-): GltfAssetRequest[] {
-  return assets.map(({ id, url }) => ({ id, url }));
+  if (
+    vegetation.status === "rejected" ||
+    rocks.status === "rejected" ||
+    animals.status === "rejected" ||
+    passages.status === "rejected" ||
+    signal?.aborted
+  ) {
+    const errors: unknown[] = [
+      ...[vegetation, rocks, animals, passages].flatMap((result) =>
+        result.status === "rejected" ? [result.reason] : [],
+      ),
+      ...(signal?.aborted ? [signal.reason] : []),
+    ];
+    const sources = [vegetation, rocks, animals].flatMap((result) =>
+      result.status === "fulfilled" ? [result.value] : [],
+    );
+    if (passages.status === "fulfilled" && passages.value)
+      sources.push(passages.value.models);
+    for (const batch of sources) {
+      try {
+        disposeGltfAssets(batch);
+      } catch (error) {
+        errors.push(error);
+      }
+    }
+    if (signal?.aborted && errors.every((error) => error === signal.reason))
+      throw signal.reason;
+    throw new AggregateError(errors, "Level assets failed to load");
+  }
+  return {
+    vegetation: vegetation.value,
+    rocks: rocks.value,
+    animals: animals.value,
+    passages: passages.value,
+  };
 }

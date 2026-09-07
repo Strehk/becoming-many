@@ -46,7 +46,7 @@ export function mountRehearsalTransport({
   clock,
   readLanguage,
   setLanguage,
-}: RehearsalTransportOptions): void {
+}: RehearsalTransportOptions): () => void {
   const { durationSeconds } = schedule;
 
   const bar = document.createElement("div");
@@ -163,10 +163,14 @@ export function mountRehearsalTransport({
 
     languageSwitch.draw();
 
-    requestAnimationFrame(draw);
+    animationFrame = requestAnimationFrame(draw);
   }
 
-  requestAnimationFrame(draw);
+  let animationFrame = requestAnimationFrame(draw);
+  return () => {
+    cancelAnimationFrame(animationFrame);
+    bar.remove();
+  };
 }
 
 interface LanguageSwitch {

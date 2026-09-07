@@ -42,10 +42,12 @@ export interface M5Adapter {
 
 /** `expectedDeviceId` overrides the authored default when the deployment names one. */
 export function createM5Adapter(expectedDeviceId?: string): M5Adapter {
+  let closed = false;
   let source: ControlSource | undefined;
   let stopPolling: (() => void) | undefined;
 
   function setHost(host: string): void {
+    if (closed) return;
     stopPolling?.();
     stopPolling = undefined;
     source = undefined;
@@ -96,6 +98,9 @@ export function createM5Adapter(expectedDeviceId?: string): M5Adapter {
     readLatestState: () => source?.readLatestState(Date.now()),
     readOperatorStatus: () =>
       source?.readDeviceReport(Date.now()) ?? { state: "off" },
-    unload: () => setHost(""),
+    unload: () => {
+      setHost("");
+      closed = true;
+    },
   };
 }

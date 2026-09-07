@@ -114,6 +114,20 @@ test("Terrain applies and advances material effects", () => {
 
   expect(appliedMaterial).toBeDefined();
   expect(updates).toEqual([0.25]);
+  loadedTerrain.module.unload();
+
+  let disposed = 0;
+  expect(() =>
+    createLoadedTerrain(undefined, DEFAULT_TERRAIN_PARAMETERS, undefined, [
+      {
+        applyTo: (material) => {
+          material.addEventListener("dispose", () => disposed++);
+          throw new Error("Effect failed");
+        },
+      },
+    ]),
+  ).toThrow("Effect failed");
+  expect(disposed).toBe(1);
 });
 
 test("Terrain samples shared border heights identically", () => {

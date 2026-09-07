@@ -15,11 +15,7 @@
       // Specific data files precede the broader startup/composition owner.
       {
         "name": "presets",
-        "patterns": [
-          "src/levels/*.level.ts",
-          "src/levels/sense-layers.ts",
-          "src/levels/show-composition.ts"
-        ]
+        "patterns": ["src/levels/*.level.ts"]
       },
       {
         "name": "authored-data",

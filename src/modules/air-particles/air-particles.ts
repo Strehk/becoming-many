@@ -74,6 +74,7 @@ function loadAirParticles(
 ): void {
   const { viewpoint, scene } = options;
   const stream = createAirParticleStream(options);
+  state.currentStream = stream;
   const initialAssignments = stream.volumeWindow.update(
     viewpoint.worldPosition.x,
     viewpoint.worldPosition.y,
@@ -85,7 +86,6 @@ function loadAirParticles(
   initializeAirParticleSlots(stream.particleCloud, initialAssignments);
   stream.particleCloud.points.visible = false;
   scene.add(stream.particleCloud.points);
-  state.currentStream = stream;
 }
 
 function updateAirParticles(

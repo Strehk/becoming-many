@@ -41,8 +41,8 @@ The #80 animal-connection removal is implemented below. Small additions remain i
 - Typed `LevelPreset` files explicitly select their modules and shared authored
   content. The Show constructs the Connections preset once; `ShowLevelState`
   retains live presentation. Layer spreads and the separate Show recipe are gone.
-- `level-runtime.ts` owns startup and frame coordination;
-  `level-composition.ts` owns assets, World Surface creation, concrete module
+- `level-runtime.ts` owns startup, frame coordination, source assets and awaited
+  termination; `level-composition.ts` loads assets and owns World Surface creation, concrete module
   construction, and cross-module wiring. `show-runtime.ts` owns show following,
   while Runtime selects desktop/M5 input directly in its local frame. World
   owns the stopped renderer, GPU preparation and subsequent loop start.
@@ -57,8 +57,11 @@ The #80 animal-connection removal is implemented below. Small additions remain i
   while the clock is clamped, until staff restart the experience.
 - Fixed chunk windows and the bounded `StreamQueue` recycle module-owned
   resources as the viewer moves.
-- GLTF assets are loaded once before the world starts; concrete modules retain
-  ownership of their Three.js and GPU resources.
+- Run releases loaded GLTF sources after all borrowers end, including skeletons
+  and ImageBitmaps. Modules release their own derivatives. Late loads, XR adoption
+  and Tone imports are awaited on cancellation; both audio owners close separately.
+- Complete Run end is available to entries. The existing New visitor command
+  still resets time/position; its replacement operating sequence remains open.
 
 ## Implemented World and Senses
 

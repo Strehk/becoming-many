@@ -18,7 +18,11 @@ import {
   writeModelInstance,
 } from "../../utils/asset-loader/instanced-model-pool";
 import { applyMaterialEffects } from "../../utils/asset-loader/material-effect";
-import { createStaticModelAsset } from "../../utils/asset-loader/static-model";
+import {
+  createStaticModelAsset,
+  disposeStaticModelAsset,
+  type StaticModelAsset,
+} from "../../utils/asset-loader/static-model";
 import {
   type ChunkCandidate,
   type ChunkCandidateGrid,
@@ -84,43 +88,51 @@ export function createVegetationInstances({
     chunkSize,
     parameters.candidateSpacingMeters,
   );
-  const sources = parameters.assets.map((settings, assetIndex) => ({
-    id: settings.id,
-    model: createStaticModelAsset(
-      getLoadedAsset(assets, settings.id),
-      settings.objectName,
-      (material) => getVegetationColor(colors, material.name, assetIndex),
-    ),
-  }));
-  if (effectsFor) {
-    // Asked per model rather than once for the layer: a sense may read a bush
-    // and a pine as different substances, and this is where that is decided.
-    for (const { id, model } of sources) {
-      const effects = effectsFor(getVegetationStature(id));
-      if (!effects) continue;
+  const sources: { id: string; model: StaticModelAsset }[] = [];
+  try {
+    for (const [assetIndex, settings] of parameters.assets.entries()) {
+      sources.push({
+        id: settings.id,
+        model: createStaticModelAsset(
+          getLoadedAsset(assets, settings.id),
+          settings.objectName,
+          (material) => getVegetationColor(colors, material.name, assetIndex),
+        ),
+      });
+    }
+    if (effectsFor) {
+      // Asked per model rather than once for the layer: a sense may read a bush
+      // and a pine as different substances, and this is where that is decided.
+      for (const { id, model } of sources) {
+        const effects = effectsFor(getVegetationStature(id));
+        if (!effects) continue;
 
-      for (const part of model.parts) {
-        applyMaterialEffects(effects, part.material);
+        for (const part of model.parts) {
+          applyMaterialEffects(effects, part.material);
+        }
       }
     }
-  }
-  const modelPool = createInstancedModelPool({
-    name: "Vegetation",
-    sources,
-    slotCount: chunkSlotCount,
-    maxInstancesPerSlot: candidateGrid.candidateCount,
-  });
+    const modelPool = createInstancedModelPool({
+      name: "Vegetation",
+      sources,
+      slotCount: chunkSlotCount,
+      maxInstancesPerSlot: candidateGrid.candidateCount,
+    });
 
-  return {
-    parameters,
-    worldSurface,
-    candidateGrid,
-    modelPool,
-    matrix: new Matrix4(),
-    position: new Vector3(),
-    rotation: new Quaternion(),
-    scale: new Vector3(),
-  };
+    return {
+      parameters,
+      worldSurface,
+      candidateGrid,
+      modelPool,
+      matrix: new Matrix4(),
+      position: new Vector3(),
+      rotation: new Quaternion(),
+      scale: new Vector3(),
+    };
+  } catch (error) {
+    for (const { model } of sources) disposeStaticModelAsset(model);
+    throw error;
+  }
 }
 
 function getVegetationColor(

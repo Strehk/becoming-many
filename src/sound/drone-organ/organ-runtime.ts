@@ -9,14 +9,14 @@
  *   stands is decided by the show; how a voice sounds is decided by the voice.
  */
 
-import { getContext, getListener } from "tone";
+import { Context, getContext, setContext } from "tone";
 import type { DroneOrganFrame, DroneOrganOptions } from "./drone-organ";
 import {
   DRONE_ORGAN_COMPOSITION,
   type OrganLayerSettings,
 } from "./drone-organ-settings";
 import { type AnchorPoint, readNearestAnchor } from "./nearest-anchor";
-import { createOrganEngine } from "./organ-engine";
+import { createOrganEngine, type OrganEngine } from "./organ-engine";
 import { createOrganLayer, type OrganLayer } from "./organ-layer";
 import { readOrganSignal } from "./organ-signals";
 import { createOrganTimeline } from "./organ-timeline";
@@ -66,162 +66,227 @@ interface RunningLayer {
 
 export interface OrganRuntime {
   readonly update: (frame: DroneOrganFrame) => void;
-  readonly dispose: () => void;
+  readonly unload: () => Promise<void>;
 }
 
-export function startOrganRuntime(options: DroneOrganOptions): OrganRuntime {
-  const composition = DRONE_ORGAN_COMPOSITION;
-  const engine = createOrganEngine(composition, options.pulseSeconds);
-  // The Show timebase can keep running while Tone is suspended. Only plan
-  // notes when this output context runs; its now() includes the audio lookahead.
-  const audioContext = getContext();
-  const timeline = createOrganTimeline(() =>
-    audioContext.state === "running" ? audioContext.now() : undefined,
-  );
-  const listener = getListener();
-  const nearest: AnchorPoint = { x: 0, y: 0, z: 0 };
-  // The pose the listener currently stands at, so a visitor holding still —
-  // or a held show — writes nothing at all.
-  const placedPose = {
-    x: Number.NaN,
-    y: Number.NaN,
-    z: Number.NaN,
-    yawRadians: Number.NaN,
-    pitchRadians: Number.NaN,
-  };
-  let framesSincePlacing = LISTENER_WRITE_INTERVAL_FRAMES;
-
-  const layers: readonly RunningLayer[] = composition.layers.map(
-    (settings, index) => ({
-      layer: createOrganLayer(engine, timeline.createLane(), index, settings),
-      settings,
-      padX: createPadAxis(settings.modulation?.padX),
-      padY: createPadAxis(settings.modulation?.padY),
-      heardAt: { x: 0, y: 0, z: 0 },
-      isOpen: false,
-      hasBeenPlaced: false,
-      hadSource: false,
-      writtenPadX: settings.pad[0],
-      writtenPadY: settings.pad[1],
-    }),
-  );
-
-  function followStrengths(frame: DroneOrganFrame): void {
-    for (const running of layers) {
-      const strength = frame.voiceStrengths[running.settings.name];
-      running.isOpen = strength > 0;
-      running.layer.setStrength(strength);
-    }
-  }
-
-  function followPads(frame: DroneOrganFrame): void {
-    for (const running of layers) {
-      if (!running.padX && !running.padY) continue;
-
-      const x = running.padX?.follow(frame) ?? running.writtenPadX;
-      const y = running.padY?.follow(frame) ?? running.writtenPadY;
-      if (
-        Math.abs(x - running.writtenPadX) < CONTROL_DEAD_BAND &&
-        Math.abs(y - running.writtenPadY) < CONTROL_DEAD_BAND
-      ) {
-        continue;
-      }
-
-      running.writtenPadX = x;
-      running.writtenPadY = y;
-      running.layer.setPad(x, y);
-    }
-  }
-
-  function followListener(frame: DroneOrganFrame): void {
-    framesSincePlacing += 1;
-    if (framesSincePlacing < LISTENER_WRITE_INTERVAL_FRAMES) return;
-
-    const pose = frame.listener;
-    if (
-      pose.x === placedPose.x &&
-      pose.y === placedPose.y &&
-      pose.z === placedPose.z &&
-      pose.yawRadians === placedPose.yawRadians &&
-      pose.pitchRadians === placedPose.pitchRadians
-    ) {
-      return;
-    }
-    framesSincePlacing = 0;
-    placedPose.x = pose.x;
-    placedPose.y = pose.y;
-    placedPose.z = pose.z;
-    placedPose.yawRadians = pose.yawRadians;
-    placedPose.pitchRadians = pose.pitchRadians;
-
-    listener.positionX.value = pose.x;
-    listener.positionY.value = pose.y;
-    listener.positionZ.value = pose.z;
-
-    const pitchCosine = Math.cos(pose.pitchRadians);
-    listener.forwardX.value = Math.sin(pose.yawRadians) * pitchCosine;
-    listener.forwardY.value = Math.sin(pose.pitchRadians);
-    listener.forwardZ.value = Math.cos(pose.yawRadians) * pitchCosine;
-    // Up stays world up: a banked turn is a roll, and a roll is not heard.
-  }
-
-  function followPlacements(frame: DroneOrganFrame): void {
-    for (const running of layers) {
-      const placement = running.settings.placement;
-      // A closed layer is silent, so where it would have sounded from costs
-      // nothing to skip; it glides in from the listener when its sense opens.
-      if (!placement || !running.isOpen) continue;
-
-      const hasSource = readNearestAnchor(
-        frame.readGroupCenters(placement.group),
-        frame.listener,
-        nearest,
+export async function startOrganRuntime(
+  options: DroneOrganOptions,
+  signal: AbortSignal,
+): Promise<OrganRuntime | undefined> {
+  // The first import already made this context. A later run replaces it only
+  // after its previous owner has completed unload, including native close.
+  const previousContext = getContext();
+  if (!(previousContext instanceof Context))
+    throw new Error("The organ needs a live Tone context");
+  const context =
+    !signal.aborted && previousContext.state === "closed"
+      ? new Context()
+      : previousContext;
+  if (context !== previousContext) setContext(context);
+  const layers: RunningLayer[] = [];
+  let engine: OrganEngine | undefined;
+  let unloading: Promise<void> | undefined;
+  function unload(): Promise<void> {
+    unloading ??= (async () => {
+      const results = await Promise.allSettled([
+        ...layers.reverse().map(async (running) => running.layer.dispose()),
+        engine?.unload(),
+      ]);
+      const errors = results.flatMap((result) =>
+        result.status === "rejected" ? [result.reason] : [],
       );
-      // With nothing of the group in the world the sound comes home to the
-      // listener, which is where it also starts before the first source exists.
-      const wantX = hasSource ? nearest.x : frame.listener.x;
-      const wantY = hasSource ? nearest.y : frame.listener.y;
-      const wantZ = hasSource ? nearest.z : frame.listener.z;
-
-      const heard = running.heardAt;
-      // The same group jumping a long way is a recycled cloud, not a flight
-      // path: follow it instead of gliding the sound through the listener.
-      const hasJumped =
-        hasSource &&
-        running.hadSource &&
-        (Math.abs(wantX - heard.x) > PLACEMENT_SNAP_METERS ||
-          Math.abs(wantY - heard.y) > PLACEMENT_SNAP_METERS ||
-          Math.abs(wantZ - heard.z) > PLACEMENT_SNAP_METERS);
-
-      if (hasJumped || !running.hasBeenPlaced) {
-        heard.x = wantX;
-        heard.y = wantY;
-        heard.z = wantZ;
-      } else {
-        heard.x += (wantX - heard.x) * PLACEMENT_GLIDE;
-        heard.y += (wantY - heard.y) * PLACEMENT_GLIDE;
-        heard.z += (wantZ - heard.z) * PLACEMENT_GLIDE;
+      // dispose() starts close without returning its Promise in Tone 14.8.49.
+      // Calling it first would make another close() return before native close.
+      try {
+        await context.close();
+      } catch (error) {
+        errors.push(error);
       }
-      running.hasBeenPlaced = true;
-      running.hadSource = hasSource;
-      running.layer.setPosition(heard.x, heard.y, heard.z);
-    }
+      try {
+        context.dispose();
+      } catch (error) {
+        errors.push(error);
+      }
+      if (errors.length)
+        throw new AggregateError(errors, "Organ cleanup failed");
+    })();
+    return unloading;
   }
+  try {
+    if (signal.aborted) {
+      await unload();
+      return undefined;
+    }
+    const composition = DRONE_ORGAN_COMPOSITION;
+    engine = await createOrganEngine(
+      composition,
+      options.pulseSeconds,
+      context,
+    );
+    if (signal.aborted) {
+      await unload();
+      return undefined;
+    }
+    const timeline = createOrganTimeline(() =>
+      context.state === "running" ? context.now() : undefined,
+    );
+    const listener = context.listener;
+    const nearest: AnchorPoint = { x: 0, y: 0, z: 0 };
+    // The pose the listener currently stands at, so a visitor holding still —
+    // or a held show — writes nothing at all.
+    const placedPose = {
+      x: Number.NaN,
+      y: Number.NaN,
+      z: Number.NaN,
+      yawRadians: Number.NaN,
+      pitchRadians: Number.NaN,
+    };
+    let framesSincePlacing = LISTENER_WRITE_INTERVAL_FRAMES;
 
-  return {
-    update: (frame): void => {
-      followStrengths(frame);
-      followPads(frame);
-      timeline.follow(frame);
-      followListener(frame);
-      followPlacements(frame);
-    },
+    for (const [index, settings] of composition.layers.entries()) {
+      const layer = createOrganLayer(
+        engine,
+        timeline.createLane(),
+        index,
+        settings,
+      );
+      layers.push({
+        layer,
+        settings,
+        padX: createPadAxis(settings.modulation?.padX),
+        padY: createPadAxis(settings.modulation?.padY),
+        heardAt: { x: 0, y: 0, z: 0 },
+        isOpen: false,
+        hasBeenPlaced: false,
+        hadSource: false,
+        writtenPadX: settings.pad[0],
+        writtenPadY: settings.pad[1],
+      });
+    }
 
-    dispose: (): void => {
-      for (const running of layers) running.layer.dispose();
-      engine.dispose();
-    },
-  };
+    function followStrengths(frame: DroneOrganFrame): void {
+      for (const running of layers) {
+        const strength = frame.voiceStrengths[running.settings.name];
+        running.isOpen = strength > 0;
+        running.layer.setStrength(strength);
+      }
+    }
+
+    function followPads(frame: DroneOrganFrame): void {
+      for (const running of layers) {
+        if (!running.padX && !running.padY) continue;
+
+        const x = running.padX?.follow(frame) ?? running.writtenPadX;
+        const y = running.padY?.follow(frame) ?? running.writtenPadY;
+        if (
+          Math.abs(x - running.writtenPadX) < CONTROL_DEAD_BAND &&
+          Math.abs(y - running.writtenPadY) < CONTROL_DEAD_BAND
+        ) {
+          continue;
+        }
+
+        running.writtenPadX = x;
+        running.writtenPadY = y;
+        running.layer.setPad(x, y);
+      }
+    }
+
+    function followListener(frame: DroneOrganFrame): void {
+      framesSincePlacing += 1;
+      if (framesSincePlacing < LISTENER_WRITE_INTERVAL_FRAMES) return;
+
+      const pose = frame.listener;
+      if (
+        pose.x === placedPose.x &&
+        pose.y === placedPose.y &&
+        pose.z === placedPose.z &&
+        pose.yawRadians === placedPose.yawRadians &&
+        pose.pitchRadians === placedPose.pitchRadians
+      ) {
+        return;
+      }
+      framesSincePlacing = 0;
+      placedPose.x = pose.x;
+      placedPose.y = pose.y;
+      placedPose.z = pose.z;
+      placedPose.yawRadians = pose.yawRadians;
+      placedPose.pitchRadians = pose.pitchRadians;
+
+      listener.positionX.value = pose.x;
+      listener.positionY.value = pose.y;
+      listener.positionZ.value = pose.z;
+
+      const pitchCosine = Math.cos(pose.pitchRadians);
+      listener.forwardX.value = Math.sin(pose.yawRadians) * pitchCosine;
+      listener.forwardY.value = Math.sin(pose.pitchRadians);
+      listener.forwardZ.value = Math.cos(pose.yawRadians) * pitchCosine;
+      // Up stays world up: a banked turn is a roll, and a roll is not heard.
+    }
+
+    function followPlacements(frame: DroneOrganFrame): void {
+      for (const running of layers) {
+        const placement = running.settings.placement;
+        // A closed layer is silent, so where it would have sounded from costs
+        // nothing to skip; it glides in from the listener when its sense opens.
+        if (!placement || !running.isOpen) continue;
+
+        const hasSource = readNearestAnchor(
+          frame.readGroupCenters(placement.group),
+          frame.listener,
+          nearest,
+        );
+        // With nothing of the group in the world the sound comes home to the
+        // listener, which is where it also starts before the first source exists.
+        const wantX = hasSource ? nearest.x : frame.listener.x;
+        const wantY = hasSource ? nearest.y : frame.listener.y;
+        const wantZ = hasSource ? nearest.z : frame.listener.z;
+
+        const heard = running.heardAt;
+        // The same group jumping a long way is a recycled cloud, not a flight
+        // path: follow it instead of gliding the sound through the listener.
+        const hasJumped =
+          hasSource &&
+          running.hadSource &&
+          (Math.abs(wantX - heard.x) > PLACEMENT_SNAP_METERS ||
+            Math.abs(wantY - heard.y) > PLACEMENT_SNAP_METERS ||
+            Math.abs(wantZ - heard.z) > PLACEMENT_SNAP_METERS);
+
+        if (hasJumped || !running.hasBeenPlaced) {
+          heard.x = wantX;
+          heard.y = wantY;
+          heard.z = wantZ;
+        } else {
+          heard.x += (wantX - heard.x) * PLACEMENT_GLIDE;
+          heard.y += (wantY - heard.y) * PLACEMENT_GLIDE;
+          heard.z += (wantZ - heard.z) * PLACEMENT_GLIDE;
+        }
+        running.hasBeenPlaced = true;
+        running.hadSource = hasSource;
+        running.layer.setPosition(heard.x, heard.y, heard.z);
+      }
+    }
+
+    return {
+      update: (frame): void => {
+        if (unloading) return;
+        followStrengths(frame);
+        followPads(frame);
+        timeline.follow(frame);
+        followListener(frame);
+        followPlacements(frame);
+      },
+
+      unload,
+    };
+  } catch (error) {
+    try {
+      await unload();
+    } catch (cleanupError) {
+      if (cleanupError !== error)
+        throw new AggregateError([error, cleanupError], "Organ startup failed");
+    }
+    throw error;
+  }
 }
 
 function createPadAxis(

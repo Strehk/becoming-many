@@ -76,6 +76,7 @@ export function createTerrainModule(
 
 function loadTerrain(state: TerrainState, options: TerrainModuleOptions): void {
   const stream = createTerrainStream(options);
+  state.currentStream = stream;
   const initialAssignments = stream.chunkWindow.update(
     options.viewpoint.worldPosition.x,
     options.viewpoint.worldPosition.z,
@@ -84,7 +85,6 @@ function loadTerrain(state: TerrainState, options: TerrainModuleOptions): void {
   initializeTerrainChunks(stream.geometry, initialAssignments);
   stream.geometry.group.visible = false;
   options.scene.add(stream.geometry.group);
-  state.currentStream = stream;
 }
 
 function updateTerrain(

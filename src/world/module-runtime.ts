@@ -13,7 +13,7 @@ export interface WorldModule {
   readonly unload: () => void;
 }
 
-type ModuleState = "inactive" | "active";
+type ModuleState = "inactive" | "active" | "unloaded";
 
 /**
  * Public lifecycle coordinator used by the Level Runtime composition root.
@@ -22,10 +22,11 @@ export class ModuleRuntime {
   private readonly states = new Map<WorldModule, ModuleState>();
 
   load(module: WorldModule): void {
-    if (this.states.has(module)) return;
+    const state = this.states.get(module);
+    if (state && state !== "unloaded") return;
 
-    module.load();
     this.states.set(module, "inactive");
+    module.load();
   }
 
   activate(module: WorldModule): void {
@@ -48,19 +49,23 @@ export class ModuleRuntime {
     this.states.set(module, "inactive");
   }
 
-  // Part of the explicit lifecycle API; modules must remain fully unloadable.
-  // fallow-ignore-next-line unused-class-member
   unload(module: WorldModule): void {
-    if (!this.states.has(module)) return;
-
-    this.deactivate(module);
-    module.unload();
-    this.states.delete(module);
+    if (this.states.get(module) === "unloaded") return;
+    const errors: unknown[] = [];
+    try {
+      this.deactivate(module);
+    } catch (error) {
+      errors.push(error);
+    }
+    this.states.set(module, "unloaded");
+    try {
+      module.unload();
+    } catch (error) {
+      errors.push(error);
+    }
+    if (errors.length)
+      throw new AggregateError(errors, "Module cleanup failed");
   }
-
-  // Future: prefetch resources before load when upcoming level cues are known.
-  // Future: support asynchronous load transitions without blocking activation.
-
   // Procedural chunk work uses the separate world StreamQueue. Keeping it out
   // of this class prevents module lifecycle and spatial streaming from mixing.
 }

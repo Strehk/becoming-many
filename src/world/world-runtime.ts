@@ -75,6 +75,10 @@ export function createWorld(
 ): WorldContext & {
   readonly prepareRenderer: () => Promise<void>;
   readonly start: (updateWorld: (deltaSeconds: number) => void) => void;
+  /** Stop execution and finish pending preparation/XR before content is freed. */
+  readonly stop: () => Promise<void>;
+  /** Release the renderer after Run has ended its content and source assets. */
+  readonly unload: () => Promise<void>;
 } {
   const { frameControl, viewPitchAssistDegrees = 0 } = options;
   const scene = new Scene();
@@ -84,7 +88,8 @@ export function createWorld(
   // graph freezes the view with nothing raised and every test still green.
   scene.add(viewer.group);
   const camera = viewer.camera;
-  const renderer = createWorldRenderer();
+  const lifetime = new AbortController();
+  const renderer = createWorldRenderer(lifetime.signal);
   const timer = new Timer();
   const modules = new ModuleRuntime();
   const streamQueue = new StreamQueue(
@@ -94,6 +99,10 @@ export function createWorld(
 
   container.replaceChildren(renderer.domElement);
   const xr = createXrSessionControl(renderer);
+  let resizeObserver: ResizeObserver | undefined;
+  let preparation: Promise<void> | undefined;
+  let stopping: Promise<void> | undefined;
+  let unloading: Promise<void> | undefined;
   timer.connect(document);
 
   return {
@@ -107,23 +116,82 @@ export function createWorld(
     xr,
     prepareRenderer,
     start,
+    stop,
+    unload: (): Promise<void> => {
+      unloading ??= (async () => {
+        const errors: unknown[] = [];
+        try {
+          await stop();
+        } catch (error) {
+          errors.push(error);
+        }
+        for (const release of [
+          () => renderer.dispose(),
+          () => renderer.forceContextLoss(),
+          () => renderer.domElement.remove(),
+          () => scene.clear(),
+        ]) {
+          try {
+            release();
+          } catch (error) {
+            errors.push(error);
+          }
+        }
+        if (errors.length)
+          throw new AggregateError(errors, "World cleanup failed");
+      })();
+      return unloading;
+    },
   };
+
+  function stop(): Promise<void> {
+    stopping ??= (async () => {
+      lifetime.abort();
+      const errors: unknown[] = [];
+      for (const release of [
+        () => renderer.setAnimationLoop(null),
+        () => resizeObserver?.disconnect(),
+        () => timer.dispose(),
+      ]) {
+        try {
+          release();
+        } catch (error) {
+          errors.push(error);
+        }
+      }
+      // Invalidate XR immediately, then wait before releasing its borrowers.
+      const stopped = await Promise.allSettled([xr.unload(), preparation]);
+      for (const result of stopped) {
+        if (
+          result.status === "rejected" &&
+          result.reason !== lifetime.signal.reason
+        )
+          errors.push(result.reason);
+      }
+      if (errors.length) throw new AggregateError(errors, "World stop failed");
+    })();
+    return stopping;
+  }
 
   // Keep resizing and the visible loop after successful level preparation.
   function start(updateWorld: (deltaSeconds: number) => void): void {
+    lifetime.signal.throwIfAborted();
     resizeRenderer();
-    new ResizeObserver(resizeRenderer).observe(container);
+    resizeObserver ??= new ResizeObserver(resizeRenderer);
+    resizeObserver.observe(container);
 
     let frameIndex = 0;
 
-    // Three.js owns the single loop so it can support WebXR later without replacement.
+    // Three.js owns the single loop for desktop and WebXR.
     renderer.setAnimationLoop((time) => {
+      if (lifetime.signal.aborted) return;
       timer.update(time);
       const deltaSeconds = frameControl
         ? frameControl.fixedDeltaSeconds
         : timer.getDelta();
 
       updateWorld(deltaSeconds);
+      if (lifetime.signal.aborted) return;
       // Navigation has moved the rig and nothing refreshes world matrices until
       // the render call. Publishing here, once, is what lets every module in
       // this frame window its content around where the visitor actually is.
@@ -149,32 +217,37 @@ export function createWorld(
   }
 
   /** Finish shader compilation and first-use uploads without advancing the run. */
-  async function prepareRenderer(): Promise<void> {
-    await renderer.compileAsync(scene, camera);
-    const previousTarget = renderer.getRenderTarget();
-    const previousCubeFace = renderer.getActiveCubeFace();
-    const previousMipmapLevel = renderer.getActiveMipmapLevel();
-    const target = new WebGLRenderTarget(1, 1);
-    target.texture.colorSpace = renderer.outputColorSpace;
+  function prepareRenderer(): Promise<void> {
+    lifetime.signal.throwIfAborted();
+    preparation ??= (async () => {
+      await renderer.compileAsync(scene, camera);
+      lifetime.signal.throwIfAborted();
+      const previousTarget = renderer.getRenderTarget();
+      const previousCubeFace = renderer.getActiveCubeFace();
+      const previousMipmapLevel = renderer.getActiveMipmapLevel();
+      const target = new WebGLRenderTarget(1, 1);
+      target.texture.colorSpace = renderer.outputColorSpace;
 
-    try {
-      renderer.setRenderTarget(target);
-      renderer.render(scene, camera);
-    } finally {
-      renderer.setRenderTarget(
-        previousTarget,
-        previousCubeFace,
-        previousMipmapLevel,
-      );
-      target.dispose();
-    }
+      try {
+        renderer.setRenderTarget(target);
+        renderer.render(scene, camera);
+      } finally {
+        renderer.setRenderTarget(
+          previousTarget,
+          previousCubeFace,
+          previousMipmapLevel,
+        );
+        target.dispose();
+      }
+    })();
+    return preparation;
   }
 
   // The canvas fills its container, so the show page's full-window root and
   // the conductor page's small stage view share one sizing rule. While an XR
   // session presents, Three.js manages the drawing buffer itself.
   function resizeRenderer(): void {
-    if (renderer.xr.isPresenting) return;
+    if (lifetime.signal.aborted || renderer.xr.isPresenting) return;
 
     const width = container.clientWidth;
     const height = container.clientHeight;
@@ -190,7 +263,7 @@ export function createWorld(
  * One WebGL2 context, XR-compatible from creation so that starting a headset
  * session never has to migrate adapters underneath the running renderer.
  */
-function createWorldRenderer(): WebGLRenderer {
+function createWorldRenderer(signal: AbortSignal): WebGLRenderer {
   const canvas = document.createElement("canvas");
   const attributes: WebGLContextAttributes = WORLD_RUNTIME_SETTINGS.renderer;
   const context = canvas.getContext("webgl2", attributes);
@@ -201,12 +274,20 @@ function createWorldRenderer(): WebGLRenderer {
   // A lost context takes every buffer, texture, and program with it, and the
   // world quietly rebuilds itself from nothing on the restore — which reads
   // as a page reload rather than as the failure it is. Say it out loud.
-  canvas.addEventListener("webglcontextlost", () => {
-    console.warn("Renderer: the WebGL context was lost.");
-  });
-  canvas.addEventListener("webglcontextrestored", () => {
-    console.warn("Renderer: the WebGL context was restored.");
-  });
+  canvas.addEventListener(
+    "webglcontextlost",
+    () => {
+      console.warn("Renderer: the WebGL context was lost.");
+    },
+    { signal },
+  );
+  canvas.addEventListener(
+    "webglcontextrestored",
+    () => {
+      console.warn("Renderer: the WebGL context was restored.");
+    },
+    { signal },
+  );
 
   return new WebGLRenderer({
     ...WORLD_RUNTIME_SETTINGS.renderer,

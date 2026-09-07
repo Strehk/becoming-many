@@ -7,7 +7,6 @@
 
 import type { Scene } from "three";
 import type { GltfAssets } from "../../utils/asset-loader/gltf-assets";
-import { disposeGltfAssets } from "../../utils/asset-loader/gltf-assets";
 import type { UnlitMaterialEffect } from "../../utils/asset-loader/material-effect";
 import {
   type ChunkAssignment,
@@ -106,8 +105,7 @@ export function createVegetationModule(
     activate: () => setVegetationVisible(state, true),
     update: () => updateVegetation(state, runtimeOptions),
     deactivate: () => setVegetationVisible(state, false),
-    unload: () =>
-      unloadVegetation(state, runtimeOptions.scene, runtimeOptions.assets),
+    unload: () => unloadVegetation(state, runtimeOptions.scene),
   };
 }
 
@@ -116,6 +114,7 @@ function loadVegetation(
   options: VegetationRuntimeOptions,
 ): void {
   const stream = createVegetationStream(options);
+  state.currentStream = stream;
   const assignments = stream.chunkWindow.update(
     options.viewpoint.worldPosition.x,
     options.viewpoint.worldPosition.z,
@@ -123,7 +122,6 @@ function loadVegetation(
 
   initializeVegetationChunks(stream.instances, assignments);
   options.scene.add(stream.instances.modelPool.group);
-  state.currentStream = stream;
 }
 
 function updateVegetation(
@@ -194,16 +192,11 @@ function setVegetationVisible(state: VegetationState, visible: boolean): void {
   if (stream) stream.instances.modelPool.group.visible = visible;
 }
 
-function unloadVegetation(
-  state: VegetationState,
-  scene: Scene,
-  assets: GltfAssets,
-): void {
+function unloadVegetation(state: VegetationState, scene: Scene): void {
   const stream = state.currentStream;
   if (!stream) return;
 
   state.currentStream = undefined;
   scene.remove(stream.instances.modelPool.group);
   disposeVegetationInstances(stream.instances);
-  disposeGltfAssets(assets);
 }

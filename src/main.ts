@@ -12,7 +12,7 @@ import { PIECE_SCHEDULE } from "./dramaturgy/piece-schedule";
 import type { ShowClock } from "./dramaturgy/show-clock";
 import { SHOW_LEVEL_STATES } from "./dramaturgy/show-levels";
 import { level as connectionsLevel } from "./levels/connections.level";
-import { startLevel } from "./levels/level-runtime";
+import { type RunningLevel, startLevel } from "./levels/level-runtime";
 import { loadDeploymentConfig } from "./station/deployment-config";
 import { mountVrEntryButton } from "./world/vr-entry-button";
 
@@ -31,45 +31,76 @@ declare global {
 
 // Runtime request, not authored configuration: the rehearsal page only lets a
 // run arm its narration language. Development requests belong to test.html.
+const lifetime = new AbortController();
+window.addEventListener("pagehide", (event) => {
+  if (!event.persisted) lifetime.abort();
+});
 const request = new URLSearchParams(window.location.search);
 
 // Deployment facts the station server was started with; empty when nothing
 // answers /config. A set fact is deployment authority: it is applied here and
 // the matching conductor control turns read-only.
-const deployment = await loadDeploymentConfig();
+let level: RunningLevel | undefined;
+try {
+  const deployment = await loadDeploymentConfig();
 
-const level = await startLevel(document.querySelector(".app"), {
-  kind: "show",
-  preset: connectionsLevel,
-  show: {
-    schedule: PIECE_SCHEDULE,
-    language: resolveNarrationLanguage(request.get("language")),
-    states: SHOW_LEVEL_STATES,
-  },
-  m5ExpectedDeviceId: deployment.m5DeviceId,
-});
-
-window.showClock = level.show?.clock;
-
-const show = level.show;
-if (show) {
-  // The rehearsal page starts the piece by itself: a run-through begins at
-  // the top without anyone reaching for the console, and the transport bar
-  // is there to hold, scrub, and jump once it runs. Show time still waits on
-  // the audio timebase, which a browser keeps suspended until the first
-  // gesture in this window — so the piece opens the moment the page is
-  // touched, not silently behind a suspended context.
-  show.clock.play();
-
-  mountRehearsalTransport({
-    container: document.body,
-    schedule: PIECE_SCHEDULE,
-    clock: show.clock,
-    readLanguage: show.readLanguage,
-    setLanguage: show.setLanguage,
+  level = await startLevel(document.querySelector(".app"), {
+    signal: lifetime.signal,
+    kind: "show",
+    preset: connectionsLevel,
+    show: {
+      schedule: PIECE_SCHEDULE,
+      language: resolveNarrationLanguage(request.get("language")),
+      states: SHOW_LEVEL_STATES,
+    },
+    m5ExpectedDeviceId: deployment.m5DeviceId,
   });
+  lifetime.signal.throwIfAborted();
+
+  window.showClock = level.show?.clock;
+  lifetime.signal.addEventListener(
+    "abort",
+    () => {
+      delete window.showClock;
+    },
+    { once: true },
+  );
+
+  const show = level.show;
+  if (show) {
+    // The rehearsal page starts the piece by itself: a run-through begins at
+    // the top without anyone reaching for the console, and the transport bar
+    // is there to hold, scrub, and jump once it runs. Show time still waits on
+    // the audio timebase, which a browser keeps suspended until the first
+    // gesture in this window — so the piece opens the moment the page is
+    // touched, not silently behind a suspended context.
+    show.clock.play();
+
+    const unmountTransport = mountRehearsalTransport({
+      container: document.body,
+      schedule: PIECE_SCHEDULE,
+      clock: show.clock,
+      readLanguage: show.readLanguage,
+      setLanguage: show.setLanguage,
+    });
+    lifetime.signal.addEventListener("abort", unmountTransport, { once: true });
+  }
+
+  const unmountVr = mountVrEntryButton(document.body, level.xr);
+  lifetime.signal.addEventListener("abort", unmountVr, { once: true });
+
+  if (deployment.m5Host) level.m5?.setHost(deployment.m5Host);
+} catch (error) {
+  const wasCancelled =
+    lifetime.signal.aborted && error === lifetime.signal.reason;
+  lifetime.abort();
+  try {
+    await level?.unload();
+  } catch (cleanupError) {
+    throw new AggregateError(
+      [error, cleanupError],
+      "Page startup and cleanup failed",
+    );
+  }
+  if (!wasCancelled) throw error;
 }
-
-mountVrEntryButton(document.body, level.xr);
-
-if (deployment.m5Host) level.m5?.setHost(deployment.m5Host);

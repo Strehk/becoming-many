@@ -95,7 +95,12 @@ export function createTerrainGeometry({
     presentation?.material ?? new MeshBasicMaterial({ color: TERRAIN_COLOR });
   material.opacity = clampedOpacity;
   material.transparent = clampedOpacity < 1;
-  for (const effect of effects) effect.applyTo(material);
+  try {
+    for (const effect of effects) effect.applyTo(material);
+  } catch (error) {
+    material.dispose();
+    throw error;
+  }
 
   const storesZoneConditions = presentation?.conditionsAt !== undefined;
   const storesThermalWarmth = effects.some(

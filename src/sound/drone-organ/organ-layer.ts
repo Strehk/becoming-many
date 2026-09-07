@@ -14,7 +14,7 @@
  * The send sits behind the level, so silencing a layer silences its room too.
  */
 
-import { Filter, Gain, Panner3D } from "tone";
+import { Filter, Gain, Panner3D, type ToneAudioNode } from "tone";
 import type {
   OrganLayerSettings,
   OrganPlacement,
@@ -73,73 +73,101 @@ export function createOrganLayer(
   salt: number,
   settings: OrganLayerSettings,
 ): OrganLayer {
-  const bus = new Gain(1);
-  const cutoff = new Filter(
-    CUTOFF_BASE_HERTZ * CUTOFF_DECADES ** settings.cutoff,
-    "lowpass",
-  );
-  const level = new Gain(0);
-  const roomSend = new Gain(settings.roomSend * SEND_SCALE);
-
-  // Placed layers hear the world through a panner, which collapses the voice
-  // to mono: where a sound is replaces its stereo image, and that is the point.
-  const panner = settings.placement
-    ? createPanner(settings.placement)
-    : undefined;
-
-  bus.connect(cutoff);
-  if (panner) {
-    cutoff.connect(panner);
-    panner.connect(level);
-  } else {
-    cutoff.connect(level);
-  }
-  level.connect(engine.master);
-  level.connect(roomSend);
-  roomSend.connect(engine.reverb);
-
-  const voice: OrganVoice = createOrganVoice(
-    bus,
-    { harmony: engine.harmony, lane, salt },
-    settings.voice,
-  );
-  voice.setPad(settings.pad[0], settings.pad[1]);
-  lane.setActive(false);
-
-  let writtenLevel = 0;
-
-  return {
-    placement: settings.placement,
-
-    setStrength: (strength): void => {
-      lane.setActive(strength > 0);
-
-      const target = settings.volume * VOLUME_SCALE * strength;
-      if (target === writtenLevel) return;
-      if (
-        target !== 0 &&
-        Math.abs(target - writtenLevel) < STRENGTH_DEAD_BAND
-      ) {
-        return;
+  const nodes: ToneAudioNode[] = [];
+  let voice: OrganVoice | undefined;
+  function dispose(): void {
+    const errors: unknown[] = [];
+    for (const resource of [lane, voice, ...nodes.reverse()]) {
+      try {
+        resource?.dispose();
+      } catch (error) {
+        errors.push(error);
       }
+    }
+    nodes.length = 0;
+    voice = undefined;
+    if (errors.length)
+      throw new AggregateError(errors, "Organ layer cleanup failed");
+  }
+  try {
+    const bus = new Gain(1);
+    nodes.push(bus);
+    const cutoff = new Filter(
+      CUTOFF_BASE_HERTZ * CUTOFF_DECADES ** settings.cutoff,
+      "lowpass",
+    );
+    nodes.push(cutoff);
+    const level = new Gain(0);
+    nodes.push(level);
+    const roomSend = new Gain(settings.roomSend * SEND_SCALE);
+    nodes.push(roomSend);
 
-      writtenLevel = target;
-      level.gain.rampTo(target, STRENGTH_RAMP_SECONDS);
-    },
+    // Placed layers hear the world through a panner, which collapses the voice
+    // to mono: where a sound is replaces its stereo image, and that is the point.
+    const panner = settings.placement
+      ? createPanner(settings.placement)
+      : undefined;
 
-    setPad: voice.setPad,
+    if (panner) nodes.push(panner);
+    bus.connect(cutoff);
+    if (panner) {
+      cutoff.connect(panner);
+      panner.connect(level);
+    } else {
+      cutoff.connect(level);
+    }
+    level.connect(engine.master);
+    level.connect(roomSend);
+    roomSend.connect(engine.reverb);
 
-    setPosition: (x, y, z): void => {
-      panner?.setPosition(x, y, z);
-    },
+    voice = createOrganVoice(
+      bus,
+      { harmony: engine.harmony, lane, salt },
+      settings.voice,
+    );
+    voice.setPad(settings.pad[0], settings.pad[1]);
+    lane.setActive(false);
 
-    dispose: (): void => {
-      lane.dispose();
-      voice.dispose();
-      for (const node of [bus, cutoff, level, roomSend, panner])
-        node?.dispose();
-    },
-  };
+    let writtenLevel = 0;
+
+    return {
+      placement: settings.placement,
+
+      setStrength: (strength): void => {
+        lane.setActive(strength > 0);
+
+        const target = settings.volume * VOLUME_SCALE * strength;
+        if (target === writtenLevel) return;
+        if (
+          target !== 0 &&
+          Math.abs(target - writtenLevel) < STRENGTH_DEAD_BAND
+        ) {
+          return;
+        }
+
+        writtenLevel = target;
+        level.gain.rampTo(target, STRENGTH_RAMP_SECONDS);
+      },
+
+      setPad: voice.setPad,
+
+      setPosition: (x, y, z): void => {
+        panner?.setPosition(x, y, z);
+      },
+
+      dispose,
+    };
+  } catch (error) {
+    try {
+      dispose();
+    } catch (cleanupError) {
+      throw new AggregateError(
+        [error, cleanupError],
+        "Organ layer startup failed",
+      );
+    }
+    throw error;
+  }
 }
 
 function createPanner(placement: OrganPlacement): Panner3D {

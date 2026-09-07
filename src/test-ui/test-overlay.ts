@@ -15,6 +15,7 @@ const INTEGER_FORMAT = new Intl.NumberFormat("de-DE", {
 });
 
 export interface TestOverlay {
+  readonly unload: () => void;
   readonly update: (deltaSeconds: number) => void;
 }
 
@@ -40,6 +41,7 @@ export function createTestOverlay(
   let elapsedSeconds = 0;
 
   return {
+    unload: () => root.remove(),
     update(deltaSeconds): void {
       elapsedSeconds += deltaSeconds;
       if (elapsedSeconds < DISPLAY_REFRESH_SECONDS) return;

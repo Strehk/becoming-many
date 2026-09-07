@@ -12,15 +12,24 @@ import { startConductorPage } from "./conductor-page";
 
 // Runtime request, not authored configuration: `?language=<de|en>` arms the
 // session's narration language.
+const lifetime = new AbortController();
+window.addEventListener("pagehide", (event) => {
+  if (!event.persisted) lifetime.abort();
+});
 const request = new URLSearchParams(window.location.search);
 
 // Deployment facts the station server was started with; empty when nothing
 // answers /config. A set fact renders read-only on this page.
 const deployment = await loadDeploymentConfig();
 
-await startConductorPage({
-  container: document.querySelector(".conductor"),
-  schedule: PIECE_SCHEDULE,
-  language: resolveNarrationLanguage(request.get("language")),
-  deployment,
-});
+try {
+  await startConductorPage({
+    signal: lifetime.signal,
+    container: document.querySelector(".conductor"),
+    schedule: PIECE_SCHEDULE,
+    language: resolveNarrationLanguage(request.get("language")),
+    deployment,
+  });
+} catch (error) {
+  if (!lifetime.signal.aborted || error !== lifetime.signal.reason) throw error;
+}

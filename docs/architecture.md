@@ -23,7 +23,7 @@ show state.
 
 ## Composition and Frame Flow
 
-`src/levels/level-runtime.ts` is the startup and frame-coordination root. A
+`src/levels/level-runtime.ts` owns startup, frame coordination and awaited Run termination. A
 static request contains one independent `LevelPreset`; a Show uses the Connections
 preset plus its narrow `ShowLevelState` map. The runtime loads the required assets, creates a stopped World in
 `src/world/world-runtime.ts`,
@@ -32,6 +32,13 @@ applies the opening presentation, delegates concrete construction to
 awaits World-owned GPU preparation for Show, connects controls and optional
 show following, then starts the single loop. Presentation is applied before
 any module derives a fixed spatial window from the camera.
+
+`RunningLevel.unload()` stops the loop and starts input/audio/XR cleanup,
+awaits pending preparation and children, ends modules in reverse order, releases
+borrowed GLTF sources, then releases World and canvas. Failed/cancelled starts
+use the same path; Composition cleans earlier factory handles on failure.
+Entries cancel pending starts and own their DOM/listeners. A persisted `pagehide`
+keeps the same visit; final page exit ends it. Visitor restart policy remains open.
 
 Test UI sampling and overlay creation are entry-owned optional dependencies.
 Legacy Grass and Zone Visualizer implementations load only for the standalone

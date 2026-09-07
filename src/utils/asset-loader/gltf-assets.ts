@@ -9,6 +9,7 @@ import {
   type BufferGeometry,
   type Material,
   Mesh,
+  type Skeleton,
   SkinnedMesh,
   Texture,
 } from "three";
@@ -24,15 +25,34 @@ export type GltfAssets = ReadonlyMap<string, GLTF>;
 /** Load every distinct URL once and expose the result through authored IDs. */
 export async function loadGltfAssets(
   requests: readonly GltfAssetRequest[],
+  signal?: AbortSignal,
 ): Promise<GltfAssets> {
   validateUniqueAssetIds(requests);
 
+  signal?.throwIfAborted();
   const loader = new GLTFLoader();
   const urls = [...new Set(requests.map(({ url }) => url))];
-  const loadedEntries = await Promise.all(
-    urls.map(async (url) => [url, await loader.loadAsync(url)] as const),
+  const loaded = await Promise.allSettled(
+    urls.map((url) => loader.loadAsync(url)),
   );
-  const assetsByUrl = new Map(loadedEntries);
+  const assetsByUrl = new Map<string, GLTF>();
+  for (const [index, result] of loaded.entries()) {
+    if (result.status === "fulfilled")
+      assetsByUrl.set(urls[index] as string, result.value);
+  }
+  const failure = loaded.find((result) => result.status === "rejected");
+  if (failure || signal?.aborted) {
+    const error: unknown = failure?.reason ?? signal?.reason;
+    try {
+      disposeGltfAssets(assetsByUrl);
+    } catch (cleanupError) {
+      throw new AggregateError(
+        [error, cleanupError],
+        "GLTF loading and cleanup failed",
+      );
+    }
+    throw error;
+  }
 
   return new Map(
     requests.map(({ id, url }) => {
@@ -48,7 +68,11 @@ export function disposeGltfAssets(assets: GltfAssets): void {
   const geometries = new Set<BufferGeometry>();
   const materials = new Set<Material>();
   const textures = new Set<Texture>();
-  const scenes = new Set([...assets.values()].map(({ scene }) => scene));
+  const skeletons = new Set<Skeleton>();
+  const images = new Set<ImageBitmap>();
+  const scenes = new Set(
+    [...assets.values()].flatMap(({ scene, scenes }) => [scene, ...scenes]),
+  );
 
   for (const scene of scenes) {
     scene.traverse((object) => {
@@ -61,13 +85,38 @@ export function disposeGltfAssets(assets: GltfAssets): void {
       for (const material of objectMaterials)
         collectMaterial(material, materials, textures);
 
-      if (object instanceof SkinnedMesh) object.skeleton.dispose();
+      if (object instanceof SkinnedMesh) skeletons.add(object.skeleton);
     });
   }
 
-  for (const geometry of geometries) geometry.dispose();
-  for (const material of materials) material.dispose();
-  for (const texture of textures) texture.dispose();
+  for (const texture of textures) {
+    if (
+      typeof ImageBitmap !== "undefined" &&
+      texture.source.data instanceof ImageBitmap
+    )
+      images.add(texture.source.data);
+  }
+  const errors: unknown[] = [];
+  for (const resource of [
+    ...geometries,
+    ...materials,
+    ...skeletons,
+    ...textures,
+  ]) {
+    try {
+      resource.dispose();
+    } catch (error) {
+      errors.push(error);
+    }
+  }
+  for (const image of images) {
+    try {
+      image.close();
+    } catch (error) {
+      errors.push(error);
+    }
+  }
+  if (errors.length) throw new AggregateError(errors, "GLTF cleanup failed");
 }
 
 function validateUniqueAssetIds(requests: readonly GltfAssetRequest[]): void {

@@ -23,7 +23,7 @@ export interface AudioTimebase {
    */
   readonly readState: () => AudioContextState;
 
-  readonly unload: () => void;
+  readonly unload: () => Promise<void>;
 }
 
 /**
@@ -35,6 +35,8 @@ export interface AudioTimebase {
 export function createAudioTimebase(): AudioTimebase {
   const audioContext = new AudioContext();
 
+  let unloading: Promise<void> | undefined;
+
   function release(): void {
     for (const eventName of RESUME_GESTURE_EVENTS) {
       window.removeEventListener(eventName, resume);
@@ -45,7 +47,7 @@ export function createAudioTimebase(): AudioTimebase {
     // Release only once the context is actually running. Dropping the
     // listeners up front would leave a rejected resume — or a context the
     // device suspends again later — with nothing left to bring it back.
-    void audioContext.resume().then(release, () => undefined);
+    if (!unloading) void audioContext.resume().then(release, () => undefined);
   }
 
   for (const eventName of RESUME_GESTURE_EVENTS) {
@@ -57,9 +59,10 @@ export function createAudioTimebase(): AudioTimebase {
 
     readState: () => audioContext.state,
 
-    unload(): void {
+    unload(): Promise<void> {
       release();
-      void audioContext.close();
+      unloading ??= audioContext.close();
+      return unloading;
     },
   };
 }

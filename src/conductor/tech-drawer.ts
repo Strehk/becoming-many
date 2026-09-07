@@ -17,6 +17,7 @@ import type { ShowActions } from "./show-actions";
 
 export interface TechDrawerOptions {
   readonly parent: HTMLElement;
+  readonly signal: AbortSignal;
   readonly actions: ShowActions;
 }
 
@@ -31,6 +32,7 @@ export interface TechDrawer {
 
 export function createTechDrawer({
   parent,
+  signal,
   actions,
 }: TechDrawerOptions): TechDrawer {
   const root = document.createElement("aside");
@@ -78,6 +80,7 @@ export function createTechDrawer({
     "Reload the page",
     "Tap again to reload",
     () => actions.reloadShow(),
+    signal,
   );
   reloadButton.classList.add("conductor__reload-button");
   createGroup(root, "Resets", [resets]);

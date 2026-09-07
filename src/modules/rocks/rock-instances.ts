@@ -21,7 +21,11 @@ import {
   applyMaterialEffects,
   type UnlitMaterialEffect,
 } from "../../utils/asset-loader/material-effect";
-import { createStaticModelAsset } from "../../utils/asset-loader/static-model";
+import {
+  createStaticModelAsset,
+  disposeStaticModelAsset,
+  type StaticModelAsset,
+} from "../../utils/asset-loader/static-model";
 import {
   type ChunkCandidate,
   type ChunkCandidateGrid,
@@ -83,38 +87,46 @@ export function createRockInstances({
     chunkSize,
     parameters.candidateSpacingMeters,
   );
-  const sources = parameters.assets.map((settings, assetIndex) => ({
-    id: settings.id,
-    model: createStaticModelAsset(
-      getLoadedAsset(assets, settings.id),
-      settings.objectName,
-      (material) => getRockColor(colors, material.name, assetIndex),
-    ),
-  }));
-  if (effects) {
-    for (const { model } of sources) {
-      for (const part of model.parts) {
-        applyMaterialEffects(effects, part.material);
+  const sources: { id: string; model: StaticModelAsset }[] = [];
+  try {
+    for (const [assetIndex, settings] of parameters.assets.entries()) {
+      sources.push({
+        id: settings.id,
+        model: createStaticModelAsset(
+          getLoadedAsset(assets, settings.id),
+          settings.objectName,
+          (material) => getRockColor(colors, material.name, assetIndex),
+        ),
+      });
+    }
+    if (effects) {
+      for (const { model } of sources) {
+        for (const part of model.parts) {
+          applyMaterialEffects(effects, part.material);
+        }
       }
     }
-  }
-  const modelPool = createInstancedModelPool({
-    name: "Rocks",
-    sources,
-    slotCount: chunkSlotCount,
-    maxInstancesPerSlot: candidateGrid.candidateCount,
-  });
+    const modelPool = createInstancedModelPool({
+      name: "Rocks",
+      sources,
+      slotCount: chunkSlotCount,
+      maxInstancesPerSlot: candidateGrid.candidateCount,
+    });
 
-  return {
-    parameters,
-    worldSurface,
-    candidateGrid,
-    modelPool,
-    matrix: new Matrix4(),
-    position: new Vector3(),
-    rotation: new Quaternion(),
-    scale: new Vector3(),
-  };
+    return {
+      parameters,
+      worldSurface,
+      candidateGrid,
+      modelPool,
+      matrix: new Matrix4(),
+      position: new Vector3(),
+      rotation: new Quaternion(),
+      scale: new Vector3(),
+    };
+  } catch (error) {
+    for (const { model } of sources) disposeStaticModelAsset(model);
+    throw error;
+  }
 }
 
 function getRockColor(

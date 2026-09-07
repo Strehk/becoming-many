@@ -145,48 +145,66 @@ test("Animals animate only the nearest bounded population", () => {
   expect(scene.children).toHaveLength(0);
 });
 
-test("Animals decorate every actor material with supplied effects", () => {
-  const scene = new Scene();
-  const viewerPosition = new Vector3();
-  const viewpoint: Viewpoint = {
-    worldPosition: viewerPosition,
-    viewDistanceMeters: DEFAULT_VIEW_DISTANCE_METERS,
-  };
-  const decoratedMaterials: SensedMaterial[] = [];
-  const bodyMatrices: Matrix4[] = [];
-  const module = createAnimalsModule({
-    scene,
-    viewpoint,
-    definition: DEFINITION,
-    preset: PRESET,
-    assets: createAnimalAssets(),
-    worldSurface: createFlatSurface(),
-    effectsFor: (bodyMatrix) => {
-      bodyMatrices.push(bodyMatrix);
-      return [
-        {
-          applyTo: (material: SensedMaterial) => {
-            decoratedMaterials.push(material);
+test.each([false, true])(
+  "Animals own decorated materials even when an effect fails: %s",
+  (fails) => {
+    const scene = new Scene();
+    const viewerPosition = new Vector3();
+    const viewpoint: Viewpoint = {
+      worldPosition: viewerPosition,
+      viewDistanceMeters: DEFAULT_VIEW_DISTANCE_METERS,
+    };
+    const decoratedMaterials: SensedMaterial[] = [];
+    let disposed = 0;
+    const bodyMatrices: Matrix4[] = [];
+    const module = createAnimalsModule({
+      scene,
+      viewpoint,
+      definition: DEFINITION,
+      preset: PRESET,
+      assets: createAnimalAssets(),
+      worldSurface: createFlatSurface(),
+      effectsFor: (bodyMatrix) => {
+        bodyMatrices.push(bodyMatrix);
+        return [
+          {
+            applyTo: (material: SensedMaterial) => {
+              decoratedMaterials.push(material);
+              material.addEventListener("dispose", () => disposed++);
+              if (fails && decoratedMaterials.length === 2)
+                throw new Error("Effect failed");
+            },
           },
-        },
-      ];
-    },
-  });
+        ];
+      },
+    });
 
-  module.load();
+    if (fails) {
+      expect(() => module.load()).toThrow("Effect failed");
+      expect(disposed).toBe(2);
+      expect(scene.children).toHaveLength(0);
+      module.unload();
+      expect(disposed).toBe(2);
+      return;
+    }
 
-  // Two species with two actors each and one material per cloned model.
-  expect(decoratedMaterials).toHaveLength(4);
-  // Every decorated mesh is handed the route into its own body space.
-  expect(bodyMatrices).toHaveLength(4);
-  expect(bodyMatrices.every((matrix) => matrix instanceof Matrix4)).toBe(true);
-  expect(
-    decoratedMaterials.every(
-      (material) => material instanceof MeshBasicMaterial,
-    ),
-  ).toBe(true);
-  module.unload();
-});
+    module.load();
+
+    // Two species with two actors each and one material per cloned model.
+    expect(decoratedMaterials).toHaveLength(4);
+    // Every decorated mesh is handed the route into its own body space.
+    expect(bodyMatrices).toHaveLength(4);
+    expect(bodyMatrices.every((matrix) => matrix instanceof Matrix4)).toBe(
+      true,
+    );
+    expect(
+      decoratedMaterials.every(
+        (material) => material instanceof MeshBasicMaterial,
+      ),
+    ).toBe(true);
+    module.unload();
+  },
+);
 
 test("Animals reject an impossible visibility budget", () => {
   expect(() =>

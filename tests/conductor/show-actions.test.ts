@@ -35,6 +35,7 @@ function createRecorder(): Recorder {
   };
 
   const level: RunningLevel = {
+    unload: () => Promise.resolve(),
     show,
     resetFlight: () => calls.push("resetFlight"),
     readFrameMetrics: () => undefined,
@@ -42,6 +43,7 @@ function createRecorder(): Recorder {
     xr: {
       start: () => Promise.resolve(),
       stop: () => Promise.resolve(),
+      unload: () => Promise.resolve(),
       subscribe: () => () => undefined,
     },
   };

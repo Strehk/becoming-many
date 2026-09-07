@@ -10,7 +10,7 @@ import type { XrSessionControl } from "./xr-session";
 export function mountVrEntryButton(
   container: HTMLElement,
   xr: XrSessionControl,
-): void {
+): () => void {
   const button = document.createElement("button");
   button.type = "button";
 
@@ -30,7 +30,7 @@ export function mountVrEntryButton(
 
   let isSessionActive = false;
 
-  xr.subscribe((state) => {
+  const unsubscribe = xr.subscribe((state) => {
     isSessionActive = state.isSessionActive;
     if (state.isSessionActive) {
       button.textContent = "Exit VR";
@@ -52,4 +52,8 @@ export function mountVrEntryButton(
   });
 
   container.append(button);
+  return () => {
+    unsubscribe();
+    button.remove();
+  };
 }

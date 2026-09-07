@@ -26,6 +26,7 @@ const MOVEMENT_KEYS = new Set([
 
 export interface DesktopControls {
   readonly update: (deltaSeconds: number) => void;
+  readonly unload: () => Promise<void>;
 }
 
 export function createDesktopControls(
@@ -34,35 +35,82 @@ export function createDesktopControls(
   domElement: HTMLElement,
 ): DesktopControls {
   const controls = new PointerLockControls(camera, domElement);
-  const pressedKeys = trackMovementKeys();
+  const lifetime = new AbortController();
+  const { signal } = lifetime;
+  const pressedKeys = new Set<string>();
+  let pendingLock: Promise<void> | undefined;
+  let unloading: Promise<void> | undefined;
 
-  domElement.addEventListener("click", () => controls.lock());
+  domElement.addEventListener(
+    "click",
+    () => {
+      if (pendingLock) return;
+      pendingLock = domElement
+        .requestPointerLock()
+        .catch((error: unknown) => {
+          if (!signal.aborted)
+            console.warn("Desktop pointer lock failed.", error);
+        })
+        .finally(() => {
+          pendingLock = undefined;
+        });
+    },
+    { signal },
+  );
+
+  window.addEventListener(
+    "keydown",
+    (event) => {
+      if (!MOVEMENT_KEYS.has(event.code)) return;
+
+      event.preventDefault();
+      pressedKeys.add(event.code);
+    },
+    { signal },
+  );
+
+  window.addEventListener(
+    "keyup",
+    (event) => {
+      if (!MOVEMENT_KEYS.has(event.code)) return;
+
+      event.preventDefault();
+      pressedKeys.delete(event.code);
+    },
+    { signal },
+  );
+
+  window.addEventListener("blur", () => pressedKeys.clear(), { signal });
 
   return {
-    update: (deltaSeconds) =>
-      updateMovement(controls, viewerRig, pressedKeys, deltaSeconds),
+    update: (deltaSeconds) => {
+      if (!signal.aborted)
+        updateMovement(controls, viewerRig, pressedKeys, deltaSeconds);
+    },
+    unload: (): Promise<void> => {
+      if (unloading) return unloading;
+      lifetime.abort();
+      pressedKeys.clear();
+      controls.dispose();
+      unloading = (async () => {
+        await pendingLock;
+        // A permission response can grant the lock after our listeners ended.
+        const owner = domElement.ownerDocument;
+        if (owner.pointerLockElement !== domElement) return;
+        await new Promise<void>((resolve, reject) => {
+          const onUnlock = (): void => resolve();
+          owner.addEventListener("pointerlockchange", onUnlock, { once: true });
+          try {
+            owner.exitPointerLock();
+          } catch (error) {
+            owner.removeEventListener("pointerlockchange", onUnlock);
+            reject(error);
+          }
+        });
+      })();
+      return unloading;
+    },
   };
-}
-
-function trackMovementKeys(): ReadonlySet<string> {
-  const pressedKeys = new Set<string>();
-
-  window.addEventListener("keydown", (event) => {
-    if (!MOVEMENT_KEYS.has(event.code)) return;
-
-    event.preventDefault();
-    pressedKeys.add(event.code);
-  });
-
-  window.addEventListener("keyup", (event) => {
-    if (!MOVEMENT_KEYS.has(event.code)) return;
-
-    event.preventDefault();
-    pressedKeys.delete(event.code);
-  });
-
-  window.addEventListener("blur", () => pressedKeys.clear());
-  return pressedKeys;
 }
 
 function updateMovement(

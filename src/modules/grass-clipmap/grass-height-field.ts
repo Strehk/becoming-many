@@ -121,10 +121,15 @@ export function createGrassHeightField(
     return true;
   };
 
-  beginRecenter(options.cameraX, options.cameraZ);
-  while (!fillNextRows()) {
-    // The first window must be complete before the first frame; a partly
-    // filled one would root the whole field at the lowest elevation.
+  try {
+    beginRecenter(options.cameraX, options.cameraZ);
+    while (!fillNextRows()) {
+      // The first window must be complete before the first frame; a partly
+      // filled one would root the whole field at the lowest elevation.
+    }
+  } catch (error) {
+    texture.dispose();
+    throw error;
   }
 
   return {

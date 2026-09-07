@@ -95,6 +95,18 @@ export function createGrassClipmapField(
     for (const chunk of level.chunks) group.add(chunk);
   }
 
+  try {
+    for (const level of levels) {
+      for (const perTier of level.materials) {
+        for (const material of perTier)
+          applyMaterialEffects(options.effects ?? [], material);
+      }
+    }
+  } catch (error) {
+    dispose();
+    throw error;
+  }
+
   const windClock = { seconds: 0 };
   const frustum = new Frustum();
   const viewProjection = new Matrix4();
@@ -170,17 +182,19 @@ export function createGrassClipmapField(
       shared.uGrassHeightPlacement.value.copy(options.heightField.placement);
     },
 
-    dispose: () => {
-      for (const level of levels) {
-        for (const perDetail of level.geometries) {
-          for (const geometry of perDetail) geometry.dispose();
-        }
-        for (const perTier of level.materials) {
-          for (const material of perTier) material.dispose();
-        }
-      }
-    },
+    dispose,
   };
+
+  function dispose(): void {
+    for (const level of levels) {
+      for (const perDetail of level.geometries) {
+        for (const geometry of perDetail) geometry.dispose();
+      }
+      for (const perTier of level.materials) {
+        for (const material of perTier) material.dispose();
+      }
+    }
+  }
 }
 
 /**
@@ -494,10 +508,6 @@ function createLevel(context: {
           ...stepUniforms[step],
         },
       });
-      // Every tier and step is its own material object, but the patched
-      // sources are identical per tier, so three still compiles one program
-      // per tier and keys the rest to its cache.
-      applyMaterialEffects(effects, material);
       return material;
     }),
   );

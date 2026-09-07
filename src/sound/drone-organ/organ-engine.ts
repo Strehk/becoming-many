@@ -1,5 +1,5 @@
 /**
- * Purpose: Own the drone organ's audio context and its shared chain.
+ * Purpose: Own the drone organ's shared audio chain.
  * Context: Every voice mixes into one master chain and sends into one room, so
  *   the layers of the organ sound like one instrument rather than nine.
  * Responsibility: Build master, limiter, and reverb on Tone's own context,
@@ -9,7 +9,14 @@
  *   no transport.
  */
 
-import { Frequency, Gain, getContext, Limiter, Reverb, start } from "tone";
+import {
+  type Context,
+  Frequency,
+  Gain,
+  Limiter,
+  Reverb,
+  type ToneAudioNode,
+} from "tone";
 import type { OrganComposition } from "./drone-organ-settings";
 import type { OrganHarmony } from "./organ-harmony";
 
@@ -22,63 +29,86 @@ export interface OrganEngine {
 
   readonly harmony: OrganHarmony;
 
-  readonly dispose: () => void;
+  readonly unload: () => Promise<void>;
 }
 
 /**
- * Build the organ on the context Tone made for itself, rather than on the one
- * the show's timebase owns. Sharing the show's context, which this port
- * first did, silently broke every voice's room: Tone reaches the audio
- * hardware through standardized-audio-context, whose AudioWorklet nodes only
- * come up on a context that library created. Measured on the built page, all
- * thirty-two comb filters of the four rooms failed to build, one unhandled
- * `InvalidStateError` each, and the rooms fell silent while the rest played on.
- *
- * The cost is a second `AudioContext` beside the timebase's. That one carries
- * no audio at all — it is the show's hardware clock — so nothing is mixed
- * across the two, and both resume on the same first gesture.
+ * Use the organ's Tone-created context. The native Show clock context broke
+ * the rooms' AudioWorklets in Chromium; that compatibility evidence and the
+ * two owners are recorded in docs/target-architecture.md.
  */
-export function createOrganEngine(
+export async function createOrganEngine(
   composition: OrganComposition,
   pulseSeconds: number,
-): OrganEngine {
-  const releaseGesture = resumeOnGesture();
+  context: Context,
+): Promise<OrganEngine> {
+  const releaseGesture = resumeOnGesture(context);
+  const nodes: ToneAudioNode[] = [];
+  let reverb: Reverb | undefined;
+  async function unload(): Promise<void> {
+    releaseGesture();
+    const errors: unknown[] = [];
+    try {
+      await reverb?.ready;
+    } catch (error) {
+      errors.push(error);
+    }
+    for (const node of nodes.reverse()) {
+      try {
+        node.dispose();
+      } catch (error) {
+        errors.push(error);
+      }
+    }
+    if (errors.length)
+      throw new AggregateError(errors, "Organ engine cleanup failed");
+  }
 
-  // Master → limiter → speakers. The composition leaves the equalizer and the
-  // master filter neutral and its delay silent, so neither is built: an unused
-  // biquad still costs a headset frame budget it does not have to.
-  const master = new Gain(composition.masterVolume);
-  const limiter = new Limiter(-1);
-  master.connect(limiter);
-  limiter.toDestination();
+  try {
+    // Master → limiter → speakers. The composition leaves the equalizer and the
+    // master filter neutral and its delay silent, so neither is built: an unused
+    // biquad still costs a headset frame budget it does not have to.
+    const master = new Gain(composition.masterVolume);
+    nodes.push(master);
+    const limiter = new Limiter(-1);
+    nodes.push(limiter);
+    master.connect(limiter);
+    limiter.toDestination();
 
-  // One convolution room shared by every layer, addressed through each layer's
-  // post-fader send. Tone renders the impulse response in the background; the
-  // organ simply starts dry and grows its room a moment later.
-  const reverb = new Reverb({
-    decay: composition.room.decaySeconds,
-    preDelay: composition.room.preDelaySeconds,
-    wet: 1,
-  });
-  reverb.connect(master);
+    // One convolution room shared by every layer, addressed through each layer's
+    // post-fader send. Tone renders the impulse response in the background; the
+    // organ simply starts dry and grows its room a moment later.
+    reverb = new Reverb({
+      decay: composition.room.decaySeconds,
+      preDelay: composition.room.preDelaySeconds,
+      wet: 1,
+    });
+    nodes.push(reverb);
+    reverb.connect(master);
 
-  return {
-    master,
-    reverb,
+    return {
+      master,
+      reverb,
 
-    harmony: {
-      rootMidi: Frequency(composition.harmony.rootNote).toMidi(),
-      scaleSemitones: composition.harmony.scaleSemitones,
-      pulseSeconds,
-    },
+      harmony: {
+        rootMidi: Frequency(composition.harmony.rootNote).toMidi(),
+        scaleSemitones: composition.harmony.scaleSemitones,
+        pulseSeconds,
+      },
 
-    dispose: (): void => {
-      releaseGesture();
-      reverb.dispose();
-      limiter.dispose();
-      master.dispose();
-    },
-  };
+      unload,
+    };
+  } catch (error) {
+    try {
+      await unload();
+    } catch (cleanupError) {
+      throw new AggregateError(
+        [error, cleanupError],
+        "Organ engine startup failed",
+      );
+    }
+    throw error;
+  }
 }
 
 /**
@@ -87,7 +117,7 @@ export function createOrganEngine(
  * is genuinely running: one blocked attempt must not leave the organ silent
  * for the rest of the session.
  */
-function resumeOnGesture(): () => void {
+function resumeOnGesture(context: Context): () => void {
   const events = ["pointerdown", "keydown"] as const;
 
   function release(): void {
@@ -96,9 +126,9 @@ function resumeOnGesture(): () => void {
   }
 
   function resume(): void {
-    void start().then(
+    void context.resume().then(
       () => {
-        if (getContext().state === "running") release();
+        if (context.state === "running") release();
       },
       () => undefined,
     );

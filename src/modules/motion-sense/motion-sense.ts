@@ -122,28 +122,6 @@ function loadMotionSense(
   senseFadeUniform: { readonly value: number },
 ): void {
   const { viewpoint, scene, parameters } = options;
-  const flySwarms = createFlySwarms({
-    parameters,
-    groundYAt: options.groundYAt,
-    zoneAt: options.zoneAt,
-    initialPlayerX: viewpoint.worldPosition.x,
-    initialPlayerZ: viewpoint.worldPosition.z,
-    senseFadeUniform,
-  });
-  const printers: MotionTrailPrinter[] = [
-    {
-      source: flySwarms,
-      trail: createMotionTrailBuffer({
-        pointCount:
-          parameters.swarms.swarmCount * parameters.swarms.fliesPerSwarm,
-        trail: parameters.trail,
-        appearance: parameters.appearance,
-        intensity: parameters.intensity,
-        senseFadeUniform,
-      }),
-    },
-  ];
-
   // Bird bodies stay invisible (perception-only actors): only their trail
   // ring joins the scene beside the visible fly specks.
   const birdFlocks = parameters.birds
@@ -154,6 +132,28 @@ function loadMotionSense(
         initialPlayerZ: viewpoint.worldPosition.z,
       })
     : undefined;
+  const flySwarms = createFlySwarms({
+    parameters,
+    groundYAt: options.groundYAt,
+    zoneAt: options.zoneAt,
+    initialPlayerX: viewpoint.worldPosition.x,
+    initialPlayerZ: viewpoint.worldPosition.z,
+    senseFadeUniform,
+  });
+  const printers: MotionTrailPrinter[] = [];
+  state.currentResources = { flySwarms, birdFlocks, printers };
+  printers.push({
+    source: flySwarms,
+    trail: createMotionTrailBuffer({
+      pointCount:
+        parameters.swarms.swarmCount * parameters.swarms.fliesPerSwarm,
+      trail: parameters.trail,
+      appearance: parameters.appearance,
+      intensity: parameters.intensity,
+      senseFadeUniform,
+    }),
+  });
+
   if (birdFlocks && parameters.birds) {
     printers.push({
       source: birdFlocks,
@@ -180,7 +180,6 @@ function loadMotionSense(
     printer.trail.points.visible = false;
     scene.add(printer.trail.points);
   }
-  state.currentResources = { flySwarms, birdFlocks, printers };
 }
 
 function updateMotionSense(

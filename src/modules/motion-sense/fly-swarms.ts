@@ -168,7 +168,13 @@ export function createFlySwarms(options: FlySwarmsOptions): FlySwarms {
     shapes,
     anchors,
   };
-  writeWorldPositions(options, state, positionAttribute);
+  try {
+    writeWorldPositions(options, state, positionAttribute);
+  } catch (error) {
+    geometry.dispose();
+    points.material.dispose();
+    throw error;
+  }
 
   return {
     points,

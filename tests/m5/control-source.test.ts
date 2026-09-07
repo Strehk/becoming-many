@@ -93,6 +93,10 @@ describe("control source", () => {
       adapter.setHost("");
       expect(adapter.readFrame()).toBeUndefined();
       expect(adapter.readOperatorStatus()).toEqual({ state: "off" });
+      adapter.unload();
+      adapter.setHost("after-end.local");
+      expect(fetchMock).toHaveBeenCalledTimes(3);
+      expect(adapter.readFrame()).toBeUndefined();
     } finally {
       adapter.unload();
       fetchMock.mockRestore();

@@ -99,191 +99,228 @@ export interface ShowRuntime {
   readonly update: () => void;
   readonly readActiveLevelState: () => ShowLevelState;
   readonly running: RunningShow;
+  readonly unload: () => Promise<void>;
 }
 
-export function createShowRuntime(
+export async function createShowRuntime(
   request: ShowRequest,
   world: WorldContext,
   reach: ShowWorldReach,
   worldSurface: WorldSurface,
-): ShowRuntime {
+): Promise<ShowRuntime> {
   const { schedule, states } = request;
   const openingLevel = showLevelAt(schedule, 0);
   if (!openingLevel) throw new Error("A show schedule needs at least one cue");
 
   const timebase = createAudioTimebase();
-  const clock = createShowClock(schedule.durationSeconds, timebase.readSeconds);
+  let clock: ShowClock;
   const cueIds = schedule.narration.map((cue) => cue.cueId);
   let language = request.language;
-  let narration = createNarrationPlayer({ language, cueIds });
-  // The organ follows the same clock but plays on Tone's own context, which
-  // is the only context its rooms come up on. It loads Tone.js by itself, so
-  // the world runs on before the organ makes a sound.
-  const droneOrgan = createDroneOrgan({
-    pulseSeconds: ORGAN_SCORE.pulseSeconds,
-  });
-  let activeLevel: ShowLevelName | undefined;
-  // Scratch state, so following the show allocates nothing per frame.
-  const voiceStrengths: Record<OrganVoiceName, number> = {
-    wind: 0,
-    choir: 0,
-    sonar: 0,
-    birdWingBeat: 0,
-    insectWingBeat: 0,
-    bassLoop: 0,
-    pressureWave: 0,
-    polyRhythm: 0,
-    hiHat: 0,
-  };
-  const listenerPose: MutableListenerPose = {
-    x: 0,
-    y: 0,
-    z: 0,
-    yawRadians: 0,
-    pitchRadians: 0,
-  };
-  const liveBackground = new Color(0xffffff);
-  const backgroundColors = createBackgroundColors(states);
-
-  function followViewDistance(showTimeSeconds: number): void {
-    const levelName = showLevelAt(schedule, showTimeSeconds);
-    if (levelName === undefined || levelName === activeLevel) return;
-
-    world.camera.far = states[levelName].viewDistance;
-    world.camera.updateProjectionMatrix();
-    activeLevel = levelName;
+  let narration: ReturnType<typeof createNarrationPlayer> | undefined;
+  let droneOrgan: ReturnType<typeof createDroneOrgan> | undefined;
+  let unloading: Promise<void> | undefined;
+  function unload(): Promise<void> {
+    clock?.pause();
+    unloading ??= (async () => {
+      const results = await Promise.allSettled([
+        Promise.resolve().then(() => narration?.unload()),
+        droneOrgan?.unload(),
+        timebase.unload(),
+      ]);
+      const errors = results.flatMap((result) =>
+        result.status === "rejected" ? [result.reason] : [],
+      );
+      if (errors.length)
+        throw new AggregateError(errors, "Show cleanup failed");
+    })();
+    return unloading;
   }
+  try {
+    clock = createShowClock(schedule.durationSeconds, timebase.readSeconds);
+    narration = createNarrationPlayer({ language, cueIds });
+    // The organ follows the same clock but plays on Tone's own context, which
+    // is the only context its rooms come up on. It loads Tone.js by itself, so
+    // the world runs on before the organ makes a sound.
+    droneOrgan = createDroneOrgan({
+      pulseSeconds: ORGAN_SCORE.pulseSeconds,
+    });
+    let activeLevel: ShowLevelName | undefined;
+    // Scratch state, so following the show allocates nothing per frame.
+    const voiceStrengths: Record<OrganVoiceName, number> = {
+      wind: 0,
+      choir: 0,
+      sonar: 0,
+      birdWingBeat: 0,
+      insectWingBeat: 0,
+      bassLoop: 0,
+      pressureWave: 0,
+      polyRhythm: 0,
+      hiHat: 0,
+    };
+    const listenerPose: MutableListenerPose = {
+      x: 0,
+      y: 0,
+      z: 0,
+      yawRadians: 0,
+      pitchRadians: 0,
+    };
+    const liveBackground = new Color(0xffffff);
+    const backgroundColors = createBackgroundColors(states);
 
-  function followBackground(showTimeSeconds: number): void {
-    const transition = levelTransitionAt(schedule, showTimeSeconds);
-    if (!transition) return;
+    function followViewDistance(showTimeSeconds: number): void {
+      const levelName = showLevelAt(schedule, showTimeSeconds);
+      if (levelName === undefined || levelName === activeLevel) return;
 
-    liveBackground
-      .copy(backgroundColors[transition.from])
-      .lerp(backgroundColors[transition.to], transition.progress);
-    world.renderer.setClearColor(liveBackground);
-    reach.worldFades.structure?.setBackground(liveBackground);
-    reach.worldFades.animals?.setBackground(liveBackground);
-    reach.setSkyBackground?.(liveBackground);
-  }
-
-  function setSense(sense: ShowSense, intensity: number): void {
-    reach.senses[sense]?.(intensity);
-    const modules = reach.gates.get(sense);
-    if (!modules) return;
-
-    for (const module of modules) {
-      if (intensity > 0) world.modules.activate(module);
-      else world.modules.deactivate(module);
+      world.camera.far = states[levelName].viewDistance;
+      world.camera.updateProjectionMatrix();
+      activeLevel = levelName;
     }
-  }
 
-  function followSenses(showTimeSeconds: number): void {
-    const scent = senseIntensityAt(schedule, states, "scent", showTimeSeconds);
-    const echo = senseIntensityAt(schedule, states, "echo", showTimeSeconds);
-    const motion = senseIntensityAt(
-      schedule,
-      states,
-      "motion",
-      showTimeSeconds,
-    );
-    const thermal = senseIntensityAt(
-      schedule,
-      states,
-      "thermal",
-      showTimeSeconds,
-    );
-    const magnetic = senseIntensityAt(
-      schedule,
-      states,
-      "magnetic",
-      showTimeSeconds,
-    );
-    const connections = senseIntensityAt(
-      schedule,
-      states,
-      "connections",
-      showTimeSeconds,
-    );
+    function followBackground(showTimeSeconds: number): void {
+      const transition = levelTransitionAt(schedule, showTimeSeconds);
+      if (!transition) return;
 
-    setSense("scent", scent);
-    setSense("echo", echo);
-    setSense("motion", motion);
-    setSense("thermal", thermal);
-    setSense("magnetic", magnetic);
-    setSense("connections", connections);
-    reach.worldFades.structure?.setPresence(echo);
-    reach.worldFades.animals?.setPresence(thermal);
-    // Derived like everything else here, so a seek lands mid-fade and a seek
-    // to zero puts the credits away without a second piece of state.
-    reach.setEndCreditsPresence?.(
-      endCreditsPresenceAt(schedule, showTimeSeconds),
-    );
-  }
+      liveBackground
+        .copy(backgroundColors[transition.from])
+        .lerp(backgroundColors[transition.to], transition.progress);
+      world.renderer.setClearColor(liveBackground);
+      reach.worldFades.structure?.setBackground(liveBackground);
+      reach.worldFades.animals?.setBackground(liveBackground);
+      reach.setSkyBackground?.(liveBackground);
+    }
 
-  function followWorld(showTimeSeconds: number): void {
-    followViewDistance(showTimeSeconds);
-    followBackground(showTimeSeconds);
-    followSenses(showTimeSeconds);
-    // Passages read the same instant as the senses they announce, so an
-    // animal crossing a cue boundary stays in step with the fade under it.
-    reach.followPassages?.(showTimeSeconds);
-  }
+    function setSense(sense: ShowSense, intensity: number): void {
+      reach.senses[sense]?.(intensity);
+      const modules = reach.gates.get(sense);
+      if (!modules) return;
 
-  // The organ is a follower like the narration: the score says how strong
-  // each voice stands at this instant, and the clock says what instant it is.
-  function followOrgan(showTime: ShowTimeSample): void {
-    for (const voice of ORGAN_VOICES) {
-      voiceStrengths[voice] = organVoiceStrengthAt(
+      for (const module of modules) {
+        if (intensity > 0) world.modules.activate(module);
+        else world.modules.deactivate(module);
+      }
+    }
+
+    function followSenses(showTimeSeconds: number): void {
+      const scent = senseIntensityAt(
         schedule,
-        ORGAN_SCORE,
-        voice,
-        showTime.timeSeconds,
+        states,
+        "scent",
+        showTimeSeconds,
+      );
+      const echo = senseIntensityAt(schedule, states, "echo", showTimeSeconds);
+      const motion = senseIntensityAt(
+        schedule,
+        states,
+        "motion",
+        showTimeSeconds,
+      );
+      const thermal = senseIntensityAt(
+        schedule,
+        states,
+        "thermal",
+        showTimeSeconds,
+      );
+      const magnetic = senseIntensityAt(
+        schedule,
+        states,
+        "magnetic",
+        showTimeSeconds,
+      );
+      const connections = senseIntensityAt(
+        schedule,
+        states,
+        "connections",
+        showTimeSeconds,
+      );
+
+      setSense("scent", scent);
+      setSense("echo", echo);
+      setSense("motion", motion);
+      setSense("thermal", thermal);
+      setSense("magnetic", magnetic);
+      setSense("connections", connections);
+      reach.worldFades.structure?.setPresence(echo);
+      reach.worldFades.animals?.setPresence(thermal);
+      // Derived like everything else here, so a seek lands mid-fade and a seek
+      // to zero puts the credits away without a second piece of state.
+      reach.setEndCreditsPresence?.(
+        endCreditsPresenceAt(schedule, showTimeSeconds),
       );
     }
-    readListenerPose(world, listenerPose);
-    droneOrgan.update({
-      showTimeSeconds: showTime.timeSeconds,
-      isPlaying: showTime.isPlaying,
-      timeScale: showTime.timeScale,
-      voiceStrengths,
-      listener: listenerPose,
-      groundYMeters: worldSurface.groundYAt(listenerPose.x, listenerPose.z),
-      readGroupCenters: (group) => readActorCenters(reach, group),
-    });
-  }
 
-  followWorld(0);
+    function followWorld(showTimeSeconds: number): void {
+      followViewDistance(showTimeSeconds);
+      followBackground(showTimeSeconds);
+      followSenses(showTimeSeconds);
+      // Passages read the same instant as the senses they announce, so an
+      // animal crossing a cue boundary stays in step with the fade under it.
+      reach.followPassages?.(showTimeSeconds);
+    }
 
-  return {
-    update: (): void => {
-      const showTime = clock.sample();
-      narration.follow({
-        position: narrationCueAt(schedule, showTime.timeSeconds),
+    // The organ is a follower like the narration: the score says how strong
+    // each voice stands at this instant, and the clock says what instant it is.
+    function followOrgan(showTime: ShowTimeSample): void {
+      for (const voice of ORGAN_VOICES) {
+        voiceStrengths[voice] = organVoiceStrengthAt(
+          schedule,
+          ORGAN_SCORE,
+          voice,
+          showTime.timeSeconds,
+        );
+      }
+      readListenerPose(world, listenerPose);
+      droneOrgan?.update({
+        showTimeSeconds: showTime.timeSeconds,
         isPlaying: showTime.isPlaying,
         timeScale: showTime.timeScale,
+        voiceStrengths,
+        listener: listenerPose,
+        groundYMeters: worldSurface.groundYAt(listenerPose.x, listenerPose.z),
+        readGroupCenters: (group) => readActorCenters(reach, group),
       });
-      followWorld(showTime.timeSeconds);
-      followOrgan(showTime);
-    },
+    }
 
-    readActiveLevelState: () => states[activeLevel ?? openingLevel],
+    followWorld(0);
 
-    running: {
-      clock,
-      readLanguage: () => language,
-      readActiveLevel: () => activeLevel ?? openingLevel,
-      readAudioState: timebase.readState,
-      setLanguage: (next): void => {
-        if (next === language) return;
-
-        clock.pause();
-        narration.unload();
-        language = next;
-        narration = createNarrationPlayer({ language, cueIds });
+    return {
+      unload,
+      update: (): void => {
+        if (unloading) return;
+        const showTime = clock.sample();
+        narration?.follow({
+          position: narrationCueAt(schedule, showTime.timeSeconds),
+          isPlaying: showTime.isPlaying,
+          timeScale: showTime.timeScale,
+        });
+        followWorld(showTime.timeSeconds);
+        followOrgan(showTime);
       },
-    },
-  };
+
+      readActiveLevelState: () => states[activeLevel ?? openingLevel],
+
+      running: {
+        clock,
+        readLanguage: () => language,
+        readActiveLevel: () => activeLevel ?? openingLevel,
+        readAudioState: timebase.readState,
+        setLanguage: (next): void => {
+          if (unloading || next === language) return;
+
+          clock.pause();
+          narration?.unload();
+          language = next;
+          narration = createNarrationPlayer({ language, cueIds });
+        },
+      },
+    };
+  } catch (error) {
+    try {
+      await unload();
+    } catch (cleanupError) {
+      throw new AggregateError([error, cleanupError], "Show startup failed");
+    }
+    throw error;
+  }
 }
 
 /**

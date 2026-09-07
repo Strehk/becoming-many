@@ -5,14 +5,24 @@
  * Boundary: Network loading and browser rendering are covered by runtime acceptance.
  */
 
-import { expect, test } from "bun:test";
-import { BoxGeometry, Group, Mesh, MeshStandardMaterial } from "three";
+import { expect, spyOn, test } from "bun:test";
+import {
+  BoxGeometry,
+  Group,
+  Mesh,
+  MeshBasicMaterial,
+  MeshStandardMaterial,
+  Texture,
+} from "three";
 import type { GLTF } from "three/addons/loaders/GLTFLoader.js";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { ANIMALS_DEFINITION } from "../../src/modules/animals/animals-definition";
 import { ROCKS_DEFINITION } from "../../src/modules/rocks/rocks-definition";
 import { VEGETATION_DEFINITION } from "../../src/modules/vegetation/vegetation-definition";
-import { disposeGltfAssets } from "../../src/utils/asset-loader/gltf-assets";
+import {
+  disposeGltfAssets,
+  loadGltfAssets,
+} from "../../src/utils/asset-loader/gltf-assets";
 import {
   createStaticModelAsset,
   disposeStaticModelAsset,
@@ -78,6 +88,23 @@ test("rejects missing and empty GLTF objects with explicit errors", () => {
   expect(() => createStaticModelAsset(gltf, empty.name)).toThrow(
     "GLTF object contains no meshes: EmptyGroup",
   );
+  const first = createMesh("first", 0);
+  const second = createMesh("second", 0);
+  second.material = [new MeshStandardMaterial(), new MeshStandardMaterial()];
+  empty.add(first, second);
+  const disposed = spyOn(MeshBasicMaterial.prototype, "dispose");
+  let colors = 0;
+  try {
+    expect(() =>
+      createStaticModelAsset(gltf, empty.name, () => {
+        if (++colors === 3) throw new Error("Color failed");
+        return 0xffffff;
+      }),
+    ).toThrow("Color failed");
+    expect(disposed).toHaveBeenCalledTimes(2);
+  } finally {
+    disposed.mockRestore();
+  }
 });
 
 test("every configured production model resolves to complete mesh parts", async () => {
@@ -130,3 +157,93 @@ async function loadPublicGltf(url: string): Promise<GLTF> {
   const data = await Bun.file(`public${url}`).arrayBuffer();
   return new GLTFLoader().parseAsync(data, "");
 }
+
+test.each(["failed sibling", "cancelled"])(
+  "releases late GLTF results after %s before rejecting",
+  async (reason) => {
+    const scene = new Group();
+    const mesh = createMesh("owned", 0);
+    scene.add(mesh);
+    const geometryDispose = spyOn(mesh.geometry, "dispose");
+    const materialDispose = spyOn(
+      mesh.material as MeshStandardMaterial,
+      "dispose",
+    );
+    const pending = Promise.withResolvers<GLTF>();
+    const controller = new AbortController();
+    const error = new Error(reason);
+    const loader = spyOn(GLTFLoader.prototype, "loadAsync")
+      .mockReturnValueOnce(
+        reason === "failed sibling"
+          ? Promise.reject(error)
+          : Promise.resolve(createGltf(new Group())),
+      )
+      .mockReturnValueOnce(pending.promise);
+    try {
+      const loading = loadGltfAssets(
+        [
+          { id: "first", url: "/first.glb" },
+          { id: "late", url: "/late.glb" },
+          { id: "alias", url: "/late.glb" },
+        ],
+        controller.signal,
+      );
+      if (reason === "cancelled") controller.abort(error);
+      let settled = false;
+      const rejection = loading.catch((failure: unknown) => {
+        settled = true;
+        return failure;
+      });
+      await Promise.resolve();
+      expect(settled).toBe(false);
+      pending.resolve(createGltf(scene));
+      expect(await rejection).toBe(error);
+      expect(loader).toHaveBeenCalledTimes(2);
+      expect(geometryDispose).toHaveBeenCalledTimes(1);
+      expect(materialDispose).toHaveBeenCalledTimes(1);
+    } finally {
+      loader.mockRestore();
+      geometryDispose.mockRestore();
+      materialDispose.mockRestore();
+    }
+  },
+);
+
+test("source disposal visits every scene once and continues after a release failure", () => {
+  const primary = new Group();
+  const secondary = new Group();
+  const mesh = createMesh("shared", 0);
+  const texture = new Texture();
+  (mesh.material as MeshStandardMaterial).map = texture;
+  primary.add(mesh);
+  secondary.add(mesh.clone());
+  const gltf = { ...createGltf(primary), scenes: [primary, secondary] };
+  const failure = new Error("geometry release failed");
+  const geometryDispose = spyOn(mesh.geometry, "dispose").mockImplementation(
+    () => {
+      throw failure;
+    },
+  );
+  const materialDispose = spyOn(
+    mesh.material as MeshStandardMaterial,
+    "dispose",
+  );
+  const textureDispose = spyOn(texture, "dispose");
+  try {
+    expect(() =>
+      disposeGltfAssets(
+        new Map([
+          ["source", gltf],
+          ["alias", gltf],
+        ]),
+      ),
+    ).toThrow(AggregateError);
+    expect(geometryDispose).toHaveBeenCalledTimes(1);
+    expect(materialDispose).toHaveBeenCalledTimes(1);
+    expect(textureDispose).toHaveBeenCalledTimes(1);
+  } finally {
+    geometryDispose.mockRestore();
+    materialDispose.mockRestore();
+    textureDispose.mockRestore();
+  }
+});

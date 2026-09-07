@@ -6,10 +6,7 @@
  */
 
 import type { Scene } from "three";
-import {
-  disposeGltfAssets,
-  type GltfAssets,
-} from "../../utils/asset-loader/gltf-assets";
+import type { GltfAssets } from "../../utils/asset-loader/gltf-assets";
 import type { UnlitMaterialEffect } from "../../utils/asset-loader/material-effect";
 import {
   type ChunkAssignment,
@@ -92,13 +89,13 @@ export function createRocksModule(options: RocksModuleOptions): WorldModule {
     activate: () => setRocksVisible(state, true),
     update: () => updateRocks(state, runtimeOptions),
     deactivate: () => setRocksVisible(state, false),
-    unload: () =>
-      unloadRocks(state, runtimeOptions.scene, runtimeOptions.assets),
+    unload: () => unloadRocks(state, runtimeOptions.scene),
   };
 }
 
 function loadRocks(state: RocksState, options: RocksRuntimeOptions): void {
   const stream = createRockStream(options);
+  state.currentStream = stream;
   const assignments = stream.chunkWindow.update(
     options.viewpoint.worldPosition.x,
     options.viewpoint.worldPosition.z,
@@ -106,7 +103,6 @@ function loadRocks(state: RocksState, options: RocksRuntimeOptions): void {
 
   initializeRockChunks(stream.instances, assignments);
   options.scene.add(stream.instances.modelPool.group);
-  state.currentStream = stream;
 }
 
 function updateRocks(
@@ -172,16 +168,11 @@ function setRocksVisible(state: RocksState, visible: boolean): void {
   if (stream) stream.instances.modelPool.group.visible = visible;
 }
 
-function unloadRocks(
-  state: RocksState,
-  scene: Scene,
-  assets: GltfAssets,
-): void {
+function unloadRocks(state: RocksState, scene: Scene): void {
   const stream = state.currentStream;
   if (!stream) return;
 
   state.currentStream = undefined;
   scene.remove(stream.instances.modelPool.group);
   disposeRockInstances(stream.instances);
-  disposeGltfAssets(assets);
 }

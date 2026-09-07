@@ -14,7 +14,10 @@ const MAXIMUM_LINES = 40;
  * onto the canvas, together with the capability report that explains most
  * differences between a desktop GPU and a mobile one.
  */
-export function showHeadsetDiagnostics(container: HTMLElement): void {
+export function showHeadsetDiagnostics(
+  container: HTMLElement,
+  signal: AbortSignal,
+): void {
   const overlay = document.createElement("pre");
   overlay.style.cssText = [
     "position:fixed",
@@ -41,27 +44,44 @@ export function showHeadsetDiagnostics(container: HTMLElement): void {
   write(describeGraphics());
   write("");
 
-  window.addEventListener("error", (event) => {
-    write(`ERROR ${event.message}`);
-    write(`  at ${event.filename}:${event.lineno}`);
-  });
-  window.addEventListener("unhandledrejection", (event) => {
-    write(`REJECTED ${String(event.reason)}`);
-  });
+  window.addEventListener(
+    "error",
+    (event) => {
+      write(`ERROR ${event.message}`);
+      write(`  at ${event.filename}:${event.lineno}`);
+    },
+    { signal },
+  );
+  window.addEventListener(
+    "unhandledrejection",
+    (event) => {
+      write(`REJECTED ${String(event.reason)}`);
+    },
+    { signal },
+  );
 
   // Three reports a failed shader compile or link through console.error and
   // then carries on with a broken material, which is exactly the case that
   // shows as an empty world rather than as a crash.
-  const originalError = console.error.bind(console);
+  const originalError = console.error;
   console.error = (...values: unknown[]): void => {
     write(`CONSOLE ${values.map(String).join(" ").slice(0, 600)}`);
     originalError(...values);
   };
-  const originalWarn = console.warn.bind(console);
+  const originalWarn = console.warn;
   console.warn = (...values: unknown[]): void => {
     write(`WARN ${values.map(String).join(" ").slice(0, 300)}`);
     originalWarn(...values);
   };
+  signal.addEventListener(
+    "abort",
+    () => {
+      console.error = originalError;
+      console.warn = originalWarn;
+      overlay.remove();
+    },
+    { once: true },
+  );
 }
 
 /** One throwaway context, so the report never depends on the running renderer. */
@@ -77,7 +97,7 @@ function describeGraphics(): string {
     : "unknown";
   const extensions = gl.getSupportedExtensions() ?? [];
 
-  return [
+  const description = [
     // First line on purpose: a query parameter that never arrives explains
     // more empty worlds than any GPU limit does.
     `url: ${window.location.href}`,
@@ -90,4 +110,6 @@ function describeGraphics(): string {
     `xr: ${"xr" in navigator}`,
     `ua: ${navigator.userAgent.slice(0, 160)}`,
   ].join("\n");
+  gl.getExtension("WEBGL_lose_context")?.loseContext();
+  return description;
 }
