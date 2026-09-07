@@ -19,6 +19,11 @@ history belongs in Git; unresolved product and deployment questions belong in
 
 ## Composition and Contracts
 
+- Confirmed 2026-09-07: architectural filenames use `<domain-name>.<role>.ts`.
+  The [Engineering Standards](engineering-standards.md#file-names-and-architectural-roles)
+  define the small role vocabulary, responsibility contracts and scoped
+  migration. Plain domain algorithm names remain valid; roles require no
+  companion files or new runtime owners.
 - `src/levels/level-runtime.ts` is the single startup and frame-coordination
   entry. `src/levels/level-composition.ts` is its concrete construction owner;
   it is not a parallel runtime.

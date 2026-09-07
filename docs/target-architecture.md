@@ -111,6 +111,14 @@ keep concrete construction and its return mapping together in
 `level-composition.ts`. Arrange private functions below the public story, in
 reading order. A private function is not a reason for another file.
 
+Confirmed 2026-09-07: role-bearing target filenames follow
+`<domain-name>.<role>.ts`. The [Engineering Standards](engineering-standards.md#file-names-and-architectural-roles)
+own the role vocabulary and migration rules. Paths in this document identify
+existing owners until their scoped migration; adopting names such as
+`level.composition.ts` does not create another owner. Entry connects browser
+startup and UI to Run; page/panel code owns only presentation and input, while
+Show and Run retain playback and experience lifecycle policy.
+
 The necessary new capability is cancellation/complete disposal on existing
 handles. World also exposes its existing preparation work and small diagnostic
 reads directly. These replace callbacks and oversized arguments; they do not

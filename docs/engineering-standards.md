@@ -24,6 +24,43 @@ These standards guide readable code; they do not require new infrastructure.
 - Preserve clear formatting. Minifying, packing statements or moving files
   outside the count is not simplification.
 
+## File names and architectural roles
+
+Use `<domain-name>.<role>.ts` for files with an architectural role. The domain
+name uses English lowercase kebab-case; the dot separates the role from the
+subject. For example, `world-fade.effect.ts` names both the effect and its role.
+The role describes the responsibility permitted in the file.
+
+| Role | Example | Responsibility |
+| --- | --- | --- |
+| `level` | `connections.level.ts` | One self-contained literal level configuration, with type-only imports; no resource creation or runtime logic. |
+| `runtime` | `show.runtime.ts`, `world.runtime.ts` | A running owner with state, operations and complete resource lifetime; only World owns the render loop. |
+| `composition` | `level.composition.ts` | One-time concrete construction and connection of existing owners and content; no independent ongoing orchestration. |
+| `module` | `vegetation.module.ts` | Content participating in the shared World module lifecycle, owning its resources and local behavior. |
+| `effect` | `thermal.effect.ts` | A focused material or presentation effect with explicit ownership of its own resources and borrowed inputs. |
+| `page` | `conductor.page.ts` | A composed UI with presentation, input bindings and UI cleanup; no experience startup or playback/reset policy. |
+| `panel` | `transport.panel.ts` | A bounded UI region with rendering, gestures and calls to public owner commands; no experience orchestration. |
+| `entry` | `conductor.entry.ts` | Browser bootstrap: resolve request/deployment facts, start or cancel a Run, mount UI and connect page exit to cleanup. Run owns the internal experience lifecycle. |
+
+- This is the complete initial architectural role vocabulary. Extend it only
+  for a concrete responsibility that existing roles or plain domain names do
+  not express. A role does not mandate a class, interface or extra file.
+- Domain algorithms may keep direct names such as `flight-ground-clearance.ts`.
+  Small private helpers stay with their owner. Do not generate a companion
+  `.types.ts`, `.service.ts`, `.state.ts` or `.config.ts` for every feature.
+- Roles complement folder boundaries: page/panel code belongs to UI; runtimes
+  own domain behavior; entries connect both. UI-local gestures, confirmation
+  timers and display caches remain UI responsibilities.
+- Keep tooling-specific extensions such as `.test.ts`, `.vert.glsl` and
+  `.frag.glsl`. They do not introduce additional application architecture roles.
+
+Confirmed 2026-09-07. Apply this convention to new role-bearing files and when
+refactoring an existing owner. The examples are target names, not claims that
+the current files have already been renamed. Migrate imports, entry references,
+affected tooling paths and documentation together; remove the old path without
+a forwarding alias. A rename alone is not a structural reduction, and this
+convention does not authorize extra files or a repository-wide rename pass.
+
 ## TypeScript and authored configuration
 
 - Use strict, precise TypeScript; avoid `any`, unsafe casts and suppression of
