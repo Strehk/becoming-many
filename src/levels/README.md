@@ -30,8 +30,8 @@ not narrative states. The Test preset uses Grass Clipmap and the browser Test UI
 
 `level-catalog.ts` names standalone presets. The Show uses the Connections
 preset for its once-prepared world; changing these module parameters affects both
-runs. `show-levels.ts` owns the presentation states the running Show can change. The bare `src/main.ts` route starts that show; `?level=<name>` and
-matching path names enter through `src/test-main.ts` and select one showless
+runs. `show-levels.ts` owns the presentation states the running Show can change. The bare `src/rehearsal.entry.ts` route starts that show; `?level=<name>` and
+matching path names enter through `src/test.entry.ts` and select one showless
 development preset. Benchmarks use that Test entry too.
 
 An unknown requested name warns and falls back to Connections. That fallback is
@@ -39,7 +39,7 @@ for explicit development selection, not the behavior of the bare show route.
 
 ## Runtime and Composition
 
-`level-preset.ts` owns the data contracts. `level-runtime.ts` owns startup and
+`level-preset.ts` owns the data contracts. `level.runtime.ts` owns startup and
 frame coordination. It:
 
 - creates the stopped World Runtime after loading required assets;
@@ -49,9 +49,9 @@ frame coordination. It:
 - connects desktop and M5 input, selecting exactly one source per frame;
 - passes frame delta to entry-owned diagnostics before input/Show work;
 - delegates optional show time, narration, transitions, sense fades, and the
-  drone organ's per-frame contract to `show-runtime.ts`;
+  drone organ's per-frame contract to `show.runtime.ts`;
 - starts the World loop only after preparation and returns the narrow
-  `RunningLevel` command/query surface currently used by pages.
+  `Run` command/query surface currently used by pages.
 
 Its local frame handles benchmark placement or live input, Show updates and
 height limits in order. World then publishes the viewpoint, updates
@@ -79,8 +79,7 @@ transition.
 
 Run owns experience startup, frame coordination and complete end; Show owns
 transport and language. Browser Entry chooses requests and connects a Run to
-UI. Page/panel code must not implement those engine policies. #36 narrows the
-public contracts and migrates affected filenames according to the
+UI. Page/panel code receives narrow public capabilities under the
 [Engineering Standards](../../docs/engineering-standards.md).
 
 Run owns loaded GLTF sources until all borrowers finish. Composition constructs

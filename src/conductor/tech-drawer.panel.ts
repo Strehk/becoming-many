@@ -9,16 +9,19 @@
  *   inside it keeps its layout size while hidden.
  */
 
+import type { Run } from "../levels/level.runtime";
+import type { RunningShow } from "../levels/show.runtime";
 import type { M5OperatorStatus } from "../m5/m5-adapter";
 import { CONDUCTOR_SETTINGS } from "./conductor-settings";
 import type { ConductorPanel } from "./conductor-state";
 import { createButton, createConfirmButton } from "./panel-buttons";
-import type { ShowActions } from "./show-actions";
 
 export interface TechDrawerOptions {
   readonly parent: HTMLElement;
   readonly signal: AbortSignal;
-  readonly actions: ShowActions;
+  readonly show: Pick<RunningShow, "setTimeScale" | "resetTime">;
+  readonly run: Pick<Run, "resetFlight">;
+  readonly reloadPage: () => void;
 }
 
 export interface TechDrawer {
@@ -33,7 +36,9 @@ export interface TechDrawer {
 export function createTechDrawer({
   parent,
   signal,
-  actions,
+  show,
+  run,
+  reloadPage,
 }: TechDrawerOptions): TechDrawer {
   const root = document.createElement("aside");
   root.className = "conductor__drawer";
@@ -65,21 +70,19 @@ export function createTechDrawer({
   const speeds = document.createElement("div");
   speeds.className = "conductor__speeds";
   const rateButtons = CONDUCTOR_SETTINGS.timeScales.map((timeScale) =>
-    createButton(speeds, `${timeScale}×`, () =>
-      actions.setTimeScale(timeScale),
-    ),
+    createButton(speeds, `${timeScale}×`, () => show.setTimeScale(timeScale)),
   );
   createGroup(root, "Rehearsal speed", [speeds]);
 
   const resets = document.createElement("div");
   resets.className = "conductor__resets";
-  createButton(resets, "Rewind to start and hold", () => actions.resetShow());
-  createButton(resets, "Reset flight position", () => actions.resetFlight());
+  createButton(resets, "Rewind to start and hold", show.resetTime);
+  createButton(resets, "Reset flight position", run.resetFlight);
   const reloadButton = createConfirmButton(
     resets,
     "Reload the page",
     "Tap again to reload",
-    () => actions.reloadShow(),
+    reloadPage,
     signal,
   );
   reloadButton.classList.add("conductor__reload-button");
@@ -105,22 +108,18 @@ export function createTechDrawer({
     m5Parent,
     panel: {
       update(state): void {
-        const { snapshot } = state;
-
         rateButtons.forEach((button, index) => {
           button.setAttribute(
             "aria-pressed",
-            String(CONDUCTOR_SETTINGS.timeScales[index] === snapshot.timeScale),
+            String(CONDUCTOR_SETTINGS.timeScales[index] === state.timeScale),
           );
         });
 
-        frames.write(
-          frameText(snapshot.framesPerSecond, snapshot.p95Milliseconds),
-        );
-        m5.write(m5Text(snapshot.m5));
-        level.write(snapshot.activeLevel);
-        audio.write(snapshot.audioState);
-        language.write(snapshot.language.toUpperCase());
+        frames.write(frameText(state.framesPerSecond, state.p95Milliseconds));
+        m5.write(m5Text(state.m5));
+        level.write(state.activeLevel);
+        audio.write(state.audioState);
+        language.write(state.language.toUpperCase());
       },
     },
   };

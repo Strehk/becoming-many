@@ -9,7 +9,7 @@ import { expect, test } from "bun:test";
 
 test("Level Runtime delegates concrete world construction", async () => {
   const runtimeSource = await Bun.file(
-    new URL("../../src/levels/level-runtime.ts", import.meta.url),
+    new URL("../../src/levels/level.runtime.ts", import.meta.url),
   ).text();
 
   expect(runtimeSource).toContain('from "./level-composition"');

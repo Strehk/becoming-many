@@ -136,6 +136,27 @@ async function runSmokeRoute(
       "Entry URL must remain the requested route",
     );
     observation = await checkEntry(page, route);
+    if (route === "/conductor.html") {
+      await page.evaluate(() =>
+        window.dispatchEvent(
+          new PageTransitionEvent("pagehide", { persisted: true }),
+        ),
+      );
+      assert.equal(
+        await page.locator("canvas").count(),
+        1,
+        "A persisted page keeps its Run",
+      );
+      await page.evaluate(() =>
+        window.dispatchEvent(new PageTransitionEvent("pagehide")),
+      );
+      await page.locator(".conductor__masthead").waitFor({ state: "detached" });
+      assert.equal(
+        await page.locator("canvas").count(),
+        0,
+        "Page exit removes UI and its Run canvas",
+      );
+    }
     assert.equal(errors.length, 0, errors.join("\n"));
   } catch (error) {
     errors.push(String(error));
@@ -193,7 +214,7 @@ async function checkEntry(
   if (route === "/") await checkRehearsal(page);
   else
     assert.equal(
-      await page.evaluate(() => window.showClock),
+      await page.evaluate(() => window.show),
       undefined,
       "Static levels must not start a show",
     );
@@ -262,24 +283,21 @@ async function waitForLevel(page: Page): Promise<void> {
 }
 
 async function checkRehearsal(page: Page): Promise<void> {
-  await page.waitForFunction(() => window.showClock !== undefined);
+  await page.waitForFunction(() => window.show !== undefined);
   await page.getByRole("button", { name: "Hold", exact: true }).click();
-  await page.waitForFunction(
-    () => window.showClock?.sample().isPlaying === false,
-  );
+  await page.waitForFunction(() => window.show?.sample().isPlaying === false);
   const pausedTime = await page.evaluate(
-    () => window.showClock?.sample().timeSeconds,
+    () => window.show?.sample().timeSeconds,
   );
   // An elapsed observation window checks stability; it is not startup readiness.
   await page.waitForTimeout(PAUSE_OBSERVATION_MILLISECONDS);
   assert.equal(
-    await page.evaluate(() => window.showClock?.sample().timeSeconds),
+    await page.evaluate(() => window.show?.sample().timeSeconds),
     pausedTime,
   );
   await page.getByRole("button", { name: "Play", exact: true }).click();
   await page.waitForFunction(
-    (before) =>
-      (window.showClock?.sample().timeSeconds ?? 0) > (before ?? 0) + 0.2,
+    (before) => (window.show?.sample().timeSeconds ?? 0) > (before ?? 0) + 0.2,
     pausedTime,
   );
   await page.getByRole("button", { name: "DE", exact: true }).click();
@@ -287,9 +305,7 @@ async function checkRehearsal(page: Page): Promise<void> {
     .locator('button[aria-pressed="true"]')
     .filter({ hasText: /^DE$/ })
     .waitFor();
-  await page.waitForFunction(
-    () => window.showClock?.sample().isPlaying === false,
-  );
+  await page.waitForFunction(() => window.show?.sample().isPlaying === false);
   await page.getByRole("button", { name: "EN", exact: true }).click();
   await page
     .locator('button[aria-pressed="true"]')
@@ -297,16 +313,20 @@ async function checkRehearsal(page: Page): Promise<void> {
     .waitFor();
   await page.getByRole("button", { name: "Echo", exact: true }).click();
   await page.waitForFunction(
-    (seconds) => window.showClock?.sample().timeSeconds === seconds,
+    (seconds) => window.show?.sample().timeSeconds === seconds,
     ECHO_START_SECONDS,
   );
   await page.getByRole("button", { name: "Prologue", exact: true }).click();
-  await page.waitForFunction(
-    () => window.showClock?.sample().timeSeconds === 0,
-  );
+  await page.waitForFunction(() => window.show?.sample().timeSeconds === 0);
   await page.getByRole("button", { name: "Play", exact: true }).click();
   await page.waitForFunction(
-    () => (window.showClock?.sample().timeSeconds ?? 0) > 0.2,
+    () => (window.show?.sample().timeSeconds ?? 0) > 0.2,
+  );
+  await checkScrubbing(
+    page,
+    ".rehearsal__track",
+    ".rehearsal button:first-child",
+    ".rehearsal output",
   );
 }
 
@@ -317,6 +337,12 @@ async function checkConductor(page: Page): Promise<boolean> {
   await page.locator(".conductor__wake").waitFor({ state: "hidden" });
   await checkConductorTransport(page);
   await checkConductorNextVisitor(page);
+  await checkScrubbing(
+    page,
+    ".timeline__track",
+    ".conductor__transport-button",
+    ".conductor__clock output",
+  );
   return wakeRequired;
 }
 
@@ -388,6 +414,67 @@ async function checkConductorNextVisitor(page: Page): Promise<void> {
     1,
     "A second visitor must not add a renderer",
   );
+}
+
+/** Real pointer capture must restore playing/held state on release and cancel. */
+async function checkScrubbing(
+  page: Page,
+  trackSelector: string,
+  transportSelector: string,
+  readoutSelector: string,
+): Promise<void> {
+  const track = page.locator(trackSelector);
+  const transport = page.locator(transportSelector).first();
+  const isPlaying = () =>
+    transport.evaluate(
+      (button) =>
+        button.dataset.playing === "true" || button.textContent === "Hold",
+    );
+  for (const resume of [true, false]) {
+    if ((await isPlaying()) !== resume) await transport.click();
+    const bounds = await track.boundingBox();
+    assert(bounds, "Timeline must have usable geometry");
+    const y = bounds.y + bounds.height / 2;
+    await page.mouse.move(bounds.x + bounds.width * 0.1, y);
+    await page.mouse.down();
+    await page.mouse.move(bounds.x + bounds.width * 0.2, y, { steps: 3 });
+    assert.equal(await isPlaying(), false, "Scrubbing holds playback");
+    if (resume) {
+      await page.mouse.up();
+    } else {
+      // Dispatch cancellation for the real captured pointer, then release the mouse.
+      await track.evaluate((element) => {
+        for (let pointerId = 0; pointerId < 10; pointerId++) {
+          if (element.hasPointerCapture(pointerId)) {
+            const bounds = element.getBoundingClientRect();
+            element.dispatchEvent(
+              new PointerEvent("pointercancel", {
+                pointerId,
+                clientX: bounds.x + bounds.width * 0.2,
+                clientY: bounds.y + bounds.height / 2,
+              }),
+            );
+          }
+        }
+      });
+      await page.mouse.up();
+    }
+    await page.waitForFunction(
+      ({ selector, playing }) => {
+        const button = document.querySelector<HTMLElement>(selector);
+        return (
+          (button?.dataset.playing === "true" ||
+            button?.textContent === "Hold") === playing
+        );
+      },
+      { selector: transportSelector, playing: resume },
+    );
+    assert.match(
+      await page.locator(readoutSelector).innerText(),
+      /^1:4[0-9]/,
+      "Drag seeks to the selected show position",
+    );
+  }
 }
 
 async function checkFlash(page: Page): Promise<void> {

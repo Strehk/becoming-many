@@ -4,29 +4,31 @@
  *   between visitors, so its controls share one thumb-sized bar.
  * Responsibility: Render the language switch, the headset button, the
  *   "New visitor" reset, and the technician-drawer toggle.
- * Boundary: Session rules live in docs/direction/session-operator.md; the
- *   show is commanded only through the actions contract.
+ * Boundary: Show owns language changes; Run owns the interim visitor reset.
  */
 
 import { NARRATION_LANGUAGES } from "../dramaturgy/narration-catalog";
+import type { Run } from "../levels/level.runtime";
+import type { RunningShow } from "../levels/show.runtime";
 import type { XrSessionControl } from "../world/xr-session";
 import type { ConductorPanel } from "./conductor-state";
 import { createButton, createConfirmButton } from "./panel-buttons";
-import type { ShowActions } from "./show-actions";
 import { resolveStreamButton } from "./stream-button";
 
 export interface SessionBarOptions {
   readonly parent: HTMLElement;
   readonly signal: AbortSignal;
-  readonly actions: ShowActions;
-  readonly xr: XrSessionControl;
+  readonly show: Pick<RunningShow, "setLanguage">;
+  readonly run: Pick<Run, "resetShowAndFlight">;
+  readonly xr: Pick<XrSessionControl, "start" | "stop">;
   readonly onToggleTechDrawer: () => void;
 }
 
 export function createSessionBar({
   parent,
   signal,
-  actions,
+  show,
+  run,
   xr,
   onToggleTechDrawer,
 }: SessionBarOptions): ConductorPanel {
@@ -43,11 +45,7 @@ export function createSessionBar({
 
   const languageButtons = NARRATION_LANGUAGES.map((language) =>
     createButton(languageGroup, language.toUpperCase(), () => {
-      // Language is fixed at arm time; switching mid-piece is a re-arm and
-      // holds the show rather than switching under a visitor — see
-      // docs/direction/session-operator.md.
-      actions.pause();
-      actions.setLanguage(language);
+      show.setLanguage(language);
     }),
   );
 
@@ -56,7 +54,7 @@ export function createSessionBar({
     root,
     "New visitor",
     "Tap again to reset",
-    () => actions.restartExperience(),
+    run.resetShowAndFlight,
     signal,
   );
   restartButton.classList.add("conductor__restart-button");
@@ -84,7 +82,7 @@ export function createSessionBar({
 
   return {
     update(state): void {
-      const { language, xr: xrState } = state.snapshot;
+      const { language, xr: xrState } = state;
 
       languageButtons.forEach((button, index) => {
         button.setAttribute(

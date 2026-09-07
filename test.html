@@ -1,7 +1,7 @@
 <!--
 Purpose: Host standalone development levels, benchmarks, and diagnostics.
 Context: The rehearsal show and Test tooling use separate browser entries.
-Responsibility: Provide the Test mount and load src/test-main.ts.
+Responsibility: Provide the Test mount and load src/test.entry.ts.
 Boundary: Runtime composition and development behavior live in TypeScript.
 -->
 <!doctype html>
@@ -15,6 +15,6 @@ Boundary: Runtime composition and development behavior live in TypeScript.
   </head>
   <body>
     <main class="app"></main>
-    <script type="module" src="/src/test-main.ts"></script>
+    <script type="module" src="/src/test.entry.ts"></script>
   </body>
 </html>

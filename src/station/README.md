@@ -27,6 +27,5 @@ and imports this folder the way the benchmark runner imports `src/benchmark`.
 The server owns its default listen port.
 
 The browser hosts the Engine in-process. Its Entry applies deployment facts;
-UI calls Engine owners through narrow contracts. #36 removes the current
-Conductor actions adapter. This folder supplies no Show command transport or
+UI calls Engine owners directly through narrow contracts. This folder supplies no Show command transport or
 visitor state. See the [target boundaries](../../docs/target-architecture.md#3-target-structure).

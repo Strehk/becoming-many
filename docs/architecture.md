@@ -9,10 +9,10 @@ not yet implemented. Windows-PCVR over USB-C is the installation target.
 
 The build has four browser entries:
 
-- `index.html` loads `src/main.ts`: the complete rehearsal show only.
-- `test.html` loads `src/test-main.ts`: standalone levels, benchmarks,
+- `index.html` loads `src/rehearsal.entry.ts`: the complete rehearsal show only.
+- `test.html` loads `src/test.entry.ts`: standalone levels, benchmarks,
   headset diagnostics, and direct-M5 development.
-- `conductor.html` loads `src/conductor/conductor-main.ts`: the operator surface
+- `conductor.html` loads `src/conductor.entry.ts`: the operator surface
   with the show running in the same page.
 - `flash.html` loads `src/flash/flash-main.ts`: Web Serial firmware setup for the
   M5 controller.
@@ -27,24 +27,21 @@ The experience Engine runs in the browser: Level Runtime, Show, World, M5,
 flight controls, audio and content. Station is the separate backend; moving
 policy out of Conductor does not move rendering or Show state to that server.
 
-The following are current debts, not completed target migrations:
+Entry resolves deployment/browser choices and starts/cancels one Run. Conductor
+page/panels own only DOM, gestures and observations. Show exposes direct transport
+and language commands; its clock stays internal. Rehearsal's `window.show`
+console surface uses those same commands (for example `window.show.seekTo(90)`).
+Run exposes the current `resetShowAndFlight` operation and narrow M5/XR
+capabilities; UI cannot consume controller edges or unload those children.
+The shared XR button lives in `src/ui/`; session mechanics stay in World.
 
-- `conductor-page.ts` still combines UI mounting with Run startup/cancellation.
-- `show-actions.ts` still forwards commands and defines time/position reset.
-- M5 panel construction still applies the initial host; public Run handles
-  expose more M5/XR capabilities than UI needs.
-- `world/vr-entry-button.ts` is a DOM component inside the rendering folder.
-- Four stylesheets plus TypeScript inline styles still serve the surfaces;
-  central `src/app.css` is the #84 target and does not exist yet.
-
-The [target diagrams and placement map](target-architecture.md#3-target-structure)
-show the agreed destination. #36 owns UI/Entry/command separation, #84 central
-styling and #11 the final import boundaries. The current paths below remain
-accurate until their source migration.
+Four stylesheets and authored inline styles remain until #84 centralizes them.
+The [target diagrams](target-architecture.md#3-target-structure) show deployment,
+lifetime ownership, command contracts and frame order.
 
 ## Composition and Frame Flow
 
-`src/levels/level-runtime.ts` owns startup, frame coordination and awaited Run termination. A
+`src/levels/level.runtime.ts` owns startup, frame coordination and awaited Run termination. A
 static request contains one independent `LevelPreset`; a Show uses the Connections
 preset plus its narrow `ShowLevelState` map. The runtime loads the required assets, creates a stopped World in
 `src/world/world-runtime.ts`,
@@ -54,7 +51,7 @@ awaits World-owned GPU preparation for Show, connects controls and optional
 show following, then starts the single loop. Presentation is applied before
 any module derives a fixed spatial window from the camera.
 
-`RunningLevel.unload()` stops the loop and starts input/audio/XR cleanup,
+`Run.unload()` stops the loop and starts input/audio/XR cleanup,
 awaits pending preparation and children, ends modules in reverse order, releases
 borrowed GLTF sources, then releases World and canvas. Failed/cancelled starts
 use the same path; Composition cleans earlier factory handles on failure.
@@ -86,7 +83,7 @@ or browser resource owns its complete disposal.
 ```text
 src/
 ├── benchmark/       deterministic in-page route and report data
-├── conductor/       operator page, panels, snapshots, and actions
+├── conductor/       operator page, panels and view state
 ├── control/         desktop and M5 flight mapping and constraints
 ├── dev/             opt-in diagnostics and rehearsal controls
 ├── dramaturgy/      show clock, schedule, cue layout, and level timing
@@ -97,7 +94,10 @@ src/
 ├── sound/           narration, the audio timebase, and the drone organ
 ├── station/         browser-side deployment facts
 ├── test-ui/         browser-only frame metrics and diagnostic overlay
-├── test-main.ts     standalone level and benchmark browser entry
+├── conductor.entry.ts operator startup and UI wiring
+├── rehearsal.entry.ts rehearsal startup and UI wiring
+├── test.entry.ts     standalone level and benchmark browser entry
+├── ui/              shared browser controls
 ├── utils/           narrow shared technical utilities
 ├── world/           permanent runtime, XR, chunks, and scheduling
 └── world-surface/   deterministic read-only height and zone facts
@@ -204,7 +204,7 @@ construction so fixed spatial pools use its authored view distance. A requested
 standalone level or benchmark does not start a show, so neither builds the
 credits panel.
 
-`show-runtime.ts` also drives the drone organ in `src/sound/drone-organ/`
+`show.runtime.ts` also drives the drone organ in `src/sound/drone-organ/`
 through one per-frame contract: the show time sample, the strength of each
 voice as `organ-score.ts` derives it, the listener pose, ground height, and
 the live bird-flock and fly-swarm centres that Motion Sense reports through

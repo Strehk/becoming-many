@@ -24,7 +24,7 @@ export function createButton(
 /**
  * A destructive action asks twice, in words that say what the second tap
  * does. A blocking `window.confirm` is the wrong tool: it would freeze this
- * page's own clock — and with it the show.
+ * page's execution while the hardware timebase continues.
  */
 export function createConfirmButton(
   parent: HTMLElement,

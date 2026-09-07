@@ -7,24 +7,19 @@ headset and controller controls. The show runs in this same browser page.
 The target folder owns DOM, input bindings, gesture preview, confirmations,
 status presentation and UI cleanup. It owns no Show clock or visitor policy.
 
-## Existing implementation and planned boundary
+## Entry and Engine boundary
 
-`conductor-main.ts` currently loads deployment facts; `conductor-page.ts`
-starts `startLevel`, assembles the panels and samples Show/M5/XR/metrics.
-`show-actions.ts` forwards commands and implements the current soft reset:
-rewind, reset flight, then hold. This is not a fresh Run.
-
-#36 moves bootstrap to `src/conductor.entry.ts`, makes `conductor.page.ts`
-UI-only and replaces the actions adapter with narrow Show/Run/M5/XR contracts.
-The entry applies initial M5 configuration; mounting a panel must not start
-polling. Show owns playback/language; Run owns experience lifetime. Browser
-reload and stored operator preferences stay at the browser boundary.
+`src/conductor.entry.ts` resolves deployment/URL/stored choices, starts one Run,
+applies its initial M5 host, mounts the page and connects page exit to cleanup.
+`conductor.page.ts` mounts panels against narrow Show/Run/M5/XR capabilities.
+Show owns playback/language; Run owns experience lifetime and the current
+`resetShowAndFlight` operation (rewind, reset flight, hold). That operation does
+not replace the Run. Browser reload and stored preferences belong to Entry.
 
 ## Public interface and retained interaction
 
 Panels draw a local view state and invoke only their needed public commands.
-The current `ShowSnapshot` includes XR, M5 and diagnostics and will be named as
-UI state. Drag preview, seek throttling, `wasPlaying`, keyboard mapping and
+`ConductorViewState` combines Show, XR, M5 and diagnostic observations for drawing. Drag preview, seek throttling, `wasPlaying`, keyboard mapping and
 confirmation timers are legitimate UI behavior. Schedule arithmetic remains
 in `dramaturgy`; device validity remains in M5.
 

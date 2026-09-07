@@ -3,13 +3,13 @@
  * Context: The station is run by front-of-house staff, not technicians.
  * Responsibility: Render the Sound, Picture, Controller, and Headset tiles,
  *   and the one banner a fault that needs a person deserves.
- * Boundary: The page decides what the readings mean; this only shows them.
+ * Boundary: These labels summarize observations; device validity stays in M5.
  *   The numbers behind the words live in the technician drawer.
  */
 
 import type { M5OperatorStatus } from "../m5/m5-adapter";
 import type { XrSessionState } from "../world/xr-session";
-import type { ConductorPanel, ConductorState } from "./conductor-state";
+import type { ConductorPanel, ConductorViewState } from "./conductor-state";
 
 type ReadingState = "idle" | "live" | "warn" | "alarm";
 
@@ -49,14 +49,12 @@ export function createStatusStrip({
 
   return {
     update(state): void {
-      const { snapshot } = state;
-
-      sound.write(...soundReading(snapshot.audioState));
+      sound.write(...soundReading(state.audioState));
       picture.write(...pictureReading(state));
-      controller.write(...controllerReading(snapshot.m5));
-      headset.write(...headsetReading(snapshot.xr));
+      controller.write(...controllerReading(state.m5));
+      headset.write(...headsetReading(state.xr));
 
-      banner.hidden = snapshot.m5?.state !== "wrong-device";
+      banner.hidden = state.m5?.state !== "wrong-device";
     },
   };
 }
@@ -90,8 +88,8 @@ function controllerReading(status: M5OperatorStatus | undefined): ReadingText {
 /** The acceptance target from docs/performance.md is a stable 90 FPS. */
 const FRAME_RATE_FLOOR = 85;
 
-function pictureReading(state: ConductorState): ReadingText {
-  const { framesPerSecond } = state.snapshot;
+function pictureReading(state: ConductorViewState): ReadingText {
+  const { framesPerSecond } = state;
   if (framesPerSecond === undefined) return ["—", "idle"];
 
   return framesPerSecond >= FRAME_RATE_FLOOR

@@ -2,19 +2,19 @@
  * Purpose: Bootstrap the complete Becoming Many show for rehearsal.
  * Context: The root page is the audience experience without development routes.
  * Responsibility: Start the show and mount its rehearsal and WebXR controls.
- * Boundary: Standalone levels, benchmarks, and diagnostics enter through test-main.ts.
+ * Boundary: Standalone levels, benchmarks, and diagnostics enter through test.entry.ts.
  */
 
 import "./style.css";
-import { mountRehearsalTransport } from "./dev/rehearsal-transport";
+import { mountRehearsalTransport } from "./dev/rehearsal.panel";
 import { resolveNarrationLanguage } from "./dramaturgy/narration-catalog";
 import { PIECE_SCHEDULE } from "./dramaturgy/piece-schedule";
-import type { ShowClock } from "./dramaturgy/show-clock";
 import { SHOW_LEVEL_STATES } from "./dramaturgy/show-levels";
 import { level as connectionsLevel } from "./levels/connections.level";
-import { type RunningLevel, startLevel } from "./levels/level-runtime";
+import { type Run, startLevel } from "./levels/level.runtime";
+import type { RunningShow } from "./levels/show.runtime";
 import { loadDeploymentConfig } from "./station/deployment-config";
-import { mountVrEntryButton } from "./world/vr-entry-button";
+import { mountVrEntryButton } from "./ui/xr-entry-button";
 
 declare global {
   interface Window {
@@ -25,7 +25,19 @@ declare global {
      * rehearsal happens in the headset, against a production build, without
      * the conductor page's transport at hand.
      */
-    showClock?: ShowClock;
+    show?: Pick<
+      RunningShow,
+      | "sample"
+      | "play"
+      | "pause"
+      | "togglePlayback"
+      | "seekTo"
+      | "seekBy"
+      | "setTimeScale"
+      | "resetTime"
+      | "readLanguage"
+      | "setLanguage"
+    >;
   }
 }
 
@@ -40,7 +52,7 @@ const request = new URLSearchParams(window.location.search);
 // Deployment facts the station server was started with; empty when nothing
 // answers /config. A set fact is deployment authority: it is applied here and
 // the matching conductor control turns read-only.
-let level: RunningLevel | undefined;
+let level: Run | undefined;
 try {
   const deployment = await loadDeploymentConfig();
 
@@ -57,11 +69,11 @@ try {
   });
   lifetime.signal.throwIfAborted();
 
-  window.showClock = level.show?.clock;
+  window.show = level.show;
   lifetime.signal.addEventListener(
     "abort",
     () => {
-      delete window.showClock;
+      delete window.show;
     },
     { once: true },
   );
@@ -74,14 +86,12 @@ try {
     // the audio timebase, which a browser keeps suspended until the first
     // gesture in this window — so the piece opens the moment the page is
     // touched, not silently behind a suspended context.
-    show.clock.play();
+    show.play();
 
     const unmountTransport = mountRehearsalTransport({
       container: document.body,
       schedule: PIECE_SCHEDULE,
-      clock: show.clock,
-      readLanguage: show.readLanguage,
-      setLanguage: show.setLanguage,
+      show,
     });
     lifetime.signal.addEventListener("abort", unmountTransport, { once: true });
   }

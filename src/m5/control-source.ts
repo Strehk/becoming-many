@@ -6,8 +6,8 @@
  * Responsibility: Run derive → safety → auto-neutralize → smooth per poll,
  *   latch button edges until the single reader consumes them, and report the
  *   operator-facing device state.
- * Boundary: Network IO lives in m5-adapter.ts. `readFrame` has exactly one
- *   caller — the level-runtime frame body — which is what makes consume-on-read
+ * Boundary: Network IO lives in m5-adapter.ts. `consumeFrame` has exactly one
+ *   caller — the level.runtime frame body — which is what makes consume-on-read
  *   edges safe; a second reader would steal edges. Other views read
  *   `readLatestState` instead.
  */
@@ -39,7 +39,7 @@ export interface ControlSource {
   /** Accept only identified, compatible, calibrated and advancing samples. */
   readonly pushState: (state: M5State, nowMilliseconds: number) => void;
   /** Read the frame for this render frame. Consumes pending button edges. */
-  readonly readFrame: (nowMilliseconds: number) => ControlFrame;
+  readonly consumeFrame: (nowMilliseconds: number) => ControlFrame;
   readonly readDeviceReport: (nowMilliseconds: number) => M5DeviceReport;
   /**
    * The newest accepted poll, for a glanceable second reader. Undefined while
@@ -122,7 +122,7 @@ export function createControlSource(
       pendingButtonUp ||= derived.buttonUp;
     },
 
-    readFrame(nowMilliseconds) {
+    consumeFrame(nowMilliseconds) {
       const live = isLive(nowMilliseconds);
       // Only trusted, fresh edges reach the single reader, exactly once.
       const frame: ControlFrame = {

@@ -48,12 +48,26 @@ export interface ShowRequest {
 }
 
 export interface RunningShow {
-  readonly clock: ShowClock;
+  readonly sample: ShowClock["sample"];
+  readonly play: ShowClock["play"];
+  readonly pause: ShowClock["pause"];
+  readonly seekTo: ShowClock["seekTo"];
+  readonly seekBy: ShowClock["seekBy"];
+  readonly setTimeScale: ShowClock["setTimeScale"];
+  /** Toggle from the current Show state, independently of UI refresh timing. */
+  readonly togglePlayback: () => void;
+  /** Rewind and hold; the current world and flight remain unchanged. */
+  readonly resetTime: () => void;
   readonly readLanguage: () => NarrationLanguage;
   readonly readActiveLevel: () => ShowLevelName;
   readonly setLanguage: (language: NarrationLanguage) => void;
   readonly readAudioState: () => AudioContextState;
 }
+
+type ShowWorld = Pick<
+  WorldContext,
+  "camera" | "renderer" | "modules" | "viewpoint"
+>;
 
 type SenseDrivers = Readonly<
   Partial<Record<ShowSense, (intensity: number) => void>>
@@ -104,7 +118,7 @@ export interface ShowRuntime {
 
 export async function createShowRuntime(
   request: ShowRequest,
-  world: WorldContext,
+  world: ShowWorld,
   reach: ShowWorldReach,
   worldSurface: WorldSurface,
 ): Promise<ShowRuntime> {
@@ -299,7 +313,20 @@ export async function createShowRuntime(
       readActiveLevelState: () => states[activeLevel ?? openingLevel],
 
       running: {
-        clock,
+        sample: clock.sample,
+        play: clock.play,
+        pause: clock.pause,
+        seekTo: clock.seekTo,
+        seekBy: clock.seekBy,
+        setTimeScale: clock.setTimeScale,
+        togglePlayback: () => {
+          if (clock.sample().isPlaying) clock.pause();
+          else clock.play();
+        },
+        resetTime: () => {
+          clock.seekTo(0);
+          clock.pause();
+        },
         readLanguage: () => language,
         readActiveLevel: () => activeLevel ?? openingLevel,
         readAudioState: timebase.readState,
@@ -328,10 +355,7 @@ export async function createShowRuntime(
  * The eye carries the head pose the rig published at the end of the previous
  * frame — the same frame of reference every module windows its content around.
  */
-function readListenerPose(
-  world: WorldContext,
-  pose: MutableListenerPose,
-): void {
+function readListenerPose(world: ShowWorld, pose: MutableListenerPose): void {
   const eye = world.viewpoint.worldPosition;
   pose.x = eye.x;
   pose.y = eye.y;

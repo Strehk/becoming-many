@@ -20,12 +20,12 @@ yaw; physical rig polarity still needs acceptance. With a host, quality 0 is neu
 so a dropped poll continues the glide and gentle descent. Keyboard movement
 returns when the host is cleared; the frames come from `src/m5`.
 
-The local frame in `src/levels/level-runtime.ts` selects the input directly:
+The local frame in `src/levels/level.runtime.ts` selects the input directly:
 an available M5 frame has exclusive control for that frame; otherwise desktop
 input updates the same viewer rig.
 
 `flight-reset.ts` returns the flight rig to the pose a level starts from, which
-the in-process conductor page reaches through `RunningLevel`. Reset and height limits stay
+the in-process conductor page reaches through `Run`. Reset and height limits stay
 effective in immersive VR because they move the rig, not the headset-owned
 camera pose.
 

@@ -33,7 +33,7 @@ history belongs in Git; unresolved product and deployment questions belong in
   define the small role vocabulary, responsibility contracts and scoped
   migration. Plain domain algorithm names remain valid; roles require no
   companion files or new runtime owners.
-- `src/levels/level-runtime.ts` is the single startup and frame-coordination
+- `src/levels/level.runtime.ts` is the single startup and frame-coordination
   owner. `src/levels/level-composition.ts` is its concrete construction owner;
   it is not a parallel runtime.
 - Concrete content modules never import sibling modules. Level Composition

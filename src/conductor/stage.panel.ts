@@ -35,7 +35,7 @@ export function createStagePanel({
     // While a session runs, Three.js renders into the headset and the canvas
     // holds its last frame — said out loud so a frozen preview reads as normal.
     update(state): void {
-      overlay.hidden = !state.snapshot.xr.isSessionActive;
+      overlay.hidden = !state.xr.isSessionActive;
     },
   };
 }

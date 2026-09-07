@@ -75,7 +75,7 @@ test("audio owners await late starts and native close before disposal or reuse",
     };
     const contexts = [];
     class Context {
-      state = "suspended"; listener = {}; disposed = 0; closing = false;
+      state = "suspended"; currentTime = 0; listener = {}; disposed = 0; closing = false;
       release; closeCalls = 0;
       constructor() { contexts.push(this); }
       close() {
@@ -146,6 +146,7 @@ test("audio owners await late starts and native close before disposal or reuse",
     native.release(); await nativeEnd;
 
     let releaseOrgan, organEnded = false, narrationCount = 0, follows = 0;
+    let narrationUnloads = 0, failNarrationCleanup = false;
     mock.module("./src/sound/drone-organ/drone-organ.ts", () => ({
       createDroneOrgan: () => ({
         update: () => { follows++; },
@@ -155,10 +156,13 @@ test("audio owners await late starts and native close before disposal or reuse",
     mock.module("./src/sound/narration-player.ts", () => ({
       createNarrationPlayer: () => {
         narrationCount++;
-        return { follow: () => { follows++; }, unload: () => { throw new Error("media cleanup failed"); } };
+        return { follow: () => { follows++; }, unload: () => {
+          narrationUnloads++;
+          if (failNarrationCleanup) throw new Error("media cleanup failed");
+        } };
       },
     }));
-    const { createShowRuntime } = await import("./src/levels/show-runtime.ts");
+    const { createShowRuntime } = await import("./src/levels/show.runtime.ts");
     const { PIECE_SCHEDULE } = await import("./src/dramaturgy/piece-schedule.ts");
     const { SHOW_LEVEL_STATES } = await import("./src/dramaturgy/show-levels.ts");
     const show = await createShowRuntime(
@@ -167,13 +171,33 @@ test("audio owners await late starts and native close before disposal or reuse",
       { gates: new Map(), senses: {}, worldFades: {} }, {},
     );
     const showNative = contexts.at(-1);
+    const commands = show.running;
+    assert.equal("clock" in commands, false);
+    commands.play(); showNative.currentTime = 2;
+    assert.equal(commands.sample().timeSeconds, 2);
+    commands.seekTo(20); commands.seekBy(-5); commands.setTimeScale(2);
+    showNative.currentTime = 3;
+    assert.equal(commands.sample().timeSeconds, 17);
+    commands.togglePlayback();
+    assert.equal(commands.sample().isPlaying, false);
+    commands.togglePlayback();
+    assert.equal(commands.sample().isPlaying, true);
+    commands.setLanguage("de");
+    assert.equal(commands.sample().isPlaying, false);
+    assert.equal(commands.sample().timeSeconds, 17);
+    assert.equal(commands.readLanguage(), "de");
+    commands.setLanguage("de");
+    assert.equal(narrationUnloads, 1); assert.equal(narrationCount, 2);
+    commands.play(); commands.resetTime();
+    assert.deepEqual(commands.sample(), { timeSeconds: 0, isPlaying: false, timeScale: 2 });
+    failNarrationCleanup = true;
     const showEnd = show.unload();
     const showFailure = assert.rejects(showEnd, error => error.errors.some(cause => /media cleanup/.test(cause.message)));
     assert.equal(show.unload(), showEnd);
     assert.equal(organEnded, true);
     assert.equal(showNative.closing, true);
-    show.update(); show.running.setLanguage("de");
-    assert.equal(follows, 0); assert.equal(narrationCount, 1);
+    show.update(); show.running.setLanguage("en");
+    assert.equal(follows, 0); assert.equal(narrationCount, 2);
     releaseOrgan(); showNative.release(); await showFailure;
     const invalidStart = createShowRuntime(
       { schedule: { ...PIECE_SCHEDULE, durationSeconds: -1 }, language: "en", states: SHOW_LEVEL_STATES },

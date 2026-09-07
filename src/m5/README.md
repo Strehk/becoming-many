@@ -25,9 +25,8 @@ frame lives in `src/control/m5-flight.ts`.
 
 M5 owns host replacement, request cancellation, validation and derived input
 state. Entry supplies the initial host/device identity; panels edit the host
-and observe status. The current `readFrame()` consumes button edges and has one
-Runtime caller. #36 names this operation `consumeFrame()` and exposes only
-configuration/observation capabilities to UI; it does not change axis policy.
+and observe status. `consumeFrame()` consumes button edges and has one Run caller.
+UI receives only configuration/observation capabilities; axis policy is unchanged.
 Run owns the adapter's lifetime. No UI can consume edges or call child cleanup.
 [Target contracts](../../docs/target-architecture.md#4-responsibilities-and-contracts)
 retain physical #18/#38 acceptance separately from this API cleanup.

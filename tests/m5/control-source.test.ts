@@ -41,7 +41,7 @@ describe("control source", () => {
       50,
     );
 
-    const frame = source.readFrame(60);
+    const frame = source.consumeFrame(60);
     expect(frame.buttonDown).toBe(true);
     expect(frame.buttonUp).toBe(true);
   });
@@ -54,9 +54,9 @@ describe("control source", () => {
       50,
     );
 
-    expect(source.readFrame(55).buttonDown).toBe(true);
-    expect(source.readFrame(66).buttonDown).toBe(false);
-    expect(source.readFrame(77).buttonDown).toBe(false);
+    expect(source.consumeFrame(55).buttonDown).toBe(true);
+    expect(source.consumeFrame(66).buttonDown).toBe(false);
+    expect(source.consumeFrame(77).buttonDown).toBe(false);
   });
 
   it("resets host history and ignores a late response without blocking the next host", async () => {
@@ -73,15 +73,15 @@ describe("control source", () => {
     try {
       adapter.setHost("first.local");
       await Bun.sleep(0);
-      expect(adapter.readFrame()?.pitch).toBeCloseTo(0.25);
+      expect(adapter.consumeFrame()?.pitch).toBeCloseTo(0.25);
       adapter.setHost("hanging.local");
-      expect(adapter.readFrame()?.quality).toBe(0);
+      expect(adapter.consumeFrame()?.quality).toBe(0);
       expect(adapter.readLatestState()).toBeUndefined();
       adapter.setHost("next.local");
       expect(fetchMock).toHaveBeenCalledTimes(3);
       expect(fetchMock.mock.calls[1]?.[1]?.signal?.aborted).toBe(true);
       await Bun.sleep(0);
-      const frame = adapter.readFrame();
+      const frame = adapter.consumeFrame();
       expect(frame?.pitch).toBeCloseTo(-0.25);
       expect(frame?.buttonDown).toBe(false);
       expect(frame?.buttonUp).toBe(false);
@@ -91,12 +91,12 @@ describe("control source", () => {
       await Bun.sleep(0);
       expect(adapter.readLatestState()?.pitch).toBe(-0.4);
       adapter.setHost("");
-      expect(adapter.readFrame()).toBeUndefined();
+      expect(adapter.consumeFrame()).toBeUndefined();
       expect(adapter.readOperatorStatus()).toEqual({ state: "off" });
       adapter.unload();
       adapter.setHost("after-end.local");
       expect(fetchMock).toHaveBeenCalledTimes(3);
-      expect(adapter.readFrame()).toBeUndefined();
+      expect(adapter.consumeFrame()).toBeUndefined();
     } finally {
       adapter.unload();
       fetchMock.mockRestore();
@@ -108,14 +108,14 @@ describe("control source", () => {
     source.pushState(state({ pitch: 0.4 }), 0);
     source.pushState(state({ seq: 2, pitch: 0.4, buttonPressCount: 1 }), 50);
 
-    const staleFrame = source.readFrame(50 + 1_001);
+    const staleFrame = source.consumeFrame(50 + 1_001);
     expect(staleFrame.quality).toBe(0);
     expect(staleFrame.pitch).toBe(0);
     expect(staleFrame.buttonDown).toBe(false);
     expect(source.readDeviceReport(50 + 1_001).state).toBe("connecting");
     expect(source.readLatestState(50 + 1_001)).toBeUndefined();
     source.pushState(state({ seq: 3, buttonPressCount: 12 }), 1_052);
-    expect(source.readFrame(1_053).buttonDown).toBe(false);
+    expect(source.consumeFrame(1_053).buttonDown).toBe(false);
   });
 
   it("eases a live pose up from neutral instead of snapping", () => {
@@ -123,7 +123,7 @@ describe("control source", () => {
     source.pushState(state({ pitch: 0.4 }), 0);
 
     // One smoothing step: 0.625 of the way from 0 toward 0.4.
-    expect(source.readFrame(10).pitch).toBeCloseTo(0.25);
+    expect(source.consumeFrame(10).pitch).toBeCloseTo(0.25);
     expect(source.readDeviceReport(10)).toEqual({
       state: "live",
       quality: 1,
@@ -146,7 +146,7 @@ describe("control source", () => {
       source.pushState(state({ seq: 2, pitch: 0.4, buttonPressCount: 1 }), 50);
       for (let poll = 0; poll < 3; poll++) {
         source.pushState(state({ seq: 3, ...rejected }), 60 + poll);
-        const frame = source.readFrame(65);
+        const frame = source.consumeFrame(65);
         expect(frame.quality).toBe(0);
         expect(frame.buttonDown).toBe(false);
         expect(source.readLatestState(65)).toBeUndefined();
@@ -159,9 +159,9 @@ describe("control source", () => {
         state({ seq: "uptimeMs" in rejected ? rejected.seq : 2 }),
         66,
       );
-      expect(source.readFrame(67).quality).toBe(0);
+      expect(source.consumeFrame(67).quality).toBe(0);
       source.pushState(state({ seq: 4, pitch: 0.4, buttonPressCount: 12 }), 70);
-      const recovered = source.readFrame(75);
+      const recovered = source.consumeFrame(75);
       expect(recovered.pitch).toBeCloseTo(expectedId ? 0.25 : 0);
       expect(recovered.buttonDown).toBe(false);
     },
@@ -174,6 +174,6 @@ describe("control source", () => {
 
     expect(source.readLatestState(60)?.pitch).toBe(0.4);
     // The raw poll, not the smoothed frame — and the press still arrives.
-    expect(source.readFrame(60).buttonDown).toBe(true);
+    expect(source.consumeFrame(60).buttonDown).toBe(true);
   });
 });

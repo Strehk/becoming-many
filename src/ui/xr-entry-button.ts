@@ -5,11 +5,11 @@
  * Boundary: Session logic lives in xr-session; the operator page has its own UI.
  */
 
-import type { XrSessionControl } from "./xr-session";
+import type { XrSessionControl } from "../world/xr-session";
 
 export function mountVrEntryButton(
   container: HTMLElement,
-  xr: XrSessionControl,
+  xr: Pick<XrSessionControl, "subscribe" | "start" | "stop">,
 ): () => void {
   const button = document.createElement("button");
   button.type = "button";

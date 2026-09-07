@@ -159,21 +159,21 @@ unchanged; changing those latencies is a separate measured fix.
 
 ### Target placement and migration map
 
-These are target names to apply within the issue that changes each owner.
-Current source links remain valid until that migration. Keep HTML routes stable.
+The #36 migration applies role names to the affected owners and removes aliases.
+HTML routes stay stable. Remaining owner names migrate with their scoped refactor.
 
-| Current location | Target location / owner | Issue |
+| Responsibility | Current placement after #36 | Remaining work |
 | --- | --- | --- |
-| `src/conductor/conductor-main.ts` and Run-start code inside the page | `src/conductor.entry.ts`: browser bootstrap only | #36 |
-| `src/conductor/conductor-page.ts` | `src/conductor/conductor.page.ts`: UI mounting/input/display | #36 |
-| `src/conductor/transport-panel.ts` and other actual panels | `src/conductor/transport.panel.ts` and corresponding role names | #36 |
-| `src/conductor/show-actions.ts` | Delete; Show commands and existing Run operations | #36, complete visitor operation #9 |
-| `src/levels/show-runtime.ts` | `src/levels/show.runtime.ts`: public Show commands, internal clock | #36 |
-| `src/levels/level-runtime.ts` | `src/levels/level.runtime.ts`: existing Run owner with narrow public capabilities | #36 |
-| `src/levels/level-composition.ts` | `src/levels/level.composition.ts` when its construction boundary is touched | Owner's scoped refactor |
-| `src/world/world-runtime.ts` | `src/world/world.runtime.ts` when its resource boundary is touched | Owner's scoped refactor |
-| `src/world/vr-entry-button.ts` | Shared `src/ui/xr-entry-button.ts`; session mechanics remain World-owned | #36 |
-| Four authored stylesheets and DOM inline styles | `src/app.css`, imported by browser entries | #84 |
+| Browser bootstrap | `src/conductor.entry.ts`, `src/rehearsal.entry.ts`, `src/test.entry.ts` | Flash entry migrates with #84 |
+| Conductor UI | `src/conductor/conductor.page.ts` and actual `.panel.ts` regions | Styling #84 |
+| Show commands / internal clock | `src/levels/show.runtime.ts` | Preserved by UI contracts |
+| Run start/frame/end and scoped reset | `src/levels/level.runtime.ts` | Full visitor operation #9 |
+| Shared XR button | `src/ui/xr-entry-button.ts`; mechanics in World | Styling #84 |
+| One-time content construction | `src/levels/level-composition.ts` | `.composition.ts` on next construction refactor |
+| Renderer/resource owner | `src/world/world-runtime.ts` | `.runtime.ts` on next resource refactor |
+| Styles | Four stylesheets and authored DOM inline styles | Central `src/app.css` in #84 |
+
+`show-actions.ts` is removed. Its commands belong to Show and Run.
 
 Use `src/ui/` only for UI genuinely shared by current surfaces, initially the
 existing XR button. It is not a component registry. Other entry files adopt
@@ -188,7 +188,7 @@ own role semantics, contract vocabulary, file reading order and central styling.
 
 **“Run” is the existing `startLevel` invocation and returned handle, not a new
 ApplicationRun file, class or coordinator.** The target adds no runtime owner.
-Keep start, its frame function, restart and end together in `level-runtime.ts`;
+Keep start, its frame function, restart and end together in `level.runtime.ts`;
 keep concrete construction and its return mapping together in
 `level-composition.ts`. Arrange private functions below the public story, in
 reading order. A private function is not a reason for another file.
@@ -215,12 +215,12 @@ not counted as deleting its capability.
 | --- | --- | --- | --- |
 | **Entry** (browser `.entry.ts` targets) | Request/deployment resolution, pending-start cancellation, UI/Run references, optional diagnostic sampler | Browser inputs → Run request and UI bindings | Starts/cancels/ends one Run, mounts/unmounts UI. No experience policy. |
 | **UI** (Conductor, Rehearsal, Test) | DOM, input bindings, drag preview, confirmation timers, display caches | Narrow commands and observations → operator interaction | Releases UI listeners and subscriptions only. No child-resource disposal, device validation or Show/reset policy. |
-| **Run** (`level-runtime.ts`) | Child references, startup/closing state, source GLTF assets | Discriminated request; commands, cancellation and complete `unload()` for Entry | Direct startup, input selection, local frame/restart/end. No concrete content algorithms or second loop. |
+| **Run** (`level.runtime.ts`) | Child references, startup/closing state, source GLTF assets | Discriminated request; commands, cancellation and complete `unload()` for Entry | Direct startup, input selection, local frame/restart/end. No concrete content algorithms or second loop. |
 | **Composition** (`level-composition.ts`) | No persistent owner state | Recipes, World, borrowed assets → Surface, ordered modules and ShowWorldReach | Called once by Run; factories clean partial failure. No transport, registry or coordinator object. |
 | **World** (`world-runtime.ts`) | Renderer/context, scene, rig/camera, Timer, XR/resize listeners, ModuleRuntime and StreamQueue | Run's frame function; viewpoint and execution for modules; optional benchmark FrameControl | Run starts it last/stops it first. Owns preparation, render and final release. No level policy or show clock. |
 | **Flight controls** (`control/`) | Desktop capture and input-specific navigation state | Selected desktop/M5 input → rig locomotion; Surface-based limits | Created/reset/disposed by Run; capture and movement math remain local. No protocol parsing or headset-pose overwrite. |
 | **M5** (`m5/`) | Host-bound poll/sample/filter/calibration/button state | Untrusted HTTP → flight ControlFrame and observational UI status | Existing adapter replaces host state and invalidates late work. Run owns its lifetime. No show commands or transforms. |
-| **Show** (`show-runtime.ts`, `dramaturgy/`) | Clock origins/rate/play state, language, native timebase, audio followers, bounded scratch | Authored schedule/state/score and composed ports → current commands/observations | Run creates/ticks/ends it. Pure lookups remain calculations. No content construction or rig movement. |
+| **Show** (`show.runtime.ts`, `dramaturgy/`) | Clock origins/rate/play state, language, native timebase, audio followers, bounded scratch | Authored schedule/state/score and composed ports → current commands/observations | Run creates/ticks/ends it. Pure lookups remain calculations. No content construction or rig movement. |
 | **Audio** (`sound/`) | Narration media; organ nodes, scheduling cursors and Tone context | One Show sample, strengths and spatial signals → sound/status | Show owns follower lifetime; organ releases nodes/context including late imports. No independent show clock. |
 | **World Surface** (`world-surface/`) | Physical conditions, zone thresholds and continuous transition weights | Height/zone facts for content and flight; identical weights for Clipmap, Vegetation and Rocks | Created in Composition; pure queries, no render lifecycle. Content owns derived coverage/density and placement, never parallel zone rules. |
 | **Content** (`modules/`) | Own CPU/GPU pools, derivatives, slot assignments and worker where needed | Borrowed sources, Surface/viewpoint/ports → scene and specific provider facts | Composition constructs; ModuleRuntime runs lifecycle. No sibling imports or private schedule. |
@@ -263,19 +263,19 @@ not simply the number of source files.
 
 ```text
 test.level.ts                 What exists and its authored values.
-test-main.ts                  Select this recipe and explicit entry tools.
-level-runtime.ts / startLevel Load sources; create a stopped World.
+test.entry.ts                  Select this recipe and explicit entry tools.
+level.runtime.ts / startLevel Load sources; create a stopped World.
                               Apply initial presentation before allocation.
                               composeLevel(...); load/activate in order.
                               Prepare World when this is a show.
                               Construct input and the optional Show directly.
                               Start World's one loop.
                               Return commands and the complete end path.
-level-runtime.ts / frame      Benchmark placement OR one M5/desktop update.
+level.runtime.ts / frame      Benchmark placement OR one M5/desktop update.
                               Update Show once; apply flight height limits.
 world-runtime.ts / frame      Publish viewpoint; update active modules.
                               Drain bounded stream work; render once.
-level-runtime.ts / dispose    Stop work; end children; release sources and World.
+level.runtime.ts / dispose    Stop work; end children; release sources and World.
 ```
 
 Within `composeLevel`, show construction order and `reach` mapping together.
@@ -368,7 +368,7 @@ not evidence that these ownership and physical operation obligations are met.
 **Need/owner:** all entries need predictable start, failure and end. Level
 Runtime owns the sequence; World owns rendering; Run owns loaded GLTF sources.
 
-**As implemented in #73:** [startLevel](../src/levels/level-runtime.ts)
+**As implemented in #73:** [startLevel](../src/levels/level.runtime.ts)
 loads sources, creates a stopped World, composes and prepares it, then starts
 its loop and directly returns the running level. The old callback/captured-result
 channel is gone. #9 now connects awaited Run/child/source termination and
@@ -409,10 +409,9 @@ complete disposal; no reset-only shortcut or transition-specific workaround.
 **Need/owner:** Show owns transport/language, Run owns complete visitor restart,
 M5 owns device validity, and entries own presentation and gestures.
 
-**Observed:** [createShowActions](../src/conductor/show-actions.ts) forwards clock
-methods but uniquely defines reset. UI repeats the pause already performed by
-Show's language setter. Conductor and
-[rehearsal transport](../src/dev/rehearsal-transport.ts) duplicate scrub mechanics;
+**Historical debt, removed by #36:** `createShowActions` forwarded clock
+methods and defined reset; UI repeated Show's language pause. Conductor and
+[rehearsal transport](../src/dev/rehearsal.panel.ts) duplicate scrub mechanics;
 DOM/snapshot state can determine commands. `9982d18` already removed the remote
 broker; `fd48b27` deliberately changed visitor reset to hold at zero.
 
@@ -421,8 +420,8 @@ Remove the forwarding adapter, UI reset sequences, repeated pause and stale-stat
 command decisions. #36 also separates browser entry wiring from page/panel UI
 and narrows public M5/XR capabilities. Preserve the current soft reset as an
 explicitly named existing Run operation until #9 replaces it with the approved
-complete visitor operation; this is not completed visitor-lifecycle acceptance. Migrate the real `window.showClock` headset-console consumer
-before removing mutable-clock exposure. Keep the fullscreen/headset rehearsal
+complete visitor operation; this is not completed visitor-lifecycle acceptance. The retained headset-console surface is now `window.show`, using the same
+direct owner commands as UI; the former `window.showClock` is removed. Keep the fullscreen/headset rehearsal
 workflow explicitly retained in [PR #59](https://github.com/Strehk/becoming-many/pull/59#issuecomment-5537091887).
 Remove `ConductorState.isScrubbing`, which has no reader. Preserve pointer
 preview and `wasPlaying`. A shared scrub function is allowed only if it replaces
@@ -687,10 +686,10 @@ remove old consumers, obsolete tests and documentation with the replaced path.
 
 | Current structure | Proven problem | Action | Target owner | Old path eliminated | Dependency / proof |
 | --- | --- | --- | --- | --- | --- |
-| `level-runtime.ts`: `setupLevel`, `LevelUpdate`, `prepareLevelComposition`, its private `LevelCompositionOptions`, `PreparedLevelComposition` | Packages and returns one start's existing variables through callbacks | Delete local chain | Direct `startLevel` sequence | `{running, update}`, captured `running`, skipped-setup guard; World `SetupWorld`/`setupWorld` | #73 implemented; preparation failure blocks start; complete visitor replacement remains #9 |
+| `level.runtime.ts`: `setupLevel`, `LevelUpdate`, `prepareLevelComposition`, its private `LevelCompositionOptions`, `PreparedLevelComposition` | Packages and returns one start's existing variables through callbacks | Delete local chain | Direct `startLevel` sequence | `{running, update}`, captured `running`, skipped-setup guard; World `SetupWorld`/`setupWorld` | #73 implemented; preparation failure blocks start; complete visitor replacement remains #9 |
 | Same file: `createOptionalShow`/`OptionalShowOptions`, `createLevelControls`/`LevelControls`, `createLevelUpdate`/`LevelFrameOptions` | Repeated optional checks and one-consumer option packages obscure order | Inline choices; delete packages | Adjacent startup and named local frame | Repeated Show/benchmark checks, control factory wrapping and copied frame dependencies | #73 implemented; input/show order preserved |
 | `level-composition.ts`: `createConfiguredModules`, `ComposedWorld`, `composeShowReach`, `ComposedSenseHandles` | Each helper has only its preceding local caller | Consolidate in existing function | `composeLevel` | Intermediate construction results and handle repackaging | #73 implemented; real contracts and local domain algorithms retained |
-| `RunningLevel.readFrameMetrics`, closure, `FrameMetricsRecorder.read`, Run's metrics type export | Entry sends its own sampler in and reads it back through Run | Removed in #35 | Existing entry sampler | Run metrics getter and duplicate type ownership | Test/Conductor read `sampler.read()` directly; frame input remains |
+| `Run.readFrameMetrics`, closure, `FrameMetricsRecorder.read`, Run's metrics type export | Entry sends its own sampler in and reads it back through Run | Removed in #35 | Existing entry sampler | Run metrics getter and duplicate type ownership | Test/Conductor read `sampler.read()` directly; frame input remains |
 | `LevelTestOverlay`, `TestOverlayFactory`, `OptionalTestOverlayOptions`, `createOptionalTestOverlay`, `request.testOverlay`, Run's overlay update | UI creation/lifetime hidden inside runtime setup | Delete runtime path | Test entry | Factory injection and UI frame forwarding | Existing World provides counters; entry owns DOM and cleanup |
 | `ConductorState.isScrubbing` and its assignment | No reader; type and writing only | Delete without replacement | No owner needed | Unused flag | Keep used `scrubSeconds`, gesture `wasPlaying` and UI render caches |
 | Animals `getVisibleWorldPositions`/`getVisibleActorPositions`/`packedPositions`; `ConnectionActorSource`; composition `animalSource`; Mycelium `ANIMAL_CLASS_INDEX`, `updateAnimalLinks`, `animalTargetNodes`, animal link capacities/hysteresis/source settings/offsets | No authored moving-animal root-web consumer | Retire complete capability | Static Mycelium; Animals body observations for scent/heat | Extra position projection through dynamic links, reserved rows and tests | D4/#80 implemented; `88a2179`, preset absence, identical normalized static attributes; cumulative visual acceptance pending |

@@ -85,7 +85,7 @@ import type {
   TerrainPreset,
   WorldComposition,
 } from "./level-preset";
-import type { ShowWorldReach } from "./show-runtime";
+import type { ShowWorldReach } from "./show.runtime";
 
 export interface LoadedLevelAssets {
   readonly vegetation: GltfAssets;
@@ -103,7 +103,10 @@ export interface TestLevelModules {
 }
 
 interface LevelCompositionOptions {
-  readonly world: WorldContext;
+  readonly world: Pick<
+    WorldContext,
+    "scene" | "camera" | "viewerRig" | "viewpoint" | "streamQueue"
+  >;
   readonly level: LevelPreset;
   readonly assets: LoadedLevelAssets;
   readonly forShow: boolean;

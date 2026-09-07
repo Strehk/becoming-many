@@ -11,9 +11,9 @@ Live issues own acceptance. Do not create a second implementation plan.
 | Field | Current state |
 | --- | --- |
 | Branch | `david_refactor` only. Commit/push completed, tested blocks to `origin/david_refactor` and verify success; no main, force-push or additional branches. |
-| Current request | Prepare documentation and matching issues for the UI/Entry/Engine architecture, including central CSS and the agreed diagrams. This preparation does not implement or accept the planned runtime changes. |
-| Source checkpoint | `ee2692b` before this documentation block. The runtime remains unchanged by the plan. |
-| Next implementation | #36, then #84, then final #11. Start the next requested source block at #36; do not replay completed #35/#85 removals. |
+| Current request | Implement the prepared architecture and ready software issues so the next Start level can use clear existing owners. Product/physical decisions stay open. |
+| Source checkpoint | `281e7df` before #36 implementation; Entry/UI separation and direct Show/Run contracts are implemented in this block. |
+| Next implementation | #36 verification/checkpoint, then #84 central CSS and final #11 boundary enforcement. Do not replay completed removals. |
 | Confirmed direction | Conductor is UI only; Entry connects UI to the existing browser Engine. Show owns transport/language, Run owns lifetime, World owns rendering, M5 owns validity. Backend remains Station delivery/config/health. Role filenames and `src/app.css` are approved targets. |
 | Existing software | Direct startup, complete child/source cleanup, entry diagnostics, explicit literal levels, legacy Grass retirement, shared zone influences, approved bank clearance and shared Rocks/Vegetation lifecycle are implemented. Their distinct remaining issue acceptance is preserved. |
 | Current visitor behavior | New visitor remains time/position reset and hold. Complete replacement operation and calibration/start interaction remain #9/#46 decisions. |

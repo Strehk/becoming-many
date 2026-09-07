@@ -1,17 +1,10 @@
-/**
- * Purpose: Describe what the conductor page knows at the instant it redraws.
- * Context: Several panels render the same instant and must not disagree.
- * Responsibility: Own the view contract the page passes to every panel.
- * Boundary: How the state is gathered belongs to the page composition root.
- */
-
 import type { NarrationLanguage } from "../dramaturgy/narration-catalog";
 import type { ShowLevelName } from "../dramaturgy/narration-schedule";
 import type { M5OperatorStatus } from "../m5/m5-adapter";
 import type { XrSessionState } from "../world/xr-session";
 
-/** One reading of the show this page hosts, taken fresh every frame. */
-export interface ShowSnapshot {
+/** UI observations; display time follows the pointer during a scrub gesture. */
+export interface ConductorViewState {
   readonly showTimeSeconds: number;
   readonly isPlaying: boolean;
   readonly timeScale: number;
@@ -28,16 +21,7 @@ export interface ShowSnapshot {
   readonly xr: XrSessionState;
 }
 
-export interface ConductorState {
-  readonly snapshot: ShowSnapshot;
-
-  /** The snapshot's clock, or the operator's own position while scrubbing. */
-  readonly showTimeSeconds: number;
-
-  readonly isScrubbing: boolean;
-}
-
-/** One panel of the page. Panels never hold state; they only render it. */
+/** A UI region with local gesture/display state and no experience policy. */
 export interface ConductorPanel {
-  readonly update: (state: ConductorState) => void;
+  readonly update: (state: ConductorViewState) => void;
 }

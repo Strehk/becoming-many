@@ -49,7 +49,7 @@ export function createWakeOverlay(
 
   return {
     update(state): void {
-      root.hidden = state.snapshot.audioState === "running";
+      root.hidden = state.audioState === "running";
     },
   };
 }

@@ -9,14 +9,14 @@ import "./style.css";
 import { createBenchmarkRun } from "./benchmark/benchmark-run";
 import { isBenchmarkProfileName } from "./benchmark/benchmark-settings";
 import { showHeadsetDiagnostics } from "./dev/headset-diagnostics";
+import { type Run, startLevel } from "./levels/level.runtime";
 import { LEVEL_CATALOG, resolveLevelName } from "./levels/level-catalog";
 import { levelNameFromPath } from "./levels/level-names";
-import { type RunningLevel, startLevel } from "./levels/level-runtime";
 import { loadDeploymentConfig } from "./station/deployment-config";
 import { FrameMetricsSampler } from "./test-ui/frame-metrics";
 import { loadTestLevelModules } from "./test-ui/test-level-modules";
 import { createTestOverlay, type TestOverlay } from "./test-ui/test-overlay";
-import { mountVrEntryButton } from "./world/vr-entry-button";
+import { mountVrEntryButton } from "./ui/xr-entry-button";
 
 const lifetime = new AbortController();
 window.addEventListener("pagehide", (event) => {
@@ -45,7 +45,7 @@ const benchmark =
         levelName,
         isBenchmarkProfileName(requestedProfile) ? requestedProfile : "full",
       );
-let level: RunningLevel | undefined;
+let level: Run | undefined;
 try {
   const deployment = await loadDeploymentConfig();
   const preset = LEVEL_CATALOG[levelName];

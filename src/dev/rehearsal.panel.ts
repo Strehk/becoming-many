@@ -3,7 +3,7 @@
  *   the show, and jump to a section.
  * Context: The default page plays the piece full-window, without the conductor
  *   page's operator surface; rehearsing a cue there otherwise means reloading.
- * Responsibility: Mount one bar that reflects show time and commands the clock.
+ * Responsibility: Mount one bar that reflects show time and commands the show.
  * Boundary: The show clock stays the authority; nothing here tracks show time.
  *   Slot arithmetic belongs to the dramaturgy layout.
  */
@@ -14,7 +14,7 @@ import {
 } from "../dramaturgy/narration-catalog";
 import type { NarrationSchedule } from "../dramaturgy/narration-schedule";
 import { cueSlots } from "../dramaturgy/schedule-layout";
-import type { ShowClock } from "../dramaturgy/show-clock";
+import type { RunningShow } from "../levels/show.runtime";
 
 const SECONDS_PER_MINUTE = 60;
 
@@ -30,9 +30,16 @@ const PLAYHEAD_DECIMALS = 1;
 export interface RehearsalTransportOptions {
   readonly container: HTMLElement;
   readonly schedule: NarrationSchedule;
-  readonly clock: ShowClock;
-  readonly readLanguage: () => NarrationLanguage;
-  readonly setLanguage: (language: NarrationLanguage) => void;
+  readonly show: Pick<
+    RunningShow,
+    | "sample"
+    | "togglePlayback"
+    | "play"
+    | "pause"
+    | "seekTo"
+    | "readLanguage"
+    | "setLanguage"
+  >;
 }
 
 /**
@@ -43,13 +50,12 @@ export interface RehearsalTransportOptions {
 export function mountRehearsalTransport({
   container,
   schedule,
-  clock,
-  readLanguage,
-  setLanguage,
+  show,
 }: RehearsalTransportOptions): () => void {
   const { durationSeconds } = schedule;
 
   const bar = document.createElement("div");
+  bar.className = "rehearsal";
   // Styled inline for the same reason the VR entry button is: this page has
   // no UI stylesheet, and dark controls stay readable on the bright canvas.
   bar.style.cssText = [
@@ -89,7 +95,10 @@ export function mountRehearsalTransport({
   ].join(";");
   track.append(playhead);
 
-  const languageSwitch = createLanguageSwitch(readLanguage, setLanguage);
+  const languageSwitch = createLanguageSwitch(
+    show.readLanguage,
+    show.setLanguage,
+  );
 
   topRow.append(transportButton, readout, track, ...languageSwitch.buttons);
 
@@ -104,7 +113,7 @@ export function mountRehearsalTransport({
     const startSeconds = index === 0 ? 0 : slot.atSeconds;
 
     const button = createBarButton(sectionName(slot.cueId));
-    button.addEventListener("click", () => clock.seekTo(startSeconds));
+    button.addEventListener("click", () => show.seekTo(startSeconds));
     sections.append(button);
 
     track.append(createSectionTick(startSeconds, durationSeconds));
@@ -113,10 +122,7 @@ export function mountRehearsalTransport({
   bar.append(topRow, sections);
   container.append(bar);
 
-  transportButton.addEventListener("click", () => {
-    if (clock.sample().isPlaying) clock.pause();
-    else clock.play();
-  });
+  transportButton.addEventListener("click", show.togglePlayback);
 
   // The dragged position while scrubbing; it wins over the clock, which is
   // sampled a frame behind the pointer.
@@ -125,7 +131,7 @@ export function mountRehearsalTransport({
   attachScrubbing({
     track,
     durationSeconds,
-    clock,
+    show,
     onScrubChange: (showTimeSeconds) => {
       scrubSeconds = showTimeSeconds;
     },
@@ -137,7 +143,7 @@ export function mountRehearsalTransport({
   let renderedPlayheadLeft: string | undefined;
 
   function draw(): void {
-    const sample = clock.sample();
+    const sample = show.sample();
     const showTimeSeconds = scrubSeconds ?? sample.timeSeconds;
 
     if (renderedPlaying !== sample.isPlaying) {
@@ -216,7 +222,7 @@ function createLanguageSwitch(
 interface ScrubbingOptions {
   readonly track: HTMLElement;
   readonly durationSeconds: number;
-  readonly clock: ShowClock;
+  readonly show: Pick<RunningShow, "sample" | "play" | "pause" | "seekTo">;
   /** Reports the dragged position, or undefined when the drag ends. */
   readonly onScrubChange: (showTimeSeconds: number | undefined) => void;
 }
@@ -229,7 +235,7 @@ interface ScrubbingOptions {
 function attachScrubbing({
   track,
   durationSeconds,
-  clock,
+  show,
   onScrubChange,
 }: ScrubbingOptions): void {
   let wasPlaying = false;
@@ -244,13 +250,13 @@ function attachScrubbing({
   function seek(event: PointerEvent): void {
     const showTimeSeconds = readShowTime(event);
     onScrubChange(showTimeSeconds);
-    clock.seekTo(showTimeSeconds);
+    show.seekTo(showTimeSeconds);
   }
 
   track.addEventListener("pointerdown", (event) => {
     track.setPointerCapture(event.pointerId);
-    wasPlaying = clock.sample().isPlaying;
-    if (wasPlaying) clock.pause();
+    wasPlaying = show.sample().isPlaying;
+    if (wasPlaying) show.pause();
     seek(event);
   });
 
@@ -264,8 +270,8 @@ function attachScrubbing({
     if (!track.hasPointerCapture(event.pointerId)) return;
 
     track.releasePointerCapture(event.pointerId);
-    clock.seekTo(readShowTime(event));
-    if (wasPlaying) clock.play();
+    show.seekTo(readShowTime(event));
+    if (wasPlaying) show.play();
     wasPlaying = false;
     onScrubChange(undefined);
   }
@@ -295,6 +301,7 @@ function createSectionTick(
 
 function createTrack(): HTMLElement {
   const track = document.createElement("div");
+  track.className = "rehearsal__track";
   track.style.cssText = [
     "position:relative",
     "flex:1",

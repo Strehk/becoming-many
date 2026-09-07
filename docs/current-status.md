@@ -1,6 +1,6 @@
 # Current Development Status
 
-As-built snapshot: 2026-09-07, checkpoint `76c370d` plus the #85 explicit-level simplification on `david_refactor`.
+As-built snapshot: 2026-09-07, the #36 Entry/UI/Engine separation after checkpoint `281e7df` on `david_refactor`.
 Dated measurement packets retain the earlier exact identities they tested;
 the current checkout is the authority for runtime details.
 
@@ -17,7 +17,9 @@ issue fixes. The approved target is Windows-PCVR over USB-C with stable 90 Hz
 on the actual installation. Tutorial and credits are required; remaining content
 and operation decisions are tracked in the roadmap. Complete visitor teardown
 is implemented at existing owners; the concrete next-visitor restart remains open.
-Explicit, self-contained literal levels are implemented.
+Explicit, self-contained literal levels are implemented. Conductor is UI-only;
+Entry wires one Run, and UI/console use direct Show commands with its clock internal.
+The current Run time/flight reset remains distinct from full visitor replacement.
 The #80 animal-connection removal is implemented below. Small additions remain issue-backed.
 
 ## Runnable Surfaces
@@ -44,9 +46,9 @@ The #80 animal-connection removal is implemented below. Small additions remain i
 - Typed `LevelPreset` files contain their module settings as local literals,
   without imported parameter blocks or executable helpers. The Show constructs the Connections preset once; `ShowLevelState`
   retains live presentation. Layer spreads and the separate Show recipe are gone.
-- `level-runtime.ts` owns startup, frame coordination, source assets and awaited
+- `level.runtime.ts` owns startup, frame coordination, source assets and awaited
   termination; `level-composition.ts` loads assets and owns World Surface creation, concrete module
-  construction, and cross-module wiring. `show-runtime.ts` owns show following,
+  construction, and cross-module wiring. `show.runtime.ts` owns show following,
   while Runtime selects desktop/M5 input directly in its local frame. World
   owns the stopped renderer, GPU preparation and subsequent loop start.
 - Static presentation or the schedule's opening show state is applied before

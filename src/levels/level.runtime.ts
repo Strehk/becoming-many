@@ -36,10 +36,10 @@ import {
   type RunningShow,
   type ShowRequest,
   type ShowRuntime,
-} from "./show-runtime";
+} from "./show.runtime";
 
-/** One running level, returned so the page that started it can command it. */
-export interface RunningLevel {
+/** One experience lifetime, with commands and observations for its entry/UI. */
+export interface Run {
   readonly renderCounters: RenderCounters;
   /** Diagnostic reads only; never called by the frame loop. */
   readonly readGraphicsInfo: () => GraphicsInfo;
@@ -51,15 +51,19 @@ export interface RunningLevel {
    * pose remains owned by pointer look or the headset.
    */
   readonly resetFlight: () => void;
+  /** Rewind, reset the flight rig and hold; this does not replace the Run. */
+  readonly resetShowAndFlight: () => void;
 
   /**
    * The M5 tilt controller, idle until a host is set (by the conductor page,
    * a deployment config, or a `?m5=` request). Undefined under a benchmark.
    */
-  readonly m5: M5Adapter | undefined;
+  readonly m5:
+    | Pick<M5Adapter, "setHost" | "readOperatorStatus" | "readLatestState">
+    | undefined;
 
   /** The renderer's WebXR session, for the page that owns the entry button. */
-  readonly xr: XrSessionControl;
+  readonly xr: Pick<XrSessionControl, "start" | "stop" | "subscribe">;
 }
 
 interface CommonLevelRequest {
@@ -88,7 +92,7 @@ export type LevelStartRequest = StaticLevelRequest | ShowLevelRequest;
 export async function startLevel(
   container: Element | null,
   request: LevelStartRequest,
-): Promise<RunningLevel> {
+): Promise<Run> {
   if (!(container instanceof HTMLElement)) {
     throw new Error("Missing level container element");
   }
@@ -167,22 +171,30 @@ export async function startLevel(
       unload,
       readGraphicsInfo: world.readGraphicsInfo,
       show: show?.running,
-      resetFlight: (): void =>
-        resetFlightPose(
-          runningWorld.viewerRig.position,
-          runningWorld.viewerRig.quaternion,
-        ),
+      resetFlight,
+      resetShowAndFlight: (): void => {
+        show?.running.seekTo(0);
+        resetFlight();
+        show?.running.pause();
+      },
       renderCounters: world.renderCounters,
       m5,
       xr: world.xr,
     };
+
+    function resetFlight(): void {
+      resetFlightPose(
+        runningWorld.viewerRig.position,
+        runningWorld.viewerRig.quaternion,
+      );
+    }
 
     function updateFrame(deltaSeconds: number): void {
       request.onFrame?.(deltaSeconds);
       if (benchmark) {
         benchmark.placeViewer(runningWorld.viewerRig);
       } else {
-        const controlFrame = m5?.readFrame();
+        const controlFrame = m5?.consumeFrame();
         if (controlFrame)
           applyM5Flight(runningWorld.viewerRig, controlFrame, deltaSeconds);
         else desktop?.update(deltaSeconds);

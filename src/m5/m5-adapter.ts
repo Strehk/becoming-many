@@ -28,7 +28,7 @@ export interface M5Adapter {
    * the glider keeps flying — `quality: 0` means "nothing is steering",
    * never "stop".
    */
-  readonly readFrame: () => ControlFrame | undefined;
+  readonly consumeFrame: () => ControlFrame | undefined;
   readonly readOperatorStatus: () => M5OperatorStatus;
   /**
    * The newest device sample, for views that only glance at it — the
@@ -94,7 +94,7 @@ export function createM5Adapter(expectedDeviceId?: string): M5Adapter {
 
   return {
     setHost,
-    readFrame: () => source?.readFrame(Date.now()),
+    consumeFrame: () => source?.consumeFrame(Date.now()),
     readLatestState: () => source?.readLatestState(Date.now()),
     readOperatorStatus: () =>
       source?.readDeviceReport(Date.now()) ?? { state: "off" },

@@ -11,9 +11,12 @@
 
 import type { NarrationSchedule } from "../dramaturgy/narration-schedule";
 import { cueSlots } from "../dramaturgy/schedule-layout";
+import type { RunningShow } from "../levels/show.runtime";
 import { CONDUCTOR_SETTINGS } from "./conductor-settings";
 import type { ConductorPanel } from "./conductor-state";
-import type { ShowActions } from "./show-actions";
+
+type TimelineShow = Pick<RunningShow, "sample" | "play" | "pause" | "seekTo">;
+
 import { cueDisplayName, formatShowTime } from "./time-format";
 
 const MILLISECONDS_PER_SECOND = 1_000;
@@ -21,7 +24,7 @@ const MILLISECONDS_PER_SECOND = 1_000;
 export interface ShowTimelineOptions {
   readonly parent: HTMLElement;
   readonly schedule: NarrationSchedule;
-  readonly actions: ShowActions;
+  readonly show: TimelineShow;
   /** Reports the operator's own position, or undefined when the drag ends. */
   readonly onScrubChange: (showTimeSeconds: number | undefined) => void;
 }
@@ -47,7 +50,7 @@ interface ChapterView {
 export function createShowTimeline({
   parent,
   schedule,
-  actions,
+  show,
   onScrubChange,
 }: ShowTimelineOptions): ConductorPanel {
   const { durationSeconds } = schedule;
@@ -62,7 +65,7 @@ export function createShowTimeline({
   buttons.className = "conductor__chapters";
 
   const chapters = readChapters(schedule).map((chapter) =>
-    createChapterView(track, buttons, chapter, durationSeconds, actions),
+    createChapterView(track, buttons, chapter, durationSeconds, show),
   );
 
   const playhead = document.createElement("div");
@@ -71,14 +74,12 @@ export function createShowTimeline({
   root.append(track, buttons);
   parent.append(root);
 
-  attachScrubbing({ track, durationSeconds, actions, onScrubChange });
+  attachScrubbing({ track, durationSeconds, show, onScrubChange });
 
   return {
     update(state): void {
       const showTimeSeconds = state.showTimeSeconds;
 
-      // The scrub gesture reads this to know whether to resume afterwards.
-      track.dataset.playing = String(state.snapshot.isPlaying);
       playhead.style.left = `${toPercent(showTimeSeconds, durationSeconds)}%`;
 
       for (const view of chapters) {
@@ -112,7 +113,7 @@ function createChapterView(
   buttons: HTMLElement,
   chapter: Chapter,
   durationSeconds: number,
-  actions: ShowActions,
+  show: TimelineShow,
 ): ChapterView {
   const slot = document.createElement("div");
   slot.className = "timeline__slot";
@@ -143,7 +144,7 @@ function createChapterView(
   buttonTime.textContent = formatShowTime(chapter.startSeconds);
 
   button.append(buttonName, buttonTime);
-  button.addEventListener("click", () => actions.seekTo(chapter.startSeconds));
+  button.addEventListener("click", () => show.seekTo(chapter.startSeconds));
   buttons.append(button);
 
   return { chapter, slot, progress, button };
@@ -152,7 +153,7 @@ function createChapterView(
 interface ScrubbingOptions {
   readonly track: HTMLElement;
   readonly durationSeconds: number;
-  readonly actions: ShowActions;
+  readonly show: TimelineShow;
   readonly onScrubChange: (showTimeSeconds: number | undefined) => void;
 }
 
@@ -165,7 +166,7 @@ interface ScrubbingOptions {
 function attachScrubbing({
   track,
   durationSeconds,
-  actions,
+  show,
   onScrubChange,
 }: ScrubbingOptions): void {
   let wasPlaying = false;
@@ -180,13 +181,13 @@ function attachScrubbing({
 
   track.addEventListener("pointerdown", (event) => {
     track.setPointerCapture(event.pointerId);
-    wasPlaying = track.dataset.playing === "true";
-    if (wasPlaying) actions.pause();
+    wasPlaying = show.sample().isPlaying;
+    if (wasPlaying) show.pause();
 
     const showTimeSeconds = readShowTime(event);
     lastSentMilliseconds = performance.now();
     onScrubChange(showTimeSeconds);
-    actions.seekTo(showTimeSeconds);
+    show.seekTo(showTimeSeconds);
   });
 
   track.addEventListener("pointermove", (event) => {
@@ -201,7 +202,7 @@ function attachScrubbing({
     if (now - lastSentMilliseconds < intervalMilliseconds) return;
 
     lastSentMilliseconds = now;
-    actions.seekTo(showTimeSeconds);
+    show.seekTo(showTimeSeconds);
   });
 
   function endScrub(event: PointerEvent): void {
@@ -209,8 +210,8 @@ function attachScrubbing({
 
     track.releasePointerCapture(event.pointerId);
     // The throttle can have swallowed the last move, so land it exactly.
-    actions.seekTo(readShowTime(event));
-    if (wasPlaying) actions.play();
+    show.seekTo(readShowTime(event));
+    if (wasPlaying) show.play();
     wasPlaying = false;
     onScrubChange(undefined);
   }

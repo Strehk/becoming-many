@@ -83,7 +83,7 @@ async function sampleFrames(page: Page, durationSeconds: number) {
             capped: boolean;
             hidden: boolean;
           }>((finish) => {
-            const clock = window.showClock;
+            const clock = window.show;
             if (!clock) throw new Error("Show clock is unavailable");
             const startedAt = performance.now();
             const startSeconds = clock.sample().timeSeconds;
@@ -174,7 +174,7 @@ function collectNarrationEvidence(page: Page) {
 async function loadShow(page: Page, url: URL) {
   const startedAt = performance.now();
   await page.goto(url.href, { waitUntil: "domcontentloaded" });
-  await page.waitForFunction(() => window.showClock !== undefined);
+  await page.waitForFunction(() => window.show !== undefined);
   await page.locator("canvas").first().waitFor({ state: "visible" });
   const readinessMs = performance.now() - startedAt;
   await page.bringToFront();
@@ -200,10 +200,10 @@ function verifyFrameCollection(
 }
 
 async function observePlayback(page: Page, target: number, duration: number) {
-  await page.evaluate((target) => window.showClock?.seekTo(target), target);
+  await page.evaluate((target) => window.show?.seekTo(target), target);
   await page.getByRole("button", { name: "Play", exact: true }).click();
   const observation = await sampleFrames(page, duration);
-  if (await page.evaluate(() => window.showClock?.sample().isPlaying)) {
+  if (await page.evaluate(() => window.show?.sample().isPlaying)) {
     await page.getByRole("button", { name: "Hold", exact: true }).click();
   }
   const {

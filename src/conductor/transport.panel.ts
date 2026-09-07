@@ -13,21 +13,21 @@ import {
   narrationCueAt,
 } from "../dramaturgy/narration-schedule";
 import { nextCueAt } from "../dramaturgy/schedule-layout";
+import type { RunningShow } from "../levels/show.runtime";
 import { CONDUCTOR_SETTINGS } from "./conductor-settings";
 import type { ConductorPanel } from "./conductor-state";
-import type { ShowActions } from "./show-actions";
 import { cueDisplayName, formatShowTime } from "./time-format";
 
 export interface TransportPanelOptions {
   readonly parent: HTMLElement;
   readonly schedule: NarrationSchedule;
-  readonly actions: ShowActions;
+  readonly show: Pick<RunningShow, "seekBy" | "togglePlayback">;
 }
 
 export function createTransportPanel({
   parent,
   schedule,
-  actions,
+  show,
 }: TransportPanelOptions): ConductorPanel {
   const root = document.createElement("section");
   root.className = "conductor__transport";
@@ -63,7 +63,7 @@ export function createTransportPanel({
   controls.className = "conductor__transport-controls";
 
   createNudgeButton(controls, "back", () =>
-    actions.seekBy(-CONDUCTOR_SETTINGS.touchNudgeSeconds),
+    show.seekBy(-CONDUCTOR_SETTINGS.touchNudgeSeconds),
   );
 
   const transportButton = document.createElement("button");
@@ -76,25 +76,20 @@ export function createTransportPanel({
   controls.append(transportButton);
 
   createNudgeButton(controls, "forward", () =>
-    actions.seekBy(CONDUCTOR_SETTINGS.touchNudgeSeconds),
+    show.seekBy(CONDUCTOR_SETTINGS.touchNudgeSeconds),
   );
 
   root.append(clockBlock, cues, controls);
   parent.append(root);
 
-  // Mirrors the last drawn state so one button both starts and holds.
-  let isShowPlaying = false;
-  transportButton.addEventListener("click", () => {
-    if (isShowPlaying) actions.pause();
-    else actions.play();
-  });
+  transportButton.addEventListener("click", show.togglePlayback);
 
   // The icon is parsed markup, so it only redraws when the answer changes.
   let renderedPlaying: boolean | undefined;
 
   return {
     update(state): void {
-      isShowPlaying = state.snapshot.isPlaying;
+      const isShowPlaying = state.isPlaying;
 
       if (renderedPlaying !== isShowPlaying) {
         renderedPlaying = isShowPlaying;
