@@ -19,8 +19,8 @@ code is not removal. No extra coordinator, forwarding layer or audit system.
 Restart operation (including a possible page reload), riverbank
 clearance/overhang and tutorial/credits details need
 small reviewable proposals before their dependent changes. None of these gates
-reopens the confirmed owner decisions. Review at most three implemented issues
-before the next cumulative human behavior, architecture and size check.
+reopens the confirmed owner decisions. After three implementations, agents review
+behavior, architecture and size, then continue autonomously under the workflow.
 
 The original 2026-09-05 investigation used `9bfb84b` plus local M0 work and read
 52 issues, 17 comments and relevant PRs. Its implementation observations and
@@ -195,7 +195,7 @@ and Show are named technical chapters, not places the reader must visit to
 recover hidden startup decisions. The cancellation/failure sequence below
 belongs beside that story, not behind an unexplained `cleanupEverything()`.
 
-**Human check:** read the recipe and startup/frame/end section aloud. Explain
+**Readability check:** read the recipe and startup/frame/end section in order. Explain
 why assets load, what is absent, where input is selected, what runs next, who
 owns every allocation and what a failed start releases. If an answer requires
 following forwarding-only functions, remove those functions and their argument
@@ -687,7 +687,7 @@ one frame and end from the main story without chasing forwarding-only helpers.
 Keep owner-local operations together; measure success by deleted dependencies,
 state and alternate paths, not by multiplying smaller files.
 
-Human acceptance walks a static start/end, a Show frame/seek and a language/
+Agent review walks a static start/end, a Show frame/seek and a language/
 complete visitor restart. For each, identify acquisitions, one authority per
 state, retained behavior and every deleted consumer path. Inspect D4's full deletion
 and D5's producer agreement; compare diagram, contracts and migration with the

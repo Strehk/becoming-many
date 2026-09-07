@@ -1,6 +1,6 @@
 # Refactor Test Plan
 
-Use the [workflow](refactor-workflow.md) for branch checks, issue scope, human
+Use the [workflow](refactor-workflow.md) for branch checks, issue scope, decision
 gates and evidence retention. Reuse Bun, Biome, Vite, Fallow, Playwright and the
 existing benchmark. Tests are maintained tools, not a permanent archive of
 implementation steps. Test counts and coverage percentages are not goals.
@@ -32,7 +32,7 @@ implementation steps. Test counts and coverage percentages are not goals.
 | Shared ownership/async work | Current consumers, failed/cancelled start, full end/fresh start, late results and long-running visitor cycles |
 | Browser/test tooling | Its affected scenarios and failure detection; preserve independent application evidence when its inputs are unchanged |
 | Rendering, audio, streaming or scheduling behavior/cost | Relevant before/after counters, comparable headed timings and normal-show checks |
-| Milestone | Integrated browser/counter checks, full EN/DE show, cumulative architecture review and human acceptance |
+| Milestone | Integrated browser/counter checks, full EN/DE show, agent-led cumulative architecture review; no mandatory user acceptance |
 | Physical-device behavior | Actual Windows-PCVR installation over USB-C, headset and M5/venue matrix; Mac simulation is insufficient |
 
 For application work, run repository gates after implementation/simplification,
@@ -76,7 +76,8 @@ Existing commands and supported scenarios live in
   For visual changes, inspect comparable poses/cues with working real controls;
   a screenshot after failed input is not proof of the intended view.
 - Capture traces/screenshots in separate functional/diagnostic runs, not timing
-  runs. Human review records visible and audible behavior on the exact candidate.
+  runs. Agent review records observable behavior on the exact candidate; user testing
+  is optional and unavailable listening/device evidence stays explicit.
 - Verify many successive visitors, failed/cancelled starts and late assets,
   workers/audio/XR results: no old run may publish into its successor; shared
   source assets remain valid until their final borrower ends. During one visit,

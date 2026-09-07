@@ -13,7 +13,7 @@ and removal obligations. Its explicitly open choices remain decisions.
 | [Engineering standards](engineering-standards.md) | Implementation rules |
 | [Architecture](architecture.md), [decisions](architecture-decisions.md) | As-built ownership and confirmed constraints |
 | Live GitHub issue | Problem, acceptance criteria, decisions and completion |
-| [Roadmap](roadmap.md) | Order, prerequisites, current checkpoint and human review count |
+| [Roadmap](roadmap.md) | Order, prerequisites, current checkpoint and active goal |
 | [Test plan](refactor-test-plan.md) | Verification and test retention |
 | [Current status](current-status.md), [performance](performance.md) | As-built capabilities and measured performance |
 | `docs/evidence/issue-<number>/` | Essential dated results, identities and failure evidence |
@@ -33,8 +33,8 @@ Do not add another plan, status ledger or completion template.
   toward `origin/david_refactor`. Documentation permission is not Git permission.
 - Implement one issue at a time. An independent ready issue can follow a
   technically implemented issue awaiting external acceptance, but cannot cross
-  an unmet dependency or human gate. User-requested review corrections belong
-  to the reviewed block; they do not imply its acceptance.
+  an unmet technical dependency or explicitly open decision. Pending manual
+  testing does not block independent work toward the active goal.
 
 ## Issue loop
 
@@ -86,26 +86,28 @@ Never suppress a finding or update a baseline merely to make a gate green.
 Before changing confirmed ownership or adding a structural abstraction, obtain
 approval for the concrete owner/consumer/removal proposal unless already given.
 
-## Human gates
+## Autonomous review and decision gates
 
-| Trigger | Required acceptance |
+On 2026-09-07 the user authorized autonomous work through the roadmap's active
+goal without mandatory user testing or intermediate human acceptance. This
+supersedes the former three-issue and milestone stop rules, including older
+issue checklists requesting routine manual review. Human testing is optional.
+
+| Trigger | Required action |
 | --- | --- |
-| Every issue | Code/architecture review and applicable verification |
-| Visible behavior | Prepared human browser check; required device checks remain separate |
-| Three implemented issues or milestone boundary, whichever comes first | Cumulative human behavior, architecture and size review before another implementation |
-| Open structural or product choice | Decision before dependent implementation |
-| M0 and later milestones | Integrated behavior, ownership, measurement/evidence review |
+| Every issue | Independent code/architecture review, applicable automated and agent-operated browser checks, concise GitHub evidence and size delta |
+| Three implemented issues or milestone boundary | Agent-led cumulative behavior, architecture and size review; document findings and continue without waiting for the user |
+| Explicitly open structural or product choice | Obtain the specific decision before dependent implementation; continue independent ready issues |
+| Unavailable physical equipment or listening evidence | Record the exact unverified criterion; continue independent work without claiming physical acceptance |
+| Active goal reached | Report completed work, remaining blockers, measurements and code reduction; no mandatory user test session |
 
-Count locally implemented work even when hardware acceptance is pending. The
-roadmap alone records the count and last actual review. Prepare three to five
-concrete actions in a visible production browser, with expected behavior and
-remaining uncertainties. Record the actual response and tested state; silence,
-a request to correct review findings, or a successful test is not acceptance.
-New owners/abstractions, unplanned content changes and unjustified growth need
-an explicit decision unless already approved. Basic Windows-PCVR startup and
-visitor restart must be investigated early enough to inform dependent designs.
-Present the concrete restart operation before implementation; page reload is
-a candidate to validate on Windows-PCVR, not assumed automatic XR re-entry.
+Technical verification, branch protection, issue dependencies and the binding
+target architecture remain mandatory. Do not close an issue with an unmet
+technical or physical criterion, or treat waived user testing as proof of 90 Hz.
+A measured regression must be fixed or explicitly accepted. This authorization
+does not approve new owners, structural abstractions, unplanned content,
+unjustified growth, an open restart/level-show choice or a benchmark update.
+Prepare concrete decision proposals while progressing independent issues.
 
 ## Evidence, feedback and integration
 

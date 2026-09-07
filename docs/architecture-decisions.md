@@ -189,8 +189,8 @@ history belongs in Git; unresolved product and deployment questions belong in
   the same change. Keep tests only while they protect relevant current risks;
   retire temporary probes after preserving essential findings, never to hide
   failures. No additional audit infrastructure or line-count gaming.
-- After at most three implemented issues, perform cumulative human behavior,
-  architecture and size review. Routine choices are autonomous. New owners,
+- After three implemented issues, agents review cumulative behavior, architecture
+  and size, then continue autonomously. User testing is optional. Routine choices are autonomous. New owners,
   abstractions, unplanned content and unexplained growth need a conscious
   decision. Remaining gates are concrete proposals with consequences, as mapped
   in the [target architecture](target-architecture.md#10-decisions-issuepr-evidence-and-critical-review)
