@@ -9,6 +9,7 @@ human decisions live only in the [roadmap](../roadmap.md).
 | [#77](issue-77/README.md) | Type-only contract relocation, identical build manifest, boundary proof |
 | [#78](issue-78/README.md) | Historical counter attribution and unapproved reference diff |
 | [#79](issue-79/README.md) | Audio diagnosis/correction, before/after rendering and ordinary final EN/DE |
+| [#81](https://github.com/Strehk/becoming-many/issues/81) | Riverbank decision views: [1 m proposal](issue-81-clearance-1m.png), [2.5 m preview](issue-81-clearance-2_5m.png); source `19308ff`, no placement decision or implementation |
 | [#82](issue-82/README.md) | Gather recovery, regression proof, rendering comparison and failed pointer-lock view |
 
 JSON packets keep records under their original report names. References resolve
