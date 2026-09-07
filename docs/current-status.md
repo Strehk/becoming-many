@@ -50,9 +50,10 @@ The #80 animal-connection removal is implemented below. Small additions remain i
   owns the stopped renderer, GPU preparation and subsequent loop start.
 - Static presentation or the schedule's opening show state is applied before
   modules size their fixed spatial windows.
-- Test UI metrics and overlay lifetime belong to the Test and Conductor entries. The
-  rehearsal show neither samples them nor loads Test UI, legacy Grass, or Zone
-  Visualizer code.
+- Test and Conductor own their metrics; Test owns its overlay lifetime. The
+  rehearsal show neither samples those metrics nor loads Test UI or Zone Visualizer.
+- Grass Clipmap is the sole Grass renderer, including Test and Design Test;
+  legacy Grass and its diagnostic construction path have been removed (#13).
 - The show clock is the authority for narration, world-state selection,
   transitions, sense intensity, and end-credit presence.
 - The End Credits module fades one canvas-textured plane in at 8:36 and holds it

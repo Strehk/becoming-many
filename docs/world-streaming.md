@@ -48,7 +48,6 @@ adaptive quality system, or asset-prefetch framework exists.
 - Air and Scent Particles update fixed point-buffer ranges.
 - Vegetation and Rocks replay deterministic placements into compact instanced
   draws.
-- Legacy Grass recycles chunk assignments into its fixed instanced mesh.
 - Grass Clipmap keeps fixed chunk anchors and refills a camera-following height
   texture through queued work.
 - Connections uses its own worker for topology, then publishes into fixed

@@ -108,13 +108,10 @@ interface LevelSetup {
   readonly testModules: TestLevelModules | undefined;
 }
 
-type CreateLegacyGrass =
-  typeof import("../modules/grass/grass").createGrassModule;
 type CreateZonePresentation =
   typeof import("../modules/zone-visualizer/zone-visualizer").createZoneVisualizer;
 
 export interface TestLevelModules {
-  readonly createLegacyGrass?: CreateLegacyGrass;
   readonly createZonePresentation?: CreateZonePresentation;
 }
 
@@ -217,7 +214,6 @@ export function composeLevel(options: LevelCompositionOptions): ComposedLevel {
     );
     add(undefined, createAirParticles(setup));
     add("scent", scent?.module);
-    add(undefined, createGrass(setup, echoDepth, thermal, structureFade));
     add(
       undefined,
       createGrassClipmap(setup, echoDepth, thermal, structureFade),
@@ -562,32 +558,6 @@ function createGrassClipmap(
   });
 }
 
-function createGrass(
-  setup: LevelSetup,
-  echoDepth: EchoDepthEffect | undefined,
-  thermal: ThermalPerceptionEffects | undefined,
-  worldFade: WorldFadeEffect | undefined,
-): WorldModule | undefined {
-  const preset = setup.level.grass;
-  if (!preset) return undefined;
-
-  const createLegacyGrass = setup.testModules?.createLegacyGrass;
-  if (!createLegacyGrass) throw new Error("Legacy Grass module was not loaded");
-
-  return createLegacyGrass({
-    scene: setup.world.scene,
-    viewpoint: setup.world.viewpoint,
-    preset,
-    streamQueue: setup.world.streamQueue,
-    worldSurface: setup.worldSurface,
-    // Grass takes the vegetation heat response: it is the same living plant
-    // matter, growing between the bushes that carry those values, and a
-    // meadow that ran cooler than the shrubs standing in it would read as a
-    // different substance.
-    effects: buildSurfaceEffects(worldFade, thermal?.vegetation, echoDepth),
-  });
-}
-
 function createVegetation(
   setup: LevelSetup,
   echoDepth: EchoDepthEffect | undefined,
@@ -722,7 +692,7 @@ function createTerrainPresentation(
 function hasVisibleSurface(level: WorldComposition): boolean {
   return Boolean(
     level.terrain ||
-      level.grass ||
+      level.grassClipmap ||
       level.vegetation ||
       level.rocks ||
       level.animals,

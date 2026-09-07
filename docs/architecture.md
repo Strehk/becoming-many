@@ -43,8 +43,8 @@ keeps the same visit; final page exit ends it. Visitor restart policy remains op
 Test and Conductor own and read their frame samplers directly. Test creates and
 ends its overlay, updates it through the existing optional frame callback, and
 reads World's read-only draw counters. Run holds no UI or sampler contract.
-Legacy Grass and Zone Visualizer implementations load only for the standalone
-presets that author them; the rehearsal show does not fetch those chunks.
+Zone Visualizer loads only for standalone presets that request zone presentation.
+All Grass-bearing levels use the same Grass Clipmap construction.
 
 The single frame loop is owned by World Runtime:
 
@@ -121,7 +121,7 @@ receive it as a read-only contract.
 `src/modules` owns the rendered or simulated content. Current categories are:
 
 - streamed geometry and populations: Terrain, Vegetation, Rocks, Animals,
-  legacy Grass, and Grass Clipmap;
+  and Grass Clipmap;
 - point and network systems: Air Particles, Scent Particles, Motion Sense, and
   Mycelium/Connections;
 - material or presentation effects: Echo Depth, Thermal Perception, World Fade,

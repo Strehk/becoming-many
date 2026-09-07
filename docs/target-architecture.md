@@ -149,12 +149,11 @@ replaces them.
 
 For `/test.html?level=test`, [test.level.ts](../src/levels/test.level.ts) directly
 states white background, 180 m view range, 50 m maximum ground clearance and
-Test UI. It includes Air Particles (80 per chunk), zone-colored Terrain, legacy
-Grass, Vegetation, Rocks, Animals and Magnetic sky. It does not request Scent,
+Test UI. It includes Air Particles (80 per chunk), zone-colored Terrain, Grass
+Clipmap, Vegetation, Rocks, Animals and Magnetic sky. It does not request Scent,
 Echo Depth, Motion, Thermal or Connections. These are observed diagnostic
-choices, not new defaults. **Confirmed target change:** Test and Design Test
-replace legacy Grass with Clipmap using the same construction path as the Show.
-The seven-module explanation below remains; the Grass implementation changes.
+choices, not new defaults. Test and Design Test now use the same Grass Clipmap
+construction path as the Show (#13), preserving the seven-module explanation.
 
 A reader can therefore explain the result: load the vegetation/rock/animal
 models, establish the view before allocating spatial pools, construct those
@@ -413,8 +412,8 @@ consume those same weights for their own density/coverage. No module owns a
 second zone classifier, transition width or smoothing calculation.
 
 **Observed:** `4807c0d` selected Clipmap for narrative Grass but retained legacy
-Grass for diagnostics. `test.level.ts` and `designTest.level.ts` still author
-`grass`; Composition and the Test loader support both paths.
+Grass for diagnostics. #13 migrates `test.level.ts` and `designTest.level.ts`
+to `grassClipmap` and removes the legacy Composition/Test-loader path.
 [World Surface](../src/world-surface/world-surface.ts) currently exposes
 `zoneConditionsAt` and hard `zoneAt`, not continuous weights.
 [getGrassZoneCoverage](../src/modules/grass-clipmap/grass-height-field.ts) uses
@@ -435,15 +434,15 @@ service, a Grass-specific smoothing pass or a universal population runtime.
 The CPU/GPU representation may differ; it must transport or evaluate the same
 centrally owned rules, never become another authored zone authority.
 
-**Concrete removal:** delete `src/modules/grass/`, `GrassPreset` and
-`WorldComposition.grass`; migrate the two diagnostic recipes to `grassClipmap`.
-Delete Composition's `createGrass`, `CreateLegacyGrass` and
-`TestLevelModules.createLegacyGrass`, the Test loader's legacy dynamic import,
-and `tests/modules/grass.test.ts`. Remove legacy-only assertions/load cases from
-`tests/test-ui/test-level-modules.test.ts` and affected preset tests. Keep the
-Zone Visualizer's lazy loader, Clipmap tests, shared material effects and the
-still-used `thermal.grass` response. No legacy fallback, compatibility config or
-second renderer remains; #40's legacy-only cleanup becomes unnecessary.
+**Removed in #13:** `src/modules/grass/`, `GrassPreset`, `WorldComposition.grass`,
+Composition's legacy factory/contract, the Test loader's legacy import and
+`tests/modules/grass.test.ts`, including exclusive loader/preset cases. Both
+diagnostics directly author `grassClipmap`. Zone Visualizer's lazy loader,
+Clipmap tests, shared material effects and `thermal.grass` remain. No legacy
+fallback, compatibility config or second renderer replaces the deleted path.
+Diagnostic meadow density/height and palettes remain authored; Clipmap's common
+height/coverage replaces the old separate shrub setting. #71 owns shared zone
+weights; #72 and integrated visual/physical acceptance remain open.
 
 **Separate cause-level fixes:** #71 replaces jagged density/coverage boundaries
 with the shared continuous weights. #72 fixes false grass rejection in the
@@ -588,7 +587,7 @@ remove old consumers, obsolete tests and documentation with the replaced path.
 | `src/control/flight-reset.ts` | Only Run uses its two transform assignments | Remove wrapper when the fresh-run sequence establishes required initialization | Existing Run startup/restart | Imported reset wrapper; reset-only visitor semantics | D1/D2; concrete restart gate first, preserve local head pose |
 | `src/levels/show-renderer-preparation.ts` | Only Run passes World resources through `ShowRenderWorld` | Delete file, retain operations | Existing World closure | `ShowRenderWorld`, separate preparation wrapper/import | #73 implemented; unchanged preparation and failure restoration verified |
 | `sense-layers.ts`, `show-composition.ts`, authored Terrain/Connections forwarding files | Layer membership, hidden warm variant and duplicate Show recipe | Removed in #85 | Explicit module keys and the Connections preset for Show | Layer objects, spreads, duplicate Show type/request and exclusive test | All nine effective presets and Show settings preserved; shared content parameters retained |
-| `src/modules/grass/`, `GrassPreset`, `WorldComposition.grass`, two diagnostic `grass` recipes; Composition/Test loader legacy factory and import; `tests/modules/grass.test.ts` | Duplicate renderer and diagnostic-only construction path | Confirmed: delete legacy implementation and exclusive consumers; migrate recipes | Existing Grass Clipmap for Show/Test/Design Test | `createGrass`, `CreateLegacyGrass`, `createLegacyGrass`, legacy shaders/config/loading and exclusive test cases | D5/#13: owner decided; preserve shared effects and Zone Visualizer loading. #40 becomes unnecessary; #71/#72 and Windows-PCVR acceptance remain |
+| `src/modules/grass/`, `GrassPreset`, `WorldComposition.grass`, two diagnostic `grass` recipes; Composition/Test loader legacy factory and import; `tests/modules/grass.test.ts` | Duplicate renderer and diagnostic-only construction path | Removed in #13; both diagnostics use `grassClipmap` | Existing Grass Clipmap for Show/Test/Design Test | `createGrass`, `CreateLegacyGrass`, `createLegacyGrass`, legacy shaders/config/loading and exclusive test cases | D5/#13: owner decided; preserve shared effects and Zone Visualizer loading. #40 becomes unnecessary; #71/#72 and Windows-PCVR acceptance remain |
 
 ### Functions, contracts and state removed inside retained files
 

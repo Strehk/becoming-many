@@ -17,8 +17,7 @@ dispose everything they create.
 - Vegetation and Rocks render deterministic compact instanced populations.
 - Animals owns ten bounded actors, visibility, animation, and movement.
 - Air and Scent Particles own bounded points buffers.
-- Grass Clipmap is the narrative grass path; legacy Grass remains in diagnostic
-  presets pending issue #13.
+- Grass Clipmap is the sole grass renderer for narrative and diagnostic presets.
 - Motion Sense owns point actors and GPU-aged trail rings.
 - Magnetic Sense owns one camera-following sky dome and patches no sibling.
 - Mycelium/Connections owns fixed network draws and a module-specific topology

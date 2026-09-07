@@ -57,7 +57,10 @@ test("each world component appears only in its intended levels", () => {
     ["scentParticles", "scent echo motion thermal magnetic connections"],
     ["echoDepth", "echo motion thermal magnetic connections"],
     ["terrain", "echo motion thermal magnetic connections test design-test"],
-    ["grassClipmap", "echo motion thermal magnetic connections"],
+    [
+      "grassClipmap",
+      "echo motion thermal magnetic connections test design-test",
+    ],
     ["vegetation", "echo motion thermal magnetic connections test design-test"],
     ["rocks", "echo motion thermal magnetic connections test design-test"],
     ["motion", "motion thermal magnetic connections"],
@@ -65,7 +68,6 @@ test("each world component appears only in its intended levels", () => {
     ["thermal", "thermal magnetic connections"],
     ["magnetic", "magnetic connections test"],
     ["connections", "connections"],
-    ["grass", "test design-test"],
   ] as const;
 
   for (const [component, expected] of expectedLevels) {
@@ -84,14 +86,8 @@ test("Test owns its diagnostic world values independently", () => {
   expect(testPreset.terrain?.presentation).toBe("zones");
   expect(testPreset.magnetic?.fieldElevationDegrees).toBe(7.5);
   expect(testPreset.magnetic?.colors.northColor).toBe(0xd97819);
-  expect(testPreset.grass?.zones.meadow).toEqual({
-    tuftsPerSquareMeter: 1.5,
-    bladeHeightMeters: 0.75,
-  });
-  expect(testPreset.grass?.zones.shrubSlope).toEqual({
-    tuftsPerSquareMeter: 0.4,
-    bladeHeightMeters: 0.22,
-  });
+  expect(testPreset.grassClipmap?.tuftsPerSquareMeter).toBe(1.5);
+  expect(testPreset.grassClipmap?.bladeHeightMeters).toBe(0.75);
   expect(testPreset.vegetation?.instancesPerHectareByZone).toEqual({
     meadow: 12,
     coniferForest: 150,
@@ -431,8 +427,8 @@ test("Design Test authors semantic colors without development diagnostics", () =
     waterColor: 0x9bdedb,
   });
   expect(designTestLevel.terrain?.presentation).toBeUndefined();
-  expect(designTestLevel.grass?.rootColor).toBe(0x49328b);
-  expect(designTestLevel.grass?.tipColor).toBe(0x67d6ad);
+  expect(designTestLevel.grassClipmap?.colors.rootColor).toBe(0x49328b);
+  expect(designTestLevel.grassClipmap?.colors.tipColor).toBe(0x67d6ad);
   expect(designTestLevel.vegetation?.colors.trunkColor).toBe(0x51447b);
   expect(designTestLevel.rocks?.colors.lightColor).toBe(0x739fa8);
   expect(designTestLevel.animals?.colors.furColor).toBe(0xf3d34f);

@@ -8,7 +8,6 @@
 import type { AirParticlesParameters } from "../modules/air-particles/air-particles";
 import type { AnimalsPreset } from "../modules/animals/animals";
 import type { EchoDepthParameters } from "../modules/echo-depth/echo-depth";
-import type { GrassPreset } from "../modules/grass/grass";
 import type { GrassClipmapPreset } from "../modules/grass-clipmap/grass-clipmap";
 import type { MagneticSenseParameters } from "../modules/magnetic-sense/magnetic-sense";
 import type { MotionSenseParameters } from "../modules/motion-sense/motion-sense";
@@ -32,7 +31,6 @@ export type WorldComposition = {
   readonly airParticles?: AirParticlesParameters;
   readonly scentParticles?: ScentParticlesParameters;
   readonly terrain?: TerrainPreset;
-  readonly grass?: GrassPreset;
   readonly grassClipmap?: GrassClipmapPreset;
   readonly rocks?: RocksPreset;
   readonly animals?: AnimalsPreset;

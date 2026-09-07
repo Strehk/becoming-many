@@ -5,6 +5,7 @@
  * Boundary: Zone Visualizer stays in test.level; this file creates no runtime resources.
  */
 
+import { GRASS_CLIPMAP } from "./authored/grass-clipmap";
 import type { LevelPreset } from "./level-preset";
 
 export const level: LevelPreset = {
@@ -35,12 +36,14 @@ export const level: LevelPreset = {
       waterColor: 0x9bdedb,
     },
   },
-  grass: {
-    rootColor: 0x49328b,
-    tipColor: 0x67d6ad,
-    zones: {
-      meadow: { tuftsPerSquareMeter: 1.5, bladeHeightMeters: 0.75 },
-      shrubSlope: { tuftsPerSquareMeter: 0.4, bladeHeightMeters: 0.22 },
+  grassClipmap: {
+    tuftsPerSquareMeter: 1.5,
+    fullDensityRadiusMeters: GRASS_CLIPMAP.fullDensityRadiusMeters,
+    bladeHeightMeters: 0.75,
+    bladeWidthMeters: GRASS_CLIPMAP.bladeWidthMeters,
+    colors: {
+      rootColor: 0x49328b,
+      tipColor: 0x67d6ad,
     },
   },
   vegetation: {
