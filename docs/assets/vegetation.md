@@ -21,8 +21,8 @@ wood has, rather than a defect. Nothing in the placement path tilts a plant:
 instances are rotated around the vertical axis only, so a visibly leaning tree
 is always the model.
 
-The directory cleanup preserves the shipping GLBs byte-for-byte. Further mesh
-or texture optimization requires evidence from the target Windows-PCVR setup.
+Further mesh or texture optimization requires evidence from the target
+Windows-PCVR setup.
 
 ## Inventory
 

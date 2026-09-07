@@ -1,5 +1,7 @@
 {
   "version": 1,
+  "author": "Quaternius",
+  "license": "CC0-1.0",
   "assets": [
     {
       "id": "pine-01",
@@ -20,10 +22,7 @@
         "estimatedDrawCalls": 2,
         "animations": 0
       },
-      "meshNames": ["Pine_4"],
-      "author": "Quaternius",
-      "license": "CC0-1.0",
-      "previouslyRecordedSha256": "240e6f60c5b106a892c80490d7c710f20ef902b328b5e173c0a567334e4df972"
+      "meshNames": ["Pine_4"]
     },
     {
       "id": "pine-02",
@@ -44,10 +43,7 @@
         "estimatedDrawCalls": 2,
         "animations": 0
       },
-      "meshNames": ["Pine_5"],
-      "author": "Quaternius",
-      "license": "CC0-1.0",
-      "previouslyRecordedSha256": "b2cc7f2e672f94a41925ba831af8b3db9cbe6621172fb6f2717881c81c074e18"
+      "meshNames": ["Pine_5"]
     },
     {
       "id": "pine-pack",
@@ -74,10 +70,7 @@
         "PineTree_3",
         "PineTree_1",
         "PineTree_2"
-      ],
-      "author": "Quaternius",
-      "license": "CC0-1.0",
-      "previouslyRecordedSha256": "2864d5b2294d0ea2941a2206aa5f22d6aa013d16fa0c7459912a7abb3b5e5218"
+      ]
     },
     {
       "id": "dead-tree-pack",
@@ -104,10 +97,7 @@
         "DeadTree_8",
         "DeadTree_7",
         "DeadTree_6"
-      ],
-      "author": "Quaternius",
-      "license": "CC0-1.0",
-      "previouslyRecordedSha256": "769e8280e97965f0cc88213a3f4645385c64c2915eda255deec4481c829beb42"
+      ]
     },
     {
       "id": "birch-pack",
@@ -134,10 +124,7 @@
         "BirchTree_4",
         "BirchTree_1",
         "BirchTree_2"
-      ],
-      "author": "Quaternius",
-      "license": "CC0-1.0",
-      "previouslyRecordedSha256": "f2e47d42052327adb2c232087fdfad06acf091acabad01abf180d342a5de03a8"
+      ]
     },
     {
       "id": "deciduous-pack",
@@ -164,10 +151,7 @@
         "NormalTree_3",
         "NormalTree_4",
         "NormalTree_5"
-      ],
-      "author": "Quaternius",
-      "license": "CC0-1.0",
-      "previouslyRecordedSha256": "2dc587f401a3a86e0e1ee0bb95b4a0293b620b445a26278fcf55b5b68b40b097"
+      ]
     },
     {
       "id": "bush",
@@ -188,10 +172,7 @@
         "estimatedDrawCalls": 1,
         "animations": 0
       },
-      "meshNames": ["Bush_Common"],
-      "author": "Quaternius",
-      "license": "CC0-1.0",
-      "previouslyRecordedSha256": "1e73125867d602884365e891158c4ed80772ea1a1ed764a5ae267f3687568d28"
+      "meshNames": ["Bush_Common"]
     },
     {
       "id": "flowering-bush",
@@ -212,10 +193,7 @@
         "estimatedDrawCalls": 2,
         "animations": 0
       },
-      "meshNames": ["Bush_Common_Flowers"],
-      "author": "Quaternius",
-      "license": "CC0-1.0",
-      "previouslyRecordedSha256": "a7f0e022aa77a70a4681d4d435ddada1992b36f32c762cf6c3d0cab794dcf13a"
+      "meshNames": ["Bush_Common_Flowers"]
     }
   ]
 }

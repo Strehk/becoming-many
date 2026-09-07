@@ -1,5 +1,7 @@
 {
   "version": 1,
+  "author": "UNRECORDED",
+  "license": "UNRECORDED",
   "assets": [
     {
       "id": "bat-route",
@@ -20,9 +22,7 @@
         "estimatedDrawCalls": 0,
         "animations": 1
       },
-      "animationClips": ["EmptyAction"],
-      "author": "UNRECORDED",
-      "license": "UNRECORDED"
+      "animationClips": ["EmptyAction"]
     },
     {
       "id": "mosquito-route",
@@ -43,9 +43,7 @@
         "estimatedDrawCalls": 0,
         "animations": 1
       },
-      "animationClips": ["EmptyAction"],
-      "author": "UNRECORDED",
-      "license": "UNRECORDED"
+      "animationClips": ["EmptyAction"]
     },
     {
       "id": "bird-route",
@@ -56,9 +54,7 @@
       "metrics": {
         "bytes": 23996
       },
-      "note": "The one FBX in the repository. Kept in its authored format so the circling route it carries is bit-identical to the tuned original; converting it would re-sample the track.",
-      "author": "UNRECORDED",
-      "license": "UNRECORDED"
+      "note": "The one FBX in the repository. Kept in its authored format so the circling route it carries is bit-identical to the tuned original; converting it would re-sample the track."
     }
   ]
 }

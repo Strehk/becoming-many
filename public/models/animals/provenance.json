@@ -12,8 +12,6 @@
         "nodes": 64,
         "meshes": 1,
         "materials": 7,
-        "textures": 0,
-        "images": 0,
         "primitives": 7,
         "vertices": 4276,
         "triangles": 2096,
@@ -49,9 +47,7 @@
         "AnimalArmature|Walk"
       ],
       "author": "Quaternius",
-      "license": "CC0-1.0",
-      "previouslyRecordedSha256": "fabf360b22eaccccd056ee99d698a9562d15aa245821f96e4fbad6db3751604e",
-      "meshNames": ["Deer"]
+      "license": "CC0-1.0"
     },
     {
       "id": "stag",
@@ -64,8 +60,6 @@
         "nodes": 56,
         "meshes": 2,
         "materials": 6,
-        "textures": 0,
-        "images": 0,
         "primitives": 6,
         "vertices": 7435,
         "triangles": 3667,
@@ -101,9 +95,7 @@
         "AnimalArmature|Walk"
       ],
       "author": "Quaternius",
-      "license": "CC0-1.0",
-      "previouslyRecordedSha256": "3c2df7c13a3d37c8660684e46aa1e5a2bf7e91a9b279983921d48bd93d0b67ed",
-      "meshNames": ["Stag_Horns", "Stag"]
+      "license": "CC0-1.0"
     },
     {
       "id": "fox",
@@ -116,8 +108,6 @@
         "nodes": 70,
         "meshes": 1,
         "materials": 5,
-        "textures": 0,
-        "images": 0,
         "primitives": 5,
         "vertices": 3752,
         "triangles": 1848,
@@ -151,9 +141,7 @@
         "AnimalArmature|Walk"
       ],
       "author": "Quaternius",
-      "license": "CC0-1.0",
-      "previouslyRecordedSha256": "9917771e1414c46557b011cbaaee6de82a827605008227a364c3862f0be62ddc",
-      "meshNames": ["Fox"]
+      "license": "CC0-1.0"
     },
     {
       "id": "rat",
@@ -166,8 +154,6 @@
         "nodes": 45,
         "meshes": 1,
         "materials": 2,
-        "textures": 0,
-        "images": 0,
         "primitives": 2,
         "vertices": 8008,
         "triangles": 4004,
@@ -183,9 +169,7 @@
         "RatArmature|Rat_Walk"
       ],
       "author": "Quaternius",
-      "license": "CC0-1.0",
-      "previouslyRecordedSha256": "68f67077981102e957059fd00aaf3799e6867c269de900bd52c9f12cec1d5f56",
-      "meshNames": ["Rat"]
+      "license": "CC0-1.0"
     },
     {
       "id": "bat",
@@ -208,8 +192,7 @@
       },
       "animationClips": ["Armature.001Action", "CylinderAction"],
       "author": "UNRECORDED",
-      "license": "UNRECORDED",
-      "meshNames": ["Cylinder"]
+      "license": "UNRECORDED"
     },
     {
       "id": "bird",
@@ -232,13 +215,7 @@
       },
       "animationClips": ["ArmatureAction"],
       "author": "UNRECORDED",
-      "license": "UNRECORDED",
-      "meshNames": [
-        "Cylinder.004",
-        "Cylinder.005",
-        "Cylinder.006",
-        "Cylinder.007"
-      ]
+      "license": "UNRECORDED"
     }
   ]
 }
