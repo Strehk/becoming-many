@@ -7,6 +7,7 @@
 
 import {
   type Group,
+  type Object3D,
   type PerspectiveCamera,
   Scene,
   Timer,
@@ -227,11 +228,22 @@ export function createWorld(
       const previousMipmapLevel = renderer.getActiveMipmapLevel();
       const target = new WebGLRenderTarget(1, 1);
       target.texture.colorSpace = renderer.outputColorSpace;
+      const visibility: [Object3D, boolean, boolean][] = [];
 
       try {
+        // Upload resident content even when its first cue or viewing angle is later.
+        scene.traverse((object) => {
+          visibility.push([object, object.visible, object.frustumCulled]);
+          object.visible = true;
+          object.frustumCulled = false;
+        });
         renderer.setRenderTarget(target);
         renderer.render(scene, camera);
       } finally {
+        for (const [object, visible, frustumCulled] of visibility) {
+          object.visible = visible;
+          object.frustumCulled = frustumCulled;
+        }
         renderer.setRenderTarget(
           previousTarget,
           previousCubeFace,

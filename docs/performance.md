@@ -26,10 +26,18 @@ camera-following height texture; Connections uses fixed render pools and moves
 topology generation off the frame path.
 
 Before the show becomes ready, its renderer compiles the composed material
-variants and renders the current camera view once into a disposable 1 × 1
-target. This moves real first-use buffer and texture setup out of visible cue
-frames without keeping inactive modules rendering. The target is restored and
-disposed before show time, controls, simulation, or narration can advance.
+variants and renders all resident content once into a disposable 1 × 1 target,
+including initially hidden or off-frustum objects. Original visibility/culling
+flags and the render target are restored before show time, controls, simulation
+or narration advance; inactive content does not keep rendering.
+
+On 2026-09-07, #16 traced 14 remaining first-Echo uploads (119,796 bytes) to the
+Bat passage and two existing Terrain slots. Including them in the same preparation
+pass removed those uploads and two texture initializations. All eight cues,
+first and repeated entry, then recorded zero new buffers, programs or texture
+initializations (16 observations). This is instrumented local initialization
+evidence, not frame-time or Windows-PCVR acceptance. Raw identities and before/after
+results are retained in [#16](https://github.com/Strehk/becoming-many/issues/16).
 
 The schedule's opening show state is applied before module construction and
 loading. Fixed Terrain and Air Particle windows therefore use the authored
