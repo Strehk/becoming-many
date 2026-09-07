@@ -84,6 +84,102 @@ convention does not authorize extra files or a repository-wide rename pass.
   module, without deep merges or silent repair. Propose the smallest direct
   recipe/show relationship before migration; no competing show configuration.
 
+## Names, contracts and reading order
+
+Use `camelCase` for functions/variables, `PascalCase` for types/classes and
+`UPPER_SNAKE_CASE` for named fixed constants. Names describe current effects:
+`Run` is a complete experience lifetime, `Preset` is construction data, `Show`
+owns dramaturgy, and `World` owns rendering. Do not use "level" interchangeably
+for all three. A `ViewState` aggregates UI observations; it is not engine state.
+`Sample` identifies a reading at an instant, `Frame` one processing step,
+`Status` operational availability/validity, and `Request` an explicit operation
+request. Keep meaningful distinctions such as material `Effect`, data `Source`
+and resource-owning `Module`; no universal base object is required.
+
+| Operation | Contract |
+| --- | --- |
+| `create…` | Construct an object/owner; document any asynchronous or deferred readiness. |
+| `mount…` | Attach UI and return its cleanup or UI handle. |
+| `start…` | Prepare and begin operation; awaited completion means the documented readiness has been reached. |
+| `read…`, `sample` | Observe without consuming events or changing domain state. |
+| `consume…` | Consume input explicitly; document its single-reader requirement. |
+| `set…`, `play`, `pause`, `seekTo` | Apply a domain command at its owner; document limits and side effects. |
+| `update`, `follow` | Perform externally driven work; create no private frame loop. |
+| `subscribe` | Observe changes; document initial delivery and return unsubscribe. |
+| `unload` | Completely end the project-owned lifetime; repeated calls are safe. |
+
+`reset…` must name what is reset. `restart…` means a complete old lifetime ends
+and a fresh one begins; a time/position reset does not satisfy it. Browser
+reload is `reloadPage`, not a Show command. Keep library-native methods such as
+Three.js `dispose()`; do not add a second project cleanup API for spelling alone.
+Synchronous cleanup returns `void`; actual asynchronous completion uses a Promise.
+
+Each boundary states its inputs, outputs, allowed mutations, units, validity
+and owner of cleanup. Read-only types do not freeze objects or make borrowed
+buffers permanent snapshots: document their validity window and prohibit
+consumer mutation/retention where storage is reused. Network data is validated
+at its existing adapter; expected off/stale states are observations, while
+failed operations report their actual errors. Do not hide failure as success.
+
+Public handles expose only a consumer's required capabilities. Prefer `Pick<>`
+of existing owner contracts over forwarding objects. UI cannot consume M5
+button edges or unload Run-owned M5/XR children. The Show clock stays internal
+after all real UI/console consumers migrate to Show commands. Show followers
+share one time sample per Show update; UI observations may be sampled separately.
+Use subscription for existing event-driven state such as XR and bounded reads
+for changing measurements; no universal observable store is required.
+
+Keep a file readable in this order: imports, public contract, technical
+constants, public factory/entry, owned state/setup, public operations and
+frame work, cleanup, private domain helpers. Small local functions may follow
+the public story without becoming files. Add an independent contract file only
+for a real shared boundary. A feature needs no automatic `types`, `service`,
+`state`, `config` or barrel companion. Preserve literal `.level.ts` files.
+
+## UI, entry and engine separation
+
+The [target architecture](target-architecture.md#3-target-structure) owns the
+responsibility map and diagrams. Apply these boundaries during implementation:
+
+- Entry resolves browser/deployment inputs, starts/cancels Run, mounts UI and
+  connects page exit to cleanup. Experience startup/frame/end policy stays Run-owned.
+- UI owns DOM, labels, gestures, confirmation timers and display caches. It
+  calls owner commands and reads observations; no playback, restart, calibration
+  or device-validity policy is defined in a page/panel.
+- Engine owns Show, World, input, audio and content behavior in the browser.
+  It imports no operator/test UI or browser entry. WebXR, Web Audio, canvas and
+  input events at their actual resource adapters are not automatically UI.
+- The Station backend delivers files, deployment facts and process health.
+  It carries no Show clock, visitor state or command transport. Sharing pure
+  route/configuration contracts does not permit importing browser runtimes.
+- Composition alone connects concrete content factories through narrow
+  contracts. Existing Fallow boundaries and focused behavior tests enforce the
+  meaningful rules; do not introduce another analyzer for this convention.
+
+## Application styling
+
+The target stylesheet is `src/app.css`, imported by each browser entry. #84
+migrates the current separate stylesheets and TypeScript style blocks together.
+Keep shared color/typography/control rules once and scope actual page layouts
+to their UI roots. Flash remains scrollable; only experience viewports receive
+full-screen/canvas sizing. Preserve intentional operator touch-target sizes.
+
+Authored DOM styling lives in this CSS file: no component stylesheets, inline
+`style`, `cssText`, TypeScript-injected stylesheets or utility-class styling.
+UI updates classes, semantic attributes and geometry. For continuously moving
+timeline/M5 marks, use small SVG geometry attributes where needed; keep visual
+presentation in CSS and preserve accessible HTML controls. Setting CSS custom
+properties through `element.style` is still inline styling. Do not replace it
+with generated percentage classes or a new styling framework.
+
+Three.js materials, shaders and canvas-texture drawing remain with the content
+owners; they are not DOM CSS. Respect third-party Shadow DOM boundaries and
+use supported styling interfaces. Reuse the current TypeScript/DOM stack;
+this cleanup does not introduce a frontend framework or component dependency.
+Delete replaced stylesheet imports, rules, inline blocks and unused selectors
+in the same block. Fix cascade/hidden-state causes rather than adding stronger
+overrides. Report actual combined styling reduction; moving CSS is not removal.
+
 ## Boundaries and lifetime
 
 - Keep one renderer/render loop and one Show-time authority. Concrete content

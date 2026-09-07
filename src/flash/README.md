@@ -11,3 +11,13 @@ page log.
 
 Building the binary is a manual PlatformIO step documented in
 `firmware/m5/README.md`.
+
+
+## UI and device boundary
+
+The browser entry connects Flash UI to the existing serial setup adapter;
+Flash has no Experience Run. UI owns forms/status and its DOM, while the serial
+adapter owns device communication and cleanup. #84 migrates authored styling
+to central `src/app.css`, preserving scrolling and esp-web-tools' Shadow DOM
+and body-mounted dialogs. Project UI conventions do not change the external
+firmware protocol or permit secret persistence.

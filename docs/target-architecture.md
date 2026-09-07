@@ -61,44 +61,126 @@ Existing diagnostic routes remain real consumers.
 
 ## 3. Target structure
 
-Dashed arrows describe construction or immutable inputs; solid arrows describe
-runtime calls or facts. The entry box means **one alternative per application**.
-Boxes name responsibilities, not mandatory new classes, folders or files.
-Composition is a construction function; it is not another live coordinator.
+Confirmed 2026-09-07: separate UI, browser Entry and experience Engine. The
+Engine is the existing Run/Show/World/input/content code running in the same
+browser as the UI. **Backend** means the separate Bun Station process. This
+is an ownership refactor, not a network split or a new CoreEngine service.
+The diagrams below show the target; current paths and remaining debt are in
+[Architecture](architecture.md). Boxes are responsibilities, not required classes.
+
+### Deployment and application boundaries
+
+Dashed arrows create/connect lifetimes; solid arrows carry calls or facts.
 
 ```mermaid
 flowchart TB
-  Station["Station server"] -->|"files, health, deployment facts"| Entry
-  Flash["Separate firmware setup page"] -->|"Web Serial setup"| Device["M5 firmware"]
-  Entry["Rehearsal OR Test OR Conductor page"] -.->|"create and dispose one run"| Run
-  Authored["Typed recipes, schedule and score"] -.->|"construction and timing inputs"| Run
-  Run["Application run: existing Level Runtime"] -.->|"create and release"| World
-  Run -.->|"call once with source assets"| Composition["Level Composition"]
-  Composition -.->|"create and wire"| Content["Content modules and material effects"]
-  Composition -.->|"create pure queries"| Surface["World Surface"]
-  Run -.->|"create and release"| Nav["Flight controls"]
-  Run -.->|"show runs only"| Show["Show: clock and followers"]
-  Run -.->|"create and release"| M5["M5 validation and polling"]
-  Device -->|"untrusted state"| M5
-  M5 -->|"validated flight frame"| Nav
-  World["World: renderer, rig, XR, module lifecycle, stream queue"] -->|"one frame callback"| Run
-  Run -->|"update selected input"| Nav
-  Nav -->|"locomotion only"| World
-  Run -->|"follow one show-time sample"| Show
-  Show -->|"intensities, gates, passages, credits"| Content
-  World -->|"published viewpoint, module updates, queued work"| Content
-  Surface -->|"physical facts and shared zone weights"| Content
-  Surface -->|"height limits"| Nav
-  Show -.->|"create and release"| Audio["Narration and organ"]
-  Show -->|"time, score and spatial signals"| Audio
-  Entry -->|"commands and read-only observations"| Run
+  Backend["Station backend<br/>Files · deployment facts · process health"]
+  subgraph Browser["Browser application"]
+    Entry["Entry<br/>Request · startup · page exit"]
+    UI["UI<br/>Conductor · Rehearsal · Test"]
+    Engine["Experience Engine<br/>Run · Show · World · input · content"]
+    Entry -.->|"mount and connect"| UI
+    Entry -.->|"start or cancel one Run"| Engine
+    UI -->|"direct commands"| Engine
+    Engine -->|"read-only observations"| UI
+  end
+  Backend -->|"files and configuration"| Entry
+  M5["M5 device"] -->|"HTTP samples"| Engine
+  Engine <-->|"WebXR session and poses"| Headset["Headset runtime"]
 ```
 
-World renders the composed scene once after the work shown. Module gate changes
-use World's existing `ModuleRuntime`; the Show never owns a competing module
-state list. The Run owns loaded source assets outside the scene until every
-borrower has ended. Show owns the native timebase; the organ schedules its
-output against a separate Tone context. Entry-owned DOM refresh is not rendering.
+Only one of Conductor, Rehearsal or Test is mounted per experience page. Flash
+is a separate setup page using Web Serial; it does not start a Show or Run.
+The Station backend never receives transport commands or owns visitor state.
+`src/station/` is the browser-side deployment boundary; `station/` is the backend.
+
+### Lifetime ownership
+
+Arrows here mean **owns or coordinates the lifetime below**, not per-frame
+messages. Composition constructs content once; World coordinates its module
+lifecycle, and each concrete module releases the resources it creates.
+
+```mermaid
+flowchart TB
+  Entry["Browser entry"] --> Run["Run<br/>Prepare · start · end · visitor replacement"]
+  Run --> Show["Show<br/>One show clock · language · dramaturgy"]
+  Run --> World["World<br/>Scene · renderer · XR · one render loop"]
+  Run --> M5["M5 adapter<br/>Polling · validation · host lifetime"]
+  Run --> Flight["Flight controls<br/>Locomotion and input state"]
+  Show --> Audio["Audio<br/>Narration · organ"]
+  World --> Modules["Content modules<br/>Landscape · animals · perception"]
+```
+
+Run owns source GLTF assets until every borrower ends. Module/resource owners
+release their own derivatives. Show owns the native timebase and its audio
+followers; the organ retains its separate Tone context, with no second Show
+clock. The concrete next-visitor operation still requires the operating decision.
+
+### Direct commands and observations
+
+An interface is a TypeScript contract at an existing owner, not a forwarding
+object or message broker. UI receives only the capabilities its controls need.
+
+```mermaid
+flowchart LR
+  UI["Operator / rehearsal UI"] -->|"play · pause · seek · language"| Show["Show"]
+  UI -->|"request visitor operation"| Run["Run"]
+  UI -->|"configure controller"| M5["M5"]
+  UI -->|"start / stop headset session"| XR["World XR"]
+```
+
+UI reads state from these same owners and may assemble a local `ViewState` for
+consistent drawing. It owns drag preview, confirmation timers and render caches.
+It does not derive calibration, device validity, playback or restart rules.
+The page's DOM refresh is not a second scene render. UI observes M5 samples;
+only Run consumes button edges. Child `unload()` methods stay with their owners.
+
+### One-time construction and one frame
+
+Composition receives the explicit level preset, loaded assets and required
+World capabilities. It creates World Surface and concrete modules and wires
+neutral sources/effects to their real consumers. World Surface supplies shared
+physical facts to content and flight. Concrete modules never import siblings.
+
+```mermaid
+flowchart LR
+  Input["Run: apply input"] --> Show["Show: one time sample<br/>synchronize followers"]
+  Show --> Limits["Run: apply flight limits"]
+  Limits --> View["World: publish viewpoint"]
+  View --> Modules["World: update modules<br/>advance bounded queue"]
+  Modules --> Render["World: render once"]
+```
+
+World supplies the frame callback. The optional entry delta sampler runs at its
+existing frame-start position; benchmark finished-frame observations run after
+render. Naming or UI migration must not silently move either hook. The organ's
+previously published spatial observations and Three.js XR-pose timing stay
+unchanged; changing those latencies is a separate measured fix.
+
+### Target placement and migration map
+
+These are target names to apply within the issue that changes each owner.
+Current source links remain valid until that migration. Keep HTML routes stable.
+
+| Current location | Target location / owner | Issue |
+| --- | --- | --- |
+| `src/conductor/conductor-main.ts` and Run-start code inside the page | `src/conductor.entry.ts`: browser bootstrap only | #36 |
+| `src/conductor/conductor-page.ts` | `src/conductor/conductor.page.ts`: UI mounting/input/display | #36 |
+| `src/conductor/transport-panel.ts` and other actual panels | `src/conductor/transport.panel.ts` and corresponding role names | #36 |
+| `src/conductor/show-actions.ts` | Delete; Show commands and existing Run operations | #36, complete visitor operation #9 |
+| `src/levels/show-runtime.ts` | `src/levels/show.runtime.ts`: public Show commands, internal clock | #36 |
+| `src/levels/level-runtime.ts` | `src/levels/level.runtime.ts`: existing Run owner with narrow public capabilities | #36 |
+| `src/levels/level-composition.ts` | `src/levels/level.composition.ts` when its construction boundary is touched | Owner's scoped refactor |
+| `src/world/world-runtime.ts` | `src/world/world.runtime.ts` when its resource boundary is touched | Owner's scoped refactor |
+| `src/world/vr-entry-button.ts` | Shared `src/ui/xr-entry-button.ts`; session mechanics remain World-owned | #36 |
+| Four authored stylesheets and DOM inline styles | `src/app.css`, imported by browser entries | #84 |
+
+Use `src/ui/` only for UI genuinely shared by current surfaces, initially the
+existing XR button. It is not a component registry. Other entry files adopt
+`.entry.ts` with their affected migration; backend/tool entry conventions remain
+separate. Domain algorithms retain descriptive plain names. The
+[Engineering Standards](engineering-standards.md#file-names-and-architectural-roles)
+own role semantics, contract vocabulary, file reading order and central styling.
 
 ## 4. Responsibilities and contracts
 
@@ -119,11 +201,11 @@ existing owners until their scoped migration; adopting names such as
 startup and UI to Run; page/panel code owns only presentation and input, while
 Show and Run retain playback and experience lifecycle policy.
 
-The necessary new capability is cancellation/complete disposal on existing
-handles. World also exposes its existing preparation work and small diagnostic
-reads directly. These replace callbacks and oversized arguments; they do not
-justify Lifecycle, Asset, Preparation, Diagnostics or FramePipeline services.
-M5 host replacement stays inside its existing adapter.
+Cancellation and complete child/source cleanup on existing handles are now
+implemented, as are World preparation and small diagnostic reads. Preserve this
+foundation; #9 still owns the concrete complete visitor replacement operation.
+These boundaries require no Lifecycle, Asset, Preparation, Diagnostics or
+FramePipeline services. M5 host replacement stays inside its existing adapter.
 
 The deletion ledger in §8 is the implementation boundary: a new wrapper that
 preserves the old chain fails this design. Moving code or renaming a type is
@@ -131,8 +213,9 @@ not counted as deleting its capability.
 
 | Existing responsibility | Owned state/resources | Inputs and actual consumers | Calls, end and exclusion |
 | --- | --- | --- | --- |
-| **Entry** (`main.ts`, `test-main.ts`, Conductor) | DOM, bindings, drag/render caches, optional sampler, pending-start cancellation | Request/deployment facts; commands and observations for panels | Starts/cancels/ends one Run; releases its own UI. No show-time or reset policy. |
-| **Run** (`level-runtime.ts`) | Child references, startup/closing state, source GLTF assets | Discriminated request; commands, cancellation and complete `dispose()` for Entry | Direct startup, input selection, local frame/restart/end. No concrete content algorithms or second loop. |
+| **Entry** (browser `.entry.ts` targets) | Request/deployment resolution, pending-start cancellation, UI/Run references, optional diagnostic sampler | Browser inputs → Run request and UI bindings | Starts/cancels/ends one Run, mounts/unmounts UI. No experience policy. |
+| **UI** (Conductor, Rehearsal, Test) | DOM, input bindings, drag preview, confirmation timers, display caches | Narrow commands and observations → operator interaction | Releases UI listeners and subscriptions only. No child-resource disposal, device validation or Show/reset policy. |
+| **Run** (`level-runtime.ts`) | Child references, startup/closing state, source GLTF assets | Discriminated request; commands, cancellation and complete `unload()` for Entry | Direct startup, input selection, local frame/restart/end. No concrete content algorithms or second loop. |
 | **Composition** (`level-composition.ts`) | No persistent owner state | Recipes, World, borrowed assets → Surface, ordered modules and ShowWorldReach | Called once by Run; factories clean partial failure. No transport, registry or coordinator object. |
 | **World** (`world-runtime.ts`) | Renderer/context, scene, rig/camera, Timer, XR/resize listeners, ModuleRuntime and StreamQueue | Run's frame function; viewpoint and execution for modules; optional benchmark FrameControl | Run starts it last/stops it first. Owns preparation, render and final release. No level policy or show clock. |
 | **Flight controls** (`control/`) | Desktop capture and input-specific navigation state | Selected desktop/M5 input → rig locomotion; Surface-based limits | Created/reset/disposed by Run; capture and movement math remain local. No protocol parsing or headset-pose overwrite. |
@@ -231,8 +314,9 @@ Preserve the current dependency order:
    credits and organ follow that sample.
 3. Run applies active flight limits; World publishes viewpoint, updates active
    modules, drains bounded stream steps and renders once.
-4. Optional measurement observes the finished frame. Conductor refreshes DOM
-   independently and adds no second XR stage render.
+4. Benchmark finished-frame measurement observes the completed render. The
+   optional entry delta sampler retains its existing frame-start position.
+   Conductor refreshes DOM independently and adds no second XR stage render.
 
 Organ currently reads the previously published viewpoint/actor centres, and XR
 pose is updated by Three's rendering path. Changing that latency/order is a
@@ -334,7 +418,10 @@ broker; `fd48b27` deliberately changed visitor reset to hold at zero.
 
 **Confirmed:** expose commands on Show/Run and let UI types select those methods.
 Remove the forwarding adapter, UI reset sequences, repeated pause and stale-state
-command decisions. Migrate the real `window.showClock` headset-console consumer
+command decisions. #36 also separates browser entry wiring from page/panel UI
+and narrows public M5/XR capabilities. Preserve the current soft reset as an
+explicitly named existing Run operation until #9 replaces it with the approved
+complete visitor operation; this is not completed visitor-lifecycle acceptance. Migrate the real `window.showClock` headset-console consumer
 before removing mutable-clock exposure. Keep the fullscreen/headset rehearsal
 workflow explicitly retained in [PR #59](https://github.com/Strehk/becoming-many/pull/59#issuecomment-5537091887).
 Remove `ConductorState.isScrubbing`, which has no reader. Preserve pointer
@@ -600,10 +687,10 @@ remove old consumers, obsolete tests and documentation with the replaced path.
 
 | Current structure | Proven problem | Action | Target owner | Old path eliminated | Dependency / proof |
 | --- | --- | --- | --- | --- | --- |
-| `level-runtime.ts`: `setupLevel`, `LevelUpdate`, `prepareLevelComposition`, its private `LevelCompositionOptions`, `PreparedLevelComposition` | Packages and returns one start's existing variables through callbacks | Delete local chain | Direct `startLevel` sequence | `{running, update}`, captured `running`, skipped-setup guard; World `SetupWorld`/`setupWorld` | #73 implemented; preparation failure blocks start; full cancellation/lifetime remains #9 |
+| `level-runtime.ts`: `setupLevel`, `LevelUpdate`, `prepareLevelComposition`, its private `LevelCompositionOptions`, `PreparedLevelComposition` | Packages and returns one start's existing variables through callbacks | Delete local chain | Direct `startLevel` sequence | `{running, update}`, captured `running`, skipped-setup guard; World `SetupWorld`/`setupWorld` | #73 implemented; preparation failure blocks start; complete visitor replacement remains #9 |
 | Same file: `createOptionalShow`/`OptionalShowOptions`, `createLevelControls`/`LevelControls`, `createLevelUpdate`/`LevelFrameOptions` | Repeated optional checks and one-consumer option packages obscure order | Inline choices; delete packages | Adjacent startup and named local frame | Repeated Show/benchmark checks, control factory wrapping and copied frame dependencies | #73 implemented; input/show order preserved |
 | `level-composition.ts`: `createConfiguredModules`, `ComposedWorld`, `composeShowReach`, `ComposedSenseHandles` | Each helper has only its preceding local caller | Consolidate in existing function | `composeLevel` | Intermediate construction results and handle repackaging | #73 implemented; real contracts and local domain algorithms retained |
-| `RunningLevel.readFrameMetrics`, closure, `FrameMetricsRecorder.read`, Run's metrics type export | Entry sends its own sampler in and reads it back through Run | Delete round trip | Existing entry sampler | Run metrics getter and duplicate type ownership | Test/Conductor read `sampler.read()` directly; frame input remains |
+| `RunningLevel.readFrameMetrics`, closure, `FrameMetricsRecorder.read`, Run's metrics type export | Entry sends its own sampler in and reads it back through Run | Removed in #35 | Existing entry sampler | Run metrics getter and duplicate type ownership | Test/Conductor read `sampler.read()` directly; frame input remains |
 | `LevelTestOverlay`, `TestOverlayFactory`, `OptionalTestOverlayOptions`, `createOptionalTestOverlay`, `request.testOverlay`, Run's overlay update | UI creation/lifetime hidden inside runtime setup | Delete runtime path | Test entry | Factory injection and UI frame forwarding | Existing World provides counters; entry owns DOM and cleanup |
 | `ConductorState.isScrubbing` and its assignment | No reader; type and writing only | Delete without replacement | No owner needed | Unused flag | Keep used `scrubSeconds`, gesture `wasPlaying` and UI render caches |
 | Animals `getVisibleWorldPositions`/`getVisibleActorPositions`/`packedPositions`; `ConnectionActorSource`; composition `animalSource`; Mycelium `ANIMAL_CLASS_INDEX`, `updateAnimalLinks`, `animalTargetNodes`, animal link capacities/hysteresis/source settings/offsets | No authored moving-animal root-web consumer | Retire complete capability | Static Mycelium; Animals body observations for scent/heat | Extra position projection through dynamic links, reserved rows and tests | D4/#80 implemented; `88a2179`, preset absence, identical normalized static attributes; cumulative visual acceptance pending |
@@ -632,77 +719,36 @@ wrapping retained old paths is not completion.
 
 ## 9. Migration and architectural acceptance
 
-These are candidate change units, **not a replacement roadmap or permission to
-start them**. Actual roadmap gates, review counts and issue prerequisites remain.
-Prioritize basic Windows-PCVR/USB-C operation and visitor-restart validation
-early enough to inform lifecycle implementation; do not postpone them until a
-finished desktop architecture or add a standalone path.
-Every implemented unit removes its replaced paths in the same change; no
-parallel runtime or permanent compatibility adapter is proposed.
+The [roadmap](roadmap.md#immediate-ui-and-engine-migration) owns the ordered next
+work. The 2026-09-07 request is documentation/issue preparation; it does not
+claim that these source migrations are implemented. Existing source work under
+#73, #9, #14/#35 and #85 is retained, including its recorded acceptance limits.
+Do not repeat removed callback chains, diagnostic round trips or authored layers.
 
-1. **Pilot D4:** retire the live-animal web path end to end. Verify current
-   authored absence, remove producer/contract/pool branches together, preserve
-   static topology and body observers. Test edge slot indexing and fixed
-   Connections output; explain counter changes rather than updating baselines
-   automatically. Use #80 and first document the existing fixed anchor classes.
-2. **Direct-start unit (#73):** replace the callback return channel for all
-   entries together. Flatten the local setup/optional-show/frame chain and
-   Composition's result packaging; remove the one-consumer input-selection and
-   preparation files by placing their behavior at the named owners. Rig setup
-   follows the reviewed fresh-run design, not preservation of the old reset API.
-   Retain frame order. This limited change
-   alone makes no new disposal/restart guarantee and introduces no second API.
-3. **Prepare child lifetimes:** in bounded owner-specific changes, make World,
-   modules, Show/audio, input, XR and entry listeners internally releasable,
-   including constructor/load failures and late completions. Do not expose an
-   incomplete Run disposal as successful application termination.
-4. **Complete the vertical Run lifetime:** adopt Run-owned source assets,
-   remove consumer source disposal, connect every prepared child end path and
-   pending-start cancellation. Publish `dispose()` only with this complete
-   chain. Verify static and Show failure/dispose/restart across all entries;
-   source ownership transfers atomically, never through two disposal owners.
-5. **D2/D6 entry unit:** move commands/reset to their owners, migrate both UIs
-   and the rehearsal console, remove the forwarding adapter and unused UI flag.
-   Share scrub only if it removes both implementations without another
-   controller. Move diagnostics to entries, remove the sampler round trip and their
-   obsolete Run contracts after their observation consumers are connected.
-6. **D5 bounded units:** migrate Test/Design Test to the already-selected
-   Clipmap and remove the whole legacy path and exclusive tests in that change.
-   Implement #71 at existing World Surface, migrate Grass/Vegetation/Rocks to
-   shared weights and delete their superseded density/coverage branches together.
-   Fix #72 independently inside Clipmap; compare conservative bounds with
-   disabling incorrect CPU culling. Each unit receives its own visual/performance
-   evidence; actual Windows-PCVR/USB-C acceptance remains required. Separately
-   apply the confirmed Vegetation clearance rule and consolidate placement.
-   Reassess shared Rocks/Vegetation mechanics afterward; no generic runtime.
+| Unit | Complete change and removal | Retained boundary |
+| --- | --- | --- |
+| #36 | Move transport/language policy to Show, interim reset operation to Run, bootstrap to Entry; remove `show-actions.ts`, duplicate pause and unread flag; narrow public capabilities and migrate real UI/console consumers and affected filenames together. | One browser Engine, one loop/clock; legitimate UI gestures remain; complete visitor replacement stays #9. |
+| #84 | Consolidate DOM styling into `src/app.css`; migrate dynamic UI geometry; delete old stylesheets/imports/inline blocks and fix demonstrated cascade/hidden defects. | Existing surfaces and semantics; no UI framework or engine behavior change. |
+| #11 | Align existing Fallow rules with real Entry/UI/Engine/backend boundaries and migrated filenames; verify forbidden imports are rejected. | No second analyzer, generated file-role framework or blanket ban on browser resource APIs. |
+| #9 + #46 | Confirm and implement complete visitor replacement and start/calibration behavior using existing Run/Show/World/input owners. | #42/#54 physical operating facts and explicit restart decision; no automatic XR re-entry assumption. |
+| #73 | Resolve the retained clock-progress uncertainty with relevant evidence. | Naming, CSS or short successful replays do not explain the original failure. |
 
-D3 and direct Connections-to-Show construction are confirmed. Compare effective
-settings and remove layer consumers,
-`sense-layers.ts` and exclusively required helpers/tests in the same change.
-Explicit parameters may grow while logic and relationships shrink. No temporary
-compatibility bridge or second Show configuration.
+Shared-command, Entry/UI and styling work can proceed without choosing the
+physical visitor sequence. Keep #42/#54 commissioning early and the physical
+acceptance branch visible. #84 now belongs to this workstream; it is no longer
+unscheduled. The live issues own exact acceptance; the test plan owns cadence.
 
-M5 host-lifetime invalidation, sample validity and axis conversion remain the
-separate #17/#18/#38 units, removing each replaced state/mapping path with its
-consumers. Scent's queue bypass is a separate measured #26 unit: remove the
-synchronous fallback together with bounded retry and slot-validity handling.
-Neither belongs inside a UI cleanup or waits on the independent recipe
-implementation.
+Every block removes replaced implementations, imports, contracts, aliases and
+exclusive tests. Renaming or moving files alone is clarity work, not production
+reduction. Keep public start/frame/end readable; measure deleted responsibilities
+and paths as well as actual source/configuration/test/documentation deltas.
 
-The Test-level reading check in §5 is a gate: the reviewer must explain startup,
-one frame and end from the main story without chasing forwarding-only helpers.
-Keep owner-local operations together; measure success by deleted dependencies,
-state and alternate paths, not by multiplying smaller files.
-
-Briefly read the affected start/frame/end path in the completed diff. Identify
-one authority per state and removed consumer paths; inspect D4/D5 obligations
-when affected. This does not require a separate reviewer or a replay of every
-interaction. A new generic abstraction must not merely replace the removed one.
-
-Apply the [test plan](refactor-test-plan.md) by risk: recipe equivalence,
-late-failure/repeated-start lifecycle coverage, affected UI flows, comparative
-render/audio measurements and required physical acceptance. Tests and Fallow
-supplement this walkthrough; they cannot prove that a capability is needed.
+Existing content obligations remain independent: #80 fixed-anchor preservation,
+#13/#71/#72 integrated visuals, #18/#38 physical control acceptance, #26/#32
+performance, #78 reference approval and required #50/#51 content. Their evidence
+and decisions are not waived or absorbed into the UI migration. Never rebuild a
+world at each cue, introduce a second clock, or change shader/input timing as a
+side effect of naming or presentation cleanup.
 
 ## 10. Decisions, issue/PR evidence and critical review
 

@@ -67,6 +67,12 @@ procedures in those documents, not here.
 
 ## Architecture Boundaries
 
+- Follow the [Engineering Standards](docs/engineering-standards.md) for
+  architectural filename roles, contract names, file reading order and central
+  styling. Keep Entry, UI, browser Engine and Station backend responsibilities
+  separate as defined by the [Target Architecture](docs/target-architecture.md).
+- Conductor pages/panels own input and display only. Entry connects browser
+  startup to Run; Show and Run own playback and experience lifecycle policy.
 - Contracts and modularity are primary constraints. Small modules own their
   resources and complete lifecycle, and data crosses ownership boundaries only
   through narrow TypeScript contracts.

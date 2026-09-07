@@ -1,6 +1,7 @@
 # Control
 
-This folder contains input, navigation, and operator-control logic.
+This folder owns visitor flight input and locomotion. Operator panels, Show
+transport commands and visitor orchestration belong to UI, Show and Run respectively.
 
 `desktop-controls.ts` provides the desktop adapter: click the canvas to capture
 the mouse, look around with the mouse, fly in the viewing direction with WASD

@@ -21,6 +21,27 @@ The build has four browser entries:
 `/config`, and `/health`; it is not bundled into the application and owns no
 show state.
 
+## Current UI and engine boundary
+
+The experience Engine runs in the browser: Level Runtime, Show, World, M5,
+flight controls, audio and content. Station is the separate backend; moving
+policy out of Conductor does not move rendering or Show state to that server.
+
+The following are current debts, not completed target migrations:
+
+- `conductor-page.ts` still combines UI mounting with Run startup/cancellation.
+- `show-actions.ts` still forwards commands and defines time/position reset.
+- M5 panel construction still applies the initial host; public Run handles
+  expose more M5/XR capabilities than UI needs.
+- `world/vr-entry-button.ts` is a DOM component inside the rendering folder.
+- Four stylesheets plus TypeScript inline styles still serve the surfaces;
+  central `src/app.css` is the #84 target and does not exist yet.
+
+The [target diagrams and placement map](target-architecture.md#3-target-structure)
+show the agreed destination. #36 owns UI/Entry/command separation, #84 central
+styling and #11 the final import boundaries. The current paths below remain
+accurate until their source migration.
+
 ## Composition and Frame Flow
 
 `src/levels/level-runtime.ts` owns startup, frame coordination and awaited Run termination. A

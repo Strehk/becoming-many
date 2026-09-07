@@ -7,7 +7,8 @@ dated evidence.
 ## Refactor Workstream
 
 - [Target Architecture](target-architecture.md) — binding target responsibilities,
-  direct start/frame/end flows, deletion ledger and explicitly open decisions.
+  diagrams for backend/browser separation, lifetime ownership and direct commands;
+  start/frame/end flows, deletion ledger and explicitly open decisions.
 
 - [Roadmap](roadmap.md) — the binding plan, resume checkpoint, issue order,
   M0 checklist, and milestones; start here after context compression.
@@ -24,7 +25,8 @@ dated evidence.
 - [Architecture Decisions](architecture-decisions.md) — current decisions that
   constrain changes.
 - [Engineering Standards](engineering-standards.md) — coding, architecture,
-  documentation, and validation rules.
+  filename roles, contract vocabulary, file reading order, central CSS and
+  documentation rules.
 - [Experience](experience.md) — the implemented narrative and interaction flow.
 - [Levels](levels/README.md) — the current world-state sequence and presets.
 - [World Streaming](world-streaming.md) — fixed windows, scheduling, and

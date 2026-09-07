@@ -2,7 +2,7 @@
 Purpose: Document ownership of typed level presets and their composition root.
 Context: Narrative states layer inside one running show composition.
 Responsibility: Explain what belongs in src/levels and how entries select it.
-Boundary: Runtime mechanisms and concrete content implementations live elsewhere.
+Boundary: Browser presentation and concrete content implementations live elsewhere.
 -->
 
 # Levels
@@ -47,11 +47,11 @@ frame coordination. It:
 - loads and activates the configured module list;
 - awaits World-owned shader compilation and first-use uploads for a show;
 - connects desktop and M5 input, selecting exactly one source per frame;
-- exposes finished-frame observations to entry-owned diagnostics;
+- passes frame delta to entry-owned diagnostics before input/Show work;
 - delegates optional show time, narration, transitions, sense fades, and the
   drone organ's per-frame contract to `show-runtime.ts`;
 - starts the World loop only after preparation and returns the narrow
-  `RunningLevel` command/query surface used by pages.
+  `RunningLevel` command/query surface currently used by pages.
 
 Its local frame handles benchmark placement or live input, Show updates and
 height limits in order. World then publishes the viewpoint, updates
@@ -74,3 +74,16 @@ show state is applied before modules size fixed spatial
 windows; later states remain driven by the same schedule and state map. Flight
 remains constrained against the shared surface through White World and every
 transition.
+
+## UI boundary and resources
+
+Run owns experience startup, frame coordination and complete end; Show owns
+transport and language. Browser Entry chooses requests and connects a Run to
+UI. Page/panel code must not implement those engine policies. #36 narrows the
+public contracts and migrates affected filenames according to the
+[Engineering Standards](../../docs/engineering-standards.md).
+
+Run owns loaded GLTF sources until all borrowers finish. Composition constructs
+and connects; World coordinates module lifecycle; modules release their own
+derivatives. UI releases only its own presentation resources. The existing
+`unload()` path is implemented; full next-visitor operation remains #9/#46.

@@ -26,6 +26,7 @@ it lives at [`station/`](../../station/README.md) beside `tests/` and `script/`,
 and imports this folder the way the benchmark runner imports `src/benchmark`.
 The server owns its default listen port.
 
-The Conductor hosts the show in-process and commands it through one typed
-actions contract. No station protocol, broker, command bus, or remote show
-transport exists in this folder.
+The browser hosts the Engine in-process. Its Entry applies deployment facts;
+UI calls Engine owners through narrow contracts. #36 removes the current
+Conductor actions adapter. This folder supplies no Show command transport or
+visitor state. See the [target boundaries](../../docs/target-architecture.md#3-target-structure).

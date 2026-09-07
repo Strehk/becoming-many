@@ -54,10 +54,21 @@ quality framework.
 ## Wind
 
 `wind.ts` is the single deterministic source of global wind direction and
-strength over time. Scent and other dynamic consumers sample it; the legacy
-Grass material currently samples only the mean direction. Aligning every
-consumer with the time-varying sample is tracked in issue #28.
+strength over time. Scent and the surviving Grass Clipmap path consume the
+shared wind; #28 records their verification. Legacy Grass has been retired.
 
 World Runtime does not know whether a slot contains terrain, particles, grass,
 or another feature. Each consumer owns generation, resources, rendering, and
 disposal.
+
+## UI boundary and resources
+
+World owns renderer, scene, rig, XR, module lifecycle and queue. Show and
+Composition receive only required capabilities; operator UI receives XR
+commands/observations through the public Run handle. It cannot unload World
+children. World owns complete renderer/XR cleanup.
+
+`vr-entry-button.ts` is current placement debt: #36 moves this shared DOM
+component into UI while keeping `xr-session.ts` here. #84 owns its styling.
+Browser XR/resource APIs belong here; labels, buttons and DOM styling do not.
+See the [target architecture](../../docs/target-architecture.md#3-target-structure).

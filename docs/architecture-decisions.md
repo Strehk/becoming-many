@@ -19,13 +19,22 @@ history belongs in Git; unresolved product and deployment questions belong in
 
 ## Composition and Contracts
 
+- Confirmed 2026-09-07: separate browser Entry, operator UI and experience
+  Engine. Conductor is a control/display surface; the existing Run owns
+  experience orchestration and Show owns transport/language. The Engine runs
+  in the browser; the Station backend remains file/config/health delivery.
+  No server-side Show, command broker or additional engine coordinator is added.
+- Confirmed 2026-09-07: #84 is part of the UI architecture migration. Central
+  `src/app.css` owns authored DOM styling; remove replaced CSS and inline styles
+  while preserving each surface's operation. The [Engineering Standards](engineering-standards.md#application-styling)
+  own styling details; the roadmap owns execution order.
 - Confirmed 2026-09-07: architectural filenames use `<domain-name>.<role>.ts`.
   The [Engineering Standards](engineering-standards.md#file-names-and-architectural-roles)
   define the small role vocabulary, responsibility contracts and scoped
   migration. Plain domain algorithm names remain valid; roles require no
   companion files or new runtime owners.
 - `src/levels/level-runtime.ts` is the single startup and frame-coordination
-  entry. `src/levels/level-composition.ts` is its concrete construction owner;
+  owner. `src/levels/level-composition.ts` is its concrete construction owner;
   it is not a parallel runtime.
 - Concrete content modules never import sibling modules. Level Composition
   connects them through small directional contracts.

@@ -40,3 +40,14 @@ their data and fixed pools.
 `atmosphere`, `paths`, and `rivers` are README-only reserved extension
 boundaries. They are not implemented modules and should remain empty until a
 concrete issue requires them.
+
+## Public interface and resource ownership
+
+`WorldModule` describes the shared content lifecycle. A returned handle may
+also expose specific drivers or sources; material effects and pure sources do
+not need an artificial module lifecycle. Their inputs/outputs are wired by
+Composition and must state any borrowed-buffer validity. Run-owned GLTF sources
+are borrowed; module-created derivatives, pools and workers are released locally.
+Operator UI never imports a concrete content implementation. Adopt role names
+with the affected owner refactor under the [Engineering Standards](../../docs/engineering-standards.md),
+without generating companion files or recreating retired modules.

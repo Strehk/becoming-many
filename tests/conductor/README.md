@@ -14,7 +14,8 @@ before touching the DOM is:
 must leave alone: browser shortcuts and anything typed into a field.
 `show-actions.test.ts` covers the operator's command surface over the show it
 hosts — above all that the composite resets fire in the right order: restart
-is rewind, flight reset, then play; reset is rewind, then hold.
+is rewind, flight reset, then hold; reset is rewind, then hold. This verifies
+the current soft reset, not full visitor-lifecycle acceptance under #9.
 `stream-button.test.ts` covers the whole availability × session matrix behind
 the headset button's one label. `time-format.test.ts` covers the readouts an
 operator scans mid-show, chapter names included.

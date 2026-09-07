@@ -89,8 +89,9 @@ audio responses, readiness, actual renderer and source/diff identity. Any
 background visibility, capped/empty sampling, stopped clock, or unexpected
 browser failure invalidates a run. Audio responses and clock movement do not
 prove audible narration/organ output; that remains a human check. Desktop
-VSync intervals cannot demonstrate the physical PICO90Hz target; the observer
-omits missed-frame counts against that unrelated display budget.
+VSync intervals cannot demonstrate the actual Windows-PCVR USB-C 90 Hz target,
+including transport and headset; the observer omits missed-frame counts against
+that unrelated display budget.
 
 Keep the measured page foreground and run sequentially without other browser
 scenes, builds, tests, or GPU-heavy work. Record power/display conditions and

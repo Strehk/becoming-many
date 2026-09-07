@@ -17,6 +17,7 @@ checking, so do not run both for the same candidate.
 | Documentation only | Review changed text and links; `git diff --check`; no application tests, build or browser replay |
 | Logic or configuration | Existing focused Bun tests covering the changed behavior; compare effective values when migrating recipes |
 | Browser UI or runtime | Exercise the affected real interaction in the browser, including its relevant start/frame/end path |
+| Shared CSS or UI/entry separation | Check Rehearsal, Test, Conductor and Flash at desktop and narrow widths; verify affected focus/hidden/disabled states, Flash scrolling, viewport isolation, timeline gestures and M5 preview. Check computed styles for the known #84 defects. |
 | Resource ownership or async lifetime | Check the changed lifetime and the concrete failure/restart case at risk; no default exhaustive cancellation matrix |
 | Rendering, streaming, audio or scheduling cost | A comparable local before/after measurement of the affected workload and its visible behavior |
 | Test tooling | Run its affected scenario and check that the relevant failure is detected |
