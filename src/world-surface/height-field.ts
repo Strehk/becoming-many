@@ -5,6 +5,7 @@
  * Boundary: Zone assignment, rendering, chunks, and lifecycle stay elsewhere.
  */
 
+import { MathUtils } from "three";
 import { ImprovedNoise } from "three/addons/math/ImprovedNoise.js";
 import type { WorldSurfaceSettings } from "./surface-settings";
 
@@ -17,10 +18,10 @@ export function getGroundY(
 ): number {
   const naturalGroundY = getNaturalGroundY(worldX, worldZ, settings);
   const riverDistance = getRiverDistance(worldX, worldZ, settings);
-  const bankProgress = smoothstep(
+  const bankProgress = MathUtils.smoothstep(
+    riverDistance,
     settings.river.channelHalfWidthMeters,
     settings.river.bankHalfWidthMeters,
-    riverDistance,
   );
   const carvedGroundY = mix(
     settings.river.riverBedHeightY,
@@ -73,14 +74,14 @@ function getNaturalGroundY(
       worldZ / heightField.detailFeatureSizeMeters,
       noiseLayer + 17,
     ) * heightField.detailElevationMeters;
-  const mountainRegion = smoothstep(
-    0,
-    0.55,
+  const mountainRegion = MathUtils.smoothstep(
     terrainNoise.noise(
       worldX / heightField.mountainRegionSizeMeters,
       worldZ / heightField.mountainRegionSizeMeters,
       noiseLayer + 31,
     ),
+    0,
+    0.55,
   );
   const ridgeNoise = terrainNoise.noise(
     worldX / heightField.mountainFeatureSizeMeters,
@@ -133,14 +134,6 @@ export function getRiverDistance(
       river.secondaryMeanderAmplitudeMeters;
 
   return Math.abs(worldX - riverCenterX);
-}
-
-function smoothstep(edgeStart: number, edgeEnd: number, value: number): number {
-  const progress = Math.min(
-    Math.max((value - edgeStart) / (edgeEnd - edgeStart), 0),
-    1,
-  );
-  return progress * progress * (3 - 2 * progress);
 }
 
 function mix(start: number, end: number, progress: number): number {

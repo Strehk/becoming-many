@@ -10,6 +10,8 @@ export const ZONE_SETTINGS = {
   coniferForestThreshold: -0.25, // Lower region values become conifer forest.
   deciduousForestThreshold: 0.28, // Higher region values become deciduous forest.
   shrubSlopeThreshold: 0.27, // Ground at or above this slope becomes shrub-covered terrain.
+  forestTransitionWidth: 0.1, // Full noise-value band centered on either forest threshold.
+  slopeTransitionWidth: 0.08, // Full slope band centered on the shrub threshold.
 };
 
 export type ZoneSettings = typeof ZONE_SETTINGS;

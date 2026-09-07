@@ -1,10 +1,11 @@
 /**
  * Purpose: Describe and classify the continuous conditions behind every world zone.
  * Context: Geometry, textures, and assets need the same zone facts without inheriting a chunk grid.
- * Responsibility: Sample absolute world coordinates and derive one hard ZoneId when requested.
+ * Responsibility: Derive categorical habitats and continuous visual influences from shared conditions.
  * Boundary: Authored thresholds live in zone-settings; colors and GPU resources live in modules.
  */
 
+import { MathUtils } from "three";
 import { ImprovedNoise } from "three/addons/math/ImprovedNoise.js";
 import { getGroundY, getRiverDistance } from "./height-field";
 import type { WorldSurfaceSettings } from "./surface-settings";
@@ -69,6 +70,48 @@ export function getZoneId(
     return "deciduousForest";
   }
   return "meadow";
+}
+
+/** Visual ground weights sum to one on land and zero in the exact water zone. */
+export type ZoneInfluences = Readonly<Record<Exclude<ZoneId, "water">, number>>;
+
+export function getZoneInfluences(
+  conditions: ZoneConditions,
+  settings: ZoneSettings,
+): ZoneInfluences {
+  if (isWater(conditions)) {
+    return { meadow: 0, coniferForest: 0, deciduousForest: 0, shrubSlope: 0 };
+  }
+
+  const forestHalfWidth = settings.forestTransitionWidth / 2;
+  const slopeHalfWidth = settings.slopeTransitionWidth / 2;
+  const shrubSlope = MathUtils.smoothstep(
+    conditions.groundSlope,
+    settings.shrubSlopeThreshold - slopeHalfWidth,
+    settings.shrubSlopeThreshold + slopeHalfWidth,
+  );
+  const coniferForest =
+    (1 - shrubSlope) *
+    (1 -
+      MathUtils.smoothstep(
+        conditions.forestRegionValue,
+        settings.coniferForestThreshold - forestHalfWidth,
+        settings.coniferForestThreshold + forestHalfWidth,
+      ));
+  const deciduousForest =
+    (1 - shrubSlope - coniferForest) *
+    MathUtils.smoothstep(
+      conditions.forestRegionValue,
+      settings.deciduousForestThreshold - forestHalfWidth,
+      settings.deciduousForestThreshold + forestHalfWidth,
+    );
+
+  return {
+    meadow: 1 - shrubSlope - coniferForest - deciduousForest,
+    coniferForest,
+    deciduousForest,
+    shrubSlope,
+  };
 }
 
 /** The one shared water fact: inside the channel and below the water line. */

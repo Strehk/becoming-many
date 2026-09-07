@@ -10,7 +10,9 @@ import type { WorldSurfaceSettings } from "./surface-settings";
 import {
   getZoneConditions,
   getZoneId,
+  getZoneInfluences,
   type ZoneConditions,
+  type ZoneInfluences,
 } from "./zone-field";
 import type { ZoneId, ZoneSettings } from "./zone-settings";
 
@@ -18,6 +20,7 @@ export interface WorldSurface {
   readonly groundYAt: (worldX: number, worldZ: number) => number;
   readonly surfaceYAt: (worldX: number, worldZ: number) => number;
   readonly zoneConditionsAt: (worldX: number, worldZ: number) => ZoneConditions;
+  readonly zoneInfluencesAt: (worldX: number, worldZ: number) => ZoneInfluences;
   readonly zoneAt: (worldX: number, worldZ: number) => ZoneId;
 }
 
@@ -37,6 +40,8 @@ export function createWorldSurface(
     surfaceYAt: (worldX, worldZ) =>
       getSurfaceY(worldX, worldZ, surfaceSettings),
     zoneConditionsAt,
+    zoneInfluencesAt: (worldX, worldZ) =>
+      getZoneInfluences(zoneConditionsAt(worldX, worldZ), zoneSettings),
     zoneAt: (worldX, worldZ) =>
       getZoneId(zoneConditionsAt(worldX, worldZ), zoneSettings),
   };

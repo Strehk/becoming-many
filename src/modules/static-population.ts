@@ -17,6 +17,12 @@ import type { WorldSurface } from "../world-surface/world-surface";
 import type { ZoneId } from "../world-surface/zone-settings";
 
 const HECTARE_SQUARE_METERS = 10_000;
+const GROUND_ZONES: readonly GroundZoneId[] = [
+  "meadow",
+  "coniferForest",
+  "deciduousForest",
+  "shrubSlope",
+];
 
 /** The cell random component that draws a placement's height from its model. */
 const HEIGHT_RANDOM_INDEX = 5;
@@ -108,44 +114,40 @@ export function selectStaticPlacement(
     parameters.seed,
     candidateIndex,
   );
-  const zone = worldSurface.zoneAt(candidate.worldX, candidate.worldZ);
-  if (zone === "water") return undefined;
-
-  const density = parameters.instancesPerHectareByZone[zone];
-  const variants = parameters.variantsByZone[zone];
-  if (density === undefined || !variants) return undefined;
-
-  const densityRandom = getCellRandom(
+  const influences = worldSurface.zoneInfluencesAt(
+    candidate.worldX,
+    candidate.worldZ,
+  );
+  let densityRandom = getCellRandom(
     parameters.seed,
     candidate.cellX,
     candidate.cellZ,
     2,
   );
-  if (
-    !isCandidateAccepted(density, candidateGrid.spacingMeters, densityRandom)
-  ) {
-    return undefined;
+
+  // Partition the existing density draw: each zone gets its weighted density.
+  // A pure zone keeps the exact old acceptance and independent variant draw.
+  for (const zone of GROUND_ZONES) {
+    const density = parameters.instancesPerHectareByZone[zone] ?? 0;
+    const probability =
+      influences[zone] *
+      ((density * candidateGrid.spacingMeters ** 2) / HECTARE_SQUARE_METERS);
+    if (densityRandom >= probability) {
+      densityRandom -= probability;
+      continue;
+    }
+    const variants = parameters.variantsByZone[zone];
+    if (!variants) return undefined;
+    const variantRandom = getCellRandom(
+      parameters.seed,
+      candidate.cellX,
+      candidate.cellZ,
+      3,
+    );
+    const model = selectModel(parameters.assets, variants, variantRandom);
+    return model ? { candidate, model } : undefined;
   }
-
-  const variantRandom = getCellRandom(
-    parameters.seed,
-    candidate.cellX,
-    candidate.cellZ,
-    3,
-  );
-  const model = selectModel(parameters.assets, variants, variantRandom);
-  return model ? { candidate, model } : undefined;
-}
-
-function isCandidateAccepted(
-  instancesPerHectare: number,
-  candidateSpacingMeters: number,
-  randomValue: number,
-): boolean {
-  return (
-    randomValue <
-    (instancesPerHectare * candidateSpacingMeters ** 2) / HECTARE_SQUARE_METERS
-  );
+  return undefined;
 }
 
 function selectModel(

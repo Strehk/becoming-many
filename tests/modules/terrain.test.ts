@@ -196,6 +196,9 @@ test("Terrain never queries zones while generating geometry", () => {
     zoneConditionsAt: () => {
       throw new Error("Terrain must not query zone conditions");
     },
+    zoneInfluencesAt: () => {
+      throw new Error("Terrain must not query zone influences");
+    },
     zoneAt: () => {
       throw new Error("Terrain must not query zones");
     },

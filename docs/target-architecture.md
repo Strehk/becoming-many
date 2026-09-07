@@ -414,16 +414,15 @@ second zone classifier, transition width or smoothing calculation.
 **Observed:** `4807c0d` selected Clipmap for narrative Grass but retained legacy
 Grass for diagnostics. #13 migrates `test.level.ts` and `designTest.level.ts`
 to `grassClipmap` and removes the legacy Composition/Test-loader path.
-[World Surface](../src/world-surface/world-surface.ts) currently exposes
-`zoneConditionsAt` and hard `zoneAt`, not continuous weights.
-[getGrassZoneCoverage](../src/modules/grass-clipmap/grass-height-field.ts) uses
-that hard classification; `selectStaticPlacement` in
-[static-population.ts](../src/modules/static-population.ts) similarly selects
-Vegetation/Rocks density by hard zone. Texture filtering is not shared zone
-semantics and does not replace the missing continuous query.
+#71 adds `zoneInfluencesAt` to [World Surface](../src/world-surface/world-surface.ts).
+[getGrassZoneCoverage](../src/modules/grass-clipmap/grass-height-field.ts) weights
+its own coverage; `selectStaticPlacement` weights authored population densities
+and selects deterministic variants. Their hard visual zone branches are removed.
+The hard `zoneAt` and `zoneConditionsAt` remain for habitats and diagnostic
+Terrain. Water has no land influence. Texture filtering is not zone semantics.
 
-**Target and rejected alternative:** extend the existing pure `zone-field.ts`,
-`zone-settings.ts` and `WorldSurface` contract with one continuous-weight query.
+**Implemented ownership:** the existing pure `zone-field.ts`, `zone-settings.ts`
+and `WorldSurface` own one continuous-weight query.
 Grass maps these weights to authored per-zone coverage; Vegetation/Rocks map
 them to their population density. Those content responses remain local.
 Retain hard classification for genuine habitat exclusions, separate from visual

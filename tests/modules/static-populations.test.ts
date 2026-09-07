@@ -24,9 +24,10 @@ import {
   disposeRockInstances,
   initializeRockChunks,
 } from "../../src/modules/rocks/rock-instances";
-import type {
-  GroundZoneId,
-  StaticPopulationParameters,
+import {
+  type GroundZoneId,
+  type StaticPopulationParameters,
+  selectStaticPlacement,
 } from "../../src/modules/static-population";
 import {
   getVegetationStature,
@@ -43,8 +44,20 @@ import {
 } from "../../src/modules/vegetation/vegetation-instances";
 import type { GltfAssets } from "../../src/utils/asset-loader/gltf-assets";
 import type { SensedMaterial } from "../../src/utils/asset-loader/material-effect";
+import {
+  createChunkCandidateGrid,
+  getCellRandom,
+  getChunkCandidate,
+} from "../../src/world/chunk-candidates";
 import type { WorldSurface } from "../../src/world-surface/world-surface";
-import type { ZoneId } from "../../src/world-surface/zone-settings";
+import {
+  getZoneInfluences,
+  type ZoneConditions,
+} from "../../src/world-surface/zone-field";
+import {
+  ZONE_SETTINGS,
+  type ZoneId,
+} from "../../src/world-surface/zone-settings";
 
 const ASSIGNMENT = {
   slotIndex: 0,
@@ -258,6 +271,107 @@ test("recycling hides only the outgoing Vegetation slot", () => {
   disposeVegetationInstances(instances);
 });
 
+test("pure zones retain the exact placement and variant random draws", () => {
+  const grid = createChunkCandidateGrid(32, 1);
+  for (const zone of [
+    "meadow",
+    "coniferForest",
+    "deciduousForest",
+    "shrubSlope",
+  ] as const) {
+    const parameters: StaticPopulationParameters = {
+      ...createVegetationParameters(zone),
+      candidateSpacingMeters: 1,
+      assets: [createAssetSettings("first"), createAssetSettings("second")],
+      instancesPerHectareByZone: { [zone]: 5_000 },
+      variantsByZone: {
+        [zone]: [
+          { assetId: "first", weight: 1 },
+          { assetId: "second", weight: 3 },
+        ],
+      },
+    };
+    const surface = createFlatSurface(zone);
+    const actual: (string | undefined)[] = [];
+    const expected: (string | undefined)[] = [];
+    for (let index = 0; index < grid.candidateCount; index++) {
+      const candidate = getChunkCandidate(
+        ASSIGNMENT,
+        grid,
+        parameters.seed,
+        index,
+      );
+      const density = getCellRandom(
+        parameters.seed,
+        candidate.cellX,
+        candidate.cellZ,
+        2,
+      );
+      const variant = getCellRandom(
+        parameters.seed,
+        candidate.cellX,
+        candidate.cellZ,
+        3,
+      );
+      expected.push(
+        density < 0.5 ? (variant <= 0.25 ? "first" : "second") : undefined,
+      );
+      actual.push(
+        selectStaticPlacement(parameters, grid, surface, ASSIGNMENT, index)
+          ?.model.id,
+      );
+    }
+    expect(actual).toEqual(expected);
+  }
+});
+
+test("shared transition weights blend population density and variants deterministically", () => {
+  const grid = createChunkCandidateGrid(32, 1);
+  const parameters: StaticPopulationParameters = {
+    ...createVegetationParameters("meadow"),
+    candidateSpacingMeters: 1,
+    assets: [createAssetSettings("meadow"), createAssetSettings("forest")],
+    instancesPerHectareByZone: { meadow: 2_500, coniferForest: 7_500 },
+    variantsByZone: {
+      meadow: [{ assetId: "meadow", weight: 1 }],
+      coniferForest: [{ assetId: "forest", weight: 1 }],
+    },
+  };
+  const conditions: ZoneConditions = {
+    riverChannelMarginMeters: -1,
+    waterDepthMeters: 1,
+    groundSlope: 0,
+    forestRegionValue: ZONE_SETTINGS.coniferForestThreshold,
+  };
+  const surface = {
+    ...createFlatSurface("meadow"),
+    zoneInfluencesAt: () => getZoneInfluences(conditions, ZONE_SETTINGS),
+  };
+  const first: (string | undefined)[] = [];
+  const repeated: (string | undefined)[] = [];
+  for (let index = 0; index < grid.candidateCount; index++) {
+    first.push(
+      selectStaticPlacement(parameters, grid, surface, ASSIGNMENT, index)?.model
+        .id,
+    );
+    repeated.push(
+      selectStaticPlacement(parameters, grid, surface, ASSIGNMENT, index)?.model
+        .id,
+    );
+  }
+  expect(repeated).toEqual(first);
+  // Half of each zone's density: 12.5% meadow, 37.5% forest, 50% empty.
+  expect(
+    first.filter((id) => id === "meadow").length / first.length,
+  ).toBeCloseTo(0.125, 1);
+  expect(
+    first.filter((id) => id === "forest").length / first.length,
+  ).toBeCloseTo(0.375, 1);
+  expect(
+    first.filter((id) => id === undefined).length / first.length,
+  ).toBeCloseTo(0.5, 1);
+});
+
 function createVegetationParameters(
   zone: GroundZoneId,
 ): StaticPopulationParameters {
@@ -339,6 +453,15 @@ function createFlatSurface(
       forestRegionValue: 0,
     }),
     zoneAt: (worldX) => (typeof zone === "function" ? zone(worldX) : zone),
+    zoneInfluencesAt: (worldX) => {
+      const id = typeof zone === "function" ? zone(worldX) : zone;
+      return {
+        meadow: Number(id === "meadow"),
+        coniferForest: Number(id === "coniferForest"),
+        deciduousForest: Number(id === "deciduousForest"),
+        shrubSlope: Number(id === "shrubSlope"),
+      };
+    },
   };
 }
 

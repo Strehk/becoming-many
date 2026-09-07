@@ -438,6 +438,9 @@ function createFlatSurface(): WorldSurface {
       groundSlope: 0,
       forestRegionValue: 0,
     }),
+    zoneInfluencesAt: () => {
+      throw new Error("Animal habitats must use exact zone membership");
+    },
     zoneAt: () => "meadow",
   };
 }

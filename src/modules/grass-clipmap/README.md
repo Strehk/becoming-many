@@ -57,8 +57,9 @@ So the ground arrives sampled, in a camera-following texture
 64-metre chunks with 32 segments, so two metres — which means the samples
 are the same points the terrain mesh is built from: the grass follows the
 surface the viewer actually sees, closer than an approximate analytical
-function would. The second channel carries how much grass the zone allows,
-so one fetch answers both questions and water and forest stay bare.
+function would. The second channel weights Grass coverage by World Surface's
+shared zone influences. One fetch answers both questions; water and forest
+interiors stay bare, while land-zone boundaries blend.
 
 The window is 192 texels square, snapped to its own texel grid so a refill
 never shifts the sample points. Leaving its safe radius starts a refill

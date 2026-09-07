@@ -158,7 +158,7 @@ test("the height field reproduces the world surface it samples", () => {
   heightField.dispose();
 });
 
-test("the height field leaves zones that grow no grass bare", () => {
+test("the height field uses shared zone influences and excludes water exactly", () => {
   const settings = GRASS_CLIPMAP_SETTINGS.heightField;
   const heightField = createGrassHeightField({
     worldSurface,
@@ -167,27 +167,34 @@ test("the height field leaves zones that grow no grass bare", () => {
     cameraZ: 0,
   });
   const data = (heightField.texture as DataTexture).image.data as Uint16Array;
-  const coverage: Partial<Record<string, number>> =
-    GRASS_CLIPMAP_SETTINGS.zoneCoverage;
+  const coverage = GRASS_CLIPMAP_SETTINGS.zoneCoverage;
 
   let bareFound = false;
   let coveredFound = false;
+  let transitionFound = false;
   for (let row = 0; row < settings.sizeTexels; row += 7) {
     for (let column = 0; column < settings.sizeTexels; column += 7) {
       const worldX = heightField.placement.x + column * settings.texelMeters;
       const worldZ = heightField.placement.y + row * settings.texelMeters;
       const index = (row * settings.sizeTexels + column) * 2 + 1;
       const stored = DataUtils.fromHalfFloat(data[index] ?? 0);
-      const zone = worldSurface.zoneAt(worldX, worldZ);
-      expect(stored).toBeCloseTo(coverage[zone] ?? 0, 3);
+      const influences = worldSurface.zoneInfluencesAt(worldX, worldZ);
+      const expected =
+        influences.meadow * coverage.meadow +
+        influences.shrubSlope * coverage.shrubSlope;
+      expect(stored).toBeCloseTo(expected, 3);
+      if (worldSurface.zoneAt(worldX, worldZ) === "water")
+        expect(stored).toBe(0);
+      if (influences.meadow > 0 && influences.meadow < 1)
+        transitionFound = true;
       if (stored === 0) bareFound = true;
       if (stored > 0) coveredFound = true;
     }
   }
-  // Water and both forest zones are never grass zones, and the sampled window
-  // has to contain both kinds of ground or the check proves nothing.
+  // Require bare land, covered land and a transition in the sampled window.
   expect(bareFound).toBe(true);
   expect(coveredFound).toBe(true);
+  expect(transitionFound).toBe(true);
 
   heightField.dispose();
 });

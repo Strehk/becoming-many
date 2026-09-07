@@ -115,8 +115,9 @@ their visual response but do not define competing global wind state.
 ## World Facts and Content
 
 `src/world-surface` is a pure deterministic query boundary. It owns height and
-continuous zone conditions but no scene objects or lifecycle. Content modules
-receive it as a read-only contract.
+conditions, hard habitat classification and shared continuous zone influences,
+with no scene objects or lifecycle. Grass maps those influences to coverage;
+static populations map them to density and deterministic variant selection.
 
 `src/modules` owns the rendered or simulated content. Current categories are:
 

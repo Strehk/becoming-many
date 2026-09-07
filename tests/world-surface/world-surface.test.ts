@@ -10,6 +10,7 @@ import { WORLD_SURFACE_SETTINGS } from "../../src/world-surface/surface-settings
 import { createWorldSurface } from "../../src/world-surface/world-surface";
 import {
   getZoneId,
+  getZoneInfluences,
   type ZoneConditions,
 } from "../../src/world-surface/zone-field";
 import { ZONE_SETTINGS } from "../../src/world-surface/zone-settings";
@@ -30,6 +31,12 @@ describe("WorldSurface", () => {
     expect(worldSurface.zoneAt(worldX, worldZ)).toBe(
       worldSurface.zoneAt(worldX, worldZ),
     );
+    expect(worldSurface.zoneInfluencesAt(worldX, worldZ)).toEqual(
+      getZoneInfluences(
+        worldSurface.zoneConditionsAt(worldX, worldZ),
+        ZONE_SETTINGS,
+      ),
+    );
     expect(worldSurface.zoneConditionsAt(worldX, worldZ)).toEqual(
       worldSurface.zoneConditionsAt(worldX, worldZ),
     );
@@ -43,6 +50,70 @@ describe("WorldSurface", () => {
     expect(classify({ forestRegionValue: -1 })).toBe("coniferForest");
     expect(classify({ forestRegionValue: 1 })).toBe("deciduousForest");
     expect(classify({})).toBe("meadow");
+  });
+
+  test("visual influences blend thresholds with hard water and slope priority", () => {
+    const conditions: ZoneConditions = {
+      riverChannelMarginMeters: -1,
+      waterDepthMeters: 1,
+      groundSlope: 0,
+      forestRegionValue: 0,
+    };
+    const {
+      coniferForestThreshold: conifer,
+      deciduousForestThreshold: deciduous,
+      shrubSlopeThreshold: slope,
+      forestTransitionWidth,
+      slopeTransitionWidth,
+    } = ZONE_SETTINGS;
+    const forestHalf = forestTransitionWidth / 2;
+    const slopeHalf = slopeTransitionWidth / 2;
+    for (const [overrides, expected] of [
+      [{}, [1, 0, 0, 0]],
+      [{ forestRegionValue: conifer - forestHalf }, [0, 1, 0, 0]],
+      [{ forestRegionValue: conifer }, [0.5, 0.5, 0, 0]],
+      [{ forestRegionValue: conifer + forestHalf }, [1, 0, 0, 0]],
+      [{ forestRegionValue: deciduous - forestHalf }, [1, 0, 0, 0]],
+      [{ forestRegionValue: deciduous }, [0.5, 0, 0.5, 0]],
+      [{ forestRegionValue: deciduous + forestHalf }, [0, 0, 1, 0]],
+      [{ groundSlope: slope - slopeHalf }, [1, 0, 0, 0]],
+      [{ groundSlope: slope }, [0.5, 0, 0, 0.5]],
+      [{ groundSlope: slope + slopeHalf, forestRegionValue: -1 }, [0, 0, 0, 1]],
+      [
+        { groundSlope: slope, forestRegionValue: conifer },
+        [0.25, 0.25, 0, 0.5],
+      ],
+      [{ riverChannelMarginMeters: 0, groundSlope: 1 }, [0, 0, 0, 0]],
+      [{ riverChannelMarginMeters: 0, waterDepthMeters: 0 }, [1, 0, 0, 0]],
+    ] satisfies [Partial<ZoneConditions>, number[]][]) {
+      const sample = { ...conditions, ...overrides };
+      const weights = getZoneInfluences(sample, ZONE_SETTINGS);
+      const actual = [
+        weights.meadow,
+        weights.coniferForest,
+        weights.deciduousForest,
+        weights.shrubSlope,
+      ];
+      actual.forEach((weight, index) => {
+        expect(weight).toBeCloseTo(expected[index] ?? 0, 12);
+      });
+      expect(getZoneInfluences(sample, ZONE_SETTINGS)).toEqual(weights);
+    }
+    for (const [field, threshold] of [
+      ["forestRegionValue", conifer],
+      ["forestRegionValue", deciduous],
+      ["groundSlope", slope],
+    ] as const) {
+      const left = getZoneInfluences(
+        { ...conditions, [field]: threshold - 1e-7 },
+        ZONE_SETTINGS,
+      );
+      const right = getZoneInfluences(
+        { ...conditions, [field]: threshold + 1e-7 },
+        ZONE_SETTINGS,
+      );
+      expect(Math.abs(left.meadow - right.meadow)).toBeLessThan(0.00001);
+    }
   });
 
   test("carves solid ground below the river surface", () => {
