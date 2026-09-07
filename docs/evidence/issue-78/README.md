@@ -1,4 +1,99 @@
-# Issue #78 — Quick reference attribution candidate
+# Issue #78 — Current quick reference proposal
+
+Prepared on 2026-09-07 at clean `21d2646` after the UI/Engine architecture
+migration. [Exact proposed diff](quick-reference-candidate.diff) is **unapproved**.
+The real `tests/benchmark/benchmark-baseline.ts` remains unchanged, SHA256
+`f427c1febdaec457311b6956418e2297b16bd44b20453ff8acbdef29e378a006`. `full: {}` stays unchanged.
+
+## Current measured workload
+
+Two sequential production Station runs used the existing quick profile on
+Apple M2 Max / ANGLE Metal, software rendering false, Chromium
+151.0.7922.34, 640 × 360 and device scale 1.
+There was no competing task-owned GPU work. Power/background processes were
+not independently controlled; these are counter comparisons, not installation
+90 Hz or timing-improvement evidence.
+
+The unchanged route has 240 warmup frames at its first pose, then 210 frames
+at 1/15 s over 14 seconds. Counters are maxima over that route, not a single
+pose. Run still applies its existing viewer rig, pitch assist and height limits.
+Source digest: `e4f3a3b7ed01c37df46ebb93cca20d7889805a43596c155a0b26bc4246df0972`. Both identity records have
+revision `21d2646afa5cbe9aaa4e57a9ea9c340053e80ef2`, empty working diff and no dirty files.
+
+All nine reports completed with `failures: []`; all five counters and streaming
+fields match exactly between the two runs. Both `--check` commands exit 1 for
+seven old-reference mismatches. This expected reference failure is retained,
+not reclassified as a passing gate.
+
+| Level | Draw calls stored → proposed | Triangles stored → proposed | Geometries stored → proposed | Textures stored → proposed | Programs stored → proposed |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| white-world | 1 → 1 | 0 → 0 | 1 → 1 | 0 → 0 | 1 → 1 |
+| scent | 13 → 13 | 1,408 → 1,408 | 27 → 27 | 0 → 0 | 3 → 3 |
+| echo | 60 → 58 | 3,810,268 → 3,947,244 | 68 → 66 | 1 → 1 | 8 → 8 |
+| motion | 63 → 61 | 3,810,268 → 3,947,244 | 71 → 69 | 1 → 1 | 10 → 10 |
+| thermal | 89 → 99 | 3,820,178 → 3,958,910 | 92 → 90 | 48 → 48 | 14 → 14 |
+| magnetic | 90 → 100 | 3,821,138 → 3,959,870 | 93 → 91 | 48 → 48 | 15 → 15 |
+| connections | 92 → 102 | 3,847,938 → 4,113,470 | 93 → 93 | 48 → 48 | 17 → 17 |
+| test | 82 → 101 | 4,278,320 → 4,043,130 | 94 → 93 | 47 → 48 | 11 → 11 |
+| design-test | 81 → 100 | 4,277,360 → 4,042,170 | 93 → 92 | 47 → 48 | 10 → 10 |
+
+Current queue peaks are 0 (White World), 109 (Scent), 249
+(Echo/Motion/Thermal/Magnetic) and 256 (Connections/Test/Design Test).
+Drain markers remain -1 outside White World (0). Matching bounded queue and
+fixed-capacity counters do not prove complete or visible worker topology.
+
+## Why this proposal replaces the old candidate
+
+The old after-#82 candidate predates the implemented animal-link retirement,
+Grass-to-Clipmap migration, conservative Clipmap bounds, shared zone influences
+and approved bank-clearance change (#80/#13/#72/#71/#81). These alter submitted
+geometry, content selection and effective visibility. The route and stored
+reference are unchanged; its historical numerical identity is no longer the
+current scene. The detailed earlier attribution and its unresolved numerical
+limits are retained below, rather than attributing every changed triangle to
+one cause.
+
+Current Connections/Test counters and streaming match the two retained #81
+post-clearance reports exactly (`benchmark-results/issue-81/after-quick-20260907/quick.json`,
+SHA256 `a3741695373a4385adaf3b9d3a3abee5867dd244e4c575d2581ce67881235b73`).
+That packet contains only those two levels; it does not prove before/after
+identity for all nine. No new counter/reference acceptance is implied.
+
+## Reviewable views and remaining decision
+
+The [current views](current-views/) show each level at the stopped endpoint of
+the same existing route, captured separately after both measurement runs with
+normal browser frame pacing. They illustrate visible content; they are neither
+route maxima nor proof of all worker topology, perceptual quality or a complete
+Show. The unchanged per-level presets remain the construction authority.
+
+Visual inspection of all nine endpoint images found these concrete limits:
+
+| Views | Visible facts and limits |
+| --- | --- |
+| [White World](current-views/white-world.png), [Scent](current-views/scent.png) | White space and dark particles; extra Scent trails are not reliably visible here. |
+| [Echo](current-views/echo.png), [Motion](current-views/motion.png) | Dark nearby geometry fills most of the image; Motion traces cannot be distinguished reliably. |
+| [Thermal](current-views/thermal.png), [Magnetic](current-views/magnetic.png), [Connections](current-views/connections.png) | Blue/turquoise near surfaces; magnetic pattern and complete root topology are not demonstrated. |
+| [Test](current-views/test.png), [Design Test](current-views/design-test.png) | Tree crowns and distinct green/violet palettes; ground, river and complete plant anchoring remain hard to see. |
+
+The near geometry and upward-looking view limit this endpoint as a content
+review. This does not prove a missing effect or regression, but it also does not
+satisfy comprehensive visual workload acceptance. A suitable ground/sense view
+still needs review; no new control path or altered benchmark route was introduced
+just to produce a reassuring image.
+
+Before application, review the intended content and exact numerical diff.
+No automatic `--update` was run. Explicit numerical approval, full milestone
+and Windows-PCVR acceptance remain outstanding; this proposal prepares the
+review and does not close #78.
+
+| Local evidence | SHA256 |
+| --- | --- |
+| `benchmark-results/issue-78/current-quick-1/quick.json` | `4bf7f0ad248d038add74f7c098377e3697178bdfc56922e0322446d40fd4a8be` |
+| `benchmark-results/issue-78/current-quick-2/quick.json` | `3e1065dc316f0fce317bf036f069ad77b9f90163e9f342f432594c6b36054fda` |
+| `benchmark-results/issue-78/current-views/views.json` | `7fbf4df7dcfa79f2f5cf2c727d653ce5cb873aebc5ab664957b2db783f7f3d3e` |
+
+# Historical reference attribution
 
 Read-only attribution prepared on 2026-09-05 at `9bfb84b` plus the uncommitted
 M0/#77 changes, on `david_refactor`. This is an **unapproved reference candidate**,
@@ -70,7 +165,7 @@ owns the remaining visual/workload decision and explicit reference approval.
 
 ## Exact review-only candidate after #82
 
-[Complete proposed reference diff](quick-reference-candidate.diff) contains only
+[Historical after-#82 reference diff](https://github.com/Strehk/becoming-many/blob/21d2646afa5cbe9aaa4e57a9ea9c340053e80ef2/docs/evidence/issue-78/quick-reference-candidate.diff) contains only
 the seven quick-level counter changes from the table, generated in memory from
 [#82's final quick report](../issue-82/verification.json) (`quick`). The production baseline was
 not edited. White World/Scent, textures/programs and the empty full-profile

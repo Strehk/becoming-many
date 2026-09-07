@@ -12,7 +12,7 @@ Live issues own acceptance. Do not create a second implementation plan.
 | --- | --- |
 | Branch | `david_refactor` only. Commit/push completed, tested blocks to `origin/david_refactor` and verify success; no main, force-push or additional branches. |
 | Current request | Implement the prepared architecture and ready software issues so the next Start level can use clear existing owners. Product/physical decisions stay open. |
-| Source checkpoint | `a213243` implements #36; `2e626b9` fixes repeat audio wake. #84/#11 complete central styling and import/type enforcement in this block. |
+| Source checkpoint | `21d2646` completes #36/#84/#11 and repeat audio wake (all pushed). The following documentation block prepares the current #78 proposal without changing the baseline. |
 | Next implementation | #36 is committed/pushed at `a213243`; #84 styling and final #11 boundary checks complete the immediate architecture path. Continue at the next Start-level definition and remaining explicit decisions, not another architecture inventory. |
 | Confirmed direction | Conductor is UI only; Entry connects UI to the existing browser Engine. Show owns transport/language, Run owns lifetime, World owns rendering, M5 owns validity. Backend remains Station delivery/config/health. Affected role filenames and `src/app.css` are implemented. |
 | Existing software | Direct startup, complete child/source cleanup, entry diagnostics, explicit literal levels, legacy Grass retirement, shared zone influences, approved bank clearance and shared Rocks/Vegetation lifecycle are implemented. Their distinct remaining issue acceptance is preserved. |
@@ -86,8 +86,10 @@ flowchart LR
 - **#73:** startup/Composition flattening is implemented. Investigate the retained
   Motion failure separately: about 0.725 Show seconds advanced over ten seconds
   while 599 frames continued. Later passes have not explained it.
-- **#78:** bounded reference investigation and explicit approval of the exact
-  proposed counters remain required; do not change the reference to pass checks.
+- **#78:** two current nine-level replays repeat exactly and the updated
+  [proposal](evidence/issue-78/README.md) records current counts and limited endpoint
+  views. Ground/sense workload review and explicit numerical approval remain;
+  the real reference and its seven failing comparisons are unchanged.
 
 These remaining gates do not invalidate the completed UI/Engine software boundary. They remain
 required for actual visitor/installation acceptance and must not be reported as
