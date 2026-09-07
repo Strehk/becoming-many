@@ -118,6 +118,11 @@ their visual response but do not define competing global wind state.
 conditions, hard habitat classification and shared continuous zone influences,
 with no scene objects or lifecycle. Grass maps those influences to coverage;
 static populations map them to density and deterministic variant selection.
+Rocks and Vegetation share fixed-slot loading, row publication, queued recycling,
+visibility and disposal in `static-population.ts`. Their factories supply only
+model construction and transforms; colors, effects and Vegetation clearance
+stay local. This is one implementation for two current consumers, with no
+registry or configurable lifecycle.
 
 `src/modules` owns the rendered or simulated content. Current categories are:
 

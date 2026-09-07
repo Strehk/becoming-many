@@ -19,30 +19,25 @@ import {
   Vector3,
 } from "three";
 import type { GLTF } from "three/addons/loaders/GLTFLoader.js";
+import { createRockInstances } from "../../src/modules/rocks/rock-instances";
 import {
-  createRockInstances,
-  disposeRockInstances,
-  initializeRockChunks,
-} from "../../src/modules/rocks/rock-instances";
-import {
+  discardStaticPopulationChunks,
   type GroundZoneId,
+  initializeStaticPopulationChunks,
   type StaticPopulationParameters,
   selectStaticPlacement,
+  writeNextStaticPopulationRow,
 } from "../../src/modules/static-population";
 import {
   getVegetationStature,
   VEGETATION_DEFINITION,
 } from "../../src/modules/vegetation/vegetation-definition";
-import {
-  createVegetationChunkWriter,
-  createVegetationInstances,
-  discardVegetationChunks,
-  disposeVegetationInstances,
-  initializeVegetationChunks,
-  uploadVegetationChanges,
-  writeNextVegetationRow,
-} from "../../src/modules/vegetation/vegetation-instances";
+import { createVegetationInstances } from "../../src/modules/vegetation/vegetation-instances";
 import type { GltfAssets } from "../../src/utils/asset-loader/gltf-assets";
+import {
+  disposeInstancedModelPool,
+  uploadCommittedModels,
+} from "../../src/utils/asset-loader/instanced-model-pool";
 import type { SensedMaterial } from "../../src/utils/asset-loader/material-effect";
 import {
   createChunkCandidateGrid,
@@ -90,7 +85,7 @@ test("Vegetation keeps every mesh part of an accepted model", () => {
     worldSurface: createFlatSurface("meadow"),
   });
 
-  initializeVegetationChunks(instances, [ASSIGNMENT]);
+  initializeStaticPopulationChunks(instances, [ASSIGNMENT]);
 
   expect(instances.modelPool.group.children).toHaveLength(2);
   expect(instances.modelPool.group.children.every(isInstancedMesh)).toBe(true);
@@ -102,7 +97,7 @@ test("Vegetation keeps every mesh part of an accepted model", () => {
   expect(readScale(instances.modelPool.group.children[1], 0)).toBeGreaterThan(
     0,
   );
-  disposeVegetationInstances(instances);
+  disposeInstancedModelPool(instances.modelPool);
 });
 
 test("Vegetation variation is stable and differs between world cells", () => {
@@ -123,8 +118,8 @@ test("Vegetation variation is stable and differs between world cells", () => {
     worldSurface: createFlatSurface("meadow"),
   });
 
-  initializeVegetationChunks(first, [ASSIGNMENT]);
-  initializeVegetationChunks(second, [ASSIGNMENT]);
+  initializeStaticPopulationChunks(first, [ASSIGNMENT]);
+  initializeStaticPopulationChunks(second, [ASSIGNMENT]);
   const firstTransforms = readTransforms(first.modelPool.group.children[0]);
   const secondTransforms = readTransforms(second.modelPool.group.children[0]);
 
@@ -135,8 +130,8 @@ test("Vegetation variation is stable and differs between world cells", () => {
   ).toHaveLength(4);
   expect(new Set(firstTransforms.map(({ width }) => width))).toHaveLength(4);
   expect(new Set(firstTransforms.map(({ depth }) => depth))).toHaveLength(4);
-  disposeVegetationInstances(first);
-  disposeVegetationInstances(second);
+  disposeInstancedModelPool(first.modelPool);
+  disposeInstancedModelPool(second.modelPool);
 });
 
 test.each([0.999, 1, 2.5])(
@@ -151,12 +146,12 @@ test.each([0.999, 1, 2.5])(
       worldSurface: createFlatSurface("meadow", -clearance),
     });
 
-    initializeVegetationChunks(instances, [ASSIGNMENT]);
+    initializeStaticPopulationChunks(instances, [ASSIGNMENT]);
 
     expect(readDrawCount(instances.modelPool.group.children[0])).toBe(
       clearance < 1 ? 0 : 4,
     );
-    disposeVegetationInstances(instances);
+    disposeInstancedModelPool(instances.modelPool);
   },
 );
 
@@ -185,7 +180,7 @@ test("Vegetation applies the effects of each model's own stature", () => {
   expect(
     decorated.every((material) => material instanceof MeshBasicMaterial),
   ).toBe(true);
-  disposeVegetationInstances(instances);
+  disposeInstancedModelPool(instances.modelPool);
 });
 
 test("Vegetation reads the bushes as undergrowth and the rest as canopy", () => {
@@ -220,7 +215,7 @@ test("Rocks apply shared material effects to every part material", () => {
 
   expect(decorated).toHaveLength(2);
   expect(new Set(decorated).size).toBe(2);
-  disposeRockInstances(instances);
+  disposeInstancedModelPool(instances.modelPool);
 });
 
 test("Rocks exclude water and retain fixed multi-part buffers", () => {
@@ -233,12 +228,12 @@ test("Rocks exclude water and retain fixed multi-part buffers", () => {
     worldSurface: createFlatSurface("water"),
   });
 
-  initializeRockChunks(instances, [ASSIGNMENT]);
+  initializeStaticPopulationChunks(instances, [ASSIGNMENT]);
 
   expect(instances.modelPool.group.children).toHaveLength(2);
   expect(readDrawCount(instances.modelPool.group.children[0])).toBe(0);
   expect(readDrawCount(instances.modelPool.group.children[1])).toBe(0);
-  disposeRockInstances(instances);
+  disposeInstancedModelPool(instances.modelPool);
 });
 
 test("recycling hides only the outgoing Vegetation slot", () => {
@@ -252,28 +247,31 @@ test("recycling hides only the outgoing Vegetation slot", () => {
       worldX < 32 ? "meadow" : "water",
     ),
   });
-  initializeVegetationChunks(instances, [
+  initializeStaticPopulationChunks(instances, [
     ASSIGNMENT,
     { ...ASSIGNMENT, slotIndex: 1, chunkX: 1, originX: 16 },
   ]);
   const mesh = instances.modelPool.group.children[0];
   expect(readDrawCount(mesh)).toBe(8);
 
-  const firstWriter = createVegetationChunkWriter({
-    ...ASSIGNMENT,
-    revision: 2,
-    chunkX: 2,
-    originX: 32,
-  });
-  discardVegetationChunks(instances, [firstWriter.assignment]);
-  uploadVegetationChanges(instances);
+  const firstWriter = {
+    assignment: {
+      ...ASSIGNMENT,
+      revision: 2,
+      chunkX: 2,
+      originX: 32,
+    },
+    nextRow: 0,
+  };
+  discardStaticPopulationChunks(instances, [firstWriter.assignment]);
+  uploadCommittedModels(instances.modelPool);
   expect(readDrawCount(mesh)).toBe(4);
 
-  expect(writeNextVegetationRow(instances, firstWriter)).toBe(false);
-  expect(writeNextVegetationRow(instances, firstWriter)).toBe(true);
-  uploadVegetationChanges(instances);
+  expect(writeNextStaticPopulationRow(instances, firstWriter)).toBe(false);
+  expect(writeNextStaticPopulationRow(instances, firstWriter)).toBe(true);
+  uploadCommittedModels(instances.modelPool);
   expect(readDrawCount(mesh)).toBe(4);
-  disposeVegetationInstances(instances);
+  disposeInstancedModelPool(instances.modelPool);
 });
 
 test("pure zones retain the exact placement and variant random draws", () => {

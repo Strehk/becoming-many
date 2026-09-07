@@ -1,10 +1,21 @@
 /**
- * Purpose: Share the small data contract used by zone-driven static populations.
+ * Purpose: Share placement and fixed-slot writing for Rocks and Vegetation.
  * Context: Vegetation and Rocks use the same density and weighted-variant math.
- * Responsibility: Resolve level density, select accepted candidates, and validate definitions.
- * Boundary: Chunk ownership, transforms, Three.js resources, and lifecycle stay in each module.
+ * Responsibility: Stream fixed instance slots and select their accepted candidates.
+ * Boundary: Rocks and Vegetation own model construction, colors, effects, and transforms.
  */
 
+import { Matrix4, Quaternion, type Scene, Vector3 } from "three";
+import {
+  clearModelSlot,
+  commitModelSlot,
+  createInstancedModelPool,
+  discardCommittedModelSlot,
+  disposeInstancedModelPool,
+  type InstancedModelPool,
+  uploadCommittedModels,
+} from "../utils/asset-loader/instanced-model-pool";
+import type { StaticModelAsset } from "../utils/asset-loader/static-model";
 import {
   type ChunkCandidate,
   type ChunkCandidateGrid,
@@ -12,11 +23,19 @@ import {
   getCellRandom,
   getChunkCandidate,
 } from "../world/chunk-candidates";
-import type { ChunkAssignment } from "../world/chunk-system";
+import {
+  type ChunkAssignment,
+  ChunkWindow,
+  getChunkSize,
+} from "../world/chunk-system";
+import type { WorldModule } from "../world/module-runtime";
+import type { StreamQueue } from "../world/stream-queue";
+import type { Viewpoint } from "../world/viewer-rig";
 import type { WorldSurface } from "../world-surface/world-surface";
 import type { ZoneId } from "../world-surface/zone-settings";
 
 const HECTARE_SQUARE_METERS = 10_000;
+const STATIC_POPULATION_CHUNK_LEVEL = 2;
 const GROUND_ZONES: readonly GroundZoneId[] = [
   "meadow",
   "coniferForest",
@@ -66,6 +85,199 @@ export interface StaticPopulationParameters
 export interface StaticPlacement {
   readonly candidate: ChunkCandidate;
   readonly model: StaticModelDefinition;
+}
+
+/** Fixed instance buffers and the concrete population's transform policy. */
+export interface StaticPopulationInstances {
+  readonly parameters: StaticPopulationParameters;
+  readonly worldSurface: WorldSurface;
+  readonly candidateGrid: ChunkCandidateGrid;
+  readonly modelPool: InstancedModelPool;
+  readonly matrix: Matrix4;
+  readonly position: Vector3;
+  readonly rotation: Quaternion;
+  readonly scale: Vector3;
+  readonly writeTransform: (
+    instances: StaticPopulationInstances,
+    assignment: ChunkAssignment,
+    model: StaticModelDefinition,
+    candidate: ChunkCandidate,
+  ) => void;
+}
+
+/** Allocate the shared pool and scratch transforms after concrete material setup. */
+export function createStaticPopulationInstances(options: {
+  readonly name: string;
+  readonly parameters: StaticPopulationParameters;
+  readonly worldSurface: WorldSurface;
+  readonly candidateGrid: ChunkCandidateGrid;
+  readonly sources: readonly {
+    readonly id: string;
+    readonly model: StaticModelAsset;
+  }[];
+  readonly chunkSlotCount: number;
+  readonly writeTransform: StaticPopulationInstances["writeTransform"];
+}): StaticPopulationInstances {
+  return {
+    parameters: options.parameters,
+    worldSurface: options.worldSurface,
+    candidateGrid: options.candidateGrid,
+    modelPool: createInstancedModelPool({
+      name: options.name,
+      sources: options.sources,
+      slotCount: options.chunkSlotCount,
+      maxInstancesPerSlot: options.candidateGrid.candidateCount,
+    }),
+    matrix: new Matrix4(),
+    position: new Vector3(),
+    rotation: new Quaternion(),
+    scale: new Vector3(),
+    writeTransform: options.writeTransform,
+  };
+}
+
+export interface StaticPopulationChunkWriter {
+  readonly assignment: ChunkAssignment;
+  nextRow: number;
+}
+
+/** The same fixed-slot lifetime serves Rocks and Vegetation; content stays local. */
+export function createStaticPopulationModule(
+  options: {
+    readonly scene: Scene;
+    readonly viewpoint: Viewpoint;
+    readonly streamQueue: StreamQueue;
+  },
+  createInstances: (
+    chunkSize: number,
+    chunkSlotCount: number,
+  ) => StaticPopulationInstances,
+): WorldModule {
+  let currentStream:
+    | {
+        readonly chunkWindow: ChunkWindow;
+        readonly instances: StaticPopulationInstances;
+        readonly slotJobKeys: readonly object[];
+      }
+    | undefined;
+
+  return {
+    load: () => {
+      const chunkSize = getChunkSize(STATIC_POPULATION_CHUNK_LEVEL);
+      const radius = Math.max(
+        1,
+        Math.ceil(options.viewpoint.viewDistanceMeters / chunkSize),
+      );
+      const chunkWindow = new ChunkWindow({
+        level: STATIC_POPULATION_CHUNK_LEVEL,
+        radius,
+      });
+      const instances = createInstances(chunkSize, chunkWindow.slotCount);
+      currentStream = {
+        chunkWindow,
+        instances,
+        slotJobKeys: Array.from({ length: chunkWindow.slotCount }, () => ({})),
+      };
+      const { x, z } = options.viewpoint.worldPosition;
+      initializeStaticPopulationChunks(instances, chunkWindow.update(x, z));
+      options.scene.add(instances.modelPool.group);
+    },
+    activate: () => {
+      if (currentStream) currentStream.instances.modelPool.group.visible = true;
+    },
+    update: () => {
+      const stream = currentStream;
+      if (!stream) return;
+      uploadCommittedModels(stream.instances.modelPool);
+      const { x, z } = options.viewpoint.worldPosition;
+      const assignments = stream.chunkWindow.update(x, z);
+      discardStaticPopulationChunks(stream.instances, assignments);
+      uploadCommittedModels(stream.instances.modelPool);
+      for (const assignment of assignments) {
+        const key = stream.slotJobKeys[assignment.slotIndex];
+        if (!key) continue;
+        const writer = { assignment, nextRow: 0 };
+        options.streamQueue.enqueue({
+          key,
+          isCurrent: () =>
+            currentStream === stream &&
+            stream.chunkWindow.isCurrent(assignment),
+          runStep: () => writeNextStaticPopulationRow(stream.instances, writer),
+        });
+      }
+    },
+    deactivate: () => {
+      if (currentStream)
+        currentStream.instances.modelPool.group.visible = false;
+    },
+    unload: () => {
+      const stream = currentStream;
+      if (!stream) return;
+      currentStream = undefined;
+      options.scene.remove(stream.instances.modelPool.group);
+      disposeInstancedModelPool(stream.instances.modelPool);
+    },
+  };
+}
+
+/** Fill initial slots synchronously; recycled slots advance through the queue. */
+export function initializeStaticPopulationChunks(
+  instances: StaticPopulationInstances,
+  assignments: readonly ChunkAssignment[],
+): void {
+  for (const assignment of assignments) {
+    const writer = { assignment, nextRow: 0 };
+    while (!writeNextStaticPopulationRow(instances, writer)) {
+      // Complete the slot before the first frame.
+    }
+  }
+  uploadCommittedModels(instances.modelPool);
+}
+
+/** Publish a slot only after its last candidate row is complete. */
+export function writeNextStaticPopulationRow(
+  instances: StaticPopulationInstances,
+  writer: StaticPopulationChunkWriter,
+): boolean {
+  const { assignment } = writer;
+  if (writer.nextRow === 0)
+    clearModelSlot(instances.modelPool, assignment.slotIndex);
+  const firstCandidate = writer.nextRow * instances.candidateGrid.cellsPerSide;
+  for (
+    let column = 0;
+    column < instances.candidateGrid.cellsPerSide;
+    column++
+  ) {
+    const placement = selectStaticPlacement(
+      instances.parameters,
+      instances.candidateGrid,
+      instances.worldSurface,
+      assignment,
+      firstCandidate + column,
+    );
+    if (placement) {
+      instances.writeTransform(
+        instances,
+        assignment,
+        placement.model,
+        placement.candidate,
+      );
+    }
+  }
+  writer.nextRow++;
+  if (writer.nextRow < instances.candidateGrid.cellsPerSide) return false;
+  commitModelSlot(instances.modelPool, assignment.slotIndex);
+  return true;
+}
+
+/** Hide outgoing slots before Terrain can recycle their ground. */
+export function discardStaticPopulationChunks(
+  instances: StaticPopulationInstances,
+  assignments: readonly ChunkAssignment[],
+): void {
+  for (const assignment of assignments) {
+    discardCommittedModelSlot(instances.modelPool, assignment.slotIndex);
+  }
 }
 
 /**

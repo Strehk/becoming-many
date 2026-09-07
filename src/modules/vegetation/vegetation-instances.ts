@@ -1,22 +1,13 @@
 /**
  * Purpose: Generate compact, fixed-capacity Vegetation instances by world zone.
  * Context: Endless vegetation must recycle chunks without drawing rejected candidates.
- * Responsibility: Select models, compose transforms, and publish completed chunk slots.
- * Boundary: Loading, chunk selection, scheduling, and lifecycle stay elsewhere.
+ * Responsibility: Own model sources, material policy, and concrete instance transforms.
+ * Boundary: Static population writing publishes slots; the module owns streaming and lifecycle.
  */
 
-import { Matrix4, Quaternion, Vector3 } from "three";
+import { Vector3 } from "three";
 import type { GltfAssets } from "../../utils/asset-loader/gltf-assets";
-import {
-  clearModelSlot,
-  commitModelSlot,
-  createInstancedModelPool,
-  discardCommittedModelSlot,
-  disposeInstancedModelPool,
-  type InstancedModelPool,
-  uploadCommittedModels,
-  writeModelInstance,
-} from "../../utils/asset-loader/instanced-model-pool";
+import { writeModelInstance } from "../../utils/asset-loader/instanced-model-pool";
 import { applyMaterialEffects } from "../../utils/asset-loader/material-effect";
 import {
   createStaticModelAsset,
@@ -25,7 +16,6 @@ import {
 } from "../../utils/asset-loader/static-model";
 import {
   type ChunkCandidate,
-  type ChunkCandidateGrid,
   createChunkCandidateGrid,
   getCellRandom,
 } from "../../world/chunk-candidates";
@@ -33,11 +23,12 @@ import type { ChunkAssignment } from "../../world/chunk-system";
 import type { WorldSurface } from "../../world-surface/world-surface";
 import type {
   StaticModelDefinition,
+  StaticPopulationInstances,
   StaticPopulationParameters,
 } from "../static-population";
 import {
+  createStaticPopulationInstances,
   getStaticPlacementHeight,
-  selectStaticPlacement,
   validateStaticPopulation,
 } from "../static-population";
 import type { VegetationColors, VegetationEffectsFor } from "./vegetation";
@@ -61,22 +52,6 @@ interface VegetationInstancesOptions {
   readonly effectsFor?: VegetationEffectsFor;
 }
 
-export interface VegetationInstances {
-  readonly parameters: StaticPopulationParameters;
-  readonly worldSurface: WorldSurface;
-  readonly candidateGrid: ChunkCandidateGrid;
-  readonly modelPool: InstancedModelPool;
-  readonly matrix: Matrix4;
-  readonly position: Vector3;
-  readonly rotation: Quaternion;
-  readonly scale: Vector3;
-}
-
-export interface VegetationChunkWriter {
-  readonly assignment: ChunkAssignment;
-  nextRow: number;
-}
-
 export function createVegetationInstances({
   parameters,
   colors,
@@ -85,7 +60,7 @@ export function createVegetationInstances({
   chunkSlotCount,
   worldSurface,
   effectsFor,
-}: VegetationInstancesOptions): VegetationInstances {
+}: VegetationInstancesOptions): StaticPopulationInstances {
   validateStaticPopulation(parameters, chunkSize, "Vegetation");
   const candidateGrid = createChunkCandidateGrid(
     chunkSize,
@@ -115,23 +90,15 @@ export function createVegetationInstances({
         }
       }
     }
-    const modelPool = createInstancedModelPool({
+    return createStaticPopulationInstances({
       name: "Vegetation",
-      sources,
-      slotCount: chunkSlotCount,
-      maxInstancesPerSlot: candidateGrid.candidateCount,
-    });
-
-    return {
       parameters,
       worldSurface,
       candidateGrid,
-      modelPool,
-      matrix: new Matrix4(),
-      position: new Vector3(),
-      rotation: new Quaternion(),
-      scale: new Vector3(),
-    };
+      sources,
+      chunkSlotCount,
+      writeTransform: writeVegetationTransform,
+    });
   } catch (error) {
     for (const { model } of sources) disposeStaticModelAsset(model);
     throw error;
@@ -148,111 +115,13 @@ function getVegetationColor(
   return assetIndex % 2 === 0 ? colors.leafColor : colors.leafAccentColor;
 }
 
-/** Fill all initial slots before the first frame. */
-export function initializeVegetationChunks(
-  instances: VegetationInstances,
-  assignments: readonly ChunkAssignment[],
-): void {
-  for (const assignment of assignments) {
-    const writer = createVegetationChunkWriter(assignment);
-    while (!writeNextVegetationRow(instances, writer)) {
-      // Startup is synchronous; recycled chunks use one row per queue step.
-    }
-  }
-  uploadVegetationChanges(instances);
-}
-
-export function createVegetationChunkWriter(
-  assignment: ChunkAssignment,
-): VegetationChunkWriter {
-  return { assignment, nextRow: 0 };
-}
-
-/** Generate one row and publish the compact model pool after the final row. */
-export function writeNextVegetationRow(
-  instances: VegetationInstances,
-  writer: VegetationChunkWriter,
-): boolean {
-  if (writer.nextRow === 0) {
-    clearModelSlot(instances.modelPool, writer.assignment.slotIndex);
-  }
-  writeVegetationRow(instances, writer.assignment, writer.nextRow);
-  writer.nextRow += 1;
-  if (writer.nextRow < instances.candidateGrid.cellsPerSide) return false;
-
-  commitModelSlot(instances.modelPool, writer.assignment.slotIndex);
-  return true;
-}
-
-/** Upload every completed slot together, once during the next module frame. */
-export function uploadVegetationChanges(instances: VegetationInstances): void {
-  uploadCommittedModels(instances.modelPool);
-}
-
-/** Hide outgoing chunks before Terrain can recycle the ground below them. */
-export function discardVegetationChunks(
-  instances: VegetationInstances,
-  assignments: readonly ChunkAssignment[],
-): void {
-  for (const assignment of assignments) {
-    discardCommittedModelSlot(instances.modelPool, assignment.slotIndex);
-  }
-}
-
-export function disposeVegetationInstances(
-  instances: VegetationInstances,
-): void {
-  disposeInstancedModelPool(instances.modelPool);
-}
-
-function writeVegetationRow(
-  instances: VegetationInstances,
-  assignment: ChunkAssignment,
-  row: number,
-): void {
-  const firstCandidate = row * instances.candidateGrid.cellsPerSide;
-  for (
-    let column = 0;
-    column < instances.candidateGrid.cellsPerSide;
-    column += 1
-  ) {
-    writeVegetationCandidate(instances, assignment, firstCandidate + column);
-  }
-}
-
-function writeVegetationCandidate(
-  instances: VegetationInstances,
-  assignment: ChunkAssignment,
-  candidateIndex: number,
-): void {
-  const placement = selectStaticPlacement(
-    instances.parameters,
-    instances.candidateGrid,
-    instances.worldSurface,
-    assignment,
-    candidateIndex,
-  );
-  if (
-    !placement ||
-    !hasVegetationClearance(instances.worldSurface, placement.candidate)
-  ) {
-    return;
-  }
-
-  writeVegetationTransform(
-    instances,
-    assignment,
-    placement.model,
-    placement.candidate,
-  );
-}
-
 function writeVegetationTransform(
-  instances: VegetationInstances,
+  instances: StaticPopulationInstances,
   assignment: ChunkAssignment,
   settings: StaticModelDefinition,
   candidate: ChunkCandidate,
 ): void {
+  if (!hasVegetationClearance(instances.worldSurface, candidate)) return;
   const variant = instances.modelPool.variants.get(settings.id);
   if (!variant) return;
   const height = getStaticPlacementHeight(
@@ -297,7 +166,7 @@ function writeVegetationTransform(
 }
 
 function getHorizontalScale(
-  instances: VegetationInstances,
+  instances: StaticPopulationInstances,
   candidate: ChunkCandidate,
   randomValueIndex: number,
 ): number {
