@@ -1,0 +1,64 @@
+{
+  "version": 1,
+  "assets": [
+    {
+      "id": "bat-route",
+      "file": "/routes/animal-passages/bat-route.glb",
+      "sourceRepository": "https://github.com/Strehk/uni-becoming-many",
+      "sourcePath": "public/events/bat_path.glb",
+      "sha256": "b2ef7c66c59e664707f6ad06ab3ade2d4a08ccf25c6b30e9a424c917262e3d2b",
+      "metrics": {
+        "bytes": 9072,
+        "nodes": 1,
+        "meshes": 0,
+        "materials": 0,
+        "textures": 0,
+        "images": 0,
+        "primitives": 0,
+        "vertices": 0,
+        "triangles": 0,
+        "estimatedDrawCalls": 0,
+        "animations": 1
+      },
+      "animationClips": ["EmptyAction"],
+      "author": "UNRECORDED",
+      "license": "UNRECORDED"
+    },
+    {
+      "id": "mosquito-route",
+      "file": "/routes/animal-passages/mosquito-route.glb",
+      "sourceRepository": "https://github.com/Strehk/uni-becoming-many",
+      "sourcePath": "public/events/mosquito_path_neu_neu_neu.glb",
+      "sha256": "60712993e1ff4cc4526cdf7b805a779320a141e39e740a136f744a43535f1862",
+      "metrics": {
+        "bytes": 6784,
+        "nodes": 1,
+        "meshes": 0,
+        "materials": 0,
+        "textures": 0,
+        "images": 0,
+        "primitives": 0,
+        "vertices": 0,
+        "triangles": 0,
+        "estimatedDrawCalls": 0,
+        "animations": 1
+      },
+      "animationClips": ["EmptyAction"],
+      "author": "UNRECORDED",
+      "license": "UNRECORDED"
+    },
+    {
+      "id": "bird-route",
+      "file": "/routes/animal-passages/bird-route.fbx",
+      "sourceRepository": "https://github.com/Strehk/uni-becoming-many",
+      "sourcePath": "public/events/bird-circle.fbx",
+      "sha256": "cbe47c85d8833cc230d2231099c329519f66336951c5fd2d3da58632ec9e3497",
+      "metrics": {
+        "bytes": 23996
+      },
+      "note": "The one FBX in the repository. Kept in its authored format so the circling route it carries is bit-identical to the tuned original; converting it would re-sample the track.",
+      "author": "UNRECORDED",
+      "license": "UNRECORDED"
+    }
+  ]
+}

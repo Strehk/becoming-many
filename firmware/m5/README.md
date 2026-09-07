@@ -37,16 +37,16 @@ pio device monitor      # watch the newline-JSON serial channel
 ## Export the merged binary for the flash page
 
 The browser flash page (`/flash.html`, esp-web-tools) installs one merged
-image from `public/firmware/`. The pioarduino platform already merges
+image from `public/firmware/m5-controller/`. The pioarduino platform already merges
 bootloader, partitions, boot_app0, and app on every build, so after a
 release-worthy build the export is one copy:
 
 ```sh
 pio run
-cp .pio/build/m5stick-s3/firmware.factory.bin ../../public/firmware/bm-m5.bin
+cp .pio/build/m5stick-s3/firmware.factory.bin ../../public/firmware/m5-controller/m5-controller.bin
 ```
 
-Then bump the `version` in `public/firmware/manifest.json` to match
+Then bump the `version` in `public/firmware/m5-controller/manifest.json` to match
 `FirmwareVersion`. CI automation for this step is planned but not built
 ([Quality and Operations](../../docs/direction/quality-operations.md)).
 

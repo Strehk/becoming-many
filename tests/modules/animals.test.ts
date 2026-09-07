@@ -398,7 +398,7 @@ function readVisibleOpacity(population: Group): number {
 function createSpecies(id: AnimalSpeciesId) {
   return {
     id,
-    url: `/animals/${id}.glb`,
+    url: `/models/animals/${id}.glb`,
     count: 2,
     heightMeters: 1,
     speedMetersPerSecond: 1,

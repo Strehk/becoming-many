@@ -1,0 +1,101 @@
+{
+  "version": 1,
+  "assets": [
+    {
+      "id": "gold-rock",
+      "file": "/models/rocks/gold-rock.glb",
+      "sourcePage": "https://poly.pizza/m/49NgnJzOHc",
+      "sourceDownload": "https://static.poly.pizza/b5523c60-3263-4d97-a4c0-8526ad2443fb.glb",
+      "sha256": "740b09112599d3cb7b9f8607bb69fb24c5cdd9288e797e39f7960159dd04676d",
+      "author": "Quaternius",
+      "license": "CC0-1.0",
+      "previouslyRecordedSha256": "964efe177a2708075212da778b87054cca2d4ea95db7943885c83fdb5d638163",
+      "metrics": {
+        "bytes": 44340,
+        "nodes": 2,
+        "meshes": 1,
+        "materials": 2,
+        "textures": 0,
+        "images": 0,
+        "primitives": 2,
+        "vertices": 1137,
+        "triangles": 878,
+        "estimatedDrawCalls": 2,
+        "animations": 0
+      },
+      "meshNames": ["Resource_Gold_3"]
+    },
+    {
+      "id": "rock-medium",
+      "file": "/models/rocks/rock-medium.glb",
+      "sourcePage": "https://poly.pizza/m/KZdEP3uUpa",
+      "sourceDownload": "https://static.poly.pizza/aaf0aaa7-c244-430a-908b-2ac57567d81c.glb",
+      "sha256": "bb21b19171d536ab5766db7bfac32e53cfd34a3c7af0081c56d6b48c07259fbe",
+      "author": "Quaternius",
+      "license": "CC0-1.0",
+      "previouslyRecordedSha256": "c2ab966f16264b4e77de53b61a8a310028eb0a0a74ee40603dba7cf23ca3f322",
+      "metrics": {
+        "bytes": 1060600,
+        "nodes": 2,
+        "meshes": 1,
+        "materials": 1,
+        "textures": 1,
+        "images": 1,
+        "primitives": 1,
+        "vertices": 249,
+        "triangles": 244,
+        "estimatedDrawCalls": 1,
+        "animations": 0
+      },
+      "meshNames": ["Rock_Medium_2"]
+    },
+    {
+      "id": "rock-pack",
+      "file": "/models/rocks/rock-pack.glb",
+      "sourcePage": "https://poly.pizza/m/gYhoEOKItJ",
+      "sourceDownload": "https://static.poly.pizza/01671e28-0504-4db1-a5d5-af71ce0a6a1e.glb",
+      "sha256": "091f7777f38c19314da40b4d9405725e6682cd7adcfd779149c90034feeaeca2",
+      "author": "Quaternius",
+      "license": "CC0-1.0",
+      "previouslyRecordedSha256": "122f937f06b8e1d05d750a38a478196533925be515eded7ca0396b759058973f",
+      "metrics": {
+        "bytes": 3151068,
+        "nodes": 6,
+        "meshes": 5,
+        "materials": 1,
+        "textures": 1,
+        "images": 1,
+        "primitives": 5,
+        "vertices": 2968,
+        "triangles": 2230,
+        "estimatedDrawCalls": 5,
+        "animations": 0
+      },
+      "meshNames": ["Rock_4", "Rock_1", "Rock_2", "Rock_3", "Rock_5"]
+    },
+    {
+      "id": "rock-small",
+      "file": "/models/rocks/rock-small.glb",
+      "sourcePage": "https://poly.pizza/m/OQvi8PIZ40",
+      "sourceDownload": "https://static.poly.pizza/c6f65def-08c5-4c81-b17f-f37b171ad911.glb",
+      "sha256": "afae7609415ceee2718d1fe314f45d7223b9b80634c086b50dca6663e65094d0",
+      "author": "Quaternius",
+      "license": "CC0-1.0",
+      "previouslyRecordedSha256": "f2085fb5edfe6ec33b7fe9dd8969fdc016900c18649b94c9ba703d8413cdcd97",
+      "metrics": {
+        "bytes": 5668,
+        "nodes": 2,
+        "meshes": 1,
+        "materials": 1,
+        "textures": 0,
+        "images": 0,
+        "primitives": 1,
+        "vertices": 156,
+        "triangles": 84,
+        "estimatedDrawCalls": 1,
+        "animations": 0
+      },
+      "meshNames": ["Rock_3"]
+    }
+  ]
+}

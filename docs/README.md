@@ -51,7 +51,7 @@ planned, or open. Open decisions remain in
 - [Grass Clipmap Review — 2026-09-02](performance-review-grass-clipmap-2026-09-02.md)
   preserves findings against the reviewed revision; current issues decide what
   still applies.
-- [Assets](assets/) records provenance and current asset use.
+- [Assets](assets/README.md) records shipping structure, provenance and current asset use.
 - [Moodboards](moodboards/) preserve visual references, not implementation
   claims.
 

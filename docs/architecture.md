@@ -220,4 +220,5 @@ asset provenance and firmware metadata, not authored runtime configuration.
 
 Static GLTF definitions are loaded before World Runtime starts and passed into
 the modules that own their instanced or cloned resources. Asset provenance is
-recorded under `public/*/manifest.json` and [docs/assets](assets/).
+recorded in adjacent `provenance.json` files; [docs/assets](assets/README.md)
+defines the shipping directory structure and naming rules.

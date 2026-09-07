@@ -1,8 +1,8 @@
-# Tree and Shrub Assets
+# Vegetation Assets
 
-`public/trees` contains eight Quaternius CC0 GLBs from Poly Pizza. Source pages,
+`public/models/vegetation` contains eight Quaternius CC0 GLBs from Poly Pizza. Source pages,
 download URLs, checksums, mesh names, geometry counts, and texture counts are
-recorded in `public/trees/manifest.json`.
+recorded in `public/models/vegetation/provenance.json`.
 
 ## Current Runtime Use
 
@@ -13,7 +13,7 @@ instanced mesh parts; source groups containing multiple trees are not treated as
 one placement unit.
 
 One of those conifer variants, `pine-7` (`PineTree_4` inside
-`pine-trees-01.glb`), is not an upright cone: its trunk drifts more than two
+`pine-pack.glb`), is not an upright cone: its trunk drifts more than two
 units sideways over its own height and carries a nearly horizontal limb. At a
 full share it put visibly crooked trees through the whole conifer forest, so
 it is weighted at 0.15 against the other conifers' 1 — the rare leaning tree a
@@ -21,21 +21,21 @@ wood has, rather than a defect. Nothing in the placement path tilts a plant:
 instances are rotated around the vertical axis only, so a visibly leaning tree
 is always the model.
 
-The shipping GLBs remain their source-quality versions. No current physical
-PICO measurement has justified a derived mesh or texture optimization set.
+The directory cleanup preserves the shipping GLBs byte-for-byte. Further mesh
+or texture optimization requires evidence from the target Windows-PCVR setup.
 
 ## Inventory
 
 | Set | Source | File | Mesh variants | Triangles | Estimated draw calls | Textures |
 | --- | --- | --- | ---: | ---: | ---: | ---: |
-| Pine 4 | [Poly Pizza](https://poly.pizza/m/79gmlLnweB) | `pine-single-01.glb` | 1 | 3,370 | 2 | 3 |
-| Pine 5 | [Poly Pizza](https://poly.pizza/m/igSu0cPoBz) | `pine-single-02.glb` | 1 | 1,646 | 2 | 3 |
-| Pine Trees 01 | [Poly Pizza](https://poly.pizza/m/w8ZaiYjK8C) | `pine-trees-01.glb` | 5 | 10,366 | 10 | 3 |
-| Dead Trees | [Poly Pizza](https://poly.pizza/m/F5I0Q7TwO5) | `dead-trees.glb` | 5 | 15,464 | 5 | 2 |
-| Birch Trees | [Poly Pizza](https://poly.pizza/m/R7qMWzb7nk) | `birch-trees.glb` | 5 | 27,158 | 10 | 3 |
-| Trees | [Poly Pizza](https://poly.pizza/m/etFGNvsiFv) | `trees.glb` | 5 | 32,220 | 10 | 3 |
+| Pine 4 | [Poly Pizza](https://poly.pizza/m/79gmlLnweB) | `pine-01.glb` | 1 | 3,370 | 2 | 3 |
+| Pine 5 | [Poly Pizza](https://poly.pizza/m/igSu0cPoBz) | `pine-02.glb` | 1 | 1,646 | 2 | 3 |
+| Pine Trees 01 | [Poly Pizza](https://poly.pizza/m/w8ZaiYjK8C) | `pine-pack.glb` | 5 | 10,366 | 10 | 3 |
+| Dead Trees | [Poly Pizza](https://poly.pizza/m/F5I0Q7TwO5) | `dead-tree-pack.glb` | 5 | 15,464 | 5 | 2 |
+| Birch Trees | [Poly Pizza](https://poly.pizza/m/R7qMWzb7nk) | `birch-pack.glb` | 5 | 27,158 | 10 | 3 |
+| Trees | [Poly Pizza](https://poly.pizza/m/etFGNvsiFv) | `deciduous-pack.glb` | 5 | 32,220 | 10 | 3 |
 | Bush | [Poly Pizza](https://poly.pizza/m/EoTERLq3z2) | `bush.glb` | 1 | 900 | 1 | 1 |
-| Bush with Flowers | [Poly Pizza](https://poly.pizza/m/U1ymDy8tbY) | `bush-with-flowers.glb` | 1 | 1,368 | 2 | 2 |
+| Bush with Flowers | [Poly Pizza](https://poly.pizza/m/U1ymDy8tbY) | `flowering-bush.glb` | 1 | 1,368 | 2 | 2 |
 
 ## Runtime Rules
 

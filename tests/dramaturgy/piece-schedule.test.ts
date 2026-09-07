@@ -108,7 +108,9 @@ describe("the piece schedule", () => {
   });
 
   test("resolves its cues to files served from the audio folder", () => {
-    expect(narrationUrl("prologue", "en")).toBe("/audio/en/1.mp3");
-    expect(narrationUrl("return", "de")).toBe("/audio/de/8.mp3");
+    expect(narrationUrl("prologue", "en")).toBe(
+      "/audio/narration/en/prologue.mp3",
+    );
+    expect(narrationUrl("return", "de")).toBe("/audio/narration/de/return.mp3");
   });
 });

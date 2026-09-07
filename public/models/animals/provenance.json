@@ -1,19 +1,19 @@
 {
   "version": 1,
-  "author": "Quaternius",
-  "license": "CC0-1.0",
   "assets": [
     {
       "id": "deer",
-      "file": "/animals/deer.glb",
+      "file": "/models/animals/deer.glb",
       "sourcePage": "https://poly.pizza/m/T6Cs7tmMHJ",
       "sourceDownload": "https://static.poly.pizza/4b6c2a41-43c7-404c-ae37-e8c4645ff93b.glb",
-      "sha256": "fabf360b22eaccccd056ee99d698a9562d15aa245821f96e4fbad6db3751604e",
+      "sha256": "68a578a2ac56170d341baf39e37c52759751edceb82b63e63b0dc0b897c2e6d8",
       "metrics": {
-        "bytes": 1007564,
+        "bytes": 973840,
         "nodes": 64,
         "meshes": 1,
         "materials": 7,
+        "textures": 0,
+        "images": 0,
         "primitives": 7,
         "vertices": 4276,
         "triangles": 2096,
@@ -47,19 +47,25 @@
         "AnimalArmature|Idle_HitReact_Right",
         "AnimalArmature|Jump_toIdle",
         "AnimalArmature|Walk"
-      ]
+      ],
+      "author": "Quaternius",
+      "license": "CC0-1.0",
+      "previouslyRecordedSha256": "fabf360b22eaccccd056ee99d698a9562d15aa245821f96e4fbad6db3751604e",
+      "meshNames": ["Deer"]
     },
     {
       "id": "stag",
-      "file": "/animals/stag.glb",
+      "file": "/models/animals/stag.glb",
       "sourcePage": "https://poly.pizza/m/tQdzbZ1Cmw",
       "sourceDownload": "https://static.poly.pizza/a9c69fbc-bf7c-4585-9a49-a82e0be1ac6b.glb",
-      "sha256": "3c2df7c13a3d37c8660684e46aa1e5a2bf7e91a9b279983921d48bd93d0b67ed",
+      "sha256": "2bc9458e6d5552bf5ff10303c015aca264c7298da7139b8de71eb8f038d2769c",
       "metrics": {
-        "bytes": 1044172,
+        "bytes": 1013740,
         "nodes": 56,
         "meshes": 2,
         "materials": 6,
+        "textures": 0,
+        "images": 0,
         "primitives": 6,
         "vertices": 7435,
         "triangles": 3667,
@@ -93,19 +99,25 @@
         "AnimalArmature|Idle_HitReact_Right",
         "AnimalArmature|Jump_toIdle",
         "AnimalArmature|Walk"
-      ]
+      ],
+      "author": "Quaternius",
+      "license": "CC0-1.0",
+      "previouslyRecordedSha256": "3c2df7c13a3d37c8660684e46aa1e5a2bf7e91a9b279983921d48bd93d0b67ed",
+      "meshNames": ["Stag_Horns", "Stag"]
     },
     {
       "id": "fox",
-      "file": "/animals/fox.glb",
+      "file": "/models/animals/fox.glb",
       "sourcePage": "https://poly.pizza/m/Bc97C66HKi",
       "sourceDownload": "https://static.poly.pizza/e18e86df-1692-48d8-ac6e-1e25ab4ad574.glb",
-      "sha256": "9917771e1414c46557b011cbaaee6de82a827605008227a364c3862f0be62ddc",
+      "sha256": "1d7df6c0f0365e517187d32312f107d8eb75e572c98653dcbfb0c07d63a41b6c",
       "metrics": {
-        "bytes": 960228,
+        "bytes": 923108,
         "nodes": 70,
         "meshes": 1,
         "materials": 5,
+        "textures": 0,
+        "images": 0,
         "primitives": 5,
         "vertices": 3752,
         "triangles": 1848,
@@ -137,19 +149,25 @@
         "AnimalArmature|Idle_HitReact_Right",
         "AnimalArmature|Jump_ToIdle",
         "AnimalArmature|Walk"
-      ]
+      ],
+      "author": "Quaternius",
+      "license": "CC0-1.0",
+      "previouslyRecordedSha256": "9917771e1414c46557b011cbaaee6de82a827605008227a364c3862f0be62ddc",
+      "meshNames": ["Fox"]
     },
     {
       "id": "rat",
-      "file": "/animals/rat.glb",
+      "file": "/models/animals/rat.glb",
       "sourcePage": "https://poly.pizza/m/iltq5bVNaV",
       "sourceDownload": "https://static.poly.pizza/64cb7150-8031-44ab-a0c9-e1529a572b23.glb",
-      "sha256": "68f67077981102e957059fd00aaf3799e6867c269de900bd52c9f12cec1d5f56",
+      "sha256": "82e7c06c55aa563d1d1bffc7ebbcb55fea83e577f25624fa14c0ca026a16a22d",
       "metrics": {
-        "bytes": 550764,
+        "bytes": 541340,
         "nodes": 45,
         "meshes": 1,
         "materials": 2,
+        "textures": 0,
+        "images": 0,
         "primitives": 2,
         "vertices": 8008,
         "triangles": 4004,
@@ -163,6 +181,63 @@
         "RatArmature|Rat_Jump",
         "RatArmature|Rat_Run",
         "RatArmature|Rat_Walk"
+      ],
+      "author": "Quaternius",
+      "license": "CC0-1.0",
+      "previouslyRecordedSha256": "68f67077981102e957059fd00aaf3799e6867c269de900bd52c9f12cec1d5f56",
+      "meshNames": ["Rat"]
+    },
+    {
+      "id": "bat",
+      "file": "/models/animals/bat.glb",
+      "sourceRepository": "https://github.com/Strehk/uni-becoming-many",
+      "sourcePath": "public/creatures/bat_BS_rig.glb",
+      "sha256": "1d24395a80d0cb7b28fea3905d55fd27961f986a546963928710c73ed8c0b4ba",
+      "metrics": {
+        "bytes": 361520,
+        "nodes": 7,
+        "meshes": 1,
+        "materials": 1,
+        "textures": 1,
+        "images": 1,
+        "primitives": 1,
+        "vertices": 936,
+        "triangles": 498,
+        "estimatedDrawCalls": 1,
+        "animations": 2
+      },
+      "animationClips": ["Armature.001Action", "CylinderAction"],
+      "author": "UNRECORDED",
+      "license": "UNRECORDED",
+      "meshNames": ["Cylinder"]
+    },
+    {
+      "id": "bird",
+      "file": "/models/animals/bird.glb",
+      "sourceRepository": "https://github.com/Strehk/uni-becoming-many",
+      "sourcePath": "public/creatures/bird_erasmus.glb",
+      "sha256": "f4e6b76babe6951c598d68fad4b7905287f7fe288d34a095b4f24115db076918",
+      "metrics": {
+        "bytes": 39232,
+        "nodes": 10,
+        "meshes": 4,
+        "materials": 4,
+        "textures": 0,
+        "images": 0,
+        "primitives": 4,
+        "vertices": 297,
+        "triangles": 316,
+        "estimatedDrawCalls": 4,
+        "animations": 1
+      },
+      "animationClips": ["ArmatureAction"],
+      "author": "UNRECORDED",
+      "license": "UNRECORDED",
+      "meshNames": [
+        "Cylinder.004",
+        "Cylinder.005",
+        "Cylinder.006",
+        "Cylinder.007"
       ]
     }
   ]

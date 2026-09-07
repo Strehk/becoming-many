@@ -21,20 +21,20 @@ Both files carry the same nine sections in the same order:
 
 ## Recordings
 
-`public/audio/en/` and `public/audio/de/` hold eight recordings for these nine
-sections: **file 7 carries both Finale and Overload** as a single take, so
+`public/audio/narration/en/` and `public/audio/narration/de/` hold eight recordings for these nine
+sections: **finale.mp3 carries both Finale and Overload** as a single take, so
 nothing is unrecorded.
 
-| File | Sections |
+| File stem (original number) | Sections |
 |---|---|
-| 1 | Prologue |
-| 2 | Chemical Sense — Scent |
-| 3 | Bat — Depth |
-| 4 | Insect — Motion |
-| 5 | Infrared |
-| 6 | Migratory Bird — The Magnetic Field |
-| 7 | Finale **and** Overload |
-| 8 | Return |
+| prologue (1) | Prologue |
+| scent (2) | Chemical Sense — Scent |
+| echo (3) | Bat — Depth |
+| motion (4) | Insect — Motion |
+| thermal (5) | Infrared |
+| magnetic (6) | Migratory Bird — The Magnetic Field |
+| finale (7) | Finale **and** Overload |
+| return (8) | Return |
 
 The mapping was reconstructed from delivery rate — sections 1-6 run at 78-96
 words per minute in both languages, and only the merged reading of file 7 lands

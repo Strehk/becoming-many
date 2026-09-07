@@ -25,7 +25,7 @@ case-sensitive and use lower camel case where more than one word is needed.
 | `dark` | `darkColor` |
 | `light` | `lightColor` |
 
-## Animals
+## Ground animals
 
 | Material | Level color |
 | --- | --- |
@@ -35,6 +35,11 @@ case-sensitive and use lower camel case where more than one word is needed.
 | `feature` | `featureColor` |
 
 `feature` covers small contrasting parts such as hooves, horns, eyes, noses,
-and exposed skin. All materials in production GLBs must use one name from the
-corresponding table. Level-controlled materials ignore their embedded base
-color texture so that the authored level color remains exact.
+and exposed skin. Materials consumed by the Vegetation, Rocks and ground Animals
+modules use the corresponding table. Level-controlled materials ignore their
+embedded base color texture so that the authored level color remains exact.
+
+Bat and bird share `models/animals/` with the ground animals but are rendered
+by Animal Passages. That module preserves their authored colors and the bat's
+texture without these role overrides. Their original material and animation
+names are therefore retained.

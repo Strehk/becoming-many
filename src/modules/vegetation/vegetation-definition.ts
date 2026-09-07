@@ -48,56 +48,56 @@ export const VEGETATION_DEFINITION: StaticPopulationDefinition = {
   assets: [
     {
       id: "pine-1",
-      url: "/trees/pine-single-01.glb",
+      url: "/models/vegetation/pine-01.glb",
       objectName: "Pine_4",
       minimumHeightMeters: 5,
       maximumHeightMeters: 9.5,
     },
     {
       id: "pine-2",
-      url: "/trees/pine-single-02.glb",
+      url: "/models/vegetation/pine-02.glb",
       objectName: "Pine_5",
       minimumHeightMeters: 4.5,
       maximumHeightMeters: 8.5,
     },
     {
       id: "pine-3",
-      url: "/trees/pine-trees-01.glb",
+      url: "/models/vegetation/pine-pack.glb",
       objectName: "PineTree_5",
       minimumHeightMeters: 5,
       maximumHeightMeters: 9,
     },
     {
       id: "deciduous-tree-1",
-      url: "/trees/trees.glb",
+      url: "/models/vegetation/deciduous-pack.glb",
       objectName: "NormalTree_1",
       minimumHeightMeters: 5,
       maximumHeightMeters: 9.5,
     },
     {
       id: "deciduous-tree-2",
-      url: "/trees/trees.glb",
+      url: "/models/vegetation/deciduous-pack.glb",
       objectName: "NormalTree_2",
       minimumHeightMeters: 4.5,
       maximumHeightMeters: 8.5,
     },
     {
       id: "deciduous-tree-3",
-      url: "/trees/trees.glb",
+      url: "/models/vegetation/deciduous-pack.glb",
       objectName: "NormalTree_3",
       minimumHeightMeters: 6,
       maximumHeightMeters: 10,
     },
     {
       id: "bush",
-      url: "/trees/bush.glb",
+      url: "/models/vegetation/bush.glb",
       objectName: "Bush_Common",
       minimumHeightMeters: 0.7,
       maximumHeightMeters: 1.3,
     },
     {
       id: "flowering-bush",
-      url: "/trees/bush-with-flowers.glb",
+      url: "/models/vegetation/flowering-bush.glb",
       objectName: "Bush_Common_Flowers",
       minimumHeightMeters: 0.6,
       maximumHeightMeters: 1.2,
@@ -105,50 +105,50 @@ export const VEGETATION_DEFINITION: StaticPopulationDefinition = {
     // Everything below is appended rather than interleaved: the leaf and
     // accent colors alternate by array index, so inserting into the middle
     // would silently repaint the plants above.
-    // The four remaining crowns inside pine-trees-01.glb. That file is
+    // The four remaining crowns inside pine-pack.glb. That file is
     // already downloaded for PineTree_5, so these cost no transfer and no
     // extra source: they are silhouettes that were loaded and then left
     // unused. Seven conifer outlines instead of three is the cheapest answer
     // there is to a stand reading as one shape repeated.
     {
       id: "pine-4",
-      url: "/trees/pine-trees-01.glb",
+      url: "/models/vegetation/pine-pack.glb",
       objectName: "PineTree_1",
       minimumHeightMeters: 5,
       maximumHeightMeters: 9.5,
     },
     {
       id: "pine-5",
-      url: "/trees/pine-trees-01.glb",
+      url: "/models/vegetation/pine-pack.glb",
       objectName: "PineTree_2",
       minimumHeightMeters: 4,
       maximumHeightMeters: 8,
     },
     {
       id: "pine-6",
-      url: "/trees/pine-trees-01.glb",
+      url: "/models/vegetation/pine-pack.glb",
       objectName: "PineTree_3",
       minimumHeightMeters: 5.5,
       maximumHeightMeters: 10,
     },
     {
       id: "pine-7",
-      url: "/trees/pine-trees-01.glb",
+      url: "/models/vegetation/pine-pack.glb",
       objectName: "PineTree_4",
       minimumHeightMeters: 4.5,
       maximumHeightMeters: 8.5,
     },
-    // The two remaining crowns inside trees.glb, unused on the same terms.
+    // The two remaining crowns inside deciduous-pack.glb, unused on the same terms.
     {
       id: "deciduous-tree-4",
-      url: "/trees/trees.glb",
+      url: "/models/vegetation/deciduous-pack.glb",
       objectName: "NormalTree_4",
       minimumHeightMeters: 5,
       maximumHeightMeters: 9,
     },
     {
       id: "deciduous-tree-5",
-      url: "/trees/trees.glb",
+      url: "/models/vegetation/deciduous-pack.glb",
       objectName: "NormalTree_5",
       minimumHeightMeters: 4,
       maximumHeightMeters: 8,
@@ -160,24 +160,24 @@ export const VEGETATION_DEFINITION: StaticPopulationDefinition = {
     // two sizes. Its heights run taller and thinner than the trees around it
     // for the same reason. It also carries fewer triangles per instance than
     // the trees it displaces, so the mix costs nothing on the frame; what it
-    // costs is transfer, and that is recorded in docs/assets/trees.md.
+    // costs is transfer, and that is recorded in docs/assets/vegetation.md.
     {
       id: "birch-1",
-      url: "/trees/birch-trees.glb",
+      url: "/models/vegetation/birch-pack.glb",
       objectName: "BirchTree_1",
       minimumHeightMeters: 6.5,
       maximumHeightMeters: 11,
     },
     {
       id: "birch-2",
-      url: "/trees/birch-trees.glb",
+      url: "/models/vegetation/birch-pack.glb",
       objectName: "BirchTree_2",
       minimumHeightMeters: 6,
       maximumHeightMeters: 10.5,
     },
     {
       id: "birch-3",
-      url: "/trees/birch-trees.glb",
+      url: "/models/vegetation/birch-pack.glb",
       objectName: "BirchTree_3",
       minimumHeightMeters: 7,
       maximumHeightMeters: 12,
@@ -191,14 +191,14 @@ export const VEGETATION_DEFINITION: StaticPopulationDefinition = {
     // has no standing to make.
     {
       id: "dead-tree-1",
-      url: "/trees/dead-trees.glb",
+      url: "/models/vegetation/dead-tree-pack.glb",
       objectName: "DeadTree_6",
       minimumHeightMeters: 4,
       maximumHeightMeters: 8,
     },
     {
       id: "dead-tree-2",
-      url: "/trees/dead-trees.glb",
+      url: "/models/vegetation/dead-tree-pack.glb",
       objectName: "DeadTree_7",
       minimumHeightMeters: 3.5,
       maximumHeightMeters: 7,

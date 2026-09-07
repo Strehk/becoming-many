@@ -21,7 +21,7 @@ the alpha already drawn into the texture, which is what makes the fade free.
 
 `end-credits-texture.ts` paints the lines onto a transparent canvas — black
 glyphs, no card, no box — in Rubik at weight 700, the one static weight
-shipped at `public/fonts/rubik/Rubik-Bold.ttf` (`manifest.json` beside it
+shipped at `public/fonts/rubik/rubik-bold.ttf` (`provenance.json` beside it
 records the license and source). The font loads asynchronously through the
 `FontFace` API, so the canvas paints once immediately in a fallback face and
 once more, at most, when Rubik resolves — never per frame, and a failed load

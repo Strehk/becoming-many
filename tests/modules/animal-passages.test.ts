@@ -110,13 +110,13 @@ describe("the authored passages", () => {
     expect(MOSQUITO_PASSAGE.pointCount).toBeGreaterThan(0);
     expect(MOSQUITO_PASSAGE.cloudRadiusMeters).toBeGreaterThan(0);
     expect(MOSQUITO_PASSAGE.cloudHeightMeters).toBeGreaterThan(0);
-    expect(MOSQUITO_PASSAGE.routeUrl).toStartWith("/passages/");
+    expect(MOSQUITO_PASSAGE.routeUrl).toStartWith("/routes/animal-passages/");
   });
 
   test("carry a model, a route, and a wingspan to scale it to", () => {
     for (const definition of PASSAGE_FLIGHTS) {
-      expect(definition.modelUrl).toStartWith("/passages/");
-      expect(definition.routeUrl).toStartWith("/passages/");
+      expect(definition.modelUrl).toStartWith("/models/animals/");
+      expect(definition.routeUrl).toStartWith("/routes/animal-passages/");
       expect(definition.wingspanMeters).toBeGreaterThan(0);
       expect(definition.exitDurationSeconds).toBeGreaterThan(0);
       expect(definition.modelForward.length()).toBeCloseTo(1, 10);

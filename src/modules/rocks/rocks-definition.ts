@@ -23,28 +23,28 @@ export const ROCKS_DEFINITION: StaticPopulationDefinition = {
   assets: [
     {
       id: "rock-pack",
-      url: "/rocks/rocks-pack.glb",
+      url: "/models/rocks/rock-pack.glb",
       objectName: "Rock_2",
       minimumHeightMeters: 0.4,
       maximumHeightMeters: 1,
     },
     {
       id: "rock-medium",
-      url: "/rocks/rock-medium.glb",
+      url: "/models/rocks/rock-medium.glb",
       objectName: "Rock_Medium_2",
       minimumHeightMeters: 0.5,
       maximumHeightMeters: 1.2,
     },
     {
       id: "rock-small",
-      url: "/rocks/rocks.glb",
+      url: "/models/rocks/rock-small.glb",
       objectName: "Rock_3",
       minimumHeightMeters: 0.25,
       maximumHeightMeters: 0.65,
     },
     {
       id: "gold-rock",
-      url: "/rocks/gold-rocks.glb",
+      url: "/models/rocks/gold-rock.glb",
       objectName: "Resource_Gold_3",
       minimumHeightMeters: 0.3,
       maximumHeightMeters: 0.8,

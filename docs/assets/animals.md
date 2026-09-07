@@ -1,12 +1,15 @@
 # Animal Assets
 
-The first animal set contains four unique animated GLB files. The Deer URL was supplied twice and is stored once.
+The animal directory contains six animated GLB files: four ground animals,
+a bat and a bird. The original duplicate Deer URL is stored once.
 
 ## Current Runtime Status
 
-The files and manifest exist under `public/animals`. Levels with Animals load
-all four models from `/animals/...`; authored species counts produce ten actors
-while only four visible animation mixers advance.
+Files and per-asset provenance live under `public/models/animals`. Levels with
+Animals load the four ground models; authored species counts produce ten actors
+while only four visible animation mixers advance. Animal Passages loads the
+bat and bird separately, with tracks from `public/routes/animal-passages/`.
+The mosquito passage is a procedural swarm and needs only a route, no model.
 
 ## Inventory
 
@@ -16,8 +19,13 @@ while only four visible animation mixers advance.
 | Stag | [Poly Pizza](https://poly.pizza/m/tQdzbZ1Cmw) | `stag.glb` | 3,667 | 6 | 26 |
 | Fox | [Poly Pizza](https://poly.pizza/m/Bc97C66HKi) | `fox.glb` | 1,848 | 5 | 24 |
 | Rat | [Poly Pizza](https://poly.pizza/m/iltq5bVNaV) | `rat.glb` | 4,004 | 2 | 6 |
+| Bat | Predecessor repository, attribution unrecorded | `bat.glb` | 498 | 1 | 2 |
+| Bird | Predecessor repository, attribution unrecorded | `bird.glb` | 316 | 4 | 1 |
 
-All models are by Quaternius and published under CC0. The files contain no textures and use material colors.
+The four ground models are by Quaternius and recorded as CC0. They contain no
+textures and use material colors. Bat and bird attribution remains unrecorded
+in `provenance.json`; the bat contains one texture, the bird uses part colors.
+See [material naming](material-naming.md) for the two rendering contracts.
 
 ## Animation Requirement
 
@@ -40,4 +48,4 @@ walk clip per species and does not play duplicate aliases.
 - Stop and uncache animation state when an animal unloads.
 - Any optimized derivative must preserve required clips and pass a visual check.
 
-The manifest records source URLs, checksums, local metrics, and exact clip names.
+Provenance records source URLs, checksums, local metrics, and exact clip names.

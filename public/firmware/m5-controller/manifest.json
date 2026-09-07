@@ -5,7 +5,7 @@
   "builds": [
     {
       "chipFamily": "ESP32-S3",
-      "parts": [{ "path": "bm-m5.bin", "offset": 0 }]
+      "parts": [{ "path": "m5-controller.bin", "offset": 0 }]
     }
   ]
 }

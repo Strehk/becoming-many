@@ -13,13 +13,13 @@ export const END_CREDITS_PANEL_SETTINGS = {
   textureAnisotropy: 8, // Sharpness when the panel is read at an angle.
   textColor: "#000000", // Glyph colour; the panel is only ever seen against White World.
   // The name registered with the FontFace below; ships as one static weight
-  // at public/fonts/rubik/Rubik-Bold.ttf.
+  // at public/fonts/rubik/rubik-bold.ttf.
   fontFamilyName: "Rubik",
   // What every line actually draws in: Rubik once it has loaded, the system
   // stack for the one frame before that or if the load ever fails.
   fontFamily: "Rubik, system-ui, sans-serif",
   fontWeight: "700", // The one weight shipped; every line draws at it.
-  fontUrl: "/fonts/rubik/Rubik-Bold.ttf",
+  fontUrl: "/fonts/rubik/rubik-bold.ttf",
   typeSizePixels: {
     title: 104, // The piece's name.
     role: 40, // Quiet labels such as "A Project By".

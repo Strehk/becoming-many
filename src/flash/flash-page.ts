@@ -19,7 +19,7 @@ import {
   type SerialSetupChannel,
 } from "./serial-setup";
 
-const MANIFEST_URL = "/firmware/manifest.json";
+const MANIFEST_URL = "/firmware/m5-controller/manifest.json";
 // Remember non-secret technician inputs; the password lasts only this visit.
 const STORAGE_KEY = "bm-m5-flash-setup";
 const LOG_LINE_LIMIT = 300;
