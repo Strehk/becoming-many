@@ -91,16 +91,21 @@ try {
 
   if (deployment.m5Host) level.m5?.setHost(deployment.m5Host);
 } catch (error) {
-  const wasCancelled =
-    lifetime.signal.aborted && error === lifetime.signal.reason;
+  let failure = error;
   lifetime.abort();
   try {
     await level?.unload();
   } catch (cleanupError) {
-    throw new AggregateError(
+    failure = new AggregateError(
       [error, cleanupError],
       "Page startup and cleanup failed",
     );
   }
-  if (!wasCancelled) throw error;
+  if (failure !== lifetime.signal.reason) {
+    const alert = document.createElement("p");
+    alert.setAttribute("role", "alert");
+    alert.textContent = "Unable to start Becoming Many. Please reload.";
+    (document.querySelector(".app") ?? document.body).append(alert);
+    throw failure;
+  }
 }

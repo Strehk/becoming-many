@@ -31,5 +31,11 @@ try {
     deployment,
   });
 } catch (error) {
-  if (!lifetime.signal.aborted || error !== lifetime.signal.reason) throw error;
+  if (!lifetime.signal.aborted || error !== lifetime.signal.reason) {
+    const alert = document.createElement("p");
+    alert.setAttribute("role", "alert");
+    alert.textContent = "Unable to start Becoming Many. Please reload.";
+    (document.querySelector(".conductor") ?? document.body).append(alert);
+    throw error;
+  }
 }

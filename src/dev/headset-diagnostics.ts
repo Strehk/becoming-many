@@ -5,19 +5,18 @@
  * Boundary: Nothing here runs unless a run asks for it; the piece itself is untouched.
  */
 
-const MAXIMUM_LINES = 40;
+import type { GraphicsInfo } from "../world/world-runtime";
 
-/**
- * Install before anything else starts. A shader that fails to compile, an
- * asset that fails to load, and a promise that rejects all reach the console
- * and nowhere else — on a headset that means they vanish. This mirrors them
- * onto the canvas, together with the capability report that explains most
- * differences between a desktop GPU and a mobile one.
- */
-export function showHeadsetDiagnostics(
-  container: HTMLElement,
-  signal: AbortSignal,
-): void {
+const MAXIMUM_LINES = 40;
+const MAXIMUM_LINE_LENGTH = 600;
+
+/** Install before startup; keep failures visible until the entry ends diagnostics. */
+export function showHeadsetDiagnostics(container: HTMLElement): {
+  readonly showGraphics: (info: GraphicsInfo) => void;
+  readonly unload: () => void;
+} {
+  const lifetime = new AbortController();
+  const { signal } = lifetime;
   const overlay = document.createElement("pre");
   overlay.style.cssText = [
     "position:fixed",
@@ -35,81 +34,87 @@ export function showHeadsetDiagnostics(
   container.appendChild(overlay);
 
   const lines: string[] = [];
-  const write = (line: string): void => {
-    lines.push(line);
-    if (lines.length > MAXIMUM_LINES) lines.shift();
-    overlay.textContent = lines.join("\n");
+  let firstError: string | undefined;
+  const write = (message: string, fatal = false): void => {
+    if (signal.aborted) return;
+    const line = safeFormat(message);
+    if (fatal && !firstError) firstError = line;
+    else lines.push(line);
+    if (lines.length >= MAXIMUM_LINES) lines.shift();
+    overlay.textContent = [firstError, ...lines].filter(Boolean).join("\n");
   };
 
-  write(describeGraphics());
-  write("");
+  write("Renderer not available yet");
 
   window.addEventListener(
     "error",
     (event) => {
-      write(`ERROR ${event.message}`);
-      write(`  at ${event.filename}:${event.lineno}`);
+      write(`ERROR ${event.message}`, true);
     },
     { signal },
   );
   window.addEventListener(
     "unhandledrejection",
     (event) => {
-      write(`REJECTED ${String(event.reason)}`);
+      write(`REJECTED ${safeFormat(event.reason)}`, true);
     },
     { signal },
   );
 
-  // Three reports a failed shader compile or link through console.error and
-  // then carries on with a broken material, which is exactly the case that
-  // shows as an empty world rather than as a crash.
   const originalError = console.error;
-  console.error = (...values: unknown[]): void => {
-    write(`CONSOLE ${values.map(String).join(" ").slice(0, 600)}`);
-    originalError(...values);
-  };
   const originalWarn = console.warn;
-  console.warn = (...values: unknown[]): void => {
-    write(`WARN ${values.map(String).join(" ").slice(0, 300)}`);
-    originalWarn(...values);
+  const reportError = (...values: unknown[]): void => {
+    const message = values.slice(0, MAXIMUM_LINES).map(safeFormat).join(" ");
+    write(message, true);
+    originalError(message);
   };
-  signal.addEventListener(
-    "abort",
-    () => {
-      console.error = originalError;
-      console.warn = originalWarn;
-      overlay.remove();
+  const reportWarning = (...values: unknown[]): void => {
+    const message = values.slice(0, MAXIMUM_LINES).map(safeFormat).join(" ");
+    write(message);
+    originalWarn(message);
+  };
+  console.error = reportError;
+  console.warn = reportWarning;
+  return {
+    showGraphics: (info) => {
+      for (const [name, value] of Object.entries(info))
+        write(`${name}: ${value}`);
     },
-    { once: true },
-  );
+    unload,
+  };
+
+  function unload(): void {
+    if (signal.aborted) return;
+    lifetime.abort();
+    if (console.error === reportError) console.error = originalError;
+    if (console.warn === reportWarning) console.warn = originalWarn;
+    overlay.remove();
+  }
 }
 
-/** One throwaway context, so the report never depends on the running renderer. */
-function describeGraphics(): string {
-  const canvas = document.createElement("canvas");
-  const gl2 = canvas.getContext("webgl2");
-  const gl = gl2 ?? canvas.getContext("webgl");
-  if (!gl) return "NO WEBGL CONTEXT AT ALL";
-
-  const debugInfo = gl.getExtension("WEBGL_debug_renderer_info");
-  const renderer = debugInfo
-    ? String(gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL))
-    : "unknown";
-  const extensions = gl.getSupportedExtensions() ?? [];
-
-  const description = [
-    // First line on purpose: a query parameter that never arrives explains
-    // more empty worlds than any GPU limit does.
-    `url: ${window.location.href}`,
-    `webgl2: ${gl2 !== null}`,
-    `renderer: ${renderer}`,
-    `vertex texture units: ${gl.getParameter(gl.MAX_VERTEX_TEXTURE_IMAGE_UNITS)}`,
-    `max texture size: ${gl.getParameter(gl.MAX_TEXTURE_SIZE)}`,
-    `float linear: ${extensions.includes("OES_texture_float_linear")}`,
-    `half float linear: ${extensions.includes("OES_texture_half_float_linear")}`,
-    `xr: ${"xr" in navigator}`,
-    `ua: ${navigator.userAgent.slice(0, 160)}`,
-  ].join("\n");
-  gl.getExtension("WEBGL_lose_context")?.loseContext();
-  return description;
+/** Avoid object traversal and user-defined stringification in failure reporting. */
+function safeFormat(value: unknown): string {
+  try {
+    const text =
+      value instanceof Error
+        ? value.message
+        : value === null ||
+            (typeof value !== "object" && typeof value !== "function")
+          ? String(value)
+          : "[object omitted]";
+    return text
+      .slice(0, MAXIMUM_LINE_LENGTH)
+      .replace(/https?:\/\/[^\s"'<>]+/gi, (address) => {
+        const url = new URL(address);
+        return `${url.origin}${url.pathname}`;
+      })
+      .replace(
+        /\b[\w-]*(?:password|passwd|token|secret|authorization|api[_-]?key)[\w-]*["']?\s*[:=]\s*[^\r\n]*/gi,
+        "[redacted]",
+      )
+      .replace(/[\r\n]+/g, " ")
+      .slice(0, MAXIMUM_LINE_LENGTH);
+  } catch {
+    return "[unreadable error]";
+  }
 }

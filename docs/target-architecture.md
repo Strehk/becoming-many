@@ -501,9 +501,10 @@ supports creating/replacing/disposing contexts; release nodes/ticker and await
 closure, then establish a fresh context before next-run nodes. Late imports
 must release acquired resources. Actual restart/worklet behavior remains unproved.
 
-Remove the additional GPU probe in
-[headset-diagnostics.ts](../src/dev/headset-diagnostics.ts) and restore hooks on
-end. Test entry constructs its overlay; remove `LevelTestOverlay`,
+#14 removes the additional GPU probe in
+[headset-diagnostics.ts](../src/dev/headset-diagnostics.ts); the entry owns its
+bounded diagnostic handle and restores hooks on end. World supplies the actual
+capability report on demand; startup errors stay visible. Next, Test entry constructs its overlay; remove `LevelTestOverlay`,
 `TestOverlayFactory` and `createOptionalTestOverlay` from Run. World supplies
 read-only draw-call/triangle counters and a capability report for those two
 actual consumers, not renderer mutation access. Preserve the lazy Test-module

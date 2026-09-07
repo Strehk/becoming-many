@@ -20,15 +20,19 @@ import { mountVrEntryButton } from "./world/vr-entry-button";
 
 const lifetime = new AbortController();
 window.addEventListener("pagehide", (event) => {
-  if (!event.persisted) lifetime.abort();
+  if (!event.persisted) {
+    lifetime.abort();
+    diagnostics?.unload();
+  }
 });
 const request = new URLSearchParams(window.location.search);
 
 // A headset browser has no console, so explicit diagnostics make browser and
 // shader failures visible on the development page itself.
-if (request.get("diagnostics") !== null) {
-  showHeadsetDiagnostics(document.body, lifetime.signal);
-}
+const diagnostics =
+  request.get("diagnostics") !== null
+    ? showHeadsetDiagnostics(document.body)
+    : undefined;
 
 const requestedLevel =
   request.get("level") ?? levelNameFromPath(window.location.pathname) ?? null;
@@ -59,6 +63,7 @@ try {
     m5ExpectedDeviceId: deployment.m5DeviceId,
   });
   lifetime.signal.throwIfAborted();
+  diagnostics?.showGraphics(level.readGraphicsInfo());
 
   const unmountVr = mountVrEntryButton(document.body, level.xr);
   lifetime.signal.addEventListener("abort", unmountVr, { once: true });
@@ -66,16 +71,21 @@ try {
   const m5Host = request.get("m5") ?? deployment.m5Host;
   if (m5Host) level.m5?.setHost(m5Host);
 } catch (error) {
-  const wasCancelled =
-    lifetime.signal.aborted && error === lifetime.signal.reason;
+  let failure = error;
   lifetime.abort();
   try {
     await level?.unload();
   } catch (cleanupError) {
-    throw new AggregateError(
+    failure = new AggregateError(
       [error, cleanupError],
       "Page startup and cleanup failed",
     );
   }
-  if (!wasCancelled) throw error;
+  if (failure !== lifetime.signal.reason) {
+    const alert = document.createElement("p");
+    alert.setAttribute("role", "alert");
+    alert.textContent = "Unable to start Becoming Many. Please reload.";
+    (document.querySelector(".app") ?? document.body).append(alert);
+    throw failure;
+  }
 }

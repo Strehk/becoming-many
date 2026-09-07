@@ -28,6 +28,8 @@ The #80 animal-connection removal is implemented below. Small additions remain i
   `magnetic`, `connections`, `test`, and `design-test`.
 - The Test page accepts `?benchmark[=<profile>]`, `?m5=<host>`, and
   `?diagnostics=1` for deterministic replay and explicit development tools.
+  Diagnostics reads the existing renderer, retains the first fatal error, and
+  releases its hooks on exit. All three application entries show startup failures.
 - `/conductor.html` is the station/operator page and hosts the show in-process.
 - `/flash.html` installs the bundled M5 firmware through Web Serial.
 

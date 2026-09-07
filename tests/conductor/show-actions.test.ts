@@ -35,6 +35,11 @@ function createRecorder(): Recorder {
   };
 
   const level: RunningLevel = {
+    readGraphicsInfo: () => ({
+      renderer: "test",
+      maxTextureSize: 0,
+      maxVertexTextures: 0,
+    }),
     unload: () => Promise.resolve(),
     show,
     resetFlight: () => calls.push("resetFlight"),

@@ -20,6 +20,13 @@ import { createViewerRig, type Viewpoint } from "./viewer-rig";
 import { WORLD_RUNTIME_SETTINGS } from "./world-settings";
 import { createXrSessionControl, type XrSessionControl } from "./xr-session";
 
+/** On-demand facts from this world's actual rendering context. */
+export interface GraphicsInfo {
+  readonly renderer: string;
+  readonly maxTextureSize: number;
+  readonly maxVertexTextures: number;
+}
+
 export interface WorldContext {
   readonly scene: Scene;
   /**
@@ -74,6 +81,7 @@ export function createWorld(
   container: HTMLElement,
   options: WorldOptions = {},
 ): WorldContext & {
+  readonly readGraphicsInfo: () => GraphicsInfo;
   readonly prepareRenderer: () => Promise<void>;
   readonly start: (updateWorld: (deltaSeconds: number) => void) => void;
   /** Stop execution and finish pending preparation/XR before content is freed. */
@@ -115,6 +123,17 @@ export function createWorld(
     modules,
     streamQueue,
     xr,
+    readGraphicsInfo: () => {
+      const gl = renderer.getContext();
+      const debug = gl.getExtension("WEBGL_debug_renderer_info");
+      return {
+        renderer: debug
+          ? String(gl.getParameter(debug.UNMASKED_RENDERER_WEBGL))
+          : "unknown",
+        maxTextureSize: renderer.capabilities.maxTextureSize,
+        maxVertexTextures: renderer.capabilities.maxVertexTextures,
+      };
+    },
     prepareRenderer,
     start,
     stop,

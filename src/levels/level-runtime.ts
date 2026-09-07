@@ -19,7 +19,7 @@ import { showLevelStateAt } from "../dramaturgy/show-levels";
 import { createM5Adapter, type M5Adapter } from "../m5/m5-adapter";
 import { disposeGltfAssets } from "../utils/asset-loader/gltf-assets";
 import type { WorldModule } from "../world/module-runtime";
-import { createWorld } from "../world/world-runtime";
+import { createWorld, type GraphicsInfo } from "../world/world-runtime";
 import type { XrSessionControl } from "../world/xr-session";
 import {
   composeLevel,
@@ -58,6 +58,8 @@ type TestOverlayFactory = (
 
 /** One running level, returned so the page that started it can command it. */
 export interface RunningLevel {
+  /** Diagnostic reads only; never called by the frame loop. */
+  readonly readGraphicsInfo: () => GraphicsInfo;
   readonly unload: () => Promise<void>;
   readonly show: RunningShow | undefined;
 
@@ -194,6 +196,7 @@ export async function startLevel(
     world.start(updateFrame);
     return {
       unload,
+      readGraphicsInfo: world.readGraphicsInfo,
       show: show?.running,
       resetFlight: (): void =>
         resetFlightPose(
