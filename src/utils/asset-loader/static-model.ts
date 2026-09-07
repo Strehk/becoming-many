@@ -33,7 +33,6 @@ export interface StaticModelAsset {
   readonly parts: readonly StaticModelPart[];
   readonly height: number;
   readonly minimumY: number;
-  readonly footprintRadius: number;
 }
 
 /** Extract every Mesh below the configured object, including the object itself. */
@@ -70,19 +69,11 @@ export function createStaticModelAsset(
       parts,
       height,
       minimumY: modelBounds.min.y,
-      footprintRadius: getFootprintRadius(modelBounds),
     };
   } catch (error) {
     for (const part of parts) disposeModelPart(part);
     throw error;
   }
-}
-
-/** Return a rotation-safe horizontal radius around the model origin. */
-function getFootprintRadius(bounds: Box3): number {
-  const furthestX = Math.max(Math.abs(bounds.min.x), Math.abs(bounds.max.x));
-  const furthestZ = Math.max(Math.abs(bounds.min.z), Math.abs(bounds.max.z));
-  return Math.hypot(furthestX, furthestZ);
 }
 
 /**

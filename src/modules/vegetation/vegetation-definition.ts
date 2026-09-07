@@ -5,7 +5,23 @@
  * Boundary: Level density lives in level presets; streaming and rendering live beside this file.
  */
 
+import type { ChunkCandidate } from "../../world/chunk-candidates";
+import type { WorldSurface } from "../../world-surface/world-surface";
 import type { StaticPopulationDefinition } from "../static-population";
+
+const MINIMUM_RIVER_CLEARANCE_METERS = 1;
+
+/** Keep roots outside the analytic channel; canopy overhang is allowed. */
+export function hasVegetationClearance(
+  worldSurface: WorldSurface,
+  candidate: ChunkCandidate,
+): boolean {
+  const { riverChannelMarginMeters } = worldSurface.zoneConditionsAt(
+    candidate.worldX,
+    candidate.worldZ,
+  );
+  return -riverChannelMarginMeters >= MINIMUM_RIVER_CLEARANCE_METERS;
+}
 
 /**
  * What a plant is, told apart by stature rather than by species: a plant that

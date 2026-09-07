@@ -139,21 +139,26 @@ test("Vegetation variation is stable and differs between world cells", () => {
   disposeVegetationInstances(second);
 });
 
-test("Vegetation keeps complete model footprints outside river channels", () => {
-  const instances = createVegetationInstances({
-    colors: VEGETATION_COLORS,
-    parameters: createVegetationParameters("meadow"),
-    assets: createMultiPartAssets("plant"),
-    chunkSize: 16,
-    chunkSlotCount: 1,
-    worldSurface: createFlatSurface("meadow", -0.01),
-  });
+test.each([0.999, 1, 2.5])(
+  "Vegetation uses ground clearance %f m regardless of canopy size",
+  (clearance) => {
+    const instances = createVegetationInstances({
+      colors: VEGETATION_COLORS,
+      parameters: createVegetationParameters("meadow"),
+      assets: createMultiPartAssets("plant"),
+      chunkSize: 16,
+      chunkSlotCount: 1,
+      worldSurface: createFlatSurface("meadow", -clearance),
+    });
 
-  initializeVegetationChunks(instances, [ASSIGNMENT]);
+    initializeVegetationChunks(instances, [ASSIGNMENT]);
 
-  expect(readDrawCount(instances.modelPool.group.children[0])).toBe(0);
-  disposeVegetationInstances(instances);
-});
+    expect(readDrawCount(instances.modelPool.group.children[0])).toBe(
+      clearance < 1 ? 0 : 4,
+    );
+    disposeVegetationInstances(instances);
+  },
+);
 
 test("Vegetation applies the effects of each model's own stature", () => {
   const decorated: SensedMaterial[] = [];

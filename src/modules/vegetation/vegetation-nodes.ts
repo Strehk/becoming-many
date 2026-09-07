@@ -14,18 +14,12 @@ import {
   resolveStaticPopulation,
   type StaticPopulationPreset,
 } from "../static-population";
-import { VEGETATION_DEFINITION } from "./vegetation-definition";
+import {
+  hasVegetationClearance,
+  VEGETATION_DEFINITION,
+} from "./vegetation-definition";
 
 const VEGETATION_CHUNK_LEVEL = 2;
-
-/**
- * The rendered module additionally rejects instances whose scaled model
- * footprint touches the river channel; that radius needs the loaded asset,
- * unavailable here. This fixed conservative stand-in keeps anchors and trees
- * matching everywhere except rare riverbank placements, which is documented
- * rather than hidden.
- */
-const RIVER_FOOTPRINT_STAND_IN_METERS = 2.5;
 
 /** Expose the level-authored tree and bush positions as web anchors. */
 export function createVegetationConnectionSource(
@@ -48,13 +42,7 @@ export function createVegetationConnectionSource(
         worldSurface,
         chunkSize,
         { chunkX, chunkZ, chunkSizeMeters },
-        (candidate) => {
-          const { riverChannelMarginMeters } = worldSurface.zoneConditionsAt(
-            candidate.worldX,
-            candidate.worldZ,
-          );
-          return -riverChannelMarginMeters >= RIVER_FOOTPRINT_STAND_IN_METERS;
-        },
+        (candidate) => hasVegetationClearance(worldSurface, candidate),
         pushAnchor,
       ),
   };

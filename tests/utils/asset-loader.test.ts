@@ -42,7 +42,6 @@ test("extracts every Mesh below a named GLTF Group", () => {
   expect(asset.parts[0]?.sourceMatrix.elements[12]).toBe(0);
   expect(asset.parts[1]?.sourceMatrix.elements[12]).toBe(2);
   expect(asset.minimumY).toBe(-0.5);
-  expect(asset.footprintRadius).toBeCloseTo(Math.hypot(2.5, 0.5));
   disposeStaticModelAsset(asset);
 });
 
@@ -118,7 +117,6 @@ test("every configured production model resolves to complete mesh parts", async 
     const asset = createStaticModelAsset(gltf, configuredAsset.objectName);
     expect(asset.parts.length).toBeGreaterThan(0);
     expect(asset.height).toBeGreaterThan(0);
-    expect(asset.footprintRadius).toBeGreaterThan(0);
     disposeStaticModelAsset(asset);
     disposeGltfAssets(new Map([[configuredAsset.id, gltf]]));
   }

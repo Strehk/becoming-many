@@ -41,7 +41,10 @@ import {
   validateStaticPopulation,
 } from "../static-population";
 import type { VegetationColors, VegetationEffectsFor } from "./vegetation";
-import { getVegetationStature } from "./vegetation-definition";
+import {
+  getVegetationStature,
+  hasVegetationClearance,
+} from "./vegetation-definition";
 
 const FULL_ROTATION_RADIANS = Math.PI * 2;
 const MINIMUM_HORIZONTAL_SCALE = 0.82;
@@ -229,7 +232,12 @@ function writeVegetationCandidate(
     assignment,
     candidateIndex,
   );
-  if (!placement) return;
+  if (
+    !placement ||
+    !hasVegetationClearance(instances.worldSurface, placement.candidate)
+  ) {
+    return;
+  }
 
   writeVegetationTransform(
     instances,
@@ -255,13 +263,6 @@ function writeVegetationTransform(
   const heightScale = height / variant.model.height;
   const widthScale = getHorizontalScale(instances, candidate, 6);
   const depthScale = getHorizontalScale(instances, candidate, 7);
-  const footprintRadius =
-    variant.model.footprintRadius *
-    heightScale *
-    Math.max(widthScale, depthScale);
-  if (!hasDryFootprint(instances.worldSurface, candidate, footprintRadius)) {
-    return;
-  }
 
   const worldY =
     instances.worldSurface.groundYAt(candidate.worldX, candidate.worldZ) -
@@ -293,20 +294,6 @@ function writeVegetationTransform(
     assignment.slotIndex,
     instances.matrix,
   );
-}
-
-/** Keep the complete rotated model outside the analytical river channel. */
-function hasDryFootprint(
-  worldSurface: WorldSurface,
-  candidate: ChunkCandidate,
-  footprintRadius: number,
-): boolean {
-  const { riverChannelMarginMeters } = worldSurface.zoneConditionsAt(
-    candidate.worldX,
-    candidate.worldZ,
-  );
-  const distanceOutsideRiverMeters = -riverChannelMarginMeters;
-  return distanceOutsideRiverMeters >= footprintRadius;
 }
 
 function getHorizontalScale(

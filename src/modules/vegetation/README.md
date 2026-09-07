@@ -1,7 +1,7 @@
 # Vegetation
 
 This module streams deterministic trees and bushes. Grass remains owned by the
-dedicated Grass module.
+Grass Clipmap module.
 
 It consumes World Surface facts and owns its bounded vegetation resources. It
 does not define stream-cell policy or the permanent world coordinate system.
@@ -15,10 +15,10 @@ does not define stream-cell policy or the permanent world coordinate system.
 - The level supplies only instances per hectare for the zones it wants. The
   shared candidate grid recreates absolute positions; Vegetation applies its
   fixed species weights, rotation, and authored metre heights.
-- Water receives no vegetation. The scaled model footprint must also fit
-  outside the analytical river edge, so wide or rotated crowns cannot hang
-  over the channel. Meadows mix sparse trees and bushes, while the two forest
-  zones and shrub slopes use their configured populations.
+- One Vegetation-owned rule requires 1 m lateral clearance from the existing
+  analytic channel boundary. Canopy overhang is allowed; acceptance does not
+  depend on loaded models. Meadows mix sparse trees and bushes, while the two
+  forest zones and shrub slopes use their configured populations.
 - Multi-part GLTF Groups become one compact `InstancedMesh` per mesh part.
   Rejected candidate capacity is not included in the draw count.
 - Outgoing chunk slots disappear before Terrain recycles their ground. A new
@@ -37,9 +37,8 @@ does not define stream-cell policy or the permanent world coordinate system.
   walk for senses that decorate the plants without loading them: the web gets
   positions, the scent sense also gets the model standing there and its
   authored height, so a plant's scent belongs to that plant. Both cross the
-  boundary only through the shared source contracts, and both share the
-  documented 2.5-metre river-footprint stand-in, because the true footprint
-  radius needs the loaded asset.
+  boundary only through shared source contracts and use the same 1 m clearance
+  rule as rendering, without model footprints or projection-specific stand-ins.
 
 GPU wind and LOD are absent. Add either only when a current visual or measured
 performance need justifies it.

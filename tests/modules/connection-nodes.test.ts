@@ -163,36 +163,49 @@ test("Scent clearing anchors stay in forest and partition their chunk", () => {
   }
 });
 
-test("Scent sources are the very plants the web links, not a second world", () => {
-  const scentSource = createVegetationScentSource(
-    DENSITY_PRESET,
-    WORLD_SURFACE,
-  );
-  const webSource = createVegetationConnectionSource(
-    DENSITY_PRESET,
-    WORLD_SURFACE,
-  );
+test.each([0.999, 1, 2.5])(
+  "Vegetation scent and anchors share ground clearance %f m without models",
+  (clearance) => {
+    const worldSurface = {
+      ...WORLD_SURFACE,
+      zoneConditionsAt: (worldX: number, worldZ: number) => ({
+        ...WORLD_SURFACE.zoneConditionsAt(worldX, worldZ),
+        riverChannelMarginMeters: -clearance,
+      }),
+    };
+    const scentSource = createVegetationScentSource(
+      DENSITY_PRESET,
+      worldSurface,
+    );
+    const webSource = createVegetationConnectionSource(
+      DENSITY_PRESET,
+      worldSurface,
+    );
 
-  for (let chunkX = -2; chunkX <= 2; chunkX += 1) {
-    for (let chunkZ = -2; chunkZ <= 2; chunkZ += 1) {
-      const plants: Anchor[] = [];
-      scentSource.appendChunkPlants(
-        chunkX,
-        chunkZ,
-        64,
-        (worldX, groundY, worldZ, heightMeters, groupId) => {
-          expect(heightMeters).toBeGreaterThan(0);
-          expect(scentSource.groupIds).toContain(groupId);
-          plants.push({ worldX, worldY: groundY, worldZ });
-        },
-      );
+    for (let chunkX = -2; chunkX <= 2; chunkX += 1) {
+      for (let chunkZ = -2; chunkZ <= 2; chunkZ += 1) {
+        const plants: Anchor[] = [];
+        scentSource.appendChunkPlants(
+          chunkX,
+          chunkZ,
+          64,
+          (worldX, groundY, worldZ, heightMeters, groupId) => {
+            expect(heightMeters).toBeGreaterThan(0);
+            expect(scentSource.groupIds).toContain(groupId);
+            plants.push({ worldX, worldY: groundY, worldZ });
+          },
+        );
 
-      expect(plants.length).toBeLessThanOrEqual(
-        scentSource.maxPlantsPerChunk(64),
-      );
-      expect(anchorKeys(plants)).toEqual(
-        anchorKeys(collectAnchors(webSource, chunkX, chunkZ, 64)),
-      );
+        expect(plants.length).toBeLessThanOrEqual(
+          scentSource.maxPlantsPerChunk(64),
+        );
+        expect(anchorKeys(plants)).toEqual(
+          anchorKeys(collectAnchors(webSource, chunkX, chunkZ, 64)),
+        );
+      }
     }
-  }
-});
+    const accepted = collectWindowAnchors(webSource, 2).length;
+    if (clearance < 1) expect(accepted).toBe(0);
+    else expect(accepted).toBeGreaterThan(0);
+  },
+);

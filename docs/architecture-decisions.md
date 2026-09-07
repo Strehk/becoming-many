@@ -66,11 +66,11 @@ history belongs in Git; unresolved product and deployment questions belong in
   those weights under #71; genuine habitat exclusions retain hard classification
   from the same conditions. No consumer-local zone authority is permitted.
   Vegetation owns one plant-placement decision shared by rendering, scent and
-  Mycelium. Remove separate riverbank checks and stand-in footprints. Prefer a
-  ground-distance rule independent of loaded models; per-species distances
-  belong to existing definitions. Before changing appearance, decide the actual
-  distance and crown overhang from a small comparable riverbank. #72's precise
-  culling correction remains a separate focused comparison.
+  Mycelium. Confirmed 2026-09-07 after the #81 bank comparison: 1 m lateral
+  clearance from the existing analytic channel boundary; canopy overhang is
+  allowed. Remove model footprints and separate 2.5 m projection checks. No new
+  distance algorithm or species-specific footprint rule. #72 culling remains
+  a separate concern.
 - Magnetic Sense is self-contained and sky-only. It does not patch Terrain,
   Grass, or other module materials.
 - Connections topology is generated in a module-owned worker and published into

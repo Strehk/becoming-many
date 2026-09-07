@@ -19,18 +19,12 @@ import {
   resolveStaticPopulation,
   type StaticPopulationPreset,
 } from "../static-population";
-import { VEGETATION_DEFINITION } from "./vegetation-definition";
+import {
+  hasVegetationClearance,
+  VEGETATION_DEFINITION,
+} from "./vegetation-definition";
 
 const VEGETATION_CHUNK_LEVEL = 2;
-
-/**
- * The rendered module additionally rejects instances whose scaled model
- * footprint touches the river channel; that radius needs the loaded asset,
- * which the Scent World does not load at all. This is the same conservative
- * stand-in the Connections anchors use, so scent and trees disagree only on
- * rare riverbank placements.
- */
-const RIVER_FOOTPRINT_STAND_IN_METERS = 2.5;
 
 /**
  * Which signature every model carries. Grouped by what a nose would plausibly
@@ -102,13 +96,7 @@ export function createVegetationScentSource(
         worldSurface,
         chunkSize,
         { chunkX, chunkZ, chunkSizeMeters },
-        (candidate) => {
-          const { riverChannelMarginMeters } = worldSurface.zoneConditionsAt(
-            candidate.worldX,
-            candidate.worldZ,
-          );
-          return -riverChannelMarginMeters >= RIVER_FOOTPRINT_STAND_IN_METERS;
-        },
+        (candidate) => hasVegetationClearance(worldSurface, candidate),
         ({ candidate, model }, groundY) => {
           const groupId = SCENT_GROUP_BY_ASSET[model.id];
           if (groupId === undefined) return;

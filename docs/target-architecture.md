@@ -16,8 +16,7 @@ code is not removal. No extra coordinator, forwarding layer or audit system.
 
 **Confirmed** names direction; **Observed** names code or dated evidence;
 **Open** names a concrete remaining choice, never permission to silently choose.
-Restart operation (including a possible page reload), riverbank
-clearance/overhang and tutorial/credits details need
+Restart operation (including a possible page reload) and tutorial/credits details need
 small reviewable proposals before their dependent changes. None of these gates
 reopens the confirmed owner decisions. The [workflow](refactor-workflow.md) and
 [test plan](refactor-test-plan.md) own implementation and verification cadence:
@@ -458,16 +457,13 @@ about which plant exists at which position. Rendering, scent and Mycelium use
 that same decision. World Surface supplies terrain, river and zone facts;
 there is no second plant inventory or world-object manager.
 
-Observed `vegetation-scent.ts` and `vegetation-nodes.ts` use a 2.5 m river
-stand-in while rendering uses scaled model footprints. Delete those separate
-riverbank tests and approximations together. Prefer a simple ground-clearance
-rule independent of loaded 3D models; species-specific distances, if needed,
-belong to existing Vegetation definitions.
-
-**Open before changing appearance:** compare one small fixed riverbank region;
-propose its ground distance and whether overhanging crowns are allowed. Obtain
-that concrete visual decision before replacing existing placement. Owner and
-shared-rule direction are settled; numerical distance and overhang are not.
+**Confirmed 2026-09-07 (#81):** use 1 m lateral clearance from the existing
+analytic river-channel boundary; canopy overhang is allowed. Vegetation owns
+one model-independent acceptance rule shared by rendering, Scent and Mycelium.
+Delete scaled model footprints and the separate 2.5 m projection stand-ins
+together. No new distance algorithm or species-specific footprint rule. The
+[compared bank views](evidence/README.md) support this approved choice; they do
+not establish a global placement or physical-device guarantee.
 
 **Acceptance and remaining decisions:** no further approval or renderer contest
 is needed for Clipmap ownership, central zone weights or legacy retirement.
@@ -477,8 +473,8 @@ water boundaries; retain intended habitat exclusions. Check #72 separately at
 fixed grazing views, terrain extrema and changing XR viewpoints. Record changed
 appearance/counters explicitly, then obtain stable 90 Hz evidence on the actual
 Windows-PCVR/USB-C/headset installation. Measurements can require corrections or explicit regression
-acceptance; they do not authorize legacy reintroduction. Vegetation ground
-distance and crown-overhang acceptance remain open before its visual change.
+acceptance; they do not authorize legacy reintroduction. Apply the confirmed
+#81 ground-clearance rule and verify agreement across its three consumers.
 
 ### D6 — Keep demonstrated technical boundaries; remove owner-level bypasses
 
@@ -556,7 +552,7 @@ these old failures are not erased. Physical Windows-PCVR acceptance is separate.
 | --- | --- |
 | Preparation or stream-step changes | Fresh versus repeated Echo crossing; isolate upload/link diagnosis separately. For Scent, force enqueue rejection and verify bounded retry, valid slot revisions and no synchronous fill. Then compare relevant counters and repeated timings under the test plan. |
 | Confirmed Clipmap migration; #71/#72 | Compare migrated Show/Test/Design Test at fixed routes and authored conditions. For #71, sample shared weights and derived coverage/density at the same boundary coordinates. For #72, compare conservative bounds versus disabled incorrect CPU culling at grazing/extreme-height views, then measure cost. Repeated performance and actual Windows-PCVR/USB-C acceptance remain required; renderer ownership is settled. |
-| Vegetation placement facts | Compare accepted candidate IDs, scales and river margins for a small riverbank region across renderer, Scent and Connections. Use the preferred model-independent ground distance and decide crown overhang before visual replacement. |
+| Vegetation placement facts | Compare accepted candidate IDs, scales and river margins for a small riverbank region across renderer, Scent and Connections. Verify the confirmed 1 m analytic-channel clearance with canopy overhang allowed. |
 | Organ context lifetime and #79 | Start → gesture → audible rooms → seek/rate/pause → dispose → start, plus dispose during dynamic import. Investigate the scheduling exception separately; then complete EN/DE and actual Windows-PCVR audio/frame acceptance. |
 | Scrub throttling / diagnostics | Repeated pointer drag with audio, or diagnostics off/on at the same route; compare useful behavior and work. Do not delete a throttle based only on its old transport origin. |
 
@@ -605,7 +601,7 @@ remove old consumers, obsolete tests and documentation with the replaced path.
 | Old-host M5 source state, late polling publication, `controllerType` and compensating axis mappings | Device state survives its valid lifetime | Replace/reset at existing owner | Existing M5 adapter and flight conversion | Superseded device state and discriminator | #17/#18/#38; one edge consumer, physical polarity |
 | Hard density/coverage branches in `getGrassZoneCoverage` and `selectStaticPlacement`; any module-local zone thresholds/transition math | Consumers derive abrupt visual responses independently; continuous weights absent from WorldSurface | Replace with shared continuous query; delete superseded visual branches | Existing World Surface owns conditions/thresholds/weights; Grass/Vegetation/Rocks own derived content responses | Parallel transition calculation and hard switches used only for coverage/density | Confirmed D5/#71; identical-coordinate agreement, genuine habitat exclusions retained |
 | Clipmap `createLevel` bounding sphere in `grass-clipmap-field.ts` | Bounds do not establish conservative coverage of shader-displaced grass | Replace flat bounds with one conservative sphere derived at construction | Existing Clipmap geometry/mesh owner | False rejection path; no culling wrapper or service | D5/#72; fixed-view correctness and cost comparison, separate from #71 |
-| Vegetation river-footprint stand-ins and separate acceptance predicates | Rendered plants, scent and anchors disagree | Consolidate after comparison | Pure Vegetation acceptance | Independent placement approximations | D5/#81; shared model-independent ground rule; approve distance and crown overhang at a fixed riverbank |
+| Vegetation river-footprint stand-ins and separate acceptance predicates | Rendered plants, scent and anchors disagree | Consolidate after comparison | Pure Vegetation acceptance | Independent placement approximations | D5/#81; approved 1 m analytic-channel clearance, canopy overhang allowed |
 | Scent `writeScentSlotSynchronously` after enqueue failure | Queue exhaustion bypasses bounded work | Delete fallback | Scent retry/slot validity; existing queue | Synchronous frame fill on queue rejection | #26; bounded retry and no stale publication |
 | Terrain's old `TerrainMaterialEffect` export/import route | Mycelium imports a sibling implementation | Relocate unchanged; delete old route | Existing shared effect boundary | Old export and imports, no shim | #77; this type move alone is not strategic deletion |
 
@@ -666,7 +662,7 @@ parallel runtime or permanent compatibility adapter is proposed.
    Fix #72 independently inside Clipmap; compare conservative bounds with
    disabling incorrect CPU culling. Each unit receives its own visual/performance
    evidence; actual Windows-PCVR/USB-C acceptance remains required. Separately
-   decide Vegetation ground distance/crown overhang and consolidate placement.
+   apply the confirmed Vegetation clearance rule and consolidate placement.
    Reassess shared Rocks/Vegetation mechanics afterward; no generic runtime.
 
 D3 and direct Connections-to-Show construction are confirmed. Compare effective
@@ -705,7 +701,6 @@ their actual dependent work:
 | Remaining decision | Before which change | Concrete proposal/evidence |
 | --- | --- | --- |
 | Visitor restart, including page reload | Complete restart implementation in existing Run | Early Windows-PCVR/USB-C test of XR end/re-entry, audio wake and next-visitor operation; no automatic-XR assumption |
-| Vegetation distance and crown overhang | Placement replacement under #81 | One comparable riverbank; shared model-independent ground rule |
 | Exact benchmark reference | #78 update | Bounded fixed-scene investigation, repeatable counters and explained differences; current numeric candidate remains unapproved |
 | Tutorial/credits details | Their concrete content, timing and control changes | Required features; propose content, duration, audio rights, start behavior and movement during credits using existing owners |
 | Clipmap culling correction | #72 selects conservative construction-time bounds | Two fixed views match disabled culling with six fewer draws each; geometric and physical acceptance remain separate |
@@ -796,7 +791,7 @@ adding a universal intensity/module API was rejected.
 | Migration promised World restart before audio/input/assets could end | Direct-start simplification now makes no disposal promise. The first public Run disposal is a complete vertical lifetime; child preparation precedes it. |
 | No way to stop startup before its handle returned | Entry owns cancellation from the start; late resources cannot publish a Run and must be released. |
 | Asset borrowing and cleanup guarantees were ambiguous | Run owns sources; modules own their allocations. Constructor failure, load failure and source-resource audit are separate obligations. |
-| Footprint metadata could create another truth | The confirmed target now prefers model-independent ground clearance owned by Vegetation; distance and crown overhang need the small riverbank decision. |
+| Footprint metadata could create another truth | Vegetation owns the approved model-independent 1 m clearance from the existing analytic channel boundary; canopy overhang is allowed. |
 | M5 invalidation left old button/state behavior unspecified | Whole device-lifetime reset, no edges from invalid samples, one edge-consuming flight reader are explicit. |
 | Layer deletion was presented as necessary ownership work | Historically optional; superseded by the confirmed D3 decision above. Concrete level-to-show construction still precedes the rewrite. |
 
