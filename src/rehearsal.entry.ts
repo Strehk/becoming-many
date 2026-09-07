@@ -5,7 +5,7 @@
  * Boundary: Standalone levels, benchmarks, and diagnostics enter through test.entry.ts.
  */
 
-import "./style.css";
+import "./app.css";
 import { mountRehearsalTransport } from "./dev/rehearsal.panel";
 import { resolveNarrationLanguage } from "./dramaturgy/narration-catalog";
 import { PIECE_SCHEDULE } from "./dramaturgy/piece-schedule";

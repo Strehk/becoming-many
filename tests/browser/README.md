@@ -41,6 +41,10 @@ reset, and a second play. Flash checks readiness, removes legacy stored password
 and submits synthetic credentials through an isolated in-memory serial port.
 Only SSID/device ID survive reload; the password reaches the simulated port but
 never storage or the page log. No physical serial port or device is accessed.
+The four UI surfaces are also checked at 1280 and 390 CSS pixels, including
+Flash scrolling, timeline drag/release/cancel, inline-style absence, transport
+contrast/size, drawer focus/inert state, simulated accepted M5 preview geometry
+and final/persisted Conductor pagehide. The simulated M5 never contacts hardware.
 The report records whether Conductor required a wake gesture; an already
 running audio context legitimately skips its hidden wake overlay.
 

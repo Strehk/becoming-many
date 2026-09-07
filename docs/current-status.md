@@ -1,6 +1,6 @@
 # Current Development Status
 
-As-built snapshot: 2026-09-07, the #36 Entry/UI/Engine separation after checkpoint `281e7df` on `david_refactor`.
+As-built snapshot: 2026-09-07, the #36/#84/#11 architecture migration and audio-wake correction on `david_refactor`.
 Dated measurement packets retain the earlier exact identities they tested;
 the current checkout is the authority for runtime details.
 
@@ -20,6 +20,10 @@ is implemented at existing owners; the concrete next-visitor restart remains ope
 Explicit, self-contained literal levels are implemented. Conductor is UI-only;
 Entry wires one Run, and UI/console use direct Show commands with its clock internal.
 The current Run time/flight reset remains distinct from full visitor replacement.
+All browser entries share `src/app.css`; timelines/M5 use SVG geometry and the
+closed technician drawer cannot receive keyboard focus. Import/type rules enforce
+the Entry/UI/Engine/Station split. Native and organ audio can be woken again after
+a later suspension; this does not explain the original #73 measurement.
 The #80 animal-connection removal is implemented below. Small additions remain issue-backed.
 
 ## Runnable Surfaces

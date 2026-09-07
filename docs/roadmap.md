@@ -12,9 +12,9 @@ Live issues own acceptance. Do not create a second implementation plan.
 | --- | --- |
 | Branch | `david_refactor` only. Commit/push completed, tested blocks to `origin/david_refactor` and verify success; no main, force-push or additional branches. |
 | Current request | Implement the prepared architecture and ready software issues so the next Start level can use clear existing owners. Product/physical decisions stay open. |
-| Source checkpoint | `281e7df` before #36 implementation; Entry/UI separation and direct Show/Run contracts are implemented in this block. |
-| Next implementation | #36 verification/checkpoint, then #84 central CSS and final #11 boundary enforcement. Do not replay completed removals. |
-| Confirmed direction | Conductor is UI only; Entry connects UI to the existing browser Engine. Show owns transport/language, Run owns lifetime, World owns rendering, M5 owns validity. Backend remains Station delivery/config/health. Role filenames and `src/app.css` are approved targets. |
+| Source checkpoint | `a213243` implements #36; `2e626b9` fixes repeat audio wake. #84/#11 complete central styling and import/type enforcement in this block. |
+| Next implementation | #36 is committed/pushed at `a213243`; #84 styling and final #11 boundary checks complete the immediate architecture path. Continue at the next Start-level definition and remaining explicit decisions, not another architecture inventory. |
+| Confirmed direction | Conductor is UI only; Entry connects UI to the existing browser Engine. Show owns transport/language, Run owns lifetime, World owns rendering, M5 owns validity. Backend remains Station delivery/config/health. Affected role filenames and `src/app.css` are implemented. |
 | Existing software | Direct startup, complete child/source cleanup, entry diagnostics, explicit literal levels, legacy Grass retirement, shared zone influences, approved bank clearance and shared Rocks/Vegetation lifecycle are implemented. Their distinct remaining issue acceptance is preserved. |
 | Current visitor behavior | New visitor remains time/position reset and hold. Complete replacement operation and calibration/start interaction remain #9/#46 decisions. |
 | Unresolved evidence | #73 Motion clock-progress failure, #78 exact reference approval and real Windows-PCVR USB-C 90 Hz/transport/headset/M5/venue acceptance remain open. CSS fixes do not resolve them. |
@@ -27,16 +27,16 @@ The older checkpoint's issue order is superseded by the order below.
 
 ## Immediate UI and Engine Migration
 
-These existing issues form the next architecture workstream. No new UI framework,
+This architecture workstream is implemented and locally verified. No new UI framework,
 remote Show transport, command bus, global store or CoreEngine coordinator is needed.
 A source move alone is not code reduction; remove the replaced implementation and
 its exclusive paths in the same coherent block.
 
 | Order | Existing issue | Scope and required removal | Dependency / completion boundary |
 | --- | --- | --- | --- |
-| 1 | [#36](https://github.com/Strehk/becoming-many/issues/36) | Separate Entry from Conductor UI; put transport/language in Show and existing reset operation in Run; delete `show-actions.ts`, duplicate pauses, stale-state decisions and unused scrub flag. Narrow M5/XR capabilities, move shared XR button to UI, migrate actual affected role filenames and all consumers. | Software-ready. Preserve probe/console, wake, scrub, M5 and XR behavior. Complete visitor replacement remains #9; preserve and name the interim reset honestly. |
-| 2 | [#84](https://github.com/Strehk/becoming-many/issues/84) | Central `src/app.css`, shared visual rules and scoped layouts; remove four old stylesheets/imports and authored DOM inline styling. Fix known transport cascade and hidden M5 preview defects; preserve dynamic geometry and accessible interaction. | Follows #36's affected UI placement. CSS is part of the architecture workstream, not unscheduled. New visual/product redesign is outside this cleanup. |
-| 3 | [#11](https://github.com/Strehk/becoming-many/issues/11) | Update existing Fallow zones/rules for Entry, UI, browser Engine, Station and migrated roles; verify real allowed/forbidden imports and narrow type capabilities. | Final software boundary stage after #36/#84. Earlier module-boundary evidence remains valid; zero imports alone proves neither lifecycle nor 90 Hz. |
+| 1 | [#36](https://github.com/Strehk/becoming-many/issues/36) | Separate Entry from Conductor UI; put transport/language in Show and existing reset operation in Run; delete `show-actions.ts`, duplicate pauses, stale-state decisions and unused scrub flag. Narrow M5/XR capabilities, move shared XR button to UI, migrate actual affected role filenames and all consumers. | Implemented and closed at `a213243`; local UI/lifetime checks pass. Complete visitor replacement remains #9; preserve and name the interim reset honestly. |
+| 2 | [#84](https://github.com/Strehk/becoming-many/issues/84) | Central `src/app.css`, shared visual rules and scoped layouts; remove four old stylesheets/imports and authored DOM inline styling. Fix known transport cascade and hidden M5 preview defects; preserve dynamic geometry and accessible interaction. | Implemented; four surfaces, responsive gestures/focus and simulated M5 geometry pass. New visual/product redesign is outside this cleanup. |
+| 3 | [#11](https://github.com/Strehk/becoming-many/issues/11) | Update existing Fallow zones/rules for Entry, UI, browser Engine, Station and migrated roles; verify real allowed/forbidden imports and narrow type capabilities. | Implemented after #36/#84: real graph clean, forbidden imports/types rejected; zero imports alone proves neither lifecycle nor 90 Hz. |
 
 ```mermaid
 flowchart LR
@@ -49,6 +49,20 @@ consumers, prerequisite and smallest useful acceptance check. Naming migration
 includes imports, HTML/Vite entry references, tooling paths, tests and documents;
 keep stable browser routes and remove old aliases. Role-bearing files outside the
 affected owners migrate with their later coherent refactor, not a mass-rename task.
+
+## Start-level handoff
+
+The implementation path is documented in [Levels](../src/levels/README.md#implementing-the-next-start-level):
+a literal `start.level.ts`, stable route/catalog registration and existing Run /
+Composition / Show owners. UI contains no experience sequencing. A standalone
+Start scene needs no new architecture owner; the calibrated visitor/tutorial
+handoff still requires #9/#46/#50 decisions. The actual next level is intentionally
+left for the user's next content implementation step.
+
+#20's completed shader-contract implementation is closed under the current
+workflow; its old three-issue review gate no longer blocks source work. Other
+issues with remaining physical, content, numerical-reference or unexplained
+failure criteria remain open, even when their source refactor is implemented.
 
 ## Independent Operating and Verification Work
 
@@ -75,7 +89,7 @@ flowchart LR
 - **#78:** bounded reference investigation and explicit approval of the exact
   proposed counters remain required; do not change the reference to pass checks.
 
-These branches do not block independent #36/#84 software work. They remain
+These remaining gates do not invalidate the completed UI/Engine software boundary. They remain
 required for actual visitor/installation acceptance and must not be reported as
 complete after a UI, CSS or naming change.
 
@@ -100,7 +114,7 @@ complete after a UI, CSS or naming change.
 | --- | --- |
 | M0 | Retain early boundary/tooling evidence; #78 exact reference and complete milestone acceptance remain open. |
 | M1 | Preserve completed startup/content/material work and its outstanding acceptance; #73 uncertainty remains separate. |
-| M2 | #36 → #84 → final #11; retained #9/#16 software and complete visitor operation; early #42/#54 commissioning. |
+| M2 | #36/#84/#11 architecture software implemented; retained #9/#16 software and complete visitor operation; early #42/#54 commissioning. |
 | M3 | Physical input/calibration/flight: #18/#38, #9 → #46 → #33. |
 | M4 | Remaining integrated rendering and performance acceptance: #13/#71/#72/#80, #26/#32. |
 | M5 | Required #50/#51 and decision-bound encounter work. |

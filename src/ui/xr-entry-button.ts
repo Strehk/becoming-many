@@ -14,19 +14,7 @@ export function mountVrEntryButton(
   const button = document.createElement("button");
   button.type = "button";
 
-  // Styled inline because this page has no UI stylesheet of its own; dark
-  // controls stay readable on the bright canvas.
-  button.style.position = "fixed";
-  button.style.bottom = "20px";
-  button.style.left = "50%";
-  button.style.transform = "translateX(-50%)";
-  button.style.padding = "12px 24px";
-  button.style.border = "1px solid #111111";
-  button.style.borderRadius = "4px";
-  button.style.background = "rgba(255, 255, 255, 0.85)";
-  button.style.color = "#111111";
-  button.style.font = "13px sans-serif";
-  button.style.cursor = "pointer";
+  button.className = "xr-entry-button";
 
   let isSessionActive = false;
 

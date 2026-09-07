@@ -55,7 +55,7 @@ export function createWakeOverlay(
 }
 
 // A sleeping bell, drawn inline so it recolors with the page.
-const WAKE_ICON_SVG = `<svg width="72" height="72" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+const WAKE_ICON_SVG = `<svg class="conductor-icon-outline conductor-icon-wake" width="72" height="72" viewBox="0 0 24 24" aria-hidden="true">
   <path d="M8 4 a4 4 0 0 1 4 4 v6"></path>
   <path d="M12 14 a4 4 0 1 0 8 0 a4 4 0 0 0 -8 0"></path>
   <path d="M16 12 v2.5 l1.6 1.6"></path>

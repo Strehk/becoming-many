@@ -2,6 +2,8 @@ import type { Run } from "../levels/level.runtime";
 import type { M5State } from "../m5/protocol";
 import type { ConductorPanel } from "./conductor-state";
 
+const SVG_NAMESPACE = "http://www.w3.org/2000/svg";
+
 export interface M5PanelOptions {
   readonly parent: HTMLElement;
   readonly m5: Pick<NonNullable<Run["m5"]>, "readLatestState"> | undefined;
@@ -90,10 +92,13 @@ function createPreview(readState: () => M5State | undefined): M5Preview {
   element.className = "conductor__m5-preview";
   element.hidden = true;
 
-  const pad = document.createElement("div");
-  pad.className = "conductor__m5-pad";
-  const dot = document.createElement("div");
-  dot.className = "conductor__m5-dot";
+  const pad = document.createElementNS(SVG_NAMESPACE, "svg");
+  pad.classList.add("conductor__m5-pad");
+  pad.setAttribute("viewBox", "0 0 100 100");
+  pad.setAttribute("aria-hidden", "true");
+  const dot = document.createElementNS(SVG_NAMESPACE, "circle");
+  dot.classList.add("conductor__m5-dot");
+  dot.setAttribute("r", "7");
   pad.append(dot);
 
   const readout = document.createElement("span");
@@ -113,8 +118,8 @@ function createPreview(readState: () => M5State | undefined): M5Preview {
       element.dataset.live = String(state !== undefined);
 
       if (state === undefined) {
-        dot.style.left = "50%";
-        dot.style.top = "50%";
+        dot.setAttribute("cx", "50");
+        dot.setAttribute("cy", "50");
         readout.textContent = "no signal";
         return;
       }
@@ -122,8 +127,8 @@ function createPreview(readState: () => M5State | undefined): M5Preview {
       // Half the pad minus a margin keeps full deflection inside the ring.
       const roll = clamp(state.roll, -1, 1);
       const pitch = clamp(state.pitch, -1, 1);
-      dot.style.left = `${50 + roll * 42}%`;
-      dot.style.top = `${50 - pitch * 42}%`;
+      dot.setAttribute("cx", String(50 + roll * 42));
+      dot.setAttribute("cy", String(50 - pitch * 42));
       readout.textContent = `P ${pitch.toFixed(2)} · R ${roll.toFixed(2)} · q${state.quality.toFixed(1)}`;
     },
   };

@@ -12,7 +12,6 @@
 import "esp-web-tools";
 
 import { M5_FIRMWARE_VERSION, type M5SerialCommand } from "../m5/protocol";
-import "./flash.css";
 import {
   isWebSerialSupported,
   openSerialSetup,

@@ -13,6 +13,7 @@ import { type Browser, chromium, type Page } from "playwright";
 import { formatShowTime } from "../../src/conductor/time-format";
 import { PIECE_SCHEDULE } from "../../src/dramaturgy/piece-schedule";
 import { LEVEL_NAMES } from "../../src/levels/level-names";
+import { M5_FIRMWARE_VERSION } from "../../src/m5/protocol";
 import {
   assertRefactorBranch,
   collectBrowserErrors,
@@ -129,6 +130,13 @@ async function runSmokeRoute(
   try {
     assertRefactorBranch();
     await context.tracing.start({ screenshots: true, snapshots: true });
+    if (route === "/conductor.html") {
+      await page.route(`${baseUrl}/config`, (request) =>
+        request.fulfill({
+          json: { m5DeviceId: "browser-smoke-m5" },
+        }),
+      );
+    }
     await page.goto(`${baseUrl}${route}`, { waitUntil: "load" });
     assert.equal(
       page.url(),
@@ -136,6 +144,9 @@ async function runSmokeRoute(
       "Entry URL must remain the requested route",
     );
     observation = await checkEntry(page, route);
+    if (["/", "/test.html", "/conductor.html", "/flash.html"].includes(route)) {
+      await checkUiLayout(page, route);
+    }
     if (route === "/conductor.html") {
       await page.evaluate(() =>
         window.dispatchEvent(
@@ -475,6 +486,193 @@ async function checkScrubbing(
       "Drag seeks to the selected show position",
     );
   }
+}
+
+/** Shared styling must preserve each surface and its actual responsive controls. */
+async function checkUiLayout(page: Page, route: string): Promise<void> {
+  for (const width of [VIEWPORT.width, 390]) {
+    await page.setViewportSize({ width, height: VIEWPORT.height });
+    const layout = await page.evaluate(() => ({
+      viewportWidth: innerWidth,
+      scrollWidth: document.documentElement.scrollWidth,
+      bodyOverflow: getComputedStyle(document.body).overflowY,
+    }));
+    assert(
+      layout.scrollWidth <= layout.viewportWidth,
+      `${route}: horizontal overflow at ${width}`,
+    );
+    if (route === "/flash.html") {
+      assert.notEqual(
+        layout.bodyOverflow,
+        "hidden",
+        "Flash keeps vertical scrolling",
+      );
+      await page.evaluate(() =>
+        window.scrollTo(0, document.documentElement.scrollHeight),
+      );
+      assert(
+        await page.evaluate(() => scrollY > 0),
+        "Flash content remains reachable",
+      );
+    } else {
+      assert.equal(await page.locator("canvas").count(), 1);
+    }
+    assert.equal(
+      await page.locator("[style]:not(canvas)").count(),
+      0,
+      "Authored UI has no inline styles",
+    );
+    if (route === "/conductor.html") {
+      const button = page.locator(".conductor__transport-button");
+      const buttonBounds = await button.boundingBox();
+      assert(buttonBounds);
+      assert(
+        buttonBounds.height >= 72,
+        "Operator transport retains its touch target",
+      );
+      const colors = await button.evaluate((element) => {
+        const style = getComputedStyle(element);
+        return { background: style.backgroundColor, text: style.color };
+      });
+      assert.notEqual(
+        colors.background,
+        colors.text,
+        "Transport text contrasts with its surface",
+      );
+      assert.equal(
+        colors.background,
+        (await button.getAttribute("data-playing")) === "true"
+          ? "rgb(242, 180, 92)"
+          : "rgb(110, 231, 168)",
+        "Transport state color survives shared button rules",
+      );
+      assert.equal(colors.text, "rgb(13, 19, 17)");
+      await checkScrubbing(
+        page,
+        ".timeline__track",
+        ".conductor__transport-button",
+        ".conductor__clock output",
+      );
+    } else if (route === "/") {
+      await checkScrubbing(
+        page,
+        ".rehearsal__track",
+        ".rehearsal button:first-child",
+        ".rehearsal output",
+      );
+    }
+  }
+  if (route === "/conductor.html") await checkTechnicianControls(page);
+}
+
+async function checkTechnicianControls(page: Page): Promise<void> {
+  const drawer = page.locator(".conductor__drawer");
+  const toggle = page.getByRole("button", {
+    name: "Technician tools",
+    exact: true,
+  });
+  const close = page.getByRole("button", {
+    name: "Close technician tools",
+    exact: true,
+  });
+  assert.equal(
+    await drawer.evaluate((element) => element.hasAttribute("inert")),
+    true,
+  );
+  await drawer
+    .locator("button")
+    .first()
+    .evaluate((element) => element.focus());
+  assert.equal(
+    await drawer.evaluate((element) =>
+      element.contains(document.activeElement),
+    ),
+    false,
+    "Closed drawer cannot take focus",
+  );
+  await toggle.click();
+  assert.equal(await toggle.getAttribute("aria-expanded"), "true");
+  assert.equal(
+    await close.evaluate((element) => element === document.activeElement),
+    true,
+  );
+  const preview = page.locator(".conductor__m5-preview");
+  assert.equal(
+    await preview.evaluate((element) => getComputedStyle(element).display),
+    "none",
+    "Empty M5 host really hides its preview",
+  );
+  let sequence = 0;
+  let pitch = 0;
+  let roll = 0;
+  await page.route("http://m5.test/state", (request) =>
+    request.fulfill({
+      headers: { "access-control-allow-origin": "*" },
+      json: {
+        deviceId: "browser-smoke-m5",
+        firmwareVersion: M5_FIRMWARE_VERSION,
+        seq: ++sequence,
+        uptimeMs: sequence * 167,
+        pitch,
+        roll,
+        quality: 1,
+        buttonPressed: false,
+        buttonPressCount: 0,
+        buttonReleaseCount: 0,
+        isCalibrated: true,
+        rssi: -50,
+      },
+    }),
+  );
+  await page.getByLabel("M5 host", { exact: true }).fill("http://m5.test");
+  await page.getByRole("button", { name: "Set", exact: true }).click();
+  await page.locator('.conductor__m5-preview[data-live="true"]').waitFor();
+  assert.equal(
+    await page.locator(".conductor__m5-dot").getAttribute("cx"),
+    "50",
+  );
+  assert.equal(
+    await page.locator(".conductor__m5-dot").getAttribute("cy"),
+    "50",
+  );
+  pitch = 0.25;
+  roll = -0.5;
+  await page.waitForFunction(
+    () =>
+      document.querySelector(".conductor__m5-dot")?.getAttribute("cx") === "29",
+  );
+  assert.equal(
+    await page.locator(".conductor__m5-dot").getAttribute("cy"),
+    "39.5",
+  );
+  pitch = -0.5;
+  roll = 0.25;
+  await page.waitForFunction(
+    () =>
+      document.querySelector(".conductor__m5-dot")?.getAttribute("cx") ===
+      "60.5",
+  );
+  assert.equal(
+    await page.locator(".conductor__m5-dot").getAttribute("cy"),
+    "71",
+  );
+  await page.getByRole("button", { name: "Clear", exact: true }).click();
+  assert.equal(await preview.isVisible(), false);
+  await close.click();
+  assert.equal(
+    await drawer.evaluate((element) => element.hasAttribute("inert")),
+    true,
+  );
+  assert.equal(await toggle.getAttribute("aria-expanded"), "false");
+  assert.equal(
+    await toggle.evaluate((element) => element === document.activeElement),
+    true,
+  );
+  assert.equal(
+    await page.locator("canvas").count(),
+    1,
+    "Closing technician tools keeps the renderer mounted",
+  );
 }
 
 async function checkFlash(page: Page): Promise<void> {

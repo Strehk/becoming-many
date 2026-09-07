@@ -1,3 +1,4 @@
+import "./app.css";
 /**
  * Purpose: Bootstrap the M5 flash and setup page.
  * Context: A technician opens /flash.html with an M5StickS3 on USB.
@@ -5,6 +6,6 @@
  * Boundary: Everything the page does lives in src/flash and src/m5.
  */
 
-import { startFlashPage } from "./flash-page";
+import { startFlashPage } from "./flash/flash.page";
 
 startFlashPage(document.querySelector(".flash"));

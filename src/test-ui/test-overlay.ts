@@ -7,7 +7,6 @@
 
 import type { RenderCounters } from "../world/world-runtime";
 import type { FrameMetrics } from "./frame-metrics";
-import "./test-overlay.css";
 
 const DISPLAY_REFRESH_SECONDS = 0.25;
 const INTEGER_FORMAT = new Intl.NumberFormat("de-DE", {

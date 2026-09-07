@@ -1,6 +1,6 @@
 /** Resolve browser inputs, start one Run and connect the operator UI. */
 import { mountConductorPage } from "./conductor/conductor.page";
-import "./conductor/conductor.css";
+import "./app.css";
 import { resolveNarrationLanguage } from "./dramaturgy/narration-catalog";
 import { PIECE_SCHEDULE } from "./dramaturgy/piece-schedule";
 import { SHOW_LEVEL_STATES } from "./dramaturgy/show-levels";

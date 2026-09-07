@@ -20,6 +20,7 @@ type TimelineShow = Pick<RunningShow, "sample" | "play" | "pause" | "seekTo">;
 import { cueDisplayName, formatShowTime } from "./time-format";
 
 const MILLISECONDS_PER_SECOND = 1_000;
+const SVG_NAMESPACE = "http://www.w3.org/2000/svg";
 
 export interface ShowTimelineOptions {
   readonly parent: HTMLElement;
@@ -42,8 +43,8 @@ interface Chapter {
 
 interface ChapterView {
   readonly chapter: Chapter;
-  readonly slot: HTMLElement;
-  readonly progress: HTMLElement;
+  readonly slot: SVGSVGElement;
+  readonly progress: SVGRectElement;
   readonly button: HTMLButtonElement;
 }
 
@@ -58,8 +59,9 @@ export function createShowTimeline({
   root.className = "conductor__timeline";
   root.setAttribute("aria-label", "Show timeline");
 
-  const track = document.createElement("div");
-  track.className = "timeline__track";
+  const track = document.createElementNS(SVG_NAMESPACE, "svg");
+  track.classList.add("timeline__track");
+  track.setAttribute("aria-hidden", "true");
 
   const buttons = document.createElement("div");
   buttons.className = "conductor__chapters";
@@ -68,8 +70,9 @@ export function createShowTimeline({
     createChapterView(track, buttons, chapter, durationSeconds, show),
   );
 
-  const playhead = document.createElement("div");
-  playhead.className = "timeline__playhead";
+  const playhead = document.createElementNS(SVG_NAMESPACE, "line");
+  playhead.classList.add("timeline__playhead");
+  playhead.setAttribute("y2", "100%");
   track.append(playhead);
   root.append(track, buttons);
   parent.append(root);
@@ -80,7 +83,9 @@ export function createShowTimeline({
     update(state): void {
       const showTimeSeconds = state.showTimeSeconds;
 
-      playhead.style.left = `${toPercent(showTimeSeconds, durationSeconds)}%`;
+      const position = `${toPercent(showTimeSeconds, durationSeconds)}%`;
+      playhead.setAttribute("x1", position);
+      playhead.setAttribute("x2", position);
 
       for (const view of chapters) {
         const { startSeconds, endSeconds } = view.chapter;
@@ -91,7 +96,10 @@ export function createShowTimeline({
 
         const played =
           (showTimeSeconds - startSeconds) / (endSeconds - startSeconds);
-        view.progress.style.width = `${Math.min(Math.max(played, 0), 1) * 100}%`;
+        view.progress.setAttribute(
+          "width",
+          `${Math.min(Math.max(played, 0), 1) * 100}%`,
+        );
       }
     },
   };
@@ -109,28 +117,36 @@ function readChapters(schedule: NarrationSchedule): readonly Chapter[] {
 }
 
 function createChapterView(
-  track: HTMLElement,
+  track: SVGSVGElement,
   buttons: HTMLElement,
   chapter: Chapter,
   durationSeconds: number,
   show: TimelineShow,
 ): ChapterView {
-  const slot = document.createElement("div");
-  slot.className = "timeline__slot";
-  slot.style.left = `${toPercent(chapter.startSeconds, durationSeconds)}%`;
-  slot.style.width = `${toPercent(
-    chapter.endSeconds - chapter.startSeconds,
-    durationSeconds,
-  )}%`;
-
-  const name = document.createElement("span");
-  name.className = "timeline__slot-name";
+  const slot = document.createElementNS(SVG_NAMESPACE, "svg");
+  slot.classList.add("timeline__slot");
+  slot.setAttribute(
+    "x",
+    `${toPercent(chapter.startSeconds, durationSeconds)}%`,
+  );
+  slot.setAttribute(
+    "width",
+    `${toPercent(chapter.endSeconds - chapter.startSeconds, durationSeconds)}%`,
+  );
+  const background = document.createElementNS(SVG_NAMESPACE, "rect");
+  background.classList.add("timeline__slot-background");
+  background.setAttribute("width", "100%");
+  background.setAttribute("height", "100%");
+  const name = document.createElementNS(SVG_NAMESPACE, "text");
+  name.classList.add("timeline__slot-name");
+  name.setAttribute("x", "10");
+  name.setAttribute("y", "21");
   name.textContent = cueDisplayName(chapter.cueId);
-
-  const progress = document.createElement("div");
-  progress.className = "timeline__progress";
-
-  slot.append(name, progress);
+  const progress = document.createElementNS(SVG_NAMESPACE, "rect");
+  progress.classList.add("timeline__progress");
+  progress.setAttribute("y", "60");
+  progress.setAttribute("height", "24");
+  slot.append(background, progress, name);
   track.append(slot);
 
   const button = document.createElement("button");
@@ -151,7 +167,7 @@ function createChapterView(
 }
 
 interface ScrubbingOptions {
-  readonly track: HTMLElement;
+  readonly track: SVGSVGElement;
   readonly durationSeconds: number;
   readonly show: TimelineShow;
   readonly onScrubChange: (showTimeSeconds: number | undefined) => void;

@@ -5,7 +5,7 @@
  * Boundary: Show rehearsal and Conductor startup live in their own entries.
  */
 
-import "./style.css";
+import "./app.css";
 import { createBenchmarkRun } from "./benchmark/benchmark-run";
 import { isBenchmarkProfileName } from "./benchmark/benchmark-settings";
 import { showHeadsetDiagnostics } from "./dev/headset-diagnostics";

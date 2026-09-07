@@ -164,14 +164,14 @@ HTML routes stay stable. Remaining owner names migrate with their scoped refacto
 
 | Responsibility | Current placement after #36 | Remaining work |
 | --- | --- | --- |
-| Browser bootstrap | `src/conductor.entry.ts`, `src/rehearsal.entry.ts`, `src/test.entry.ts` | Flash entry migrates with #84 |
-| Conductor UI | `src/conductor/conductor.page.ts` and actual `.panel.ts` regions | Styling #84 |
+| Browser bootstrap | `src/conductor.entry.ts`, `src/rehearsal.entry.ts`, `src/test.entry.ts` | `src/flash.entry.ts` handles independent device setup |
+| Conductor UI | `src/conductor/conductor.page.ts` and actual `.panel.ts` regions | Central `src/app.css` |
 | Show commands / internal clock | `src/levels/show.runtime.ts` | Preserved by UI contracts |
 | Run start/frame/end and scoped reset | `src/levels/level.runtime.ts` | Full visitor operation #9 |
-| Shared XR button | `src/ui/xr-entry-button.ts`; mechanics in World | Styling #84 |
+| Shared XR button | `src/ui/xr-entry-button.ts`; mechanics in World | Central `src/app.css` |
 | One-time content construction | `src/levels/level-composition.ts` | `.composition.ts` on next construction refactor |
 | Renderer/resource owner | `src/world/world-runtime.ts` | `.runtime.ts` on next resource refactor |
-| Styles | Four stylesheets and authored DOM inline styles | Central `src/app.css` in #84 |
+| Styles | `src/app.css`, imported by all four entries | Shared tokens and controls; scoped page layouts |
 
 `show-actions.ts` is removed. Its commands belong to Show and Run.
 

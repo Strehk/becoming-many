@@ -43,10 +43,21 @@ export function createTechDrawer({
   const root = document.createElement("aside");
   root.className = "conductor__drawer";
   root.dataset.open = "false";
+  root.id = "conductor-technician-tools";
+  root.inert = true;
   root.setAttribute("aria-label", "Technician tools");
 
+  let returnFocus: HTMLElement | undefined;
   function toggle(): void {
-    root.dataset.open = String(root.dataset.open !== "true");
+    const isOpening = root.inert;
+    if (isOpening && document.activeElement instanceof HTMLElement) {
+      returnFocus = document.activeElement;
+    }
+    root.inert = !isOpening;
+    root.dataset.open = String(isOpening);
+    returnFocus?.setAttribute("aria-expanded", String(isOpening));
+    if (isOpening) closeButton.focus({ preventScroll: true });
+    else returnFocus?.focus({ preventScroll: true });
   }
 
   const header = document.createElement("div");
@@ -191,4 +202,4 @@ function m5Text(status: M5OperatorStatus | undefined): string {
   return `live · q${status.quality.toFixed(2)}`;
 }
 
-const CLOSE_ICON_SVG = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="5" y1="5" x2="19" y2="19"></line><line x1="19" y1="5" x2="5" y2="19"></line></svg>`;
+const CLOSE_ICON_SVG = `<svg class="conductor-icon-outline" width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><line x1="5" y1="5" x2="19" y2="19"></line><line x1="19" y1="5" x2="5" y2="19"></line></svg>`;

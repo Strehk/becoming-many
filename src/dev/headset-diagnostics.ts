@@ -18,19 +18,7 @@ export function showHeadsetDiagnostics(container: HTMLElement): {
   const lifetime = new AbortController();
   const { signal } = lifetime;
   const overlay = document.createElement("pre");
-  overlay.style.cssText = [
-    "position:fixed",
-    "inset:0",
-    "margin:0",
-    "padding:12px",
-    "overflow:auto",
-    "z-index:2147483647",
-    "font:12px/1.35 ui-monospace,monospace",
-    "color:#0b0b0b",
-    "background:rgba(255,255,255,0.92)",
-    "white-space:pre-wrap",
-    "pointer-events:auto",
-  ].join(";");
+  overlay.className = "headset-diagnostics";
   container.appendChild(overlay);
 
   const lines: string[] = [];

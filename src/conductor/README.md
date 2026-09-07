@@ -33,8 +33,7 @@ M5 preview observes accepted samples without consuming flight button edges.
 
 UI releases its listeners, subscriptions, timers and DOM. The entry connects
 page exit/cancellation to Run's awaited cleanup; UI never unloads its children.
-#84 replaces the current `conductor.css` and inline styles with the central
-stylesheet under the [Engineering Standards](../../docs/engineering-standards.md#application-styling).
+All authored styling lives in `src/app.css` under the [Engineering Standards](../../docs/engineering-standards.md#application-styling).
 The [target architecture](../../docs/target-architecture.md#3-target-structure)
 owns diagrams and placement; the [roadmap](../../docs/roadmap.md) owns order.
 The full visitor restart and XR/calibration operation remain #9/#46.

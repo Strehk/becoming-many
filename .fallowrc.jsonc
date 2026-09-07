@@ -21,6 +21,7 @@
         "name": "level-contracts",
         "patterns": ["src/levels/level-preset.ts"]
       },
+      { "name": "level-routes", "patterns": ["src/levels/level-names.ts"] },
       { "name": "levels", "patterns": ["src/levels/**"] },
       // Shared contracts/mechanics are not concrete child modules.
       { "name": "modules", "autoDiscover": ["src/modules"] },
@@ -28,21 +29,39 @@
       { "name": "world", "patterns": ["src/world/**"] },
       { "name": "world-surface", "patterns": ["src/world-surface/**"] },
       { "name": "control", "patterns": ["src/control/**"] },
+      { "name": "m5-protocol", "patterns": ["src/m5/protocol.ts"] },
       { "name": "m5", "patterns": ["src/m5/**"] },
       { "name": "utils", "patterns": ["src/utils/**"] },
+      {
+        "name": "show-queries",
+        "patterns": [
+          "src/dramaturgy/narration-catalog.ts",
+          "src/dramaturgy/narration-schedule.ts",
+          "src/dramaturgy/schedule-layout.ts"
+        ]
+      },
       { "name": "dramaturgy", "patterns": ["src/dramaturgy/**"] },
       { "name": "sound", "patterns": ["src/sound/**"] },
-      { "name": "station", "patterns": ["src/station/**"] },
+      { "name": "deployment", "patterns": ["src/station/**"] },
+      { "name": "station-backend", "patterns": ["station/**"] },
       { "name": "benchmark", "patterns": ["src/benchmark/**"] },
-      { "name": "test-ui", "patterns": ["src/test-ui/**"] },
+      { "name": "app-styles", "patterns": ["src/app.css"] },
       {
-        "name": "browser-pages",
+        "name": "entries",
+        "patterns": ["src/*.entry.ts"]
+      },
+      {
+        "name": "test-entry-tools",
+        "patterns": ["src/test-ui/test-level-modules.ts"]
+      },
+      { "name": "flash", "patterns": ["src/flash/**"] },
+      {
+        "name": "ui",
         "patterns": [
-          "src/main.ts",
-          "src/test-main.ts",
           "src/conductor/**",
-          "src/flash/**",
-          "src/dev/**"
+          "src/dev/**",
+          "src/ui/**",
+          "src/test-ui/**"
         ]
       }
     ],
@@ -60,7 +79,8 @@
           "world",
           "world-surface",
           "utils",
-          "dramaturgy"
+          "dramaturgy",
+          "show-queries"
         ]
       },
       {
@@ -70,16 +90,56 @@
       { "from": "world", "allow": ["utils"] },
       { "from": "world-surface", "allow": [] },
       { "from": "control", "allow": ["m5", "world", "world-surface", "utils"] },
-      { "from": "m5", "allow": ["utils"] },
+      { "from": "m5", "allow": ["m5-protocol", "utils"] },
+      { "from": "m5-protocol", "allow": [] },
       { "from": "utils", "allow": [] },
-      { "from": "dramaturgy", "allow": ["utils"] },
-      { "from": "sound", "allow": ["dramaturgy", "utils"] },
-      { "from": "station", "allow": ["utils"] },
+      { "from": "show-queries", "allow": [] },
+      { "from": "dramaturgy", "allow": ["show-queries", "utils"] },
+      { "from": "sound", "allow": ["dramaturgy", "show-queries", "utils"] },
+      { "from": "deployment", "allow": ["utils"] },
+      { "from": "level-routes", "allow": [] },
+      {
+        "from": "station-backend",
+        "allow": ["deployment", "level-routes", "m5-protocol"]
+      },
+      { "from": "flash", "allow": ["m5-protocol"] },
+      {
+        "from": "ui",
+        "allow": ["show-queries"],
+        "allowTypeOnly": ["levels", "world", "m5", "m5-protocol", "deployment"]
+      },
+      {
+        "from": "test-entry-tools",
+        "allow": ["modules/zone-visualizer"],
+        "allowTypeOnly": ["levels", "level-contracts"]
+      },
+      {
+        "from": "benchmark",
+        "allow": ["world"]
+      },
+      {
+        "from": "entries",
+        "allow": [
+          "ui",
+          "flash",
+          "test-entry-tools",
+          "benchmark",
+          "deployment",
+          "app-styles",
+          "presets",
+          "level-contracts",
+          "level-routes",
+          "levels",
+          "dramaturgy",
+          "show-queries"
+        ]
+      },
       {
         "from": "levels",
         "allow": [
           "presets",
           "level-contracts",
+          "level-routes",
           "modules",
           "module-contracts",
           "world",
@@ -88,6 +148,7 @@
           "m5",
           "utils",
           "dramaturgy",
+          "show-queries",
           "sound"
         ],
         // Existing in-page route contract; no benchmark execution imports.

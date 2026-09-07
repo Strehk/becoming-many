@@ -17,10 +17,7 @@ import { cueSlots } from "../dramaturgy/schedule-layout";
 import type { RunningShow } from "../levels/show.runtime";
 
 const SECONDS_PER_MINUTE = 60;
-
-// Shared with the language highlight, which restores it on the button
-// that loses the active language.
-const BUTTON_BACKGROUND = "rgba(255,255,255,0.85)";
+const SVG_NAMESPACE = "http://www.w3.org/2000/svg";
 
 // The playhead is placed to a tenth of a percent — under half a second of an
 // eight-minute show, and finer than the track can show. Rounding to it is what
@@ -56,43 +53,20 @@ export function mountRehearsalTransport({
 
   const bar = document.createElement("div");
   bar.className = "rehearsal";
-  // Styled inline for the same reason the VR entry button is: this page has
-  // no UI stylesheet, and dark controls stay readable on the bright canvas.
-  bar.style.cssText = [
-    "position:fixed",
-    "top:0",
-    "left:0",
-    "right:0",
-    "z-index:10",
-    "display:flex",
-    "flex-direction:column",
-    "gap:8px",
-    "padding:10px 12px",
-    "background:rgba(255,255,255,0.85)",
-    "color:#111111",
-    "font:13px sans-serif",
-  ].join(";");
 
   const topRow = document.createElement("div");
-  topRow.style.cssText = "display:flex;align-items:center;gap:12px";
+  topRow.className = "rehearsal__top-row";
 
   const transportButton = createBarButton("Hold");
-  transportButton.style.minWidth = "64px";
+  transportButton.className = "rehearsal__transport";
 
   const readout = document.createElement("output");
-  readout.style.cssText = "min-width:96px;font-variant-numeric:tabular-nums";
+  readout.className = "rehearsal__readout";
 
   const track = createTrack();
-  const playhead = document.createElement("div");
-  playhead.style.cssText = [
-    "position:absolute",
-    "top:0",
-    "bottom:0",
-    "width:2px",
-    "margin-left:-1px",
-    "background:#111111",
-    "pointer-events:none",
-  ].join(";");
+  const playhead = document.createElementNS(SVG_NAMESPACE, "line");
+  playhead.classList.add("rehearsal__playhead");
+  playhead.setAttribute("y2", "100%");
   track.append(playhead);
 
   const languageSwitch = createLanguageSwitch(
@@ -103,7 +77,7 @@ export function mountRehearsalTransport({
   topRow.append(transportButton, readout, track, ...languageSwitch.buttons);
 
   const sections = document.createElement("div");
-  sections.style.cssText = "display:flex;flex-wrap:wrap;gap:6px";
+  sections.className = "rehearsal__sections";
 
   // The slots are shared between languages; only recording lengths differ,
   // and those are not this bar's concern.
@@ -164,7 +138,8 @@ export function mountRehearsalTransport({
     )}%`;
     if (renderedPlayheadLeft !== playheadLeft) {
       renderedPlayheadLeft = playheadLeft;
-      playhead.style.left = playheadLeft;
+      playhead.setAttribute("x1", playheadLeft);
+      playhead.setAttribute("x2", playheadLeft);
     }
 
     languageSwitch.draw();
@@ -212,15 +187,13 @@ function createLanguageSwitch(
       buttons.forEach((button, index) => {
         const isActive = NARRATION_LANGUAGES[index] === language;
         button.setAttribute("aria-pressed", String(isActive));
-        button.style.background = isActive ? "#111111" : BUTTON_BACKGROUND;
-        button.style.color = isActive ? "#ffffff" : "#111111";
       });
     },
   };
 }
 
 interface ScrubbingOptions {
-  readonly track: HTMLElement;
+  readonly track: SVGSVGElement;
   readonly durationSeconds: number;
   readonly show: Pick<RunningShow, "sample" | "play" | "pause" | "seekTo">;
   /** Reports the dragged position, or undefined when the drag ends. */
@@ -284,35 +257,20 @@ function attachScrubbing({
 function createSectionTick(
   startSeconds: number,
   durationSeconds: number,
-): HTMLElement {
-  const tick = document.createElement("div");
-  tick.style.cssText = [
-    "position:absolute",
-    "top:0",
-    "bottom:0",
-    "width:1px",
-    `left:${toPercent(startSeconds, durationSeconds)}%`,
-    "background:rgba(17,17,17,0.35)",
-    "pointer-events:none",
-  ].join(";");
-
+): SVGLineElement {
+  const tick = document.createElementNS(SVG_NAMESPACE, "line");
+  tick.classList.add("rehearsal__tick");
+  const position = `${toPercent(startSeconds, durationSeconds)}%`;
+  tick.setAttribute("x1", position);
+  tick.setAttribute("x2", position);
+  tick.setAttribute("y2", "100%");
   return tick;
 }
 
-function createTrack(): HTMLElement {
-  const track = document.createElement("div");
-  track.className = "rehearsal__track";
-  track.style.cssText = [
-    "position:relative",
-    "flex:1",
-    "height:26px",
-    "border:1px solid #111111",
-    "border-radius:4px",
-    "background:rgba(255,255,255,0.6)",
-    "touch-action:none",
-    "cursor:pointer",
-  ].join(";");
-
+function createTrack(): SVGSVGElement {
+  const track = document.createElementNS(SVG_NAMESPACE, "svg");
+  track.classList.add("rehearsal__track");
+  track.setAttribute("aria-hidden", "true");
   return track;
 }
 
@@ -320,16 +278,6 @@ function createBarButton(label: string): HTMLButtonElement {
   const button = document.createElement("button");
   button.type = "button";
   button.textContent = label;
-  button.style.cssText = [
-    "padding:6px 10px",
-    "border:1px solid #111111",
-    "border-radius:4px",
-    `background:${BUTTON_BACKGROUND}`,
-    "color:#111111",
-    "font:13px sans-serif",
-    "cursor:pointer",
-  ].join(";");
-
   return button;
 }
 

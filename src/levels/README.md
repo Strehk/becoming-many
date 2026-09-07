@@ -86,3 +86,25 @@ Run owns loaded GLTF sources until all borrowers finish. Composition constructs
 and connects; World coordinates module lifecycle; modules release their own
 derivatives. UI releases only its own presentation resources. The existing
 `unload()` path is implemented; full next-visitor operation remains #9/#46.
+
+## Implementing the next Start level
+
+Start with one `start.level.ts` literal typed as `LevelPreset`, following
+`white-world.level.ts` for a minimal scene or `test.level.ts` for diagnostic
+content. Add its stable URL name to `level-names.ts` and its preset to
+`level-catalog.ts`. The existing `/test.html?level=start` request, Station route
+and Test entry then use the same Run. Keep the root Show default unchanged
+until its product handoff is defined.
+
+Place new content at its concrete module and compose it once in Level
+Composition. A preset creates no renderer, input source or listeners. Run owns
+startup/input/end, Show owns timed transitions/audio, and UI only invokes their
+commands. New operator presentation belongs in a panel with styling in
+`src/app.css`; no experience policy goes back into Conductor.
+
+A standalone Start scene can be implemented with these contracts now. Turning
+it into the calibrated visitor/tutorial flow additionally needs the existing
+#9/#46/#50 decisions: calibration/hold/release, completion and handoff, content
+and duration. Extend the existing Run/Show/controls after those choices; do not
+create a second tutorial runtime or clock. Add a benchmark reference for new
+content only through the explicit reference-review process.

@@ -14,7 +14,7 @@ The build has four browser entries:
   headset diagnostics, and direct-M5 development.
 - `conductor.html` loads `src/conductor.entry.ts`: the operator surface
   with the show running in the same page.
-- `flash.html` loads `src/flash/flash-main.ts`: Web Serial firmware setup for the
+- `flash.html` loads `src/flash.entry.ts`: Web Serial firmware setup for the
   M5 controller.
 
 `station/station-server.ts` is a separate Bun process. It serves `dist/`,
@@ -35,9 +35,21 @@ Run exposes the current `resetShowAndFlight` operation and narrow M5/XR
 capabilities; UI cannot consume controller edges or unload those children.
 The shared XR button lives in `src/ui/`; session mechanics stay in World.
 
-Four stylesheets and authored inline styles remain until #84 centralizes them.
+All four browser entries import `src/app.css`. Shared visual rules and scoped
+page layouts replace the four former stylesheets and authored inline styles.
+Timeline/M5 geometry uses SVG attributes; closed technician tools are inert.
 The [target diagrams](target-architecture.md#3-target-structure) show deployment,
 lifetime ownership, command contracts and frame order.
+
+## Enforced imports
+
+`.fallowrc.jsonc` separates browser entries, UI, Station backend and the existing
+Engine owners. UI can import pure presentation queries and owner types, but
+cannot construct a Run, Show or World. Engine cannot import UI/entries; Station
+can share pure routes/deployment/protocol contracts without importing browser
+runtimes. The lazy diagnostic module loader has its own narrow entry-tool rule.
+`tests/levels/ui-boundary.test.ts` checks actual public capability types;
+`level-runtime-boundary.test.ts` keeps concrete content construction out of Run.
 
 ## Composition and Frame Flow
 
@@ -82,6 +94,8 @@ or browser resource owns its complete disposal.
 
 ```text
 src/
+├── app.css          shared DOM styling for all four entries
+├── flash.entry.ts  independent device-setup entry
 ├── benchmark/       deterministic in-page route and report data
 ├── conductor/       operator page, panels and view state
 ├── control/         desktop and M5 flight mapping and constraints
@@ -216,14 +230,10 @@ see [Architecture Decisions](architecture-decisions.md).
 
 ## Station and Control Boundaries
 
-The current forwarding and reset paths described here remain implementation
-debt under D1/D2: Show must own shared playback/language/time commands, and the
-existing Runtime must own complete visitor termination and fresh startup. Today
-a time/position reset does not establish that lifecycle.
-
-The Conductor imports the public level/runtime contracts and commands the show
-through `src/conductor/show-actions.ts`. It reads a snapshot each frame rather
-than holding a second copy of show time.
+Conductor reads one local view state per draw and invokes direct owner commands.
+Show owns playback/language/time, and Run owns complete termination and the
+current time/flight reset. The concrete fresh-visitor operation remains #9/#46;
+a reset does not establish a new lifetime.
 
 The M5 adapter owns one cancellable host lifetime. ControlSource owns the shared
 identity/firmware/calibration/sequence/freshness gate for steering, preview and

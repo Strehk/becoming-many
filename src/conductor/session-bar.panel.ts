@@ -73,9 +73,14 @@ export function createSessionBar({
   const streamLabel = document.createElement("span");
   streamButton.append(streamIcon, streamLabel);
 
-  const techButton = createButton(root, "", onToggleTechDrawer);
+  const techButton = createButton(root, "", () => {
+    techButton.focus({ preventScroll: true });
+    onToggleTechDrawer();
+  });
   techButton.classList.add("conductor__tech-button");
   techButton.setAttribute("aria-label", "Technician tools");
+  techButton.setAttribute("aria-controls", "conductor-technician-tools");
+  techButton.setAttribute("aria-expanded", "false");
   techButton.append(createIcon(WRENCH_ICON_SVG));
 
   parent.append(root);
@@ -107,5 +112,5 @@ function createIcon(svg: string): HTMLElement {
   return icon;
 }
 
-const HEADSET_ICON_SVG = `<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 14 a8 8 0 0 1 16 0"></path><rect x="2.5" y="13" width="5" height="7" rx="2"></rect><rect x="16.5" y="13" width="5" height="7" rx="2"></rect></svg>`;
-const WRENCH_ICON_SVG = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.7 6.3 a4.5 4.5 0 0 0 -6 5.6 L3 17.6 V21 h3.4 l5.7 -5.7 a4.5 4.5 0 0 0 5.6 -6 L14.5 12.5 L11.5 9.5 Z"></path></svg>`;
+const HEADSET_ICON_SVG = `<svg class="conductor-icon-outline" width="26" height="26" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 14 a8 8 0 0 1 16 0"></path><rect x="2.5" y="13" width="5" height="7" rx="2"></rect><rect x="16.5" y="13" width="5" height="7" rx="2"></rect></svg>`;
+const WRENCH_ICON_SVG = `<svg class="conductor-icon-outline" width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><path d="M14.7 6.3 a4.5 4.5 0 0 0 -6 5.6 L3 17.6 V21 h3.4 l5.7 -5.7 a4.5 4.5 0 0 0 5.6 -6 L14.5 12.5 L11.5 9.5 Z"></path></svg>`;
