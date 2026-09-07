@@ -19,8 +19,9 @@ code is not removal. No extra coordinator, forwarding layer or audit system.
 Restart operation (including a possible page reload), riverbank
 clearance/overhang and tutorial/credits details need
 small reviewable proposals before their dependent changes. None of these gates
-reopens the confirmed owner decisions. After three implementations, agents review
-behavior, architecture and size, then continue autonomously under the workflow.
+reopens the confirmed owner decisions. The [workflow](refactor-workflow.md) and
+[test plan](refactor-test-plan.md) own implementation and verification cadence:
+finish a coherent issue before targeted testing; no fixed milestone review loop.
 
 The original 2026-09-05 investigation used `9bfb84b` plus local M0 work and read
 52 issues, 17 comments and relevant PRs. Its implementation observations and
@@ -504,15 +505,12 @@ must release acquired resources. Actual restart/worklet behavior remains unprove
 #14 removes the additional GPU probe in
 [headset-diagnostics.ts](../src/dev/headset-diagnostics.ts); the entry owns its
 bounded diagnostic handle and restores hooks on end. World supplies the actual
-capability report on demand; startup errors stay visible. Next, Test entry constructs its overlay; remove `LevelTestOverlay`,
-`TestOverlayFactory` and `createOptionalTestOverlay` from Run. World supplies
-read-only draw-call/triangle counters and a capability report for those two
-actual consumers, not renderer mutation access. Preserve the lazy Test-module
-loader. Test/Conductor already own their samplers: they should read them directly.
-Remove `RunningLevel.readFrameMetrics`, its closure and `FrameMetricsRecorder.read`;
-keep only the optional frame input. Put the metrics type with its existing
-sampler. No new observation contract file is needed. The root has no sampler;
-Conductor already reads every 500 ms.
+capability report on demand; startup errors stay visible. #35 makes Test own its
+overlay and sampler, with Conductor reading its own sampler directly. Run keeps
+only an optional `onFrame` input; the metrics type lives beside the sampler.
+World exposes read-only live draw counters without renderer mutation access.
+The root has no sampler; Conductor still reads every 500 ms; the lazy Test-module
+loader remains. No observation contract file or additional loop was introduced.
 
 **Confirmed diagnostic separation:** ordinary Experience operation has no extra
 GPU probes, probe renderers or expensive diagnostic measurements. Diagnostic
@@ -690,11 +688,10 @@ one frame and end from the main story without chasing forwarding-only helpers.
 Keep owner-local operations together; measure success by deleted dependencies,
 state and alternate paths, not by multiplying smaller files.
 
-Agent review walks a static start/end, a Show frame/seek and a language/
-complete visitor restart. For each, identify acquisitions, one authority per
-state, retained behavior and every deleted consumer path. Inspect D4's full deletion
-and D5's producer agreement; compare diagram, contracts and migration with the
-candidate. A new generic abstraction must not merely replace the removed one.
+Briefly read the affected start/frame/end path in the completed diff. Identify
+one authority per state and removed consumer paths; inspect D4/D5 obligations
+when affected. This does not require a separate reviewer or a replay of every
+interaction. A new generic abstraction must not merely replace the removed one.
 
 Apply the [test plan](refactor-test-plan.md) by risk: recipe equivalence,
 late-failure/repeated-start lifecycle coverage, affected UI flows, comparative

@@ -41,14 +41,19 @@ narration assets, and audience-facing copy.
 
 ## Required Reading
 
-The linked workflow and test plan are mandatory, including after context
-compression. Keep procedures and checklists in those documents, not here.
+Read the workflow, test plan and roadmap checkpoint when starting or resuming;
+then read only the architecture sections relevant to the current issue.
+Implement a coherent issue first, test the combined change once, repair actual
+failures, then commit when authorized. Do not test every edit or turn issue
+maintenance into the main work. The workflow and test plan own process and
+verification cadence; historical checklists do not add recurring gates. Keep
+procedures in those documents, not here.
 
 - [Target Architecture](docs/target-architecture.md): binding refactor direction and
-  deletion ledger. Explicitly open decisions remain open; implementation and human
-  acceptance follow the roadmap gates.
-- [Refactor Workflow](docs/refactor-workflow.md): issue execution, architecture
-  review, human gates, GitHub feedback, and completion rules.
+  deletion ledger. Explicitly open decisions remain open; the roadmap identifies
+  dependencies and remaining product or physical acceptance.
+- [Refactor Workflow](docs/refactor-workflow.md): implementation-first execution,
+  concise GitHub results and completion rules.
 - [Refactor Test Plan](docs/refactor-test-plan.md): local checks, browser
   acceptance, performance comparisons, and evidence requirements.
 - [Roadmap](docs/roadmap.md): resume checkpoint, M0 preparation, ordered issues,

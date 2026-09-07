@@ -11,9 +11,9 @@ dated evidence.
 
 - [Roadmap](roadmap.md) — the binding plan, resume checkpoint, issue order,
   M0 checklist, and milestones; start here after context compression.
-- [Refactor Workflow](refactor-workflow.md) — mandatory issue execution,
-  architecture reviews, human gates, GitHub feedback, and completion records.
-- [Refactor Test Plan](refactor-test-plan.md) — local gates, browser scenarios,
+- [Refactor Workflow](refactor-workflow.md) — implementation-first issue blocks,
+  concise GitHub results and completion rules.
+- [Refactor Test Plan](refactor-test-plan.md) — targeted checks after a complete issue, browser scenarios,
   performance comparisons and evidence rules.
 
 ## Current System

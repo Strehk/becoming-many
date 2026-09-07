@@ -14,8 +14,8 @@ in the [workflow](refactor-workflow.md), [test plan](refactor-test-plan.md) and
 | Implemented | Checkpoint `49f48ac` preserves the state before tutorial-readiness work. Previous #27/#26/#32 block is committed; #17 → #18 → #38 block accepted at `1434f45`. New block #25 → #85 → #9 is technically implemented: #25 clarifies `activeLevel`, #85 removes duplicate construction, #9 connects awaited child/source lifetime. The size gate remains unmet; ready reduction issues continue. #17 is closed at `eec55bd`; #18 is committed at `b3eeea3`; #18/#38 still await physical acceptance. |
 | User feedback | On 2026-09-07 the user said the prepared result looked good and requested continuation, accepting the #17/#18/#38 block and the presented #85 composition proposal. Physical 90 Hz, calibration and #73 uncertainty remain unaccepted. |
 | Previous block evidence | #80/#73/#20: production −473, configuration −5, tests +24; no new files/dependencies/owners, three files removed. #20 adds 13 production lines for compile-time validation. Final gates: 487 tests/26,704 assertions, type/lint/build/diff, zero boundaries, smoke 14/14; all nine counters/queue records match #73, with seven inherited #78 reference failures. EN transitions pass 16/16. The earlier #73 Motion observation (+0.725 Show seconds in ten seconds while 599 frames continued) remains unexplained. Exact identities and limits live in [#20](https://github.com/Strehk/becoming-many/issues/20) and [#73](https://github.com/Strehk/becoming-many/issues/73). |
-| Next gate | Agent-led cumulative review after three implementations, then continue autonomously. #85 construction is decided; concrete visitor restart remains open. |
-| Current work | #25 is committed at `6eb0636` (production −1). #85 removes four files, production/configuration −86 and tests −13; all nine effective presets and Show settings match before/after. Motion now rejects invalid intensity at its factory. Final evidence and remaining scope live in GitHub. #9 now adds complete Run termination without selecting visitor restart: 495 tests, 11 Run cycles/failure cases, four entry-end/cancel cases, all nine counters/queues unchanged. Production +770; cumulative block +683 means the reduction outcome remains unmet. #16 subsequently adds 12 lines to the existing preparation pass: all eight first/repeated cues have zero new buffers/programs/textures. #14 removes the extra diagnostic context and preserves visible startup errors (+48 production, seven diagnostic cases pass). Next: #35 forwarding removal, then the approved #13 legacy Grass migration to retire the duplicate renderer. |
+| Next gate | Complete the current issue, test its combined diff, then commit when authorized and continue. #85 construction is decided; concrete visitor restart remains open. |
+| Current work | #25 is committed at `6eb0636` (production −1). #85 removes four files, production/configuration −86 and tests −13; all nine effective presets and Show settings match before/after. Motion now rejects invalid intensity at its factory. Final evidence and remaining scope live in GitHub. #9 now adds complete Run termination without selecting visitor restart: 495 tests, 11 Run cycles/failure cases, four entry-end/cancel cases, all nine counters/queues unchanged. Production +770; cumulative block +683 means the reduction outcome remains unmet. #16 subsequently adds 12 lines to the existing preparation pass: all eight first/repeated cues have zero new buffers/programs/textures. #14 removes the extra diagnostic context and preserves visible startup errors (+48 production, seven diagnostic cases pass). #35 removes Run metrics/overlay forwarding (production −16); Test and Conductor own their diagnostics directly. Next: the approved #13 legacy Grass migration to retire the duplicate renderer. |
 | Acceptance audit | At clean `2db5755`, independent source/history review found no introduced architecture blocker: existing owners retain one loop/clock/queue; #77 removes the old import route, #79 bounds dispatch history, #82 rejects stale work and removes four redundant staging parameters. Existing startup/disposal gaps remain #73/#9; open target decisions remain open. Application TypeScript +65 lines, test TypeScript +1,300, documentation +1,766, JSON evidence +5,702, reference candidate +74, configuration +91: total +8,998 against `9bfb84b`. This is a qualified technical pass, not human or milestone acceptance. |
 | Verified application evidence | Historical final EN/DE each521s without unexpected errors; smoke14/14; repeatable counters/queue, but seven stored #78 references still fail. Exact tested identities and limits are in [evidence](evidence/README.md). |
 | Analyzer delta | After #26, Fallow exits 1: 4 dead-code, 11 clone groups, 26 health findings. Two additional estimated-CRAP findings cover bounded retry and its regression scenario; independent review retains the necessary branches without suppression. The extra `ModuleRuntime.load` finding is false positive: `startLevel` directly calls it before activation; no suppression or wrapper was added. New test-only findings are five repeated assertions at distinct legacy-load/post-submit-reload boundaries and estimated CRAP for `checkFlash` (CC7/cognitive5). Independent review retained these meaningful checks without a helper or suppression. Real boundary violations: 0. Older 10/24 and 10/22 results remain historical. |
@@ -33,9 +33,11 @@ placement was [authorized before implementation](https://github.com/Strehk/becom
 
 On 2026-09-07 the user authorized autonomous continuation through the active
 goal below, without mandatory user testing or intermediate human acceptance.
-This supersedes the three-issue stop: perform agent-led cumulative reviews and
-continue ready issues. Technical checks and explicitly open decisions remain
-binding. Missing hardware evidence blocks only genuinely dependent work and
+The subsequent implementation-first instruction also removes fixed review
+cadences: implement a coherent issue, test its combined changes, fix failures,
+then commit when authorized and continue. The workflow and test plan own check
+selection; do not restart inventories or repeat intermediate checks. Explicitly
+open decisions remain binding. Missing hardware evidence blocks only genuinely dependent work and
 must not be reported as verified. See the [workflow](refactor-workflow.md).
 
 The user accepted the prepared #17/#18/#38 block at `1434f45` and requested
@@ -53,15 +55,15 @@ live issues and [evidence index](evidence/README.md).
 
 ## Milestones and Ordered Work
 
-All stages use agent-led cumulative reviews after three implementations or a
-milestone, without waiting for user testing. Continue ready prerequisites toward the
-active goal. Early physical commissioning remains relevant where equipment
+All stages follow implementation blocks and targeted final checks under the
+workflow and test plan, without fixed milestone reviews or routine user stops.
+Continue ready prerequisites toward the active goal. Early physical commissioning remains relevant where equipment
 is available; document missing evidence and continue independent work.
 
 | Milestone | Ordered scope | Gate |
 | --- | --- | --- |
 | M0 | Retain #21/early #11/#75/#77/#79/#82 evidence; bounded #78 reference investigation | Exact inspected reference proposal and complete M0 acceptance remain open |
-| M1 | Committed #80/#73/#20 with continuation authorized; #27 before independent measured #26/#32 work | Agent-led cumulative review; no mandatory user stop |
+| M1 | Committed #80/#73/#20 with continuation authorized; #27 before independent measured #26/#32 work | Targeted verification of the completed issue; no routine user stop |
 | M2 | Early #42 commissioning + #54 inventory; #9 lifecycle and #16 preparation; #14 diagnostics; #85 explicit levels; #35 → #36 shared UI ownership; final #11 | Concrete restart proposal first; #85 construction approved; dependent lifecycle and physical checks below |
 | M3 | #17 → #18 → #38 → #25; #46 visitor handoff → #33 physical flight | Actual Windows-PCVR/M5 calibration and operator acceptance |
 | M4 | #26, #32; #13 → #72 → #71 → #81 → #41; verify #40 retirement and #28 final wind consumers | Comparable local evidence, bank-view choice, Windows-PCVR USB-C 90 Hz |

@@ -1,133 +1,82 @@
 # Refactor Workflow
 
-This workflow governs `david_refactor`. Fix causes at existing owners and make
-the system easier to read. Bug fixes may change behavior; name that change.
-The binding [target architecture](target-architecture.md) owns target direction
-and removal obligations. Its explicitly open choices remain decisions.
+Implement the smallest clear solution at the existing owner. The binding
+[target architecture](target-architecture.md) defines responsibilities and
+removals; explicitly open decisions remain open.
 
-## One authority per fact
+## Authority and scope
 
-| Source | Owns |
-| --- | --- |
-| [AGENTS.md](../AGENTS.md) | Branch protection and required reading |
-| [Engineering standards](engineering-standards.md) | Implementation rules |
-| [Architecture](architecture.md), [decisions](architecture-decisions.md) | As-built ownership and confirmed constraints |
-| Live GitHub issue | Problem, acceptance criteria, decisions and completion |
-| [Roadmap](roadmap.md) | Order, prerequisites, current checkpoint and active goal |
-| [Test plan](refactor-test-plan.md) | Verification and test retention |
-| [Current status](current-status.md), [performance](performance.md) | As-built capabilities and measured performance |
-| `docs/evidence/issue-<number>/` | Essential dated results, identities and failure evidence |
+This workflow owns execution; the [test plan](refactor-test-plan.md) owns test
+selection and timing. The user's implementation-first instruction replaces
+older per-edit checks, full-suite-per-commit requirements, separate reviewers
+per issue and three-issue/milestone review cadences. Historical reports record
+what happened; they do not impose recurring work. Product acceptance criteria
+and explicit decisions are not waived by this process change.
 
-Link these sources instead of copying their changing facts. Replace stale
-current statements; keep necessary history in evidence or issue comments.
-Do not add another plan, status ledger or completion template.
+- [AGENTS.md](../AGENTS.md): branch protection and project constraints.
+- [Roadmap](roadmap.md): resume checkpoint, issue order and dependencies.
+- Live GitHub issue: scoped problem, acceptance and concise completion result.
+- [Engineering standards](engineering-standards.md): implementation rules.
+- [Architecture](architecture.md), [decisions](architecture-decisions.md),
+  [current status](current-status.md), [performance](performance.md): their
+  respective current facts. Update only facts the change actually affects.
 
-## Branch and scope
+Keep one authority per fact. Do not create parallel plans, audit frameworks,
+status ledgers or reports. Resume from the checkpoint instead of restarting an
+inventory or replaying checks already valid for the unchanged code.
 
-- Before every mutation, including generated artifacts, and every commit, pull,
-  rebase, merge or push, run `git branch --show-current`; require exactly
-  `david_refactor`. Otherwise stop without changing anything.
-- Check `git status` and preserve others' changes. Never check out or change
-  `main`, create another branch/worktree, or incorporate unrelated PRs.
-- Commit and push only with explicit authorization, only on this branch and
-  toward `origin/david_refactor`. Documentation permission is not Git permission.
-- Implement one issue at a time. An independent ready issue can follow a
-  technically implemented issue awaiting external acceptance, but cannot cross
-  an unmet technical dependency or explicitly open decision. Pending manual
-  testing does not block independent work toward the active goal.
+## Branch protection
 
-## Issue loop
+Before every file change or Git mutation, run `git branch --show-current` and
+require exactly `david_refactor`; otherwise stop. Check status and preserve
+others' changes. Never check out or change `main`, create another branch or
+worktree, or incorporate unrelated changes. Commit/push only when authorized;
+all such work stays on `david_refactor`, targeting `origin/david_refactor` only.
+Documentation permission is not commit or push permission.
 
-1. Read the live issue, comments, prerequisites, relevant code/tests and Git
-   history. Reconcile stale claims against the checkout before implementation.
-2. Before substantial work, state what becomes simpler, what disappears, which
-   existing owner keeps the responsibility, and why any added structure is needed.
-   Resolve dependent open decisions with a concrete result, recommendation and
-   consequences. Routine implementation choices need no extra gate. Check library
-   documentation before library-specific work; use Context7 first when available.
-3. Capture the relevant baseline from this branch. Identify the source revision
-   and dirty diff, not just HEAD. Apply the test plan according to actual risk.
-4. Implement at the existing owner. Remove replaced code, contracts, settings,
-   consumers and exclusive tests together. Do not retain compatibility paths
-   without a current consumer and an explicit reason.
-5. Review the complete affected start, frame and end with a separate reviewer.
-   Apply the size and architecture checks below, then verify the final change.
-6. Update affected canonical facts and one concise issue result: change/removal,
-   commands and results, evidence, remaining acceptance, integration status.
-   Check fulfilled criteria; close only when the required acceptance exists.
+## Implement one complete issue, then test
 
-## Size and architecture check
+1. Read the current issue and prerequisites, inspect the affected code and
+   relevant Git history. Find the smallest solution and the obsolete path it
+   removes. Correct stale issue claims only when necessary to implement the
+   right change; do not spend the block rewriting the backlog.
+2. Implement the complete coherent issue at its existing owner. Remove replaced
+   implementations, consumers, contracts, configuration and exclusive tests in
+   the same block. Prefer direct code to wrappers, new interfaces or coordinators.
+3. Briefly read the resulting diff: are responsibility, start, frame and end
+   clearer? Remove duplicate state, forwarding and speculative safeguards. This
+   is a short implementation pass, not a separate audit project.
+4. Test the completed block using the smallest relevant checks in the test plan.
+   Fix actual failures and rerun only affected checks. Do not test after each
+   edit; an intermediate check needs a concrete failure or uncertainty that
+   prevents further implementation.
+5. Record one concise GitHub result: behavior changed, code/paths removed,
+   relevant checks and outcomes, size delta and any unmet criterion. Update
+   affected canonical facts, then commit the completed issue when authorized.
+   Continue the next ready issue without repeating preparation or verification.
 
-Every implementation ends with these questions, answered briefly in its issue:
+Delegate bounded implementation work with clear file ownership when useful.
+Do not duplicate exploration or require an independent reviewer for every issue.
+Use a focused second opinion for genuinely uncertain or broad ownership changes,
+not a recurring review team. Human testing is optional; ask only for a remaining
+explicit decision that blocks dependent work. Continue independent ready work.
 
-- Is responsibility clearer, and can start, one frame, end and visitor restart
-  be read directly at their existing owner?
-- Which obsolete paths, states, wrappers, contracts and tests actually disappear?
-- Is every new file, abstraction, dependency and persistent state necessary for
-  a current behavior? Reuse/direct code comes before another owner or interface.
-- Could existing state supply an argument or derived fact instead of carrying
-  it separately? Do similar operations truly share semantics and lifetime?
-- Does the retained test suite protect current behavior rather than the old
-  implementation? Apply the test plan's deletion rules.
-- Report growth/removal separately for production logic, explicit configuration,
-  tests/test tools, and documentation/measurement artifacts, including untracked
-  files. Did states, forwarding, dependencies and required file jumps decrease?
+## Keep the result smaller
 
-Each refactor block must reduce production code, states and indirection while
-preserving readability and verified behavior. Necessary bug-fix additions must
-be offset by real removal in that block; growth is an unmet refactor outcome.
-Count authored configuration too, and report tests and documentation separately.
-Remove superseded paths and exclusive tests together. Moving, minifying or
-hiding code outside the count is not removal. Use `test.level.ts` as the reference.
+Each refactor block must reduce production code, states and indirection without
+sacrificing readability. Count authored configuration too; report source,
+tests/tooling and documentation separately from the existing diff, without new
+counting infrastructure. Moving, minifying or hiding code is not removal.
+Necessary bug-fix growth is not a simplification success: revise toward real
+removal or state the concrete unmet goal. Use `src/levels/test.level.ts` as the
+readability reference. Never add generalized recovery, fallback paths or future
+configuration for hypothetical needs.
 
-Fallow supplements review: distinguish inherited findings from regressions,
-prove new boundary rules with a temporary violation, then remove that fixture.
-Never suppress a finding or update a baseline merely to make a gate green.
-Before changing confirmed ownership or adding a structural abstraction, obtain
-approval for the concrete owner/consumer/removal proposal unless already given.
-
-## Autonomous review and decision gates
-
-On 2026-09-07 the user authorized autonomous work through the roadmap's active
-goal without mandatory user testing or intermediate human acceptance. This
-supersedes the former three-issue and milestone stop rules, including older
-issue checklists requesting routine manual review. Human testing is optional.
-
-| Trigger | Required action |
-| --- | --- |
-| Every issue | Independent code/architecture review, applicable automated and agent-operated browser checks, concise GitHub evidence and size delta |
-| Three implemented issues or milestone boundary | Agent-led cumulative behavior, architecture and size review; document findings and continue without waiting for the user |
-| Explicitly open structural or product choice | Obtain the specific decision before dependent implementation; continue independent ready issues |
-| Unavailable physical equipment or listening evidence | Record the exact unverified criterion; continue independent work without claiming physical acceptance |
-| Active goal reached | Report completed work, remaining blockers, measurements and code reduction; no mandatory user test session |
-
-Technical verification, branch protection, issue dependencies and the binding
-target architecture remain mandatory. Do not close an issue with an unmet
-technical or physical criterion, or treat waived user testing as proof of 90 Hz.
-A measured regression must be fixed or explicitly accepted. This authorization
-does not approve new owners, structural abstractions, unplanned content,
-unjustified growth, an open restart/level-show choice or a benchmark update.
-Prepare concrete decision proposals while progressing independent issues.
-
-## Evidence, feedback and integration
-
-Retain the smallest durable evidence that supports the claim: exact source/diff
-identity, conditions, commands, individual comparison results, decisive failure
-facts and limits. Store shared metadata once when this simplifies reading.
-Raw frames, repeated warnings, debugger locals and traces normally stay in
-ignored diagnostic output; keep essential failures and measurements in the
-repository or their GitHub issue before retiring temporary material. Do not
-copy full reports into several issue folders or document every intermediate
-step. Never delete unexplained failures or replace before data with a pass.
-
-Correct current-issue failures in scope. For independent defects or removal
-opportunities, search existing issues first, then update a matching issue or
-create one focused issue with code evidence, target owner, removal and acceptance.
-Keep it outside the active implementation. Use at most one status label:
-`status:ready`, `status:in-progress`, `status:blocked`, `status:awaiting-review`.
-A measured regression remains blocking until fixed or explicitly accepted.
-
-When Git operations are authorized, map focused issue commits to predecessors
-and evidence. Read overlapping PRs without switching branches. One accumulated
-branch produces one accumulated PR diff; closed issues are not proof of
-integration. Never merge/rebase/push to `main` under this workflow.
+Outside-scope simplifications belong in an existing matching issue or one
+focused new issue with code evidence, target owner, removal and acceptance.
+Record them briefly and continue the current implementation. Do not close unmet
+technical or physical criteria. Preserve essential measurements and failure
+facts once, with source identity and limits; do not archive every intermediate
+step. A measured regression requires a fix or explicit acceptance. Local browser
+results never establish installation 90 Hz. Open architecture/product choices
+and exact benchmark-reference changes still require their specific decision.

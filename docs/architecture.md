@@ -40,7 +40,9 @@ use the same path; Composition cleans earlier factory handles on failure.
 Entries cancel pending starts and own their DOM/listeners. A persisted `pagehide`
 keeps the same visit; final page exit ends it. Visitor restart policy remains open.
 
-Test UI sampling and overlay creation are entry-owned optional dependencies.
+Test and Conductor own and read their frame samplers directly. Test creates and
+ends its overlay, updates it through the existing optional frame callback, and
+reads World's read-only draw counters. Run holds no UI or sampler contract.
 Legacy Grass and Zone Visualizer implementations load only for the standalone
 presets that author them; the rehearsal show does not fetch those chunks.
 
@@ -48,7 +50,7 @@ The single frame loop is owned by World Runtime:
 
 ```text
 timer
-→ level frame: input, show, ground constraints and optional Test UI
+→ optional entry diagnostics, then input, show and ground constraints
 → publish the viewer viewpoint
 → active module updates
 → bounded stream-queue work

@@ -2,7 +2,7 @@
 
 Use the [target architecture](target-architecture.md) for target owners and
 removal obligations, [architecture](architecture.md) for current implementation,
-and the [workflow](refactor-workflow.md) for scope, size review and human gates.
+and the [workflow](refactor-workflow.md) for implementation blocks, concise review and decision boundaries.
 These standards guide readable code; they do not require new infrastructure.
 
 ## Simplify at the owner

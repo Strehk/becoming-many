@@ -62,9 +62,11 @@ runs after the relevant evidence has been preserved. Traces are functional
 diagnostics and must not be enabled during timing measurements.
 
 This suite does not prove headset tracking, physical M5 operation, audio quality,
-GPU memory disposal, full-show stability, or target-device performance. Human
-browser review and the [refactor test plan](../../docs/refactor-test-plan.md)
-remain required for those acceptance criteria.
+GPU memory disposal, full-show stability, or target-device performance. Select
+evidence for the affected criterion under the
+[refactor test plan](../../docs/refactor-test-plan.md); user browser review is
+optional and unavailable physical acceptance remains open. This command catalog
+does not require running every scenario after every issue.
 
 ## Real-Speed Show Observation
 

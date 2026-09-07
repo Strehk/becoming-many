@@ -50,7 +50,7 @@ The #80 animal-connection removal is implemented below. Small additions remain i
   owns the stopped renderer, GPU preparation and subsequent loop start.
 - Static presentation or the schedule's opening show state is applied before
   modules size their fixed spatial windows.
-- Test UI metrics are supplied only by the Test and Conductor entries. The
+- Test UI metrics and overlay lifetime belong to the Test and Conductor entries. The
   rehearsal show neither samples them nor loads Test UI, legacy Grass, or Zone
   Visualizer code.
 - The show clock is the authority for narration, world-state selection,
