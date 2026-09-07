@@ -16,8 +16,8 @@ code is not removal. No extra coordinator, forwarding layer or audit system.
 
 **Confirmed** names direction; **Observed** names code or dated evidence;
 **Open** names a concrete remaining choice, never permission to silently choose.
-Restart operation (including a possible page reload), direct level-to-show
-construction, riverbank clearance/overhang and tutorial/credits details need
+Restart operation (including a possible page reload), riverbank
+clearance/overhang and tutorial/credits details need
 small reviewable proposals before their dependent changes. None of these gates
 reopens the confirmed owner decisions. Review at most three implemented issues
 before the next cumulative human behavior, architecture and size check.
@@ -204,11 +204,11 @@ actual routes and bundle boundaries.
 
 ### Show start and one frame
 
-Use one Run and one prepared world throughout the visit. Before D3's rewrite,
-present the smallest direct mapping from independently readable levels into
-that one Show construction and schedule; do not preselect a second authored
-Show configuration or cue-by-cue world reconstruction. Preserve effective
-settings, including the opening state before pool allocation.
+Use one Run and one prepared world throughout the visit. Confirmed 2026-09-07:
+use the explicit Connections preset as the Show construction input; remove the
+second Show recipe. Show states retain presentation and timing, including the
+opening state before pool allocation. Preserve effective settings and never
+reconstruct the world at cues.
 
 Preparation, first use and bounded background work follow one strategy at the
 existing World/Run owners. No per-level transition workaround or uncontrolled
@@ -367,8 +367,9 @@ copied recipes; `8119bea` introduced shared authored blocks and
 longer constrain the confirmed target. Retain independent contracts only when
 they have actual different consumers/lifetimes, not to preserve old indirection.
 
-**Open before the rewrite:** present the smallest direct level-to-show solution
-that prepares one world per visit without a second contradictory Show recipe.
+**Confirmed 2026-09-07:** the [concrete proposal](https://github.com/Strehk/becoming-many/issues/85#issuecomment-5562660919) uses `connectionsLevel` through the common `preset` request.
+Show keeps its schedule/states and prepares that world once; delete the separate
+Show composition file/type/request field. Shared module edits affect both runs.
 Compare all effective settings, including invisible plants and Thermal motion,
 then remove every replaced layer consumer and exclusive tests atomically.
 More explicit configuration lines are allowed when they improve reading and
@@ -668,8 +669,8 @@ parallel runtime or permanent compatibility adapter is proposed.
    decide Vegetation ground distance/crown overhang and consolidate placement.
    Reassess shared Rocks/Vegetation mechanics afterward; no generic runtime.
 
-D3 is confirmed. Before rewriting recipes, present the small direct level-to-show
-construction, then compare effective settings and remove layer consumers,
+D3 and direct Connections-to-Show construction are confirmed. Compare effective
+settings and remove layer consumers,
 `sense-layers.ts` and exclusively required helpers/tests in the same change.
 Explicit parameters may grow while logic and relationships shrink. No temporary
 compatibility bridge or second Show configuration.
@@ -705,7 +706,6 @@ their actual dependent work:
 | Remaining decision | Before which change | Concrete proposal/evidence |
 | --- | --- | --- |
 | Visitor restart, including page reload | Complete restart implementation in existing Run | Early Windows-PCVR/USB-C test of XR end/re-entry, audio wake and next-visitor operation; no automatic-XR assumption |
-| Direct independent levels feeding one Show | D3 recipe rewrite | Small direct construction preserving one prepared world and effective settings |
 | Vegetation distance and crown overhang | Placement replacement under #81 | One comparable riverbank; shared model-independent ground rule |
 | Exact benchmark reference | #78 update | Bounded fixed-scene investigation, repeatable counters and explained differences; current numeric candidate remains unapproved |
 | Tutorial/credits details | Their concrete content, timing and control changes | Required features; propose content, duration, audio rights, start behavior and movement during credits using existing owners |

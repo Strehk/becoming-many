@@ -115,7 +115,7 @@ export function createTechDrawer({
           frameText(snapshot.framesPerSecond, snapshot.p95Milliseconds),
         );
         m5.write(m5Text(snapshot.m5));
-        level.write(snapshot.levelName);
+        level.write(snapshot.activeLevel);
         audio.write(snapshot.audioState);
         language.write(snapshot.language.toUpperCase());
       },

@@ -11,17 +11,17 @@ in the [workflow](refactor-workflow.md), [test plan](refactor-test-plan.md) and
 | Field | Current state |
 | --- | --- |
 | Branch / integration | `david_refactor` only; the user explicitly authorized focused local commits and continued issue work. Push, main and extra branches remain unauthorized. |
-| Implemented | Checkpoint `49f48ac` preserves the state before tutorial-readiness work. Previous #27/#26/#32 block is committed; new #17 → #18 → #38 block: 3/3 technically implemented. #17 is closed at `eec55bd`; #18 is committed at `b3eeea3`; #18/#38 await physical acceptance and cumulative review. |
-| User feedback | After the concrete block report and code-count review, the user explicitly requested a checkpoint and pragmatic continued work with fewer checks, YAGNI and the binding target architecture. This authorizes continuation; it is not listening, physical 90 Hz or #73 uncertainty acceptance. |
+| Implemented | Checkpoint `49f48ac` preserves the state before tutorial-readiness work. Previous #27/#26/#32 block is committed; #17 → #18 → #38 block accepted at `1434f45`. New block #25 → #85: 1/3 implemented; #25 narrows the Conductor field to `activeLevel`, #85 is next. #17 is closed at `eec55bd`; #18 is committed at `b3eeea3`; #18/#38 still await physical acceptance. |
+| User feedback | On 2026-09-07 the user said the prepared result looked good and requested continuation, accepting the #17/#18/#38 block and the presented #85 composition proposal. Physical 90 Hz, calibration and #73 uncertainty remain unaccepted. |
 | Previous block evidence | #80/#73/#20: production −473, configuration −5, tests +24; no new files/dependencies/owners, three files removed. #20 adds 13 production lines for compile-time validation. Final gates: 487 tests/26,704 assertions, type/lint/build/diff, zero boundaries, smoke 14/14; all nine counters/queue records match #73, with seven inherited #78 reference failures. EN transitions pass 16/16. The earlier #73 Motion observation (+0.725 Show seconds in ten seconds while 599 frames continued) remains unexplained. Exact identities and limits live in [#20](https://github.com/Strehk/becoming-many/issues/20) and [#73](https://github.com/Strehk/becoming-many/issues/73). |
-| Next gate | Cumulative review of #17/#18/#38 before another implementation. Concrete restart and level/show choices remain open before their dependent implementation. |
+| Next gate | Agent-led cumulative review after three implementations, then continue autonomously. #85 construction is decided; concrete visitor restart remains open. |
 | Current work | #17/#18/#38 production −28 lines, tests +28; separate poller, copied status contract, warning-only flags, unused controller tag and double roll negation removed. Final 490 tests, type/lint/build and independent review pass; Fallow unchanged. M5 browser evidence stays in the issues. Flight equations and GPU work unchanged; physical acceptance remains open. |
 | Acceptance audit | At clean `2db5755`, independent source/history review found no introduced architecture blocker: existing owners retain one loop/clock/queue; #77 removes the old import route, #79 bounds dispatch history, #82 rejects stale work and removes four redundant staging parameters. Existing startup/disposal gaps remain #73/#9; open target decisions remain open. Application TypeScript +65 lines, test TypeScript +1,300, documentation +1,766, JSON evidence +5,702, reference candidate +74, configuration +91: total +8,998 against `9bfb84b`. This is a qualified technical pass, not human or milestone acceptance. |
 | Verified application evidence | Historical final EN/DE each521s without unexpected errors; smoke14/14; repeatable counters/queue, but seven stored #78 references still fail. Exact tested identities and limits are in [evidence](evidence/README.md). |
 | Analyzer delta | After #26, Fallow exits 1: 4 dead-code, 11 clone groups, 26 health findings. Two additional estimated-CRAP findings cover bounded retry and its regression scenario; independent review retains the necessary branches without suppression. The extra `ModuleRuntime.load` finding is false positive: `startLevel` directly calls it before activation; no suppression or wrapper was added. New test-only findings are five repeated assertions at distinct legacy-load/post-submit-reload boundaries and estimated CRAP for `checkFlash` (CC7/cognitive5). Independent review retained these meaningful checks without a helper or suppression. Real boundary violations: 0. Older 10/24 and 10/22 results remain historical. |
 | Correction verification | 482 tests / 26,639 assertions / 64 files; typecheck, lint, build, real boundaries and diff pass. Smoke 14/14; eight sought cues × first/repeat = 16 transition observations pass. A thrown pageerror in generated `dist/test.html` makes the same smoke fail: 11 affected routes red, three untouched green, 11 failure trace/image pairs; artifact restored byte-for-byte. Logs: `benchmark-results/lean-refactor-20260906T062328Z`. These are functional correction checks, not new performance or full-show measurements. |
 | Open acceptance | #80/#73 presented browser feedback accepted; #73 technical verification remains unresolved. #80 physical acceptance, original #75 strict-start cause, #83 automated rejection, exact #78 reference and complete M0 acceptance remain open. |
-| Decisions / current work | Binding decisions are recorded in `43133d7`; #85 owns explicit levels. #80 fixed anchor inventory preserves vegetation including bushes, rocks, fixed forest-clearing points and soil. Only moving-animal links are retired. Concrete restart/level-show/bank/content choices remain open. |
+| Decisions / current work | Binding decisions are recorded in `43133d7`; #85 owns explicit levels. #80 fixed anchor inventory preserves vegetation including bushes, rocks, fixed forest-clearing points and soil. Only moving-animal links are retired. Connections-to-Show construction is confirmed; concrete restart/bank/content choices remain open. |
 | External | Actual Windows-PCVR USB-C 90 Hz including transport/headset, M5/ICAROS and venue stations remain unaccepted. Basic #42 commissioning and #54 inventory move early; they do not wait on #14. |
 
 After compression: branch/status, AGENTS, linked rules, this checkpoint, then the
@@ -29,12 +29,19 @@ relevant live issue. Continue the authorized bounded issue work; do not
 restart the inventory or infer approval from green tests. #77's existing-file
 placement was [authorized before implementation](https://github.com/Strehk/becoming-many/issues/77#issuecomment-5554801541).
 
-## Human Review
+## Autonomous Review
 
-After the #27/#26/#32 report and code-count review, the user requested a
-checkpoint and pragmatic continuation. `49f48ac` is that checkpoint. The #17/#18/#38 block is implemented; cumulative human review is due before
-another implementation. This does not establish physical,
-listening or unresolved #73 clock acceptance.
+On 2026-09-07 the user authorized autonomous continuation through the active
+goal below, without mandatory user testing or intermediate human acceptance.
+This supersedes the three-issue stop: perform agent-led cumulative reviews and
+continue ready issues. Technical checks and explicitly open decisions remain
+binding. Missing hardware evidence blocks only genuinely dependent work and
+must not be reported as verified. See the [workflow](refactor-workflow.md).
+
+The user accepted the prepared #17/#18/#38 block at `1434f45` and requested
+continuation with the presented #85 proposal. `49f48ac` remains the earlier
+checkpoint. New block is at 1/3 after #25; physical, listening and unresolved #73
+clock acceptance remain separate.
 
 Readability review: Runtime tells startup and input/Show/frame coordination;
 World owns preparation and render; the old forwarding chain and unused animal
@@ -47,20 +54,19 @@ live issues and [evidence index](evidence/README.md).
 
 ## Milestones and Ordered Work
 
-All stages use the same three-implemented-issue cumulative human gate. An issue
-may prepare a concrete proposal or gather read-only evidence while implementation
-waits for its actual dependency. Continuation after the previous 3/3 block is
-authorized; the new #17/#18/#38 block is at its 3/3 review gate. Early physical commissioning is not
-deferred until the last milestone.
+All stages use agent-led cumulative reviews after three implementations or a
+milestone, without waiting for user testing. Continue #25 then #85 toward the
+active goal. Early physical commissioning remains relevant where equipment
+is available; document missing evidence and continue independent work.
 
 | Milestone | Ordered scope | Gate |
 | --- | --- | --- |
 | M0 | Retain #21/early #11/#75/#77/#79/#82 evidence; bounded #78 reference investigation | Exact inspected reference proposal and complete M0 acceptance remain open |
-| M1 | Committed #80/#73/#20 with continuation authorized; #27 before independent measured #26/#32 work | Next cumulative review after at most #27/#26/#32 |
-| M2 | Early #42 commissioning + #54 inventory; #9 lifecycle and #16 preparation; #14 diagnostics; #85 explicit levels; #35 → #36 shared UI ownership; final #11 | Concrete restart and level/show proposals first; dependent lifecycle and physical checks below |
+| M1 | Committed #80/#73/#20 with continuation authorized; #27 before independent measured #26/#32 work | Agent-led cumulative review; no mandatory user stop |
+| M2 | Early #42 commissioning + #54 inventory; #9 lifecycle and #16 preparation; #14 diagnostics; #85 explicit levels; #35 → #36 shared UI ownership; final #11 | Concrete restart proposal first; #85 construction approved; dependent lifecycle and physical checks below |
 | M3 | #17 → #18 → #38 → #25; #46 visitor handoff → #33 physical flight | Actual Windows-PCVR/M5 calibration and operator acceptance |
 | M4 | #26, #32; #13 → #72 → #71 → #81 → #41; verify #40 retirement and #28 final wind consumers | Comparable local evidence, bank-view choice, Windows-PCVR USB-C 90 Hz |
-| M5 | Required #50 tutorial and #51 credits; decision-bound #29 and #47 → #48/#49 | Concrete content/timing/rights/input proposals and human review |
+| M5 | Required #50 tutorial and #51 credits; decision-bound #29 and #47 → #48/#49 | Explicit content/timing/rights/input decisions before dependent work |
 | M6 | Complete #42/#54, full operation and integration handover | Repeated visitors, real stations, failure recovery, exact proposed commit set |
 
 [Tracker #76](https://github.com/Strehk/becoming-many/issues/76) mirrors this plan.
@@ -80,19 +86,19 @@ as resolved issues. Every implementation block must reduce production code.
 | Priority | Existing issues | Readiness requirement |
 | --- | --- | --- |
 | 1 | #17 → #18 → #38; #25 only if still needed | One validated flight-input path with complete host replacement and clear ownership. |
-| 2 | #9, #16, #14, #85 | Complete Run lifetime, one prepared world, bounded diagnostics and explicit level/show construction. Restart and level/show proposals precede their dependent implementation. |
+| 2 | #9, #16, #14, #85 | Complete Run lifetime, one prepared world, bounded diagnostics and explicit level/show construction. Restart choice precedes dependent implementation; #85 construction approved. |
 | 3 | #35 → #36, #42/#54 → #46 | Shared commands and a validated visitor start/calibration flow. Obtain Windows-PCVR operating facts early. |
 | 4 | #73, #26/#32 and relevant rendering blockers | Resolve clock uncertainty and verify target installation performance; local browser checks alone are insufficient. |
 
-After cumulative review, reassess #25 against the simplified control boundary;
-prepare concrete restart and level/show proposals before dependent changes.
+Implement the narrowed #25, then the approved #85 construction/layer removal.
+Prepare the concrete visitor restart before dependent changes.
 Keep the tutorial's content, duration, audio rights and learning tasks open.
 
 ## Immediate Work and Dependencies
 
 | Work | Smallest scope / prerequisite |
 | --- | --- |
-| Current human gate | Pragmatic continuation authorized after the checkpoint request; current block #17/#18/#38 is 3/3. Cumulative review is due before another implementation. Separate physical, listening and #73 uncertainty gates stay open. |
+| Autonomous continuation | #17/#18/#38 accepted at `1434f45`; continue #25/#85 and ready prerequisites through the active goal without mandatory user tests. Separate physical, listening and #73 uncertainty gates stay open. |
 | #42 + #54, start early | Obtain the actual Windows/GPU/driver/browser/XR/streaming/USB/headset matrix and reproduce entry/re-entry/audio/operator behavior with existing tools. Basic commissioning does not require #14; later diagnostic detail can use it. No Mac substitute for physical results. |
 | #78, bounded investigation | Fix a camera pose and comparable conditions, identify intended scene/available contents, repeat counters and explain significant differences. Then propose the exact checked reference. No exhaustive historical-triangle archaeology and no automatic baseline update. |
 | #80, technically implemented | Remove animal–Mycelium producers, projections, contracts, wiring, reserved pool ranges, settings and exclusive tests together. First enumerate existing fixed anchor classes. Preserve animal animation/movement and Scent/Thermal data; no other content removal. |
@@ -101,7 +107,7 @@ Keep the tutorial's content, duration, audio rights and learning tasks open.
 | #9 | Use #73's direct startup. Present the smallest visitor restart sequence using #42 evidence before selecting its mechanism. Prepare owner-local cleanup, failed/cancelled starts and late results; only expose complete termination once every child/source lifetime is covered. A reload candidate is not approved automatically. |
 | #16 | Reconcile the partly implemented cold-transition work first. Use one preparation/resource/background strategy and preserve the world during a visit. Measure first/repeated transitions; coordinate #9 lifetimes and #85 configuration, no per-level workaround. |
 | #14 | Keep probes/renderers out of normal Experience operation. Diagnosis owns measurement/display; World exposes existing renderer facts by small reads. Can prepare this owner-local separation before #9, but complete cleanup acceptance depends on #9. Startup failures stay visible. |
-| #85 (D3) | Before migration, present the smallest explicit level/show solution: one prepared world and no contradictory second show configuration. Compare effective settings; missing module is absent, optional settings use module defaults, invalid required settings fail during preparation. Remove layers, hidden overrides and exclusive helpers/tests together. |
+| #85 (D3) | Approved: explicit Connections preset constructs the Show once; states retain presentation/timing. Delete the separate Show recipe/type/request field. Compare effective settings; missing module is absent, optional settings use module defaults, invalid required settings fail during preparation. Remove layers, hidden overrides and exclusive helpers/tests together. |
 | #35 → #36; final #11 | After relevant #9/#16/#14 work, remove metrics round trips and duplicate commands/reset rules. Show owns playback/language/time; existing Runtime owns visitor restart; UIs own input/display. Preserve the useful lazy Test loader. Finish boundary rules after entry/ownership changes, with no command bus or UI store. |
 | #27 → #26 | #27 locally verified; #26 has fresh comparable Scent measurements and removes the synchronous queue fallback inside existing owner/queue semantics. Investigate long replay intervals separately; retain comparison failures and actual physical acceptance. |
 | #17 → #18 → #38 → #25 | Isolate M5 host lifetime, validate samples/calibration and one control boundary, then rename actual ownership. Physical polarity/rig evidence remains necessary. |
@@ -122,7 +128,6 @@ and consequences; resolve routine implementation choices directly.
 | Decision | Evidence/proposal | Dependent work |
 | --- | --- | --- |
 | Visitor restart mechanism | On actual Windows-PCVR, compare the smallest complete restart path, including a page reload candidate: XR exit/re-entry, audio wake, staff actions and failures. Never assume automatic immersive re-entry. | #9 restart; #46 and final #36 operator behavior |
-| Level/show construction | Small direct proposal for explicit independent levels and one prepared show world; compare effective settings and list removed indirection. Extra literal configuration is allowed when it replaces structures. | #85; coordinate #16 preparation |
 | Bank appearance | Same small view, model-independent ground-distance recommendation and crown-overhang choice; species-specific values only in existing definitions when needed. | #81 visible placement change and subsequent #41 |
 | Exact reference | Defined scene/pose/assets, repeatable counters and relevant difference explanation; current candidate remains unapproved. | #78 baseline update, complete M0 acceptance |
 | Tutorial/credits details | Required content, duration, audio-use rights, start behavior and motion while credits are visible; preserve authoritative narration pending explicit content approval. | #50/#51 completion |

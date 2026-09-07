@@ -16,8 +16,7 @@ export interface ShowSnapshot {
   readonly isPlaying: boolean;
   readonly timeScale: number;
   readonly language: NarrationLanguage;
-  /** The world state the timeline currently holds, not a startup preset. */
-  readonly levelName: ShowLevelName;
+  readonly activeLevel: ShowLevelName;
   /** Anything but "running" freezes show time while looking like a pause. */
   readonly audioState: AudioContextState;
   /** Undefined until frames have been measured. */

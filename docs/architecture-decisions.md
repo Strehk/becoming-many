@@ -32,11 +32,11 @@ history belongs in Git; unresolved product and deployment questions belong in
   documented module-owned defaults for omitted optional settings. Missing
   required or invalid settings fail clearly during preparation before the visit.
   No generic deep merge or silent repair. Technical defaults live once at modules.
-- More explicit configuration is allowed when it replaces real indirection.
-  Before D3's rewrite, present the smallest direct mapping into one prepared
-  Show world, with no second contradictory Show configuration or repeated
-  resource teardown. Compare effective settings and remove replaced consumers
-  and exclusive tests in the same step.
+- Confirmed 2026-09-07: Show uses the explicit Connections preset through the
+  common `preset` request. Remove the separate Show composition file/type/field.
+  Show states retain presentation and timing, including state zero before pool
+  allocation. Shared module settings affect both runs. Compare effective values
+  and remove replaced layer consumers and exclusive tests in the same step.
 - Startup and the local frame/end remain directly readable at existing owners.
   No registry, dependency-injection container, helper chain or second runtime.
 - World facts flow from `WorldSurface` and permanent world contracts into

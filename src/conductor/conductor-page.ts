@@ -178,7 +178,7 @@ export async function startConductorPage({
       isPlaying: showTime.isPlaying,
       timeScale: showTime.timeScale,
       language: show.readLanguage(),
-      levelName: show.readActiveLevel(),
+      activeLevel: show.readActiveLevel(),
       audioState: show.readAudioState(),
       framesPerSecond: metrics?.framesPerSecond,
       p95Milliseconds: metrics?.p95Milliseconds,
