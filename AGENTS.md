@@ -36,8 +36,10 @@ narration assets, and audience-facing copy.
 - Never check out, modify, merge into, rebase, commit to, or push to `main`. All work,
   commits, pulls, rebases, and pushes for this refactor target
   `origin/david_refactor` only.
-- Do not create or use additional feature branches. Do not commit or push unless
-  explicitly authorized. Preserve existing local changes.
+- Do not create or use additional feature branches. Preserve existing local changes.
+- The user authorizes ongoing commits and pushes of completed, targeted-tested
+  issues or coherent blocks to `origin/david_refactor`. Verify push success;
+  never force-push. Follow the existing workflow, without repeated permission requests.
 
 ## Required Reading
 

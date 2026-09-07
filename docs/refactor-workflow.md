@@ -30,9 +30,12 @@ inventory or replaying checks already valid for the unchanged code.
 Before every file change or Git mutation, run `git branch --show-current` and
 require exactly `david_refactor`; otherwise stop. Check status and preserve
 others' changes. Never check out or change `main`, create another branch or
-worktree, or incorporate unrelated changes. Commit/push only when authorized;
-all such work stays on `david_refactor`, targeting `origin/david_refactor` only.
-Documentation permission is not commit or push permission.
+worktree, or incorporate unrelated changes. On 2026-09-07 the user authorized
+ongoing commits and pushes after each completed, targeted-tested issue or coherent
+block: implement → test → commit → push to `origin/david_refactor`. No repeated
+push permission is required. Never force-push. Verify the remote branch contains
+the committed result; report a failed push instead of claiming synchronization.
+A push alone requires no additional tests.
 
 ## Implement one complete issue, then test
 
@@ -52,8 +55,9 @@ Documentation permission is not commit or push permission.
    prevents further implementation.
 5. Record one concise GitHub result: behavior changed, code/paths removed,
    relevant checks and outcomes, size delta and any unmet criterion. Update
-   affected canonical facts, then commit the completed issue when authorized.
-   Continue the next ready issue without repeating preparation or verification.
+   affected canonical facts, then commit and push the completed issue under the
+   standing authorization above. Verify synchronization and continue the next
+   ready issue without repeating preparation or verification.
 
 Delegate bounded implementation work with clear file ownership when useful.
 Do not duplicate exploration or require an independent reviewer for every issue.
