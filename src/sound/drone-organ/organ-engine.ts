@@ -112,10 +112,8 @@ export async function createOrganEngine(
 }
 
 /**
- * Tone's context starts suspended, exactly like the show's timebase, and only
- * a gesture in this window can start it. The listeners stay until the context
- * is genuinely running: one blocked attempt must not leave the organ silent
- * for the rest of the session.
+ * Keep gesture resume available through later suspensions and rejected attempts.
+ * The engine releases these listeners when its lifetime ends.
  */
 function resumeOnGesture(context: Context): () => void {
   const events = ["pointerdown", "keydown"] as const;
@@ -126,12 +124,8 @@ function resumeOnGesture(context: Context): () => void {
   }
 
   function resume(): void {
-    void context.resume().then(
-      () => {
-        if (context.state === "running") release();
-      },
-      () => undefined,
-    );
+    if (context.state === "running") return;
+    void context.resume().catch(() => undefined);
   }
 
   for (const eventName of events) window.addEventListener(eventName, resume);

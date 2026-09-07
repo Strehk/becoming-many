@@ -28,3 +28,8 @@ Changes to content or output follow their own scoped decisions. Existing desktop
 measurements do not prove stable 90 Hz on the actual Windows-PCVR USB-C
 installation. See [Performance](../../docs/performance.md),
 [Architecture](../../docs/architecture.md) and the organ's own README.
+
+Gesture listeners stay with each audio owner until unload, so a later suspension
+can be resumed by a new gesture. Already-running contexts ignore these gestures;
+a rejected resume remains retryable. This recovery does not create another Show
+clock or change the scheduling grid.

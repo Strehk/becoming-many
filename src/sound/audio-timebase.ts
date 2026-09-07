@@ -37,19 +37,12 @@ export function createAudioTimebase(): AudioTimebase {
 
   let unloading: Promise<void> | undefined;
 
-  function release(): void {
-    for (const eventName of RESUME_GESTURE_EVENTS) {
-      window.removeEventListener(eventName, resume);
-    }
-  }
-
   function resume(): void {
-    // Release only once the context is actually running. Dropping the
-    // listeners up front would leave a rejected resume — or a context the
-    // device suspends again later — with nothing left to bring it back.
-    if (!unloading) void audioContext.resume().then(release, () => undefined);
+    if (unloading || audioContext.state === "running") return;
+    void audioContext.resume().catch(() => undefined);
   }
 
+  // Keep gestures until unload: a running context can suspend again later.
   for (const eventName of RESUME_GESTURE_EVENTS) {
     window.addEventListener(eventName, resume);
   }
@@ -60,7 +53,8 @@ export function createAudioTimebase(): AudioTimebase {
     readState: () => audioContext.state,
 
     unload(): Promise<void> {
-      release();
+      for (const eventName of RESUME_GESTURE_EVENTS)
+        window.removeEventListener(eventName, resume);
       unloading ??= audioContext.close();
       return unloading;
     },

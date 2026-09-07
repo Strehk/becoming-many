@@ -59,7 +59,7 @@ describe("the composed organ", () => {
   });
 });
 
-test("audio owners await late starts and native close before disposal or reuse", async () => {
+test("audio owners recover gesture resume and await complete disposal", async () => {
   // Module mocks stay in a separate process; other sound tests see real imports.
   const probe = Bun.spawn(
     [
@@ -76,8 +76,14 @@ test("audio owners await late starts and native close before disposal or reuse",
     const contexts = [];
     class Context {
       state = "suspended"; currentTime = 0; listener = {}; disposed = 0; closing = false;
-      release; closeCalls = 0;
+      release; closeCalls = 0; resumeCalls = 0; rejectResume = false;
       constructor() { contexts.push(this); }
+      resume() {
+        this.resumeCalls++;
+        if (this.rejectResume) return Promise.reject(new Error("resume blocked"));
+        this.state = "running";
+        return Promise.resolve();
+      }
       close() {
         this.closeCalls++;
         if (this.closing) return Promise.resolve();
@@ -91,7 +97,39 @@ test("audio owners await late starts and native close before disposal or reuse",
     }
     let context = new Context();
     let built = 0, ended = 0, layers = 0, releasedLayers = 0, failLayer = false;
-    mock.module("tone", () => ({ Context, getContext: () => context, setContext: next => { context = next; } }));
+    class Node {
+      ready = Promise.resolve();
+      connect() {} toDestination() {} dispose() {}
+    }
+    mock.module("tone", () => ({
+      Context, getContext: () => context, setContext: next => { context = next; },
+      Gain: Node, Limiter: Node, Reverb: Node, Frequency: () => ({ toMidi: () => 60 }),
+    }));
+    globalThis.window = new EventTarget();
+    async function checkGestureResume(audio) {
+      audio.rejectResume = true;
+      window.dispatchEvent(new Event("pointerdown")); await turn();
+      assert.equal(audio.resumeCalls, 1); assert.equal(audio.state, "suspended");
+      audio.rejectResume = false;
+      window.dispatchEvent(new Event("keydown")); await turn();
+      assert.equal(audio.resumeCalls, 2); assert.equal(audio.state, "running");
+      window.dispatchEvent(new Event("pointerdown")); await turn();
+      assert.equal(audio.resumeCalls, 2);
+      audio.state = "suspended";
+      window.dispatchEvent(new Event("pointerdown")); await turn();
+      assert.equal(audio.resumeCalls, 3); assert.equal(audio.state, "running");
+      audio.state = "suspended";
+    }
+    const { createOrganEngine } = await import("./src/sound/drone-organ/organ-engine.ts");
+    const { DRONE_ORGAN_COMPOSITION } = await import("./src/sound/drone-organ/drone-organ-settings.ts");
+    const resumeContext = new Context();
+    const gestureEngine = await createOrganEngine(DRONE_ORGAN_COMPOSITION, 1, resumeContext);
+    await checkGestureResume(resumeContext);
+    const gestureEngineEnd = gestureEngine.unload();
+    window.dispatchEvent(new Event("pointerdown"));
+    window.dispatchEvent(new Event("keydown")); await turn();
+    assert.equal(resumeContext.resumeCalls, 3);
+    await gestureEngineEnd;
     mock.module("./src/sound/drone-organ/organ-engine.ts", () => ({
       createOrganEngine: async () => { built++; return { unload: async () => { ended++; } }; },
     }));
@@ -140,7 +178,11 @@ test("audio owners await late starts and native close before disposal or reuse",
     const { createAudioTimebase } = await import("./src/sound/audio-timebase.ts");
     const timebase = createAudioTimebase();
     const native = contexts.at(-1);
+    await checkGestureResume(native);
     const nativeEnd = timebase.unload();
+    window.dispatchEvent(new Event("pointerdown"));
+    window.dispatchEvent(new Event("keydown")); await turn();
+    assert.equal(native.resumeCalls, 3);
     assert.equal(timebase.unload(), nativeEnd);
     assert.equal(native.closeCalls, 1);
     native.release(); await nativeEnd;
