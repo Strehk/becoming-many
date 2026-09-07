@@ -10,11 +10,11 @@ Boundary: Runtime mechanisms and concrete content implementations live elsewhere
 This folder owns typed level configuration, concrete world construction and the
 existing runtime that turns a static or show request into one world.
 
-Each typed level lists its module keys explicitly, following `test.level.ts`.
-Shared content in `authored/` keeps repeated palettes, scent signatures and plant
-placement consistent. Thermal levels choose the warm Motion variant explicitly;
-there are no layer spreads or hidden overrides. Required fields are typed;
-optional defaults and runtime parameter checks belong to the concrete module.
+Each level is one self-contained literal parameter object, following
+`test.level.ts`: only type imports, no imported values, helpers, calls, spreads
+or inheritance. All authored settings can be read and changed in that file.
+Repeated configuration is intentional; `authored/` is retired. Required fields
+are typed; technical defaults and validation belong to the concrete module.
 See the [target architecture](../../docs/target-architecture.md).
 
 Narrative names remain ordered as:
@@ -24,8 +24,7 @@ white-world → scent → echo → motion → thermal → magnetic → connectio
 ```
 
 `test.level.ts` and `designTest.level.ts` are diagnostic/integration presets,
-not narrative states. The Test preset still uses the older Grass module and
-the browser Test UI.
+not narrative states. The Test preset uses Grass Clipmap and the browser Test UI.
 
 ## Catalog and Entries
 
@@ -48,14 +47,14 @@ frame coordination. It:
 - loads and activates the configured module list;
 - awaits World-owned shader compilation and first-use uploads for a show;
 - connects desktop and M5 input, selecting exactly one source per frame;
-- accepts entry-owned Test UI metrics and overlay creation only when requested;
+- exposes finished-frame observations to entry-owned diagnostics;
 - delegates optional show time, narration, transitions, sense fades, and the
   drone organ's per-frame contract to `show-runtime.ts`;
 - starts the World loop only after preparation and returns the narrow
   `RunningLevel` command/query surface used by pages.
 
-Its local frame reads metrics, benchmark placement or live input, Show updates,
-height limits and Test UI in order. World then publishes the viewpoint, updates
+Its local frame handles benchmark placement or live input, Show updates and
+height limits in order. World then publishes the viewpoint, updates
 modules and streaming, renders, and reports the finished benchmark frame.
 Existing flight reset remains unchanged pending the separate fresh-run gate.
 

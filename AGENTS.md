@@ -80,7 +80,9 @@ procedures in those documents, not here.
   recycling, and frame-budgeted jobs.
 - All authored configuration is typed TypeScript. JSON under `public/` records
   asset provenance only; do not add JSON, YAML, or environment configuration to
-  the application.
+  the application. Each level is one self-contained literal parameter object:
+  type-only imports are allowed; value imports, helpers, spreads and inheritance
+  are not. Repeated authored values are preferable to hidden configuration.
 - README-only source folders are reserved extension boundaries. Keep their
   READMEs until that product area is either implemented or explicitly retired.
 

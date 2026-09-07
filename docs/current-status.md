@@ -16,7 +16,8 @@ Current priorities are measured performance, stability, code cleanup, and
 issue fixes. The approved target is Windows-PCVR over USB-C with stable 90 Hz
 on the actual installation. Tutorial and credits are required; remaining content
 and operation decisions are tracked in the roadmap. Complete visitor teardown
-and fresh startup and explicit levels are approved direction, not yet implemented.
+is implemented at existing owners; the concrete next-visitor restart remains open.
+Explicit, self-contained literal levels are implemented.
 The #80 animal-connection removal is implemented below. Small additions remain issue-backed.
 
 ## Runnable Surfaces
@@ -40,8 +41,8 @@ The #80 animal-connection removal is implemented below. Small additions remain i
 - A viewer rig owns locomotion while the camera retains desktop-look or headset
   pose. Flight is clamped against the shared world surface and authored height
   limits.
-- Typed `LevelPreset` files explicitly select their modules and shared authored
-  content. The Show constructs the Connections preset once; `ShowLevelState`
+- Typed `LevelPreset` files contain their module settings as local literals,
+  without imported parameter blocks or executable helpers. The Show constructs the Connections preset once; `ShowLevelState`
   retains live presentation. Layer spreads and the separate Show recipe are gone.
 - `level-runtime.ts` owns startup, frame coordination, source assets and awaited
   termination; `level-composition.ts` loads assets and owns World Surface creation, concrete module

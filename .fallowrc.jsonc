@@ -18,8 +18,8 @@
         "patterns": ["src/levels/*.level.ts"]
       },
       {
-        "name": "authored-data",
-        "patterns": ["src/levels/authored/**", "src/levels/level-preset.ts"]
+        "name": "level-contracts",
+        "patterns": ["src/levels/level-preset.ts"]
       },
       { "name": "levels", "patterns": ["src/levels/**"] },
       // Shared contracts/mechanics are not concrete child modules.
@@ -47,9 +47,9 @@
       }
     ],
     "rules": [
-      { "from": "presets", "allow": ["authored-data"] },
+      { "from": "presets", "allow": [], "allowTypeOnly": ["level-contracts"] },
       {
-        "from": "authored-data",
+        "from": "level-contracts",
         "allow": [],
         "allowTypeOnly": ["modules", "module-contracts"]
       },
@@ -79,7 +79,7 @@
         "from": "levels",
         "allow": [
           "presets",
-          "authored-data",
+          "level-contracts",
           "modules",
           "module-contracts",
           "world",

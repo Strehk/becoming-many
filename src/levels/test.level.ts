@@ -5,7 +5,6 @@
  * Boundary: This file contains data only and creates no runtime resources.
  */
 
-import { GRASS_CLIPMAP } from "./authored/grass-clipmap";
 import type { LevelPreset } from "./level-preset";
 
 export const level: LevelPreset = {
@@ -46,9 +45,9 @@ export const level: LevelPreset = {
   },
   grassClipmap: {
     tuftsPerSquareMeter: 1.5,
-    fullDensityRadiusMeters: GRASS_CLIPMAP.fullDensityRadiusMeters,
+    fullDensityRadiusMeters: 14,
     bladeHeightMeters: 0.75,
-    bladeWidthMeters: GRASS_CLIPMAP.bladeWidthMeters,
+    bladeWidthMeters: 0.2,
     colors: {
       rootColor: 0x173a32,
       tipColor: 0x6fae7c,

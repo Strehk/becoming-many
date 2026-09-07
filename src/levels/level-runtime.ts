@@ -121,7 +121,6 @@ export async function startLevel(
       world,
       level,
       assets,
-      materialHazeColor: level.backgroundColor,
       forShow: request.kind === "show",
       testModules: request.testModules,
     });

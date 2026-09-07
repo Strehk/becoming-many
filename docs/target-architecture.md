@@ -352,8 +352,11 @@ XR calibration remain explicit parts of the restart proposal, not renaming.
 
 **Confirmed, [#85](https://github.com/Strehk/becoming-many/issues/85):** each level
 states its modules and desired settings directly,
-following [test.level.ts](../src/levels/test.level.ts). Remove layer spreads,
-inheritance, hidden override ordering and helpers used only for that indirection.
+following [test.level.ts](../src/levels/test.level.ts). Confirmed 2026-09-07:
+one level equals one file containing literal parameter values. Only type-only
+imports are allowed; remove imported parameter blocks, functions, spreads,
+inheritance and hidden overrides. Extra explicit configuration lines are approved
+for direct reading and editing; no replacement parameter registry.
 Technical defaults live once with each module; independent levels must not
 require tracing a layer catalog to understand the intended result.
 

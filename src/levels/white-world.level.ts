@@ -5,12 +5,24 @@
  * Boundary: This file contains data only and creates no runtime resources.
  */
 
-import { AIR_PARTICLES } from "./authored/air-particles";
 import type { LevelPreset } from "./level-preset";
 
 export const level: LevelPreset = {
   backgroundColor: 0xffffff,
   viewDistance: 128,
   maximumGroundClearanceMeters: 50,
-  airParticles: AIR_PARTICLES,
+  airParticles: {
+    density: {
+      particlesPerChunk: 270,
+    },
+    appearance: {
+      color: 0x202126,
+      sizeMeters: 0.075,
+    },
+    motion: {
+      horizontalAmplitudeMeters: 0.12,
+      verticalAmplitudeMeters: 0.24,
+      speedMultiplier: 1,
+    },
+  },
 };

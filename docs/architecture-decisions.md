@@ -26,8 +26,10 @@ history belongs in Git; unresolved product and deployment questions belong in
   connects them through small directional contracts.
 - Confirmed 2026-09-06, D3: level files state their modules and desired settings
   explicitly and independently, using `test.level.ts` as the reading model.
-  Remove layer spreads, inheritance, hidden overrides and exclusively required
-  helpers. This supersedes the old `authored/` plus `sense-layers.ts` convention.
+  Confirmed 2026-09-07: one level is one self-contained literal parameter object.
+  Only type-only imports are allowed. Remove imported parameter blocks, helpers,
+  spreads and inheritance; extra explicit configuration lines are approved.
+  This retires `authored/` as well as the earlier `sense-layers.ts` convention.
 - Missing module means absent from that level. A present module uses its
   documented module-owned defaults for omitted optional settings. Missing
   required or invalid settings fail clearly during preparation before the visit.

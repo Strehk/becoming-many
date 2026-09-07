@@ -168,11 +168,10 @@ lifecycle acceptance.
 
 ## Levels and Show
 
-Each `src/levels/*.level.ts` recipe lists its module keys explicitly. Shared
-content parameters in `authored/` retain one copy of repeated palettes, scent
-signatures and placement settings; no layer object determines membership or
-silently overrides Motion. Thermal and later levels select the warm variant
-directly. Test and Design Test retain their independent diagnostic values.
+Each `src/levels/*.level.ts` recipe is one self-contained literal parameter
+object, with only a type import. Palettes, signatures, placement and warm Motion
+values are readable directly in each file. The `authored/` parameter indirection
+is retired. Test and Design Test retain their independent diagnostic values.
 
 The Show constructs the Connections preset once, using its background for
 material haze. `SHOW_LEVEL_STATES` contains only presentation facts

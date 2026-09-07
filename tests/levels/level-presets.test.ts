@@ -6,14 +6,6 @@
  */
 
 import { expect, test } from "bun:test";
-import {
-  HEAT_MOTION_SENSE,
-  MOTION_SENSE,
-} from "../../src/levels/authored/motion-sense";
-import {
-  VEGETATION,
-  VEGETATION_PLACEMENT,
-} from "../../src/levels/authored/vegetation";
 import { level as connectionsLevel } from "../../src/levels/connections.level";
 import { level as designTestLevel } from "../../src/levels/designTest.level";
 import { level as echoLevel } from "../../src/levels/echo.level";
@@ -35,8 +27,8 @@ import { WORLD_WIND } from "../../src/world/wind";
 
 // @ts-expect-error A world cannot request visible and invisible vegetation together.
 const invalidVegetation: WorldComposition = {
-  vegetation: VEGETATION,
-  invisibleVegetation: VEGETATION,
+  vegetation: echoLevel.vegetation,
+  invisibleVegetation: scentLevel.invisibleVegetation,
 };
 void invalidVegetation;
 
@@ -166,10 +158,7 @@ test("Scent Level owns its complete invisible source world", () => {
   // The unseen plants stand exactly where Echo will later show them, so a
   // trail a traveler follows in Scent rises from a plant they can see later.
   expect(scentPreset.invisibleVegetation?.instancesPerHectareByZone).toEqual(
-    VEGETATION_PLACEMENT,
-  );
-  expect(echoLevel.vegetation?.instancesPerHectareByZone).toEqual(
-    VEGETATION_PLACEMENT,
+    echoLevel.vegetation?.instancesPerHectareByZone,
   );
 
   const scent = scentPreset.scentParticles;
@@ -247,8 +236,6 @@ test("Motion Level owns its complete motion-world startup recipe", () => {
   expect(motion.trail.density).toBeGreaterThan(0);
   expect(motion.trail.density).toBeLessThanOrEqual(1);
 
-  // Motion carries the base sense; only the heat rungs above repaint it.
-  expect(motion).toEqual(MOTION_SENSE);
   // Bird traces use the cyan accent reserved for them in the 04 palette.
   expect(motion.birds?.appearance.trailColor).toBe(0x10bedb);
   expect(motion.birds?.flockCount).toBeGreaterThan(0);
@@ -280,8 +267,6 @@ test("Thermal Level owns its complete heat-world startup recipe", () => {
   // the level's brightest untruth.
   const thermalMotion = thermalPreset.motion;
   if (!thermalMotion?.birds) throw new Error("Thermal Level must carry birds");
-  // The thermal layer is spread after the motion layer, so its motion wins.
-  expect(thermalMotion).toEqual(HEAT_MOTION_SENSE);
   expect(thermalMotion.birds.appearance.trailColor).toBe(
     thermal.colors.hotColor,
   );
