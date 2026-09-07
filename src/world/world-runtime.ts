@@ -27,6 +27,12 @@ export interface GraphicsInfo {
   readonly maxVertexTextures: number;
 }
 
+/** Read-only view of the renderer's existing, per-render counters. */
+export interface RenderCounters {
+  readonly calls: number;
+  readonly triangles: number;
+}
+
 export interface WorldContext {
   readonly scene: Scene;
   /**
@@ -81,6 +87,7 @@ export function createWorld(
   container: HTMLElement,
   options: WorldOptions = {},
 ): WorldContext & {
+  readonly renderCounters: RenderCounters;
   readonly readGraphicsInfo: () => GraphicsInfo;
   readonly prepareRenderer: () => Promise<void>;
   readonly start: (updateWorld: (deltaSeconds: number) => void) => void;
@@ -123,6 +130,7 @@ export function createWorld(
     modules,
     streamQueue,
     xr,
+    renderCounters: renderer.info.render,
     readGraphicsInfo: () => {
       const gl = renderer.getContext();
       const debug = gl.getExtension("WEBGL_debug_renderer_info");

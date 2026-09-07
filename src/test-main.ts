@@ -15,7 +15,7 @@ import { type RunningLevel, startLevel } from "./levels/level-runtime";
 import { loadDeploymentConfig } from "./station/deployment-config";
 import { FrameMetricsSampler } from "./test-ui/frame-metrics";
 import { loadTestLevelModules } from "./test-ui/test-level-modules";
-import { createTestOverlay } from "./test-ui/test-overlay";
+import { createTestOverlay, type TestOverlay } from "./test-ui/test-overlay";
 import { mountVrEntryButton } from "./world/vr-entry-button";
 
 const lifetime = new AbortController();
@@ -48,22 +48,35 @@ const benchmark =
 let level: RunningLevel | undefined;
 try {
   const deployment = await loadDeploymentConfig();
-  const frameMetrics = benchmark ? undefined : new FrameMetricsSampler();
   const preset = LEVEL_CATALOG[levelName];
+  const frameMetrics =
+    !benchmark && preset.testUi ? new FrameMetricsSampler() : undefined;
+  let overlay: TestOverlay | undefined;
+  const container = document.querySelector<HTMLElement>(".app");
   const testModules = await loadTestLevelModules(preset);
 
-  level = await startLevel(document.querySelector(".app"), {
+  level = await startLevel(container, {
     signal: lifetime.signal,
     kind: "static",
     preset,
     benchmark,
-    frameMetrics,
+    onFrame: frameMetrics
+      ? (deltaSeconds) => {
+          frameMetrics.add(deltaSeconds);
+          overlay?.update(deltaSeconds);
+        }
+      : undefined,
     testModules,
-    testOverlay: frameMetrics ? createTestOverlay : undefined,
     m5ExpectedDeviceId: deployment.m5DeviceId,
   });
   lifetime.signal.throwIfAborted();
   diagnostics?.showGraphics(level.readGraphicsInfo());
+  if (frameMetrics && container) {
+    overlay = createTestOverlay(container, level.renderCounters, () =>
+      frameMetrics.read(),
+    );
+    lifetime.signal.addEventListener("abort", overlay.unload, { once: true });
+  }
 
   const unmountVr = mountVrEntryButton(document.body, level.xr);
   lifetime.signal.addEventListener("abort", unmountVr, { once: true });

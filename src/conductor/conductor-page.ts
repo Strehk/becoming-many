@@ -14,14 +14,13 @@ import {
 import type { NarrationSchedule } from "../dramaturgy/narration-schedule";
 import { SHOW_LEVEL_STATES } from "../dramaturgy/show-levels";
 import { level as connectionsLevel } from "../levels/connections.level";
-import {
-  type FrameMetrics,
-  type RunningLevel,
-  startLevel,
-} from "../levels/level-runtime";
+import { type RunningLevel, startLevel } from "../levels/level-runtime";
 import type { RunningShow } from "../levels/show-runtime";
 import type { DeploymentConfig } from "../station/deployment-config";
-import { FrameMetricsSampler } from "../test-ui/frame-metrics";
+import {
+  type FrameMetrics,
+  FrameMetricsSampler,
+} from "../test-ui/frame-metrics";
 import type { XrSessionState } from "../world/xr-session";
 import { type ConductorAction, resolveConductorKey } from "./conductor-keys";
 import { CONDUCTOR_SETTINGS } from "./conductor-settings";
@@ -94,7 +93,7 @@ export async function startConductorPage({
       kind: "show",
       preset: connectionsLevel,
       show: { schedule, language, states: SHOW_LEVEL_STATES },
-      frameMetrics,
+      onFrame: (deltaSeconds) => frameMetrics.add(deltaSeconds),
       m5ExpectedDeviceId: deployment.m5DeviceId,
     });
     level = await pendingStart;
@@ -196,7 +195,7 @@ export async function startConductorPage({
         CONDUCTOR_SETTINGS.metricsIntervalMilliseconds
       ) {
         metricsReadAtMilliseconds = now;
-        metrics = runningLevel.readFrameMetrics();
+        metrics = frameMetrics.read();
       }
 
       return {

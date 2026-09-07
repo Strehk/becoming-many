@@ -5,7 +5,6 @@
  * Boundary: Authored data and concrete world composition live in dedicated level files.
  */
 
-import type { WebGLRenderer } from "three";
 import type { BenchmarkRun } from "../benchmark/benchmark-run";
 import { createDesktopControls } from "../control/desktop-controls";
 import {
@@ -19,7 +18,11 @@ import { showLevelStateAt } from "../dramaturgy/show-levels";
 import { createM5Adapter, type M5Adapter } from "../m5/m5-adapter";
 import { disposeGltfAssets } from "../utils/asset-loader/gltf-assets";
 import type { WorldModule } from "../world/module-runtime";
-import { createWorld, type GraphicsInfo } from "../world/world-runtime";
+import {
+  createWorld,
+  type GraphicsInfo,
+  type RenderCounters,
+} from "../world/world-runtime";
 import type { XrSessionControl } from "../world/xr-session";
 import {
   composeLevel,
@@ -35,29 +38,9 @@ import {
   type ShowRuntime,
 } from "./show-runtime";
 
-export interface FrameMetrics {
-  readonly framesPerSecond: number;
-  readonly p95Milliseconds: number;
-}
-
-interface FrameMetricsRecorder {
-  readonly add: (deltaSeconds: number) => void;
-  readonly read: () => FrameMetrics | undefined;
-}
-
-interface LevelTestOverlay {
-  readonly unload: () => void;
-  readonly update: (deltaSeconds: number) => void;
-}
-
-type TestOverlayFactory = (
-  container: HTMLElement,
-  renderer: WebGLRenderer,
-  readFrameMetrics: () => FrameMetrics | undefined,
-) => LevelTestOverlay;
-
 /** One running level, returned so the page that started it can command it. */
 export interface RunningLevel {
+  readonly renderCounters: RenderCounters;
   /** Diagnostic reads only; never called by the frame loop. */
   readonly readGraphicsInfo: () => GraphicsInfo;
   readonly unload: () => Promise<void>;
@@ -68,9 +51,6 @@ export interface RunningLevel {
    * pose remains owned by pointer look or the headset.
    */
   readonly resetFlight: () => void;
-
-  /** Undefined until frames have been measured. Allocates; not per frame. */
-  readonly readFrameMetrics: () => FrameMetrics | undefined;
 
   /**
    * The M5 tilt controller, idle until a host is set (by the conductor page,
@@ -86,10 +66,8 @@ interface CommonLevelRequest {
   readonly signal?: AbortSignal;
   readonly preset: LevelPreset;
   readonly m5ExpectedDeviceId?: string;
-  /** Entry-owned sampling used by Test UI or the Conductor status strip. */
-  readonly frameMetrics?: FrameMetricsRecorder;
-  /** Test-entry UI factory; absent from show entry graphs. */
-  readonly testOverlay?: TestOverlayFactory;
+  /** Entry-owned diagnostic work; absent from normal Experience runs. */
+  readonly onFrame?: (deltaSeconds: number) => void;
   /** Concrete modules that only diagnostic presets can request. */
   readonly testModules?: TestLevelModules;
 }
@@ -124,7 +102,6 @@ export async function startLevel(
   let desktop: ReturnType<typeof createDesktopControls> | undefined;
   let m5: M5Adapter | undefined;
   let show: ShowRuntime | undefined;
-  let testOverlay: LevelTestOverlay | undefined;
   let unloading: Promise<void> | undefined;
   const signal = request.signal;
   signal?.throwIfAborted();
@@ -167,13 +144,6 @@ export async function startLevel(
         );
     // Without a host, the adapter owns no timer or network work.
     m5 = benchmark ? undefined : createM5Adapter(request.m5ExpectedDeviceId);
-    const frameMetrics = request.frameMetrics;
-    const readFrameMetrics = (): FrameMetrics | undefined =>
-      frameMetrics?.read();
-    testOverlay =
-      !benchmark && request.kind === "static" && level.testUi
-        ? request.testOverlay?.(container, world.renderer, readFrameMetrics)
-        : undefined;
     // Static runs (including benchmarks) never create show time or audio.
     show =
       request.kind === "show"
@@ -203,13 +173,13 @@ export async function startLevel(
           runningWorld.viewerRig.position,
           runningWorld.viewerRig.quaternion,
         ),
-      readFrameMetrics,
+      renderCounters: world.renderCounters,
       m5,
       xr: world.xr,
     };
 
     function updateFrame(deltaSeconds: number): void {
-      frameMetrics?.add(deltaSeconds);
+      request.onFrame?.(deltaSeconds);
       if (benchmark) {
         benchmark.placeViewer(runningWorld.viewerRig);
       } else {
@@ -233,7 +203,6 @@ export async function startLevel(
           heightLimits,
         );
       }
-      testOverlay?.update(deltaSeconds);
     }
   } catch (error) {
     try {
@@ -262,7 +231,7 @@ export async function startLevel(
         (async () => {
           await world?.stop();
         })(),
-        ...[desktop, m5, testOverlay, show].map(async (child) => {
+        ...[desktop, m5, show].map(async (child) => {
           await child?.unload();
         }),
       ];

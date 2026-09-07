@@ -43,7 +43,7 @@ function createRecorder(): Recorder {
     unload: () => Promise.resolve(),
     show,
     resetFlight: () => calls.push("resetFlight"),
-    readFrameMetrics: () => undefined,
+    renderCounters: { calls: 0, triangles: 0 },
     m5: undefined,
     xr: {
       start: () => Promise.resolve(),

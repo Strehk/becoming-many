@@ -5,8 +5,8 @@
  * Boundary: The overlay is not an immersive WebXR surface or a world content module.
  */
 
-import type { WebGLRenderer } from "three";
-import type { FrameMetrics } from "../levels/level-runtime";
+import type { RenderCounters } from "../world/world-runtime";
+import type { FrameMetrics } from "./frame-metrics";
 import "./test-overlay.css";
 
 const DISPLAY_REFRESH_SECONDS = 0.25;
@@ -19,13 +19,9 @@ export interface TestOverlay {
   readonly update: (deltaSeconds: number) => void;
 }
 
-interface MetricOutput {
-  readonly value: HTMLOutputElement;
-}
-
 export function createTestOverlay(
   container: HTMLElement,
-  renderer: WebGLRenderer,
+  renderCounters: RenderCounters,
   readFrameMetrics: () => FrameMetrics | undefined,
 ): TestOverlay {
   const root = document.createElement("aside");
@@ -50,16 +46,12 @@ export function createTestOverlay(
       const snapshot = readFrameMetrics();
       if (!snapshot) return;
 
-      fps.value.textContent = INTEGER_FORMAT.format(
+      fps.textContent = INTEGER_FORMAT.format(
         Math.round(snapshot.framesPerSecond),
       );
-      p95.value.textContent = `${snapshot.p95Milliseconds.toFixed(1)} ms`;
-      drawCalls.value.textContent = INTEGER_FORMAT.format(
-        renderer.info.render.calls,
-      );
-      triangles.value.textContent = INTEGER_FORMAT.format(
-        renderer.info.render.triangles,
-      );
+      p95.textContent = `${snapshot.p95Milliseconds.toFixed(1)} ms`;
+      drawCalls.textContent = INTEGER_FORMAT.format(renderCounters.calls);
+      triangles.textContent = INTEGER_FORMAT.format(renderCounters.triangles);
     },
   };
 }
@@ -67,7 +59,7 @@ export function createTestOverlay(
 function createMetricOutput(
   root: HTMLElement,
   labelText: string,
-): MetricOutput {
+): HTMLOutputElement {
   const card = document.createElement("div");
   card.className = "test-overlay__card";
 
@@ -81,5 +73,5 @@ function createMetricOutput(
 
   card.append(label, value);
   root.append(card);
-  return { value };
+  return value;
 }

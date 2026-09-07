@@ -5,7 +5,10 @@
  * Boundary: DOM rendering and Three.js renderer counters live outside this file.
  */
 
-import type { FrameMetrics } from "../levels/level-runtime";
+export interface FrameMetrics {
+  readonly framesPerSecond: number;
+  readonly p95Milliseconds: number;
+}
 
 const FRAME_SAMPLE_CAPACITY = 120;
 const MILLISECONDS_PER_SECOND = 1_000;
