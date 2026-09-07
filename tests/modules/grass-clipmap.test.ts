@@ -33,6 +33,7 @@ import type {
   UnlitMaterialEffect,
 } from "../../src/utils/asset-loader/material-effect";
 import { StreamQueue } from "../../src/world/stream-queue";
+import { getElevationRange } from "../../src/world-surface/height-field";
 import { WORLD_SURFACE_SETTINGS } from "../../src/world-surface/surface-settings";
 import { createWorldSurface } from "../../src/world-surface/world-surface";
 import { ZONE_SETTINGS } from "../../src/world-surface/zone-settings";
@@ -333,6 +334,40 @@ test("the grass clipmap follows the world module lifecycle", () => {
   module.load();
   const group = scene.children[0] as Group;
   expect(group.children.length).toBeGreaterThan(0);
+  const bounds = (group.children[0] as Mesh).geometry.boundingSphere;
+  if (!bounds) throw new Error("Grass requires conservative CPU bounds");
+  const size =
+    GRASS_CLIPMAP_SETTINGS.layout.coverage0Meters /
+    GRASS_CLIPMAP_SETTINGS.layout.ring;
+  const elevation = getElevationRange(WORLD_SURFACE_SETTINGS);
+  const maximumDistance = GRASS_CLIPMAP_SETTINGS.fade.endMeters * 1.05;
+  const spacing =
+    maximumDistance /
+    PRESET.fullDensityRadiusMeters /
+    Math.sqrt(PRESET.tuftsPerSquareMeter);
+  const scatter = spacing * GRASS_CLIPMAP_SETTINGS.density.jitter * 0.5;
+  const halfWidth =
+    Math.max(
+      PRESET.bladeWidthMeters * 1.28,
+      maximumDistance * GRASS_CLIPMAP_SETTINGS.blade.minAngularWidth,
+      spacing * 0.26,
+    ) * 0.5;
+  // Every extreme root, including scatter beyond the chunk, must leave room
+  // for the full blade and its width in any wind direction.
+  for (const x of [-scatter, size + scatter]) {
+    for (const z of [-scatter, size + scatter]) {
+      for (const y of [
+        elevation.minimumElevation,
+        elevation.maximumElevation,
+      ]) {
+        expect(
+          bounds.center.distanceTo(new Vector3(x, y, z)) +
+            PRESET.bladeHeightMeters +
+            halfWidth,
+        ).toBeLessThanOrEqual(bounds.radius);
+      }
+    }
+  }
   // Loading happens before the first render, so nothing is visible yet.
   expect(group.visible).toBe(false);
 

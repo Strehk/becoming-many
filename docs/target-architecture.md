@@ -446,12 +446,13 @@ weights; #72 and integrated visual/physical acceptance remain open.
 
 **Separate cause-level fixes:** #71 replaces jagged density/coverage boundaries
 with the shared continuous weights. #72 fixes false grass rejection in the
-existing `grass-clipmap-field.ts`: use conservative bounds covering shader-
-displaced terrain height, blade extent and animation, or disable the incorrect
-CPU frustum culling on those meshes. Do not add a culling layer. Transition
+existing `grass-clipmap-field.ts`. The #72 comparison selects one conservative
+sphere from the existing height range, blade/wind extent and shader scatter.
+It saves six draws per measured view compared with disabling CPU culling,
+with identical images and no established timing advantage. No new culling layer
+is needed. The original visible hole was not reproduced in those two views;
+geometric containment and physical acceptance remain distinct. Transition
 smoothing cannot fix missing meshes, and culling changes cannot fix zone seams.
-The bounds-versus-disabled-culling choice needs a focused correctness/cost
-comparison; it does not reopen the renderer choice.
 
 **Confirmed Vegetation placement ownership:** Vegetation owns one decision
 about which plant exists at which position. Rendering, scent and Mycelium use
@@ -604,7 +605,7 @@ remove old consumers, obsolete tests and documentation with the replaced path.
 | Diagnostic probe context, unbounded hooks; duplicated scrub/DOM playing state | Extra resource or redundant/stale UI mechanics | Remove probe/hooks; replace duplicate gesture only when simpler | Entry diagnostics; current Show commands | Throwaway context, unrestored hooks, dataset-based command decisions | D6/D2; startup-error reporting survives; no generic gesture service |
 | Old-host M5 source state, late polling publication, `controllerType` and compensating axis mappings | Device state survives its valid lifetime | Replace/reset at existing owner | Existing M5 adapter and flight conversion | Superseded device state and discriminator | #17/#18/#38; one edge consumer, physical polarity |
 | Hard density/coverage branches in `getGrassZoneCoverage` and `selectStaticPlacement`; any module-local zone thresholds/transition math | Consumers derive abrupt visual responses independently; continuous weights absent from WorldSurface | Replace with shared continuous query; delete superseded visual branches | Existing World Surface owns conditions/thresholds/weights; Grass/Vegetation/Rocks own derived content responses | Parallel transition calculation and hard switches used only for coverage/density | Confirmed D5/#71; identical-coordinate agreement, genuine habitat exclusions retained |
-| Clipmap `createLevel` bounding sphere in `grass-clipmap-field.ts` | Bounds do not establish conservative coverage of shader-displaced grass | Replace incorrect bounds or disable incorrect CPU mesh culling | Existing Clipmap geometry/mesh owner | False rejection path; no culling wrapper or service | D5/#72; fixed-view correctness and cost comparison, separate from #71 |
+| Clipmap `createLevel` bounding sphere in `grass-clipmap-field.ts` | Bounds do not establish conservative coverage of shader-displaced grass | Replace flat bounds with one conservative sphere derived at construction | Existing Clipmap geometry/mesh owner | False rejection path; no culling wrapper or service | D5/#72; fixed-view correctness and cost comparison, separate from #71 |
 | Vegetation river-footprint stand-ins and separate acceptance predicates | Rendered plants, scent and anchors disagree | Consolidate after comparison | Pure Vegetation acceptance | Independent placement approximations | D5/#81; shared model-independent ground rule; approve distance and crown overhang at a fixed riverbank |
 | Scent `writeScentSlotSynchronously` after enqueue failure | Queue exhaustion bypasses bounded work | Delete fallback | Scent retry/slot validity; existing queue | Synchronous frame fill on queue rejection | #26; bounded retry and no stale publication |
 | Terrain's old `TerrainMaterialEffect` export/import route | Mycelium imports a sibling implementation | Relocate unchanged; delete old route | Existing shared effect boundary | Old export and imports, no shim | #77; this type move alone is not strategic deletion |
@@ -708,7 +709,7 @@ their actual dependent work:
 | Vegetation distance and crown overhang | Placement replacement under #81 | One comparable riverbank; shared model-independent ground rule |
 | Exact benchmark reference | #78 update | Bounded fixed-scene investigation, repeatable counters and explained differences; current numeric candidate remains unapproved |
 | Tutorial/credits details | Their concrete content, timing and control changes | Required features; propose content, duration, audio rights, start behavior and movement during credits using existing owners |
-| Clipmap culling correction | #72 implementation | Focused bounds-versus-disabled-culling comparison; no new culling owner |
+| Clipmap culling correction | #72 selects conservative construction-time bounds | Two fixed views match disabled culling with six fewer draws each; geometric and physical acceptance remain separate |
 
 Routine implementation choices are autonomous. Additional owners/abstractions,
 unplanned content changes or unexplained production-logic growth need a
