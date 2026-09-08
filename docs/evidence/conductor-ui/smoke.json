@@ -1,0 +1,202 @@
+{
+  "generatedAt": "2026-09-08T13:55:00.290Z",
+  "revision": "6b84b9a4ac8bf8878596968def596ad55a44dc45",
+  "sourceDigest": "ad0e63094fc84e2f128b502ee06b9d00fdb875f0345367efa05d0555d91cca88",
+  "diffDigest": "6eb28ac418aab5a6b1a7ed7c84fc5a5e985257f6c0a3fc7016022e0a24228c73",
+  "dirtyFiles": [
+    "M src/ui/app.css",
+    " M src/ui/conductor.html",
+    " M src/ui/conductor/conductor.page.ts",
+    " M tests/browser/run-browser-smoke.ts"
+  ],
+  "platform": "darwin 25.6.0",
+  "cpu": "Apple M2 Max",
+  "bunVersion": "1.3.14",
+  "baseUrl": "http://localhost:4186",
+  "browserVersion": "151.0.7922.34",
+  "headless": false,
+  "dev": false,
+  "viewport": {
+    "width": 1280,
+    "height": 720
+  },
+  "deviceScaleFactor": 1,
+  "results": [
+    {
+      "route": "/",
+      "passed": true,
+      "errors": [],
+      "rendering": {
+        "vendor": "Google Inc. (Apple)",
+        "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M2 Max, Unspecified Version)",
+        "softwareRendering": false
+      }
+    },
+    {
+      "route": "/?level=echo",
+      "passed": true,
+      "errors": [],
+      "rendering": {
+        "vendor": "Google Inc. (Apple)",
+        "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M2 Max, Unspecified Version)",
+        "softwareRendering": false
+      }
+    },
+    {
+      "route": "/?level=start",
+      "passed": true,
+      "errors": [],
+      "rendering": {
+        "vendor": "Google Inc. (Apple)",
+        "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M2 Max, Unspecified Version)",
+        "softwareRendering": false
+      }
+    },
+    {
+      "route": "/conductor.html",
+      "passed": true,
+      "errors": [],
+      "conductorWakeRequired": false,
+      "rendering": {
+        "vendor": "Google Inc. (Apple)",
+        "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M2 Max, Unspecified Version)",
+        "softwareRendering": false
+      }
+    },
+    {
+      "route": "/flash.html",
+      "passed": true,
+      "errors": []
+    },
+    {
+      "route": "/start",
+      "passed": true,
+      "errors": [],
+      "rendering": {
+        "vendor": "Google Inc. (Apple)",
+        "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M2 Max, Unspecified Version)",
+        "softwareRendering": false
+      }
+    },
+    {
+      "route": "/white-world",
+      "passed": true,
+      "errors": [],
+      "rendering": {
+        "vendor": "Google Inc. (Apple)",
+        "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M2 Max, Unspecified Version)",
+        "softwareRendering": false
+      }
+    },
+    {
+      "route": "/scent",
+      "passed": true,
+      "errors": [],
+      "rendering": {
+        "vendor": "Google Inc. (Apple)",
+        "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M2 Max, Unspecified Version)",
+        "softwareRendering": false
+      }
+    },
+    {
+      "route": "/echo",
+      "passed": true,
+      "errors": [],
+      "rendering": {
+        "vendor": "Google Inc. (Apple)",
+        "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M2 Max, Unspecified Version)",
+        "softwareRendering": false
+      }
+    },
+    {
+      "route": "/motion",
+      "passed": true,
+      "errors": [],
+      "rendering": {
+        "vendor": "Google Inc. (Apple)",
+        "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M2 Max, Unspecified Version)",
+        "softwareRendering": false
+      }
+    },
+    {
+      "route": "/thermal",
+      "passed": true,
+      "errors": [],
+      "rendering": {
+        "vendor": "Google Inc. (Apple)",
+        "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M2 Max, Unspecified Version)",
+        "softwareRendering": false
+      }
+    },
+    {
+      "route": "/magnetic",
+      "passed": true,
+      "errors": [],
+      "rendering": {
+        "vendor": "Google Inc. (Apple)",
+        "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M2 Max, Unspecified Version)",
+        "softwareRendering": false
+      }
+    },
+    {
+      "route": "/connections",
+      "passed": true,
+      "errors": [],
+      "rendering": {
+        "vendor": "Google Inc. (Apple)",
+        "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M2 Max, Unspecified Version)",
+        "softwareRendering": false
+      }
+    },
+    {
+      "route": "/test",
+      "passed": true,
+      "errors": [],
+      "rendering": {
+        "vendor": "Google Inc. (Apple)",
+        "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M2 Max, Unspecified Version)",
+        "softwareRendering": false
+      }
+    },
+    {
+      "route": "/design-test",
+      "passed": true,
+      "errors": [],
+      "rendering": {
+        "vendor": "Google Inc. (Apple)",
+        "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M2 Max, Unspecified Version)",
+        "softwareRendering": false
+      }
+    },
+    {
+      "route": "startup-failure:/",
+      "passed": true,
+      "errors": []
+    },
+    {
+      "route": "startup-failure:/?level=echo",
+      "passed": true,
+      "errors": []
+    },
+    {
+      "route": "startup-failure:/conductor.html",
+      "passed": true,
+      "errors": []
+    },
+    {
+      "route": "ui-mount-failure:/",
+      "passed": true,
+      "errors": []
+    },
+    {
+      "route": "ui-mount-failure:/conductor.html",
+      "passed": true,
+      "errors": []
+    },
+    {
+      "route": "ui-mount-failure:/flash.html",
+      "passed": true,
+      "errors": []
+    }
+  ]
+}

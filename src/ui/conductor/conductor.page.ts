@@ -1,5 +1,16 @@
 /** Mount the operator UI against existing owner commands and observations. */
 
+import alarmClockIcon from "lucide-static/icons/alarm-clock.svg?no-inline";
+import gamepad2Icon from "lucide-static/icons/gamepad-2.svg?no-inline";
+import headsetIcon from "lucide-static/icons/headset.svg?no-inline";
+import imageIcon from "lucide-static/icons/image.svg?no-inline";
+import pauseIcon from "lucide-static/icons/pause.svg?no-inline";
+import playIcon from "lucide-static/icons/play.svg?no-inline";
+import squareIcon from "lucide-static/icons/square.svg?no-inline";
+import volume2Icon from "lucide-static/icons/volume-2.svg?no-inline";
+import wrenchIcon from "lucide-static/icons/wrench.svg?no-inline";
+import xIcon from "lucide-static/icons/x.svg?no-inline";
+
 import type {
   FrameMetrics,
   FrameMetricsSampler,
@@ -74,6 +85,23 @@ export function mountConductorPage({
   let unsubscribeXr: (() => void) | undefined;
 
   try {
+    // Vite resolves imported SVG URLs consistently in development and production.
+    for (const [name, url] of Object.entries({
+      "alarm-clock": alarmClockIcon,
+      "gamepad-2": gamepad2Icon,
+      headset: headsetIcon,
+      image: imageIcon,
+      pause: pauseIcon,
+      play: playIcon,
+      square: squareIcon,
+      "volume-2": volume2Icon,
+      wrench: wrenchIcon,
+      x: xIcon,
+    })) {
+      for (const icon of page.querySelectorAll(`use[data-icon="${name}"]`)) {
+        icon.setAttribute("href", url);
+      }
+    }
     const masthead = requireElement(page, ".conductor__masthead", HTMLElement);
     let xrState: XrSessionState = {
       availability: "unknown",

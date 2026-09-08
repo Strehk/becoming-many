@@ -4,7 +4,7 @@ import { join } from "node:path";
 
 const ROOT = join(import.meta.dirname, "../..");
 const UI = join(ROOT, "src/ui");
-const PAGES = ["index", "test", "conductor", "flash"];
+const PAGES = ["index", "conductor", "flash"];
 
 test("browser entries declare their structure, stylesheet and module in UI", () => {
   for (const page of PAGES) {

@@ -429,6 +429,32 @@ async function checkConductor(page: Page): Promise<boolean> {
   return wakeRequired;
 }
 
+/** Observe Conductor through its rendered timeline without an Engine test API. */
+async function observeConductorTime(
+  page: Page,
+  expectedSeconds?: number,
+): Promise<number> {
+  const observation = await page.waitForFunction(
+    ({ durationSeconds, expectedSeconds }) => {
+      const position = document
+        .querySelector(".timeline__playhead")
+        ?.getAttribute("x1");
+      const seconds =
+        (Number.parseFloat(position ?? "NaN") / 100) * durationSeconds;
+      const matches =
+        expectedSeconds === undefined
+          ? seconds > 0.2
+          : Math.abs(seconds - expectedSeconds) < 0.000001;
+      return matches ? { seconds } : undefined;
+    },
+    { durationSeconds: PIECE_SCHEDULE.durationSeconds, expectedSeconds },
+  );
+  const sample = await observation.jsonValue();
+  await observation.dispose();
+  assert(sample);
+  return sample.seconds;
+}
+
 /** Native focused controls and global transport shortcuts must both remain usable. */
 async function checkConductorKeyboard(page: Page): Promise<void> {
   const transport = page.locator(".conductor__transport-button");
@@ -467,10 +493,7 @@ async function checkConductorKeyboard(page: Page): Promise<void> {
     .locator('.conductor__transport-button[data-playing="false"]')
     .waitFor();
   await page.getByRole("button", { name: /Echo/ }).press("Space");
-  await page.waitForFunction(
-    (seconds) => window.show?.sample().timeSeconds === seconds,
-    ECHO_START_SECONDS,
-  );
+  await observeConductorTime(page, ECHO_START_SECONDS);
   assert.equal(await transport.getAttribute("data-playing"), "false");
   await page.evaluate(() => (document.activeElement as HTMLElement)?.blur());
   await page.keyboard.press("Space");
@@ -489,21 +512,14 @@ async function checkConductorTransport(page: Page): Promise<void> {
   await page
     .locator('.conductor__transport-button[data-playing="true"]')
     .waitFor();
-  await page.waitForFunction(
-    () => (window.show?.sample().timeSeconds ?? 0) > 0.2,
-  );
+  await observeConductorTime(page);
   await transport.click();
   await page
     .locator('.conductor__transport-button[data-playing="false"]')
     .waitFor();
-  const pausedTime = await page.evaluate(
-    () => window.show?.sample().timeSeconds,
-  );
+  const pausedTime = await observeConductorTime(page);
   await page.waitForTimeout(PAUSE_OBSERVATION_MILLISECONDS);
-  assert.equal(
-    await page.evaluate(() => window.show?.sample().timeSeconds),
-    pausedTime,
-  );
+  assert.equal(await observeConductorTime(page), pausedTime);
 }
 
 async function checkConductorStop(page: Page): Promise<void> {
@@ -519,26 +535,19 @@ async function checkConductorStop(page: Page): Promise<void> {
     .filter({ hasText: /^EN$/ })
     .waitFor();
   await page.keyboard.press(ECHO_CUE_KEY);
-  await page.waitForFunction(
-    (seconds) => window.show?.sample().timeSeconds === seconds,
-    ECHO_START_SECONDS,
-  );
+  await observeConductorTime(page, ECHO_START_SECONDS);
   await transport.click();
-  await page.waitForFunction(() => window.show?.sample().isPlaying === true);
+  await page
+    .locator('.conductor__transport-button[data-playing="true"]')
+    .waitFor();
   await page.getByRole("button", { name: "Stop", exact: true }).click();
-  await page.waitForFunction(() => window.show?.sample().timeSeconds === 0);
-  assert.equal(
-    await page.evaluate(() => window.show?.sample().isPlaying),
-    false,
-  );
+  await observeConductorTime(page, 0);
   assert.equal(await transport.getAttribute("data-playing"), "false");
   await transport.click();
   await page
     .locator('.conductor__transport-button[data-playing="true"]')
     .waitFor();
-  await page.waitForFunction(
-    () => (window.show?.sample().timeSeconds ?? 0) > 0.2,
-  );
+  await observeConductorTime(page);
   assert.equal(
     await page.locator("canvas").count(),
     1,
@@ -561,12 +570,21 @@ async function checkScrubbing(
     );
   for (const resume of [true, false]) {
     if ((await isPlaying()) !== resume) await transport.click();
+    await track.scrollIntoViewIfNeeded();
     const bounds = await track.boundingBox();
     assert(bounds, "Timeline must have usable geometry");
     const y = bounds.y + bounds.height / 2;
     await page.mouse.move(bounds.x + bounds.width * 0.1, y);
     await page.mouse.down();
     await page.mouse.move(bounds.x + bounds.width * 0.2, y, { steps: 3 });
+    await page.waitForFunction((selector) => {
+      const line = document.querySelector(
+        `${selector} .timeline__playhead, ${selector} .rehearsal__playhead`,
+      );
+      return (
+        Math.abs(Number.parseFloat(line?.getAttribute("x1") ?? "") - 20) < 0.1
+      );
+    }, trackSelector);
     assert.equal(await isPlaying(), false, "Scrubbing holds playback");
     if (resume) {
       await page.mouse.up();
@@ -598,9 +616,10 @@ async function checkScrubbing(
       },
       { selector: transportSelector, playing: resume },
     );
-    const seconds = await page.evaluate(
-      () => window.show?.sample().timeSeconds,
-    );
+    const seconds =
+      trackSelector === ".timeline__track"
+        ? await observeConductorTime(page)
+        : await page.evaluate(() => window.show?.sample().timeSeconds);
     assert(
       seconds !== undefined && seconds >= 100 && seconds < 110,
       "Drag seeks to the selected show position",
@@ -610,8 +629,13 @@ async function checkScrubbing(
 
 /** Shared styling must preserve each surface and its actual responsive controls. */
 async function checkUiLayout(page: Page, route: string): Promise<void> {
-  for (const width of [VIEWPORT.width, 390]) {
-    await page.setViewportSize({ width, height: VIEWPORT.height });
+  for (const width of route === "/conductor.html"
+    ? [1672, VIEWPORT.width, 390]
+    : [VIEWPORT.width, 390]) {
+    await page.setViewportSize({
+      width,
+      height: width === 1672 ? 940 : VIEWPORT.height,
+    });
     const layout = await page.evaluate(() => ({
       viewportWidth: innerWidth,
       scrollWidth: document.documentElement.scrollWidth,
