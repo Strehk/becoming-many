@@ -7,7 +7,7 @@
 
 import { expect, test } from "bun:test";
 import { level as connectionsLevel } from "../../src/levels/connections.level";
-import { level as designTestLevel } from "../../src/levels/designTest.level";
+import { level as diagnosticLevel } from "../../src/levels/diagnostic.level";
 import { level as echoLevel } from "../../src/levels/echo.level";
 import { LEVEL_CATALOG } from "../../src/levels/level-catalog";
 import type {
@@ -17,8 +17,8 @@ import type {
 import { level as magneticLevel } from "../../src/levels/magnetic.level";
 import { level as motionLevel } from "../../src/levels/motion.level";
 import { level as scentLevel } from "../../src/levels/scent.level";
-import { level as testLevel } from "../../src/levels/test.level";
 import { level as thermalLevel } from "../../src/levels/thermal.level";
+import { level as visualIntegrationLevel } from "../../src/levels/visual-integration.level";
 import { level as whiteWorld } from "../../src/levels/white-world.level";
 import { MYCELIUM_SETTINGS } from "../../src/modules/mycelium/mycelium-settings";
 import { THERMAL_PERCEPTION_SETTINGS } from "../../src/modules/thermal-perception/thermal-perception-settings";
@@ -43,23 +43,32 @@ test("each world component appears only in its intended levels", () => {
     ["start", "start"],
     [
       "airParticles",
-      "start white-world scent echo motion thermal magnetic connections test design-test",
+      "start white-world scent echo motion thermal magnetic connections diagnostic visual-integration",
     ],
     ["invisibleGround", "scent"],
     ["invisibleVegetation", "scent"],
     ["scentParticles", "scent echo motion thermal magnetic connections"],
     ["echoDepth", "echo motion thermal magnetic connections"],
-    ["terrain", "echo motion thermal magnetic connections test design-test"],
+    [
+      "terrain",
+      "echo motion thermal magnetic connections diagnostic visual-integration",
+    ],
     [
       "grassClipmap",
-      "echo motion thermal magnetic connections test design-test",
+      "echo motion thermal magnetic connections diagnostic visual-integration",
     ],
-    ["vegetation", "echo motion thermal magnetic connections test design-test"],
-    ["rocks", "echo motion thermal magnetic connections test design-test"],
+    [
+      "vegetation",
+      "echo motion thermal magnetic connections diagnostic visual-integration",
+    ],
+    [
+      "rocks",
+      "echo motion thermal magnetic connections diagnostic visual-integration",
+    ],
     ["motion", "motion thermal magnetic connections"],
-    ["animals", "thermal magnetic connections test design-test"],
+    ["animals", "thermal magnetic connections diagnostic visual-integration"],
     ["thermal", "thermal magnetic connections"],
-    ["magnetic", "magnetic connections test"],
+    ["magnetic", "magnetic connections diagnostic"],
     ["connections", "connections"],
   ] as const;
 
@@ -71,32 +80,32 @@ test("each world component appears only in its intended levels", () => {
   }
 });
 
-test("Test owns its diagnostic world values independently", () => {
-  const testPreset: LevelPreset = testLevel;
+test("Diagnostic owns its world values independently", () => {
+  const diagnosticPreset: LevelPreset = diagnosticLevel;
   const whiteWorldPreset: LevelPreset = whiteWorld;
 
-  expect(testPreset.terrain?.opacity).toBe(1);
-  expect(testPreset.terrain?.presentation).toBe("zones");
-  expect(testPreset.magnetic?.fieldElevationDegrees).toBe(7.5);
-  expect(testPreset.magnetic?.colors.northColor).toBe(0xd97819);
-  expect(testPreset.grassClipmap?.tuftsPerSquareMeter).toBe(1.5);
-  expect(testPreset.grassClipmap?.bladeHeightMeters).toBe(0.75);
-  expect(testPreset.vegetation?.instancesPerHectareByZone).toEqual({
+  expect(diagnosticPreset.terrain?.opacity).toBe(1);
+  expect(diagnosticPreset.terrain?.presentation).toBe("zones");
+  expect(diagnosticPreset.magnetic?.fieldElevationDegrees).toBe(7.5);
+  expect(diagnosticPreset.magnetic?.colors.northColor).toBe(0xd97819);
+  expect(diagnosticPreset.grassClipmap?.tuftsPerSquareMeter).toBe(1.5);
+  expect(diagnosticPreset.grassClipmap?.bladeHeightMeters).toBe(0.75);
+  expect(diagnosticPreset.vegetation?.instancesPerHectareByZone).toEqual({
     meadow: 12,
     coniferForest: 150,
     deciduousForest: 150,
     shrubSlope: 70,
   });
-  expect(testPreset.rocks?.instancesPerHectareByZone).toEqual({
+  expect(diagnosticPreset.rocks?.instancesPerHectareByZone).toEqual({
     meadow: 8,
     coniferForest: 10,
     deciduousForest: 10,
     shrubSlope: 60,
   });
-  expect(testPreset.animals?.colors.featureColor).toBe(0x292929);
-  expect(testPreset.diagnosticsUi).toBe(true);
-  expect(testPreset.airParticles).not.toEqual(whiteWorldPreset.airParticles);
-  expect(whiteWorldPreset.diagnosticsUi).toBeUndefined();
+  expect(diagnosticPreset.animals?.colors.featureColor).toBe(0x292929);
+  expect(diagnosticPreset.airParticles).not.toEqual(
+    whiteWorldPreset.airParticles,
+  );
 });
 
 test("Echo Level owns a complete depth-world startup recipe", () => {
@@ -112,7 +121,6 @@ test("Echo Level owns a complete depth-world startup recipe", () => {
     throw new Error("Echo Level must author terrain, vegetation, and rocks");
   }
 
-  expect(echoPreset.diagnosticsUi).toBe(true);
   expect(terrain.opacity).toBe(1);
   expect(terrain.presentation).toBeUndefined();
   expect(echoPreset.grassClipmap?.tuftsPerSquareMeter).toBeGreaterThan(0);
@@ -146,7 +154,6 @@ test("Scent Level owns its complete invisible source world", () => {
     0xf6eee0, 0xb8e0e1, 0x9dd2c8, 0xd1c1d7, 0xfda39d, 0xfdbb54,
   ];
 
-  expect(scentPreset.diagnosticsUi).toBe(true);
   // The level departs from its moodboard's pale first stop and runs on the
   // white it is entered from, so the only colour in the world arrives
   // through the scent. The deviation is argued in the level README; this
@@ -226,8 +233,6 @@ test("Motion Level owns its complete motion-world startup recipe", () => {
   const { motion } = motionPreset;
   if (!motion) throw new Error("Motion Level must author the motion sense");
 
-  expect(motionPreset.diagnosticsUi).toBe(true);
-
   expect(motion.intensity).toBe(1);
   expect(motion.swarms.swarmCount).toBeGreaterThan(0);
   expect(motion.swarms.fliesPerSwarm).toBeGreaterThan(0);
@@ -261,7 +266,6 @@ test("Thermal Level owns its complete heat-world startup recipe", () => {
   if (!thermal) throw new Error("Thermal Level must author the thermal sense");
   if (!animals) throw new Error("Thermal Level must author warm animals");
 
-  expect(thermalPreset.diagnosticsUi).toBe(true);
   // A bird is a warm body, so the heat view prints its trace in the palette's
   // hot stop instead of the cold accent the pale world reads it as. The
   // cold-blooded flies keep their own colors: a swarm printed warm would be
@@ -345,8 +349,6 @@ test("Magnetic Level owns its complete field-world startup recipe", () => {
     throw new Error("Magnetic Level must author the magnetic sense");
   }
 
-  expect(magneticPreset.diagnosticsUi).toBe(true);
-
   expect(magnetic.intensity).toBe(1);
   // The field axis: north as authored, tilted above the horizon so the
   // shimmer patch sits in the sky rather than in the ground.
@@ -371,8 +373,6 @@ test("Connections Level owns its complete connected-world startup recipe", () =>
   if (!connections) {
     throw new Error("Connections Level must author the connections sense");
   }
-
-  expect(connectionsPreset.diagnosticsUi).toBe(true);
 
   expect(connections.intensity).toBe(1);
   // Reach before density: the root mat is carried at the experiment's density,
@@ -406,16 +406,16 @@ test("Connections Level owns its complete connected-world startup recipe", () =>
   expect(connectionsPalette).toContain(connections.colors.pulseColor);
 });
 
-test("Design Test authors semantic colors without development diagnostics", () => {
-  expect(designTestLevel.terrain?.colors).toEqual({
+test("Visual integration authors semantic colors without diagnostics", () => {
+  expect(visualIntegrationLevel.terrain?.colors).toEqual({
     lowElevationColor: 0x51417d,
     highElevationColor: 0xc3c5d1,
     waterColor: 0x9bdedb,
   });
-  expect(designTestLevel.terrain?.presentation).toBeUndefined();
-  expect(designTestLevel.grassClipmap?.colors.rootColor).toBe(0x49328b);
-  expect(designTestLevel.grassClipmap?.colors.tipColor).toBe(0x67d6ad);
-  expect(designTestLevel.vegetation?.colors.trunkColor).toBe(0x51447b);
-  expect(designTestLevel.rocks?.colors.lightColor).toBe(0x739fa8);
-  expect(designTestLevel.animals?.colors.furColor).toBe(0xf3d34f);
+  expect(visualIntegrationLevel.terrain?.presentation).toBeUndefined();
+  expect(visualIntegrationLevel.grassClipmap?.colors.rootColor).toBe(0x49328b);
+  expect(visualIntegrationLevel.grassClipmap?.colors.tipColor).toBe(0x67d6ad);
+  expect(visualIntegrationLevel.vegetation?.colors.trunkColor).toBe(0x51447b);
+  expect(visualIntegrationLevel.rocks?.colors.lightColor).toBe(0x739fa8);
+  expect(visualIntegrationLevel.animals?.colors.furColor).toBe(0xf3d34f);
 });

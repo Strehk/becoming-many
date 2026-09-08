@@ -23,8 +23,13 @@ test("every catalog name resolves to itself", () => {
 test("named level paths select the standalone-level entry", () => {
   expect(levelNameFromPath("/start")).toBe("start");
   expect(levelNameFromPath("/echo")).toBe("echo");
-  expect(levelNameFromPath("/design-test/")).toBe("design-test");
+  expect(levelNameFromPath("/diagnostic")).toBe("diagnostic");
+  expect(levelNameFromPath("/visual-integration/")).toBe("visual-integration");
+  expect(levelNameFromPath("/design-test")).toBeUndefined();
+  expect(levelNameFromPath("/test")).toBeUndefined();
+  expect(levelNameFromPath("/test.html")).toBeUndefined();
   expect(levelNameFromPath("/conductor.html")).toBeUndefined();
+  expect(levelNameFromPath("/flash.html")).toBeUndefined();
 });
 
 test("no request opens the default without a word", () => {

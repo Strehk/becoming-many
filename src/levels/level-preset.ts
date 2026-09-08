@@ -56,6 +56,5 @@ export type WorldComposition = {
 export type LevelPreset = WorldComposition & {
   readonly backgroundColor: number;
   readonly viewDistance: number;
-  readonly diagnosticsUi?: true;
   readonly maximumGroundClearanceMeters: number;
 };

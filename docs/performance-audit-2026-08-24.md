@@ -1,6 +1,6 @@
 <!--
 Purpose: Preserve the 2026-08-24 browser performance audit as a reproducible evidence snapshot.
-Scope: Test Level runtime, rendering, streaming, assets, startup, and open PICO acceptance.
+Scope: Diagnostic Level runtime, rendering, streaming, assets, startup, and open PICO acceptance.
 Boundary: Measurements are desktop Chromium evidence and do not constitute physical PICO 4 acceptance.
 -->
 
@@ -12,7 +12,7 @@ current issues for active targets and conclusions.
 
 ## Executive Summary
 
-The current Test Level is **not ready for the stable 90 FPS PICO 4 target**.
+The diagnostic level is **not ready for the stable 90 FPS PICO 4 target**.
 The production build already averages about **16.1 ms per frame** on an Apple
 M4, with **26.4 ms p95**. The 90 FPS frame budget is **11.11 ms**, and about
 72% of the repeated browser frames exceeded that budget.
@@ -48,7 +48,7 @@ during this audit.
 | --- | --- | --- | --- | --- |
 | **P0** | Total render load misses the 90 FPS target | 16.1–16.6 ms mean, 26–27 ms p95, and about 72% of frames above 11.11 ms | The scene renders about 5.9 million triangles at the initial position and up to 7.17 million while moving. CPU work remains low. | Establish a strict triangle and visibility budget before adding features. The desktop result must be comfortably below 11.11 ms to leave PICO compositor and browser headroom. |
 | **P0** | Vegetation is the largest individual bottleneck | Without Vegetation: 11.67 ms and 1.07 million triangles. Full Vegetation: about 15.93 ms and 5.90 million triangles. Half density: 12.52 ms and 3.37 million triangles. | Deciduous tree sources contain 7,096–8,520 triangles per instance. Individual instanced parts contribute about 330,000–760,000 visible triangles. | First reduce Vegetation density and produce mobile LOD0 assets, especially for deciduous trees. Avoid a new Vegetation architecture until these content reductions are measured. |
-| **P0** | One view distance expands nearly every resident system | Reducing view distance from 180 m to 128 m produced 9.41 ms and 2.82 million triangles. At 64 m the test reached the 8.33 ms host limit with 856,000 triangles. | [`viewDistance: 180`](../src/levels/test.level.ts) drives Terrain, Vegetation, Grass, and particle windows together. | Reduce the Test Level view distance first. Introduce separate module distances only where the visual design demonstrably needs distant Terrain but closer dense Vegetation or Grass. |
+| **P0** | One view distance expands nearly every resident system | Reducing view distance from 180 m to 128 m produced 9.41 ms and 2.82 million triangles. At 64 m the test reached the 8.33 ms host limit with 856,000 triangles. | [`viewDistance: 180`](../src/levels/diagnostic.level.ts) drives Terrain, Vegetation, Grass, and particle windows together. | Reduce the Diagnostic Level view distance first. Introduce separate module distances only where the visual design demonstrably needs distant Terrain but closer dense Vegetation or Grass. |
 | **P1** | Static instance pools cannot be spatially culled | All inspected tree, shrub, and rock pools use `frustumCulled = false`. | [`instanced-model-pool.ts`](../src/utils/asset-loader/instanced-model-pool.ts) keeps one world-spanning `InstancedMesh` per model part. Simply enabling culling would not help much because the global bounds usually intersect the frustum. | After density and LOD reductions, test a small number of coarse spatial batches and update their bounding spheres after recycling. Measure the draw-call tradeoff. |
 | **P1** | Grass contributes almost one million triangles | Grass contributes exactly 985,608 triangles. Removing it reduced the mean to 12.07 ms. Half density reached 12.81 ms and is insufficient by itself. | At 180 m the preload ring keeps a 9 × 9 chunk window. The global mesh in [`grass-field.ts`](../src/modules/grass/grass-field.ts) is not spatially cullable. | Reduce Grass visibility distance and preload first, then density. Preserve the existing partial buffer update path. |
 | **P1** | Streaming queue has little reserve | During a ten-minute deterministic flight, the queue averaged 46 jobs and peaked at 243 of 256. It recorded 228 obsolete jobs and zero rejections. | Large resident content windows continuously schedule new chunk work. The current queue works, but only 13 slots remained at peak load. | Do not increase capacity first. Reduce resident content windows, then measure queue maximum, rejections, obsolete work, and time-to-ready on PICO. |
@@ -64,7 +64,7 @@ not acceptance measurements.
 
 | Variant | Mean frame time | p95 | Render load | Interpretation |
 | --- | ---: | ---: | ---: | --- |
-| Full Test Level | 15.93 ms | 25.6 ms | 5.90 M triangles | Short-run comparison baseline |
+| Full Diagnostic Level | 15.93 ms | 25.6 ms | 5.90 M triangles | Short-run comparison baseline |
 | No Vegetation | 11.67 ms | 22.6 ms | 1.07 M triangles | Largest single improvement |
 | Half Vegetation density | 12.52 ms | 23.9 ms | 3.37 M triangles | Useful but insufficient alone |
 | No Grass | 12.07 ms | 22.4 ms | 4.91 M triangles | Second-largest content contributor |

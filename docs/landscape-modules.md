@@ -24,10 +24,8 @@ another, a narrow neutral contract is defined and wired by Level Composition.
   shared compact static-population machinery. Their remaining duplication is
   tracked in issue #41.
 - **Grass Clipmap** is the narrative grass path from Echolocation onward. It
-  uses fixed anchors, a shared instance buffer, GPU culling, and a sampled
-  height texture.
-- **Grass** is the older CPU-placement implementation used by diagnostics. It
-  remains until issue #13 chooses one owner from current measurements.
+  is also the sole grass implementation for diagnostic presets, using fixed
+  anchors, a shared instance buffer, GPU culling, and a sampled height texture.
 - **Animals** owns ten bounded cloned actors, visibility, movement, animation,
   and the live source contracts used by senses.
 - **Air Particles** and **Scent Particles** own fixed points buffers and
@@ -62,4 +60,4 @@ performance contracts before introducing a new system.
 Every module change must retain bounded capacity, deterministic world placement
 where applicable, explicit lifecycle/disposal, no sibling imports, and focused
 contract tests. Performance-sensitive changes also require comparable benchmark
-evidence and eventual physical PICO validation.
+evidence and eventual physical Windows-PCVR validation.

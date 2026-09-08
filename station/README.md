@@ -28,8 +28,9 @@ wrong-device and firmware-mismatch warnings).
 - `/conductor.html` — the station window, served from `dist/` (run
   `bun run build` first). Development uses `bun run dev` independently with
   empty deployment defaults. `/` stays the bare rehearsal page.
-- `/?level=<name>` and named paths such as `/echo` — standalone development levels,
-  benchmarks, and opt-in diagnostics.
+- The experience page at `/?level=<name>` and named paths such as `/echo` —
+  standalone development levels, benchmarks, and opt-in diagnostics. These use
+  the root document; there is no separate diagnostics page.
 - `/health` — liveness JSON: status and uptime. It reports the process, never
   the show: a healthy server with zero windows is healthy.
 - `/config` — the deployment facts the process was started with, for the

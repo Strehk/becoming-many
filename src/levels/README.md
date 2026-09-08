@@ -11,7 +11,7 @@ This folder owns typed level configuration, concrete world construction and the
 existing runtime that turns a static or show request into one world.
 
 Each level is one self-contained literal parameter object, following
-`test.level.ts`: only type imports, no imported values, helpers, calls, spreads
+`diagnostic.level.ts`: only type imports, no imported values, helpers, calls, spreads
 or inheritance. All authored settings can be read and changed in that file.
 Repeated configuration is intentional; `authored/` is retired. Required fields
 are typed; technical defaults and validation belong to the concrete module.
@@ -23,8 +23,8 @@ Narrative names remain ordered as:
 white-world → scent → echo → motion → thermal → magnetic → connections
 ```
 
-`test.level.ts` and `designTest.level.ts` are diagnostic/integration presets,
-not narrative states. The Test preset uses Grass Clipmap and the browser diagnostics UI.
+`diagnostic.level.ts` and `visual-integration.level.ts` are diagnostic/integration presets,
+not narrative states. The Diagnostic preset uses Grass Clipmap and the browser diagnostics UI.
 
 ## Catalog and Entries
 

@@ -11,7 +11,6 @@ export const level: LevelPreset = {
   backgroundColor: 0xf7f7f7,
   viewDistance: 128,
   maximumGroundClearanceMeters: 50,
-  diagnosticsUi: true,
   airParticles: {
     density: {
       particlesPerChunk: 270,

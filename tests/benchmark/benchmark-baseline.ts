@@ -69,14 +69,14 @@ export const BENCHMARK_BASELINE: BenchmarkBaseline = {
       maxTextures: 48,
       maxPrograms: 17,
     },
-    test: {
+    diagnostic: {
       maxDrawCalls: 82,
       maxTriangles: 4278320,
       maxGeometries: 94,
       maxTextures: 47,
       maxPrograms: 11,
     },
-    "design-test": {
+    "visual-integration": {
       maxDrawCalls: 81,
       maxTriangles: 4277360,
       maxGeometries: 93,

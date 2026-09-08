@@ -72,7 +72,7 @@ sacrificing readability. Count authored configuration too; report source,
 tests/tooling and documentation separately from the existing diff, without new
 counting infrastructure. Moving, minifying or hiding code is not removal.
 Necessary bug-fix growth is not a simplification success: revise toward real
-removal or state the concrete unmet goal. Use `src/levels/test.level.ts` as the
+removal or state the concrete unmet goal. Use `src/levels/diagnostic.level.ts` as the
 readability reference. Never add generalized recovery, fallback paths or future
 configuration for hypothetical needs.
 

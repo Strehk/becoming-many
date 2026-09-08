@@ -16,15 +16,12 @@ import { LEVEL_CATALOG, resolveLevelName } from "../levels/level-catalog";
 import { createDiagnosticsOverlay } from "../ui/diagnostics/diagnostics-overlay.panel";
 import { mountVrEntryButton } from "../ui/shared/xr-entry-button";
 import { loadDeploymentConfig } from "./deployment-config";
-import { loadStandaloneLevelModules } from "./standalone-level-modules";
 
 const lifetime = new AbortController();
 const request = new URLSearchParams(window.location.search);
 const container = requireElement(document, ".app", HTMLElement);
-const diagnostics = createDiagnosticsOverlay(
-  container,
-  request.get("diagnostics") !== null,
-);
+const diagnosticsEnabled = request.has("diagnostics");
+const diagnostics = createDiagnosticsOverlay(container, diagnosticsEnabled);
 lifetime.signal.addEventListener("abort", diagnostics.unload, { once: true });
 window.addEventListener("pagehide", (event) => {
   if (!event.persisted) lifetime.abort();
@@ -48,14 +45,12 @@ try {
   const deployment = await loadDeploymentConfig();
   const preset = LEVEL_CATALOG[levelName];
   const frameMetrics =
-    !benchmark && preset.diagnosticsUi ? new FrameMetricsSampler() : undefined;
+    !benchmark && diagnosticsEnabled ? new FrameMetricsSampler() : undefined;
   const canvas = requireElement(
     container,
     ".experience-canvas",
     HTMLCanvasElement,
   );
-  const standaloneModules = await loadStandaloneLevelModules(preset);
-
   level = await startLevel(
     { canvas, viewport: container },
     {
@@ -69,7 +64,6 @@ try {
             diagnostics.update(deltaSeconds);
           }
         : undefined,
-      standaloneModules,
       m5ExpectedDeviceId: deployment.m5DeviceId,
     },
   );

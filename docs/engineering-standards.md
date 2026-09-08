@@ -149,7 +149,7 @@ responsibility map and diagrams. Apply these boundaries during implementation:
   calls owner commands and reads observations; no playback, restart, calibration
   or device-validity policy is defined in a page/panel.
 - Engine owns Show, World, input, audio and content behavior in the browser.
-  It imports no operator/test UI or browser entry. WebXR, Web Audio, canvas and
+  It imports no operator or diagnostics UI or browser entry. WebXR, Web Audio, canvas and
   input events at their actual resource adapters are not automatically UI.
 - The Station backend delivers files, deployment facts and process health.
   It carries no Show clock, visitor state or command transport. Sharing pure

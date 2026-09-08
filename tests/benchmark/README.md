@@ -14,7 +14,7 @@ replays the fixed route in Chromium, and writes one report artifact.
 bun run build
 bun run benchmark                                   # every level, full profile
 bun run benchmark --profile quick --level magnetic  # one level, coarse replay
-bun run benchmark --skip-level test                 # every level but that one
+bun run benchmark --skip-level diagnostic           # every level but that one
 bun run benchmark --headed                          # request a visible browser; inspect recorded GPU
 bun run benchmark --help                            # the flags, without a run
 ```
@@ -81,10 +81,10 @@ a complete one.
 
 Without a GPU, Chromium falls back to SwiftShader, which is fill-rate bound.
 Dense geometry is survivable — the Connections level replays in about 100
-seconds at the `quick` profile — but the grass-carrying `test` and
-`design-test` presets exceed several minutes per run and time out. Measure
+seconds at the `quick` profile — but the grass-carrying `diagnostic` and
+`visual-integration` presets exceed several minutes per run and time out. Measure
 those with `--headed` on a machine with a GPU, or leave them out of a headless
-run with `--skip-level test --skip-level design-test`.
+run with `--skip-level diagnostic --skip-level visual-integration`.
 
 ## Baseline
 

@@ -99,13 +99,6 @@ export interface LoadedLevelAssets {
   readonly passages: PassageResources | undefined;
 }
 
-type CreateZonePresentation =
-  typeof import("../modules/zone-visualizer/zone-visualizer").createZoneVisualizer;
-
-export interface StandaloneLevelModules {
-  readonly createZonePresentation?: CreateZonePresentation;
-}
-
 interface LevelCompositionOptions {
   readonly world: Pick<
     WorldContext,
@@ -114,7 +107,6 @@ interface LevelCompositionOptions {
   readonly level: LevelPreset;
   readonly assets: LoadedLevelAssets;
   readonly forShow: boolean;
-  readonly standaloneModules?: StandaloneLevelModules;
 }
 
 export interface ComposedLevel {
@@ -125,13 +117,12 @@ export interface ComposedLevel {
   readonly hasGround: boolean;
 }
 
-export function composeLevel({
+export async function composeLevel({
   world,
   level,
   assets,
   forShow,
-  standaloneModules,
-}: LevelCompositionOptions): ComposedLevel {
+}: LevelCompositionOptions): Promise<ComposedLevel> {
   const worldSurface = createWorldSurface(
     WORLD_SURFACE_SETTINGS,
     ZONE_SETTINGS,
@@ -224,7 +215,12 @@ export function composeLevel({
 
     add(
       "echo",
-      createTerrain(echoDepth, thermal, structureFade, connections?.terrain),
+      await createTerrain(
+        echoDepth,
+        thermal,
+        structureFade,
+        connections?.terrain,
+      ),
     );
     add(undefined, createAirParticles());
     add("scent", scent?.module);
@@ -388,12 +384,12 @@ export function composeLevel({
     });
   }
 
-  function createTerrain(
+  async function createTerrain(
     echoDepth: EchoDepthEffect | undefined,
     thermal: ThermalPerceptionEffects | undefined,
     worldFade: WorldFadeEffect | undefined,
     soilOpening: TerrainMaterialEffect | undefined,
-  ): WorldModule | undefined {
+  ): Promise<WorldModule | undefined> {
     const preset = level.terrain;
     // A level that keeps its surface invisible still needs it to hide what
     // stands behind a hill. The occluder writes depth and no color, carries no
@@ -412,7 +408,7 @@ export function composeLevel({
         : undefined;
     }
 
-    const presentation = createTerrainPresentation(preset);
+    const presentation = await createTerrainPresentation(preset);
     // The first-applied effect executes last and wins the final color (see
     // material-shader-patch): the world fade dissolves the finished surface
     // into the background, thermal covers everything inside its radius, and
@@ -589,14 +585,13 @@ export function composeLevel({
     });
   }
 
-  function createTerrainPresentation(
+  async function createTerrainPresentation(
     preset: TerrainPreset,
-  ): TerrainPresentation | undefined {
+  ): Promise<TerrainPresentation | undefined> {
     if (preset.presentation === "zones") {
-      const createZonePresentation = standaloneModules?.createZonePresentation;
-      if (!createZonePresentation) {
-        throw new Error("Zone Visualizer module was not loaded");
-      }
+      const { createZoneVisualizer: createZonePresentation } = await import(
+        "../modules/zone-visualizer/zone-visualizer"
+      );
       return createZonePresentation(worldSurface, ZONE_SETTINGS);
     }
     if (preset.colors) {

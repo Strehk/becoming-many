@@ -55,10 +55,6 @@
         "name": "entries",
         "patterns": ["src/entry/*.entry.ts", "src/entry/deployment-config.ts"]
       },
-      {
-        "name": "standalone-level-tools",
-        "patterns": ["src/entry/standalone-level-modules.ts"]
-      },
       { "name": "flash", "patterns": ["src/ui/flash/**"] },
       {
         "name": "ui",
@@ -133,11 +129,6 @@
         ]
       },
       {
-        "from": "standalone-level-tools",
-        "allow": ["modules/zone-visualizer"],
-        "allowTypeOnly": ["levels", "level-contracts"]
-      },
-      {
         "from": "benchmark",
         "allow": ["world"]
       },
@@ -146,7 +137,6 @@
         "allow": [
           "ui",
           "flash",
-          "standalone-level-tools",
           "benchmark",
           "shared",
           "diagnostics",

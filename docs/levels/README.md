@@ -27,7 +27,7 @@ once and gates intensities, background and solid-world fade using the show clock
 Flight position remains continuous.
 
 D3 replaces layer spreads and hidden override order with explicit independent
-TypeScript levels, following `test.level.ts`. Missing module means absent; missing
+TypeScript levels, following `diagnostic.level.ts`. Missing module means absent; missing
 optional setting uses its documented module default; invalid or missing required
 settings fail during preparation. A reviewed direct construction plan must preserve
 one prepared world per visit, compare effective settings and avoid a second show
@@ -43,9 +43,9 @@ configuration. Senses still accumulate; resources do not rebuild at every cue.
   grass.
 - `motion.level.ts`, `thermal.level.ts`, `magnetic.level.ts`, and
   `connections.level.ts` layer their named perceptions in order.
-- `test.level.ts` is the diagnostic landscape with Zone Visualizer, legacy
-  Grass, magnetic sky, and diagnostics UI.
-- `designTest.level.ts` is the visual integration preset without Zone
+- `diagnostic.level.ts` is the diagnostic landscape with Zone Visualizer, Grass
+  Clipmap, magnetic sky, and diagnostics UI.
+- `visual-integration.level.ts` is the visual integration preset without Zone
   Visualizer.
 
 The full catalog and URL names are in `src/levels/level-catalog.ts`.

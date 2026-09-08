@@ -140,7 +140,7 @@ export function describeUsage(): string {
     "",
     "Examples:",
     "  bun run benchmark --profile quick --level magnetic",
-    "  bun run benchmark --skip-level test --skip-level design-test",
+    "  bun run benchmark --skip-level diagnostic --skip-level visual-integration",
   ].join("\n");
 }
 

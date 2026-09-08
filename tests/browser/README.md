@@ -34,17 +34,19 @@ all browser scenarios and error checks remain active. It also supports Vite
 preview. The report records this mode; production Station checks stay the default.
 
 The smoke checks `/health` and `/config`, all three HTML entries, all ten level
-paths from the level-name catalog, and a query-selected level. Readiness means
-finished startup and a usable canvas, rather than HTTP success alone. Rehearsal
+paths from the level-name catalog, and query-selected standalone levels on the
+root Experience document. Readiness means finished startup and a usable canvas,
+rather than HTTP success alone. Rehearsal
 and Conductor checks cover audio wake, play, pause, language selection, cue seek,
 reset, and a second play. Flash checks readiness, removes legacy stored passwords,
 and submits synthetic credentials through an isolated in-memory serial port.
 Only SSID/device ID survive reload; the password reaches the simulated port but
 never storage or the page log. No physical serial port or device is accessed.
-The four UI surfaces are also checked at 1280 and 390 CSS pixels, including
-Flash scrolling, timeline drag/release/cancel, inline-style absence, transport
-contrast/size, drawer focus/inert state, simulated accepted M5 preview geometry
-and final/persisted Conductor pagehide. The simulated M5 never contacts hardware.
+The three UI pages and the root page's standalone-level layout are also checked
+at 1280 and 390 CSS pixels, including Flash scrolling, timeline
+drag/release/cancel, inline-style absence, transport contrast/size, drawer
+focus/inert state, simulated accepted M5 preview geometry and
+final/persisted Conductor pagehide. The simulated M5 never contacts hardware.
 The report records whether Conductor required a wake gesture; an already
 running audio context legitimately skips its hidden wake overlay.
 
@@ -60,8 +62,8 @@ the run. Each failed functional route retains a screenshot and Playwright trace:
 bunx playwright show-trace benchmark-results/issue-75/smoke-1/0-trace.zip
 ```
 
-Successful routes retain screenshots, including the four surfaces at desktop and
-narrow widths. Screenshot capture uses the original caret so Playwright does not
+Successful routes retain screenshots of the three pages and standalone-level
+layout at desktop and narrow widths. Screenshot capture uses the original caret so Playwright does not
 leave empty inline-style attributes on authored inputs. Three denied-WebGL
 scenarios verify declared startup alerts/canvas ownership. Flash additionally
 checks safe device responses, duplicate/late port selection and complete close.

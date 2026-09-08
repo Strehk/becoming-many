@@ -23,13 +23,13 @@ describe("readOptions", () => {
   test("leaves the skipped levels out of a full run", () => {
     const options = readOptions([
       "--skip-level",
-      "test",
+      "diagnostic",
       "--skip-level",
-      "design-test",
+      "visual-integration",
     ]);
 
-    expect(options.levelNames).not.toContain("test");
-    expect(options.levelNames).not.toContain("design-test");
+    expect(options.levelNames).not.toContain("diagnostic");
+    expect(options.levelNames).not.toContain("visual-integration");
     expect(options.levelNames).toContain("connections");
   });
 

@@ -30,7 +30,6 @@ import {
   composeLevel,
   type LoadedLevelAssets,
   loadLevelAssets,
-  type StandaloneLevelModules,
 } from "./level-composition";
 import type { LevelPreset } from "./level-preset";
 import {
@@ -72,8 +71,6 @@ interface CommonLevelRequest {
   readonly m5ExpectedDeviceId?: string;
   /** Entry-owned diagnostic work; absent from normal Experience runs. */
   readonly onFrame?: (deltaSeconds: number) => void;
-  /** Concrete modules that only diagnostic presets can request. */
-  readonly standaloneModules?: StandaloneLevelModules;
 }
 
 export interface StaticLevelRequest extends CommonLevelRequest {
@@ -117,12 +114,11 @@ export async function startLevel(
     world.camera.far = presentation.viewDistance;
     world.camera.updateProjectionMatrix();
 
-    const composition = composeLevel({
+    const composition = await composeLevel({
       world,
       level,
       assets,
       forShow: request.kind === "show",
-      standaloneModules: request.standaloneModules,
     });
     const { worldSurface, reach, hasGround, start } = composition;
     const startInput = { turnRight: 0, climb: 0 };

@@ -11,15 +11,15 @@ import {
   type LevelName,
 } from "../../shared/level-routes";
 import { level as connectionsLevel } from "./connections.level";
-import { level as designTestLevel } from "./designTest.level";
+import { level as diagnosticLevel } from "./diagnostic.level";
 import { level as echoLevel } from "./echo.level";
 import type { LevelPreset } from "./level-preset";
 import { level as magneticLevel } from "./magnetic.level";
 import { level as motionLevel } from "./motion.level";
 import { level as scentLevel } from "./scent.level";
 import { level as startLevel } from "./start.level";
-import { level as testLevel } from "./test.level";
 import { level as thermalLevel } from "./thermal.level";
+import { level as visualIntegrationLevel } from "./visual-integration.level";
 import { level as whiteWorldLevel } from "./white-world.level";
 
 /** Narrative order first, diagnostic presets last. */
@@ -32,8 +32,8 @@ export const LEVEL_CATALOG = {
   thermal: thermalLevel,
   magnetic: magneticLevel,
   connections: connectionsLevel,
-  test: testLevel,
-  "design-test": designTestLevel,
+  diagnostic: diagnosticLevel,
+  "visual-integration": visualIntegrationLevel,
 } as const satisfies Record<LevelName, LevelPreset>;
 
 export {

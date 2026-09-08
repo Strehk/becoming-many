@@ -1,8 +1,8 @@
 /**
- * Purpose: Define the isolated visual-design test level.
+ * Purpose: Define the isolated visual integration level.
  * Context: Colors and later textures need a stable scene separate from diagnostics.
  * Responsibility: Author the complete visual color contract for every active module.
- * Boundary: Zone Visualizer stays in test.level; this file creates no runtime resources.
+ * Boundary: Zone Visualizer stays in diagnostic.level; this file creates no runtime resources.
  */
 
 import type { LevelPreset } from "./level-preset";
@@ -11,7 +11,6 @@ export const level: LevelPreset = {
   backgroundColor: 0xeaf0fb,
   viewDistance: 180,
   maximumGroundClearanceMeters: 50,
-  diagnosticsUi: true,
   airParticles: {
     density: {
       // Thinner than the narrative layer, recolored into the design palette.

@@ -33,8 +33,8 @@ Git authorization. See [confirmed decisions](architecture-decisions.md).
 
 The application must support:
 
-- One independently configured static level, including the diagnostic Test
-  level and deterministic benchmark entry.
+- One independently configured static level, including the diagnostic level and
+  deterministic benchmark entry.
 - One show with accumulated senses, scheduled animal passages, English/German
   narration, organ, tutorial and closing credits in one prepared world per visit.
   The current 8:41 schedule is observed; tutorial/credits timing remains a decision.
@@ -77,7 +77,7 @@ flowchart TB
   Backend["Station backend<br/>Files · deployment facts · process health"]
   subgraph Browser["Browser application"]
     Entry["Entry<br/>Request · startup · page exit"]
-    UI["UI<br/>Conductor · Rehearsal · Test"]
+    UI["UI<br/>Conductor · Rehearsal · Diagnostics · Flash"]
     Engine["Experience Engine<br/>Run · Show · World · input · content"]
     Entry -.->|"mount and connect"| UI
     Entry -.->|"start or cancel one Run"| Engine
@@ -89,8 +89,10 @@ flowchart TB
   Engine <-->|"WebXR session and poses"| Headset["Headset runtime"]
 ```
 
-Only one of Conductor, Rehearsal or Test is mounted per experience page. Flash
-is a separate setup page using Web Serial; it does not start a Show or Run.
+The root Experience document mounts Rehearsal for the complete show or the
+unified Diagnostics overlay for a standalone level; it has no separate Test
+document. Conductor and Flash are separate pages. Flash uses Web Serial and
+does not start a Show or Run.
 The Station backend never receives transport commands or owns visitor state.
 `src/entry/deployment-config.ts` fetches browser deployment facts; `shared/`
 owns their platform-neutral contract and public routes. `station/` is the backend
@@ -219,7 +221,7 @@ not counted as deleting its capability.
 | Existing responsibility | Owned state/resources | Inputs and actual consumers | Calls, end and exclusion |
 | --- | --- | --- | --- |
 | **Entry** (browser `.entry.ts` targets) | Request/deployment resolution, pending-start cancellation, UI/Run references, optional diagnostic sampler | Browser inputs → Run request and UI bindings | Starts/cancels/ends one Run, mounts/unmounts UI. No experience policy. |
-| **UI** (Conductor, Rehearsal, Test, Flash) | DOM, input bindings, drag preview, confirmation timers, display caches | Narrow commands and observations → operator interaction | Releases UI listeners and subscriptions only. No child-resource disposal, device validation or Show/reset policy. |
+| **UI** (Conductor, Rehearsal, Diagnostics, Flash) | DOM, input bindings, drag preview, confirmation timers, display caches | Narrow commands and observations → operator interaction | Releases UI listeners and subscriptions only. No child-resource disposal, device validation or Show/reset policy. |
 | **Run** (`level.runtime.ts`) | Child references, startup/closing state, source GLTF assets | Discriminated request; commands, cancellation and complete `unload()` for Entry | Direct startup, input selection, local frame/restart/end. No concrete content algorithms or second loop. |
 | **Composition** (`level-composition.ts`) | No persistent owner state | Recipes, World, borrowed assets → Surface, ordered modules and ShowWorldReach | Called once by Run; factories clean partial failure. No transport, registry or coordinator object. |
 | **World** (`world-runtime.ts`) | Renderer/context, scene, rig/camera, Timer, XR/resize listeners, ModuleRuntime and StreamQueue; borrowed declared canvas/viewport | Run's frame function; viewpoint and execution for modules; optional benchmark FrameControl | Run starts it last/stops it first. Owns preparation, render and final release. No level policy or show clock. |
@@ -240,14 +242,15 @@ replaces them.
 
 ## 5. Complete target flows
 
-### Read the Test level like a short chapter
+### Read the diagnostic level like a short chapter
 
-For `/?level=test`, [test.level.ts](../src/levels/test.level.ts) directly
-states white background, 180 m view range, 50 m maximum ground clearance and
-diagnostics UI. It includes Air Particles (80 per chunk), zone-colored Terrain, Grass
+For the Experience page in standalone mode at `/?level=diagnostic`,
+[diagnostic.level.ts](../src/levels/diagnostic.level.ts) directly states white background,
+180 m view range, 50 m maximum ground clearance and diagnostics UI. It includes
+Air Particles (80 per chunk), zone-colored Terrain, Grass
 Clipmap, Vegetation, Rocks, Animals and Magnetic sky. It does not request Scent,
 Echo Depth, Motion, Thermal or Connections. These are observed diagnostic
-choices, not new defaults. Test and Design Test now use the same Grass Clipmap
+choices, not new defaults. Diagnostic and Visual Integration now use the same Grass Clipmap
 construction path as the Show (#13), preserving the seven-module explanation.
 
 A reader can therefore explain the result: load the vegetation/rock/animal
@@ -267,7 +270,7 @@ not simply the number of source files.
 **Target reading order in existing files** (schematic, not a new API):
 
 ```text
-test.level.ts                 What exists and its authored values.
+diagnostic.level.ts           What exists and its authored values.
 standalone-level.entry.ts      Select this recipe and explicit entry tools.
 level.runtime.ts / startLevel Load sources; create a stopped World.
                               Apply initial presentation before allocation.
@@ -451,7 +454,7 @@ XR calibration remain explicit parts of the restart proposal, not renaming.
 
 **Confirmed, [#85](https://github.com/Strehk/becoming-many/issues/85):** each level
 states its modules and desired settings directly,
-following [test.level.ts](../src/levels/test.level.ts). Confirmed 2026-09-07:
+following [diagnostic.level.ts](../src/levels/diagnostic.level.ts). Confirmed 2026-09-07:
 one level equals one file containing literal parameter values. Only type-only
 imports are allowed; remove imported parameter blocks, functions, spreads,
 inheritance and hidden overrides. Extra explicit configuration lines are approved
@@ -513,8 +516,8 @@ consume those same weights for their own density/coverage. No module owns a
 second zone classifier, transition width or smoothing calculation.
 
 **Observed:** `4807c0d` selected Clipmap for narrative Grass but retained legacy
-Grass for diagnostics. #13 migrates `test.level.ts` and `designTest.level.ts`
-to `grassClipmap` and removes the legacy Composition/Test-loader path.
+Grass for diagnostics. #13 migrated the diagnostic and visual-integration presets
+to `grassClipmap` and removed the former standalone loader path.
 #71 adds `zoneInfluencesAt` to [World Surface](../src/world-surface/world-surface.ts).
 [getGrassZoneCoverage](../src/modules/grass-clipmap/grass-height-field.ts) weights
 its own coverage; `selectStaticPlacement` weights authored population densities
@@ -537,7 +540,7 @@ centrally owned rules, never become another authored zone authority.
 **Removed in #13:** `src/modules/grass/`, `GrassPreset`, `WorldComposition.grass`,
 Composition's legacy factory/contract, the Test loader's legacy import and
 `tests/modules/grass.test.ts`, including exclusive loader/preset cases. Both
-diagnostics directly author `grassClipmap`. Zone Visualizer's lazy loader,
+diagnostic presets directly author `grassClipmap`. Zone Visualizer's direct lazy import,
 Clipmap tests, shared material effects and `thermal.grass` remain. No legacy
 fallback, compatibility config or second renderer replaces the deleted path.
 Diagnostic meadow density/height and palettes remain authored; Clipmap's common
@@ -599,15 +602,17 @@ supports creating/replacing/disposing contexts; release nodes/ticker and await
 closure, then establish a fresh context before next-run nodes. Late imports
 must release acquired resources. Actual restart/worklet behavior remains unproved.
 
-#14 removes the additional GPU probe in the Test
-[diagnostics overlay](../src/ui/diagnostics/diagnostics-overlay.panel.ts); the entry owns its
-bounded diagnostic handle and restores hooks on end. World supplies the actual
-capability report on demand; startup errors stay visible. #35 makes Test own its
-diagnostics UI and sampler, with Conductor reading its own sampler directly. Run keeps
-only an optional `onFrame` input; the metrics type lives beside the sampler.
-World exposes read-only live draw counters without renderer mutation access.
-The root has no sampler; Conductor still reads every 500 ms; the lazy Test-module
-loader remains. No observation contract file or additional loop was introduced.
+#14 removes the additional GPU probe in the standalone
+[diagnostics overlay](../src/ui/diagnostics/diagnostics-overlay.panel.ts); the
+standalone-level entry owns its bounded diagnostic handle and restores hooks on
+end. World supplies the actual capability report on demand; startup errors stay
+visible. #35 makes the standalone-level entry own its diagnostics UI and sampler,
+with Conductor reading its own sampler directly. Run keeps only an optional
+`onFrame` input; the metrics type lives beside the sampler. World exposes
+read-only live draw counters without renderer mutation access. The complete-show
+root has no sampler; Conductor still reads every 500 ms; the lazy standalone
+module loader remains. No observation contract file or additional loop was
+introduced.
 
 **Confirmed diagnostic separation:** ordinary Experience operation has no extra
 GPU probes, probe renderers or expensive diagnostic measurements. Diagnostic
@@ -685,7 +690,7 @@ remove old consumers, obsolete tests and documentation with the replaced path.
 | `src/control/flight-reset.ts` | Only Run uses its two transform assignments | Remove wrapper when the fresh-run sequence establishes required initialization | Existing Run startup/restart | Imported reset wrapper; reset-only visitor semantics | D1/D2; concrete restart gate first, preserve local head pose |
 | `src/levels/show-renderer-preparation.ts` | Only Run passes World resources through `ShowRenderWorld` | Delete file, retain operations | Existing World closure | `ShowRenderWorld`, separate preparation wrapper/import | #73 implemented; unchanged preparation and failure restoration verified |
 | `sense-layers.ts`, `show-composition.ts`, authored Terrain/Connections forwarding files | Layer membership, hidden warm variant and duplicate Show recipe | Removed in #85 | Explicit module keys and the Connections preset for Show | Layer objects, spreads, duplicate Show type/request and exclusive test | All nine effective presets and Show settings preserved; shared content parameters retained |
-| `src/modules/grass/`, `GrassPreset`, `WorldComposition.grass`, two diagnostic `grass` recipes; Composition/Test loader legacy factory and import; `tests/modules/grass.test.ts` | Duplicate renderer and diagnostic-only construction path | Removed in #13; both diagnostics use `grassClipmap` | Existing Grass Clipmap for Show/Test/Design Test | `createGrass`, `CreateLegacyGrass`, `createLegacyGrass`, legacy shaders/config/loading and exclusive test cases | D5/#13: owner decided; preserve shared effects and Zone Visualizer loading. #40 becomes unnecessary; #71/#72 and Windows-PCVR acceptance remain |
+| `src/modules/grass/`, `GrassPreset`, `WorldComposition.grass`, two diagnostic `grass` recipes; former standalone loader factory and import; `tests/modules/grass.test.ts` | Duplicate renderer and diagnostic-only construction path | Removed in #13; both diagnostics use `grassClipmap` | Existing Grass Clipmap for Show, Diagnostic and Visual Integration | `createGrass`, `CreateLegacyGrass`, `createLegacyGrass`, legacy shaders/config/loading and exclusive test cases | D5/#13: owner decided; preserve shared effects and Zone Visualizer loading. #40 becomes unnecessary; #71/#72 and Windows-PCVR acceptance remain |
 
 ### Functions, contracts and state removed inside retained files
 
@@ -824,7 +829,7 @@ account. Final diffs and discussion take precedence over stale descriptions.
 | [#55](https://github.com/Strehk/becoming-many/pull/55), merged | Final diff tests existing arc/lookahead motion across frame rates; it did not retain a second 2.2-rad/s implementation. Preserve one motion owner, verify behavior. |
 | [#59](https://github.com/Strehk/becoming-many/pull/59), closed unmerged | Rehearsal removal was explicitly rejected and withdrawn. D2 retains the workflow and shares only duplicate mechanics. |
 | [#60](https://github.com/Strehk/becoming-many/pull/60), merged | Construction/live-state separation, opening preparation and shared authored values are present. D1/D3 challenge remaining return-channel and layer-spread costs without undoing these gains. |
-| [#61](https://github.com/Strehk/becoming-many/pull/61), merged | Entry-owned optional diagnostics and lazy Test factories already isolate bundles. Preserve this purpose; do not generalize factories into plugins. |
+| [#61](https://github.com/Strehk/becoming-many/pull/61), merged | Optional diagnostics and lazy Zone Visualizer loading isolate bundles. Preserve this purpose; do not generalize it into plugins. |
 
 The six open PRs below are by `E-Mus`, **not the user**, and none of these
 extensions is part of the inspected baseline. They offer alternatives, not
@@ -861,7 +866,7 @@ keeps its packed buffer, dynamic links, capacities and tests without serving
 current content. The 2026-09-06 D4 decision now authorizes its retirement;
 the historical review itself did not constitute implementation acceptance.
 
-A second independent review applied the Test-level reading check. It confirmed
+A second independent review applied the diagnostic-level reading check. It confirmed
 the local setup/result/metrics detours and rejected new M5-lifetime, diagnostics
 and gesture controllers. The deletion ledger now names whole one-consumer files
 and exact local contracts. World, Composition, input math and content algorithms

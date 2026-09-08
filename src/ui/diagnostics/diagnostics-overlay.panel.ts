@@ -27,7 +27,7 @@ export interface DiagnosticsOverlay {
   readonly update: (deltaSeconds: number) => void;
 }
 
-/** Create the shared Test diagnostics surface; error capture is opt-in by URL. */
+/** Create the shared diagnostics surface; error capture is opt-in by URL. */
 export function createDiagnosticsOverlay(
   container: HTMLElement,
   captureRuntimeErrors: boolean,
@@ -46,11 +46,7 @@ export function createDiagnosticsOverlay(
     '[data-metric="triangles"]',
     HTMLOutputElement,
   );
-  const log = requireElement(
-    root,
-    "[data-headset-diagnostics]",
-    HTMLPreElement,
-  );
+  const log = requireElement(root, "[data-diagnostics-log]", HTMLPreElement);
   const lifetime = new AbortController();
   const { signal } = lifetime;
   let renderCounters: RenderCounters | undefined;

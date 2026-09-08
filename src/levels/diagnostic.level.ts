@@ -1,7 +1,7 @@
 /**
- * Purpose: Define the current landscape development level.
- * Context: Terrain must be tested without becoming part of White World.
- * Responsibility: Activate the landscape test presentation and its required modules.
+ * Purpose: Define the current landscape diagnostics level.
+ * Context: Terrain needs inspection without becoming part of White World.
+ * Responsibility: Activate the diagnostic terrain presentation and its modules.
  * Boundary: This file contains data only and creates no runtime resources.
  */
 
@@ -11,7 +11,6 @@ export const level: LevelPreset = {
   backgroundColor: 0xffffff,
   viewDistance: 180,
   maximumGroundClearanceMeters: 50,
-  diagnosticsUi: true,
   airParticles: {
     density: {
       // Thinner than the narrative layer; diagnostics need an uncluttered view.

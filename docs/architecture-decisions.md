@@ -24,7 +24,9 @@ history belongs in Git; unresolved product and deployment questions belong in
   under `src/entry/`; shared deployment and route contracts live outside browser
   source. World borrows a page-declared canvas/viewport and owns WebGL lifetime.
   Texture canvases remain content resources. Shared transport gestures replace
-  duplicate UI mechanics; no new framework or global store is introduced.
+  duplicate UI mechanics; the root Experience document replaces the separate
+  diagnostics document and exposes one diagnostics overlay for standalone runs. No new
+  framework or global store is introduced.
 - Confirmed 2026-09-07: separate browser Entry, operator UI and experience
   Engine. Conductor is a control/display surface; the existing Run owns
   experience orchestration and Show owns transport/language. The Engine runs
@@ -45,7 +47,7 @@ history belongs in Git; unresolved product and deployment questions belong in
 - Concrete content modules never import sibling modules. Level Composition
   connects them through small directional contracts.
 - Confirmed 2026-09-06, D3: level files state their modules and desired settings
-  explicitly and independently, using `test.level.ts` as the reading model.
+  explicitly and independently, using `diagnostic.level.ts` as the reading model.
   Confirmed 2026-09-07: one level is one self-contained literal parameter object.
   Only type-only imports are allowed. Remove imported parameter blocks, helpers,
   spreads and inheritance; extra explicit configuration lines are approved.
@@ -79,10 +81,10 @@ history belongs in Git; unresolved product and deployment questions belong in
   runtime intensities instead of rebuilding the world at every cue.
 - Confirmed 2026-09-05 in [target D5](target-architecture.md#d5--clipmap-only-world-surface-owns-all-zone-transitions):
   Grass Clipmap is the sole target renderer for Show and all Grass-bearing
-  diagnostic levels. #13 migrates Test/Design Test and removes the complete legacy
-  implementation, contracts, configuration, loading path and exclusive tests.
-  Migration and actual Windows-PCVR/USB-C acceptance remain outstanding; owner selection
-  is settled.
+  diagnostic levels. #13 migrated Diagnostic/Visual Integration and removed the complete
+  legacy implementation, contracts, configuration, loading path and exclusive
+  tests. Actual Windows-PCVR/USB-C acceptance remains outstanding; owner
+  selection is settled.
 - World Surface owns zone conditions, thresholds and shared continuous transition
   weights. Grass Clipmap, Vegetation and Rocks derive their coverage/density from
   those weights under #71; genuine habitat exclusions retain hard classification

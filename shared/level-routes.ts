@@ -14,8 +14,8 @@ export const LEVEL_NAMES = [
   "thermal",
   "magnetic",
   "connections",
-  "test",
-  "design-test",
+  "diagnostic",
+  "visual-integration",
 ] as const;
 
 export type LevelName = (typeof LEVEL_NAMES)[number];

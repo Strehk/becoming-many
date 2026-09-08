@@ -39,11 +39,12 @@ The #80 animal-connection removal is implemented below. Small additions remain i
 - `?language=de|en` selects narration for the full show.
 - `/?level=<name>` or `/<name>` opens one preset without the show.
   Known names are `start`, `white-world`, `scent`, `echo`, `motion`, `thermal`,
-  `magnetic`, `connections`, `test`, and `design-test`.
-- The Test page accepts `?benchmark[=<profile>]`, `?m5=<host>`, and
-  `?diagnostics=1` for deterministic replay and explicit development tools.
-  Diagnostics reads the existing renderer, retains the first fatal error, and
-  releases its hooks on exit. All three application entries show startup failures.
+  `magnetic`, `connections`, `diagnostic`, and `visual-integration`.
+- The Experience page's standalone mode accepts `?benchmark[=<profile>]`,
+  `?m5=<host>`, and `?diagnostics=1` for deterministic replay and explicit
+  development tools. Its one diagnostics overlay reads the existing renderer,
+  retains the first fatal error, and releases its hooks on exit. All three
+  application entries show startup failures.
 - `/start` provides standalone steering practice using the existing M5 input and
   World lifecycle. It does not implement the full visitor/calibration handoff.
 - `/conductor.html` is the station/operator page and hosts the show in-process.
@@ -69,9 +70,10 @@ The #80 animal-connection removal is implemented below. Small additions remain i
   owns the stopped renderer, GPU preparation and subsequent loop start.
 - Static presentation or the schedule's opening show state is applied before
   modules size their fixed spatial windows.
-- Test and Conductor entries own their DOM-free metrics; Test owns its overlay lifetime. The
-  rehearsal show neither samples those metrics nor loads diagnostics UI or Zone Visualizer.
-- Grass Clipmap is the sole Grass renderer, including Test and Design Test;
+- Standalone-level and Conductor entries own their DOM-free metrics; the
+  standalone-level entry owns the diagnostics overlay lifetime. The rehearsal
+  show neither samples those metrics nor loads diagnostics UI or Zone Visualizer.
+- Grass Clipmap is the sole Grass renderer, including Diagnostic and Visual Integration;
   legacy Grass and its diagnostic construction path have been removed (#13).
 - The show clock is the authority for narration, world-state selection,
   transitions, sense intensity, and end-credit presence.
@@ -111,7 +113,7 @@ The #80 animal-connection removal is implemented below. Small additions remain i
   because a crossing happens between senses. The swarm has no body: what
   crosses is the trail it prints, through its own ring composed beside Motion
   Sense at full strength, since the sense it announces still stands at zero.
-- The `test` and `design-test` presets remain integration/diagnostic surfaces;
+- The `diagnostic` and `visual-integration` presets remain integration/diagnostic surfaces;
   they are not narrative states.
 
 ## Controls, Audio, and Station

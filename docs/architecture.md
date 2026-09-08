@@ -11,8 +11,9 @@ Vite uses `src/ui/` as its root. HTML references `/entry/` scripts, resolved by
 Vite to `src/entry` in development and build. Three HTML documents retain their public routes:
 
 - `index.html` loads `src/entry/experience.entry.ts`: the complete rehearsal show
-  by default, or standalone levels, benchmarks, headset diagnostics, and direct-M5
-  development when an explicit request selects that mode.
+  by default, or standalone levels, benchmarks, the unified diagnostics overlay,
+  and direct-M5 development when an explicit request selects that mode. It
+  replaces the former separate diagnostics document.
 - `conductor.html` loads `src/entry/conductor.entry.ts`: the operator surface
   with the show running in the same page.
 - `flash.html` loads `src/entry/flash.entry.ts`: Web Serial firmware setup for the
@@ -49,7 +50,8 @@ lifetime ownership, command contracts and frame order.
 `.fallowrc.jsonc` separates browser entries, UI, Station backend and the existing
 Engine owners. UI can import pure presentation queries and owner types, but
 cannot construct a Run, Show or World. Engine cannot import UI/entries; Station
-imports only platform-neutral contracts from `shared/`, never browser source. The lazy diagnostic module loader has its own narrow entry-tool rule.
+imports only platform-neutral contracts from `shared/`, never browser source.
+Level Composition loads Zone Visualizer only when a diagnostic terrain requests it.
 `tests/levels/ui-boundary.test.ts` checks actual public capability types;
 `level-runtime-boundary.test.ts` keeps concrete content construction out of Run.
 
@@ -74,11 +76,11 @@ Entries cancel pending starts and own their DOM/listeners. A persisted `pagehide
 keeps the same visit; final page exit ends it. Visitor restart policy remains open.
 
 Standalone-level and Conductor entries own and read their DOM-free frame samplers from
-`src/diagnostics/` directly. The standalone-level entry creates and
-ends its overlay, updates it through the existing optional frame callback, and
-reads World's read-only draw counters. Run holds no UI or sampler contract.
-Zone Visualizer loads only for standalone presets that request zone presentation.
-All Grass-bearing levels use the same Grass Clipmap construction.
+`src/diagnostics/` directly. The standalone-level entry creates and ends the
+single diagnostics overlay, updates it through the existing optional frame
+callback, and reads World's read-only draw counters. Run holds no UI or sampler
+contract. Zone Visualizer loads only for standalone presets that request zone
+presentation. All Grass-bearing levels use the same Grass Clipmap construction.
 
 The single frame loop is owned by World Runtime:
 
@@ -104,7 +106,7 @@ src/
 ├── ui/              three HTML documents, app.css and surface controllers
 │   ├── conductor/   operator panels and view state
 │   ├── rehearsal/   show transport
-│   ├── diagnostics/ metrics overlay and headset diagnostics
+│   ├── diagnostics/ unified performance, graphics, and failure overlay
 │   ├── flash/       device setup form and bounded log
 │   └── shared/      reused DOM bindings, scrubbing, time and XR controls
 ├── diagnostics/     DOM-free bounded frame metrics
@@ -179,7 +181,7 @@ registry or configurable lifecycle.
 - point and network systems: Air Particles, Scent Particles, Motion Sense, and
   Mycelium/Connections;
 - material or presentation effects: Echo Depth, Thermal Perception, World Fade,
-  and the test-only Zone Visualizer;
+  and the diagnostic-only Zone Visualizer;
 - self-contained perception rendering: Magnetic Sense, which owns only its sky
   dome and does not patch sibling materials.
 
@@ -219,7 +221,7 @@ lifecycle acceptance.
 Each `src/levels/*.level.ts` recipe is one self-contained literal parameter
 object, with only a type import. Palettes, signatures, placement and warm Motion
 values are readable directly in each file. The `authored/` parameter indirection
-is retired. Test and Design Test retain their independent diagnostic values.
+is retired. Diagnostic and Visual Integration retain their independent values.
 
 The Show constructs the Connections preset once, using its background for
 material haze. `SHOW_LEVEL_STATES` contains only presentation facts

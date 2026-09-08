@@ -16,9 +16,9 @@ composition. Echo Depth is one material effect applied to Terrain, Vegetation,
 Rocks, and clipmap grass through shared shader contracts. Each content module
 retains its own geometry, placement, and lifecycle.
 
-Grass Clipmap is the narrative grass implementation from this level onward. The
-older Grass module remains in diagnostic presets only while issue #13 evaluates
-one owner using current measurements.
+Grass Clipmap is the sole grass implementation from this level onward, including
+diagnostic presets. The older Grass module and its separate diagnostic path were
+removed in issue #13.
 
 ## Current Risks
 

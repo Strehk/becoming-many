@@ -14,9 +14,9 @@ and XR controls; surface-specific behavior stays with its surface.
 Entry resolves deployment inputs, connects UI to existing owner commands and
 owns page-exit cleanup. Show owns playback, Run owns experience lifetime and
 World owns rendering resources while borrowing the declared canvas/viewport.
-Frame metrics live outside UI in `src/diagnostics/`; the Test module loader
-belongs to Entry. Device validity stays in M5, whose `readObservation()` never
-consumes frame input.
+Frame metrics live outside UI in `src/diagnostics/`; the standalone-level entry
+owns the optional diagnostics overlay. Device validity stays in M5, whose
+`readObservation()` never consumes frame input.
 
 Icons reference individual `lucide-static` SVG assets with declarative `<use>`
 elements. Keep `?no-inline` on their URLs: browsers reject data URLs in SVG
