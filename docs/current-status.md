@@ -222,8 +222,13 @@ The #80 animal-connection removal is implemented below. Small additions remain i
 - Five DE narration recordings were located in the predecessor tutorial
   repository. The literal recipe currently omits both `startAudio` and
   `startNarration`, so production training remains silent. DE-use permission,
-  EN fallback and final sample selection are pending; source discovery does not
-  establish acceptance. These content decisions, human
+  EN fallback remain pending; source discovery does not establish narration
+  acceptance. Eleven user-supplied generated instrumentals are now preserved in
+  `public/audio/granular/` with provenance and full-decode/level checks. The
+  [granular atmosphere step](roadmap.md#granular-atmosphere--112) plans three
+  spatial layers, a distinct goal cue and one shared hall, replacing the ordinary
+  bed at the existing training owner. Excerpts, mix and runtime integration are
+  not implemented or listened to yet. These content decisions, human
   listening/comprehension and Windows-PCVR spatial-audio/90 Hz acceptance remain
   open; no successful local test substitutes for them.
 - The conductor page provides Play/Pause, immediate Stop, language, an embedded

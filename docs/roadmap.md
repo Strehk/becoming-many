@@ -13,7 +13,7 @@ Live issues own acceptance. Do not create a second implementation plan.
 | Branch | `david_refactor` only. Commit/push completed, tested blocks to `origin/david_refactor` and verify success; no main, force-push or additional branches. |
 | Current request | Complete #50 and its actual #109–#113 prerequisites: spatial tutorial, existing Show/Run integration, bounded particle/sound presentation, combined verification and targeted commit/push. Preserve explicit audio-content and physical acceptance. |
 | Source checkpoint | `1adc872` preserves the clean source before the spatial tutorial. Earlier UI/M5 and audio-wake evidence retains its own source identities. |
-| Next implementation | Spatial Start and Show/Run handoff pass local tests, build, lint and production-browser interaction. Production training is silent: `startAudio`/`startNarration` remain absent pending DE-use permission, EN fallback and sample selection. Preserve prior [UI evidence](evidence/ui-consolidation/README.md) and separate physical acceptance. |
+| Next implementation | Spatial Start and Show/Run handoff pass local tests, build, lint and production-browser interaction. Production training is silent: `startAudio`/`startNarration` remain absent. Eleven user-provided granular sources are archived; #112 next selects excerpts and replaces the ordinary bed with spatial granular layers and shared reverb. DE-use permission and EN behavior remain open. Preserve prior [UI evidence](evidence/ui-consolidation/README.md) and separate physical acceptance. |
 | Confirmed direction | Conductor is UI only; Entry connects UI to the existing browser Engine. Show owns transport/language, Run owns lifetime, World owns rendering, M5 owns validity. Backend remains Station delivery/config/health. Affected role filenames and `src/ui/app.css` are implemented. |
 | Existing software | Direct startup, complete child/source cleanup, entry diagnostics, explicit literal levels, legacy Grass retirement, shared zone influences, approved bank clearance and shared Rocks/Vegetation lifecycle are implemented. Their distinct remaining issue acceptance is preserved. |
 | Current visitor behavior | Initial Play, four spatial goals without a deadline, then operator handoff. Interim Stop resets rig/time and holds; after handoff it recreates only retired training content. Complete replacement and fresh calibration remain #9/#46 decisions. |
@@ -72,8 +72,10 @@ World, locomotion and background particles retain their existing responsibilitie
 
 #109/#110/#113 implement the fixed particle cloud, swept ring passage and bounded
 wake/appearance. Sound and narration reuse existing owners for #111/#112. Five
-DE recordings were located in the predecessor tutorial source, but rights,
-language fallback and final samples still need their specific content acceptance.
+DE recordings were located in the predecessor tutorial source; their use and
+language fallback still need specific acceptance. Eleven user-provided generated
+instrumentals are now archived as granular material; the integration step below
+owns their excerpt selection and sound implementation.
 The production recipe therefore contains no tutorial audio or recordings; standalone
 Start uses only the native Show timebase. Configured instruction playback can finish
 before the next goal is presented, and post-handoff reset remains held until its
@@ -92,6 +94,53 @@ visitor replacement or fresh calibration.
 workflow; its old three-issue review gate no longer blocks source work. Other
 issues with remaining physical, content, numerical-reference or unexplained
 failure criteria remain open, even when their source refactor is implemented.
+
+## Granular Atmosphere — #112
+
+The user supplied eleven instrumentals and requested multiple granular layers,
+spatial distribution, substantial reverb and a distant character. The originals
+and technical catalog are in [Sound](../src/sound/README.md#granular-atmosphere-source-material).
+This supersedes waiting for source samples; it does not approve narration
+fallbacks or constitute listening acceptance. Complete this at the existing
+training sound owner before combined #50 audio/render acceptance:
+
+1. Audition the sources and select up to three contrasting 8–20 second excerpts.
+   Preserve originals; record source file and in/out times for derivatives.
+   Prepare mono point-source excerpts with fades and mix headroom. Load only
+   these excerpts, share their decoded buffers across voices, and never decode
+   the whole 29.6-minute bank in a Run (about 650 MiB of stereo float audio).
+2. Extend `TrainingAudioParameters` and `training-audio.runtime.ts` in place;
+   author the complete recipe as a literal in `start.level.ts`. Replace the
+   ordinary looping Player bed with three granular atmosphere layers; retain
+   one separately controlled current-goal voice within the existing four-source
+   spatial capacity. Initial layer roles are low bed, middle texture and sparse
+   highlights; assign sources only after audition. No second sound runtime,
+   global scheduler, context, listener writer or full-track soundtrack.
+3. Anchor atmosphere sources at fixed world positions around the course, not
+   to the player. Tone controls grains/envelopes/filtering; Three places the
+   direct sound. Use slower independent grain offsets/rates, restrained direct
+   gain and low-pass filtering for distance. Start with atmosphere grains of
+   200–400 ms and rates at most 1: at most 15 starts/s across three layers, plus
+   the separately bounded goal voice (at most 25/s). Verify actual retained
+   native sources, including scheduling lookahead and stop tails.
+4. Give those layers explicit sends to one training-owned, fully wet Tone.Reverb
+   return, prepared once before readiness. Tune an initially 8–12 second tail
+   and a low direct/reverberant ratio for distance. The diffuse return may be
+   non-positional; the quiet direct sources and current goal remain spatially
+   locatable. Do not put a reverb on every emitter, duplicate full-level output
+   routes or regenerate the impulse during frames. Keep narration out of this
+   effect and reduce ambience while speech plays. Reuse existing Tone/node
+   patterns, not private drone-organ nodes.
+5. Run continues to await sample/room preparation and own cancellation/reset/end;
+   Show supplies existing play/pause and speech facts. Start observations drive
+   only goal formation/crossing/dissolution, never learning from audio. End must
+   stop grains and release filters, room/tails, sources and exclusive buffers.
+   Measure all layers plus shared reverb with rendering, then verify head-turn
+   localization, distance, speech clarity, pause/restart and Windows-PCVR budget.
+
+Layer selection, gain/filter/room values and excerpt durations are initial tuning
+choices, not measured acoustic acceptance. The current production recipe remains
+silent until this coherent audio step is implemented and verified.
 
 ## Independent Operating and Verification Work
 
@@ -179,7 +228,7 @@ implementation checkpoint.
 | --- | --- |
 | Visitor replacement mechanism | Compare the smallest complete sequence, including page reload if suitable, on actual Windows-PCVR: XR exit/re-entry, audio wake, retained settings and staff actions. #9/#46 own implementation after the decision. |
 | Exact benchmark reference | Defined workload/pose/assets, repeatable counters and explained differences; #78 candidate remains unapproved. |
-| Tutorial audio / credits | #50 narration rights, language fallback and final samples; #51 content/timing/rights and credits movement. The four-goal tutorial flow is approved. |
+| Tutorial audio / credits | #50 narration rights/language fallback and #112 excerpt/mix acceptance (eleven instrumental sources supplied); #51 content/timing/rights and credits movement. The four-goal tutorial flow is approved. |
 | Physical flow and encounters | Calibration, hold/play, flight, safety/see-through and existing motion/gaze/timing choices; their respective issues only. |
 
 Windows-PCVR over USB-C is settled; standalone PICO is a later separate project.

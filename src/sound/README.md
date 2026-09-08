@@ -56,6 +56,47 @@ front/back localization, first-time visitor comprehension or stable 90 Hz on
 the actual Windows-PCVR USB-C installation. See [Performance](../../docs/performance.md).
 
 
+## Granular atmosphere source material
+
+On 2026-09-08 the user supplied eleven generated instrumentals for granular
+recomposition, with multiple spatial layers, substantial reverb and a distant
+character. They are source material, not a requested full-track soundtrack.
+Original bytes are preserved under `public/audio/granular/`, named
+`atmosphere-source-01.mp3` through `atmosphere-source-11.mp3`. Numbering maps
+exactly to the original download suffix, without invented timbre names.
+[Provenance](../../public/audio/granular/provenance.json) records that mapping,
+SHA-256, measured format/duration/levels and original generator metadata (Suno).
+The unnumbered file in Downloads was not among the eleven supplied files.
+
+All eleven are distinct, fully decodable 48 kHz stereo MP3 files: 41,061,238 bytes,
+1,775.1485 seconds total. Integrated loudness spans -16.2 to -12.5 LUFS; the
+highest reconstructed true peak is +0.1 dBFS. These are technical measurements,
+not an audition or a content recommendation. Original files were not normalized,
+trimmed or transcoded. Direct listening was unavailable in this session.
+
+| Source | Duration | Integrated loudness |
+| --- | ---: | ---: |
+| [atmosphere-source-01.mp3](../../public/audio/granular/atmosphere-source-01.mp3) | 1:10 | -16.2 LUFS |
+| [atmosphere-source-02.mp3](../../public/audio/granular/atmosphere-source-02.mp3) | 2:26 | -14.6 LUFS |
+| [atmosphere-source-03.mp3](../../public/audio/granular/atmosphere-source-03.mp3) | 1:01 | -14.1 LUFS |
+| [atmosphere-source-04.mp3](../../public/audio/granular/atmosphere-source-04.mp3) | 2:18 | -13.3 LUFS |
+| [atmosphere-source-05.mp3](../../public/audio/granular/atmosphere-source-05.mp3) | 3:48 | -13.3 LUFS |
+| [atmosphere-source-06.mp3](../../public/audio/granular/atmosphere-source-06.mp3) | 2:07 | -12.5 LUFS |
+| [atmosphere-source-07.mp3](../../public/audio/granular/atmosphere-source-07.mp3) | 3:09 | -12.8 LUFS |
+| [atmosphere-source-08.mp3](../../public/audio/granular/atmosphere-source-08.mp3) | 2:43 | -14.0 LUFS |
+| [atmosphere-source-09.mp3](../../public/audio/granular/atmosphere-source-09.mp3) | 3:31 | -13.9 LUFS |
+| [atmosphere-source-10.mp3](../../public/audio/granular/atmosphere-source-10.mp3) | 3:33 | -14.2 LUFS |
+| [atmosphere-source-11.mp3](../../public/audio/granular/atmosphere-source-11.mp3) | 3:49 | -13.8 LUFS |
+
+The [#112 integration step](../../docs/roadmap.md#granular-atmosphere--112)
+extends `training-audio.runtime.ts` in place: replace the ordinary sample bed
+with bounded granular layers, keep the separate spatial goal cue, and own one
+shared atmosphere reverb within that same lifetime. `spatial-audio.runtime.ts`
+continues to own placement/context/listener; Show continues to own transport and
+speech. The drone organ is not replaced or used as a hidden resource owner.
+This asset/plan update does not yet enable layers, reverb or production playback.
+
+
 ## Located tutorial narration candidates
 
 The earlier issue's repository link resolves to
@@ -77,5 +118,6 @@ therefore has no narration or sample references yet.
 The first recording reaches its right-lean instruction near 19 seconds. Final
 content integration must align that orientation period with the unchanged
 continuous M5 glide; preventing speech truncation alone does not establish
-first-visitor pacing. DE-use permission, an explicit EN policy and final effect
-samples remain the required content decisions. Script sources are unchanged.
+first-visitor pacing. DE-use permission and an explicit EN policy remain required content decisions.
+Instrumental source material is now user-supplied above; excerpt selection,
+granular mix and speech intelligibility still need actual listening. Script sources are unchanged.

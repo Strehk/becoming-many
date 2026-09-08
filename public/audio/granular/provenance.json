@@ -1,0 +1,197 @@
+{
+  "recordedAt": "2026-09-08",
+  "source": "User-provided generated instrumentals",
+  "permission": "User supplied these eleven files for use as granular sound material in Becoming Many. No full-track soundtrack playback requested.",
+  "preservation": "Original MP3 bytes, including embedded metadata/artwork, copied without transcoding. File numbering preserves the supplied download suffix.",
+  "audition": "Not directly auditioned in this session; filenames describe intended use rather than an inferred timbre.",
+  "files": [
+    {
+      "file": "atmosphere-source-01.mp3",
+      "originalFileName": "becoming-many-instrumental (1).mp3",
+      "sha256": "47a7576b0f68f40ed36e983ca0b577a3c947d8c75080f9f68776643c558ad9dd",
+      "bytes": 1580159,
+      "durationSeconds": 69.8135,
+      "sampleRateHz": 48000,
+      "channels": 2,
+      "codec": "mp3",
+      "generatorMetadata": "made with suno; created=2026-09-08T19:58:04Z; id=897b8f1a-465e-4e9a-9865-ebbc347342e5",
+      "technicalAnalysis": {
+        "decodePassed": true,
+        "integratedLufs": -16.2,
+        "loudnessRangeLu": 19.9,
+        "truePeakDbfs": -0.1
+      }
+    },
+    {
+      "file": "atmosphere-source-02.mp3",
+      "originalFileName": "becoming-many-instrumental (2).mp3",
+      "sha256": "fc003ff793a0047fe93de08f7fab7ae590c3f5522df739eae79cfb5e901a5b68",
+      "bytes": 3371241,
+      "durationSeconds": 146.0935,
+      "sampleRateHz": 48000,
+      "channels": 2,
+      "codec": "mp3",
+      "generatorMetadata": "made with suno; created=2026-09-08T19:54:45Z; id=ac885063-bd07-428b-ba10-f00899b7a5f3",
+      "technicalAnalysis": {
+        "decodePassed": true,
+        "integratedLufs": -14.6,
+        "loudnessRangeLu": 12.5,
+        "truePeakDbfs": -1.6
+      }
+    },
+    {
+      "file": "atmosphere-source-03.mp3",
+      "originalFileName": "becoming-many-instrumental (3).mp3",
+      "sha256": "4ebfc93c284c351bcbfd07bc71095aba38f4aea50d8584e5ac5b29b54bfed10e",
+      "bytes": 1555314,
+      "durationSeconds": 61.0135,
+      "sampleRateHz": 48000,
+      "channels": 2,
+      "codec": "mp3",
+      "generatorMetadata": "made with suno; created=2026-09-08T19:50:35Z; id=f94d80d5-a00e-406d-99c8-8511acadbde5",
+      "technicalAnalysis": {
+        "decodePassed": true,
+        "integratedLufs": -14.1,
+        "loudnessRangeLu": 4.7,
+        "truePeakDbfs": -1.0
+      }
+    },
+    {
+      "file": "atmosphere-source-04.mp3",
+      "originalFileName": "becoming-many-instrumental (4).mp3",
+      "sha256": "6e2f9e75fd714202b61ee89b45d6155f9f05abd271368c948c36b7187369aeea",
+      "bytes": 3446822,
+      "durationSeconds": 137.6135,
+      "sampleRateHz": 48000,
+      "channels": 2,
+      "codec": "mp3",
+      "generatorMetadata": "made with suno; created=2026-09-08T19:49:28Z; id=d0e94511-7558-45f2-8215-08ab1a34bf77",
+      "technicalAnalysis": {
+        "decodePassed": true,
+        "integratedLufs": -13.3,
+        "loudnessRangeLu": 5.1,
+        "truePeakDbfs": -1.1
+      }
+    },
+    {
+      "file": "atmosphere-source-05.mp3",
+      "originalFileName": "becoming-many-instrumental (5).mp3",
+      "sha256": "d1e0f2aaf9398926135afe2f4cbe27ae395ba20f20989bc9494d86a16cfb0a58",
+      "bytes": 5207331,
+      "durationSeconds": 228.1735,
+      "sampleRateHz": 48000,
+      "channels": 2,
+      "codec": "mp3",
+      "generatorMetadata": "made with suno; created=2026-09-08T19:48:15Z; id=1ca21298-d60d-445c-93b1-0b71bff6eff9",
+      "technicalAnalysis": {
+        "decodePassed": true,
+        "integratedLufs": -13.3,
+        "loudnessRangeLu": 8.6,
+        "truePeakDbfs": 0.1
+      }
+    },
+    {
+      "file": "atmosphere-source-06.mp3",
+      "originalFileName": "becoming-many-instrumental (6).mp3",
+      "sha256": "11b3d8204d9c4d4ea51604bab7696ee9c1964743199a283a839d054cb83ac61e",
+      "bytes": 2890861,
+      "durationSeconds": 127.0535,
+      "sampleRateHz": 48000,
+      "channels": 2,
+      "codec": "mp3",
+      "generatorMetadata": "made with suno; created=2026-09-08T19:31:09Z; id=edc8f827-d4fa-455e-9373-e08a14f898ac",
+      "technicalAnalysis": {
+        "decodePassed": true,
+        "integratedLufs": -12.5,
+        "loudnessRangeLu": 5.5,
+        "truePeakDbfs": -1.6
+      }
+    },
+    {
+      "file": "atmosphere-source-07.mp3",
+      "originalFileName": "becoming-many-instrumental (7).mp3",
+      "sha256": "c6cfab97cb61f15d27545c282dc2aba51cb311617268f2f6544e94397d994b70",
+      "bytes": 4370018,
+      "durationSeconds": 188.8135,
+      "sampleRateHz": 48000,
+      "channels": 2,
+      "codec": "mp3",
+      "generatorMetadata": "made with suno; created=2026-09-08T19:30:34Z; id=d5915fea-4880-4c88-b660-85cc601b35b3",
+      "technicalAnalysis": {
+        "decodePassed": true,
+        "integratedLufs": -12.8,
+        "loudnessRangeLu": 6.3,
+        "truePeakDbfs": -0.1
+      }
+    },
+    {
+      "file": "atmosphere-source-08.mp3",
+      "originalFileName": "becoming-many-instrumental (8).mp3",
+      "sha256": "0ed1242fe89ae76a2f0ba1e914d20e357d4dabb2d5bc2a68d4d9ad27535a0e80",
+      "bytes": 3912845,
+      "durationSeconds": 163.0935,
+      "sampleRateHz": 48000,
+      "channels": 2,
+      "codec": "mp3",
+      "generatorMetadata": "made with suno; created=2026-09-08T19:27:36Z; id=e9c90b73-f457-46d9-a844-48305da07a5d",
+      "technicalAnalysis": {
+        "decodePassed": true,
+        "integratedLufs": -14.0,
+        "loudnessRangeLu": 3.8,
+        "truePeakDbfs": -0.1
+      }
+    },
+    {
+      "file": "atmosphere-source-09.mp3",
+      "originalFileName": "becoming-many-instrumental (9).mp3",
+      "sha256": "5e3644e6b8e1a480f4097eb89e85f3e1fac81f407d14af77699f63c6be9cc14f",
+      "bytes": 4670405,
+      "durationSeconds": 210.8935,
+      "sampleRateHz": 48000,
+      "channels": 2,
+      "codec": "mp3",
+      "generatorMetadata": "made with suno; created=2026-09-08T20:09:48Z; id=be60b46f-c6e5-4897-9f46-4d12cdc336ab",
+      "technicalAnalysis": {
+        "decodePassed": true,
+        "integratedLufs": -13.9,
+        "loudnessRangeLu": 7.3,
+        "truePeakDbfs": -0.0
+      }
+    },
+    {
+      "file": "atmosphere-source-10.mp3",
+      "originalFileName": "becoming-many-instrumental (10).mp3",
+      "sha256": "aac4eb07be48a53dc56eb98270ea6016e4d2e8f3064b4cfbe43669dc1acbdbc0",
+      "bytes": 4779098,
+      "durationSeconds": 213.1735,
+      "sampleRateHz": 48000,
+      "channels": 2,
+      "codec": "mp3",
+      "generatorMetadata": "made with suno; created=2026-09-08T20:09:47Z; id=aba81fe7-bd2b-4fda-8c5d-b1fdf5558b86",
+      "technicalAnalysis": {
+        "decodePassed": true,
+        "integratedLufs": -14.2,
+        "loudnessRangeLu": 7.8,
+        "truePeakDbfs": -0.1
+      }
+    },
+    {
+      "file": "atmosphere-source-11.mp3",
+      "originalFileName": "becoming-many-instrumental (11).mp3",
+      "sha256": "6f2b68d4661c3c485b44e657b945de37631c7ad8ad3c276b5c4d312d4150a7e0",
+      "bytes": 5277144,
+      "durationSeconds": 229.4135,
+      "sampleRateHz": 48000,
+      "channels": 2,
+      "codec": "mp3",
+      "generatorMetadata": "made with suno; created=2026-09-08T20:07:31Z; id=e0e8f4c7-7c5f-4f8f-a84e-d507dece9290",
+      "technicalAnalysis": {
+        "decodePassed": true,
+        "integratedLufs": -13.8,
+        "loudnessRangeLu": 9.3,
+        "truePeakDbfs": -1.6
+      }
+    }
+  ],
+  "technicalAnalysisMethod": "Full audio decode with FFmpeg -xerror and ebur128=peak=true; integrated LUFS, loudness range LU and reconstructed true peak dBFS. Measurements do not establish perceived timbre, suitability or listening acceptance."
+}
