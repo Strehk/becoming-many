@@ -91,6 +91,8 @@ export interface ConductorCopy {
     readonly reload: string;
     readonly reloadArmed: string;
     readonly m5: string;
+    /** Opens the flash page, which is a whole page of its own. */
+    readonly flash: string;
     readonly pageLanguage: string;
     readonly readouts: {
       readonly frames: string;
@@ -228,6 +230,7 @@ const ENGLISH: ConductorCopy = {
     reload: "Reload the page",
     reloadArmed: "Tap again to reload",
     m5: "M5 controller",
+    flash: "Flash and set up a controller",
     pageLanguage: "Page language",
     readouts: {
       frames: "frames",
@@ -328,6 +331,7 @@ const GERMAN: ConductorCopy = {
     reload: "Seite neu laden",
     reloadArmed: "Nochmal tippen: neu laden",
     m5: "M5-Controller",
+    flash: "Controller flashen und einrichten",
     pageLanguage: "Sprache der Oberfläche",
     readouts: {
       frames: "Frames",

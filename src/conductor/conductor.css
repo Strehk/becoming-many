@@ -5,8 +5,11 @@
  * Responsibility: Define the masthead, session bar, transport, timeline,
  *   technician drawer, and the wake overlay, with every target thumb-sized.
  * Boundary: The immersive world and the development overlay are styled
- *   elsewhere.
+ *   elsewhere; the typeface is declared in src/fonts.css, which every
+ *   operator page shares.
  */
+
+@import "../fonts.css";
 
 /* The page owns the station's one window: no default margin, no scrollbar. */
 body {
@@ -35,8 +38,8 @@ body {
   padding: 28px;
   background: var(--ground);
   color: var(--ink);
-  font-family:
-    ui-monospace, "SFMono-Regular", Menlo, Monaco, Consolas, monospace;
+  font-family: "Rubik", ui-sans-serif, system-ui, "Segoe UI", sans-serif;
+  /* The clock redraws every frame; proportional digits would make it dance. */
   font-variant-numeric: tabular-nums;
   touch-action: manipulation;
 }
@@ -263,6 +266,7 @@ body {
   gap: 4px;
   width: 96px;
   height: 96px;
+  font-size: 20px;
   font-weight: 700;
   border-radius: 16px;
 }
@@ -272,7 +276,7 @@ body {
   width: 280px;
   height: 132px;
   color: var(--ground);
-  font-size: 28px;
+  font-size: 36px;
   font-weight: 700;
   background: var(--live);
   border: 0;
@@ -368,14 +372,14 @@ body {
   flex: 1;
   flex-direction: column;
   gap: 3px;
-  height: 76px;
-  font-size: 17px;
+  height: 84px;
+  font-size: 21px;
   font-weight: 700;
   border-radius: 12px;
 }
 
 .conductor__chapter-time {
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 400;
   opacity: 0.7;
 }
@@ -407,14 +411,14 @@ body {
 .conductor__language-label {
   padding: 0 14px;
   color: var(--muted);
-  font-size: 16px;
+  font-size: 18px;
 }
 
 .conductor__language button {
   flex: 1;
   height: 84px;
   color: var(--muted);
-  font-size: 24px;
+  font-size: 30px;
   font-weight: 700;
   background: transparent;
   border: 0;
@@ -429,7 +433,12 @@ body {
 .conductor__stream-button {
   flex: 1;
   height: 100px;
-  font-size: 22px;
+  /* Two of these hold a whole sentence in German; let a long one wrap
+   * rather than run past its own edge. */
+  padding: 10px 20px;
+  font-size: 30px;
+  line-height: 1.15;
+  text-align: center;
   font-weight: 700;
   border-radius: 14px;
 }
@@ -549,6 +558,27 @@ body {
   color: var(--alarm);
   font-weight: 700;
   border-color: var(--alarm);
+}
+
+/* A link out of the page, dressed as one of the drawer's own buttons and
+ * marked as leaving: the arrow is the only hint a new tab is coming. */
+.conductor__drawer-link {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+  height: 56px;
+  color: var(--ink);
+  font-size: 15px;
+  text-decoration: none;
+  background: var(--ground);
+  border: 1px solid var(--edge-strong);
+  border-radius: 10px;
+}
+
+.conductor__drawer-link::after {
+  content: "↗";
+  color: var(--muted);
 }
 
 .conductor__readouts {

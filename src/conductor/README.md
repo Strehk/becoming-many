@@ -14,6 +14,12 @@ opened at `/conductor.html` — the world runs in-process behind the page, and
 the headset stream starts from this page's own button. The default page at `/`
 stays the bare rehearsal show; development worlds use `/test.html`.
 
+The page is set in **Rubik**, declared in `src/fonts.css` from files under
+`public/fonts/rubik` — a venue network may have no route to a font service,
+and every operator page shares the one declaration. The clock keeps
+`font-variant-numeric: tabular-nums`, which Rubik honours, so digits changing
+every frame do not shift the layout under the operator's eye.
+
 The page is read in **English or German**. `conductor-copy.ts` holds both
 catalogues as typed data — every word the page speaks, including the chapter
 names the schedule's cue ids stand for — and `operator-language.ts` resolves
@@ -76,10 +82,11 @@ toggle.
 
 `tech-drawer.ts` is where the breaking and misleading controls live:
 rehearsal speeds, rewind-and-hold, the flight reset, the two-tap page reload,
-the M5 host panel, the raw readouts, the stage view, and the page's own
-language — the one control there that breaks nothing, kept out of
-front-of-house's reach because it is set once per venue rather than per
-visitor. The drawer slides
+the M5 host panel, a link to the flash page, the raw readouts, the stage
+view, and the page's own language — the one control there that breaks
+nothing, kept out of front-of-house's reach because it is set once per venue
+rather than per visitor. The flash link opens a tab of its own: leaving this
+page would tear down the show it hosts. The drawer slides
 rather than unmounts so the world's canvas inside it keeps its layout size.
 `stage-panel.ts` frames that stage view; while a session streams, Three.js
 renders into the headset and the view holds its last frame under a

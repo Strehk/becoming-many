@@ -98,7 +98,16 @@ export function createTechDrawer({
   const languageGroup = createGroup(root, [languages]);
 
   const m5Parent = document.createElement("div");
-  const m5Group = createGroup(root, [m5Parent]);
+
+  // Flashing a controller is the other job done at this desk, and it is a
+  // page of its own. It opens in a new tab because leaving this one would
+  // tear down the show this page is hosting.
+  const flashLink = document.createElement("a");
+  flashLink.className = "conductor__drawer-link";
+  flashLink.href = "/flash.html";
+  flashLink.target = "_blank";
+  flashLink.rel = "noopener";
+  const m5Group = createGroup(root, [m5Parent, flashLink]);
 
   const readouts = document.createElement("div");
   readouts.className = "conductor__readouts";
@@ -124,6 +133,7 @@ export function createTechDrawer({
     resetGroup.setTitle(copy.drawer.resets);
     languageGroup.setTitle(copy.drawer.pageLanguage);
     m5Group.setTitle(copy.drawer.m5);
+    flashLink.textContent = copy.drawer.flash;
 
     rewindButton.textContent = copy.drawer.rewind;
     flightButton.textContent = copy.drawer.resetFlight;
