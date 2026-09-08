@@ -6,10 +6,7 @@
  */
 
 import type { FrameMetrics } from "../../diagnostics/frame-metrics";
-import type {
-  GraphicsInfo,
-  RenderCounters,
-} from "../../world/world-runtime";
+import type { GraphicsInfo, RenderCounters } from "../../world/world-runtime";
 
 import { requireElement } from "../shared/dom";
 
@@ -97,7 +94,8 @@ export function createDiagnosticsOverlay(
   return {
     showGraphics: (info) => {
       if (!captureRuntimeErrors) return;
-      for (const [name, value] of Object.entries(info)) write(`${name}: ${value}`);
+      for (const [name, value] of Object.entries(info))
+        write(`${name}: ${value}`);
     },
     startMetrics: (nextRenderCounters, nextReadFrameMetrics) => {
       renderCounters = nextRenderCounters;

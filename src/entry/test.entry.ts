@@ -19,18 +19,16 @@ import { loadDeploymentConfig } from "./deployment-config";
 import { loadTestLevelModules } from "./test-level-modules";
 
 const lifetime = new AbortController();
-window.addEventListener("pagehide", (event) => {
-  if (!event.persisted) {
-    lifetime.abort();
-    diagnostics?.unload();
-  }
-});
 const request = new URLSearchParams(window.location.search);
 const container = requireElement(document, ".app", HTMLElement);
 const diagnostics = createDiagnosticsOverlay(
   container,
   request.get("diagnostics") !== null,
 );
+lifetime.signal.addEventListener("abort", diagnostics.unload, { once: true });
+window.addEventListener("pagehide", (event) => {
+  if (!event.persisted) lifetime.abort();
+});
 
 // A headset browser has no console, so explicit diagnostics make browser and
 // shader failures visible on the development page itself.
@@ -80,8 +78,6 @@ try {
   if (frameMetrics) {
     diagnostics.startMetrics(level.renderCounters, () => frameMetrics.read());
   }
-  lifetime.signal.addEventListener("abort", diagnostics.unload, { once: true });
-
   const unmountVr = mountVrEntryButton(document.body, level.xr);
   lifetime.signal.addEventListener("abort", unmountVr, { once: true });
 
