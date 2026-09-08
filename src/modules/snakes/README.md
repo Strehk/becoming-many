@@ -2,7 +2,8 @@
 Purpose: Document what the Snakes module owns.
 Context: The authored model was a rigid tube; what crawls is its girth and a wave.
 Responsibility: Explain the rebuilt body, the placement rule, and what is absent.
-Boundary: Level density lives in the authored preset; the ground facts in World Surface.
+Boundary: Level density lives in the authored preset; the ground facts in World Surface;
+the candidate grid and the frame budget in World.
 -->
 
 # Snakes
@@ -33,16 +34,20 @@ instead of wagging. A whole pool of snakes is one draw call and one uniform.
 
 ## Where a snake crawls
 
-- Each 64-metre cell offers candidate places drawn from its own coordinates,
-  so the same landscape carries the same snakes in every run. How many places
-  a cell offers is a level value, because how much snake a world holds is a
-  question for the piece rather than for the module.
-- The places are a lattice, not a scatter: each candidate keeps its own square
-  of the cell and is jittered inside it, with a margin at the edges. Drawn
-  freely across the whole cell, a dozen snakes landed on top of each other
-  while the rest of the cell stayed empty. A snake also crawls a short way
-  now — thirteen metres rather than thirty — because a long one let two of
-  them crawl into each other from opposite squares.
+- Places come from the shared world candidate grid, the same one Vegetation
+  and Rocks are placed on: a 64-metre cell offers one place every sixteen
+  metres, jittered inside its own square from the cell's own coordinates, so
+  the same landscape carries the same snakes in every run and no two places
+  land on top of each other. How far apart the places stand is the module's
+  value, like every other zone-driven population; how many of them are taken
+  is the level's `crawlingShare`, because how much snake a world holds is a
+  question for the piece. A snake also crawls a short way — thirteen metres
+  rather than thirty — because a long one let two of them crawl into each
+  other from neighbouring places.
+- Cells are gathered through the shared `StreamQueue`, one cell per step.
+  Crossing a 64-metre boundary regathers only the recycled edge; a slot keeps
+  the snakes it already carries until its own job replaces them. Only loading,
+  which happens before the first render, fills the whole window at once.
 - A candidate is refused unless the **whole way** it would crawl stays out of
   water and the ground along it never falls further than a body can follow.
 - Ground carries a weight rather than a yes or no, because where a snake

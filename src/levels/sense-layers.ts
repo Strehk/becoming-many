@@ -37,14 +37,13 @@ export const SCENT_LAYER: Pick<WorldComposition, "scentParticles"> = {
 
 export const ECHO_LAYER: Pick<
   WorldComposition,
-  "echoDepth" | "terrain" | "grassClipmap" | "vegetation" | "rocks" | "snakes"
+  "echoDepth" | "terrain" | "grassClipmap" | "vegetation" | "rocks"
 > = {
   echoDepth: ECHO_DEPTH,
   terrain: ZONE_TERRAIN,
   grassClipmap: GRASS_CLIPMAP,
   vegetation: VEGETATION,
   rocks: ROCKS,
-  snakes: SNAKES,
 };
 
 export const MOTION_LAYER: Pick<WorldComposition, "motion"> = {

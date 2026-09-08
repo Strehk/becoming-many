@@ -11,6 +11,11 @@ export interface SnakesDefinition {
   readonly seed: number;
   /** Candidates are drawn per cell of this level; 2 is the 64-metre cell. */
   readonly chunkLevel: 2;
+  /**
+   * How far apart the places a cell offers stand. It must divide the cell
+   * exactly, so neighbouring cells keep offering places on the same grid.
+   */
+  readonly candidateSpacingMeters: number;
   readonly lengthMeters: { readonly minimum: number; readonly maximum: number };
   /** Rings along the body and sides around it; the whole cost of one snake. */
   readonly ringCount: number;
@@ -41,6 +46,10 @@ export interface SnakesDefinition {
 export const SNAKES_DEFINITION: SnakesDefinition = {
   seed: 8123, // Keeps snake placement stable across levels and runs.
   chunkLevel: 2,
+  // Sixteen metres, so the 64-metre cell offers sixteen places on the shared
+  // candidate grid. Wider spacing thins the landscape everywhere at once;
+  // the level's crawling share is the knob for how many of them are taken.
+  candidateSpacingMeters: 16,
   // A large snake, and no larger: what makes one findable from the air is the
   // heat it carries, not the size it is blown up to.
   lengthMeters: { minimum: 1.6, maximum: 2.4 },

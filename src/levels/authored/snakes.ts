@@ -1,5 +1,5 @@
 /**
- * Purpose: Author the snakes the echo world and every later level carry.
+ * Purpose: Author the snakes the thermal world and every later level carry.
  * Context: The ladder carries a structural module forward unchanged once it is introduced.
  * Responsibility: Own the one copy of these values.
  * Boundary: Data only; no runtime resources and no level presentation.
@@ -9,21 +9,16 @@ import type { SnakesPreset } from "../../modules/snakes/snakes";
 
 export const SNAKES: SnakesPreset = {
   /*
-   * Nine places offered per 64-metre cell, one to each square of a three by
-   * three lattice, so no two can land on top of each other. A square number,
-   * because the lattice fills evenly only when it is. Most are refused: by water, by a
-   * bank too steep to follow, and by the weight of the ground itself, which
-   * keeps the meadow from swallowing most of the population where nobody can
-   * see it. What is left is a handful crossing the country around a visitor
-   * at any moment — met now and then rather than everywhere underfoot.
+   * Test value: a little over half the places the candidate grid offers carry
+   * a snake, which is far more snake than a meadow holds — it is here so a
+   * run-through finds one while the crawl is being judged. Nine of the
+   * sixteen places a 64-metre cell offers is the density the module was
+   * tuned at; a quiet landscape is a fraction of it. The ground still refuses
+   * most of what survives this draw: water, a bank too steep to follow, and
+   * the weight of the ground itself, which keeps the meadow from swallowing
+   * the population where nobody can see it.
    */
-  candidatesPerCell: 9,
-  /*
-   * Test value: every place the ground accepts carries a snake, which is far
-   * more snake than a meadow holds — it is here so a run-through finds one
-   * while the crawl is being judged. A quiet landscape is a fraction of this.
-   */
-  crawlingShare: 1,
+  crawlingShare: 0.56,
   /*
    * The palette's hot stop, the same one the bird traces take once the heat
    * view is open. A snake takes its warmth from the sun rather than from

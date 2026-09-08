@@ -10,10 +10,16 @@ import { InstancedMesh, Matrix4, Scene, Vector3 } from "three";
 import { createSnakeGeometry } from "../../src/modules/snakes/snake-geometry";
 import { createSnakesModule } from "../../src/modules/snakes/snakes";
 import { SNAKES_DEFINITION } from "../../src/modules/snakes/snakes-definition";
+import { StreamQueue } from "../../src/world/stream-queue";
 import type { WorldSurface } from "../../src/world-surface/world-surface";
 import type { ZoneId } from "../../src/world-surface/zone-settings";
 
-const PRESET = { candidatesPerCell: 4, crawlingShare: 1, color: 0x2b2b2b };
+const PRESET = { crawlingShare: 1, color: 0x2b2b2b };
+
+/** A queue that never runs out of budget, so a step is taken when it is due. */
+function createTestStreamQueue(): StreamQueue {
+  return new StreamQueue({ budgetMilliseconds: 1, capacity: 256 }, () => 0);
+}
 
 describe("the rebuilt snake body", () => {
   test("lays every ring along a unit body and marks where it sits", () => {
@@ -66,6 +72,7 @@ describe("Snakes", () => {
       scene,
       viewpoint: { worldPosition: new Vector3(), viewDistanceMeters: 64 },
       preset: PRESET,
+      streamQueue: createTestStreamQueue(),
       worldSurface: createFlatSurface("meadow"),
     });
     module.load();
@@ -80,6 +87,7 @@ describe("Snakes", () => {
       scene: woodedScene,
       viewpoint: { worldPosition: new Vector3(), viewDistanceMeters: 64 },
       preset: PRESET,
+      streamQueue: createTestStreamQueue(),
       worldSurface: createFlatSurface("coniferForest"),
     });
     wooded.load();
@@ -94,6 +102,7 @@ describe("Snakes", () => {
       scene: waterScene,
       viewpoint: { worldPosition: new Vector3(), viewDistanceMeters: 64 },
       preset: PRESET,
+      streamQueue: createTestStreamQueue(),
       worldSurface: createFlatSurface("water"),
     });
     overWater.load();
@@ -103,12 +112,51 @@ describe("Snakes", () => {
     expect(waterMesh.count).toBe(0);
   });
 
+  test("regathers only the crossed cells, through the frame budget", () => {
+    const scene = new Scene();
+    const viewerPosition = new Vector3();
+    const streamQueue = createTestStreamQueue();
+    const module = createSnakesModule({
+      scene,
+      viewpoint: { worldPosition: viewerPosition, viewDistanceMeters: 64 },
+      preset: PRESET,
+      streamQueue,
+      worldSurface: createFlatSurface("shrubSlope"),
+    });
+    module.load();
+    module.activate();
+    const mesh = scene.children[0];
+    if (!(mesh instanceof InstancedMesh)) throw new Error("Expected one pool");
+    // Loading happens before the first render and fills the window itself.
+    expect(streamQueue.size).toBe(0);
+    expect(mesh.count).toBeGreaterThan(0);
+
+    // One cell east of a three-by-three window: three slots are recycled, and
+    // the work waits for the shared budget instead of running inline.
+    viewerPosition.set(70, 0, 0);
+    module.update?.(1 / 60);
+    expect(streamQueue.size).toBe(3);
+
+    streamQueue.update();
+    expect(streamQueue.size).toBe(0);
+    module.update?.(1 / 60);
+    expect(mesh.count).toBeGreaterThan(0);
+
+    // Pending work must never reach an unloaded stream.
+    viewerPosition.set(140, 0, 0);
+    module.update?.(1 / 60);
+    module.unload();
+    streamQueue.update();
+    expect(streamQueue.size).toBe(0);
+  });
+
   test("carries every snake along its own way over time", () => {
     const scene = new Scene();
     const module = createSnakesModule({
       scene,
       viewpoint: { worldPosition: new Vector3(), viewDistanceMeters: 64 },
       preset: PRESET,
+      streamQueue: createTestStreamQueue(),
       worldSurface: createFlatSurface("meadow"),
     });
     module.load();

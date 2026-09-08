@@ -20,13 +20,20 @@ import {
   type UnlitMaterialEffect,
 } from "../../utils/asset-loader/material-effect";
 import { applyShaderPatch } from "../../utils/asset-loader/material-shader-patch";
-import { getCellRandom } from "../../world/chunk-candidates";
+import {
+  type ChunkCandidate,
+  type ChunkCandidateGrid,
+  createChunkCandidateGrid,
+  getCellRandom,
+  getChunkCandidate,
+} from "../../world/chunk-candidates";
 import {
   type ChunkAssignment,
   ChunkWindow,
   getChunkSize,
 } from "../../world/chunk-system";
 import type { WorldModule } from "../../world/module-runtime";
+import type { StreamJob, StreamQueue } from "../../world/stream-queue";
 import type { Viewpoint } from "../../world/viewer-rig";
 import type { WorldSurface } from "../../world-surface/world-surface";
 import { createSnakeGeometry } from "./snake-geometry";
@@ -34,23 +41,23 @@ import slitherShader from "./snake-slither.vert.glsl?raw";
 import { SNAKES_DEFINITION } from "./snakes-definition";
 
 const SLITHER_CACHE_KEY = "snake-slither-v1";
-const RANDOM_VALUES_PER_CANDIDATE = 7;
-const RANDOM_OFFSET_X = 0;
-const RANDOM_OFFSET_Z = 1;
-const RANDOM_LENGTH = 2;
-const RANDOM_HEADING = 3;
-const RANDOM_PHASE = 4;
-const RANDOM_CRAWLS = 5;
-const RANDOM_GROUND = 6;
-
-const UP = new Vector3(0, 1, 0);
 /*
- * How far into its own square a candidate may be jittered. Keeping a margin
- * at the edges is what stops two snakes of neighbouring squares from meeting
- * at the line between them.
+ * The cell random values one candidate draws. Zero and one are the shared
+ * candidate grid's own jitter, so every draw a snake makes starts above them.
  */
-const JITTER_EDGE = 0.2;
-const JITTER_SPAN = 0.6;
+const CRAWLING_RANDOM_INDEX = 2;
+const HEADING_RANDOM_INDEX = 3;
+const LENGTH_RANDOM_INDEX = 4;
+const PHASE_RANDOM_INDEX = 5;
+const GROUND_RANDOM_INDEX = 6;
+
+const UP_AXIS = new Vector3(0, 1, 0);
+/** Reused every frame: one snake's placement is composed, never allocated. */
+const PLACEMENT = new Matrix4();
+const PLACEMENT_POSITION = new Vector3();
+const PLACEMENT_FACING = new Quaternion();
+const PLACEMENT_SCALE = new Vector3();
+
 /** How much of its own length a snake swings sideways at the tail. */
 const WAVE_AMPLITUDE_SHARE = 0.09;
 /** Waves standing in the body at once, and how fast they run down it. */
@@ -59,12 +66,11 @@ const WAVE_SPEED = 0.9;
 
 export interface SnakesPreset {
   /**
-   * How many places one 64-metre cell offers. The ground refuses most of
-   * them, so this is the coarse knob on how much snake a landscape holds and
-   * the crawling share is the fine one.
+   * How many of the places a cell offers carry a snake, 0..1. The ground
+   * refuses most of what survives this, so it is the level's one knob on how
+   * much snake a landscape holds; how far apart the places stand is the
+   * module's, like every other zone-driven population.
    */
-  readonly candidatesPerCell: number;
-  /** How many of the offered places carry a snake, 0..1. */
   readonly crawlingShare: number;
   /** Skin tone; the senses recolour it from here like any other surface. */
   readonly color: number;
@@ -75,6 +81,7 @@ export interface SnakesModuleOptions {
   readonly viewpoint: Viewpoint;
   readonly preset: SnakesPreset;
   readonly worldSurface: WorldSurface;
+  readonly streamQueue: StreamQueue;
   readonly effects?: readonly UnlitMaterialEffect[];
 }
 
@@ -91,9 +98,14 @@ interface CrawlingSnake {
 
 interface SnakesStream {
   readonly chunkWindow: ChunkWindow;
+  readonly candidateGrid: ChunkCandidateGrid;
   readonly mesh: InstancedMesh;
   readonly phases: InstancedBufferAttribute;
-  readonly cells: (ChunkAssignment | undefined)[];
+  /** One list per window slot, so a moved cell regathers only itself. */
+  readonly slotSnakes: CrawlingSnake[][];
+  /** One stable queue key per slot replaces obsolete pending work. */
+  readonly slotJobKeys: readonly object[];
+  /** Every slot's snakes in one draw order, rebuilt when a slot changes. */
   readonly crawling: CrawlingSnake[];
   readonly timeUniform: { value: number };
 }
@@ -131,7 +143,11 @@ function loadSnakes(state: SnakesState, options: SnakesModuleOptions): void {
     level: SNAKES_DEFINITION.chunkLevel,
     radius,
   });
-  const capacity = chunkWindow.slotCount * options.preset.candidatesPerCell;
+  const candidateGrid = createChunkCandidateGrid(
+    chunkSize,
+    SNAKES_DEFINITION.candidateSpacingMeters,
+  );
+  const capacity = chunkWindow.slotCount * candidateGrid.candidateCount;
 
   const timeUniform = { value: 0 };
   const geometry = createSnakeGeometry();
@@ -151,23 +167,27 @@ function loadSnakes(state: SnakesState, options: SnakesModuleOptions): void {
 
   const stream: SnakesStream = {
     chunkWindow,
+    candidateGrid,
     mesh,
     phases,
-    cells: Array.from({ length: chunkWindow.slotCount }, () => undefined),
+    slotSnakes: Array.from({ length: chunkWindow.slotCount }, () => []),
+    slotJobKeys: Array.from({ length: chunkWindow.slotCount }, () => ({})),
     crawling: [],
     timeUniform,
   };
   state.currentStream = stream;
-  rememberCells(
-    stream,
-    chunkWindow.update(
-      options.viewpoint.worldPosition.x,
-      options.viewpoint.worldPosition.z,
-    ),
+
+  // Loading happens before the first render, so the whole window is gathered
+  // here: a snake is on the ground the moment it may be seen rather than at
+  // the origin for one frame. Every later cell goes through the frame budget.
+  const initialAssignments = chunkWindow.update(
+    options.viewpoint.worldPosition.x,
+    options.viewpoint.worldPosition.z,
   );
-  gatherSnakes(stream, options);
-  // Placed before the first frame, so a snake is on the ground the moment it
-  // may be seen rather than at the origin for one frame.
+  for (const assignment of initialAssignments) {
+    gatherCellSnakes(stream, options, assignment);
+  }
+  collectSnakes(stream);
   placeSnakes(stream, options, 0);
 }
 
@@ -182,90 +202,134 @@ function updateSnakes(
   state.elapsedSeconds += deltaSeconds;
   stream.timeUniform.value = state.elapsedSeconds;
 
-  const changed = stream.chunkWindow.update(
+  // Most frames return no assignments. After a boundary crossing, only the
+  // recycled edge enters the shared frame-budgeted queue: a slot keeps the
+  // snakes it already carries until its own job replaces them.
+  for (const assignment of stream.chunkWindow.update(
     options.viewpoint.worldPosition.x,
     options.viewpoint.worldPosition.z,
-  );
-  if (changed.length > 0) {
-    rememberCells(stream, changed);
-    gatherSnakes(stream, options);
+  )) {
+    const job = createCellGatherJob(state, stream, options, assignment);
+    if (job && options.streamQueue.enqueue(job)) continue;
+
+    // One cell is cheap to gather synchronously. Keeping coverage is
+    // preferable if the queue reaches its defensive capacity.
+    gatherCellSnakes(stream, options, assignment);
+    collectSnakes(stream);
   }
+
   placeSnakes(stream, options, state.elapsedSeconds);
 }
 
-/**
- * Draw the ways the window now holds. A place is offered by a cell and
- * answered by the ground: the whole way must stay in open country, and stay
- * level enough that a body lying on it is not half buried in a bank.
- */
-function gatherSnakes(
+function createCellGatherJob(
+  state: SnakesState,
   stream: SnakesStream,
   options: SnakesModuleOptions,
+  assignment: ChunkAssignment,
+): StreamJob | undefined {
+  const jobKey = stream.slotJobKeys[assignment.slotIndex];
+  if (!jobKey) return undefined;
+
+  return {
+    key: jobKey,
+
+    // The traveller may cross another boundary before this job runs. Both
+    // checks keep delayed work out of an unloaded or reassigned slot.
+    isCurrent: () =>
+      state.currentStream === stream &&
+      stream.chunkWindow.isCurrent(assignment),
+
+    runStep: () => {
+      gatherCellSnakes(stream, options, assignment);
+      collectSnakes(stream);
+      return true;
+    },
+  };
+}
+
+/**
+ * Draw the ways one cell holds. A place is offered by the shared candidate
+ * grid and answered by the ground: the whole way must stay in open country,
+ * and stay level enough that a body lying on it is not half buried in a bank.
+ */
+function gatherCellSnakes(
+  stream: SnakesStream,
+  options: SnakesModuleOptions,
+  assignment: ChunkAssignment,
 ): void {
-  const chunkSize = stream.chunkWindow.chunkSize;
+  const cellSnakes = stream.slotSnakes[assignment.slotIndex];
+  if (!cellSnakes) return;
+
+  cellSnakes.length = 0;
+  for (
+    let candidateIndex = 0;
+    candidateIndex < stream.candidateGrid.candidateCount;
+    candidateIndex += 1
+  ) {
+    const candidate = getChunkCandidate(
+      assignment,
+      stream.candidateGrid,
+      SNAKES_DEFINITION.seed,
+      candidateIndex,
+    );
+    const snake = readCrawlingSnake(candidate, options);
+    if (snake) cellSnakes.push(snake);
+  }
+}
+
+/** The snake one offered place carries, or nothing where it carries none. */
+function readCrawlingSnake(
+  candidate: ChunkCandidate,
+  options: SnakesModuleOptions,
+): CrawlingSnake | undefined {
+  const draw = (valueIndex: number): number =>
+    getCellRandom(
+      SNAKES_DEFINITION.seed,
+      candidate.cellX,
+      candidate.cellZ,
+      valueIndex,
+    );
+
+  // Its own value: sharing one with the phase would leave every snake that
+  // survived the refusal crawling in step with its neighbours. Drawn before
+  // the ground is read, so a place nothing carries costs no surface samples.
+  if (draw(CRAWLING_RANDOM_INDEX) >= options.preset.crawlingShare) {
+    return undefined;
+  }
+
+  const heading = draw(HEADING_RANDOM_INDEX) * Math.PI * 2;
+  const headingX = Math.sin(heading);
+  const headingZ = Math.cos(heading);
+  const groundWeight = readGroundWeight(
+    candidate.worldX,
+    candidate.worldZ,
+    headingX,
+    headingZ,
+    options.worldSurface,
+  );
+  // The weakest ground the way crosses decides it, so a crossing is never
+  // accepted on the strength of the end it started at.
+  if (groundWeight <= 0 || draw(GROUND_RANDOM_INDEX) >= groundWeight) {
+    return undefined;
+  }
+
+  const { minimum, maximum } = SNAKES_DEFINITION.lengthMeters;
+  return {
+    startX: candidate.worldX,
+    startZ: candidate.worldZ,
+    headingX,
+    headingZ,
+    heading,
+    lengthMeters: minimum + draw(LENGTH_RANDOM_INDEX) * (maximum - minimum),
+    phase: draw(PHASE_RANDOM_INDEX),
+  };
+}
+
+/** Lay the gathered cells into one draw order and publish their phases. */
+function collectSnakes(stream: SnakesStream): void {
   stream.crawling.length = 0;
-
-  for (const cell of stream.cells) {
-    if (!cell) continue;
-
-    for (
-      let candidate = 0;
-      candidate < options.preset.candidatesPerCell;
-      candidate += 1
-    ) {
-      const channel = candidate * RANDOM_VALUES_PER_CANDIDATE;
-      const draw = (valueIndex: number): number =>
-        getCellRandom(
-          SNAKES_DEFINITION.seed,
-          cell.chunkX,
-          cell.chunkZ,
-          channel + valueIndex,
-        );
-
-      // Its own channel: sharing one with the phase would leave every snake
-      // that survived the refusal crawling in step with its neighbours.
-      if (draw(RANDOM_CRAWLS) >= options.preset.crawlingShare) continue;
-
-      // Each candidate keeps its own square of the cell and is jittered
-      // inside it. Drawing freely across the whole cell let a dozen snakes
-      // land on top of each other while the rest of it stayed empty.
-      const lattice = Math.ceil(Math.sqrt(options.preset.candidatesPerCell));
-      const squareSize = chunkSize / lattice;
-      const squareX = candidate % lattice;
-      const squareZ = Math.floor(candidate / lattice);
-      const startX =
-        cell.originX +
-        (squareX + JITTER_EDGE + draw(RANDOM_OFFSET_X) * JITTER_SPAN) *
-          squareSize;
-      const startZ =
-        cell.originZ +
-        (squareZ + JITTER_EDGE + draw(RANDOM_OFFSET_Z) * JITTER_SPAN) *
-          squareSize;
-      const heading = draw(RANDOM_HEADING) * Math.PI * 2;
-      const headingX = Math.sin(heading);
-      const headingZ = Math.cos(heading);
-      const groundWeight = readGroundWeight(
-        startX,
-        startZ,
-        headingX,
-        headingZ,
-        options.worldSurface,
-      );
-      // The weakest ground the way crosses decides it, so a crossing is never
-      // accepted on the strength of the end it started at.
-      if (groundWeight <= 0 || draw(RANDOM_GROUND) >= groundWeight) continue;
-
-      const { minimum, maximum } = SNAKES_DEFINITION.lengthMeters;
-      stream.crawling.push({
-        startX,
-        startZ,
-        headingX,
-        headingZ,
-        heading,
-        lengthMeters: minimum + draw(RANDOM_LENGTH) * (maximum - minimum),
-        phase: draw(RANDOM_PHASE),
-      });
-    }
+  for (const cellSnakes of stream.slotSnakes) {
+    for (const snake of cellSnakes) stream.crawling.push(snake);
   }
 
   for (const [index, snake] of stream.crawling.entries()) {
@@ -280,10 +344,6 @@ function placeSnakes(
   options: SnakesModuleOptions,
   elapsedSeconds: number,
 ): void {
-  const placement = new Matrix4();
-  const position = new Vector3();
-  const facing = new Quaternion();
-  const scale = new Vector3();
   const { crawlSpeedMetersPerSecond, crawlDistanceMeters } = SNAKES_DEFINITION;
 
   for (const [index, snake] of stream.crawling.entries()) {
@@ -295,21 +355,21 @@ function placeSnakes(
     const headX = snake.startX + snake.headingX * travelled;
     const headZ = snake.startZ + snake.headingZ * travelled;
 
-    position.set(
+    PLACEMENT_POSITION.set(
       headX,
       options.worldSurface.groundYAt(headX, headZ) +
         SNAKES_DEFINITION.bodyRadiusMeters,
       headZ,
     );
-    facing.setFromAxisAngle(UP, snake.heading + Math.PI);
+    PLACEMENT_FACING.setFromAxisAngle(UP_AXIS, snake.heading + Math.PI);
     // The body is authored at unit length; its girth is authored in metres.
-    scale.set(
+    PLACEMENT_SCALE.set(
       SNAKES_DEFINITION.bodyRadiusMeters,
       SNAKES_DEFINITION.bodyRadiusMeters,
       snake.lengthMeters,
     );
-    placement.compose(position, facing, scale);
-    stream.mesh.setMatrixAt(index, placement);
+    PLACEMENT.compose(PLACEMENT_POSITION, PLACEMENT_FACING, PLACEMENT_SCALE);
+    stream.mesh.setMatrixAt(index, PLACEMENT);
   }
 
   stream.mesh.count = stream.crawling.length;
@@ -386,15 +446,6 @@ function readWaveAmplitude(): number {
   return (WAVE_AMPLITUDE_SHARE * middleLength) / bodyRadiusMeters;
 }
 
-function rememberCells(
-  stream: SnakesStream,
-  changed: readonly ChunkAssignment[],
-): void {
-  for (const assignment of changed) {
-    stream.cells[assignment.slotIndex] = assignment;
-  }
-}
-
 function setSnakesVisible(state: SnakesState, visible: boolean): void {
   if (state.currentStream) state.currentStream.mesh.visible = visible;
 }
@@ -403,6 +454,7 @@ function unloadSnakes(state: SnakesState, scene: Scene): void {
   const stream = state.currentStream;
   if (!stream) return;
 
+  // Clear the reference first so pending queue jobs immediately become stale.
   state.currentStream = undefined;
   scene.remove(stream.mesh);
   stream.mesh.geometry.dispose();

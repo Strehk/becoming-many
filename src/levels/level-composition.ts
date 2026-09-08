@@ -667,6 +667,7 @@ function createSnakes(
     viewpoint: setup.world.viewpoint,
     preset,
     worldSurface: setup.worldSurface,
+    streamQueue: setup.world.streamQueue,
     effects: buildSurfaceEffects(worldFade, undefined, echoDepth),
   });
 }
