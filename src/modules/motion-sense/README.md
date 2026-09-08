@@ -100,4 +100,6 @@ array for a group this level does not carry, and while it is unloaded.
 - The ambient swarms are persistent and statically authored. The one
   route-following swarm is the mosquito passage, printed by `passage-swarm.ts`
   and composed beside this module: it crosses before the sense it announces, so
-  it can ride neither this module's gate nor its fade.
+  it can ride neither this module's gate nor its fade. It reads where that
+  cloud stands through `src/modules/passage-crossing.ts`, the same kind of
+  neutral seam as `connection-nodes.ts`, so neither module imports the other.

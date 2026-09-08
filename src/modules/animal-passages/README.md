@@ -100,6 +100,13 @@ at full strength, composed beside Motion Sense rather than inside it. It is the
 same rule as the flown animals wearing plain unlit materials — a passage must
 land in the world that is still standing, not in the one it is announcing.
 
+The two modules meet at `src/modules/passage-crossing.ts` and nowhere else.
+This module's handle offers a `PassageSwarmCrossing` — where the cloud stands
+this instant, and the shape that prints it — only when the schedule actually
+places the swarm. The cloud shape travels with the reader because both are
+authored against the same crossing, so nothing outside this folder reaches into
+`passage-definitions.ts` to size a ring.
+
 ## Not here yet
 
 - **Passages for Scent, Thermal, and Connections.** Those three senses have no
