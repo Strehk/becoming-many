@@ -13,7 +13,7 @@ Live issues own acceptance. Do not create a second implementation plan.
 | Branch | `david_refactor` only. Commit/push completed, tested blocks to `origin/david_refactor` and verify success; no main, force-push or additional branches. |
 | Current request | Complete #50 and its actual #109–#113 prerequisites: spatial tutorial, existing Show/Run integration, bounded particle/sound presentation, combined verification and targeted commit/push. Preserve explicit audio-content and physical acceptance. |
 | Source checkpoint | `1adc872` preserves the clean source before the spatial tutorial. Earlier UI/M5 and audio-wake evidence retains its own source identities. |
-| Next implementation | Spatial Start and Show/Run handoff pass local tests, build, lint and production-browser interaction. Production training now uses three short user-provided excerpts through object-bound granular layers and one shared hall; `startNarration` remains absent. #112 still needs listening/tuning acceptance. DE-use permission and EN behavior remain open. Preserve prior [UI evidence](evidence/ui-consolidation/README.md) and separate physical acceptance. |
+| Next implementation | The 2026-09-09 spatial review supersedes isolated ring presentation: reuse the main-world volume chunks for a dense near field, large volumetric particle arrows and continuous curved particle tunnels. The researched design and remaining passage-policy decision are recorded below. Existing Show/Run integration and granular audio remain the starting point; narration-use/EN and physical acceptance stay open. |
 | Confirmed direction | Conductor is UI only; Entry connects UI to the existing browser Engine. Show owns transport/language, Run owns lifetime, World owns rendering, M5 owns validity. Backend remains Station delivery/config/health. Affected role filenames and `src/ui/app.css` are implemented. |
 | Existing software | Direct startup, complete child/source cleanup, entry diagnostics, explicit literal levels, legacy Grass retirement, shared zone influences, approved bank clearance and shared Rocks/Vegetation lifecycle are implemented. Their distinct remaining issue acceptance is preserved. |
 | Current visitor behavior | Initial Play, four procedurally placed spatial goals without a deadline, then operator handoff. Interim Stop resets rig/time and holds; after handoff it recreates only retired training content. Complete replacement and fresh calibration remain #9/#46 decisions. |
@@ -94,6 +94,62 @@ visitor replacement or fresh calibration.
 workflow; its old three-issue review gate no longer blocks source work. Other
 issues with remaining physical, content, numerical-reference or unexplained
 failure criteria remain open, even when their source refactor is implemented.
+
+## Procedural Flight World — 2026-09-09
+
+User direction: particles must continuously surround the flyer; reuse the main
+experience's chunk logic. Large three-dimensional arrows lead into a curve and
+a tunnel made of particles/rings. Formation, traversal and dissolution should
+read as one flowing world. The existing manually controlled locomotion remains
+binding; the world provides spatial guidance, not automatic steering.
+
+Research at `c18967a` identified two concrete causes of the static presentation:
+Air contains 80 points per 64 m cube (about 1.3 within a 10 m sphere), while Start
+reduces formed drift from 18 cm to 4.5 mm and draws a 90 cm, nearly planar arrow.
+Its entire cloud travels between isolated goal poses rather than forming a route.
+
+The implementation should replace that presentation at its existing owners:
+
+1. Extend Air's authored streaming bounds for a dense near field, reusing
+   `VolumeChunkWindow`, deterministic absolute coordinates, fixed GPU slot ranges,
+   stale-job rejection and World's `StreamQueue`. Only residence follows the
+   flyer; rotation and translation never carry existing particles along. Fade
+   the outer field before recycling becomes visible. Preserve main-level defaults.
+2. Start generates bounded curve sections once in world space, joining each
+   section to the preceding endpoint and tangent. Place large volumetric particle
+   arrows before the bends and orient successive tunnel cross-sections along
+   the curve. Distribute particles between the rings to give the tunnel depth.
+3. Replace the current single moving cloud with a fixed pool for the retiring,
+   current and next section. Each section's local drifting particles gather into
+   its arrow/tunnel and disperse in place; the next section begins forming before
+   the old one disappears. Build recycled slots incrementally through World,
+   without allocations or full-buffer uploads in ordinary animation frames.
+4. Keep visible motion within the formed bodies and a local flight wake. Start
+   owns spatial passage facts; the effect owns particles and actual object
+   anchors. Existing bounded audio voices follow those same bodies, with no
+   emitter per ring. Show retains instruction/transport policy; Run retains end.
+
+Initial prototype budgets, not measured production acceptance: 16 m Air cells,
+32 m range, 48 points per cell and a radial fade over 24–32 m. This gives 343
+resident slots / 16,464 points, about 49 within 10 m, versus today's 27,440
+resident points / about 1.3 nearby. An axial boundary recycles 49 slots / 2,352
+points, roughly every 3.2 seconds at 5 m/s. Three training slots of 4,096 points
+would bring the combined capacity to 28,752 (currently 28,840). Closer particles
+can increase overdraw despite similar counts: compare actual CPU/GPU and uploads,
+especially at simultaneous XYZ boundaries and on a sustained curved flight.
+Try arrows around 6–10 m long and approximately 1 m thick; dimensions, curve
+radius and tunnel aperture need visual/comfort tuning within unchanged flight.
+
+One product decision remains: keep one goal-plane passage per exercise, or
+require tunnel entry followed by exit. The latter is recommended for the new
+learning shape but changes when the next direction instruction can start.
+Until answered, do not silently replace the existing success rule. The approved
+right/left/up/down order, no deadline, held pause, persistent missed targets and
+operator handoff remain. Tests must cover whichever passage policy is selected,
+curved/high-speed traversal, stable world anchors, chunk boundaries, full cleanup,
+and first/repeated preparation. Narration and physical listening/PCVR acceptance
+remain separate. This section is researched direction; runtime still uses the
+`c18967a` isolated-goal presentation.
 
 ## Granular Atmosphere — #112
 

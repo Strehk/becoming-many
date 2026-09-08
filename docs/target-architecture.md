@@ -335,7 +335,14 @@ recipe enables user-provided granular excerpts through the existing training
 audio owner. Start supplies physical particle-body anchors; spatial audio owns
 listener/distance, Show supplies playback/speech facts, and Run awaits sample/room
 preparation and cleanup. Tutorial narration remains absent pending content
-acceptance. Native timebase suspension still prevents Show time from advancing.
+acceptance. Native timebase suspension still prevents Show time from advancing. The subsequent
+2026-09-09 user review requires continuous near-field particles through the
+existing world chunk mechanism, large volumetric particle arrows and curved
+particle tunnels with overlapping local formation/dissolution. World positions
+stay anchored; only residency is viewer-centered. This changes spatial content,
+not locomotion or lifecycle ownership. The researched implementation sequence
+and the unresolved tunnel-entry/exit success rule are in the
+[roadmap](roadmap.md#procedural-flight-world--2026-09-09).
 
 Preserve the current dependency order:
 
