@@ -1,0 +1,50 @@
+# Purpose: Report what Fallow sees in a pull request without blocking it.
+# Context: Fallow's findings — dead exports, complexity, duplication — are
+#   judgement calls a reviewer weighs against the change, not facts a machine
+#   should refuse a merge over. It reports; the reviewer decides.
+# Responsibility: Audit the changed files against the pull request's base,
+#   render the findings as annotations and a job summary, and always pass.
+# Boundary: Thresholds and export conventions are .fallowrc.jsonc's decision.
+
+name: Fallow review
+
+# Pull requests only: the audit is scoped to a diff against a base, which a
+# push to main does not have.
+on: pull_request
+
+permissions:
+  contents: read
+
+concurrency:
+  group: fallow-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    # Advisory, never a merge blocker.
+    continue-on-error: true
+    steps:
+      # Full history: the audit attributes each finding to the changeset or to
+      # the code it inherited, which needs the base commit present.
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: ./.github/actions/setup
+
+      # Analyze once; a non-zero exit is the audit's verdict, not a CI failure.
+      - name: Audit changed files
+        continue-on-error: true
+        run: >
+          bunx fallow audit
+          --base "${{ github.event.pull_request.base.sha }}"
+          --format json --quiet > fallow-audit.json
+
+      # Both surfaces render from the saved results, so nothing is analyzed
+      # twice, and both work on fork pull requests without a write token.
+      - name: Annotate findings
+        run: bunx fallow report --from fallow-audit.json --format github-annotations
+
+      - name: Summarize findings
+        run: bunx fallow report --from fallow-audit.json --format github-summary >> "$GITHUB_STEP_SUMMARY"
