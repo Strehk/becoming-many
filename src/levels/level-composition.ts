@@ -8,8 +8,15 @@
 import type { Matrix4 } from "three";
 import { FLIGHT_SETTINGS } from "../control/flight-settings";
 import { END_CREDITS } from "../dramaturgy/end-credits";
+import type { PassageSchedule } from "../dramaturgy/passage-schedule";
 import type { ShowSense } from "../dramaturgy/show-levels";
 import { createAirParticlesModule } from "../modules/air-particles/air-particles";
+import {
+  type AnimalPassagesModuleHandle,
+  createAnimalPassagesModule,
+  loadPassageResources,
+  type PassageResources,
+} from "../modules/animal-passages/animal-passages";
 import {
   type AnimalBodiesObserver,
   type AnimalsModuleHandle,
@@ -35,6 +42,7 @@ import {
   createMotionSenseModule,
   type MotionSenseModuleHandle,
 } from "../modules/motion-sense/motion-sense";
+import { createPassageSwarmModule } from "../modules/motion-sense/passage-swarm";
 import {
   type ConnectionsModuleHandle,
   createConnectionsModule,
@@ -75,6 +83,7 @@ import {
 } from "../utils/asset-loader/gltf-assets";
 import type { UnlitMaterialEffect } from "../utils/asset-loader/material-effect";
 import type { WorldModule } from "../world/module-runtime";
+import { createRigHeadingReader } from "../world/viewer-rig";
 import type { WorldContext } from "../world/world-runtime";
 import { WORLD_SURFACE_SETTINGS } from "../world-surface/surface-settings";
 import {
@@ -89,6 +98,8 @@ export interface LoadedLevelAssets {
   readonly vegetation: GltfAssets;
   readonly rocks: GltfAssets;
   readonly animals: GltfAssets;
+  /** Passage models and routes; only a show crosses animals, so only a show loads them. */
+  readonly passages: PassageResources | undefined;
 }
 
 interface LevelSetup {
@@ -99,6 +110,8 @@ interface LevelSetup {
   readonly materialHazeColor: number;
   /** Only a show composes world fades; a static run keeps its materials bare. */
   readonly forShow: boolean;
+  /** The animals this world crosses, or undefined when none do. */
+  readonly passages: PassageSchedule | undefined;
   readonly testModules: TestLevelModules | undefined;
 }
 
@@ -118,6 +131,7 @@ interface LevelCompositionOptions {
   readonly assets: LoadedLevelAssets;
   readonly materialHazeColor: number;
   readonly forShow: boolean;
+  readonly passages: PassageSchedule | undefined;
   readonly testModules?: TestLevelModules;
 }
 
@@ -202,6 +216,8 @@ function createConfiguredModules(setup: LevelSetup): ComposedWorld {
   );
   const connections = createConnectionsWeb(setup, animals);
   const motion = createMotionSense(setup);
+  const passages = createAnimalPassages(setup);
+  const passageSwarm = createPassageSwarm(setup, passages);
 
   add(
     "echo",
@@ -224,6 +240,12 @@ function createConfiguredModules(setup: LevelSetup): ComposedWorld {
   add("motion", motion?.module);
   add("magnetic", magnetic?.module);
   add("connections", connections?.module);
+  // Ungated: a passage crosses *between* senses, so no single sense strength
+  // may put it away. The schedule alone decides when its animal is in the air.
+  // The swarm passage is the sharpest case — it announces the very sense whose
+  // gate would otherwise be holding it shut while it crosses.
+  add(undefined, passages?.module);
+  add(undefined, passageSwarm);
   add(undefined, endCredits?.module);
 
   return {
@@ -234,6 +256,7 @@ function createConfiguredModules(setup: LevelSetup): ComposedWorld {
       thermal,
       magnetic,
       connections,
+      passages,
       structureFade,
       animalsFade,
       endCredits,
@@ -253,6 +276,7 @@ interface ComposedSenseHandles {
   readonly thermal: ThermalPerceptionEffects | undefined;
   readonly magnetic: MagneticSenseModuleHandle | undefined;
   readonly connections: ConnectionsModuleHandle | undefined;
+  readonly passages: AnimalPassagesModuleHandle | undefined;
   readonly structureFade: WorldFadeEffect | undefined;
   readonly animalsFade: WorldFadeEffect | undefined;
   readonly endCredits: EndCreditsPanelHandle | undefined;
@@ -277,6 +301,7 @@ function composeShowReach(
     },
     setSkyBackground: handles.magnetic?.setSkyBackground,
     setEndCreditsPresence: handles.endCredits?.setPresence,
+    followPassages: handles.passages?.followShowTime,
     readMotionActorCenters: handles.motion?.readActorCenters,
   };
 }
@@ -374,6 +399,55 @@ function createMotionSense(
     parameters,
     groundYAt: setup.worldSurface.groundYAt,
     zoneAt: setup.worldSurface.zoneAt,
+  });
+}
+
+/**
+ * The authored animal crossings. Only a show has them: they are placed by the
+ * schedule, and a static run has no show time to place them against.
+ */
+function createAnimalPassages(
+  setup: LevelSetup,
+): AnimalPassagesModuleHandle | undefined {
+  const { passages, assets } = setup;
+  if (!passages || !assets.passages) return undefined;
+
+  const { world } = setup;
+  return createAnimalPassagesModule({
+    scene: world.scene,
+    viewpoint: world.viewpoint,
+    worldSurface: setup.worldSurface,
+    schedule: passages,
+    resources: assets.passages,
+    readViewHeadingRadians: createRigHeadingReader(world.viewerRig),
+  });
+}
+
+/**
+ * The trail ring of the swarm passage. It is composed here rather than inside
+ * Motion Sense because it must outlive that module's gate: the mosquitoes
+ * cross six seconds before the motion cue, where the sense they announce still
+ * stands at zero. Motion Sense owns how a trail is printed; the passage owns
+ * where and when.
+ */
+function createPassageSwarm(
+  setup: LevelSetup,
+  passages: AnimalPassagesModuleHandle | undefined,
+): WorldModule | undefined {
+  const swarm = passages?.swarm;
+  // The ring prints in the level's own trail appearance, so a world that
+  // schedules the swarm must also carry the motion layer. `level-presets`
+  // holds the show to that; without it the crossing would go missing quietly.
+  const parameters = setup.level.motion;
+  if (!swarm || !parameters) return undefined;
+
+  return createPassageSwarmModule({
+    scene: setup.world.scene,
+    parameters,
+    pointCount: swarm.pointCount,
+    cloudRadiusMeters: swarm.cloudRadiusMeters,
+    cloudHeightMeters: swarm.cloudHeightMeters,
+    readCrossing: swarm.read,
   });
 }
 
@@ -711,8 +785,9 @@ function hasVisibleSurface(level: WorldComposition): boolean {
 
 export async function loadLevelAssets(
   level: WorldComposition,
+  passageSchedule: PassageSchedule | undefined,
 ): Promise<LoadedLevelAssets> {
-  const [vegetation, rocks, animals] = await Promise.all([
+  const [vegetation, rocks, animals, passages] = await Promise.all([
     loadGltfAssets(
       level.vegetation
         ? createStaticAssetRequests(VEGETATION_DEFINITION.assets)
@@ -726,9 +801,10 @@ export async function loadLevelAssets(
         ? createStaticAssetRequests(ANIMALS_DEFINITION.species)
         : [],
     ),
+    passageSchedule ? loadPassageResources(passageSchedule) : undefined,
   ]);
 
-  return { vegetation, rocks, animals };
+  return { vegetation, rocks, animals, passages };
 }
 
 function createStaticAssetRequests(

@@ -15,6 +15,7 @@ import {
 } from "../control/flight-ground-clearance";
 import { resetFlightPose } from "../control/flight-reset";
 import { FLIGHT_SETTINGS } from "../control/flight-settings";
+import type { PassageSchedule } from "../dramaturgy/passage-schedule";
 import { showLevelStateAt } from "../dramaturgy/show-levels";
 import { createM5Adapter, type M5Adapter } from "../m5/m5-adapter";
 import type { WorldModule } from "../world/module-runtime";
@@ -123,7 +124,7 @@ export async function startLevel(
 
   const level =
     request.kind === "static" ? request.preset : request.composition.world;
-  const assets = await loadLevelAssets(level);
+  const assets = await loadLevelAssets(level, requestedPassages(request));
   let running: RunningLevel | undefined;
   await startWorld(container, {
     setupWorld: async (world) => {
@@ -247,6 +248,7 @@ async function prepareLevelComposition(
         ? request.preset.backgroundColor
         : request.composition.materialHazeColor,
     forShow: request.kind === "show",
+    passages: requestedPassages(request),
     testModules: request.testModules,
   });
   activateModules(world, composed.modules);
@@ -257,6 +259,16 @@ async function prepareLevelComposition(
     reach: composed.reach,
     hasGround: composed.hasGround,
   };
+}
+
+/**
+ * The animals this request crosses. Only a show has them: a passage is placed
+ * by show time, and a static run has no show time to place it against.
+ */
+function requestedPassages(
+  request: LevelStartRequest,
+): PassageSchedule | undefined {
+  return request.kind === "show" ? request.composition.passages : undefined;
 }
 
 type LevelPresentation = Pick<LevelPreset, "backgroundColor" | "viewDistance">;
