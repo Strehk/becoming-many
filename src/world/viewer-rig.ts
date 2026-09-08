@@ -10,7 +10,13 @@
  *   lives in `../modules`. Neither may write the camera's own transform.
  */
 
-import { Group, MathUtils, PerspectiveCamera, Vector3 } from "three";
+import {
+  Group,
+  MathUtils,
+  type Object3D,
+  PerspectiveCamera,
+  Vector3,
+} from "three";
 
 /** World-space viewer facts, refreshed once per frame before modules update. */
 export interface Viewpoint {
@@ -81,5 +87,29 @@ export function createViewerRig(viewPitchAssistDegrees = 0): ViewerRig {
       group.updateMatrixWorld(true);
       camera.getWorldPosition(worldPosition);
     },
+  };
+}
+
+/**
+ * Read the compass yaw the rig is travelling on, in radians. The rig is what
+ * locomotion turns; the camera under it is head pose and would swing the
+ * answer with a glance, so a route turned against the visitor reads this and
+ * not the camera.
+ *
+ * Deliberately not a `Viewpoint` field: the viewpoint is published after the
+ * level update that consumes this, so a stored value would be one frame old.
+ * The reader owns one scratch vector and never allocates.
+ */
+export function createRigHeadingReader(rig: Object3D): () => number {
+  const heading = new Vector3();
+
+  return (): number => {
+    rig.updateWorldMatrix(true, false);
+    heading.set(0, 0, -1).applyQuaternion(rig.quaternion);
+    // The yaw that turns −Z onto this heading. Both components are negated
+    // because forward is −Z: reading the raw components instead answers a
+    // half turn away, which sends a route authored to cross in front of the
+    // visitor out behind them.
+    return Math.atan2(-heading.x, -heading.z);
   };
 }

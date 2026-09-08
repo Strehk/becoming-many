@@ -16,3 +16,15 @@ test("Level Runtime delegates concrete world construction", async () => {
   expect(runtimeSource).not.toMatch(/from "\.\.\/modules\//);
   expect(runtimeSource).not.toContain("-definition");
 });
+
+test("Level Composition takes authored passages through the composition", async () => {
+  const compositionSource = await Bun.file(
+    new URL("../../src/levels/level-composition.ts", import.meta.url),
+  ).text();
+
+  // Which animals cross is composition data like every other authored block:
+  // it arrives on `ShowComposition`, so this file reaches for neither the
+  // piece's schedule nor a module's own definitions to find it.
+  expect(compositionSource).not.toContain("piece-schedule");
+  expect(compositionSource).not.toContain("passage-definitions");
+});

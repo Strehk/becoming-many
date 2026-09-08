@@ -5,6 +5,7 @@
  * Boundary: This file contains types only and creates no browser or Three.js resources.
  */
 
+import type { PassageSchedule } from "../dramaturgy/passage-schedule";
 import type { AirParticlesParameters } from "../modules/air-particles/air-particles";
 import type { AnimalsPreset } from "../modules/animals/animals";
 import type { EchoDepthParameters } from "../modules/echo-depth/echo-depth";
@@ -58,4 +59,11 @@ export interface ShowComposition {
   readonly world: WorldComposition;
   /** Haze baked into surface and sky materials before live state following. */
   readonly materialHazeColor: number;
+  /**
+   * The animals that cross this show, and when. Absent means none cross, and
+   * then no passage model or route is loaded at all. It sits beside `world`
+   * rather than inside it because a passage is placed on the timeline, not
+   * carried by a sense: the schedule is what says an animal is in the air.
+   */
+  readonly passages?: PassageSchedule;
 }
