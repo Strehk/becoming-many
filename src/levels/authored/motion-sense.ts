@@ -46,8 +46,10 @@ export const MOTION_SENSE: MotionSenseParameters = {
 };
 
 /**
- * The ladder's one deviation: from Thermal Perception on, a bird is a warm body
- * and its trace takes the palette's hot stop. The flies keep their own colors.
+ * The ladder's one deviation: from Thermal Perception on, a bird is a warm body.
+ * Its trace takes the palette's hot stop, and it is here that a body joins the
+ * trace at all — movement without one is what Motion Perception is about. The
+ * flies keep their own colors and stay bodiless.
  */
 export const HEAT_MOTION_SENSE: MotionSenseParameters = {
   ...MOTION_SENSE,
@@ -56,6 +58,13 @@ export const HEAT_MOTION_SENSE: MotionSenseParameters = {
     appearance: {
       ...BIRDS.appearance,
       trailColor: 0xfb5f16,
+    },
+    // A blackbird's length, and the fur color the walking animals carry: the
+    // flocks circle beyond the heat view's reach, so a bird reads in the echo
+    // palette like an unwarmed animal rather than as a warm body up close.
+    body: {
+      lengthMeters: 0.26,
+      color: 0x171717,
     },
   },
 };

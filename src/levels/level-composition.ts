@@ -38,6 +38,7 @@ import {
   createMagneticSense,
   type MagneticSenseModuleHandle,
 } from "../modules/magnetic-sense/magnetic-sense";
+import { BIRD_BODY_ASSET } from "../modules/motion-sense/bird-bodies";
 import {
   createMotionSenseModule,
   type MotionSenseModuleHandle,
@@ -97,6 +98,7 @@ export interface LoadedLevelAssets {
   readonly vegetation: GltfAssets;
   readonly rocks: GltfAssets;
   readonly animals: GltfAssets;
+  readonly birds: GltfAssets;
   /** Passage models and routes; only a show crosses animals, so only a show loads them. */
   readonly passages: PassageResources | undefined;
 }
@@ -214,7 +216,7 @@ function createConfiguredModules(setup: LevelSetup): ComposedWorld {
     scent?.observeActorBodies,
   );
   const connections = createConnectionsWeb(setup, animals);
-  const motion = createMotionSense(setup);
+  const motion = createMotionSense(setup, animalsFade);
   const passages = createAnimalPassages(setup);
   const passageSwarm = createPassageSwarm(setup, passages);
 
@@ -299,6 +301,7 @@ function composeShowReach(
     },
     setSkyBackground: handles.magnetic?.setSkyBackground,
     setEndCreditsPresence: handles.endCredits?.setPresence,
+    setBirdBodyPresence: handles.motion?.setBodyPresence,
     followPassages: handles.passages?.followShowTime,
     readMotionActorCenters: handles.motion?.readActorCenters,
   };
@@ -387,9 +390,21 @@ function createThermalEffects(
 /** Skip the sense entirely at intensity zero so its GPU work never runs. */
 function createMotionSense(
   setup: LevelSetup,
+  animalsFade: WorldFadeEffect | undefined,
 ): MotionSenseModuleHandle | undefined {
   const parameters = setup.level.motion;
   if (!parameters || parameters.intensity === 0) return undefined;
+
+  // The bodies belong to the warm population rather than to the motion sense:
+  // they ride the animals' World Fade, so a show condenses them out of the
+  // haze with the heat view that reveals them. They circle well beyond that
+  // view's reach, so like an unwarmed animal they keep the echo palette their
+  // color is authored in. The module is handed the whole loaded set rather
+  // than one model out of it, so releasing it stays with the module that
+  // draws from it.
+  const birdBody = hasBirdBodies(setup.level)
+    ? { assets: setup.assets.birds, effects: animalsFade ? [animalsFade] : [] }
+    : undefined;
 
   return createMotionSenseModule({
     scene: setup.world.scene,
@@ -397,6 +412,7 @@ function createMotionSense(
     parameters,
     groundYAt: setup.worldSurface.groundYAt,
     zoneAt: setup.worldSurface.zoneAt,
+    birdBody,
   });
 }
 
@@ -762,7 +778,7 @@ export async function loadLevelAssets(
   level: WorldComposition,
   passageSchedule: PassageSchedule | undefined,
 ): Promise<LoadedLevelAssets> {
-  const [vegetation, rocks, animals, passages] = await Promise.all([
+  const [vegetation, rocks, animals, birds, passages] = await Promise.all([
     loadGltfAssets(
       level.vegetation
         ? createStaticAssetRequests(VEGETATION_DEFINITION.assets)
@@ -776,10 +792,21 @@ export async function loadLevelAssets(
         ? createStaticAssetRequests(ANIMALS_DEFINITION.species)
         : [],
     ),
+    loadGltfAssets(hasBirdBodies(level) ? [BIRD_BODY_ASSET] : []),
     passageSchedule ? loadPassageResources(passageSchedule) : undefined,
   ]);
 
-  return { vegetation, rocks, animals, passages };
+  return { vegetation, rocks, animals, birds, passages };
+}
+
+/**
+ * Whether this level draws bird bodies at all. One answer for both the load
+ * and the composition: a model loaded for a sense that is never built would
+ * have no owner left to release it.
+ */
+function hasBirdBodies(level: WorldComposition): boolean {
+  const motion = level.motion;
+  return Boolean(motion && motion.intensity !== 0 && motion.birds?.body);
 }
 
 function createStaticAssetRequests(

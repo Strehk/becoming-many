@@ -14,6 +14,11 @@ import {
 
 const COMPONENTS_PER_VALUE = 3;
 const TAU = Math.PI * 2;
+/*
+ * Below a tenth of a millimetre of travel in one update there is no direction
+ * to read: the square is compared so nothing takes a root per bird per frame.
+ */
+const MINIMUM_TRAVEL_SQUARED = 1e-8;
 
 /** Fixed random channel indexes keeping every hash stream independent. */
 const BIRD_RANDOM_SCATTER_ANGLE = 0;
@@ -34,13 +39,21 @@ interface BirdFlocksOptions {
 }
 
 /**
- * Pure data actor: no scene object exists because the bird bodies stay
- * invisible. The position stream feeds one Motion Trail ring through the
- * module's `MotionPointSource` seam.
+ * Pure data actor: the flock owns no scene object. Its point stream feeds one
+ * Motion Trail ring through the module's `MotionPointSource` seam, and its
+ * body stream places whatever chooses to fly the same flight — the trace is
+ * authored here, a body only follows it.
  */
 export interface BirdFlocks {
   /** Tightly packed world xyz triples of every bird point; stable identity. */
   readonly getWorldPositions: () => Float32Array;
+
+  /**
+   * Where every bird is and how it flies, five values each: world x, y, z,
+   * the heading in radians, and the beat as a sine between −1 and 1. Stable
+   * identity, rewritten in place every update.
+   */
+  readonly getBodyStream: () => Float32Array;
 
   /**
    * Tightly packed world xyz triples, one per flock: where the flock itself
@@ -48,11 +61,17 @@ export interface BirdFlocks {
    * sound on the nearest flock through this; stable identity.
    */
   readonly getFlockCenters: () => Float32Array;
+
   readonly update: (
     deltaSeconds: number,
     playerX: number,
     playerZ: number,
   ) => void;
+}
+
+/** Count the birds one parameter block flies. */
+export function getBirdCount(birds: BirdParameters): number {
+  return birds.flockCount * birds.birdsPerFlock;
 }
 
 /** Count the trail points one bird parameter block produces. */
@@ -73,6 +92,9 @@ export function createBirdFlocks(options: BirdFlocksOptions): BirdFlocks {
   const flockFirstBird = createFlockFirstBirds(flockSizes);
   const worldPositions = new Float32Array(
     getBirdPointCount(birds) * COMPONENTS_PER_VALUE,
+  );
+  const bodyStream = new Float32Array(
+    birdCount * MOTION_SENSE_SETTINGS.birdBodyValuesPerBird,
   );
   const scatterOffsets = new Float32Array(birdCount * COMPONENTS_PER_VALUE);
   const flapFrequencies = new Float32Array(birdCount);
@@ -112,6 +134,7 @@ export function createBirdFlocks(options: BirdFlocksOptions): BirdFlocks {
       getMotionRandom(flockIndex, FLOCK_RANDOM_START_ANGLE) * TAU;
   }
 
+  let hasFlown = false;
   const writePositions = (): void => {
     for (let flockIndex = 0; flockIndex < birds.flockCount; flockIndex += 1) {
       writeFlockPositions({
@@ -123,17 +146,21 @@ export function createBirdFlocks(options: BirdFlocksOptions): BirdFlocks {
         orbitAngle: orbitAngles[flockIndex] ?? 0,
         elapsedSeconds,
         worldPositions,
+        bodyStream,
+        hasFlown,
         flockCenters,
         scatterOffsets,
         flapFrequencies,
         flapPhases,
       });
     }
+    hasFlown = true;
   };
   writePositions();
 
   return {
     getWorldPositions: () => worldPositions,
+    getBodyStream: () => bodyStream,
     getFlockCenters: () => flockCenters,
     update: (deltaSeconds, playerX, playerZ) => {
       if (deltaSeconds <= 0) return;
@@ -244,6 +271,9 @@ interface FlockWriteInput {
   readonly orbitAngle: number;
   readonly elapsedSeconds: number;
   readonly worldPositions: Float32Array;
+  readonly bodyStream: Float32Array;
+  /** False only for the write before anything has moved yet. */
+  readonly hasFlown: boolean;
   readonly flockCenters: Float32Array;
   readonly scatterOffsets: Float32Array;
   readonly flapFrequencies: Float32Array;
@@ -258,11 +288,15 @@ function writeFlockPositions(input: FlockWriteInput): void {
   const centerX = input.anchor.x + Math.cos(input.orbitAngle) * radius;
   const centerZ = input.anchor.z + Math.sin(input.orbitAngle) * radius;
 
-  // The flight heading is the orbit tangent; wings extend perpendicular.
-  const headingX = -Math.sin(input.orbitAngle);
-  const headingZ = Math.cos(input.orbitAngle);
-  const lateralX = -headingZ;
-  const lateralZ = headingX;
+  // The orbit tangent is only part of where a bird goes: the flock's anchor
+  // also drifts after the traveller, and while someone flies, that drift is
+  // most of the movement. A bearing taken from the tangent alone would carry
+  // the whole flock sideways across its own path, so it stands in only for
+  // the first frame, before there is a travelled step to read.
+  const tangentHeading = Math.atan2(
+    -Math.sin(input.orbitAngle),
+    Math.cos(input.orbitAngle),
+  );
   const halfSpan = settings.birdWingSpanMeters / 2;
 
   // Where the flock as a whole is: its orbit point at flight height. One extra
@@ -285,7 +319,29 @@ function writeFlockPositions(input: FlockWriteInput): void {
     const flapTime =
       input.elapsedSeconds * (input.flapFrequencies[birdIndex] ?? 6) * TAU +
       (input.flapPhases[birdIndex] ?? 0);
-    const flapLift = Math.sin(flapTime) * settings.birdFlapAmplitudeMeters;
+    const flapSine = Math.sin(flapTime);
+    const flapLift = flapSine * settings.birdFlapAmplitudeMeters;
+
+    // One bearing serves the trace and the body flying it: the way this bird
+    // actually travelled since the last write, which is the tangent, the
+    // anchor's drift after the traveller, and the ground under it together.
+    const bodyOffset = birdIndex * settings.birdBodyValuesPerBird;
+    const heading = readTravelHeading({
+      bodyStream: input.bodyStream,
+      bodyOffset,
+      bodyX,
+      bodyZ,
+      hasFlown: input.hasFlown,
+      tangentHeading,
+    });
+    const lateralX = -Math.cos(heading);
+    const lateralZ = Math.sin(heading);
+
+    input.bodyStream[bodyOffset] = bodyX;
+    input.bodyStream[bodyOffset + 1] = bodyY;
+    input.bodyStream[bodyOffset + 2] = bodyZ;
+    input.bodyStream[bodyOffset + 3] = heading;
+    input.bodyStream[bodyOffset + 4] = flapSine;
 
     const pointOffset =
       birdIndex * settings.birdPointsPerBird * COMPONENTS_PER_VALUE;
@@ -299,4 +355,31 @@ function writeFlockPositions(input: FlockWriteInput): void {
     input.worldPositions[pointOffset + 7] = bodyY + flapLift;
     input.worldPositions[pointOffset + 8] = bodyZ - lateralZ * halfSpan;
   }
+}
+
+interface TravelHeadingInput {
+  readonly bodyStream: Float32Array;
+  readonly bodyOffset: number;
+  readonly bodyX: number;
+  readonly bodyZ: number;
+  readonly hasFlown: boolean;
+  readonly tangentHeading: number;
+}
+
+/**
+ * The bearing this bird travelled on since the last write. A step too short to
+ * read a direction from — a held show, a paused frame — keeps the bearing it
+ * already had, so a body never snaps round when its flock briefly stands still.
+ */
+function readTravelHeading(input: TravelHeadingInput): number {
+  if (!input.hasFlown) return input.tangentHeading;
+
+  const previousHeading = input.bodyStream[input.bodyOffset + 3] ?? 0;
+  const travelX = input.bodyX - (input.bodyStream[input.bodyOffset] ?? 0);
+  const travelZ = input.bodyZ - (input.bodyStream[input.bodyOffset + 2] ?? 0);
+  if (travelX * travelX + travelZ * travelZ < MINIMUM_TRAVEL_SQUARED) {
+    return previousHeading;
+  }
+
+  return Math.atan2(travelX, travelZ);
 }
