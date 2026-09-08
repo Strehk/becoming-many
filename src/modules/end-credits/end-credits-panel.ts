@@ -15,7 +15,7 @@ import {
 import type { EndCreditsDefinition } from "../../dramaturgy/end-credits";
 import type { WorldModule } from "../../world/module-runtime";
 import type { Viewpoint } from "../../world/viewer-rig";
-import { createEndCreditsPose } from "./end-credits-pose";
+import { createHeadingPanelPose } from "../heading-panel-pose";
 import { END_CREDITS_PANEL_SETTINGS } from "./end-credits-settings";
 import { drawEndCreditsTexture } from "./end-credits-texture";
 
@@ -58,7 +58,7 @@ export function createEndCreditsPanel(
   options: EndCreditsPanelOptions,
 ): EndCreditsPanelHandle {
   const settings = END_CREDITS_PANEL_SETTINGS;
-  const pose = createEndCreditsPose({
+  const pose = createHeadingPanelPose({
     distanceMeters: settings.distanceMeters,
     viewPitchDegrees: options.viewPitchDegrees,
   });

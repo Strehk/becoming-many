@@ -13,7 +13,7 @@ import {
 } from "../control/flight-ground-clearance";
 import { resetFlightPose } from "../control/flight-reset";
 import { FLIGHT_SETTINGS } from "../control/flight-settings";
-import { applyM5Flight } from "../control/m5-flight";
+import { applyM5Flight, readM5FlightInput } from "../control/m5-flight";
 import { showLevelStateAt } from "../dramaturgy/show-levels";
 import { createM5Runtime, type M5Runtime } from "../m5/runtime/m5.runtime";
 import { disposeGltfAssets } from "../utils/asset-loader/gltf-assets";
@@ -22,7 +22,7 @@ import {
   createWorld,
   type GraphicsInfo,
   type RenderCounters,
-  type WorldSurface,
+  type WorldViewport,
 } from "../world/world-runtime";
 import type { XrSessionControl } from "../world/xr-session";
 import {
@@ -59,9 +59,7 @@ export interface Run {
    * The M5 tilt controller, idle until a host is set (by the conductor page,
    * a deployment config, or a `?m5=` request). Undefined under a benchmark.
    */
-  readonly m5:
-    | Pick<M5Runtime, "setHost" | "readObservation">
-    | undefined;
+  readonly m5: Pick<M5Runtime, "setHost" | "readObservation"> | undefined;
 
   /** The renderer's WebXR session, for the page that owns the entry button. */
   readonly xr: Pick<XrSessionControl, "start" | "stop" | "subscribe">;
@@ -91,7 +89,7 @@ export interface ShowLevelRequest extends CommonLevelRequest {
 export type LevelStartRequest = StaticLevelRequest | ShowLevelRequest;
 
 export async function startLevel(
-  surface: WorldSurface,
+  surface: WorldViewport,
   request: LevelStartRequest,
 ): Promise<Run> {
   const level = request.preset;
@@ -125,13 +123,15 @@ export async function startLevel(
       forShow: request.kind === "show",
       testModules: request.testModules,
     });
-    const { worldSurface, reach, hasGround } = composition;
+    const { worldSurface, reach, hasGround, start } = composition;
+    const startInput = { turnRight: 0, climb: 0 };
     modules = composition.modules;
     for (const module of modules) {
       world.modules.load(module);
       world.modules.activate(module);
     }
-    if (request.kind === "show") await world.prepareRenderer();
+    if (request.kind === "show" || (start && !benchmark))
+      await world.prepareRenderer();
     signal?.throwIfAborted();
 
     // Benchmarks place the rig directly; live input sources stay absent.
@@ -192,6 +192,12 @@ export async function startLevel(
         benchmark.placeViewer(runningWorld.viewerRig);
       } else {
         const controlFrame = m5?.consumeFrame();
+        if (start) {
+          if (controlFrame && controlFrame.quality > 0) {
+            readM5FlightInput(controlFrame, startInput);
+            start.setInput(startInput);
+          } else start.setInput(undefined);
+        }
         if (controlFrame)
           applyM5Flight(runningWorld.viewerRig, controlFrame, deltaSeconds);
         else desktop?.update(deltaSeconds);

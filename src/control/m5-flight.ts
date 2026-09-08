@@ -19,6 +19,22 @@ interface FlightTransform {
   readonly quaternion: Quaternion;
 }
 
+/** Semantic steering shared by flight and input-driven content. */
+export interface FlightInput {
+  turnRight: number;
+  climb: number;
+}
+
+/** Translate calibrated axes without allocation; validity remains owned by M5. */
+export function readM5FlightInput(
+  frame: ControlFrame,
+  target: FlightInput,
+): void {
+  target.turnRight = -frame.roll;
+  target.climb = -frame.pitch;
+}
+
+const flightInput: FlightInput = { turnRight: 0, climb: 0 };
 const WORLD_UP = new Vector3(0, 1, 0);
 const LOCAL_FORWARD = new Vector3(0, 0, -1);
 const MINIMUM_PLANAR_DIRECTION_LENGTH = 1e-6;
@@ -30,9 +46,7 @@ export function applyM5Flight(
   frame: ControlFrame,
   deltaSeconds: number,
 ): void {
-  // Map the calibrated M5 axes once: negative pitch climbs; positive roll
-  // increases world-up yaw. The physical axis convention belongs to M5State.
-  const climbInput = -frame.pitch;
+  readM5FlightInput(frame, flightInput);
 
   // Yaw about world-up, never a tilted local axis: the heading persists after
   // the roll returns to zero and the horizon can never bank. Pre-multiplying
@@ -40,7 +54,9 @@ export function applyM5Flight(
   // independent on the child camera.
   yawStep.setFromAxisAngle(
     WORLD_UP,
-    frame.roll * FLIGHT_SETTINGS.yawRateRadiansPerSecond * deltaSeconds,
+    -flightInput.turnRight *
+      FLIGHT_SETTINGS.yawRateRadiansPerSecond *
+      deltaSeconds,
   );
   flight.quaternion.premultiply(yawStep);
 
@@ -58,7 +74,7 @@ export function applyM5Flight(
   }
 
   const verticalSpeedMetersPerSecond =
-    climbInput * FLIGHT_SETTINGS.climbRateMetersPerSecond -
+    flightInput.climb * FLIGHT_SETTINGS.climbRateMetersPerSecond -
     FLIGHT_SETTINGS.neutralDescentMetersPerSecond;
   flight.position.y += verticalSpeedMetersPerSecond * deltaSeconds;
 }

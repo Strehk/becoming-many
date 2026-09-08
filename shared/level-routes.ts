@@ -6,6 +6,7 @@
  */
 
 export const LEVEL_NAMES = [
+  "start",
   "white-world",
   "scent",
   "echo",

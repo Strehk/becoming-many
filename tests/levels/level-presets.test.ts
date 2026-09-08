@@ -40,9 +40,10 @@ test("every level authors the current terrain-relative flight ceiling", () => {
 
 test("each world component appears only in its intended levels", () => {
   const expectedLevels = [
+    ["start", "start"],
     [
       "airParticles",
-      "white-world scent echo motion thermal magnetic connections test design-test",
+      "start white-world scent echo motion thermal magnetic connections test design-test",
     ],
     ["invisibleGround", "scent"],
     ["invisibleVegetation", "scent"],

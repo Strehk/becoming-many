@@ -31,7 +31,7 @@ semantic role, so a name is never recognised by comparing its text.
 lines themselves are authored in `src/dramaturgy/end-credits.ts` and handed in
 by Level Runtime, so this module never reads the schedule.
 
-`end-credits-pose.ts` is the placement, kept pure so it is covered by
+`../heading-panel-pose.ts` shares placement with Start, kept pure so it is covered by
 `bun test` without a browser. The panel rides a fixed distance ahead of the
 **rig's** flattened heading — the direction of travel — at eye height and
 square to the viewer. Anchoring to the course rather than to the head is what

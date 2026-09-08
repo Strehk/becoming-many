@@ -6,12 +6,12 @@
  */
 
 import { expect, test } from "bun:test";
+import { levelNameFromPath } from "../../shared/level-routes";
 import {
   isLevelName,
   LEVEL_NAMES,
   resolveLevelName,
 } from "../../src/levels/level-catalog";
-import { levelNameFromPath } from "../../shared/level-routes";
 
 test("every catalog name resolves to itself", () => {
   for (const name of LEVEL_NAMES) {
@@ -21,6 +21,7 @@ test("every catalog name resolves to itself", () => {
 });
 
 test("named level paths select the Test entry", () => {
+  expect(levelNameFromPath("/start")).toBe("start");
   expect(levelNameFromPath("/echo")).toBe("echo");
   expect(levelNameFromPath("/design-test/")).toBe("design-test");
   expect(levelNameFromPath("/conductor.html")).toBeUndefined();

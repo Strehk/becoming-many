@@ -47,6 +47,10 @@ import {
   type ScentParticlesModuleHandle,
   type ScentParticlesParameters,
 } from "../modules/scent-particles/scent-particles";
+import {
+  createStartModule,
+  type StartModuleHandle,
+} from "../modules/start/start.module";
 import { createGroundOccluder } from "../modules/terrain/ground-occluder";
 import { createTerrainModule } from "../modules/terrain/terrain";
 import { createTerrainColors } from "../modules/terrain/terrain-colors";
@@ -114,6 +118,7 @@ interface LevelCompositionOptions {
 }
 
 export interface ComposedLevel {
+  readonly start: StartModuleHandle | undefined;
   readonly worldSurface: WorldSurface;
   readonly modules: readonly WorldModule[];
   readonly reach: ShowWorldReach;
@@ -237,8 +242,19 @@ export function composeLevel({
     add(undefined, passages?.module);
     add(undefined, passageSwarm);
     add(undefined, endCredits?.module);
+    const start = level.start
+      ? createStartModule({
+          scene: world.scene,
+          viewpoint: world.viewpoint,
+          viewerRig: world.viewerRig,
+          viewPitchDegrees: FLIGHT_SETTINGS.viewPitchAssistDegrees,
+          parameters: level.start,
+        })
+      : undefined;
+    add(undefined, start?.module);
 
     return {
+      start,
       worldSurface,
       modules,
       hasGround: level.invisibleGround === true || hasVisibleSurface(level),

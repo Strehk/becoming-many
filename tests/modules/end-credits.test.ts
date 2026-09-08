@@ -8,19 +8,19 @@
 import { expect, test } from "bun:test";
 import { Euler, MathUtils, Quaternion, Vector3 } from "three";
 import {
-  createEndCreditsPose,
-  type EndCreditsPoseOptions,
-} from "../../src/modules/end-credits/end-credits-pose";
+  createHeadingPanelPose,
+  type HeadingPanelPoseOptions,
+} from "../../src/modules/heading-panel-pose";
 
 const DISTANCE_METERS = 3.2;
 const VIEW_PITCH_DEGREES = 30;
 
-const LEVEL_VIEW: EndCreditsPoseOptions = {
+const LEVEL_VIEW: HeadingPanelPoseOptions = {
   distanceMeters: DISTANCE_METERS,
   viewPitchDegrees: 0,
 };
 
-const RAISED_VIEW: EndCreditsPoseOptions = {
+const RAISED_VIEW: HeadingPanelPoseOptions = {
   distanceMeters: DISTANCE_METERS,
   viewPitchDegrees: VIEW_PITCH_DEGREES,
 };
@@ -37,7 +37,7 @@ function quaternionFrom(pitchDegrees: number, yawDegrees: number): Quaternion {
 }
 
 test("places the panel ahead of an unrotated rig at eye height", () => {
-  const pose = createEndCreditsPose(LEVEL_VIEW);
+  const pose = createHeadingPanelPose(LEVEL_VIEW);
   const eye = new Vector3(4, 12, -7);
 
   pose.place(eye, new Quaternion());
@@ -49,7 +49,7 @@ test("places the panel ahead of an unrotated rig at eye height", () => {
 });
 
 test("follows the rig heading around the yaw", () => {
-  const pose = createEndCreditsPose(LEVEL_VIEW);
+  const pose = createHeadingPanelPose(LEVEL_VIEW);
   const eye = new Vector3(0, 5, 0);
 
   pose.place(eye, quaternionFrom(0, 90));
@@ -61,7 +61,7 @@ test("follows the rig heading around the yaw", () => {
 // The rendered view is raised above the rig's horizontal forward, so a panel
 // left at true eye level would sit below everything the visitor looks at.
 test("raises the panel onto the rendered view axis", () => {
-  const pose = createEndCreditsPose(RAISED_VIEW);
+  const pose = createHeadingPanelPose(RAISED_VIEW);
   const eye = new Vector3(0, 5, 0);
 
   pose.place(eye, new Quaternion());
@@ -81,7 +81,7 @@ test("keeps the panel a constant distance from the eye", () => {
   const eye = new Vector3(0, 9, 0);
 
   for (const options of [LEVEL_VIEW, RAISED_VIEW]) {
-    const pose = createEndCreditsPose(options);
+    const pose = createHeadingPanelPose(options);
     pose.place(eye, quaternionFrom(-40, 25));
 
     // Flattened: a rig aimed downward moves the panel around the heading, not
@@ -91,7 +91,7 @@ test("keeps the panel a constant distance from the eye", () => {
 });
 
 test("holds the last heading when the rig points straight down", () => {
-  const pose = createEndCreditsPose(LEVEL_VIEW);
+  const pose = createHeadingPanelPose(LEVEL_VIEW);
   const eye = new Vector3(0, 5, 0);
 
   pose.place(eye, quaternionFrom(0, 90));
@@ -103,7 +103,7 @@ test("holds the last heading when the rig points straight down", () => {
 });
 
 test("opens facing forward before any heading has been read", () => {
-  const pose = createEndCreditsPose(LEVEL_VIEW);
+  const pose = createHeadingPanelPose(LEVEL_VIEW);
   const eye = new Vector3(0, 0, 0);
 
   pose.place(eye, quaternionFrom(-90, 0));
@@ -112,7 +112,7 @@ test("opens facing forward before any heading has been read", () => {
 });
 
 test("allocates nothing after the first placement", () => {
-  const pose = createEndCreditsPose(RAISED_VIEW);
+  const pose = createHeadingPanelPose(RAISED_VIEW);
   const eye = new Vector3(1, 2, 3);
   const firstPosition = pose.position;
 

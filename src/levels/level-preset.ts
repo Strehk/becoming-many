@@ -14,6 +14,7 @@ import type { MotionSenseParameters } from "../modules/motion-sense/motion-sense
 import type { ConnectionsParameters } from "../modules/mycelium/mycelium";
 import type { RocksPreset } from "../modules/rocks/rocks";
 import type { ScentParticlesParameters } from "../modules/scent-particles/scent-particles";
+import type { StartParameters } from "../modules/start/start.module";
 import type { StaticPopulationPreset } from "../modules/static-population";
 import type { TerrainColors } from "../modules/terrain/terrain-colors";
 import type { ThermalPerceptionParameters } from "../modules/thermal-perception/thermal-perception";
@@ -27,6 +28,7 @@ export interface TerrainPreset {
 
 /** Immutable module and asset choices used to construct one world. */
 export type WorldComposition = {
+  readonly start?: StartParameters;
   readonly invisibleGround?: true;
   readonly airParticles?: AirParticlesParameters;
   readonly scentParticles?: ScentParticlesParameters;

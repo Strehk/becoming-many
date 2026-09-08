@@ -1,5 +1,5 @@
 /**
- * Purpose: Answer where the credits panel sits and what it faces.
+ * Purpose: Place immersive guidance ahead of the flight heading.
  * Context: The panel rides ahead of the course, not ahead of the gaze.
  * Responsibility: Turn one eye position and one rig heading into a panel pose.
  * Boundary: Meshes, materials, and the frame loop belong to the panel module.
@@ -7,7 +7,7 @@
 
 import { MathUtils, type Quaternion, Vector3 } from "three";
 
-export interface EndCreditsPoseOptions {
+export interface HeadingPanelPoseOptions {
   /** How far ahead of the eye the panel rides, along the rendered view axis. */
   readonly distanceMeters: number;
   /**
@@ -18,7 +18,7 @@ export interface EndCreditsPoseOptions {
   readonly viewPitchDegrees: number;
 }
 
-export interface EndCreditsPose {
+export interface HeadingPanelPose {
   /** Where the panel's centre goes, in world space. Rewritten in place. */
   readonly position: Vector3;
   /** What the panel looks at, so it stays square to the viewer. */
@@ -39,9 +39,9 @@ export interface EndCreditsPose {
 }
 
 /** One pose per panel, holding its own scratch so placement allocates nothing. */
-export function createEndCreditsPose(
-  options: EndCreditsPoseOptions,
-): EndCreditsPose {
+export function createHeadingPanelPose(
+  options: HeadingPanelPoseOptions,
+): HeadingPanelPose {
   const pitchRadians = MathUtils.degToRad(options.viewPitchDegrees);
   const forwardMeters = options.distanceMeters * Math.cos(pitchRadians);
   const riseMeters = options.distanceMeters * Math.sin(pitchRadians);

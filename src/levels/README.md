@@ -30,8 +30,8 @@ not narrative states. The Test preset uses Grass Clipmap and the browser Test UI
 
 `level-catalog.ts` names standalone presets. The Show uses the Connections
 preset for its once-prepared world; changing these module parameters affects both
-runs. `show-levels.ts` owns the presentation states the running Show can change. The bare `src/rehearsal.entry.ts` route starts that show; `?level=<name>` and
-matching path names enter through `src/test.entry.ts` and select one showless
+runs. `show-levels.ts` owns the presentation states the running Show can change. The bare `src/entry/rehearsal.entry.ts` route starts that show; `?level=<name>` and
+matching path names enter through `src/entry/test.entry.ts` and select one showless
 development preset. Benchmarks use that Test entry too.
 
 An unknown requested name warns and falls back to Connections. That fallback is
@@ -60,8 +60,8 @@ Existing flight reset remains unchanged pending the separate fresh-run gate.
 
 `level-composition.ts` loads the required GLTF assets, creates the shared World
 Surface, constructs the concrete modules, orders material effects, and wires
-neutral provider contracts. It returns only the surface, module list, ground
-presence, and `ShowWorldReach` needed by the runtime.
+neutral provider contracts. It returns the surface, module list, ground presence, `ShowWorldReach` and
+an optional Start handle. Start stays outside Show sense gates.
 
 Preset files create no resources and import no module implementation. Concrete
 modules do not import siblings; Level Composition performs cross-boundary
@@ -87,24 +87,27 @@ and connects; World coordinates module lifecycle; modules release their own
 derivatives. UI releases only its own presentation resources. The existing
 `unload()` path is implemented; full next-visitor operation remains #9/#46.
 
-## Implementing the next Start level
+## Standalone Start MVP
 
-Start with one `start.level.ts` literal typed as `LevelPreset`, following
-`white-world.level.ts` for a minimal scene or `test.level.ts` for diagnostic
-content. Add its stable URL name to `level-names.ts` and its preset to
-`level-catalog.ts`. The existing `/test.html?level=start` request, Station route
-and Test entry then use the same Run. Keep the root Show default unchanged
-until its product handoff is defined.
+`start.level.ts` explicitly selects White World air particles and the Start
+module. `/start` and `/test.html?level=start` use the existing Test entry and Run;
+`shared/level-routes.ts` and the catalog own registration. The root Show is unchanged.
 
-Place new content at its concrete module and compose it once in Level
-Composition. A preset creates no renderer, input source or listeners. Run owns
-startup/input/end, Show owns timed transitions/audio, and UI only invokes their
-commands. New operator presentation belongs in a panel with styling in
-`src/app.css`; no experience policy goes back into Conductor.
+The guide follows flight heading using the same resource-free pose calculation
+as End Credits. One opaque arrow teaches right, left, up and down. Each direction
+requires valid neutral input first, then 0.5 seconds of matching intention.
+Invalid input disarms the current gesture; elapsed time alone never completes
+it. A smaller green arrow marks completion and stays visible until teardown.
+The module uses World lifecycle and frame updates, with no private clock or loop.
 
-A standalone Start scene can be implemented with these contracts now. Turning
-it into the calibrated visitor/tutorial flow additionally needs the existing
-#9/#46/#50 decisions: calibration/hold/release, completion and handoff, content
-and duration. Extend the existing Run/Show/controls after those choices; do not
-create a second tutorial runtime or clock. Add a benchmark reference for new
-content only through the explicit reference-review process.
+Run consumes one M5 frame, translates the existing flight axes through Control,
+and supplies its validated intention to Start. Configure an identified M5 host
+through Station or `?m5=`; keyboard/mouse remain available for visual navigation
+but do not complete the tutorial. The browser acceptance uses isolated HTTP
+responses to exercise the full input path without hardware.
+
+This is a standalone software MVP for #50. Production calibration, visitor
+replacement and Show handoff remain the #9/#46/#50 decisions. Narration, final
+content, physical polarity and Windows-PCVR acceptance remain open. The existing
+benchmark can measure the waiting scene; it does not exercise gesture completion
+and no new numerical reference is accepted by this change.
