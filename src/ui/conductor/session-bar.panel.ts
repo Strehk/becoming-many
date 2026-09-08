@@ -1,20 +1,11 @@
-import { requireElement, writeText } from "../shared/dom";
-/**
- * Purpose: Hold the between-visitors controls: language, headset, reset.
- * Context: Arming the next session is the one job front-of-house staff do
- *   between visitors, so its controls share one thumb-sized bar.
- * Responsibility: Render the language switch, the headset button, the
- *   "New visitor" reset, and the technician-drawer toggle.
- * Boundary: Show owns language changes; Run owns the interim visitor reset.
- */
-
 import { NARRATION_LANGUAGES } from "../../dramaturgy/narration-catalog";
 import type { Run } from "../../levels/level.runtime";
 import type { RunningShow } from "../../levels/show.runtime";
 import type { XrSessionControl } from "../../world/xr-session";
-import type { ConductorPanel } from "./view-state";
+import { requireElement, writeText } from "../shared/dom";
 import { bindConfirmation } from "./confirmation";
 import { resolveStreamButton } from "./headset-button-state";
+import type { ConductorPanel } from "./view-state";
 
 export interface SessionBarOptions {
   readonly parent: HTMLElement;
@@ -35,19 +26,48 @@ export function createSessionBar({
 }: SessionBarOptions): ConductorPanel {
   const root = requireElement(parent, ".conductor__session-bar", HTMLElement);
   const languageButtons = NARRATION_LANGUAGES.map((language) => {
-    const button = requireElement(root, `[data-language="${language}"]`, HTMLButtonElement);
-    button.addEventListener("click", () => show.setLanguage(language), { signal });
+    const button = requireElement(
+      root,
+      `[data-language="${language}"]`,
+      HTMLButtonElement,
+    );
+    button.addEventListener("click", () => show.setLanguage(language), {
+      signal,
+    });
     return button;
   });
-  bindConfirmation(requireElement(root, ".conductor__restart-button", HTMLButtonElement), "Tap again to reset", run.resetShowAndFlight, signal);
+  bindConfirmation(
+    requireElement(root, ".conductor__restart-button", HTMLButtonElement),
+    "Tap again to reset",
+    run.resetShowAndFlight,
+    signal,
+  );
   let isSessionActive = false;
-  const streamButton = requireElement(root, ".conductor__stream-button", HTMLButtonElement);
-  const streamLabel = requireElement(streamButton, "[data-headset-label]", HTMLElement);
-  streamButton.addEventListener("click", () => {
-    const request = isSessionActive ? xr.stop() : xr.start();
-    request.catch((reason) => console.warn("The headset session request failed.", reason));
-  }, { signal });
-  const techButton = requireElement(root, ".conductor__tech-button", HTMLButtonElement);
+  const streamButton = requireElement(
+    root,
+    ".conductor__stream-button",
+    HTMLButtonElement,
+  );
+  const streamLabel = requireElement(
+    streamButton,
+    "[data-headset-label]",
+    HTMLElement,
+  );
+  streamButton.addEventListener(
+    "click",
+    () => {
+      const request = isSessionActive ? xr.stop() : xr.start();
+      request.catch((reason) =>
+        console.warn("The headset session request failed.", reason),
+      );
+    },
+    { signal },
+  );
+  const techButton = requireElement(
+    root,
+    ".conductor__tech-button",
+    HTMLButtonElement,
+  );
   techButton.addEventListener("click", onToggleTechDrawer, { signal });
 
   return {
@@ -69,4 +89,3 @@ export function createSessionBar({
     },
   };
 }
-

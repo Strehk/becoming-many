@@ -1,6 +1,9 @@
 # Current Development Status
 
-As-built snapshot: 2026-09-07, the #36/#84/#11 architecture migration and audio-wake correction on `david_refactor`.
+As-built snapshot: 2026-09-08, UI/Entry and M5 consolidation implemented on
+`david_refactor`. Combined local checks and browser acceptance pass; see
+[UI evidence](evidence/ui-consolidation/README.md). The previous
+#36/#84/#11 and audio-wake results remain dated evidence for their tested code.
 Dated measurement packets retain the earlier exact identities they tested;
 the current checkout is the authority for runtime details.
 
@@ -20,9 +23,13 @@ is implemented at existing owners; the concrete next-visitor restart remains ope
 Explicit, self-contained literal levels are implemented. Conductor is UI-only;
 Entry wires one Run, and UI/console use direct Show commands with its clock internal.
 The current Run time/flight reset remains distinct from full visitor replacement.
-All browser entries share `src/app.css`; timelines/M5 use SVG geometry and the
-closed technician drawer cannot receive keyboard focus. Import/type rules enforce
-the Entry/UI/Engine/Station split. Native and organ audio can be woken again after
+All four HTML documents now live under `src/ui/` and link `app.css`; page/panel
+TypeScript binds declared markup. Entry lives under `src/entry/`, frame metrics
+under `src/diagnostics/`, and deployment/route contracts under `shared/`.
+Conductor and Rehearsal share scrubbing and time formatting. World borrows the
+page canvas/viewport and owns WebGL/resize cleanup. Timelines/M5 retain SVG
+geometry and the closed technician drawer is inert. Updated import/type and
+markup rules pass the combined verification. Native and organ audio can be woken again after
 a later suspension; this does not explain the original #73 measurement.
 The #80 animal-connection removal is implemented below. Small additions remain issue-backed.
 
@@ -31,14 +38,19 @@ The #80 animal-connection removal is implemented below. Small additions remain i
 - `/` starts the full show on load and mounts the rehearsal transport.
 - `?language=de|en` selects narration for the full show.
 - `/test.html?level=<name>` or `/<name>` opens one preset without the show.
-  Known names are `white-world`, `scent`, `echo`, `motion`, `thermal`,
+  Known names are `start`, `white-world`, `scent`, `echo`, `motion`, `thermal`,
   `magnetic`, `connections`, `test`, and `design-test`.
 - The Test page accepts `?benchmark[=<profile>]`, `?m5=<host>`, and
   `?diagnostics=1` for deterministic replay and explicit development tools.
   Diagnostics reads the existing renderer, retains the first fatal error, and
   releases its hooks on exit. All three application entries show startup failures.
+- `/start` provides standalone steering practice using the existing M5 input and
+  World lifecycle. It does not implement the full visitor/calibration handoff.
 - `/conductor.html` is the station/operator page and hosts the show in-process.
-- `/flash.html` installs the bundled M5 firmware through Web Serial.
+- `/flash.html` installs the bundled M5 firmware and configures the controller
+  through Web Serial. Entry owns connection lifetime; UI owns form/status.
+  Only the device response confirms applied configuration; passwords are never
+  persisted or included in the setup log.
 
 ## Implemented Runtime
 
@@ -57,7 +69,7 @@ The #80 animal-connection removal is implemented below. Small additions remain i
   owns the stopped renderer, GPU preparation and subsequent loop start.
 - Static presentation or the schedule's opening show state is applied before
   modules size their fixed spatial windows.
-- Test and Conductor own their metrics; Test owns its overlay lifetime. The
+- Test and Conductor entries own their DOM-free metrics; Test owns its overlay lifetime. The
   rehearsal show neither samples those metrics nor loads Test UI or Zone Visualizer.
 - Grass Clipmap is the sole Grass renderer, including Test and Design Test;
   legacy Grass and its diagnostic construction path have been removed (#13).

@@ -1,15 +1,6 @@
-import { requireElement, writeText } from "../shared/dom";
-/**
- * Purpose: Answer "is everything all right" from across the room, in plain words.
- * Context: The station is run by front-of-house staff, not technicians.
- * Responsibility: Render the Sound, Picture, Controller, and Headset tiles,
- *   and the one banner a fault that needs a person deserves.
- * Boundary: These labels summarize observations; device validity stays in M5.
- *   The numbers behind the words live in the technician drawer.
- */
-
-import type { M5OperatorStatus } from "../../m5/m5-adapter";
+import type { M5Observation } from "../../m5/runtime/m5.runtime";
 import type { XrSessionState } from "../../world/xr-session";
+import { requireElement, writeText } from "../shared/dom";
 import type { ConductorPanel, ConductorViewState } from "./view-state";
 
 type ReadingState = "idle" | "live" | "warn" | "alarm";
@@ -34,7 +25,11 @@ export function createStatusStrip({
   const picture = bindTile(root, "picture");
   const controller = bindTile(root, "controller");
   const headset = bindTile(root, "headset");
-  const banner = requireElement(bannerParent, ".conductor__banner", HTMLElement);
+  const banner = requireElement(
+    bannerParent,
+    ".conductor__banner",
+    HTMLElement,
+  );
 
   return {
     update(state): void {
@@ -43,7 +38,7 @@ export function createStatusStrip({
       controller.write(...controllerReading(state.m5));
       headset.write(...headsetReading(state.xr));
 
-      banner.hidden = state.m5?.state !== "wrong-device";
+      banner.hidden = state.m5?.status !== "wrong-device";
     },
   };
 }
@@ -66,12 +61,15 @@ function headsetReading(xr: XrSessionState): ReadingText {
  * both read as "no device", which is a normal state, not a fault. A
  * rejected sample reads as "Check"; the technician drawer names the reason.
  */
-function controllerReading(status: M5OperatorStatus | undefined): ReadingText {
-  if (status === undefined || status.state === "off") return ["—", "idle"];
-  if (status.state === "wrong-device") return ["Check", "alarm"];
-  if (status.state === "connecting") return ["Connecting", "warn"];
+function controllerReading(status: M5Observation | undefined): ReadingText {
+  if (status === undefined || status.status === "off") return ["—", "idle"];
+  if (status.status === "wrong-device") return ["Check", "alarm"];
+  if (status.status === "connecting") return ["Connecting", "warn"];
 
-  return status.state === "live" ? ["OK", "live"] : ["Check", "warn"];
+  if (status.status !== "live") return ["Check", "warn"];
+  return (status.control?.quality ?? 0) > 0
+    ? ["OK", "live"]
+    : ["Neutral", "idle"];
 }
 
 /** The acceptance target from docs/performance.md is a stable 90 FPS. */

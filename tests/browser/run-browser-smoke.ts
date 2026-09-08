@@ -10,16 +10,20 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { parseArgs } from "node:util";
 import { type Browser, chromium, type Page } from "playwright";
-import { formatShowTime } from "../../src/ui/shared/show-time-format";
-import { PIECE_SCHEDULE } from "../../src/dramaturgy/piece-schedule";
 import { LEVEL_NAMES } from "../../shared/level-routes";
+import { PIECE_SCHEDULE } from "../../src/dramaturgy/piece-schedule";
 import { M5_FIRMWARE_VERSION } from "../../src/m5/protocol";
+import { formatShowTime } from "../../src/ui/shared/show-time-format";
 import {
   assertRefactorBranch,
   collectBrowserErrors,
   readRenderingInfo,
   readRunIdentity,
 } from "./browser-evidence";
+
+import { checkFlashLifecycle } from "./flash-acceptance";
+import { checkStartLevel, prepareStartInput } from "./start-acceptance";
+import { checkStartupFailure } from "./startup-failure";
 
 const READY_TIMEOUT_MILLISECONDS = 90_000;
 const PAUSE_OBSERVATION_MILLISECONDS = 1_100;
@@ -65,6 +69,7 @@ async function main(): Promise<void> {
       "/",
       "/test.html",
       "/test.html?level=echo",
+      "/test.html?level=start",
       "/conductor.html",
       "/flash.html",
       ...LEVEL_NAMES.map((level) => `/${level}`),
@@ -75,6 +80,29 @@ async function main(): Promise<void> {
       console.log(
         `${result.passed ? "PASS" : "FAIL"} ${route}: ${result.errors.join("; ")}`,
       );
+    }
+    for (const route of ["/", "/test.html", "/conductor.html"]) {
+      const scenario = `startup-failure:${route}`;
+      try {
+        await checkStartupFailure(
+          browser,
+          baseUrl,
+          route,
+          join(
+            outputDirectory,
+            `startup-failure-${route === "/" ? "rehearsal" : route.slice(1)}.png`,
+          ),
+        );
+        results.push({ route: scenario, passed: true, errors: [] });
+        console.log(`PASS ${scenario}`);
+      } catch (error) {
+        results.push({
+          route: scenario,
+          passed: false,
+          errors: [String(error)],
+        });
+        console.log(`FAIL ${scenario}: ${String(error)}`);
+      }
     }
   } catch (error) {
     results.push({ route: "harness", passed: false, errors: [String(error)] });
@@ -137,6 +165,10 @@ async function runSmokeRoute(
         }),
       );
     }
+    const startInput =
+      route === "/start" || route === "/test.html?level=start"
+        ? await prepareStartInput(page, baseUrl)
+        : undefined;
     await page.goto(`${baseUrl}${route}`, { waitUntil: "load" });
     assert.equal(
       page.url(),
@@ -144,10 +176,16 @@ async function runSmokeRoute(
       "Entry URL must remain the requested route",
     );
     observation = await checkEntry(page, route);
+    if (startInput) await checkStartLevel(page, startInput, artifactBase);
     assertRefactorBranch();
-    await page.screenshot({ path: `${artifactBase}-ready.png`, fullPage: true });
+    await page.screenshot({
+      path: `${artifactBase}-ready.png`,
+      fullPage: true,
+      caret: "initial",
+    });
     if (["/", "/test.html", "/conductor.html", "/flash.html"].includes(route)) {
       await checkUiLayout(page, route);
+      if (route === "/flash.html") await checkFlashLifecycle(page, baseUrl);
     }
     if (route === "/conductor.html") {
       await page.evaluate(() =>
@@ -177,7 +215,11 @@ async function runSmokeRoute(
     errors.push(String(error));
     assertRefactorBranch();
     await page
-      .screenshot({ path: `${artifactBase}-failure.png`, fullPage: true })
+      .screenshot({
+        path: `${artifactBase}-failure.png`,
+        fullPage: true,
+        caret: "initial",
+      })
       .catch((error) => errors.push(`Screenshot failed: ${String(error)}`));
   } finally {
     // Closing a context aborts its pending requests; those are not page failures.
@@ -346,7 +388,7 @@ async function checkRehearsal(page: Page): Promise<void> {
 }
 
 async function checkConductor(page: Page): Promise<boolean> {
-  await page.locator(".conductor__wake").waitFor({ state: "attached" });
+  await page.locator(".conductor:not([inert])").waitFor();
   const wakeRequired = await page.locator(".conductor__wake").isVisible();
   if (wakeRequired) await page.locator(".conductor__wake").click();
   await page.locator(".conductor__wake").waitFor({ state: "hidden" });
@@ -564,10 +606,15 @@ async function checkUiLayout(page: Page, route: string): Promise<void> {
         ".rehearsal button:first-child",
         ".rehearsal output",
       );
-    }    assertRefactorBranch();
+    }
+    assertRefactorBranch();
     await page.screenshot({
-      path: join(outputDirectory, `${route === "/" ? "rehearsal" : route.slice(1).replace(".html", "")}-${width}.png`),
+      path: join(
+        outputDirectory,
+        `${route === "/" ? "rehearsal" : route.slice(1).replace(".html", "")}-${width}.png`,
+      ),
       fullPage: true,
+      caret: "initial",
     });
   }
   if (route === "/conductor.html") await checkTechnicianControls(page);
@@ -613,6 +660,7 @@ async function checkTechnicianControls(page: Page): Promise<void> {
   let sequence = 0;
   let pitch = 0;
   let roll = 0;
+  let quality = 1;
   await page.route("http://m5.test/state", (request) =>
     request.fulfill({
       headers: { "access-control-allow-origin": "*" },
@@ -623,7 +671,7 @@ async function checkTechnicianControls(page: Page): Promise<void> {
         uptimeMs: sequence * 167,
         pitch,
         roll,
-        quality: 1,
+        quality,
         buttonPressed: false,
         buttonPressCount: 0,
         buttonReleaseCount: 0,
@@ -664,8 +712,21 @@ async function checkTechnicianControls(page: Page): Promise<void> {
     await page.locator(".conductor__m5-dot").getAttribute("cy"),
     "71",
   );
+  quality = 0;
+  await page
+    .locator('[data-tile="controller"] output')
+    .filter({ hasText: "Neutral" })
+    .waitFor();
+  assert.match(
+    await page.locator(".conductor__m5-readout").innerText(),
+    /input q0\.0/,
+  );
   assertRefactorBranch();
-  await page.screenshot({ path: join(outputDirectory, "conductor-technician.png"), fullPage: true });
+  await page.screenshot({
+    path: join(outputDirectory, "conductor-technician.png"),
+    fullPage: false,
+    caret: "initial",
+  });
   await page.getByRole("button", { name: "Clear", exact: true }).click();
   assert.equal(await preview.isVisible(), false);
   await close.click();
@@ -765,7 +826,8 @@ async function checkFlash(page: Page): Promise<void> {
     `${JSON.stringify({ type: "configure", ssid: station.ssid, password, deviceId: station.deviceId })}\n`,
   ]);
   const log = await page.locator(".flash__log").innerText();
-  assert(log.includes("[redacted]"));
+  assert(log.includes("configure sent; awaiting device response"));
+  assert.equal(log.includes("Configuration applied"), false);
   assert.equal(log.includes(password), false);
   assert.equal(
     await page.evaluate((key) => localStorage.getItem(key), storageKey),

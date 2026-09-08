@@ -10,7 +10,7 @@ import {
   type ConductorKeyPress,
   resolveConductorKey,
 } from "../../src/ui/conductor/keyboard-shortcuts";
-import { CONDUCTOR_SETTINGS } from "../../src/conductor/conductor-settings";
+import { CONDUCTOR_SETTINGS } from "../../src/ui/conductor/operator-settings";
 
 function press(overrides: Partial<ConductorKeyPress> = {}): ConductorKeyPress {
   return {

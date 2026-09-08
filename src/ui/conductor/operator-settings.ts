@@ -1,10 +1,3 @@
-/**
- * Purpose: Define how the conductor page paces and responds under the operator.
- * Context: The page is driven live, mostly by keyboard, during a performance.
- * Responsibility: Keep nudge sizes, rate choices, and timings in one editable place.
- * Boundary: The station server's own facts live in the station settings.
- */
-
 export const CONDUCTOR_SETTINGS = {
   // How far an arrow key moves the show. Small enough to place a word, large
   // enough that holding the key crosses a section.

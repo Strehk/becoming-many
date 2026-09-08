@@ -6,15 +6,15 @@ own names, contracts and styling. The [workflow](refactor-workflow.md) and
 [test plan](refactor-test-plan.md) own implementation and verification cadence.
 Live issues own acceptance. Do not create a second implementation plan.
 
-## Resume Checkpoint — 2026-09-07
+## Resume Checkpoint — 2026-09-08
 
 | Field | Current state |
 | --- | --- |
 | Branch | `david_refactor` only. Commit/push completed, tested blocks to `origin/david_refactor` and verify success; no main, force-push or additional branches. |
-| Current request | Implement the prepared architecture and ready software issues so the next Start level can use clear existing owners. Product/physical decisions stay open. |
-| Source checkpoint | `21d2646` completes #36/#84/#11 and repeat audio wake (all pushed). The following documentation block prepares the current #78 proposal without changing the baseline. |
-| Next implementation | #36 is committed/pushed at `a213243`; #84 styling and final #11 boundary checks complete the immediate architecture path. Continue at the next Start-level definition and remaining explicit decisions, not another architecture inventory. |
-| Confirmed direction | Conductor is UI only; Entry connects UI to the existing browser Engine. Show owns transport/language, Run owns lifetime, World owns rendering, M5 owns validity. Backend remains Station delivery/config/health. Affected role filenames and `src/app.css` are implemented. |
+| Current request | Complete the approved declarative UI/Entry refactor, coordinate concurrent M5 and Start work, run combined checks and extensive browser/screenshot acceptance, then commit/push. Product/physical decisions stay open. |
+| Source checkpoint | `0e2c676` preserves the state before UI consolidation. Later `5b1302b` preserves the shared work before the concurrent Start implementation. Earlier #36/#84/#11 and audio-wake evidence retains its original identities. |
+| Next implementation | UI/Entry and M5 consolidation plus standalone Start are implemented and locally verified. Preserve the [combined evidence](evidence/ui-consolidation/README.md); continue remaining explicit product/physical decisions rather than repeat this migration. |
+| Confirmed direction | Conductor is UI only; Entry connects UI to the existing browser Engine. Show owns transport/language, Run owns lifetime, World owns rendering, M5 owns validity. Backend remains Station delivery/config/health. Affected role filenames and `src/ui/app.css` are implemented. |
 | Existing software | Direct startup, complete child/source cleanup, entry diagnostics, explicit literal levels, legacy Grass retirement, shared zone influences, approved bank clearance and shared Rocks/Vegetation lifecycle are implemented. Their distinct remaining issue acceptance is preserved. |
 | Current visitor behavior | New visitor remains time/position reset and hold. Complete replacement operation and calibration/start interaction remain #9/#46 decisions. |
 | Unresolved evidence | #73 Motion clock-progress failure, #78 exact reference approval and real Windows-PCVR USB-C 90 Hz/transport/headset/M5/venue acceptance remain open. CSS fixes do not resolve them. |
@@ -27,7 +27,16 @@ The older checkpoint's issue order is superseded by the order below.
 
 ## Immediate UI and Engine Migration
 
-This architecture workstream is implemented and locally verified. No new UI framework,
+The earlier #36/#84/#11 block is implemented and locally verified at its recorded
+source identities. The 2026-09-08 consolidation is implemented: all browser HTML
+and controllers live in `src/ui/`, startup in `src/entry/`, metrics in
+`src/diagnostics/`, and platform-neutral contracts to `shared/`. Authored markup
+and canvas placement are explicit; shared scrubbing replaces duplicate
+gestures and Flash separates form binding from connection lifetime. Combined
+checks and responsive browser interactions/screenshots pass in production and
+development; [results and limits](evidence/ui-consolidation/README.md) are retained.
+
+No new UI framework,
 remote Show transport, command bus, global store or CoreEngine coordinator is needed.
 A source move alone is not code reduction; remove the replaced implementation and
 its exclusive paths in the same coherent block.
@@ -35,7 +44,7 @@ its exclusive paths in the same coherent block.
 | Order | Existing issue | Scope and required removal | Dependency / completion boundary |
 | --- | --- | --- | --- |
 | 1 | [#36](https://github.com/Strehk/becoming-many/issues/36) | Separate Entry from Conductor UI; put transport/language in Show and existing reset operation in Run; delete `show-actions.ts`, duplicate pauses, stale-state decisions and unused scrub flag. Narrow M5/XR capabilities, move shared XR button to UI, migrate actual affected role filenames and all consumers. | Implemented and closed at `a213243`; local UI/lifetime checks pass. Complete visitor replacement remains #9; preserve and name the interim reset honestly. |
-| 2 | [#84](https://github.com/Strehk/becoming-many/issues/84) | Central `src/app.css`, shared visual rules and scoped layouts; remove four old stylesheets/imports and authored DOM inline styling. Fix known transport cascade and hidden M5 preview defects; preserve dynamic geometry and accessible interaction. | Implemented; four surfaces, responsive gestures/focus and simulated M5 geometry pass. New visual/product redesign is outside this cleanup. |
+| 2 | [#84](https://github.com/Strehk/becoming-many/issues/84) | Central `src/ui/app.css`, shared visual rules and scoped layouts; remove four old stylesheets/imports and authored DOM inline styling. Fix known transport cascade and hidden M5 preview defects; preserve dynamic geometry and accessible interaction. | Implemented; four surfaces, responsive gestures/focus and simulated M5 geometry pass. New visual/product redesign is outside this cleanup. |
 | 3 | [#11](https://github.com/Strehk/becoming-many/issues/11) | Update existing Fallow zones/rules for Entry, UI, browser Engine, Station and migrated roles; verify real allowed/forbidden imports and narrow type capabilities. | Implemented after #36/#84: real graph clean, forbidden imports/types rejected; zero imports alone proves neither lifecycle nor 90 Hz. |
 
 ```mermaid
@@ -56,8 +65,8 @@ The implementation path is documented in [Levels](../src/levels/README.md#implem
 a literal `start.level.ts`, stable route/catalog registration and existing Run /
 Composition / Show owners. UI contains no experience sequencing. A standalone
 Start scene needs no new architecture owner; the calibrated visitor/tutorial
-handoff still requires #9/#46/#50 decisions. The actual next level is intentionally
-left for the user's next content implementation step.
+handoff still requires #9/#46/#50 decisions. The standalone Start practice is
+implemented at `a136bcc`, with its real M5 simulation exercised in both browser modes.
 
 #20's completed shader-contract implementation is closed under the current
 workflow; its old three-issue review gate no longer blocks source work. Other

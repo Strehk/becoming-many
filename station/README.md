@@ -33,7 +33,7 @@ wrong-device and firmware-mismatch warnings).
 - `/health` — liveness JSON: status and uptime. It reports the process, never
   the show: a healthy server with zero windows is healthy.
 - `/config` — the deployment facts the process was started with, for the
-  pages to fetch on load (`src/station/deployment-config.ts`).
+  pages to fetch on load (`shared/deployment-config.ts`).
 
 ## Environment
 

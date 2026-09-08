@@ -1,14 +1,13 @@
-import { requireElement } from "../ui/shared/dom";
-/** Resolve browser inputs, start one Run and connect the operator UI. */
-import { mountConductorPage } from "../ui/conductor/conductor.page";
-
+import { FrameMetricsSampler } from "../diagnostics/frame-metrics";
 import { resolveNarrationLanguage } from "../dramaturgy/narration-catalog";
 import { PIECE_SCHEDULE } from "../dramaturgy/piece-schedule";
 import { SHOW_LEVEL_STATES } from "../dramaturgy/show-levels";
 import { level as connectionsLevel } from "../levels/connections.level";
 import { type Run, startLevel } from "../levels/level.runtime";
+/** Resolve browser inputs, start one Run and connect the operator UI. */
+import { mountConductorPage } from "../ui/conductor/conductor.page";
+import { requireElement } from "../ui/shared/dom";
 import { loadDeploymentConfig } from "./deployment-config";
-import { FrameMetricsSampler } from "../diagnostics/frame-metrics";
 
 const M5_HOST_STORAGE_KEY = "bm-conductor-m5-host";
 const container = document.querySelector(".conductor");
@@ -27,21 +26,28 @@ try {
   if (deployment.stationName)
     document.title = `${deployment.stationName} — Becoming Many`;
   const stageMount = requireElement(container, "#world-stage", HTMLElement);
-  const canvas = requireElement(stageMount, ".experience-canvas", HTMLCanvasElement);
+  const canvas = requireElement(
+    stageMount,
+    ".experience-canvas",
+    HTMLCanvasElement,
+  );
   const frameMetrics = new FrameMetricsSampler();
   const request = new URLSearchParams(window.location.search);
-  pendingStart = startLevel({ canvas, viewport: stageMount }, {
-    signal: lifetime.signal,
-    kind: "show",
-    preset: connectionsLevel,
-    show: {
-      schedule: PIECE_SCHEDULE,
-      language: resolveNarrationLanguage(request.get("language")),
-      states: SHOW_LEVEL_STATES,
+  pendingStart = startLevel(
+    { canvas, viewport: stageMount },
+    {
+      signal: lifetime.signal,
+      kind: "show",
+      preset: connectionsLevel,
+      show: {
+        schedule: PIECE_SCHEDULE,
+        language: resolveNarrationLanguage(request.get("language")),
+        states: SHOW_LEVEL_STATES,
+      },
+      onFrame: (deltaSeconds) => frameMetrics.add(deltaSeconds),
+      m5ExpectedDeviceId: deployment.m5DeviceId,
     },
-    onFrame: (deltaSeconds) => frameMetrics.add(deltaSeconds),
-    m5ExpectedDeviceId: deployment.m5DeviceId,
-  });
+  );
   run = await pendingStart;
   lifetime.signal.throwIfAborted();
   const { show, m5 } = run;
@@ -83,7 +89,8 @@ try {
     );
   }
   if (!wasCancelled) {
-    requireElement(document, "[data-startup-error]", HTMLElement).hidden = false;
+    requireElement(document, "[data-startup-error]", HTMLElement).hidden =
+      false;
     throw error;
   }
 }

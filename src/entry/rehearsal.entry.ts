@@ -1,4 +1,5 @@
 import { requireElement } from "../ui/shared/dom";
+
 /**
  * Purpose: Bootstrap the complete Becoming Many show for rehearsal.
  * Context: The root page is the audience experience without development routes.
@@ -6,16 +7,15 @@ import { requireElement } from "../ui/shared/dom";
  * Boundary: Standalone levels, benchmarks, and diagnostics enter through test.entry.ts.
  */
 
-
-import { mountRehearsalTransport } from "../ui/rehearsal/transport.panel";
 import { resolveNarrationLanguage } from "../dramaturgy/narration-catalog";
 import { PIECE_SCHEDULE } from "../dramaturgy/piece-schedule";
 import { SHOW_LEVEL_STATES } from "../dramaturgy/show-levels";
 import { level as connectionsLevel } from "../levels/connections.level";
 import { type Run, startLevel } from "../levels/level.runtime";
 import type { RunningShow } from "../levels/show.runtime";
-import { loadDeploymentConfig } from "./deployment-config";
+import { mountRehearsalTransport } from "../ui/rehearsal/transport.panel";
 import { mountVrEntryButton } from "../ui/shared/xr-entry-button";
+import { loadDeploymentConfig } from "./deployment-config";
 
 declare global {
   interface Window {
@@ -58,18 +58,25 @@ try {
   const deployment = await loadDeploymentConfig();
 
   const viewport = requireElement(document, ".app", HTMLElement);
-  const canvas = requireElement(viewport, ".experience-canvas", HTMLCanvasElement);
-  level = await startLevel({ canvas, viewport }, {
-    signal: lifetime.signal,
-    kind: "show",
-    preset: connectionsLevel,
-    show: {
-      schedule: PIECE_SCHEDULE,
-      language: resolveNarrationLanguage(request.get("language")),
-      states: SHOW_LEVEL_STATES,
+  const canvas = requireElement(
+    viewport,
+    ".experience-canvas",
+    HTMLCanvasElement,
+  );
+  level = await startLevel(
+    { canvas, viewport },
+    {
+      signal: lifetime.signal,
+      kind: "show",
+      preset: connectionsLevel,
+      show: {
+        schedule: PIECE_SCHEDULE,
+        language: resolveNarrationLanguage(request.get("language")),
+        states: SHOW_LEVEL_STATES,
+      },
+      m5ExpectedDeviceId: deployment.m5DeviceId,
     },
-    m5ExpectedDeviceId: deployment.m5DeviceId,
-  });
+  );
   lifetime.signal.throwIfAborted();
 
   window.show = level.show;
@@ -115,7 +122,8 @@ try {
     );
   }
   if (failure !== lifetime.signal.reason) {
-    requireElement(document, "[data-startup-error]", HTMLElement).hidden = false;
+    requireElement(document, "[data-startup-error]", HTMLElement).hidden =
+      false;
     throw failure;
   }
 }

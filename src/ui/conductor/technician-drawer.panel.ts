@@ -1,21 +1,10 @@
-import { requireElement, writeText } from "../shared/dom";
-/**
- * Purpose: Keep every control that can break a live show out of casual reach.
- * Context: Rehearsal speeds, resets, the page reload, the M5 host, and the
- *   raw readings are technician tools; front-of-house must not hit them by
- *   accident, so they live behind one deliberate toggle.
- * Responsibility: Own the drawer surface, the rehearsal and reset controls,
- *   and the raw readouts; offer mounts for the stage view and the M5 panel.
- * Boundary: The drawer slides rather than unmounts, so the world's canvas
- *   inside it keeps its layout size while hidden.
- */
-
 import type { Run } from "../../levels/level.runtime";
 import type { RunningShow } from "../../levels/show.runtime";
-import type { M5OperatorStatus } from "../../m5/m5-adapter";
+import type { M5Observation } from "../../m5/runtime/m5.runtime";
+import { requireElement, writeText } from "../shared/dom";
+import { bindConfirmation } from "./confirmation";
 import { CONDUCTOR_SETTINGS } from "./operator-settings";
 import type { ConductorPanel } from "./view-state";
-import { bindConfirmation } from "./confirmation";
 
 export interface TechDrawerOptions {
   readonly parent: HTMLElement;
@@ -44,7 +33,11 @@ export function createTechDrawer({
   reloadPage,
 }: TechDrawerOptions): TechDrawer {
   const root = requireElement(parent, ".conductor__drawer", HTMLElement);
-  const closeButton = requireElement(root, ".conductor__drawer-close", HTMLButtonElement);
+  const closeButton = requireElement(
+    root,
+    ".conductor__drawer-close",
+    HTMLButtonElement,
+  );
   let isOpen = false;
   function setOpen(open: boolean): void {
     isOpen = open;
@@ -58,22 +51,45 @@ export function createTechDrawer({
   }
   setOpen(false);
   closeButton.addEventListener("click", toggle, { signal });
-  root.addEventListener("keydown", (event) => {
-    if (event.key !== "Escape" || !isOpen) return;
-    event.preventDefault();
-    toggle();
-  }, { signal });
+  root.addEventListener(
+    "keydown",
+    (event) => {
+      if (event.key !== "Escape" || !isOpen) return;
+      event.preventDefault();
+      toggle();
+    },
+    { signal },
+  );
   signal.addEventListener("abort", () => setOpen(false), { once: true });
   const stageParent = requireElement(root, "[data-stage-parent]", HTMLElement);
   const m5Parent = requireElement(root, "[data-m5-parent]", HTMLElement);
   const rateButtons = CONDUCTOR_SETTINGS.timeScales.map((timeScale) => {
-    const button = requireElement(root, `[data-time-scale="${timeScale}"]`, HTMLButtonElement);
-    button.addEventListener("click", () => show.setTimeScale(timeScale), { signal });
+    const button = requireElement(
+      root,
+      `[data-time-scale="${timeScale}"]`,
+      HTMLButtonElement,
+    );
+    button.addEventListener("click", () => show.setTimeScale(timeScale), {
+      signal,
+    });
     return button;
   });
-  requireElement(root, "[data-reset-show]", HTMLButtonElement).addEventListener("click", show.resetTime, { signal });
-  requireElement(root, "[data-reset-flight]", HTMLButtonElement).addEventListener("click", run.resetFlight, { signal });
-  bindConfirmation(requireElement(root, ".conductor__reload-button", HTMLButtonElement), "Tap again to reload", reloadPage, signal);
+  requireElement(root, "[data-reset-show]", HTMLButtonElement).addEventListener(
+    "click",
+    show.resetTime,
+    { signal },
+  );
+  requireElement(
+    root,
+    "[data-reset-flight]",
+    HTMLButtonElement,
+  ).addEventListener("click", run.resetFlight, { signal });
+  bindConfirmation(
+    requireElement(root, ".conductor__reload-button", HTMLButtonElement),
+    "Tap again to reload",
+    reloadPage,
+    signal,
+  );
   const frames = bindReadout(root, "frames");
   const m5 = bindReadout(root, "m5");
   const level = bindReadout(root, "level");
@@ -103,9 +119,20 @@ export function createTechDrawer({
   };
 }
 
-function bindReadout(parent: HTMLElement, name: string): { write: (text: string) => void } {
-  const output = requireElement(parent, `[data-reading="${name}"]`, HTMLOutputElement);
-  return { write(text): void { writeText(output, text); } };
+function bindReadout(
+  parent: HTMLElement,
+  name: string,
+): { write: (text: string) => void } {
+  const output = requireElement(
+    parent,
+    `[data-reading="${name}"]`,
+    HTMLOutputElement,
+  );
+  return {
+    write(text): void {
+      writeText(output, text);
+    },
+  };
 }
 
 function frameText(
@@ -122,11 +149,10 @@ function frameText(
 /**
  * The Controller tile shows the rejection reason or live sample quality.
  */
-function m5Text(status: M5OperatorStatus | undefined): string {
-  if (status === undefined || status.state === "off") return "—";
+function m5Text(status: M5Observation | undefined): string {
+  if (status === undefined || status.status === "off") return "—";
 
-  if (status.state !== "live") return status.state.replaceAll("-", " ");
+  if (status.status !== "live") return status.status.replaceAll("-", " ");
 
-  return `live · q${status.quality.toFixed(2)}`;
+  return `live · input q${(status.control?.quality ?? 0).toFixed(2)}`;
 }
-

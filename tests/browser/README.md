@@ -33,7 +33,7 @@ The explicit `--dev` flag skips only the Station `/health` and `/config` checks;
 all browser scenarios and error checks remain active. It also supports Vite
 preview. The report records this mode; production Station checks stay the default.
 
-The smoke checks `/health` and `/config`, all four HTML entries, all nine level
+The smoke checks `/health` and `/config`, all four HTML entries, all ten level
 paths from the level-name catalog, and a query-selected level. Readiness means
 finished startup and a usable canvas, rather than HTTP success alone. Rehearsal
 and Conductor checks cover audio wake, play, pause, language selection, cue seek,
@@ -60,6 +60,11 @@ the run. Each failed functional route retains a screenshot and Playwright trace:
 bunx playwright show-trace benchmark-results/issue-75/smoke-1/0-trace.zip
 ```
 
+Successful routes retain screenshots, including the four surfaces at desktop and
+narrow widths. Screenshot capture uses the original caret so Playwright does not
+leave empty inline-style attributes on authored inputs. Three denied-WebGL
+scenarios verify declared startup alerts/canvas ownership. Flash additionally
+checks safe device responses, duplicate/late port selection and complete close.
 Successful traces are discarded. Retain essential results in the issue evidence;
 scratch output stays in ignored `benchmark-results/`. Delete obsolete scratch
 runs after the relevant evidence has been preserved. Traces are functional

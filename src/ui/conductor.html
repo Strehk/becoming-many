@@ -1,77 +1,340 @@
 <!doctype html>
 <html lang="en">
-<head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<meta name="theme-color" content="#0d1311" />
-<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-<link rel="stylesheet" href="./app.css" />
-<title>Becoming Many — Conductor</title>
-</head>
-<body>
-<main id="conductor-root" class="conductor">
-<header class="conductor__masthead">
-<div class="conductor__identity"><span class="conductor__identity-piece">Becoming Many</span><span class="conductor__identity-station" data-station hidden></span></div>
-<div class="conductor__tiles" aria-label="Station status">
-<div class="conductor__tile" data-tile="sound"><span class="conductor__tile-dot"></span><div class="conductor__tile-body"><span class="conductor__tile-label">Sound</span><output class="conductor__tile-value">—</output></div></div>
-<div class="conductor__tile" data-tile="picture"><span class="conductor__tile-dot"></span><div class="conductor__tile-body"><span class="conductor__tile-label">Picture</span><output class="conductor__tile-value">—</output></div></div>
-<div class="conductor__tile" data-tile="controller"><span class="conductor__tile-dot"></span><div class="conductor__tile-body"><span class="conductor__tile-label">Controller</span><output class="conductor__tile-value">—</output></div></div>
-<div class="conductor__tile" data-tile="headset"><span class="conductor__tile-dot"></span><div class="conductor__tile-body"><span class="conductor__tile-label">Headset</span><output class="conductor__tile-value">—</output></div></div>
-</div></header>
-<p class="conductor__banner" hidden>The hand controller is not answering as this station's own. The show keeps playing — call a technician before the next visitor steers.</p>
-<p class="startup-error" data-startup-error hidden></p>
-<section class="conductor__transport" aria-label="Transport">
-<div class="conductor__clock-block"><div class="conductor__clock"><output data-elapsed></output><span class="conductor__clock-total"></span></div>
-<div class="conductor__status-line"><span class="conductor__status-pill"></span><span class="conductor__remaining"></span></div></div>
-<div class="conductor__cues">
-<div data-cue="now"><span class="conductor__cue-label">now </span><output class="conductor__cue-name"></output> <span class="conductor__cue-label" data-detail></span></div>
-<div data-cue="next"><span class="conductor__cue-label">next </span><output class="conductor__cue-name"></output> <span class="conductor__cue-label" data-detail></span></div>
-</div>
-<div class="conductor__transport-controls">
-<button type="button" class="conductor__nudge-button" data-nudge="back" aria-label="Back ten seconds"><span><svg class="conductor-icon-outline" width="26" height="26" viewBox="0 0 24 24" aria-hidden="true"><polyline points="11 17 6 12 11 7"></polyline><polyline points="18 17 13 12 18 7"></polyline></svg></span><span data-nudge-label>10 s</span></button>
-<button type="button" class="conductor__transport-button"><span class="conductor__transport-icon"><span data-play-icon><svg class="conductor-icon-solid" width="34" height="34" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5 L20 12 L7 19.5 Z"></path></svg></span><span data-pause-icon hidden><svg class="conductor-icon-solid" width="34" height="34" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="4" width="5" height="16" rx="1"></rect><rect x="14" y="4" width="5" height="16" rx="1"></rect></svg></span></span><span data-transport-label>Play</span></button>
-<button type="button" class="conductor__nudge-button" data-nudge="forward" aria-label="Forward ten seconds"><span><svg class="conductor-icon-outline" width="26" height="26" viewBox="0 0 24 24" aria-hidden="true"><polyline points="13 17 18 12 13 7"></polyline><polyline points="6 17 11 12 6 7"></polyline></svg></span><span data-nudge-label>10 s</span></button>
-</div></section>
-<section class="conductor__timeline" aria-label="Show timeline">
-<svg class="timeline__track" aria-hidden="true"><line class="timeline__playhead" y2="100%"></line></svg>
-<div class="conductor__chapters"></div>
-<template data-chapter-slot><svg class="timeline__slot"><rect class="timeline__slot-background" width="100%" height="100%"></rect><rect class="timeline__progress" y="60" height="24"></rect><text class="timeline__slot-name" x="10" y="21"></text></svg></template>
-<template data-chapter-button><button type="button" class="conductor__chapter-button"><span data-name></span><span class="conductor__chapter-time"></span></button></template>
-</section>
-<section class="conductor__session-bar" aria-label="Session">
-<div class="conductor__language"><span class="conductor__language-label">Language</span><button type="button" data-language="en">EN</button><button type="button" data-language="de">DE</button></div>
-<button type="button" class="conductor__restart-button">New visitor</button>
-<button type="button" class="conductor__stream-button"><span class="conductor__button-icon"><svg class="conductor-icon-outline" width="26" height="26" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 14 a8 8 0 0 1 16 0"></path><rect x="2.5" y="13" width="5" height="7" rx="2"></rect><rect x="16.5" y="13" width="5" height="7" rx="2"></rect></svg></span><span data-headset-label></span></button>
-<button type="button" class="conductor__tech-button" aria-label="Technician tools" aria-controls="conductor-technician-tools" aria-expanded="false"><span class="conductor__button-icon"><svg class="conductor-icon-outline" width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><path d="M14.7 6.3 a4.5 4.5 0 0 0 -6 5.6 L3 17.6 V21 h3.4 l5.7 -5.7 a4.5 4.5 0 0 0 5.6 -6 L14.5 12.5 L11.5 9.5 Z"></path></svg></span></button></section>
-<aside class="conductor__drawer" id="conductor-technician-tools" data-open="false" inert aria-label="Technician tools">
-<div class="conductor__drawer-group"><div class="conductor__drawer-header"><span>Technician tools</span>
-<button type="button" class="conductor__drawer-close" aria-label="Close technician tools"><svg class="conductor-icon-outline" width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><line x1="5" y1="5" x2="19" y2="19"></line><line x1="19" y1="5" x2="5" y2="19"></line></svg></button></div>
-<p class="conductor__drawer-caution">These controls can interrupt a live show. Close this panel before handing the station back.</p></div>
-<div class="conductor__drawer-group" data-stage-parent><span class="conductor__drawer-heading">Stage view</span><div class="conductor__stage-view"><div id="world-stage" class="conductor__stage-mount"><canvas class="experience-canvas"></canvas></div><p class="conductor__stage-overlay" hidden>streaming — paused</p></div></div>
-<div class="conductor__drawer-group"><span class="conductor__drawer-heading">Rehearsal speed</span><div class="conductor__speeds">
-<button type="button" data-time-scale="0.25">0.25×</button>
-<button type="button" data-time-scale="0.5">0.5×</button>
-<button type="button" data-time-scale="1">1×</button>
-<button type="button" data-time-scale="2">2×</button>
-</div></div>
-<div class="conductor__drawer-group"><span class="conductor__drawer-heading">Resets</span><div class="conductor__resets"><button type="button" data-reset-show>Rewind to start and hold</button><button type="button" data-reset-flight>Reset flight position</button><button type="button" class="conductor__reload-button">Reload the page</button></div></div>
-<div class="conductor__drawer-group"><span class="conductor__drawer-heading">M5 controller</span><div data-m5-parent>
-<section class="conductor__m5" aria-label="M5 controller"><label class="conductor__m5-label">M5 host<input type="text" placeholder="bm-station-a-m5.local" /></label><button type="button" data-set-host>Set</button><button type="button" data-clear-host>Clear</button>
-<div class="conductor__m5-preview" hidden><svg class="conductor__m5-pad" viewBox="0 0 100 100" aria-hidden="true"><circle class="conductor__m5-dot" r="7"></circle></svg><span class="conductor__m5-readout"></span></div></section>
-</div></div>
-<div class="conductor__readouts">
-<span><span>frames </span><output data-reading="frames">—</output></span>
-<span><span>m5 </span><output data-reading="m5">—</output></span>
-<span><span>level </span><output data-reading="level">—</output></span>
-<span><span>audio </span><output data-reading="audio">—</output></span>
-<span><span>language </span><output data-reading="language">—</output></span>
-</div></aside>
-<div class="conductor__wake" hidden><span class="conductor__wake-station" hidden></span><span class="conductor__wake-title">Becoming Many</span>
-<div class="conductor__wake-icon"><svg class="conductor-icon-outline conductor-icon-wake" width="72" height="72" viewBox="0 0 24 24" aria-hidden="true">
-  <path d="M8 4 a4 4 0 0 1 4 4 v6"></path>
-  <path d="M12 14 a4 4 0 1 0 8 0 a4 4 0 0 0 -8 0"></path>
-  <path d="M16 12 v2.5 l1.6 1.6"></path>
-</svg></div>
-<span class="conductor__wake-headline">The station is asleep</span><span class="conductor__wake-hint">Tap anywhere on this screen to wake the sound.</span><span class="conductor__wake-pill">Tap to wake</span></div>
-</main><script type="module" src="../entry/conductor.entry.ts"></script>
-</body></html>
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0d1311">
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="./app.css">
+    <title>Becoming Many — Conductor</title>
+  </head>
+  <body>
+    <p role="alert" class="startup-error" data-startup-error hidden>
+      Unable to start Becoming Many. Please reload.
+    </p>
+    <main id="conductor-root" class="conductor" inert>
+      <header class="conductor__masthead">
+        <div class="conductor__identity">
+          <span class="conductor__identity-piece">Becoming Many</span
+          ><span class="conductor__identity-station" data-station hidden></span>
+        </div>
+        <section class="conductor__tiles" aria-label="Station status">
+          <div class="conductor__tile" data-tile="sound">
+            <span class="conductor__tile-dot"></span>
+            <div class="conductor__tile-body">
+              <span class="conductor__tile-label">Sound</span
+              ><output class="conductor__tile-value">—</output>
+            </div>
+          </div>
+          <div class="conductor__tile" data-tile="picture">
+            <span class="conductor__tile-dot"></span>
+            <div class="conductor__tile-body">
+              <span class="conductor__tile-label">Picture</span
+              ><output class="conductor__tile-value">—</output>
+            </div>
+          </div>
+          <div class="conductor__tile" data-tile="controller">
+            <span class="conductor__tile-dot"></span>
+            <div class="conductor__tile-body">
+              <span class="conductor__tile-label">Controller</span
+              ><output class="conductor__tile-value">—</output>
+            </div>
+          </div>
+          <div class="conductor__tile" data-tile="headset">
+            <span class="conductor__tile-dot"></span>
+            <div class="conductor__tile-body">
+              <span class="conductor__tile-label">Headset</span
+              ><output class="conductor__tile-value">—</output>
+            </div>
+          </div>
+        </section>
+      </header>
+      <p class="conductor__banner" hidden>
+        The hand controller is not answering as this station's own. The show
+        keeps playing — call a technician before the next visitor steers.
+      </p>
+      <section class="conductor__transport" aria-label="Transport">
+        <div class="conductor__clock-block">
+          <div class="conductor__clock">
+            <output data-elapsed></output
+            ><span class="conductor__clock-total"></span>
+          </div>
+          <div class="conductor__status-line">
+            <span class="conductor__status-pill"></span
+            ><span class="conductor__remaining"></span>
+          </div>
+        </div>
+        <div class="conductor__cues">
+          <div data-cue="now">
+            <span class="conductor__cue-label">now </span
+            ><output class="conductor__cue-name"></output>
+            <span class="conductor__cue-label" data-detail></span>
+          </div>
+          <div data-cue="next">
+            <span class="conductor__cue-label">next </span
+            ><output class="conductor__cue-name"></output>
+            <span class="conductor__cue-label" data-detail></span>
+          </div>
+        </div>
+        <div class="conductor__transport-controls">
+          <button
+            type="button"
+            class="conductor__nudge-button"
+            data-nudge="back"
+            aria-label="Back ten seconds"
+          >
+            <span
+              ><svg
+                class="conductor-icon-outline"
+                width="26"
+                height="26"
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+              >
+                <polyline points="11 17 6 12 11 7"></polyline>
+                <polyline points="18 17 13 12 18 7"></polyline>
+              </svg></span
+            ><span data-nudge-label>10 s</span>
+          </button>
+          <button type="button" class="conductor__transport-button">
+            <span class="conductor__transport-icon"
+              ><span data-play-icon
+                ><svg
+                  class="conductor-icon-solid"
+                  width="34"
+                  height="34"
+                  viewBox="0 0 24 24"
+                  aria-hidden="true"
+                >
+                  <path d="M7 4.5 L20 12 L7 19.5 Z"></path>
+                </svg></span
+              ><span data-pause-icon hidden
+                ><svg
+                  class="conductor-icon-solid"
+                  width="34"
+                  height="34"
+                  viewBox="0 0 24 24"
+                  aria-hidden="true"
+                >
+                  <rect x="5" y="4" width="5" height="16" rx="1"></rect>
+                  <rect x="14" y="4" width="5" height="16" rx="1"></rect>
+                </svg></span
+              ></span
+            ><span data-transport-label>Play</span>
+          </button>
+          <button
+            type="button"
+            class="conductor__nudge-button"
+            data-nudge="forward"
+            aria-label="Forward ten seconds"
+          >
+            <span
+              ><svg
+                class="conductor-icon-outline"
+                width="26"
+                height="26"
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+              >
+                <polyline points="13 17 18 12 13 7"></polyline>
+                <polyline points="6 17 11 12 6 7"></polyline>
+              </svg></span
+            ><span data-nudge-label>10 s</span>
+          </button>
+        </div>
+      </section>
+      <section class="conductor__timeline" aria-label="Show timeline">
+        <svg class="timeline__track" aria-hidden="true">
+          <line class="timeline__playhead" y2="100%"></line>
+        </svg>
+        <div class="conductor__chapters"></div>
+        <template data-chapter-slot
+          ><svg class="timeline__slot" aria-hidden="true">
+            <rect
+              class="timeline__slot-background"
+              width="100%"
+              height="100%"
+            ></rect>
+            <rect class="timeline__progress" y="60" height="24"></rect>
+            <text class="timeline__slot-name" x="10" y="21"></text>
+          </svg></template
+        >
+        <template data-chapter-button
+          ><button type="button" class="conductor__chapter-button">
+            <span data-name></span><span class="conductor__chapter-time"></span>
+          </button></template
+        >
+      </section>
+      <section class="conductor__session-bar" aria-label="Session">
+        <div class="conductor__language">
+          <span class="conductor__language-label">Language</span
+          ><button type="button" data-language="en">EN</button
+          ><button type="button" data-language="de">DE</button>
+        </div>
+        <button type="button" class="conductor__restart-button">
+          New visitor
+        </button>
+        <button type="button" class="conductor__stream-button">
+          <span class="conductor__button-icon"
+            ><svg
+              class="conductor-icon-outline"
+              width="26"
+              height="26"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+            >
+              <path d="M4 14 a8 8 0 0 1 16 0"></path>
+              <rect x="2.5" y="13" width="5" height="7" rx="2"></rect>
+              <rect x="16.5" y="13" width="5" height="7" rx="2"></rect>
+            </svg></span
+          ><span data-headset-label></span>
+        </button>
+        <button
+          type="button"
+          class="conductor__tech-button"
+          aria-label="Technician tools"
+          aria-controls="conductor-technician-tools"
+          aria-expanded="false"
+        >
+          <span class="conductor__button-icon"
+            ><svg
+              class="conductor-icon-outline"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+            >
+              <path
+                d="M14.7 6.3 a4.5 4.5 0 0 0 -6 5.6 L3 17.6 V21 h3.4 l5.7 -5.7 a4.5 4.5 0 0 0 5.6 -6 L14.5 12.5 L11.5 9.5 Z"
+              ></path>
+            </svg></span
+          >
+        </button>
+      </section>
+      <aside
+        class="conductor__drawer"
+        id="conductor-technician-tools"
+        data-open="false"
+        inert
+        aria-label="Technician tools"
+      >
+        <div class="conductor__drawer-group">
+          <div class="conductor__drawer-header">
+            <span>Technician tools</span>
+            <button
+              type="button"
+              class="conductor__drawer-close"
+              aria-label="Close technician tools"
+            >
+              <svg
+                class="conductor-icon-outline"
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+              >
+                <line x1="5" y1="5" x2="19" y2="19"></line>
+                <line x1="19" y1="5" x2="5" y2="19"></line>
+              </svg>
+            </button>
+          </div>
+          <p class="conductor__drawer-caution">
+            These controls can interrupt a live show. Close this panel before
+            handing the station back.
+          </p>
+        </div>
+        <div class="conductor__drawer-group" data-stage-parent>
+          <span class="conductor__drawer-heading">Stage view</span>
+          <div class="conductor__stage-view">
+            <div id="world-stage" class="conductor__stage-mount">
+              <canvas class="experience-canvas"></canvas>
+            </div>
+            <p class="conductor__stage-overlay" hidden>streaming — paused</p>
+          </div>
+        </div>
+        <div class="conductor__drawer-group">
+          <span class="conductor__drawer-heading">Rehearsal speed</span>
+          <div class="conductor__speeds">
+            <button type="button" data-time-scale="0.25">0.25×</button>
+            <button type="button" data-time-scale="0.5">0.5×</button>
+            <button type="button" data-time-scale="1">1×</button>
+            <button type="button" data-time-scale="2">2×</button>
+          </div>
+        </div>
+        <div class="conductor__drawer-group">
+          <span class="conductor__drawer-heading">Resets</span>
+          <div class="conductor__resets">
+            <button type="button" data-reset-show>
+              Rewind to start and hold
+            </button><button type="button" data-reset-flight>
+              Reset flight position
+            </button><button type="button" class="conductor__reload-button">
+              Reload the page
+            </button>
+          </div>
+        </div>
+        <div class="conductor__drawer-group">
+          <span class="conductor__drawer-heading">M5 controller</span>
+          <div data-m5-parent>
+            <section class="conductor__m5" aria-label="M5 controller">
+              <label class="conductor__m5-label"
+                >M5 host<input
+                  type="text"
+                  placeholder="bm-station-a-m5.local"
+                ></label
+              ><button type="button" data-set-host>Set</button
+              ><button type="button" data-clear-host>Clear</button>
+              <div class="conductor__m5-preview" hidden>
+                <svg
+                  class="conductor__m5-pad"
+                  viewBox="0 0 100 100"
+                  aria-hidden="true"
+                >
+                  <circle class="conductor__m5-dot" r="7"></circle>
+                </svg><span class="conductor__m5-readout"></span>
+              </div>
+            </section>
+          </div>
+        </div>
+        <div class="conductor__readouts">
+          <span
+            ><span>frames </span><output data-reading="frames">—</output></span
+          >
+          <span><span>m5 </span><output data-reading="m5">—</output></span>
+          <span
+            ><span>level </span><output data-reading="level">—</output></span
+          >
+          <span
+            ><span>audio </span><output data-reading="audio">—</output></span
+          >
+          <span
+            ><span>language </span
+            ><output data-reading="language">—</output></span
+          >
+        </div>
+      </aside>
+      <div class="conductor__wake" hidden>
+        <span class="conductor__wake-station" hidden></span
+        ><span class="conductor__wake-title">Becoming Many</span>
+        <div class="conductor__wake-icon">
+          <svg
+            class="conductor-icon-outline conductor-icon-wake"
+            width="72"
+            height="72"
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+          >
+            <path d="M8 4 a4 4 0 0 1 4 4 v6"></path>
+            <path d="M12 14 a4 4 0 1 0 8 0 a4 4 0 0 0 -8 0"></path>
+            <path d="M16 12 v2.5 l1.6 1.6"></path>
+          </svg>
+        </div>
+        <span class="conductor__wake-headline">The station is asleep</span
+        ><span class="conductor__wake-hint"
+          >Tap anywhere on this screen to wake the sound.</span
+        ><span class="conductor__wake-pill">Tap to wake</span>
+      </div>
+    </main>
+    <script type="module" src="/entry/conductor.entry.ts"></script>
+  </body>
+</html>

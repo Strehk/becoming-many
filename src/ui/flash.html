@@ -1,11 +1,11 @@
 <!doctype html>
 <html lang="en">
   <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#0d1311" />
-    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="./app.css" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0d1311">
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="./app.css">
     <title>Becoming Many — M5 Flash & Setup</title>
   </head>
   <body>
@@ -27,21 +27,30 @@
           Disconnect the setup console below first — flashing needs the serial
           port for itself.
         </p>
-        <esp-web-install-button manifest="/firmware/m5-controller/manifest.json"></esp-web-install-button>
+        <esp-web-install-button
+          manifest="/firmware/m5-controller/manifest.json"
+        ></esp-web-install-button>
       </section>
 
       <section class="flash__panel">
         <h2>2 · Configure</h2>
         <form class="flash__form">
-          <label>Station WiFi SSID
-            <input name="ssid" autocomplete="off" required />
+          <label
+            >Station WiFi SSID
+            <input name="ssid" autocomplete="off" required>
           </label>
-          <label>Station WiFi password
-            <input name="password" type="password" autocomplete="off" />
+          <label
+            >Station WiFi password
+            <input name="password" type="password" autocomplete="off">
           </label>
-          <label>Device id
-            <input name="deviceId" autocomplete="off" required
-              placeholder="bm-station-a-m5" />
+          <label
+            >Device id
+            <input
+              name="deviceId"
+              autocomplete="off"
+              required
+              placeholder="bm-station-a-m5"
+            >
           </label>
           <div class="flash__actions">
             <button type="button" data-action="connect">Connect console</button>
@@ -49,12 +58,22 @@
           </div>
         </form>
         <div class="flash__actions" data-role="commands">
-          <button type="button" disabled data-command="getConfig">Read config</button>
-          <button type="button" disabled data-command="diagnose">Diagnose</button>
-          <button type="button" disabled data-command="calibrate">Calibrate</button>
-          <button type="button" disabled data-command="clearCalibration">Clear calibration</button>
+          <button type="button" disabled data-command="getConfig">
+            Read config
+          </button>
+          <button type="button" disabled data-command="diagnose">
+            Diagnose
+          </button>
+          <button type="button" disabled data-command="calibrate">
+            Calibrate
+          </button>
+          <button type="button" disabled data-command="clearCalibration">
+            Clear calibration
+          </button>
           <button type="button" disabled data-command="reboot">Reboot</button>
-          <button type="button" disabled data-command="factoryReset">Factory reset</button>
+          <button type="button" disabled data-command="factoryReset">
+            Factory reset
+          </button>
         </div>
       </section>
 
@@ -63,6 +82,6 @@
         <pre class="flash__log" aria-live="polite"></pre>
       </section>
     </main>
-    <script type="module" src="../entry/flash.entry.ts"></script>
+    <script type="module" src="/entry/flash.entry.ts"></script>
   </body>
 </html>

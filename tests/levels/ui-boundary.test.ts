@@ -1,7 +1,7 @@
 import { expectTypeOf, test } from "bun:test";
-import type { ConductorPageOptions } from "../../src/ui/conductor/conductor.page";
 import type { Run } from "../../src/levels/level.runtime";
 import type { RunningShow } from "../../src/levels/show.runtime";
+import type { ConductorPageOptions } from "../../src/ui/conductor/conductor.page";
 
 // These assertions run during type checking; Bun does not inspect TS contracts.
 test("operator capabilities exclude consuming input and child cleanup", () => {

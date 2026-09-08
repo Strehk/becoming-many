@@ -6,10 +6,10 @@
  */
 
 import { expect, test } from "bun:test";
+import { loadTestLevelModules } from "../../src/entry/test-level-modules";
 import { level as designTestLevel } from "../../src/levels/designTest.level";
 import { level as testLevel } from "../../src/levels/test.level";
 import { level as whiteWorldLevel } from "../../src/levels/white-world.level";
-import { loadTestLevelModules } from "../../src/entry/test-level-modules";
 
 test("loads no Zone Visualizer without its terrain presentation", async () => {
   for (const preset of [whiteWorldLevel, designTestLevel]) {

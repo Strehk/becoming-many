@@ -49,4 +49,3 @@ function readEntry(
   const trimmed = value.trim();
   return trimmed.length === 0 ? {} : { [key]: trimmed };
 }
-

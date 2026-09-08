@@ -1,10 +1,3 @@
-/**
- * Purpose: Turn a key press on the conductor page into one operator action.
- * Context: A conductor works the keyboard, not the mouse, while watching the show.
- * Responsibility: Own the key map and refuse presses meant for something else.
- * Boundary: Sending the resulting command belongs to the page that reads this.
- */
-
 import { CONDUCTOR_SETTINGS } from "./operator-settings";
 
 /** What a key press asks the show to do. */

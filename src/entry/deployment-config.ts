@@ -1,4 +1,7 @@
-import { parseDeploymentConfig, type DeploymentConfig } from "../../shared/deployment-config";
+import {
+  type DeploymentConfig,
+  parseDeploymentConfig,
+} from "../../shared/deployment-config";
 
 /**
  * Fetches the station server's /config. Vite development and preview have no

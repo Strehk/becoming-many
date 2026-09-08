@@ -1,24 +1,25 @@
 /** Mount the operator UI against existing owner commands and observations. */
-import { requireElement } from "../shared/dom";
-import { NARRATION_LANGUAGES } from "../../dramaturgy/narration-catalog";
-import type { NarrationSchedule } from "../../dramaturgy/narration-schedule";
-import type { Run } from "../../levels/level.runtime";
-import type { RunningShow } from "../../levels/show.runtime";
+
 import type {
   FrameMetrics,
   FrameMetricsSampler,
 } from "../../diagnostics/frame-metrics";
+import { NARRATION_LANGUAGES } from "../../dramaturgy/narration-catalog";
+import type { NarrationSchedule } from "../../dramaturgy/narration-schedule";
+import type { Run } from "../../levels/level.runtime";
+import type { RunningShow } from "../../levels/show.runtime";
 import type { XrSessionState } from "../../world/xr-session";
+import { requireElement } from "../shared/dom";
 import { resolveConductorKey } from "./keyboard-shortcuts";
-import { CONDUCTOR_SETTINGS } from "./operator-settings";
-import type { ConductorPanel, ConductorViewState } from "./view-state";
 import { createM5Panel } from "./m5.panel";
+import { CONDUCTOR_SETTINGS } from "./operator-settings";
 import { createSessionBar } from "./session-bar.panel";
 import { createShowTimeline } from "./show-timeline.panel";
 import { createStagePanel } from "./stage.panel";
 import { createStatusStrip } from "./status-strip.panel";
 import { createTechDrawer } from "./technician-drawer.panel";
 import { createTransportPanel } from "./transport.panel";
+import type { ConductorPanel, ConductorViewState } from "./view-state";
 import { createWakeOverlay } from "./wake-overlay.panel";
 
 export interface ConductorPageOptions {
@@ -43,9 +44,7 @@ export interface ConductorPageOptions {
   >;
   readonly run: Pick<Run, "resetFlight" | "resetShowAndFlight">;
   readonly xr: Run["xr"];
-  readonly m5:
-    | Pick<NonNullable<Run["m5"]>, "readLatestState" | "readOperatorStatus">
-    | undefined;
+  readonly m5: Pick<NonNullable<Run["m5"]>, "readObservation"> | undefined;
   readonly frameMetrics: Pick<FrameMetricsSampler, "read">;
   readonly initialM5Host: string;
   readonly isM5HostLocked: boolean;
@@ -94,7 +93,11 @@ export function mountConductorPage({
     });
     const drawer = createTechDrawer({
       parent: page,
-      trigger: requireElement(page, ".conductor__tech-button", HTMLButtonElement),
+      trigger: requireElement(
+        page,
+        ".conductor__tech-button",
+        HTMLButtonElement,
+      ),
       show,
       run,
       reloadPage,
@@ -123,7 +126,6 @@ export function mountConductorPage({
       createStagePanel({ parent: drawer.stageParent, stageMount }),
       createM5Panel({
         parent: drawer.m5Parent,
-        m5,
         initialHost: initialM5Host,
         isHostLocked: isM5HostLocked,
         onHostChange: onM5HostChange,
@@ -200,13 +202,14 @@ export function mountConductorPage({
         audioState: show.readAudioState(),
         framesPerSecond: metrics?.framesPerSecond,
         p95Milliseconds: metrics?.p95Milliseconds,
-        m5: m5?.readOperatorStatus(),
+        m5: m5?.readObservation(),
         xr: xrState,
       };
       for (const panel of panels) panel.update(state);
       animationFrame = requestAnimationFrame(draw);
     }
-    animationFrame = requestAnimationFrame(draw);
+    draw();
+    page.inert = false;
     return unmount;
   } catch (error) {
     unmount();
@@ -214,10 +217,9 @@ export function mountConductorPage({
   }
 
   function unmount(): void {
+    page.inert = true;
     lifetime.abort();
     cancelAnimationFrame(animationFrame);
     unsubscribeXr?.();
-
   }
 }
-

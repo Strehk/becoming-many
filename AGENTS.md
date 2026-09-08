@@ -92,6 +92,19 @@ procedures in those documents, not here.
 - README-only source folders are reserved extension boundaries. Keep their
   READMEs until that product area is either implemented or explicitly retired.
 
+## Declarative UI
+
+- All authored browser HTML/SVG structure and UI controllers live under `src/ui/`.
+  HTML declares fixed controls and templates; TypeScript binds behavior and updates
+  observations without markup strings, parsing sinks or authored DOM constructors.
+- Browser bootstrap lives under `src/entry/`; pure deployment/route contracts live
+  in `shared/`. Station imports no browser source.
+- World borrows the declared canvas and viewport. UI owns DOM placement; World
+  owns WebGL, resize and renderer lifetime. Off-document texture canvases remain
+  rendering resources with their content owner.
+- Each UI controller ends its listeners, subscriptions, timers and gestures;
+  cleanup preserves static document structure.
+
 ## Toolchain
 
 - Bun manages packages and tests; Vite builds the application; Biome checks

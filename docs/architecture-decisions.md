@@ -19,13 +19,19 @@ history belongs in Git; unresolved product and deployment questions belong in
 
 ## Composition and Contracts
 
+- Confirmed 2026-09-08: consolidate all browser surfaces under `src/ui/`, with
+  declarative HTML/SVG, central CSS and TypeScript behavior bindings. Entry lives
+  under `src/entry/`; shared deployment and route contracts live outside browser
+  source. World borrows a page-declared canvas/viewport and owns WebGL lifetime.
+  Texture canvases remain content resources. Shared transport gestures replace
+  duplicate UI mechanics; no new framework or global store is introduced.
 - Confirmed 2026-09-07: separate browser Entry, operator UI and experience
   Engine. Conductor is a control/display surface; the existing Run owns
   experience orchestration and Show owns transport/language. The Engine runs
   in the browser; the Station backend remains file/config/health delivery.
   No server-side Show, command broker or additional engine coordinator is added.
 - Confirmed 2026-09-07: #84 is part of the UI architecture migration. Central
-  `src/app.css` owns authored DOM styling; remove replaced CSS and inline styles
+  `src/ui/app.css` owns authored DOM styling; remove replaced CSS and inline styles
   while preserving each surface's operation. The [Engineering Standards](engineering-standards.md#application-styling)
   own styling details; the roadmap owns execution order.
 - Confirmed 2026-09-07: architectural filenames use `<domain-name>.<role>.ts`.

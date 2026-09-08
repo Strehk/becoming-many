@@ -30,6 +30,8 @@ Use `<domain-name>.<role>.ts` for files with an architectural role. The domain
 name uses English lowercase kebab-case; the dot separates the role from the
 subject. For example, `world-fade.effect.ts` names both the effect and its role.
 The role describes the responsibility permitted in the file.
+A dot introduces an approved architectural role suffix. It is not a general
+namespace or category separator.
 
 | Role | Example | Responsibility |
 | --- | --- | --- |
@@ -151,15 +153,34 @@ responsibility map and diagrams. Apply these boundaries during implementation:
   input events at their actual resource adapters are not automatically UI.
 - The Station backend delivers files, deployment facts and process health.
   It carries no Show clock, visitor state or command transport. Sharing pure
-  route/configuration contracts does not permit importing browser runtimes.
+  route/configuration contracts means importing `shared/`; Station never imports
+  browser source under `src/`. Entry owns browser deployment fetching.
 - Composition alone connects concrete content factories through narrow
   contracts. Existing Fallow boundaries and focused behavior tests enforce the
   meaningful rules; do not introduce another analyzer for this convention.
 
+## Declarative browser UI
+
+All authored browser page, control, icon and SVG structure lives in HTML under
+`src/ui/`. TypeScript queries declared elements, clones declared templates, binds
+input and updates dynamic state. UI/Entry does not build authored elements or
+parse markup strings (`innerHTML`, `outerHTML`, `insertAdjacentHTML`, DOMParser).
+Repeated structures use native template content. No runtime template parser, raw
+HTML import, frontend framework or global UI store is introduced.
+
+Page/panel controllers own their listeners, subscriptions, confirmation timers
+and gestures. Cleanup ends these and removes only owned clones; static document
+structure remains. Show owns playback rules, Run owns experience lifetime, and
+World borrows the declared canvas/viewport while owning WebGL and resize.
+UI reads M5 through `readObservation()`; only Run consumes frame/button input.
+Flash Entry owns serial connection lifetime and awaits close; Flash UI owns
+form binding and display. A successful write is not device confirmation.
+Off-document canvas textures remain legitimate rendering resources with their
+content owner; the UI rule does not ban browser APIs in Engine adapters.
+
 ## Application styling
 
-The target stylesheet is `src/app.css`, imported by each browser entry. #84
-migrates the current separate stylesheets and TypeScript style blocks together.
+The stylesheet is `src/ui/app.css`, linked by each HTML page.
 Keep shared color/typography/control rules once and scope actual page layouts
 to their UI roots. Flash remains scrollable; only experience viewports receive
 full-screen/canvas sizing. Preserve intentional operator touch-target sizes.

@@ -1,6 +1,6 @@
 import type { NarrationLanguage } from "../../dramaturgy/narration-catalog";
 import type { ShowLevelName } from "../../dramaturgy/narration-schedule";
-import type { M5OperatorStatus } from "../../m5/m5-adapter";
+import type { M5Observation } from "../../m5/runtime/m5.runtime";
 import type { XrSessionState } from "../../world/xr-session";
 
 /** UI observations; display time follows the pointer during a scrub gesture. */
@@ -15,8 +15,8 @@ export interface ConductorViewState {
   /** Undefined until frames have been measured. */
   readonly framesPerSecond?: number;
   readonly p95Milliseconds?: number;
-  /** Undefined under a benchmark build; `state: "off"` while no host is set. */
-  readonly m5: M5OperatorStatus | undefined;
+  /** Undefined under a benchmark build; `status: "off"` while no host is set. */
+  readonly m5: M5Observation | undefined;
   /** The headset session, so every panel reads the same instant of it. */
   readonly xr: XrSessionState;
 }

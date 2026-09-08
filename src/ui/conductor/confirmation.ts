@@ -17,15 +17,19 @@ export function bindConfirmation(
     button.textContent = label;
   }
   signal.addEventListener("abort", disarm, { once: true });
-  button.addEventListener("click", () => {
-    if (armed) {
-      disarm();
-      onConfirm();
-      return;
-    }
-    armed = true;
-    button.dataset.armed = "true";
-    button.textContent = armedLabel;
-    timer = setTimeout(disarm, CONDUCTOR_SETTINGS.confirmMilliseconds);
-  }, { signal });
+  button.addEventListener(
+    "click",
+    () => {
+      if (armed) {
+        disarm();
+        onConfirm();
+        return;
+      }
+      armed = true;
+      button.dataset.armed = "true";
+      button.textContent = armedLabel;
+      timer = setTimeout(disarm, CONDUCTOR_SETTINGS.confirmMilliseconds);
+    },
+    { signal },
+  );
 }

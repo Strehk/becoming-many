@@ -1,13 +1,10 @@
+import type { M5Observation } from "../../m5/runtime/m5.runtime";
 import { requireElement, writeText } from "../shared/dom";
-import type { Run } from "../../levels/level.runtime";
-import type { M5State } from "../../m5/protocol";
 import type { ConductorPanel } from "./view-state";
-
 
 export interface M5PanelOptions {
   readonly parent: HTMLElement;
   readonly signal: AbortSignal;
-  readonly m5: Pick<NonNullable<Run["m5"]>, "readLatestState"> | undefined;
   readonly initialHost: string;
   readonly isHostLocked: boolean;
   readonly onHostChange: (host: string) => void;
@@ -16,7 +13,6 @@ export interface M5PanelOptions {
 export function createM5Panel({
   parent,
   signal,
-  m5,
   initialHost,
   isHostLocked,
   onHostChange,
@@ -26,7 +22,7 @@ export function createM5Panel({
   host.value = initialHost;
   host.readOnly = isHostLocked;
   host.title = isHostLocked ? "Set by the station's deployment config" : "";
-  const preview = bindPreview(root, () => m5?.readLatestState());
+  const preview = bindPreview(root);
   preview.setHost(initialHost);
   const apply = requireElement(root, "[data-set-host]", HTMLButtonElement);
   const clear = requireElement(root, "[data-clear-host]", HTMLButtonElement);
@@ -37,16 +33,29 @@ export function createM5Panel({
     preview.setHost(nextHost);
   }
   if (!isHostLocked) {
-    apply.addEventListener("click", () => applyHost(host.value.trim()), { signal });
-    clear.addEventListener("click", () => { host.value = ""; applyHost(""); }, { signal });
-    host.addEventListener("keydown", (event) => {
-      if (event.key === "Enter") applyHost(host.value.trim());
-    }, { signal });
+    apply.addEventListener("click", () => applyHost(host.value.trim()), {
+      signal,
+    });
+    clear.addEventListener(
+      "click",
+      () => {
+        host.value = "";
+        applyHost("");
+      },
+      { signal },
+    );
+    host.addEventListener(
+      "keydown",
+      (event) => {
+        if (event.key === "Enter") applyHost(host.value.trim());
+      },
+      { signal },
+    );
   }
 
   return {
-    update(): void {
-      preview.render();
+    update(state): void {
+      preview.render(state.m5);
     },
   };
 }
@@ -55,28 +64,26 @@ interface M5Preview {
   /** An empty host hides the pad; the samples come from the show either way. */
   readonly setHost: (host: string) => void;
   /** Called from the page's redraw; positions the dot from the last sample. */
-  readonly render: () => void;
+  readonly render: (observation: M5Observation | undefined) => void;
 }
 
-/**
- * A crosshair pad with one dot: roll deflects it sideways, pitch deflects it
- * up (positive pitch climbs, so the dot rises). `readState` is the show's
- * newest sample; it yields nothing while the device is stale, missing, or the
- * wrong one, which parks the dot at center and dims the pad.
- */
-function bindPreview(root: HTMLElement, readState: () => M5State | undefined): M5Preview {
+/** Display the accepted device sample separately from effective steering quality. */
+function bindPreview(root: HTMLElement): M5Preview {
   const element = requireElement(root, ".conductor__m5-preview", HTMLElement);
   const dot = requireElement(element, ".conductor__m5-dot", SVGCircleElement);
-  const readout = requireElement(element, ".conductor__m5-readout", HTMLElement);
+  const readout = requireElement(
+    element,
+    ".conductor__m5-readout",
+    HTMLElement,
+  );
 
   return {
-
     setHost(host) {
       element.hidden = host.length === 0;
     },
 
-    render() {
-      const state = readState();
+    render(observation) {
+      const state = observation?.sample;
       element.dataset.live = String(state !== undefined);
 
       if (state === undefined) {
@@ -91,7 +98,10 @@ function bindPreview(root: HTMLElement, readState: () => M5State | undefined): M
       const pitch = clamp(state.pitch, -1, 1);
       dot.setAttribute("cx", String(50 + roll * 42));
       dot.setAttribute("cy", String(50 - pitch * 42));
-      writeText(readout, `P ${pitch.toFixed(2)} · R ${roll.toFixed(2)} · q${state.quality.toFixed(1)}`);
+      writeText(
+        readout,
+        `P ${pitch.toFixed(2)} · R ${roll.toFixed(2)} · sample q${state.quality.toFixed(1)} · input q${(observation?.control?.quality ?? 0).toFixed(1)}`,
+      );
     },
   };
 }

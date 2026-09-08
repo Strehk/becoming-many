@@ -1,4 +1,5 @@
 import { requireElement } from "../ui/shared/dom";
+
 /**
  * Purpose: Bootstrap standalone development and diagnostic runs.
  * Context: Test traffic must not enlarge or branch the root show entry.
@@ -6,18 +7,20 @@ import { requireElement } from "../ui/shared/dom";
  * Boundary: Show rehearsal and Conductor startup live in their own entries.
  */
 
-
+import { levelNameFromPath } from "../../shared/level-routes";
 import { createBenchmarkRun } from "../benchmark/benchmark-run";
 import { isBenchmarkProfileName } from "../benchmark/benchmark-settings";
-import { showHeadsetDiagnostics } from "../ui/test/headset-diagnostics.panel";
+import { FrameMetricsSampler } from "../diagnostics/frame-metrics";
 import { type Run, startLevel } from "../levels/level.runtime";
 import { LEVEL_CATALOG, resolveLevelName } from "../levels/level-catalog";
-import { levelNameFromPath } from "../../shared/level-routes";
-import { loadDeploymentConfig } from "./deployment-config";
-import { FrameMetricsSampler } from "../diagnostics/frame-metrics";
-import { loadTestLevelModules } from "./test-level-modules";
-import { createTestOverlay, type TestOverlay } from "../ui/test/metrics-overlay.panel";
 import { mountVrEntryButton } from "../ui/shared/xr-entry-button";
+import { showHeadsetDiagnostics } from "../ui/test/headset-diagnostics.panel";
+import {
+  createTestOverlay,
+  type TestOverlay,
+} from "../ui/test/metrics-overlay.panel";
+import { loadDeploymentConfig } from "./deployment-config";
+import { loadTestLevelModules } from "./test-level-modules";
 
 const lifetime = new AbortController();
 window.addEventListener("pagehide", (event) => {
@@ -54,23 +57,30 @@ try {
     !benchmark && preset.testUi ? new FrameMetricsSampler() : undefined;
   let overlay: TestOverlay | undefined;
   const container = requireElement(document, ".app", HTMLElement);
-  const canvas = requireElement(container, ".experience-canvas", HTMLCanvasElement);
+  const canvas = requireElement(
+    container,
+    ".experience-canvas",
+    HTMLCanvasElement,
+  );
   const testModules = await loadTestLevelModules(preset);
 
-  level = await startLevel({ canvas, viewport: container }, {
-    signal: lifetime.signal,
-    kind: "static",
-    preset,
-    benchmark,
-    onFrame: frameMetrics
-      ? (deltaSeconds) => {
-          frameMetrics.add(deltaSeconds);
-          overlay?.update(deltaSeconds);
-        }
-      : undefined,
-    testModules,
-    m5ExpectedDeviceId: deployment.m5DeviceId,
-  });
+  level = await startLevel(
+    { canvas, viewport: container },
+    {
+      signal: lifetime.signal,
+      kind: "static",
+      preset,
+      benchmark,
+      onFrame: frameMetrics
+        ? (deltaSeconds) => {
+            frameMetrics.add(deltaSeconds);
+            overlay?.update(deltaSeconds);
+          }
+        : undefined,
+      testModules,
+      m5ExpectedDeviceId: deployment.m5DeviceId,
+    },
+  );
   lifetime.signal.throwIfAborted();
   diagnostics?.showGraphics(level.readGraphicsInfo());
   if (frameMetrics && container) {
@@ -97,7 +107,8 @@ try {
     );
   }
   if (failure !== lifetime.signal.reason) {
-    requireElement(document, "[data-startup-error]", HTMLElement).hidden = false;
+    requireElement(document, "[data-startup-error]", HTMLElement).hidden =
+      false;
     throw failure;
   }
 }

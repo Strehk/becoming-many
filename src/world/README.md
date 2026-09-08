@@ -68,7 +68,7 @@ Composition receive only required capabilities; operator UI receives XR
 commands/observations through the public Run handle. It cannot unload World
 children. World owns complete renderer/XR cleanup.
 
-The shared DOM button lives in `src/ui/xr-entry-button.ts`;
-`xr-session.ts` owns session mechanics here. Styling is in `src/app.css`.
+The shared DOM button lives in `src/ui/shared/xr-entry-button.ts`;
+`xr-session.ts` owns session mechanics here. Styling is in `src/ui/app.css`.
 Browser XR/resource APIs belong here; labels, buttons and DOM styling do not.
 See the [target architecture](../../docs/target-architecture.md#3-target-structure).

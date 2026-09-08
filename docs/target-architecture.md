@@ -92,7 +92,10 @@ flowchart TB
 Only one of Conductor, Rehearsal or Test is mounted per experience page. Flash
 is a separate setup page using Web Serial; it does not start a Show or Run.
 The Station backend never receives transport commands or owns visitor state.
-`src/station/` is the browser-side deployment boundary; `station/` is the backend.
+`src/entry/deployment-config.ts` fetches browser deployment facts; `shared/`
+owns their platform-neutral contract and public routes. `station/` is the backend
+and imports no browser source. Flash Entry owns serial connection lifetime;
+its page owns form binding and display.
 
 ### Lifetime ownership
 
@@ -132,8 +135,9 @@ flowchart LR
 UI reads state from these same owners and may assemble a local `ViewState` for
 consistent drawing. It owns drag preview, confirmation timers and render caches.
 It does not derive calibration, device validity, playback or restart rules.
-The page's DOM refresh is not a second scene render. UI observes M5 samples;
-only Run consumes button edges. Child `unload()` methods stay with their owners.
+The page's DOM refresh is not a second scene render. UI reads M5 through one
+non-consuming `readObservation()` snapshot; validity stays at M5. Only Run
+consumes frame/button input. Child `unload()` methods stay with their owners.
 
 ### One-time construction and one frame
 
@@ -162,23 +166,24 @@ unchanged; changing those latencies is a separate measured fix.
 The #36 migration applies role names to the affected owners and removes aliases.
 HTML routes stay stable. Remaining owner names migrate with their scoped refactor.
 
-| Responsibility | Current placement after #36 | Remaining work |
+| Responsibility | Current placement | Contract or remaining work |
 | --- | --- | --- |
-| Browser bootstrap | `src/conductor.entry.ts`, `src/rehearsal.entry.ts`, `src/test.entry.ts` | `src/flash.entry.ts` handles independent device setup |
-| Conductor UI | `src/conductor/conductor.page.ts` and actual `.panel.ts` regions | Central `src/app.css` |
+| Browser bootstrap | `src/entry/` and its four `.entry.ts` files | Flash owns independent device setup; other entries connect one Run |
+| Conductor UI | `src/ui/conductor/conductor.page.ts` and actual `.panel.ts` regions | Central `src/ui/app.css` |
 | Show commands / internal clock | `src/levels/show.runtime.ts` | Preserved by UI contracts |
 | Run start/frame/end and scoped reset | `src/levels/level.runtime.ts` | Full visitor operation #9 |
-| Shared XR button | `src/ui/xr-entry-button.ts`; mechanics in World | Central `src/app.css` |
+| Shared XR button | `src/ui/shared/xr-entry-button.ts`; mechanics in World | Central `src/ui/app.css` |
 | One-time content construction | `src/levels/level-composition.ts` | `.composition.ts` on next construction refactor |
 | Renderer/resource owner | `src/world/world-runtime.ts` | `.runtime.ts` on next resource refactor |
-| Styles | `src/app.css`, imported by all four entries | Shared tokens and controls; scoped page layouts |
+| Styles | `src/ui/app.css`, linked by all four HTML pages | Shared tokens and controls; scoped page layouts |
 
 `show-actions.ts` is removed. Its commands belong to Show and Run.
 
-Use `src/ui/` only for UI genuinely shared by current surfaces, initially the
-existing XR button. It is not a component registry. Other entry files adopt
-`.entry.ts` with their affected migration; backend/tool entry conventions remain
-separate. Domain algorithms retain descriptive plain names. The
+All browser surfaces live under `src/ui/`, grouped by surface. HTML owns authored
+page/control/SVG structure; TypeScript binds behavior and projects observations.
+`src/ui/shared/` contains only currently reused UI mechanics. Browser bootstrap
+lives under `src/entry/`; backend/tool entry conventions remain separate.
+Domain algorithms retain descriptive plain names. The
 [Engineering Standards](engineering-standards.md#file-names-and-architectural-roles)
 own role semantics, contract vocabulary, file reading order and central styling.
 
@@ -214,17 +219,17 @@ not counted as deleting its capability.
 | Existing responsibility | Owned state/resources | Inputs and actual consumers | Calls, end and exclusion |
 | --- | --- | --- | --- |
 | **Entry** (browser `.entry.ts` targets) | Request/deployment resolution, pending-start cancellation, UI/Run references, optional diagnostic sampler | Browser inputs → Run request and UI bindings | Starts/cancels/ends one Run, mounts/unmounts UI. No experience policy. |
-| **UI** (Conductor, Rehearsal, Test) | DOM, input bindings, drag preview, confirmation timers, display caches | Narrow commands and observations → operator interaction | Releases UI listeners and subscriptions only. No child-resource disposal, device validation or Show/reset policy. |
+| **UI** (Conductor, Rehearsal, Test, Flash) | DOM, input bindings, drag preview, confirmation timers, display caches | Narrow commands and observations → operator interaction | Releases UI listeners and subscriptions only. No child-resource disposal, device validation or Show/reset policy. |
 | **Run** (`level.runtime.ts`) | Child references, startup/closing state, source GLTF assets | Discriminated request; commands, cancellation and complete `unload()` for Entry | Direct startup, input selection, local frame/restart/end. No concrete content algorithms or second loop. |
 | **Composition** (`level-composition.ts`) | No persistent owner state | Recipes, World, borrowed assets → Surface, ordered modules and ShowWorldReach | Called once by Run; factories clean partial failure. No transport, registry or coordinator object. |
-| **World** (`world-runtime.ts`) | Renderer/context, scene, rig/camera, Timer, XR/resize listeners, ModuleRuntime and StreamQueue | Run's frame function; viewpoint and execution for modules; optional benchmark FrameControl | Run starts it last/stops it first. Owns preparation, render and final release. No level policy or show clock. |
+| **World** (`world-runtime.ts`) | Renderer/context, scene, rig/camera, Timer, XR/resize listeners, ModuleRuntime and StreamQueue; borrowed declared canvas/viewport | Run's frame function; viewpoint and execution for modules; optional benchmark FrameControl | Run starts it last/stops it first. Owns preparation, render and final release. No level policy or show clock. |
 | **Flight controls** (`control/`) | Desktop capture and input-specific navigation state | Selected desktop/M5 input → rig locomotion; Surface-based limits | Created/reset/disposed by Run; capture and movement math remain local. No protocol parsing or headset-pose overwrite. |
 | **M5** (`m5/`) | Host-bound poll/sample/filter/calibration/button state | Untrusted HTTP → flight ControlFrame and observational UI status | Existing adapter replaces host state and invalidates late work. Run owns its lifetime. No show commands or transforms. |
 | **Show** (`show.runtime.ts`, `dramaturgy/`) | Clock origins/rate/play state, language, native timebase, audio followers, bounded scratch | Authored schedule/state/score and composed ports → current commands/observations | Run creates/ticks/ends it. Pure lookups remain calculations. No content construction or rig movement. |
 | **Audio** (`sound/`) | Narration media; organ nodes, scheduling cursors and Tone context | One Show sample, strengths and spatial signals → sound/status | Show owns follower lifetime; organ releases nodes/context including late imports. No independent show clock. |
 | **World Surface** (`world-surface/`) | Physical conditions, zone thresholds and continuous transition weights | Height/zone facts for content and flight; identical weights for Clipmap, Vegetation and Rocks | Created in Composition; pure queries, no render lifecycle. Content owns derived coverage/density and placement, never parallel zone rules. |
 | **Content** (`modules/`) | Own CPU/GPU pools, derivatives, slot assignments and worker where needed | Borrowed sources, Surface/viewpoint/ports → scene and specific provider facts | Composition constructs; ModuleRuntime runs lifecycle. No sibling imports or private schedule. |
-| **Station / Flash / firmware** | Existing independent process, serial UI or device sensing lifetime | Files/config/health, setup commands, controller protocol | Outside Run; setup releases bindings and transient credentials. No broker, shared show state or new supervisor. |
+| **Station / Flash / firmware** | Independent backend, Entry-owned serial connection, UI bindings, device sensing | Files/config/health, typed setup commands and responses | Outside Run; serial adapter awaits port release, UI clears transient credentials. Writes do not confirm application. No broker or shared Show state. |
 
 `WorldModule` separates active updates from resource lifetime; `ShowWorldReach`
 connects real composed setters/providers to Show. Plant scent and root anchors
@@ -349,7 +354,7 @@ and cleans acquired/late resources. For a running application, Entry disables
 commands and cancels UI callbacks; Run marks closing, stops the loop, stops
 input/polling/audio scheduling and invalidates asynchronous publication. End XR,
 unload content in reverse dependency order, release source assets after all
-borrowers have ended, then release World and canvas. Individual cleanup
+borrowers have ended, then release World and its WebGL context. The page retains its declared canvas. Individual cleanup
 failures must not prevent remaining cleanup or conceal the original error.
 Disposal is idempotent and awaited before restarting.
 
@@ -411,7 +416,7 @@ M5 owns device validity, and entries own presentation and gestures.
 
 **Historical debt, removed by #36:** `createShowActions` forwarded clock
 methods and defined reset; UI repeated Show's language pause. Conductor and
-[rehearsal transport](../src/dev/rehearsal.panel.ts) duplicate scrub mechanics;
+[rehearsal transport](../src/ui/rehearsal/transport.panel.ts) duplicate scrub mechanics;
 DOM/snapshot state can determine commands. `9982d18` already removed the remote
 broker; `fd48b27` deliberately changed visitor reset to hold at zero.
 
@@ -595,7 +600,7 @@ closure, then establish a fresh context before next-run nodes. Late imports
 must release acquired resources. Actual restart/worklet behavior remains unproved.
 
 #14 removes the additional GPU probe in
-[headset-diagnostics.ts](../src/dev/headset-diagnostics.ts); the entry owns its
+[headset-diagnostics.ts](../src/ui/test/headset-diagnostics.panel.ts); the entry owns its
 bounded diagnostic handle and restores hooks on end. World supplies the actual
 capability report on demand; startup errors stay visible. #35 makes Test own its
 overlay and sampler, with Conductor reading its own sampler directly. Run keeps
@@ -675,7 +680,7 @@ remove old consumers, obsolete tests and documentation with the replaced path.
 
 | Current structure | Proven problem | Action | Target owner | Old path eliminated | Dependency / proof |
 | --- | --- | --- | --- | --- | --- |
-| `src/conductor/show-actions.ts` | One adapter forwards commands and uniquely owns reset | Delete file | Existing Show commands and Run visitor restart | `createShowActions`, UI reset sequences, second command route | D2; migrate panels, keys and rehearsal console |
+| `src/ui/conductor/show-actions.ts` | One adapter forwards commands and uniquely owns reset | Delete file | Existing Show commands and Run visitor restart | `createShowActions`, UI reset sequences, second command route | D2; migrate panels, keys and rehearsal console |
 | `src/control/flight-control-source.ts` | Only Run consumes this stateless `readFrame → if → delegate` factory | Delete file, retain behavior | Run's local frame selects; existing controls perform movement | Factory plus `FlightControlSource`, `DesktopFlightSource`, `M5FlightSource` | #73 implemented; input/benchmark probes pass; presented browser accepted |
 | `src/control/flight-reset.ts` | Only Run uses its two transform assignments | Remove wrapper when the fresh-run sequence establishes required initialization | Existing Run startup/restart | Imported reset wrapper; reset-only visitor semantics | D1/D2; concrete restart gate first, preserve local head pose |
 | `src/levels/show-renderer-preparation.ts` | Only Run passes World resources through `ShowRenderWorld` | Delete file, retain operations | Existing World closure | `ShowRenderWorld`, separate preparation wrapper/import | #73 implemented; unchanged preparation and failure restoration verified |
@@ -727,7 +732,7 @@ Do not repeat removed callback chains, diagnostic round trips or authored layers
 | Unit | Complete change and removal | Retained boundary |
 | --- | --- | --- |
 | #36 | Move transport/language policy to Show, interim reset operation to Run, bootstrap to Entry; remove `show-actions.ts`, duplicate pause and unread flag; narrow public capabilities and migrate real UI/console consumers and affected filenames together. | One browser Engine, one loop/clock; legitimate UI gestures remain; complete visitor replacement stays #9. |
-| #84 | Consolidate DOM styling into `src/app.css`; migrate dynamic UI geometry; delete old stylesheets/imports/inline blocks and fix demonstrated cascade/hidden defects. | Existing surfaces and semantics; no UI framework or engine behavior change. |
+| #84 | Consolidate DOM styling into `src/ui/app.css`; migrate dynamic UI geometry; delete old stylesheets/imports/inline blocks and fix demonstrated cascade/hidden defects. | Existing surfaces and semantics; no UI framework or engine behavior change. |
 | #11 | Align existing Fallow rules with real Entry/UI/Engine/backend boundaries and migrated filenames; verify forbidden imports are rejected. | No second analyzer, generated file-role framework or blanket ban on browser resource APIs. |
 | #9 + #46 | Confirm and implement complete visitor replacement and start/calibration behavior using existing Run/Show/World/input owners. | #42/#54 physical operating facts and explicit restart decision; no automatic XR re-entry assumption. |
 | #73 | Resolve the retained clock-progress uncertainty with relevant evidence. | Naming, CSS or short successful replays do not explain the original failure. |

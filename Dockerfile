@@ -23,6 +23,9 @@ WORKDIR /app
 # station/ and shared/, so no node_modules ships.
 COPY station ./station
 COPY shared ./shared
+# The optional simulator uses the same pure device protocol as browser clients.
+COPY firmware/m5/tools/simulator.ts ./firmware/m5/tools/simulator.ts
+COPY src/m5/protocol.ts ./src/m5/protocol.ts
 COPY --from=build /app/dist ./dist
 
 ENV NODE_ENV=production

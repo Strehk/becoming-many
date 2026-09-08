@@ -78,7 +78,7 @@ interface FrameControl {
 }
 
 /** DOM placement belongs to the page; World borrows these elements until unload. */
-export interface WorldSurface {
+export interface WorldViewport {
   readonly canvas: HTMLCanvasElement;
   readonly viewport: HTMLElement;
 }
@@ -90,7 +90,7 @@ interface WorldOptions {
 
 /** Create the stopped world; its caller prepares content before starting frames. */
 export function createWorld(
-  { canvas, viewport }: WorldSurface,
+  { canvas, viewport }: WorldViewport,
   options: WorldOptions = {},
 ): WorldContext & {
   readonly renderCounters: RenderCounters;

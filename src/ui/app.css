@@ -723,7 +723,7 @@ body:has(> .app) {
 }
 
 /* Test diagnostics */
-.test-overlay {
+.test-overlay:not([hidden]) {
   position: fixed;
   top: 16px;
   left: 16px;
@@ -870,7 +870,7 @@ body:has(> .app) {
   background: var(--rehearsal-background);
 }
 
-.rehearsal {
+.rehearsal:not([hidden]) {
   inset: 0 0 auto;
   z-index: 10;
   display: flex;
@@ -964,4 +964,14 @@ body:has(> .app) {
   .conductor__language {
     flex-basis: 100%;
   }
+}
+
+/* Startup failures must remain legible above the experience viewport. */
+[data-startup-error]:not([hidden]) {
+  position: fixed;
+  inset: 1rem 1rem auto;
+  z-index: 100;
+  padding: 1rem;
+  color: #0d1311;
+  background: #ffffff;
 }

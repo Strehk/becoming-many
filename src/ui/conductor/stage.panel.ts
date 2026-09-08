@@ -8,8 +8,20 @@ export interface StagePanelOptions {
 }
 
 /** Bind the static stage overlay without moving or owning the renderer canvas. */
-export function createStagePanel({ parent, stageMount }: StagePanelOptions): ConductorPanel {
-  if (!parent.contains(stageMount)) throw new Error("Stage viewport must belong to the technician drawer.");
-  const overlay = requireElement(parent, ".conductor__stage-overlay", HTMLElement);
-  return { update(state): void { overlay.hidden = !state.xr.isSessionActive; } };
+export function createStagePanel({
+  parent,
+  stageMount,
+}: StagePanelOptions): ConductorPanel {
+  if (!parent.contains(stageMount))
+    throw new Error("Stage viewport must belong to the technician drawer.");
+  const overlay = requireElement(
+    parent,
+    ".conductor__stage-overlay",
+    HTMLElement,
+  );
+  return {
+    update(state): void {
+      overlay.hidden = !state.xr.isSessionActive;
+    },
+  };
 }

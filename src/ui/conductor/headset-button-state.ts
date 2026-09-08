@@ -1,10 +1,3 @@
-/**
- * Purpose: Decide what the headset button says for a given session state.
- * Context: One label answers "can I start the headset picture right now".
- * Responsibility: Map the XR session state to a label and an enabled flag.
- * Boundary: Pure decision logic; the DOM around it lives in the session bar.
- */
-
 import type { XrSessionState } from "../../world/xr-session";
 
 export type StreamButtonLabel =

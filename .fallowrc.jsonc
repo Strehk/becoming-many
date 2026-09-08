@@ -4,6 +4,8 @@
 // Boundary: Import rules do not prove lifecycle, behavior, or performance correctness.
 {
   "$schema": "https://raw.githubusercontent.com/fallow-rs/fallow/main/schema.json",
+  // HTML lives below the Vite root; declare the four actual browser bootstraps.
+  "entry": ["src/entry/*.entry.ts", "src/ui/app.css"],
   "ignoreExports": [
     {
       "file": "src/levels/*.level.ts",
@@ -29,7 +31,14 @@
       { "name": "world-surface", "patterns": ["src/world-surface/**"] },
       { "name": "control", "patterns": ["src/control/**"] },
       { "name": "m5-protocol", "patterns": ["src/m5/protocol.ts"] },
-      { "name": "m5", "patterns": ["src/m5/runtime/**", "src/m5/setup/**", "src/m5/control-frame.ts"] },
+      {
+        "name": "m5",
+        "patterns": [
+          "src/m5/runtime/**",
+          "src/m5/setup/**",
+          "src/m5/control-frame.ts"
+        ]
+      },
       { "name": "utils", "patterns": ["src/utils/**"] },
       {
         "name": "show-queries",
@@ -97,16 +106,22 @@
       { "from": "sound", "allow": ["dramaturgy", "show-queries", "utils"] },
       { "from": "shared", "allow": [] },
       { "from": "diagnostics", "allow": [] },
-      { "from": "shared", "allow": [] },
       {
         "from": "station-backend",
         "allow": ["shared"]
       },
-      { "from": "flash", "allow": ["m5-protocol"] },
+      { "from": "flash", "allow": ["ui"], "allowTypeOnly": ["m5-protocol"] },
       {
         "from": "ui",
         "allow": ["show-queries"],
-        "allowTypeOnly": ["levels", "world", "m5", "m5-protocol", "shared", "diagnostics"]
+        "allowTypeOnly": [
+          "levels",
+          "world",
+          "m5",
+          "m5-protocol",
+          "shared",
+          "diagnostics"
+        ]
       },
       {
         "from": "test-entry-tools",
@@ -130,7 +145,6 @@
           "m5-protocol",
           "presets",
           "level-contracts",
-          "shared",
           "levels",
           "dramaturgy",
           "show-queries"

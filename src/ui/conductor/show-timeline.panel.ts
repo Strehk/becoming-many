@@ -1,25 +1,13 @@
-import { requireElement } from "../shared/dom";
-import { attachScrubbing } from "../shared/transport-scrubbing";
-/**
- * Purpose: Draw the schedule as chapters and let the operator move by touch.
- * Context: Recovering a lost cue means one tap on a chapter, or a drag on
- *   the track — the two gestures front-of-house staff actually use.
- * Responsibility: Render chapter slots, their played progress, the playhead,
- *   and the chapter buttons; seek on tap and drag.
- * Boundary: Slot arithmetic belongs to the dramaturgy layout, never to this
- *   file. Recording lengths and headroom are a tuning concern, verified in
- *   tests/dramaturgy — this panel shows progress, not takes.
- */
-
 import type { NarrationSchedule } from "../../dramaturgy/narration-schedule";
 import { cueSlots } from "../../dramaturgy/schedule-layout";
 import type { RunningShow } from "../../levels/show.runtime";
+import { requireElement } from "../shared/dom";
+import { attachScrubbing } from "../shared/transport-scrubbing";
 import type { ConductorPanel } from "./view-state";
 
 type TimelineShow = Pick<RunningShow, "sample" | "play" | "pause" | "seekTo">;
 
 import { cueDisplayName, formatShowTime } from "../shared/show-time-format";
-
 
 export interface ShowTimelineOptions {
   readonly parent: HTMLElement;
@@ -60,27 +48,61 @@ export function createShowTimeline({
   const track = requireElement(root, ".timeline__track", SVGSVGElement);
   const buttons = requireElement(root, ".conductor__chapters", HTMLElement);
   const playhead = requireElement(track, ".timeline__playhead", SVGLineElement);
-  const slotTemplate = requireElement(root, "[data-chapter-slot]", HTMLTemplateElement);
-  const buttonTemplate = requireElement(root, "[data-chapter-button]", HTMLTemplateElement);
+  const slotTemplate = requireElement(
+    root,
+    "[data-chapter-slot]",
+    HTMLTemplateElement,
+  );
+  const buttonTemplate = requireElement(
+    root,
+    "[data-chapter-button]",
+    HTMLTemplateElement,
+  );
   const chapters = readChapters(schedule).map((chapter) => {
     const slotFragment = document.importNode(slotTemplate.content, true);
     const slot = requireElement(slotFragment, "svg", SVGSVGElement);
-    const progress = requireElement(slot, ".timeline__progress", SVGRectElement);
-    slot.setAttribute("x", `${toPercent(chapter.startSeconds, durationSeconds)}%`);
-    slot.setAttribute("width", `${toPercent(chapter.endSeconds - chapter.startSeconds, durationSeconds)}%`);
-    requireElement(slot, "text", SVGTextElement).textContent = cueDisplayName(chapter.cueId);
+    const progress = requireElement(
+      slot,
+      ".timeline__progress",
+      SVGRectElement,
+    );
+    slot.setAttribute(
+      "x",
+      `${toPercent(chapter.startSeconds, durationSeconds)}%`,
+    );
+    slot.setAttribute(
+      "width",
+      `${toPercent(chapter.endSeconds - chapter.startSeconds, durationSeconds)}%`,
+    );
+    requireElement(slot, "text", SVGTextElement).textContent = cueDisplayName(
+      chapter.cueId,
+    );
     track.insertBefore(slotFragment, playhead);
     const buttonFragment = document.importNode(buttonTemplate.content, true);
     const button = requireElement(buttonFragment, "button", HTMLButtonElement);
-    requireElement(button, "[data-name]", HTMLElement).textContent = cueDisplayName(chapter.cueId);
-    requireElement(button, ".conductor__chapter-time", HTMLElement).textContent = formatShowTime(chapter.startSeconds);
-    button.addEventListener("click", () => show.seekTo(chapter.startSeconds), { signal });
+    requireElement(button, "[data-name]", HTMLElement).textContent =
+      cueDisplayName(chapter.cueId);
+    requireElement(
+      button,
+      ".conductor__chapter-time",
+      HTMLElement,
+    ).textContent = formatShowTime(chapter.startSeconds);
+    button.addEventListener("click", () => show.seekTo(chapter.startSeconds), {
+      signal,
+    });
     buttons.append(buttonFragment);
     return { chapter, slot, progress, button } satisfies ChapterView;
   });
-  signal.addEventListener("abort", () => {
-    for (const view of chapters) { view.slot.remove(); view.button.remove(); }
-  }, { once: true });
+  signal.addEventListener(
+    "abort",
+    () => {
+      for (const view of chapters) {
+        view.slot.remove();
+        view.button.remove();
+      }
+    },
+    { once: true },
+  );
   attachScrubbing({ track, durationSeconds, show, onScrubChange, signal });
 
   return {

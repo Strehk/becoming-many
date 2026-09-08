@@ -31,6 +31,10 @@ export default defineConfig({
   root: resolve(import.meta.dirname, "src/ui"),
   publicDir: resolve(import.meta.dirname, "public"),
   plugins: [levelEntryRoutes],
+  resolve: {
+    // Browser bootstraps are siblings of the HTML root in both dev and build.
+    alias: { "/entry": resolve(import.meta.dirname, "src/entry") },
+  },
   build: {
     outDir: resolve(import.meta.dirname, "dist"),
     emptyOutDir: true,
