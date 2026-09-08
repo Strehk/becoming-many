@@ -22,6 +22,8 @@ export interface NarrationFollowState {
 
 export interface NarrationPlayer {
   readonly follow: (state: NarrationFollowState) => void;
+  /** Actual media playback, including blocked, ended and unloaded clips. */
+  readonly readIsPlaying: () => boolean;
   /** Replace the prepared clip set, retaining unchanged recordings without reloading. */
   readonly setRecordings: (recordings: readonly NarrationRecording[]) => void;
   readonly unload: () => void;
@@ -122,6 +124,16 @@ export function createNarrationPlayer(options: {
   }
 
   return {
+    readIsPlaying(): boolean {
+      const element = activeCueId ? clips.get(activeCueId)?.element : undefined;
+      return Boolean(
+        !isUnloaded &&
+          element &&
+          !element.paused &&
+          !element.ended &&
+          element.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA,
+      );
+    },
     follow({ position, isPlaying, timeScale }): void {
       // A slot is sized for the longer language, so the shorter recording runs
       // out before its slot does; past that end there is simply silence.

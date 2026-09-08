@@ -167,11 +167,22 @@ test("the selected presentation ends after a partial load and receives no inacti
   const update = mock((_frame: StartParticleFrame) => {});
   const setVisible = mock((_visible: boolean) => {});
   const unload = mock(() => {});
+  const objects = {
+    ringLeft: new Vector3(-1, 0, 0),
+    ringRight: new Vector3(1, 0, 0),
+    arrow: new Vector3(-2, 0, 0),
+  };
   const start = createStartModule({
     viewpoint: { worldPosition, viewDistanceMeters: 100 },
     viewerRig: new Group(),
     parameters: PARAMETERS,
-    particles: { load, update, setVisible, unload },
+    particles: {
+      load,
+      update,
+      setVisible,
+      unload,
+      readObjectAnchors: () => objects,
+    },
   });
   const runtime = new ModuleRuntime();
   load.mockImplementationOnce(() => {
@@ -189,12 +200,15 @@ test("the selected presentation ends after a partial load and receives no inacti
   runtime.update(0.1);
   expect(setVisible).toHaveBeenLastCalledWith(true);
   expect(update).toHaveBeenCalledTimes(1);
+  expect(start.readObservation().objects).toBe(objects);
   runtime.deactivate(start.module);
+  expect(start.readObservation().objects).toBeUndefined();
   expect(setVisible).toHaveBeenLastCalledWith(false);
   runtime.update(100);
   expect(update).toHaveBeenCalledTimes(1);
   runtime.unload(start.module);
   expect(unload).toHaveBeenCalledTimes(2);
+  expect(start.readObservation().objects).toBeUndefined();
 });
 
 test("Show can finish speech after a crossing without completing any unflown goal", () => {
@@ -229,6 +243,7 @@ test("cloud and formed targets keep their world anchor through player translatio
       load() {},
       unload() {},
       setVisible() {},
+      readObjectAnchors: () => undefined,
       update(frame) {
         rendered = {
           ...frame,

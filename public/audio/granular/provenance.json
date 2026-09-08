@@ -193,5 +193,47 @@
       }
     }
   ],
-  "technicalAnalysisMethod": "Full audio decode with FFmpeg -xerror and ebur128=peak=true; integrated LUFS, loudness range LU and reconstructed true peak dBFS. Measurements do not establish perceived timbre, suitability or listening acceptance."
+  "technicalAnalysisMethod": "Full audio decode with FFmpeg -xerror and ebur128=peak=true; integrated LUFS, loudness range LU and reconstructed true peak dBFS. Measurements do not establish perceived timbre, suitability or listening acceptance.",
+  "derivatives": [
+    {
+      "file": "atmosphere-grain-01.wav",
+      "source": "atmosphere-source-01.mp3",
+      "sourceInSeconds": 12,
+      "sourceOutSeconds": 24,
+      "durationSeconds": 12,
+      "sampleRateHz": 48000,
+      "channels": 1,
+      "codec": "pcm_s16le",
+      "processing": "pan=mono|c0=0.5*c0+0.5*c1,volume=-6dB,afade=t=in:st=0:d=0.3,afade=t=out:st=11.7:d=0.3",
+      "sha256": "e9e9974a6f612c45dccfa8e1dc2ee41beae0c73fe51d231c041df9f612c6c79d",
+      "bytes": 1152078
+    },
+    {
+      "file": "atmosphere-grain-03.wav",
+      "source": "atmosphere-source-03.mp3",
+      "sourceInSeconds": 16,
+      "sourceOutSeconds": 28,
+      "durationSeconds": 12,
+      "sampleRateHz": 48000,
+      "channels": 1,
+      "codec": "pcm_s16le",
+      "processing": "pan=mono|c0=0.5*c0+0.5*c1,volume=-6dB,afade=t=in:st=0:d=0.3,afade=t=out:st=11.7:d=0.3",
+      "sha256": "0abf454cc8a3fec44c19594c52c1bf835f7656aae23870d790d9fbdd11dbc8f5",
+      "bytes": 1152078
+    },
+    {
+      "file": "atmosphere-grain-08.wav",
+      "source": "atmosphere-source-08.mp3",
+      "sourceInSeconds": 24,
+      "sourceOutSeconds": 36,
+      "durationSeconds": 12,
+      "sampleRateHz": 48000,
+      "channels": 1,
+      "codec": "pcm_s16le",
+      "processing": "pan=mono|c0=0.5*c0+0.5*c1,volume=-6dB,afade=t=in:st=0:d=0.3,afade=t=out:st=11.7:d=0.3",
+      "sha256": "21bc9271e413e6db40b5a866d9d25f24bc1494a93dc2246d8319fb7b2c2d57b2",
+      "bytes": 1152078
+    }
+  ],
+  "derivativeSelection": "Initial technical selection from sources 01, 03 and 08 for the bounded spatial mix; not an audition-approved timbral selection. Originals remain preserved for listening and later tuning."
 }

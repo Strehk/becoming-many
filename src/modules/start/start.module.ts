@@ -4,6 +4,7 @@ import type { Viewpoint } from "../../world/viewer-rig";
 import { crossesFlightRing } from "./flight-goals";
 import type {
   StartParticleEffect,
+  StartParticleObjects,
   StartParticleParameters,
 } from "./start-particles.effect";
 
@@ -38,6 +39,7 @@ export interface StartObservation {
   readonly goalPosition: Readonly<Vector3>;
   readonly formationProgress: number;
   readonly crossingCount: number;
+  readonly objects?: StartParticleObjects;
   readonly wake:
     | {
         readonly position: Readonly<Vector3>;
@@ -113,6 +115,7 @@ export function createStartModule(
     goalPosition,
     formationProgress: 0,
     crossingCount: 0,
+    objects: undefined as StartParticleObjects | undefined,
     wake: undefined as StartObservation["wake"],
   };
   const particleFrame = {
@@ -157,11 +160,13 @@ export function createStartModule(
       deactivate: () => {
         active = false;
         particles?.setVisible(false);
+        observation.objects = undefined;
       },
       unload: () => {
         active = false;
         loaded = false;
         particles?.unload();
+        observation.objects = undefined;
       },
     },
   };
@@ -177,6 +182,7 @@ export function createStartModule(
     observation.formationProgress = 0;
     observation.crossingCount = 0;
     observation.wake = undefined;
+    observation.objects = undefined;
   }
 
   function placeGoal(): void {
@@ -291,5 +297,6 @@ export function createStartModule(
     particleFrame.completionProgress = observation.phase === "crossed" ? 1 : 0;
     particleFrame.wake = observation.wake;
     particles?.update(particleFrame);
+    observation.objects = particles.readObjectAnchors();
   }
 }

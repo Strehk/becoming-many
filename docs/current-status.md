@@ -215,20 +215,23 @@ The #80 animal-connection removal is implemented below. Small additions remain i
   native pose parameters per changed update. Organ owns only its nodes. Tone
   loads dynamically; benchmarks and ordinary standalone levels build no audio
   graph. Standalone Start acquires Tone only when `startAudio` is configured;
-  the current recipe omits it, creating only Show's native timebase. Historical
+  the current recipe enables three object-bound granular layers, a goal voice
+  and one shared eight-second hall. Historical
   organ cost was measured on desktop Chromium only (about
   0.1 ms median per update with all layers open); the four `AudioWorklet`
   Freeverb rooms are unmeasured on the target Windows-PCVR installation.
 - Five DE narration recordings were located in the predecessor tutorial
-  repository. The literal recipe currently omits both `startAudio` and
-  `startNarration`, so production training remains silent. DE-use permission,
+  repository. The literal recipe still omits `startNarration`. DE-use permission,
   EN fallback remain pending; source discovery does not establish narration
   acceptance. Eleven user-supplied generated instrumentals are now preserved in
   `public/audio/granular/` with provenance and full-decode/level checks. The
-  [granular atmosphere step](roadmap.md#granular-atmosphere--112) plans three
+  [granular atmosphere step](roadmap.md#granular-atmosphere--112) implements three
   spatial layers, a distinct goal cue and one shared hall, replacing the ordinary
-  bed at the existing training owner. Excerpts, mix and runtime integration are
-  not implemented or listened to yet. These content decisions, human
+  bed at the existing training owner. Three twelve-second mono excerpts load;
+  original full tracks do not. Ring/arrow body anchors come from Start, and
+  listener distance controls level, filtering and room balance. Pause silences
+  the hall too, speech ducks the mix, and Run owns readiness/cleanup. Source
+  selection and mix are initial technical choices without audition. These content decisions, human
   listening/comprehension and Windows-PCVR spatial-audio/90 Hz acceptance remain
   open; no successful local test substitutes for them.
 - The conductor page provides Play/Pause, immediate Stop, language, an embedded

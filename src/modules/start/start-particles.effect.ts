@@ -51,11 +51,19 @@ export interface StartParticleFrame {
   readonly wake?: StartParticleWake;
 }
 
+/** Borrowed world-space centers of the visible particle bodies, not listener offsets. */
+export interface StartParticleObjects {
+  readonly ringLeft: Readonly<Vector3>;
+  readonly ringRight: Readonly<Vector3>;
+  readonly arrow: Readonly<Vector3>;
+}
+
 export interface StartParticleEffect {
   readonly load: () => void;
   readonly setVisible: (visible: boolean) => void;
   /** Externally supplied time only; invisible/unloaded effects perform no work. */
   readonly update: (frame: StartParticleFrame) => void;
+  readonly readObjectAnchors: () => StartParticleObjects | undefined;
   readonly unload: () => void;
 }
 
@@ -65,6 +73,9 @@ const MAXIMUM_PARTICLE_COUNT = 16_384;
 const RANDOM_RANGE = 0x1_0000_0000;
 const LOCAL_NORMAL = new Vector3(0, 0, 1);
 const UNIT_SCALE = new Vector3(1, 1, 1);
+const ARROW_WIDTH_METERS = 0.9;
+const ARROW_SOURCE_WIDTH = 1.1;
+const ARROW_GAP_METERS = 0.5;
 const ARROW_OUTLINE = [
   [-0.55, -0.1],
   [0.12, -0.1],
@@ -85,11 +96,19 @@ export function createStartParticleEffect({
 }): StartParticleEffect {
   validateParameters(parameters);
   const goalRotation = new Quaternion();
+  const objects = {
+    ringLeft: new Vector3(),
+    ringRight: new Vector3(),
+    arrow: new Vector3(),
+  };
+  let anchorsReady = false;
   const uniforms = {
     startTime: { value: 0 },
     startGoalPose: { value: new Matrix4() },
     startRadius: { value: 1 },
     startArrowAngle: { value: 0 },
+    startArrowOffset: { value: new Vector3() },
+    startArrowScale: { value: ARROW_WIDTH_METERS / ARROW_SOURCE_WIDTH },
     startFormation: { value: 0 },
     startCompletion: { value: 0 },
     startDriftAmplitude: { value: parameters.driftAmplitudeMeters },
@@ -112,6 +131,8 @@ export function createStartParticleEffect({
       if (points) points.visible = visible;
     },
     update,
+    readObjectAnchors: () =>
+      points?.visible && anchorsReady ? objects : undefined,
     unload,
   };
 
@@ -175,24 +196,68 @@ export function createStartParticleEffect({
     uniforms.startTime.value = frame.elapsedSeconds;
     uniforms.startRadius.value = frame.ringRadiusMeters;
     uniforms.startArrowAngle.value = frame.arrowAngleRadians;
+    const arrowDistance =
+      frame.ringRadiusMeters + ARROW_GAP_METERS + ARROW_WIDTH_METERS / 2;
+    uniforms.startArrowOffset.value.set(
+      -Math.cos(frame.arrowAngleRadians) * arrowDistance,
+      -Math.sin(frame.arrowAngleRadians) * arrowDistance,
+      0,
+    );
     uniforms.startFormation.value = frame.formationProgress;
     uniforms.startCompletion.value = frame.completionProgress;
     const wake = frame.wake;
     uniforms.startWakeStrength.value = wake?.strength ?? 0;
+    objects.ringLeft.set(-frame.ringRadiusMeters, 0, 0);
+    objects.ringRight.set(frame.ringRadiusMeters, 0, 0);
+    objects.arrow.copy(uniforms.startArrowOffset.value);
+    updateObjectAnchor(objects.ringLeft, frame);
+    updateObjectAnchor(objects.ringRight, frame);
+    updateObjectAnchor(objects.arrow, frame);
+    anchorsReady = true;
     if (!wake) return;
     uniforms.startWakePosition.value.copy(wake.position);
     uniforms.startWakeDirection.value.copy(wake.direction);
     uniforms.startWakeAge.value = wake.ageSeconds;
   }
 
+  function updateObjectAnchor(
+    anchor: Vector3,
+    frame: StartParticleFrame,
+  ): void {
+    const formation = smoothstep(frame.formationProgress);
+    anchor.multiplyScalar(formation).applyMatrix4(uniforms.startGoalPose.value);
+    const wake = frame.wake;
+    if (!wake) return;
+    const age = Math.min(
+      1,
+      Math.max(0, wake.ageSeconds / parameters.wakeDurationSeconds),
+    );
+    const envelope = Math.sin(age * Math.PI) * (1 - age);
+    const influence =
+      1 -
+      smoothstep(
+        anchor.distanceTo(wake.position) / parameters.wakeRadiusMeters,
+      );
+    anchor.addScaledVector(
+      wake.direction,
+      parameters.wakeDistanceMeters * wake.strength * influence * envelope,
+    );
+  }
+
   function unload(): void {
     if (!points) return;
     const releasedPoints = points;
     points = undefined;
+    anchorsReady = false;
     scene.remove(releasedPoints);
     releasedPoints.geometry.dispose();
     releasedPoints.material.dispose();
   }
+}
+
+function smoothstep(progress: number): number {
+  const clamped = Math.min(1, Math.max(0, progress));
+  return clamped * clamped * (3 - 2 * clamped);
 }
 
 function writeParticleAttributes(

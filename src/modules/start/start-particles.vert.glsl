@@ -4,6 +4,8 @@ uniform float startTime;
 uniform mat4 startGoalPose;
 uniform float startRadius;
 uniform float startArrowAngle;
+uniform vec3 startArrowOffset;
+uniform float startArrowScale;
 uniform float startFormation;
 uniform float startCompletion;
 uniform float startDriftAmplitude;
@@ -21,11 +23,6 @@ attribute float startPhase;
 varying float startBrightnessPhase;
 varying float startShapePresence;
 
-// The world-space arrow sits outside the aperture and points into the ring.
-const float START_ARROW_WIDTH_METERS = 0.9;
-const float START_ARROW_SOURCE_WIDTH = 1.1;
-const float START_ARROW_GAP_METERS = 0.5;
-
 vec3 animateStartParticle(vec3 cloudPosition) {
   float time = startTime * startDriftSpeed;
   vec3 drift = vec3(
@@ -35,14 +32,14 @@ vec3 animateStartParticle(vec3 cloudPosition) {
   ) * startDriftAmplitude;
   float formation = smoothstep(0.0, 1.0, startFormation);
   float shapeScale = startArrowParticle > 0.5
-    ? START_ARROW_WIDTH_METERS / START_ARROW_SOURCE_WIDTH
+    ? startArrowScale
     : startRadius;
   vec3 target = startTarget * shapeScale;
   if (startArrowParticle > 0.5) {
-    target.x -= startRadius + START_ARROW_GAP_METERS + START_ARROW_WIDTH_METERS / 2.0;
     float cosine = cos(startArrowAngle);
     float sine = sin(startArrowAngle);
     target.xy = mat2(cosine, sine, -sine, cosine) * target.xy;
+    target += startArrowOffset;
   }
   vec3 localPosition = mix(cloudPosition + drift, target + drift * 0.025, formation);
   vec3 worldPosition = (startGoalPose * vec4(localPosition, 1.0)).xyz;

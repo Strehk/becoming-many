@@ -389,3 +389,62 @@ Actual served build hashes are preserved separately from the harness checkout.
 The supplementary normal-show baseline did not complete and was terminated;
 its page/context failures remain unresolved. No paired normal-show result exists.
 Subsequent Conductor/Entry changes require their own relevant verification.
+
+
+### Object-bound granular audio
+
+The #112 instrumental extension replaces the ordinary bed with three object
+layers, one goal voice and one shared eight-second Tone.Reverb. The production
+recipe schedules 12.375 grains/s; three twelve-second mono buffers occupy
+6.59 MiB at 48 kHz. Validation allows at most four voices, three bounded buffers
+and 40 starts/s. Decoding may resample to a device rate up to 96 kHz; this does
+not change the fixed sample-duration capacity.
+
+Comparable normal-VSync headed Chromium 151.0.7922.34 on Apple M2 Max/Metal,
+root route, 1920×1080 DPR1, simulated real M5 input and complete four-goal course:
+
+| Training candidate | Frames | CPU median / p95 / p99 / max (ms) | GPU median / p95 / p99 / max (ms) | RAF p95 / max (ms) |
+| --- | ---: | --- | --- | --- |
+| Prior silent training, world-anchored particles | 3047 | 0.3 / 0.4 / 0.4 / 6.2 | 0.190 / 0.249 / 0.319 / 1.340 | 17.7 / 17.8 |
+| All instrumental layers and shared hall | 3048 | 0.8 / 2.4 / 2.7 / 5.2 | 0.157 / 0.355 / 0.528 / 0.855 | 17.2 / 17.7 |
+
+The source baseline is `42c06c9` with the #112 working diff. Served-assets SHA-256
+is `5a3d7b19bdadb8f540e095899effafbe25e5341c0e985deda114136aa121771d`;
+the prior silent build is `8ccece2f29f6a0a770c972e3aab157f995e6de1212db8f25a154defd0cee079e`.
+The later wet-distance correction beyond maximum distance does not affect this
+course's near-goal comparison and is separately regression/signal tested.
+Both retain two tutorial draws, with the main handoff sampled separately. In the
+following 392 main frames CPU p95 is 2.4 ms before versus 2.1 ms after. The audio-enabled candidate shows higher measured tutorial CPU/GPU cost;
+no improvement or isolated causal attribution of GPU cost is claimed. Desktop cadence
+shows no dropped-frame regression in this observation, but the actual Windows
+PCVR 90 Hz installation remains unmeasured and required.
+
+An audio-only signal probe uses the same owners and native HRTF listener, with
+actual derivatives and synthetic worst-case grains in separate phases. Source
+coordinates remain unchanged during head rotation; channel dominance reverses.
+For a 440 Hz point source, retreat from 5 to 35 m reduces RMS from 0.03052 to
+0.00551; return restores 0.03039. With all production layers/hall enabled, the
+selected direct source's near/far RMS is 0.01116/0.000188 and the diffuse room
+0.01557/0.000429 (5/165 m, separate sampled windows). Speech reduces these to
+0.00292/0.00345 near; pause/unload measure zero. Changing source material and
+hall memory mean these are functional measurements, not a calibrated acoustic
+transfer function or perceptual listening acceptance.
+
+At the validated 40-starts/s ceiling, the two diagnostic observations peak at
+20 and 19 scheduled/active native sources, including lookahead/tails. The later
+probe measures Tone tick mean/max 0.791/2.5 ms and frame-follow mean/max
+0.034/0.4 ms in an empty audio document; these do not substitute for combined
+rendering measurements. Pause/unload stop scheduling, late decode cancellation
+passes, and the shared context closes/replaces successfully. One context-owned
+Tone source persists until context close; no claim of immediate zero native
+nodes at voice disposal is made. Raw local diagnostics remain under
+`benchmark-results/issue-50/granular-course/` and `/tmp/becoming-many-granular-probe.json`;
+retain the compact evidence in the tutorial report rather than raw frame arrays.
+
+
+The corrected final build `c3f581b21fcff17337c19dfc332ed02f35c060c78672eb9ca282c38ba7b56905`
+also passes two complete Conductor courses (3051/3045 training frames), two
+handoffs and held Stop/restarts, plus standalone `/start` startup, formation and
+real-input flight checks. No browser errors or warnings occur. The Conductor
+canvas is 934×525 in a 1920×1080 viewport, so these are lifecycle checks, not the
+full-viewport comparison above. The standalone capture uses 1280×720 DPR1.

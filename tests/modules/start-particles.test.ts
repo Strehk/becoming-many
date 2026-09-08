@@ -216,3 +216,69 @@ test("invalid particle capacities and physical extents fail before resource crea
     }),
   ).toThrow("wakeDurationSeconds");
 });
+
+test("object anchors share the formed geometry pose and disappear with their owner", () => {
+  const scene = new Scene();
+  const effect = createStartParticleEffect({ scene, parameters: PARAMETERS });
+  expect(effect.readObjectAnchors()).toBeUndefined();
+  effect.load();
+  effect.setVisible(true);
+  expect(effect.readObjectAnchors()).toBeUndefined();
+  const frame = { ...createFrame(), formationProgress: 1 };
+  effect.update(frame);
+  const objects = effect.readObjectAnchors();
+  expect(objects?.ringLeft).toEqual(new Vector3(0.5, 3, -8));
+  expect(objects?.ringRight).toEqual(new Vector3(3.5, 3, -8));
+  expect(objects?.arrow.x).toBeCloseTo(-0.45);
+  expect(objects?.arrow.y).toBe(3);
+
+  // A differently oriented goal transforms all bodies with the same world pose.
+  effect.update({
+    ...frame,
+    goalNormal: new Vector3(1, 0, 0),
+    arrowAngleRadians: Math.PI / 2,
+  });
+  expect(effect.readObjectAnchors()).toBe(objects);
+  expect(objects?.ringLeft.x).toBeCloseTo(2);
+  expect(objects?.ringLeft.z).toBeCloseTo(-6.5);
+  expect(objects?.ringRight.z).toBeCloseTo(-9.5);
+  expect(objects?.arrow.x).toBeCloseTo(2);
+  expect(objects?.arrow.y).toBeCloseTo(0.55);
+  expect(objects?.arrow.z).toBeCloseTo(-8);
+  effect.setVisible(false);
+  expect(effect.readObjectAnchors()).toBeUndefined();
+  effect.unload();
+  effect.load();
+  effect.setVisible(true);
+  expect(effect.readObjectAnchors()).toBeUndefined();
+  effect.unload();
+});
+
+test("body anchors gather with formation and follow finite crossing wake", () => {
+  const effect = createStartParticleEffect({
+    scene: new Scene(),
+    parameters: PARAMETERS,
+  });
+  effect.load();
+  effect.setVisible(true);
+  const frame = createFrame();
+  effect.update(frame);
+  expect(effect.readObjectAnchors()?.arrow).toEqual(frame.goalPosition);
+  expect(effect.readObjectAnchors()?.ringLeft).toEqual(frame.goalPosition);
+  effect.update({ ...frame, formationProgress: 0.5 });
+  expect(effect.readObjectAnchors()?.ringLeft.x).toBeCloseTo(1.25);
+  const wake = {
+    position: frame.goalPosition,
+    direction: new Vector3(0, 0, -1),
+    strength: 1,
+    ageSeconds: PARAMETERS.wakeDurationSeconds / 2,
+  };
+  effect.update({ ...frame, wake });
+  expect(effect.readObjectAnchors()?.ringLeft.z).toBeCloseTo(-9.25);
+  effect.update({
+    ...frame,
+    wake: { ...wake, ageSeconds: PARAMETERS.wakeDurationSeconds },
+  });
+  expect(effect.readObjectAnchors()?.ringLeft.z).toBe(-8);
+  effect.unload();
+});

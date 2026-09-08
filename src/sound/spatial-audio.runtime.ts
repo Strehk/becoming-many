@@ -18,6 +18,8 @@ export interface SpatialSourceParameters {
 /** Playback and its input node remain owned by the caller. Coordinates are metres. */
 export interface SpatialSource {
   readonly setPosition: (x: number, y: number, z: number) => void;
+  /** Metres from this object to the shared, last published listener pose. */
+  readonly readDistanceMeters: () => number;
   readonly unload: () => void;
 }
 
@@ -125,6 +127,7 @@ export async function createSpatialAudio(
         let isUnloaded = false;
         let isPlaced = false;
         const source: SpatialSource = {
+          readDistanceMeters: () => sound.position.distanceTo(position),
           setPosition(x, y, z): void {
             if (isUnloaded) return;
             if (

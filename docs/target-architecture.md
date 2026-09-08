@@ -327,9 +327,11 @@ Run unloads/removes training registrations and references while retaining the
 prepared main world. This does not decide complete visitor replacement or fresh
 headset calibration. Reset after handoff stays held until configured sample
 preparation succeeds; failure remains visible and retryable. The current Start
-recipe omits audio/recordings pending content acceptance, so standalone training
-creates the native timebase without Tone. Audio suspension still prevents Show
-time from advancing.
+recipe enables user-provided granular excerpts through the existing training
+audio owner. Start supplies physical particle-body anchors; spatial audio owns
+listener/distance, Show supplies playback/speech facts, and Run awaits sample/room
+preparation and cleanup. Tutorial narration remains absent pending content
+acceptance. Native timebase suspension still prevents Show time from advancing.
 
 Preserve the current dependency order:
 

@@ -716,5 +716,161 @@
       "styling_inherited": 5,
       "duplication_demoted": 0
     }
+  },
+  "granularAtmosphere": {
+    "sourceBase": "42c06c9311e54695402057d7c3deacd92070fd9e",
+    "sourceDigest": "19420daa84ab55485c41d1f84eb6c5caac697a54fff47d58712fca3ea8f68626",
+    "finalBuildDigest": "c3f581b21fcff17337c19dfc332ed02f35c060c78672eb9ca282c38ba7b56905",
+    "sourceAssets": "public/audio/granular/provenance.json",
+    "focusedTests": {
+      "passed": 56,
+      "failed": 0
+    },
+    "build": "passed",
+    "lint": "passed, 333 files",
+    "browser": {
+      "rootFullCourseAndHandoff": "passed",
+      "conductorCourses": 2,
+      "heldRestarts": 2,
+      "standaloneStart": "passed",
+      "errors": []
+    },
+    "signal": {
+      "bridge": {
+        "sameContext": true,
+        "panningModel": "HRTF",
+        "heard": [
+          {
+            "name": "left",
+            "leftRms": 0.031768312817831566,
+            "rightRms": 0.02031284685546704,
+            "pannerPosition": [-5, 0, -5]
+          },
+          {
+            "name": "right",
+            "leftRms": 0.020459939165618626,
+            "rightRms": 0.03147688162462753,
+            "pannerPosition": [5, 0, -5]
+          },
+          {
+            "name": "front",
+            "leftRms": 0.030350802585738045,
+            "rightRms": 0.030350802585738045,
+            "pannerPosition": [0, 0, -5]
+          },
+          {
+            "name": "back",
+            "leftRms": 0.03161723608030578,
+            "rightRms": 0.03161723608030578,
+            "pannerPosition": [0, 0, 5]
+          }
+        ],
+        "pose": {
+          "position": [2, 3, 4],
+          "forward": [-1, 5.551115123125783e-17, 0],
+          "up": [-5.551115123125783e-17, 0.8660253882408142, 0.5]
+        },
+        "capRejected": true,
+        "distances": [
+          {
+            "distance": 5,
+            "leftRms": 0.030520526189550957,
+            "rightRms": 0.030520526189550957
+          },
+          {
+            "distance": 35,
+            "leftRms": 0.005510245578641868,
+            "rightRms": 0.005510245578641868
+          },
+          {
+            "distance": 5,
+            "leftRms": 0.030392310239914355,
+            "rightRms": 0.030392310239914355
+          }
+        ],
+        "beforeTurn": {
+          "leftRms": 0.031564147758319984,
+          "rightRms": 0.020443851605942937
+        },
+        "afterTurn": {
+          "leftRms": 0.018317967142259892,
+          "rightRms": 0.03290864210318845,
+          "sourcePosition": [-5, 0, -5]
+        }
+      },
+      "worstCaseGrains": {
+        "baselineTick": {
+          "count": 23,
+          "meanMilliseconds": 0.004347827123559039,
+          "maxMilliseconds": 0.10000002384185791
+        },
+        "activeTick": {
+          "count": 56,
+          "meanMilliseconds": 0.7910714293164867,
+          "maxMilliseconds": 2.5
+        },
+        "frameUpdates": {
+          "count": 181,
+          "meanMilliseconds": 0.03425414423916221,
+          "maxMilliseconds": 0.4000000059604645
+        },
+        "activeScheduled": 121,
+        "scheduled": 125,
+        "ended": 124,
+        "peakScheduledOrActive": 19,
+        "maxAheadSeconds": 0.09733333333333238,
+        "activeAtEnd": 1,
+        "pauseIdle": true,
+        "unloadIdle": true,
+        "lateDecodeCancelled": true,
+        "parameters": {
+          "maxGrainStartsPerSecond": 40,
+          "voices": 4,
+          "sharedReverbSeconds": 8
+        },
+        "sample": "2-second in-memory generated sine, test only"
+      },
+      "instrumentals": {
+        "near": {
+          "wetRms": 0.015572265837643949,
+          "directRms": 0.011155527117047558
+        },
+        "speech": {
+          "wetRms": 0.0034481429373749563,
+          "directRms": 0.002916465938888573
+        },
+        "far": {
+          "wetRms": 0.00042890957617083977,
+          "directRms": 0.0001882249317769878
+        },
+        "paused": {
+          "wetRms": 0,
+          "directRms": 0
+        },
+        "ended": {
+          "wetRms": 0,
+          "directRms": 0
+        },
+        "sourcePositions": [
+          [-3.5, 0, -5],
+          [3.5, 0, -5],
+          [-4.449999809265137, 0, -5],
+          [0, 0, -5]
+        ],
+        "sampleRate": 48000
+      },
+      "contextLifecycle": {
+        "oldState": "closed",
+        "nextState": "closed",
+        "replaced": true,
+        "cancelled": true
+      }
+    },
+    "independentReview": "Upper wet-distance clamp removed; 96/192 metre regression added and reviewer confirmed. No further scoped findings.",
+    "remaining": [
+      "Actual source audition and mix/localization acceptance",
+      "Approved DE narration use and EN policy",
+      "First-visitor comprehension, comfort and Windows-PCVR USB-C 90 Hz"
+    ]
   }
 }

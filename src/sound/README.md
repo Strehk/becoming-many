@@ -26,17 +26,30 @@ disconnects its route and gain without stopping or disposing the caller's node.
 Connected nodes use the same Tone-created native context. The positional route
 has one destination path; its Tone source must not also call toDestination.
 
-`training-audio.runtime.ts` consumes borrowed goal/formation/wake observations without
-learning rules or a clock. One decoded sample is shared by one granular goal
-voice and one quiet ordinary sample bed. Recipes bound grain size to 80–500 ms,
-overlap to at most one grain, and playback rate to 0.25–2. This caps the default
-100 ms lookahead at three future grain starts and 25 grains per second. Tone
-14 also retains native sources through its stop timeout and lookahead tail;
-those sources are included in the measured active-source budget.
-Pause/complete stops source clocks; unload disposes both players and their
-exclusive buffer references and disconnects the positional route. Fetch uses
-Run's cancellation signal and late decode/import results cannot publish nodes.
-The ambient player alone has a non-positional destination route.
+`training-audio.runtime.ts` consumes borrowed visual object/formation/wake facts.
+Three granular layers belong to the two sides of the visible particle ring and
+the arrow body; a fourth voice marks the current goal. Start's particle effect
+publishes their world anchors using the same formation, goal transform, arrow
+offset and wake as its graphics. Hidden/removed presentation supplies no anchors
+and schedules no sound. No emitter follows the listener.
+
+Four GrainPlayers share at most three mono excerpts (20 seconds each, 2 MB
+encoded; decoding may resample up to 96 kHz). The production recipe loads three
+12-second/48 kHz WAVs, about 6.6 MiB decoded at 48 kHz, and schedules about 12.4
+grains/s. Validation caps the complete recipe at 40 starts/s. Tone's lookahead and
+stop tails retain additional native sources; browser evidence counts these too.
+One training-owned, fully wet eight-second Reverb is prepared before readiness.
+Each voice has a low-pass filter and separate direct/room gains. Direct sound
+passes through the shared HRTF placement; diffuse sends use the same inverse
+distance attenuation without an upper clamp. Retreat lowers level and cutoff
+while increasing the room/direct ratio. Show supplies actual narration playback
+for ambience/room ducking, without copying the visual observation each frame.
+
+Pause immediately mutes direct and hall outputs and stops grain clocks. At
+formation zero no voices schedule; complete/unload retires the four voices,
+placements, filters, gains, shared room and exclusive buffers. Run awaits room
+preparation even when cancelled, so its asynchronous impulse cannot publish into
+a disposed owner. The ordinary non-positional sample bed is removed.
 
 `narration-player.ts` remains the single media playback implementation. It
 accepts the recordings selected by Show, with measured durations. Main clips
@@ -100,7 +113,11 @@ with bounded granular layers, keep the separate spatial goal cue, and own one
 shared atmosphere reverb within that same lifetime. `spatial-audio.runtime.ts`
 continues to own placement/context/listener; Show continues to own transport and
 speech. The drone organ is not replaced or used as a hidden resource owner.
-This asset/plan update does not yet enable layers, reverb or production playback.
+Production Start now enables the complete bounded mix. `atmosphere-grain-01.wav`,
+`atmosphere-grain-03.wav` and `atmosphere-grain-08.wav` preserve documented
+12-second source selections with mono downmix, 6 dB headroom and edge fades.
+Selection and mix values are initial technical choices; listening/tuning remains
+open. Originals are never fetched by the running recipe.
 
 
 ## Located tutorial narration candidates
@@ -111,7 +128,7 @@ Only the original audio bytes were inspected; no legacy runtime is reused.
 The five German files are stereo, 48 kHz, float32 PCM. The source contains no
 English recordings, effect samples, license or speaker attribution. These are
 located candidates, not approved production assets; the literal Start recipe
-therefore has no narration or sample references yet.
+therefore still has no tutorial narration references.
 
 | Original file | Duration (s) | SHA-256 |
 | --- | ---: | --- |
@@ -125,5 +142,4 @@ The first recording reaches its right-lean instruction near 19 seconds. Final
 content integration must align that orientation period with the unchanged
 continuous M5 glide; preventing speech truncation alone does not establish
 first-visitor pacing. DE-use permission and an explicit EN policy remain required content decisions.
-Instrumental source material is now user-supplied above; excerpt selection,
-granular mix and speech intelligibility still need actual listening. Script sources are unchanged.
+Instrumental source material is now user-supplied above; excerpt/mix suitability and speech intelligibility still need actual listening. Script sources are unchanged.

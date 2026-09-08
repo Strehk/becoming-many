@@ -142,6 +142,7 @@ interface ShowTutorial {
 
 export interface ShowRuntime {
   readonly setTutorial: (tutorial: ShowTutorial) => void;
+  readonly readSpeechActive: () => boolean;
   /** Run holds playback until an exclusive training sample is prepared. */
   readonly setPreparationState: (state: "loading" | "ready" | "failed") => void;
   readonly update: () => void;
@@ -409,6 +410,7 @@ export async function createShowRuntime(
     return {
       unload,
       setTutorial,
+      readSpeechActive: () => narration?.readIsPlaying() ?? false,
       setPreparationState(state): void {
         preparationState = state;
         if (state !== "ready") {

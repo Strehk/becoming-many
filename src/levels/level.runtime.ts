@@ -394,12 +394,13 @@ export async function startLevel(
       }
 
       show?.update();
+      audio?.update();
       if (start && trainingAudio)
         trainingAudio.update(
           start.readObservation(),
           show?.running.sample().isPlaying ?? true,
+          show?.readSpeechActive() ?? false,
         );
-      audio?.update();
       // Training has the same white-space limits as standalone Start. The
       // prepared main terrain must not invisibly block its spatial goals.
       heightLimits.minimumGroundClearanceMeters =

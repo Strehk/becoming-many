@@ -103,14 +103,70 @@ listening acceptance remain open. #50 therefore remains open.
 
 The five German recordings were found in the
 [predecessor's pinned audio directory](https://github.com/E-Mus/becoming-many-tutorial/tree/52fdfdb69a80b63988b71e035614db8abad4bac1/public/audio).
-No English recordings or effect samples were found there. Production Start
-currently has no narration/audio recipe while the specific DE-use, EN behavior
-and sample decisions remain pending. Synthetic audio probes establish routing
-and cleanup only; they are not production listening evidence.
+No English recordings or effect samples were found there. The user subsequently
+supplied eleven instrumental sources; the current recipe enables a bounded
+granular mix from three short derivatives. DE-use and EN narration decisions
+remain pending. Signal probes establish routing, distance response and cleanup;
+they are not production listening evidence.
 
 Automated desktop pointer lock still fails under #83; simulated M5 success does
 not resolve it. Fallow retains its recorded complexity/style findings without
-suppressions. No new full 521-second observation, complete combined production
-audio/render measurement, human tutorial-comprehension test or Windows-PCVR
+suppressions. No new full 521-second observation, human tutorial-comprehension test or Windows-PCVR
 USB-C 90 Hz/transport/headset acceptance is claimed. These limits prevent calling
 the required production tutorial fully accepted.
+
+
+## Object-bound granular atmosphere — #112
+
+The ordinary sample bed is replaced by three granular layers bound to the visible
+ring sides and arrow body, plus the current-goal voice. The eleven original MP3s
+remain preserved; the literal recipe loads only three twelve-second mono
+excerpts with recorded source ranges, fades and headroom. One shared eight-second
+hall, HRTF direct placement, distance-dependent filtering and inverse-distance
+room sends provide near/far behavior. Audio receives Start's borrowed world
+anchors and Show's actual speech state. Hidden presentation, formation zero,
+pause and lifecycle end stop the appropriate sources; pause mutes hall tails.
+
+The independent read-only review found an upper clamp in the hall attenuation
+that would leave distant missed goals equally loud beyond 128 m. It was removed,
+with a regression at 96/192 m. No further ownership/scheduling defect was found.
+Four sources, three buffers and one hall remain fixed; configured scheduling is
+12.375 grains/s, with a validated maximum of 40. At 48 kHz the excerpts use
+6.59 MiB decoded, plus the shared impulse. No new runtime or listener is introduced.
+
+The combined focused suite passes 56 tests (Start, graphics, audio, Run restart,
+Show clock/state), and the production build and mandatory lint (333 files) pass. The actual instrumental
+signal probe confirms nonzero direct/hall output, decreasing near/far levels,
+speech ducking and zero output after pause/unload. A separate worst-case
+40-grains/s probe retained at most 20 scheduled/active native sources across its
+two observations; scheduling stops on pause/unload. One shared Tone context
+source remains until context close; context replacement/close and late decode
+cancellation pass. These native-source counters include lookahead/stop tails,
+not just the nominal four voices.
+
+The full 1920×1080 production root course and operator handoff pass without
+browser errors. Compared with the earlier silent training candidate, CPU p95
+increases from 0.4 to 2.4 ms; GPU p95 is 0.249 versus 0.355 ms. Normal desktop
+frame cadence remains around 60 Hz. This is added audio cost, not a performance
+improvement or proof of Windows-PCVR 90 Hz. See the exact conditions and identities
+in [Performance](../../performance.md#object-bound-granular-audio).
+
+Listening/timbral selection, substantial-hall localization, speech intelligibility,
+first-visitor comprehension and actual Windows-PCVR acceptance remain open.
+
+
+The corrected final build also passes two complete Conductor courses/handoffs,
+two held Stop/restarts with newly prepared sample/room resources, and the
+standalone Start browser interaction. No errors or warnings were observed.
+Source identities and compact signal evidence are in [summary.json](summary.json).
+
+![Visible ring and arrow carrying the granular sources](granular-formed-goal.png)
+
+Standalone Start after formation, 1280×720. Both particle systems remain in world
+space; the ring sides and arrow supply the spatial sound anchors.
+
+![Held Start after the second audio-enabled course and reset](granular-held-restart.png)
+
+Conductor after the second operator handoff and Stop. Play is available only
+after training graphics, excerpts and room have been prepared again. The static
+image records readiness and scene state; it does not establish audible quality.

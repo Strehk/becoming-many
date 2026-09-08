@@ -79,7 +79,7 @@ test("Run gates training preparation and releases failed or cancelled restart ch
       mock.module("./src/levels/show.runtime.ts", () => ({
         createShowRuntime: async (...args) => {
           show = {
-            state:"ready", tutorial:args[6], stateWrites:[], update(){},
+            state:"ready", tutorial:args[6], stateWrites:[], update(){}, readSpeechActive:()=>false,
             setTutorial(tutorial){this.tutorial=tutorial;},
             setPreparationState(state){this.state=state;this.stateWrites.push(state);if(state==="failed")this.tutorial=undefined;},
             unload:async()=>{show.tutorial=undefined;},
