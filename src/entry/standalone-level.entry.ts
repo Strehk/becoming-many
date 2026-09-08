@@ -21,8 +21,12 @@ const lifetime = new AbortController();
 const request = new URLSearchParams(window.location.search);
 const container = requireElement(document, ".app", HTMLElement);
 const diagnosticsEnabled = request.has("diagnostics");
-const diagnostics = createDiagnosticsOverlay(container, diagnosticsEnabled);
-lifetime.signal.addEventListener("abort", diagnostics.unload, { once: true });
+const diagnostics = diagnosticsEnabled
+  ? createDiagnosticsOverlay(container, true)
+  : undefined;
+lifetime.signal.addEventListener("abort", () => diagnostics?.unload(), {
+  once: true,
+});
 window.addEventListener("pagehide", (event) => {
   if (!event.persisted) lifetime.abort();
 });
@@ -61,15 +65,15 @@ try {
       onFrame: frameMetrics
         ? (deltaSeconds) => {
             frameMetrics.add(deltaSeconds);
-            diagnostics.update(deltaSeconds);
+            diagnostics?.update(deltaSeconds);
           }
         : undefined,
       m5ExpectedDeviceId: deployment.m5DeviceId,
     },
   );
   lifetime.signal.throwIfAborted();
-  diagnostics.showGraphics(level.readGraphicsInfo());
-  if (frameMetrics) {
+  diagnostics?.showGraphics(level.readGraphicsInfo());
+  if (diagnostics && frameMetrics) {
     diagnostics.startMetrics(level.renderCounters, () => frameMetrics.read());
   }
   const unmountVr = mountVrEntryButton(document.body, level.xr);

@@ -141,7 +141,7 @@ retained in [#32](https://github.com/Strehk/becoming-many/issues/32).
 - A separate 2026-09-03 Chromium startup check reduced default-show readiness
   from about 22.1 seconds before the opening-state fix to 1.31 seconds for the
   first browser launch and 0.53/0.54 seconds in two subsequent fresh contexts.
-  The static Test level became ready in 0.43 seconds, and the built Station
+  The static Diagnostic level became ready in 0.43 seconds, and the built Station
   route in 0.46 seconds. All routes returned HTTP 200 with one canvas and no
   console errors or warnings. These desktop times establish the startup-order
   cause; they do not establish physical PICO acceptance.

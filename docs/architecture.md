@@ -102,7 +102,7 @@ or browser resource owns its complete disposal.
 shared/              platform-neutral deployment and route contracts
 station/             Bun file/config/health backend
 src/
-├── entry/           browser startup, deployment loading and standalone-level module loading
+├── entry/           browser startup and deployment loading
 ├── ui/              three HTML documents, app.css and surface controllers
 │   ├── conductor/   operator panels and view state
 │   ├── rehearsal/   show transport

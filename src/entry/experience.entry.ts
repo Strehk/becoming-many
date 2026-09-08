@@ -1,6 +1,6 @@
 /**
  * Purpose: Select the root page's complete-show or standalone-level startup.
- * Context: One experience page replaces a separate Test HTML document.
+ * Context: One experience page replaces a separate standalone document.
  * Responsibility: Route URL requests without loading standalone tooling for a show.
  * Boundary: The selected entry owns its own lifecycle and browser resources.
  */

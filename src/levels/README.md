@@ -24,7 +24,8 @@ white-world → scent → echo → motion → thermal → magnetic → connectio
 ```
 
 `diagnostic.level.ts` and `visual-integration.level.ts` are diagnostic/integration presets,
-not narrative states. The Diagnostic preset uses Grass Clipmap and the browser diagnostics UI.
+not narrative states. The Diagnostic preset uses Grass Clipmap; the browser diagnostics UI
+is an explicit standalone URL option.
 
 ## Catalog and Entries
 

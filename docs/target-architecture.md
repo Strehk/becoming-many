@@ -90,8 +90,8 @@ flowchart TB
 ```
 
 The root Experience document mounts Rehearsal for the complete show or the
-unified Diagnostics overlay for a standalone level; it has no separate Test
-document. Conductor and Flash are separate pages. Flash uses Web Serial and
+unified Diagnostics overlay for a standalone level; it has no separate
+diagnostics document. Conductor and Flash are separate pages. Flash uses Web Serial and
 does not start a Show or Run.
 The Station backend never receives transport commands or owns visitor state.
 `src/entry/deployment-config.ts` fetches browser deployment facts; `shared/`
@@ -246,7 +246,8 @@ replaces them.
 
 For the Experience page in standalone mode at `/?level=diagnostic`,
 [diagnostic.level.ts](../src/levels/diagnostic.level.ts) directly states white background,
-180 m view range, 50 m maximum ground clearance and diagnostics UI. It includes
+180 m view range and 50 m maximum ground clearance. `?diagnostics=1` adds the
+same browser diagnostics overlay to every standalone level. It includes
 Air Particles (80 per chunk), zone-colored Terrain, Grass
 Clipmap, Vegetation, Rocks, Animals and Magnetic sky. It does not request Scent,
 Echo Depth, Motion, Thermal or Connections. These are observed diagnostic
@@ -538,7 +539,7 @@ The CPU/GPU representation may differ; it must transport or evaluate the same
 centrally owned rules, never become another authored zone authority.
 
 **Removed in #13:** `src/modules/grass/`, `GrassPreset`, `WorldComposition.grass`,
-Composition's legacy factory/contract, the Test loader's legacy import and
+Composition's legacy factory/contract, the former standalone loader's legacy import and
 `tests/modules/grass.test.ts`, including exclusive loader/preset cases. Both
 diagnostic presets directly author `grassClipmap`. Zone Visualizer's direct lazy import,
 Clipmap tests, shared material effects and `thermal.grass` remain. No legacy
@@ -572,7 +573,7 @@ not establish a global placement or physical-device guarantee.
 
 **Acceptance and remaining decisions:** no further approval or renderer contest
 is needed for Clipmap ownership, central zone weights or legacy retirement.
-Validate all migrated entries and the Test-level reading flow. Compare weights
+Validate all migrated entries and the diagnostic-level reading flow. Compare weights
 at identical world coordinates and coverage/density across meadow/forest/slope/
 water boundaries; retain intended habitat exclusions. Check #72 separately at
 fixed grazing views, terrain extrema and changing XR viewpoints. Record changed
@@ -610,8 +611,8 @@ visible. #35 makes the standalone-level entry own its diagnostics UI and sampler
 with Conductor reading its own sampler directly. Run keeps only an optional
 `onFrame` input; the metrics type lives beside the sampler. World exposes
 read-only live draw counters without renderer mutation access. The complete-show
-root has no sampler; Conductor still reads every 500 ms; the lazy standalone
-module loader remains. No observation contract file or additional loop was
+root has no sampler; Conductor still reads every 500 ms; Level Composition
+imports Zone Visualizer lazily when requested. No observation contract file or additional loop was
 introduced.
 
 **Confirmed diagnostic separation:** ordinary Experience operation has no extra
@@ -658,7 +659,7 @@ these old failures are not erased. Physical Windows-PCVR acceptance is separate.
 | Decision requiring evidence | Smallest later experiment before broad acceptance |
 | --- | --- |
 | Preparation or stream-step changes | Fresh versus repeated Echo crossing; isolate upload/link diagnosis separately. For Scent, force enqueue rejection and verify bounded retry, valid slot revisions and no synchronous fill. Then compare relevant counters and repeated timings under the test plan. |
-| Confirmed Clipmap migration; #71/#72 | Compare migrated Show/Test/Design Test at fixed routes and authored conditions. For #71, sample shared weights and derived coverage/density at the same boundary coordinates. For #72, compare conservative bounds versus disabled incorrect CPU culling at grazing/extreme-height views, then measure cost. Repeated performance and actual Windows-PCVR/USB-C acceptance remain required; renderer ownership is settled. |
+| Confirmed Clipmap migration; #71/#72 | Compare migrated Show, Diagnostic and Visual Integration at fixed routes and authored conditions. For #71, sample shared weights and derived coverage/density at the same boundary coordinates. For #72, compare conservative bounds versus disabled incorrect CPU culling at grazing/extreme-height views, then measure cost. Repeated performance and actual Windows-PCVR/USB-C acceptance remain required; renderer ownership is settled. |
 | Vegetation placement facts | Compare accepted candidate IDs, scales and river margins for a small riverbank region across renderer, Scent and Connections. Verify the confirmed 1 m analytic-channel clearance with canopy overhang allowed. |
 | Organ context lifetime and #79 | Start → gesture → audible rooms → seek/rate/pause → dispose → start, plus dispose during dynamic import. Investigate the scheduling exception separately; then complete EN/DE and actual Windows-PCVR audio/frame acceptance. |
 | Scrub throttling / diagnostics | Repeated pointer drag with audio, or diagnostics off/on at the same route; compare useful behavior and work. Do not delete a throttle based only on its old transport origin. |
@@ -717,7 +718,7 @@ remove old consumers, obsolete tests and documentation with the replaced path.
 Keep ModuleRuntime, StreamQueue, ChunkWindow, rig, ShowClock, audio and the
 module-owned worker: they own different existing resources. Keep level names
 separate from the preset catalog so Vite/Station do not import all presets.
-Keep the lazy Test loader and used Conductor observation contract.
+Keep the direct lazy Zone Visualizer import and the used Conductor observation contract.
 
 No new runtime/coordinator file is required. Extend existing handles for end,
 cancellation, preparation and direct diagnostic reads. A shared pure placement

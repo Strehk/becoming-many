@@ -44,7 +44,8 @@ configuration. Senses still accumulate; resources do not rebuild at every cue.
 - `motion.level.ts`, `thermal.level.ts`, `magnetic.level.ts`, and
   `connections.level.ts` layer their named perceptions in order.
 - `diagnostic.level.ts` is the diagnostic landscape with Zone Visualizer, Grass
-  Clipmap, magnetic sky, and diagnostics UI.
+  Clipmap, and magnetic sky. `?diagnostics=1` enables the same browser overlay
+  for any standalone level.
 - `visual-integration.level.ts` is the visual integration preset without Zone
   Visualizer.
 
