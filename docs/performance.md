@@ -25,7 +25,7 @@ owned disposal. The narrative Grass Clipmap uses a shared instance buffer and a
 camera-following height texture; Connections uses fixed render pools and moves
 topology generation off the frame path.
 
-Before the show becomes ready, its renderer compiles the composed material
+Before the Show or standalone Start becomes ready, its renderer compiles the composed material
 variants and renders all resident content once into a disposable 1 × 1 target,
 including initially hidden or off-frustum objects. Original visibility/culling
 flags and the render target are restored before show time, controls, simulation
@@ -204,3 +204,24 @@ The [workflow](refactor-workflow.md), [test plan](refactor-test-plan.md) and
 measurement conditions and acceptance. Comparable measurements are required
 for improvement claims; desktop evidence does not establish installation or
 headset acceptance. Missing physical measurements remain pending.
+
+## Standalone Start MVP — 2026-09-08
+
+Start adds one opaque arrow to the unchanged White World air-particle recipe.
+The existing headed quick replay on Apple M2 Max (Chromium 151, 640 × 360,
+240 warmup frames) records 2 draw calls, 5 triangles, 2 geometries, 0 textures
+and 2 programs; White World records 1, 0, 1, 0 and 1 respectively.
+Source identity: `a136bcc` implements the Start block; the first comparison
+ran on its unchanged source before commit (source SHA-256
+`99a41fcf82941c222489e3db3210bc7385025b4494c15bfedcdcd8fcd8fb9b92`).
+Scratch evidence is `benchmark-results/start-mvp/compare-1/quick.json`.
+Only deterministic counters are retained as evidence: concurrent UI acceptance
+could affect timing. A second timing attempt was interrupted during a concurrent
+production rebuild and is not evidence. Neither run changes a benchmark reference
+or establishes Windows-PCVR performance.
+
+Both standalone URLs completed the real M5 polling path with simulated firmware
+responses in headed Chromium, including invalid input, wrong direction, neutral
+gating, held diagonals and reload. Unit checks cover hidden/inactive updates and
+resource disposal. Completion remains visible, costing placement and one guide
+draw per frame; deactivation hides it and stops its updates.
