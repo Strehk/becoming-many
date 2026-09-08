@@ -336,8 +336,8 @@ flight or turn every ambient simulation into a show-time replay.
 
 Buttons/keys call owner commands. Playback toggles read current Show state,
 not a rendered snapshot. Seek changes the one clock; next update derives fades
-and passage position without replaying events. Language change pauses once,
-unloads old narration and rearms the selected language at the same time.
+and passage position without replaying events. Language change preserves playback state,
+unloads old narration and rearms the selected language at the current show time.
 
 The existing Runtime owns the complete visitor restart: end the old run and
 prepare a fresh run. Retaining the old world by seeking zero and resetting

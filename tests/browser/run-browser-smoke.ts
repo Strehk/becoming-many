@@ -400,12 +400,25 @@ async function checkRehearsal(page: Page): Promise<void> {
     .locator('button[aria-pressed="true"]')
     .filter({ hasText: /^DE$/ })
     .waitFor();
-  await page.waitForFunction(() => window.show?.sample().isPlaying === false);
+  assert.equal(
+    await page.evaluate(() => window.show?.sample().isPlaying),
+    true,
+  );
   await page.getByRole("button", { name: "EN", exact: true }).click();
   await page
     .locator('button[aria-pressed="true"]')
     .filter({ hasText: /^EN$/ })
     .waitFor();
+  assert.equal(
+    await page.evaluate(() => window.show?.sample().isPlaying),
+    true,
+  );
+  await page.waitForFunction(
+    (before) => (window.show?.sample().timeSeconds ?? 0) > (before ?? 0) + 0.4,
+    pausedTime,
+  );
+  await page.getByRole("button", { name: "Hold", exact: true }).click();
+  await page.waitForFunction(() => window.show?.sample().isPlaying === false);
   await page.getByRole("button", { name: "Echo", exact: true }).click();
   await page.waitForFunction(
     (seconds) => window.show?.sample().timeSeconds === seconds,
@@ -470,31 +483,57 @@ async function observeConductorTime(
 /** Native focused controls and global transport shortcuts must both remain usable. */
 async function checkConductorKeyboard(page: Page): Promise<void> {
   const transport = page.locator(".conductor__transport-button");
-  for (const language of ["de", "en"] as const) {
-    // Let this language's preload finish before replacing its audio elements.
-    const recordings = Promise.all(
-      PIECE_SCHEDULE.narration.map((cue) =>
-        page.waitForEvent("requestfinished", {
-          predicate: (request) =>
-            new URL(request.url()).pathname ===
-            narrationUrl(cue.cueId, language),
-        }),
-      ),
-    );
-    const button = page.getByRole("button", {
-      name: language.toUpperCase(),
-      exact: true,
-    });
-    await button.press("Space");
-    await recordings;
-    await page.waitForFunction(
-      (name) =>
-        document
-          .querySelector(`[data-language="${name}"]`)
-          ?.getAttribute("aria-pressed") === "true",
-      language.toLowerCase(),
-    );
-    assert.equal(await transport.getAttribute("data-playing"), "false");
+  for (const isPlaying of [true, false]) {
+    await transport.click();
+    await page
+      .locator(`.conductor__transport-button[data-playing="${isPlaying}"]`)
+      .waitFor();
+    for (const language of ["de", "en"] as const) {
+      // Let this language's preload finish before replacing its audio elements.
+      const recordings = Promise.all(
+        PIECE_SCHEDULE.narration.map((cue) =>
+          page.waitForEvent("requestfinished", {
+            predicate: (request) =>
+              new URL(request.url()).pathname ===
+              narrationUrl(cue.cueId, language),
+          }),
+        ),
+      );
+      const before = await observeConductorTime(page);
+      const button = page.getByRole("button", {
+        name: language.toUpperCase(),
+        exact: true,
+      });
+      await button.press("Space");
+      await recordings;
+      await page.waitForFunction(
+        (name) =>
+          document
+            .querySelector(`[data-language="${name}"]`)
+            ?.getAttribute("aria-pressed") === "true",
+        language.toLowerCase(),
+      );
+      assert.equal(
+        await transport.getAttribute("data-playing"),
+        String(isPlaying),
+      );
+      if (isPlaying) {
+        await page.waitForFunction(
+          ({ before, durationSeconds }) => {
+            const position = document
+              .querySelector(".timeline__playhead")
+              ?.getAttribute("x1");
+            return (
+              (Number.parseFloat(position ?? "") / 100) * durationSeconds >
+              before + 0.2
+            );
+          },
+          { before, durationSeconds: PIECE_SCHEDULE.durationSeconds },
+        );
+      } else {
+        assert.equal(await observeConductorTime(page), before);
+      }
+    }
   }
   await transport.press("Space");
   await page

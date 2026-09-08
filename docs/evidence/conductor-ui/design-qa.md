@@ -69,4 +69,17 @@ Screenshots: [desktop](conductor-1672.png), [1280px](conductor-1280.png),
 [narrow](conductor-390.png), [menu desktop](conductor-technician-desktop.png),
 [menu narrow](conductor-technician-mobile.png), [M5 preview](conductor-technician.png).
 
+## Follow-up: language continuity and controller icon
+
+Language selection now replaces narration without pausing the Show clock.
+Running and paused states, current position and rate are preserved at the Show
+owner. The M5 controller uses Lucide's rectangular `smartphone` glyph with a small
+button instead of `gamepad-2`; existing icon size, status color and CSS are retained.
+
+`bun run lint`, `bun run build` and 38 focused sound/clock/Conductor tests passed.
+The [six selected browser scenarios](language-smoke.json) passed, including EN/DE
+switches in running and paused Conductor states, continuous Rehearsal playback,
+icon geometry, and startup/partial-mount cleanup. Source digest:
+`a0978d31c68ac6296a21fe4dbb88e666338a7698e752812000d4c0de50371b30`. The desktop/narrow screenshots above show the updated icon.
+
 final result: passed

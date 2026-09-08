@@ -25,7 +25,7 @@ in `dramaturgy`; device validity remains in M5.
 
 Play/Pause toggles playback. Stop immediately rewinds, resets flight and pauses
 through Run; the selected language is retained. The timeline is the only time
-display. Language selection sits below transport; the canvas stays in the main
+display. Language changes preserve playback and show position. Language selection sits below transport; the canvas stays in the main
 surface when technician tools open or close. The timeline exposes its position
 as a keyboard-accessible slider: arrow keys seek by five seconds (thirty with
 Shift), Home and End jump to the bounds. Its geometry follows Show time directly.

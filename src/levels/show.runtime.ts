@@ -60,6 +60,7 @@ export interface RunningShow {
   readonly resetTime: () => void;
   readonly readLanguage: () => NarrationLanguage;
   readonly readActiveLevel: () => ShowLevelName;
+  /** Replace narration at the current position without changing playback state. */
   readonly setLanguage: (language: NarrationLanguage) => void;
   readonly readAudioState: () => AudioContextState;
 }
@@ -333,7 +334,6 @@ export async function createShowRuntime(
         setLanguage: (next): void => {
           if (unloading || next === language) return;
 
-          clock.pause();
           narration?.unload();
           language = next;
           narration = createNarrationPlayer({ language, cueIds });

@@ -1,0 +1,76 @@
+{
+  "generatedAt": "2026-09-08T14:42:26.758Z",
+  "revision": "6e7981c38700a5aa254d6cc070f4276740237fa3",
+  "sourceDigest": "a0978d31c68ac6296a21fe4dbb88e666338a7698e752812000d4c0de50371b30",
+  "diffDigest": "7a63285efc7e871b8ee819b3a7512e18a4f31cc92a659ab7ec157f47e60edecb",
+  "dirtyFiles": [
+    "M docs/README.md",
+    " M docs/direction/dramaturgy-audio.md",
+    " M docs/evidence/README.md",
+    " M docs/performance.md",
+    " M docs/target-architecture.md",
+    " M src/levels/show.runtime.ts",
+    " M src/ui/conductor.html",
+    " M src/ui/conductor/README.md",
+    " M src/ui/conductor/conductor.page.ts",
+    " M tests/browser/run-browser-smoke.ts",
+    " M tests/sound/drone-organ-composition.test.ts",
+    "?? docs/evidence/performance-audit-2026-09-08/",
+    "?? docs/performance-audit-2026-09-08.md"
+  ],
+  "platform": "darwin 25.6.0",
+  "cpu": "Apple M2 Max",
+  "bunVersion": "1.3.14",
+  "baseUrl": "http://127.0.0.1:4187",
+  "browserVersion": "151.0.7922.34",
+  "headless": false,
+  "dev": false,
+  "viewport": {
+    "width": 1280,
+    "height": 720
+  },
+  "deviceScaleFactor": 1,
+  "results": [
+    {
+      "route": "/conductor.html",
+      "passed": true,
+      "errors": [],
+      "conductorWakeRequired": false,
+      "rendering": {
+        "vendor": "Google Inc. (Apple)",
+        "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M2 Max, Unspecified Version)",
+        "softwareRendering": false
+      }
+    },
+    {
+      "route": "/",
+      "passed": true,
+      "errors": [],
+      "rendering": {
+        "vendor": "Google Inc. (Apple)",
+        "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M2 Max, Unspecified Version)",
+        "softwareRendering": false
+      }
+    },
+    {
+      "route": "startup-failure:/",
+      "passed": true,
+      "errors": []
+    },
+    {
+      "route": "startup-failure:/conductor.html",
+      "passed": true,
+      "errors": []
+    },
+    {
+      "route": "ui-mount-failure:/",
+      "passed": true,
+      "errors": []
+    },
+    {
+      "route": "ui-mount-failure:/conductor.html",
+      "passed": true,
+      "errors": []
+    }
+  ]
+}

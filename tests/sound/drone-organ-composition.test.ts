@@ -225,11 +225,18 @@ test("audio owners recover gesture resume and await complete disposal", async ()
     commands.togglePlayback();
     assert.equal(commands.sample().isPlaying, true);
     commands.setLanguage("de");
-    assert.equal(commands.sample().isPlaying, false);
+    assert.equal(commands.sample().isPlaying, true);
     assert.equal(commands.sample().timeSeconds, 17);
     assert.equal(commands.readLanguage(), "de");
     commands.setLanguage("de");
     assert.equal(narrationUnloads, 1); assert.equal(narrationCount, 2);
+    showNative.currentTime = 4;
+    assert.deepEqual(commands.sample(), { timeSeconds: 19, isPlaying: true, timeScale: 2 });
+    commands.pause(); commands.setLanguage("en");
+    showNative.currentTime = 5;
+    assert.deepEqual(commands.sample(), { timeSeconds: 19, isPlaying: false, timeScale: 2 });
+    assert.equal(commands.readLanguage(), "en");
+    assert.equal(narrationUnloads, 2); assert.equal(narrationCount, 3);
     commands.play(); commands.resetTime();
     assert.deepEqual(commands.sample(), { timeSeconds: 0, isPlaying: false, timeScale: 2 });
     failNarrationCleanup = true;
@@ -239,7 +246,7 @@ test("audio owners recover gesture resume and await complete disposal", async ()
     assert.equal(organEnded, true);
     assert.equal(showNative.closing, true);
     show.update(); show.running.setLanguage("en");
-    assert.equal(follows, 0); assert.equal(narrationCount, 2);
+    assert.equal(follows, 0); assert.equal(narrationCount, 3);
     releaseOrgan(); showNative.release(); await showFailure;
     const invalidStart = createShowRuntime(
       { schedule: { ...PIECE_SCHEDULE, durationSeconds: -1 }, language: "en", states: SHOW_LEVEL_STATES },

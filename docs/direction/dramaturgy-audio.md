@@ -9,8 +9,8 @@ the same show time.
 
 English and German share cue timing. Language selects assets addressed by cue
 id; `script/en.md` and `script/de.md` remain the authoritative wording. Changing
-language re-arms narration at the current time and pauses the show for an
-explicit restart.
+language re-arms narration at the current show time. A running show continues;
+a paused show stays paused.
 
 Narration playback supplies the audio timebase. Pause, seek, and rehearsal
 speed therefore keep sound and visuals aligned. A suspended browser audio
