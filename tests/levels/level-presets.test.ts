@@ -94,9 +94,9 @@ test("Test owns its diagnostic world values independently", () => {
     shrubSlope: 60,
   });
   expect(testPreset.animals?.colors.featureColor).toBe(0x292929);
-  expect(testPreset.testUi).toBe(true);
+  expect(testPreset.diagnosticsUi).toBe(true);
   expect(testPreset.airParticles).not.toEqual(whiteWorldPreset.airParticles);
-  expect(whiteWorldPreset.testUi).toBeUndefined();
+  expect(whiteWorldPreset.diagnosticsUi).toBeUndefined();
 });
 
 test("Echo Level owns a complete depth-world startup recipe", () => {
@@ -112,7 +112,7 @@ test("Echo Level owns a complete depth-world startup recipe", () => {
     throw new Error("Echo Level must author terrain, vegetation, and rocks");
   }
 
-  expect(echoPreset.testUi).toBe(true);
+  expect(echoPreset.diagnosticsUi).toBe(true);
   expect(terrain.opacity).toBe(1);
   expect(terrain.presentation).toBeUndefined();
   expect(echoPreset.grassClipmap?.tuftsPerSquareMeter).toBeGreaterThan(0);
@@ -146,7 +146,7 @@ test("Scent Level owns its complete invisible source world", () => {
     0xf6eee0, 0xb8e0e1, 0x9dd2c8, 0xd1c1d7, 0xfda39d, 0xfdbb54,
   ];
 
-  expect(scentPreset.testUi).toBe(true);
+  expect(scentPreset.diagnosticsUi).toBe(true);
   // The level departs from its moodboard's pale first stop and runs on the
   // white it is entered from, so the only colour in the world arrives
   // through the scent. The deviation is argued in the level README; this
@@ -226,7 +226,7 @@ test("Motion Level owns its complete motion-world startup recipe", () => {
   const { motion } = motionPreset;
   if (!motion) throw new Error("Motion Level must author the motion sense");
 
-  expect(motionPreset.testUi).toBe(true);
+  expect(motionPreset.diagnosticsUi).toBe(true);
 
   expect(motion.intensity).toBe(1);
   expect(motion.swarms.swarmCount).toBeGreaterThan(0);
@@ -261,7 +261,7 @@ test("Thermal Level owns its complete heat-world startup recipe", () => {
   if (!thermal) throw new Error("Thermal Level must author the thermal sense");
   if (!animals) throw new Error("Thermal Level must author warm animals");
 
-  expect(thermalPreset.testUi).toBe(true);
+  expect(thermalPreset.diagnosticsUi).toBe(true);
   // A bird is a warm body, so the heat view prints its trace in the palette's
   // hot stop instead of the cold accent the pale world reads it as. The
   // cold-blooded flies keep their own colors: a swarm printed warm would be
@@ -345,7 +345,7 @@ test("Magnetic Level owns its complete field-world startup recipe", () => {
     throw new Error("Magnetic Level must author the magnetic sense");
   }
 
-  expect(magneticPreset.testUi).toBe(true);
+  expect(magneticPreset.diagnosticsUi).toBe(true);
 
   expect(magnetic.intensity).toBe(1);
   // The field axis: north as authored, tilted above the horizon so the
@@ -372,7 +372,7 @@ test("Connections Level owns its complete connected-world startup recipe", () =>
     throw new Error("Connections Level must author the connections sense");
   }
 
-  expect(connectionsPreset.testUi).toBe(true);
+  expect(connectionsPreset.diagnosticsUi).toBe(true);
 
   expect(connections.intensity).toBe(1);
   // Reach before density: the root mat is carried at the experiment's density,

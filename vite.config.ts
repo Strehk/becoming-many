@@ -7,10 +7,10 @@ function rewriteLevelRequest(request: { url?: string }): void {
 
   const url = new URL(request.url, "http://localhost");
   if (!levelNameFromPath(url.pathname)) return;
-  request.url = `/test.html${url.search}`;
+  request.url = `/${url.search}`;
 }
 
-/** Keep stable /echo-style links while serving their explicit Test entry. */
+/** Keep stable /echo-style links while serving the root experience page. */
 const levelEntryRoutes: Plugin = {
   name: "level-entry-routes",
   configureServer(server) {
@@ -33,7 +33,9 @@ export default defineConfig({
   plugins: [levelEntryRoutes],
   resolve: {
     // Browser bootstraps are siblings of the HTML root in both dev and build.
-    alias: { "/entry": resolve(import.meta.dirname, "src/entry") },
+    alias: {
+      "/entry": resolve(import.meta.dirname, "src/entry"),
+    },
   },
   build: {
     outDir: resolve(import.meta.dirname, "dist"),
@@ -43,7 +45,6 @@ export default defineConfig({
       // the show page has to be named here beside the conductor page.
       input: {
         main: resolve(import.meta.dirname, "src/ui/index.html"),
-        test: resolve(import.meta.dirname, "src/ui/test.html"),
         conductor: resolve(import.meta.dirname, "src/ui/conductor.html"),
         flash: resolve(import.meta.dirname, "src/ui/flash.html"),
       },

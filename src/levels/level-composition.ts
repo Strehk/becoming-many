@@ -102,7 +102,7 @@ export interface LoadedLevelAssets {
 type CreateZonePresentation =
   typeof import("../modules/zone-visualizer/zone-visualizer").createZoneVisualizer;
 
-export interface TestLevelModules {
+export interface StandaloneLevelModules {
   readonly createZonePresentation?: CreateZonePresentation;
 }
 
@@ -114,7 +114,7 @@ interface LevelCompositionOptions {
   readonly level: LevelPreset;
   readonly assets: LoadedLevelAssets;
   readonly forShow: boolean;
-  readonly testModules?: TestLevelModules;
+  readonly standaloneModules?: StandaloneLevelModules;
 }
 
 export interface ComposedLevel {
@@ -130,7 +130,7 @@ export function composeLevel({
   level,
   assets,
   forShow,
-  testModules,
+  standaloneModules,
 }: LevelCompositionOptions): ComposedLevel {
   const worldSurface = createWorldSurface(
     WORLD_SURFACE_SETTINGS,
@@ -593,7 +593,7 @@ export function composeLevel({
     preset: TerrainPreset,
   ): TerrainPresentation | undefined {
     if (preset.presentation === "zones") {
-      const createZonePresentation = testModules?.createZonePresentation;
+      const createZonePresentation = standaloneModules?.createZonePresentation;
       if (!createZonePresentation) {
         throw new Error("Zone Visualizer module was not loaded");
       }

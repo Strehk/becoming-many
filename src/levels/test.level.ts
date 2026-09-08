@@ -11,7 +11,7 @@ export const level: LevelPreset = {
   backgroundColor: 0xffffff,
   viewDistance: 180,
   maximumGroundClearanceMeters: 50,
-  testUi: true,
+  diagnosticsUi: true,
   airParticles: {
     density: {
       // Thinner than the narrative layer; diagnostics need an uncluttered view.

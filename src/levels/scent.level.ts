@@ -11,7 +11,7 @@ export const level: LevelPreset = {
   backgroundColor: 0xffffff,
   viewDistance: 128,
   maximumGroundClearanceMeters: 50,
-  testUi: true,
+  diagnosticsUi: true,
   // Scent alone stands on an unseen world: the ground and plants are placed
   // but not drawn, so trails rise where Echo will later show the plants.
   invisibleGround: true,

@@ -20,7 +20,7 @@ test("every catalog name resolves to itself", () => {
   }
 });
 
-test("named level paths select the Test entry", () => {
+test("named level paths select the standalone-level entry", () => {
   expect(levelNameFromPath("/start")).toBe("start");
   expect(levelNameFromPath("/echo")).toBe("echo");
   expect(levelNameFromPath("/design-test/")).toBe("design-test");

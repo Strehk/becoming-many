@@ -55,7 +55,7 @@ async function serveStatic(pathname: string): Promise<Response> {
     decoded === "/"
       ? "/index.html"
       : levelNameFromPath(decoded)
-        ? "/test.html"
+        ? "/index.html"
         : decoded;
   const file = Bun.file(join(DIST_DIRECTORY, relative));
   if (!(await file.exists())) {

@@ -68,9 +68,8 @@ async function main(): Promise<void> {
     }
     const routes = [
       "/",
-      "/test.html",
-      "/test.html?level=echo",
-      "/test.html?level=start",
+      "/?level=echo",
+      "/?level=start",
       "/conductor.html",
       "/flash.html",
       ...LEVEL_NAMES.map((level) => `/${level}`),
@@ -85,7 +84,7 @@ async function main(): Promise<void> {
     for (const { name, routes, check } of [
       {
         name: "startup-failure",
-        routes: ["/", "/test.html", "/conductor.html"],
+        routes: ["/", "/?level=echo", "/conductor.html"],
         check: checkStartupFailure,
       },
       {
@@ -180,7 +179,7 @@ async function runSmokeRoute(
       );
     }
     const startInput =
-      route === "/start" || route === "/test.html?level=start"
+      route === "/start" || route === "/?level=start"
         ? await prepareStartInput(page, baseUrl)
         : undefined;
     await page.goto(`${baseUrl}${route}`, { waitUntil: "load" });
@@ -197,11 +196,13 @@ async function runSmokeRoute(
       fullPage: true,
       caret: "initial",
     });
-    if (["/", "/test.html", "/conductor.html", "/flash.html"].includes(route)) {
+    if (
+      ["/", "/?level=echo", "/conductor.html", "/flash.html"].includes(route)
+    ) {
       await checkUiLayout(page, route);
       if (route === "/flash.html") await checkFlashLifecycle(page, baseUrl);
     }
-    if (["/", "/test.html", "/conductor.html"].includes(route)) {
+    if (["/", "/?level=echo", "/conductor.html"].includes(route)) {
       await page.evaluate(() =>
         window.dispatchEvent(
           new PageTransitionEvent("pagehide", { persisted: true }),
@@ -233,7 +234,7 @@ async function runSmokeRoute(
         assert.equal(await page.locator("[data-rehearsal]").isVisible(), false);
         assert.equal(await page.locator("[data-sections] button").count(), 0);
       }
-      if (route === "/test.html")
+      if (route === "/?level=echo")
         assert.equal(await page.locator("[data-xr-entry]").isVisible(), false);
     }
     assert.equal(errors.length, 0, errors.join("\n"));

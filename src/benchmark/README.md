@@ -7,8 +7,8 @@ Boundary: Rendering, level data, and the browser runner live elsewhere.
 
 # Benchmark
 
-This folder owns the replayed measurement mode. It is inert unless the Test
-entry at `/test.html` is opened with `?benchmark`.
+This folder owns the replayed measurement mode. It is inert unless the
+standalone-level mode at `/?level=<name>` is opened with `&benchmark`.
 
 `benchmark-settings.ts` authors the camera route, the warmup frame count, the
 stream step count, the 90 Hz frame budget, and the replay profiles.
@@ -51,7 +51,7 @@ Counters from `renderer.info` are exact integers and repeat across machines.
 Frame times are measurements and only compare against a run on the same
 machine and rendering path. The two never mix in one pass/fail decision.
 
-The overlay from `src/ui/test` stays off during a run so its DOM writes do not
+The diagnostics overlay stays off during a run so its DOM writes do not
 enter the samples.
 
 Viewport size is part of the workload and must be pinned by the caller.

@@ -175,7 +175,7 @@ HTML routes stay stable. Remaining owner names migrate with their scoped refacto
 | Shared XR button | `src/ui/shared/xr-entry-button.ts`; mechanics in World | Central `src/ui/app.css` |
 | One-time content construction | `src/levels/level-composition.ts` | `.composition.ts` on next construction refactor |
 | Renderer/resource owner | `src/world/world-runtime.ts` | `.runtime.ts` on next resource refactor |
-| Styles | `src/ui/app.css`, linked by all four HTML pages | Shared tokens and controls; scoped page layouts |
+| Styles | `src/ui/app.css`, linked by all three HTML pages | Shared tokens and controls; scoped page layouts |
 
 `show-actions.ts` is removed. Its commands belong to Show and Run.
 
@@ -242,9 +242,9 @@ replaces them.
 
 ### Read the Test level like a short chapter
 
-For `/test.html?level=test`, [test.level.ts](../src/levels/test.level.ts) directly
+For `/?level=test`, [test.level.ts](../src/levels/test.level.ts) directly
 states white background, 180 m view range, 50 m maximum ground clearance and
-Test UI. It includes Air Particles (80 per chunk), zone-colored Terrain, Grass
+diagnostics UI. It includes Air Particles (80 per chunk), zone-colored Terrain, Grass
 Clipmap, Vegetation, Rocks, Animals and Magnetic sky. It does not request Scent,
 Echo Depth, Motion, Thermal or Connections. These are observed diagnostic
 choices, not new defaults. Test and Design Test now use the same Grass Clipmap
@@ -268,7 +268,7 @@ not simply the number of source files.
 
 ```text
 test.level.ts                 What exists and its authored values.
-test.entry.ts                  Select this recipe and explicit entry tools.
+standalone-level.entry.ts      Select this recipe and explicit entry tools.
 level.runtime.ts / startLevel Load sources; create a stopped World.
                               Apply initial presentation before allocation.
                               composeLevel(...); load/activate in order.
@@ -600,7 +600,7 @@ closure, then establish a fresh context before next-run nodes. Late imports
 must release acquired resources. Actual restart/worklet behavior remains unproved.
 
 #14 removes the additional GPU probe in the Test
-[diagnostics overlay](../src/ui/test/diagnostics-overlay.panel.ts); the entry owns its
+[diagnostics overlay](../src/ui/diagnostics/diagnostics-overlay.panel.ts); the entry owns its
 bounded diagnostic handle and restores hooks on end. World supplies the actual
 capability report on demand; startup errors stay visible. #35 makes Test own its
 diagnostics UI and sampler, with Conductor reading its own sampler directly. Run keeps
@@ -695,7 +695,7 @@ remove old consumers, obsolete tests and documentation with the replaced path.
 | Same file: `createOptionalShow`/`OptionalShowOptions`, `createLevelControls`/`LevelControls`, `createLevelUpdate`/`LevelFrameOptions` | Repeated optional checks and one-consumer option packages obscure order | Inline choices; delete packages | Adjacent startup and named local frame | Repeated Show/benchmark checks, control factory wrapping and copied frame dependencies | #73 implemented; input/show order preserved |
 | `level-composition.ts`: `createConfiguredModules`, `ComposedWorld`, `composeShowReach`, `ComposedSenseHandles` | Each helper has only its preceding local caller | Consolidate in existing function | `composeLevel` | Intermediate construction results and handle repackaging | #73 implemented; real contracts and local domain algorithms retained |
 | `Run.readFrameMetrics`, closure, `FrameMetricsRecorder.read`, Run's metrics type export | Entry sends its own sampler in and reads it back through Run | Removed in #35 | Existing entry sampler | Run metrics getter and duplicate type ownership | Test/Conductor read `sampler.read()` directly; frame input remains |
-| `LevelTestOverlay`, `TestOverlayFactory`, `OptionalTestOverlayOptions`, `createOptionalTestOverlay`, `request.testOverlay`, Run's overlay update | UI creation/lifetime hidden inside runtime setup | Delete runtime path | Test entry | Factory injection and UI frame forwarding | Existing World provides counters; entry owns DOM and cleanup |
+| `LevelTestOverlay`, `TestOverlayFactory`, `OptionalTestOverlayOptions`, `createOptionalTestOverlay`, `request.testOverlay`, Run's overlay update | UI creation/lifetime hidden inside runtime setup | Delete runtime path | Standalone-level entry | Factory injection and UI frame forwarding | Existing World provides counters; entry owns DOM and cleanup |
 | `ConductorState.isScrubbing` and its assignment | No reader; type and writing only | Delete without replacement | No owner needed | Unused flag | Keep used `scrubSeconds`, gesture `wasPlaying` and UI render caches |
 | Animals `getVisibleWorldPositions`/`getVisibleActorPositions`/`packedPositions`; `ConnectionActorSource`; composition `animalSource`; Mycelium `ANIMAL_CLASS_INDEX`, `updateAnimalLinks`, `animalTargetNodes`, animal link capacities/hysteresis/source settings/offsets | No authored moving-animal root-web consumer | Retire complete capability | Static Mycelium; Animals body observations for scent/heat | Extra position projection through dynamic links, reserved rows and tests | D4/#80 implemented; `88a2179`, preset absence, identical normalized static attributes; cumulative visual acceptance pending |
 | Module-side `disposeGltfAssets` and lost successful parallel loads | Source acquisition and release have different owners | Remove old release path atomically | Run sources; module derivatives | Consumer source disposal and leaked successful siblings | #9 implemented: Run releases sources after borrowers; cancellation collects late successes |

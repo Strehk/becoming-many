@@ -44,7 +44,7 @@ configuration. Senses still accumulate; resources do not rebuild at every cue.
 - `motion.level.ts`, `thermal.level.ts`, `magnetic.level.ts`, and
   `connections.level.ts` layer their named perceptions in order.
 - `test.level.ts` is the diagnostic landscape with Zone Visualizer, legacy
-  Grass, magnetic sky, and Test UI.
+  Grass, magnetic sky, and diagnostics UI.
 - `designTest.level.ts` is the visual integration preset without Zone
   Visualizer.
 

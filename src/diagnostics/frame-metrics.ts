@@ -1,6 +1,6 @@
 /**
  * Purpose: Measure bounded frame-rate statistics for development diagnostics.
- * Context: The Test UI needs stable FPS and p95 values without growing memory.
+ * Context: The diagnostics UI needs stable FPS and p95 values without growing memory.
  * Responsibility: Retain recent valid frame times and summarize their distribution.
  * Boundary: DOM rendering and Three.js renderer counters live outside this file.
  */

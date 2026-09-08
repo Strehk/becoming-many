@@ -4,7 +4,7 @@
 // Boundary: Import rules do not prove lifecycle, behavior, or performance correctness.
 {
   "$schema": "https://raw.githubusercontent.com/fallow-rs/fallow/main/schema.json",
-  // HTML lives below the Vite root; declare the four actual browser bootstraps.
+  // HTML lives below the Vite root; declare the three actual browser bootstraps.
   "entry": ["src/entry/*.entry.ts", "src/ui/app.css"],
   "ignoreExports": [
     {
@@ -56,17 +56,17 @@
         "patterns": ["src/entry/*.entry.ts", "src/entry/deployment-config.ts"]
       },
       {
-        "name": "test-entry-tools",
-        "patterns": ["src/entry/test-level-modules.ts"]
+        "name": "standalone-level-tools",
+        "patterns": ["src/entry/standalone-level-modules.ts"]
       },
       { "name": "flash", "patterns": ["src/ui/flash/**"] },
       {
         "name": "ui",
         "patterns": [
           "src/ui/conductor/**",
+          "src/ui/diagnostics/**",
           "src/ui/rehearsal/**",
-          "src/ui/shared/**",
-          "src/ui/test/**"
+          "src/ui/shared/**"
         ]
       }
     ],
@@ -133,7 +133,7 @@
         ]
       },
       {
-        "from": "test-entry-tools",
+        "from": "standalone-level-tools",
         "allow": ["modules/zone-visualizer"],
         "allowTypeOnly": ["levels", "level-contracts"]
       },
@@ -146,7 +146,7 @@
         "allow": [
           "ui",
           "flash",
-          "test-entry-tools",
+          "standalone-level-tools",
           "benchmark",
           "shared",
           "diagnostics",

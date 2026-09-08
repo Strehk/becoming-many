@@ -33,7 +33,7 @@ The explicit `--dev` flag skips only the Station `/health` and `/config` checks;
 all browser scenarios and error checks remain active. It also supports Vite
 preview. The report records this mode; production Station checks stay the default.
 
-The smoke checks `/health` and `/config`, all four HTML entries, all ten level
+The smoke checks `/health` and `/config`, all three HTML entries, all ten level
 paths from the level-name catalog, and a query-selected level. Readiness means
 finished startup and a usable canvas, rather than HTTP success alone. Rehearsal
 and Conductor checks cover audio wake, play, pause, language selection, cue seek,

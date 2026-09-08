@@ -4,7 +4,7 @@ import { requireElement } from "../ui/shared/dom";
  * Purpose: Bootstrap the complete Becoming Many show for rehearsal.
  * Context: The root page is the audience experience without development routes.
  * Responsibility: Start the show and mount its rehearsal and WebXR controls.
- * Boundary: Standalone levels, benchmarks, and diagnostics enter through test.entry.ts.
+ * Boundary: Standalone levels, benchmarks, and diagnostics enter through standalone-level.entry.ts.
  */
 
 import { resolveNarrationLanguage } from "../dramaturgy/narration-catalog";
@@ -43,7 +43,7 @@ declare global {
 }
 
 // Runtime request, not authored configuration: the rehearsal page only lets a
-// run arm its narration language. Development requests belong to test.html.
+// run arm its narration language. Standalone requests use their own entry.
 const lifetime = new AbortController();
 window.addEventListener("pagehide", (event) => {
   if (!event.persisted) lifetime.abort();

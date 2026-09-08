@@ -116,8 +116,8 @@ history belongs in Git; unresolved product and deployment questions belong in
   are the tuning. A passage is ungated and undecorated: a crossing happens
   between senses, so no sense strength may put it away and it wears none of
   their effects.
-- The default page runs only the complete show. The explicit Test entry owns
-  standalone levels, benchmarks, headset diagnostics, and direct-M5 requests.
+- The root page runs the complete show by default and selects its standalone-level
+  entry for explicit level, benchmark, diagnostics, or direct-M5 requests.
 - The viewer rig owns locomotion while the camera owns local desktop-look or
   headset pose. Desktop and M5 controls move the same rig.
 - D2: all interfaces call the same domain commands. Show owns playback,

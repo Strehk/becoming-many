@@ -1,5 +1,5 @@
 /**
- * Purpose: Verify bounded frame statistics used by the Test UI.
+ * Purpose: Verify bounded frame statistics used by the diagnostics UI.
  * Context: FPS and p95 must remain deterministic without unbounded sample history.
  * Responsibility: Cover calculation, input rejection, and rolling-window capacity.
  * Boundary: DOM rendering and Three.js counters are verified in the browser.

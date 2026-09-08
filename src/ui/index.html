@@ -14,6 +14,49 @@
       <p role="alert" data-startup-error hidden>
         Unable to start Becoming Many. Please reload.
       </p>
+      <aside
+        class="diagnostics-overlay"
+        aria-label="Diagnostics"
+        data-diagnostics
+        hidden
+      >
+        <section
+          class="diagnostics-overlay__metrics"
+          aria-label="Performance metrics"
+          data-metrics
+          hidden
+        >
+          <div class="diagnostics-overlay__card">
+            <span class="diagnostics-overlay__label">FPS</span>
+            <output class="diagnostics-overlay__value" data-metric="fps"
+              >--</output
+            >
+          </div>
+          <div class="diagnostics-overlay__card">
+            <span class="diagnostics-overlay__label">P95</span>
+            <output class="diagnostics-overlay__value" data-metric="p95"
+              >--</output
+            >
+          </div>
+          <div class="diagnostics-overlay__card">
+            <span class="diagnostics-overlay__label">DRAW CALLS</span>
+            <output class="diagnostics-overlay__value" data-metric="draw-calls"
+              >--</output
+            >
+          </div>
+          <div class="diagnostics-overlay__card">
+            <span class="diagnostics-overlay__label">DREIECKE</span>
+            <output class="diagnostics-overlay__value" data-metric="triangles"
+              >--</output
+            >
+          </div>
+        </section>
+        <pre
+          class="diagnostics-overlay__log"
+          data-headset-diagnostics
+          hidden
+        ></pre>
+      </aside>
     </main>
     <div class="rehearsal" data-rehearsal hidden>
       <div class="rehearsal__top-row">
@@ -38,6 +81,6 @@
     <button type="button" class="xr-entry-button" data-xr-entry hidden disabled>
       VR not available
     </button>
-    <script type="module" src="../entry/rehearsal.entry.ts"></script>
+    <script type="module" src="../entry/experience.entry.ts"></script>
   </body>
 </html>

@@ -1,5 +1,5 @@
 /**
- * Purpose: Present performance, graphics, and failure diagnostics in one Test UI.
+ * Purpose: Present performance, graphics, and failure diagnostics in one UI.
  * Context: Development and headset browsers need visible diagnostics without a console.
  * Responsibility: Own diagnostic DOM, display cadence, and temporary error hooks.
  * Boundary: It reads existing World facts and never changes runtime behavior.

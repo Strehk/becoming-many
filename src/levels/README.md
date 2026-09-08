@@ -24,15 +24,15 @@ white-world → scent → echo → motion → thermal → magnetic → connectio
 ```
 
 `test.level.ts` and `designTest.level.ts` are diagnostic/integration presets,
-not narrative states. The Test preset uses Grass Clipmap and the browser Test UI.
+not narrative states. The Test preset uses Grass Clipmap and the browser diagnostics UI.
 
 ## Catalog and Entries
 
 `level-catalog.ts` names standalone presets. The Show uses the Connections
 preset for its once-prepared world; changing these module parameters affects both
 runs. `show-levels.ts` owns the presentation states the running Show can change. The bare `src/entry/rehearsal.entry.ts` route starts that show; `?level=<name>` and
-matching path names enter through `src/entry/test.entry.ts` and select one showless
-development preset. Benchmarks use that Test entry too.
+matching path names enter through `src/entry/standalone-level.entry.ts` and select one showless
+development preset. Benchmarks use that standalone-level entry too.
 
 An unknown requested name warns and falls back to Connections. That fallback is
 for explicit development selection, not the behavior of the bare show route.
@@ -90,7 +90,7 @@ derivatives. UI releases only its own presentation resources. The existing
 ## Standalone Start MVP
 
 `start.level.ts` explicitly selects White World air particles and the Start
-module. `/start` and `/test.html?level=start` use the existing Test entry and Run;
+module. `/start` and `/?level=start` use the existing standalone-level entry and Run;
 `shared/level-routes.ts` and the catalog own registration. The root Show is unchanged.
 
 The guide follows flight heading using the same resource-free pose calculation

@@ -1,16 +1,16 @@
 /**
  * Purpose: Supply concrete modules used only by standalone diagnostic presets.
- * Context: The Test entry owns the Zone Visualizer dependency.
- * Responsibility: Load only the implementations requested by one Test preset.
+ * Context: The standalone-level entry owns the Zone Visualizer dependency.
+ * Responsibility: Load only the implementations requested by one standalone preset.
  * Boundary: Show and Conductor entries never import this file.
  */
 
-import type { TestLevelModules } from "../levels/level-composition";
+import type { StandaloneLevelModules } from "../levels/level-composition";
 import type { WorldComposition } from "../levels/level-preset";
 
-export async function loadTestLevelModules(
+export async function loadStandaloneLevelModules(
   level: WorldComposition,
-): Promise<TestLevelModules> {
+): Promise<StandaloneLevelModules> {
   const zones =
     level.terrain?.presentation === "zones"
       ? await import("../modules/zone-visualizer/zone-visualizer")

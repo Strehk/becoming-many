@@ -2,7 +2,7 @@ import { requireElement } from "../ui/shared/dom";
 
 /**
  * Purpose: Bootstrap standalone development and diagnostic runs.
- * Context: Test traffic must not enlarge or branch the root show entry.
+ * Context: The root page selects this entry without loading it for the complete show.
  * Responsibility: Parse level, benchmark, diagnostics, and direct-M5 requests.
  * Boundary: Show rehearsal and Conductor startup live in their own entries.
  */
@@ -13,10 +13,10 @@ import { isBenchmarkProfileName } from "../benchmark/benchmark-settings";
 import { FrameMetricsSampler } from "../diagnostics/frame-metrics";
 import { type Run, startLevel } from "../levels/level.runtime";
 import { LEVEL_CATALOG, resolveLevelName } from "../levels/level-catalog";
+import { createDiagnosticsOverlay } from "../ui/diagnostics/diagnostics-overlay.panel";
 import { mountVrEntryButton } from "../ui/shared/xr-entry-button";
-import { createDiagnosticsOverlay } from "../ui/test/diagnostics-overlay.panel";
 import { loadDeploymentConfig } from "./deployment-config";
-import { loadTestLevelModules } from "./test-level-modules";
+import { loadStandaloneLevelModules } from "./standalone-level-modules";
 
 const lifetime = new AbortController();
 const request = new URLSearchParams(window.location.search);
@@ -48,13 +48,13 @@ try {
   const deployment = await loadDeploymentConfig();
   const preset = LEVEL_CATALOG[levelName];
   const frameMetrics =
-    !benchmark && preset.testUi ? new FrameMetricsSampler() : undefined;
+    !benchmark && preset.diagnosticsUi ? new FrameMetricsSampler() : undefined;
   const canvas = requireElement(
     container,
     ".experience-canvas",
     HTMLCanvasElement,
   );
-  const testModules = await loadTestLevelModules(preset);
+  const standaloneModules = await loadStandaloneLevelModules(preset);
 
   level = await startLevel(
     { canvas, viewport: container },
@@ -69,7 +69,7 @@ try {
             diagnostics.update(deltaSeconds);
           }
         : undefined,
-      testModules,
+      standaloneModules,
       m5ExpectedDeviceId: deployment.m5DeviceId,
     },
   );

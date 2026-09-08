@@ -30,7 +30,7 @@ import {
   composeLevel,
   type LoadedLevelAssets,
   loadLevelAssets,
-  type TestLevelModules,
+  type StandaloneLevelModules,
 } from "./level-composition";
 import type { LevelPreset } from "./level-preset";
 import {
@@ -73,7 +73,7 @@ interface CommonLevelRequest {
   /** Entry-owned diagnostic work; absent from normal Experience runs. */
   readonly onFrame?: (deltaSeconds: number) => void;
   /** Concrete modules that only diagnostic presets can request. */
-  readonly testModules?: TestLevelModules;
+  readonly standaloneModules?: StandaloneLevelModules;
 }
 
 export interface StaticLevelRequest extends CommonLevelRequest {
@@ -122,7 +122,7 @@ export async function startLevel(
       level,
       assets,
       forShow: request.kind === "show",
-      testModules: request.testModules,
+      standaloneModules: request.standaloneModules,
     });
     const { worldSurface, reach, hasGround, start } = composition;
     const startInput = { turnRight: 0, climb: 0 };

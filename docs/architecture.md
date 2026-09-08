@@ -8,11 +8,11 @@ not yet implemented. Windows-PCVR over USB-C is the installation target.
 ## Runtime Surfaces
 
 Vite uses `src/ui/` as its root. HTML references `/entry/` scripts, resolved by
-Vite to `src/entry` in development and build. Four HTML documents retain their public routes:
+Vite to `src/entry` in development and build. Three HTML documents retain their public routes:
 
-- `index.html` loads `src/entry/rehearsal.entry.ts`: the complete rehearsal show only.
-- `test.html` loads `src/entry/test.entry.ts`: standalone levels, benchmarks,
-  headset diagnostics, and direct-M5 development.
+- `index.html` loads `src/entry/experience.entry.ts`: the complete rehearsal show
+  by default, or standalone levels, benchmarks, headset diagnostics, and direct-M5
+  development when an explicit request selects that mode.
 - `conductor.html` loads `src/entry/conductor.entry.ts`: the operator surface
   with the show running in the same page.
 - `flash.html` loads `src/entry/flash.entry.ts`: Web Serial firmware setup for the
@@ -73,8 +73,8 @@ use the same path; Composition cleans earlier factory handles on failure.
 Entries cancel pending starts and own their DOM/listeners. A persisted `pagehide`
 keeps the same visit; final page exit ends it. Visitor restart policy remains open.
 
-Test and Conductor entries own and read their DOM-free frame samplers from
-`src/diagnostics/` directly. Test creates and
+Standalone-level and Conductor entries own and read their DOM-free frame samplers from
+`src/diagnostics/` directly. The standalone-level entry creates and
 ends its overlay, updates it through the existing optional frame callback, and
 reads World's read-only draw counters. Run holds no UI or sampler contract.
 Zone Visualizer loads only for standalone presets that request zone presentation.
@@ -100,11 +100,11 @@ or browser resource owns its complete disposal.
 shared/              platform-neutral deployment and route contracts
 station/             Bun file/config/health backend
 src/
-├── entry/           browser startup, deployment loading and test module loading
-├── ui/              four HTML documents, app.css and surface controllers
+├── entry/           browser startup, deployment loading and standalone-level module loading
+├── ui/              three HTML documents, app.css and surface controllers
 │   ├── conductor/   operator panels and view state
 │   ├── rehearsal/   show transport
-│   ├── test/        metrics overlay and headset diagnostics
+│   ├── diagnostics/ metrics overlay and headset diagnostics
 │   ├── flash/       device setup form and bounded log
 │   └── shared/      reused DOM bindings, scrubbing, time and XR controls
 ├── diagnostics/     DOM-free bounded frame metrics
