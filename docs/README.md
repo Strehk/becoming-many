@@ -48,6 +48,8 @@ planned, or open. Open decisions remain in
 - [Refactor Evidence](evidence/README.md) — dated results and shared run metadata,
   with individual measurements retained under their originating issue.
 
+- [Browser Performance Audit — 2026-09-08](performance-audit-2026-09-08.md)
+  records full-show, ten-level, CPU/GPU and loading findings with focused removal-first work packages.
 - [Browser Performance Audit — 2026-08-24](performance-audit-2026-08-24.md)
   preserves its dated desktop measurements.
 - [Grass Clipmap Review — 2026-09-02](performance-review-grass-clipmap-2026-09-02.md)

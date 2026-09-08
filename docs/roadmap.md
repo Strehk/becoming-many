@@ -104,6 +104,18 @@ These remaining gates do not invalidate the completed UI/Engine software boundar
 required for actual visitor/installation acceptance and must not be reported as
 complete after a UI, CSS or naming change.
 
+## Browser Performance Follow-up — 2026-09-08
+
+The [browser audit](performance-audit-2026-09-08.md) records the measured source,
+results and limitations. Its findings are filed in the existing issue workflow
+under the [performance label](https://github.com/Strehk/becoming-many/issues?q=is%3Aissue%20is%3Aopen%20label%3Aperformance),
+with the handoff in [#76](https://github.com/Strehk/becoming-many/issues/76).
+Start with #93 narration state writes, #94 Hi-Hat graph work, #95 Grass step cost
+and #96 duplicate population publication; #16 owns preparation readiness.
+Live issues own acceptance. Preserve KISS/YAGNI, existing owners and removal of
+replaced paths; hypotheses require measurement before implementation. No new
+reference, product or physical acceptance follows from the desktop results.
+
 ## Existing Work to Preserve
 
 | Work | Current software facts and remaining scope |

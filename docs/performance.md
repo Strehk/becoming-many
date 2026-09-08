@@ -113,6 +113,12 @@ retained in [#32](https://github.com/Strehk/becoming-many/issues/32).
 
 ## Dated Evidence
 
+- The [2026-09-08 browser audit](performance-audit-2026-09-08.md) records a frozen
+  production build, ordinary full-show/cue observations, ten-level movement
+  diagnostics, GPU resolution scaling and source-attributed audio/streaming
+  findings. It retains instrumentation, concurrent-work and lock-state limits;
+  it does not update a reference or establish Windows-PCVR acceptance.
+
 - The [2026-08-24 browser audit](performance-audit-2026-08-24.md) measured an
   earlier landscape composition. It remains useful evidence for the fixed-pool
   and streaming changes it tested, but its totals are not current-show totals.
