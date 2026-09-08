@@ -1,33 +1,24 @@
 # Control
 
-This folder owns visitor flight input and locomotion. Operator panels, Show
-transport commands and visitor orchestration belong to UI, Show and Run respectively.
+This folder owns visitor input and rig locomotion. Run creates the controls,
+selects M5 or desktop each frame, applies height limits and ends input capture.
+Show transport and visitor replacement remain with Show and Run.
 
-`desktop-controls.ts` provides the desktop adapter: click the canvas to capture
-the mouse, look around with the mouse, fly in the viewing direction with WASD
-or the arrow keys, and press Escape to release the pointer.
+- `desktop-controls.runtime.ts` owns pointer lock, held keys and reusable movement
+  buffers. Keyboard navigation is captured only while the canvas owns pointer
+  lock; release or window blur clears held keys. Mouse look changes the camera,
+  while WASD/arrows move the rig along the viewing direction.
+- `m5-flight.runtime.ts` owns reusable glider math for one rig. Calibrated roll
+  steers world-up yaw and negative pitch climbs against neutral descent. The
+  horizon stays level and head look does not steer flight. M5 owns validation;
+  neutral frames still glide. Physical polarity acceptance remains open.
+- `flight-settings.ts` holds shared glide, climb, yaw, descent and minimum
+  ground-clearance values. View pitch assistance belongs to World in
+  `src/world/viewer-rig.ts` and also aligns Start and Credits presentation.
+- `flight-ground-clearance.ts` clamps rig altitude against World Surface height.
+  Run selects applicable limits; each level authors its optional maximum.
+- `flight-reset.ts` preserves the existing origin/heading reset without changing
+  local head pose. Its retirement remains tied to the reviewed fresh-visitor
+  sequence in #9/#46; a pose reset does not replace a Run.
 
-`flight-settings.ts` is the typed base configuration for ICAROS speed, climb,
-yaw, neutral descent bias, minimum ground clearance, and upward view
-assistance. `flight-ground-clearance.ts` constrains altitude relative to the
-deterministic ground: the shared minimum applies where a level exposes a world
-surface, while each level authors its own optional maximum.
-
-`m5-flight.ts` applies an M5 ControlFrame as ICAROS glider flight: constant
-forward glide, roll yaws the heading about world-up (the horizon never banks),
-and negative pitch climbs against the downward bias. Positive roll adds world-up
-yaw; physical rig polarity still needs acceptance. With a host, quality 0 is neutral,
-so a dropped poll continues the glide and gentle descent. Keyboard movement
-returns when the host is cleared; the frames come from `src/m5`.
-
-The local frame in `src/levels/level.runtime.ts` selects the input directly:
-an available M5 frame has exclusive control for that frame; otherwise desktop
-input updates the same viewer rig.
-
-`flight-reset.ts` returns the flight rig to the pose a level starts from, which
-the in-process conductor page reaches through `Run`. Reset and height limits stay
-effective in immersive VR because they move the rig, not the headset-owned
-camera pose.
-
-Control code must not own content modules, world rendering, or its own frame
-loop.
+Controls own no content, protocol parsing, renderer or frame loop.

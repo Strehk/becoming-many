@@ -9,7 +9,10 @@
 import { describe, expect, test } from "bun:test";
 import { Group, Vector3 } from "three";
 import { FLIGHT_SETTINGS } from "../../src/control/flight-settings";
-import { applyM5Flight, readM5FlightInput } from "../../src/control/m5-flight";
+import {
+  createM5Flight,
+  readM5FlightInput,
+} from "../../src/control/m5-flight.runtime";
 import {
   type ControlFrame,
   createNeutralControl,
@@ -23,13 +26,13 @@ describe("m5 flight", () => {
   test("uses the confirmed shared flight tuning", () => {
     expect(FLIGHT_SETTINGS.glideSpeedMetersPerSecond).toBe(5);
     expect(FLIGHT_SETTINGS.neutralDescentMetersPerSecond).toBe(1);
-    expect(FLIGHT_SETTINGS.viewPitchAssistDegrees).toBe(30);
   });
 
   test("glides at the configured speed with the neutral descent bias", () => {
     const rig = new Group();
+    const applyM5Flight = createM5Flight(rig);
 
-    applyM5Flight(rig, liveFrame(), 1);
+    applyM5Flight(liveFrame(), 1);
 
     expect(rig.position.x).toBeCloseTo(0);
     expect(rig.position.y).toBeCloseTo(
@@ -44,8 +47,9 @@ describe("m5 flight", () => {
     "roll %s yaws exactly and holds a level heading",
     (roll) => {
       const rig = new Group();
+      const applyM5Flight = createM5Flight(rig);
 
-      applyM5Flight(rig, liveFrame({ roll }), 1);
+      applyM5Flight(liveFrame({ roll }), 1);
 
       const forward = flightForward(rig);
       const yawRadians = roll * FLIGHT_SETTINGS.yawRateRadiansPerSecond;
@@ -57,7 +61,7 @@ describe("m5 flight", () => {
       expect(up.x).toBeCloseTo(0);
       expect(up.y).toBeCloseTo(1);
       expect(up.z).toBeCloseTo(0);
-      applyM5Flight(rig, liveFrame(), 1);
+      applyM5Flight(liveFrame(), 1);
       expect(flightForward(rig).distanceTo(forward)).toBeCloseTo(0);
     },
   );
@@ -66,8 +70,9 @@ describe("m5 flight", () => {
     "pitch %s changes altitude without pitching the view",
     (pitch) => {
       const rig = new Group();
+      const applyM5Flight = createM5Flight(rig);
 
-      applyM5Flight(rig, liveFrame({ pitch }), 1);
+      applyM5Flight(liveFrame({ pitch }), 1);
 
       expect(rig.position.y).toBeCloseTo(
         -pitch * FLIGHT_SETTINGS.climbRateMetersPerSecond -
@@ -88,7 +93,8 @@ test("tutorial intention agrees with actual flight direction", () => {
   readM5FlightInput(frame, input);
   expect(input).toEqual({ turnRight: 0.7, climb: 0.6 });
   const rig = new Group();
-  applyM5Flight(rig, frame, 0.1);
+  const applyM5Flight = createM5Flight(rig);
+  applyM5Flight(frame, 0.1);
   expect(flightForward(rig).x).toBeGreaterThan(0);
   expect(rig.position.y).toBeGreaterThan(0);
 });

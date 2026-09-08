@@ -45,6 +45,9 @@ export interface ViewerRig {
   readonly publish: () => void;
 }
 
+/** Raise the rendered view above physical head pitch for the ICAROS rig. */
+export const VIEW_PITCH_ASSIST_DEGREES = 30;
+
 export function createViewerRig(viewPitchAssistDegrees = 0): ViewerRig {
   const group = new Group();
   group.name = "ViewerRig";

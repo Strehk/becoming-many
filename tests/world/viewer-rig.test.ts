@@ -9,7 +9,10 @@
 
 import { describe, expect, test } from "bun:test";
 import { MathUtils, Matrix4, type Object3D, Scene, Vector3 } from "three";
-import { createViewerRig } from "../../src/world/viewer-rig";
+import {
+  createViewerRig,
+  VIEW_PITCH_ASSIST_DEGREES,
+} from "../../src/world/viewer-rig";
 
 /**
  * `WebXRManager.updateUserCamera` reproduced exactly: the camera's local
@@ -107,7 +110,8 @@ describe("viewer rig", () => {
   });
 
   test("raises the view through a parent transform WebXR cannot overwrite", () => {
-    const viewer = createViewerRig(30);
+    expect(VIEW_PITCH_ASSIST_DEGREES).toBe(30);
+    const viewer = createViewerRig(VIEW_PITCH_ASSIST_DEGREES);
     viewer.publish();
     writeHeadsetPose(
       viewer.camera,

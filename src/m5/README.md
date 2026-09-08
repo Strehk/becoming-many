@@ -1,7 +1,7 @@
 # M5
 
 M5 owns device communication and the input produced by one M5StickS3. Browser
-UI lives in `src/ui`; flight equations remain in `src/control/m5-flight.ts`.
+UI lives in `src/ui`; flight equations remain in `src/control/m5-flight.runtime.ts`.
 Start here to follow the controller across its separate execution environments.
 
 ## Reading order and contracts

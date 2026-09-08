@@ -6,7 +6,6 @@
  */
 
 import { type Matrix4, Vector3 } from "three";
-import { FLIGHT_SETTINGS } from "../control/flight-settings";
 import { END_CREDITS } from "../dramaturgy/end-credits";
 import { PIECE_PASSAGES } from "../dramaturgy/piece-schedule";
 import type { ShowSense } from "../dramaturgy/show-levels";
@@ -77,6 +76,7 @@ import type {
   UnlitMaterialEffect,
 } from "../utils/asset-loader/material-effect";
 import type { WorldModule } from "../world/module-runtime";
+import { VIEW_PITCH_ASSIST_DEGREES } from "../world/viewer-rig";
 import type { WorldContext } from "../world/world-runtime";
 import { WORLD_SURFACE_SETTINGS } from "../world-surface/surface-settings";
 import {
@@ -165,7 +165,7 @@ export function composeLevel({
           scene: world.scene,
           viewpoint: world.viewpoint,
           viewerRig: world.viewerRig,
-          viewPitchDegrees: FLIGHT_SETTINGS.viewPitchAssistDegrees,
+          viewPitchDegrees: VIEW_PITCH_ASSIST_DEGREES,
           definition: END_CREDITS,
         })
       : undefined;
@@ -247,7 +247,7 @@ export function composeLevel({
           scene: world.scene,
           viewpoint: world.viewpoint,
           viewerRig: world.viewerRig,
-          viewPitchDegrees: FLIGHT_SETTINGS.viewPitchAssistDegrees,
+          viewPitchDegrees: VIEW_PITCH_ASSIST_DEGREES,
           parameters: level.start,
         })
       : undefined;

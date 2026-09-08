@@ -6,18 +6,19 @@
  */
 
 import type { BenchmarkRun } from "../benchmark/benchmark-run";
-import { createDesktopControls } from "../control/desktop-controls";
-import {
-  BASE_MINIMUM_GROUND_CLEARANCE_METERS,
-  keepFlightWithinHeightLimits,
-} from "../control/flight-ground-clearance";
+import { createDesktopControls } from "../control/desktop-controls.runtime";
+import { keepFlightWithinHeightLimits } from "../control/flight-ground-clearance";
 import { resetFlightPose } from "../control/flight-reset";
 import { FLIGHT_SETTINGS } from "../control/flight-settings";
-import { applyM5Flight, readM5FlightInput } from "../control/m5-flight";
+import {
+  createM5Flight,
+  readM5FlightInput,
+} from "../control/m5-flight.runtime";
 import { showLevelStateAt } from "../dramaturgy/show-levels";
 import { createM5Runtime, type M5Runtime } from "../m5/runtime/m5.runtime";
 import { disposeGltfAssets } from "../utils/asset-loader/gltf-assets";
 import type { WorldModule } from "../world/module-runtime";
+import { VIEW_PITCH_ASSIST_DEGREES } from "../world/viewer-rig";
 import {
   createWorld,
   type GraphicsInfo,
@@ -110,7 +111,7 @@ export async function startLevel(
     signal?.throwIfAborted();
     world = createWorld(surface, {
       frameControl: benchmark,
-      viewPitchAssistDegrees: FLIGHT_SETTINGS.viewPitchAssistDegrees,
+      viewPitchAssistDegrees: VIEW_PITCH_ASSIST_DEGREES,
     });
     world.renderer.setClearColor(presentation.backgroundColor);
     world.camera.far = presentation.viewDistance;
@@ -125,6 +126,7 @@ export async function startLevel(
     });
     const { worldSurface, reach, hasGround, start } = composition;
     const startInput = { turnRight: 0, climb: 0 };
+    const applyM5Flight = createM5Flight(world.viewerRig);
     modules = composition.modules;
     for (const module of modules) {
       world.modules.load(module);
@@ -155,7 +157,7 @@ export async function startLevel(
         : undefined;
     const heightLimits = {
       minimumGroundClearanceMeters: hasGround
-        ? BASE_MINIMUM_GROUND_CLEARANCE_METERS
+        ? FLIGHT_SETTINGS.minimumGroundClearanceMeters
         : undefined,
       maximumGroundClearanceMeters: staticMaximumGroundClearanceMeters,
     };
@@ -198,8 +200,7 @@ export async function startLevel(
             start.setInput(startInput);
           } else start.setInput(undefined);
         }
-        if (controlFrame)
-          applyM5Flight(runningWorld.viewerRig, controlFrame, deltaSeconds);
+        if (controlFrame) applyM5Flight(controlFrame, deltaSeconds);
         else desktop?.update(deltaSeconds);
       }
 

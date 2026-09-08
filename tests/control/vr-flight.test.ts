@@ -8,20 +8,24 @@
 import { describe, expect, test } from "bun:test";
 import { Matrix4, type Object3D, Scene } from "three";
 import { FLIGHT_SETTINGS } from "../../src/control/flight-settings";
-import { applyM5Flight } from "../../src/control/m5-flight";
+import { createM5Flight } from "../../src/control/m5-flight.runtime";
 import { createNeutralControl } from "../../src/m5/control-frame";
-import { createViewerRig } from "../../src/world/viewer-rig";
+import {
+  createViewerRig,
+  VIEW_PITCH_ASSIST_DEGREES,
+} from "../../src/world/viewer-rig";
 
 const STANDING_HEIGHT_METERS = 1.6;
 
 describe("VR flight", () => {
   test("keeps a steady M5 glide while WebXR replaces the head pose", () => {
     const scene = new Scene();
-    const viewer = createViewerRig(FLIGHT_SETTINGS.viewPitchAssistDegrees);
+    const viewer = createViewerRig(VIEW_PITCH_ASSIST_DEGREES);
     scene.add(viewer.group);
+    const applyM5Flight = createM5Flight(viewer.group);
 
     for (let frame = 0; frame < 10; frame += 1) {
-      applyM5Flight(viewer.group, createNeutralControl(), 1);
+      applyM5Flight(createNeutralControl(), 1);
       viewer.publish();
       writeHeadsetPose(
         viewer.camera,
@@ -43,10 +47,11 @@ describe("VR flight", () => {
 
   test("keeps M5 steering on the rig instead of the headset camera", () => {
     const scene = new Scene();
-    const viewer = createViewerRig(FLIGHT_SETTINGS.viewPitchAssistDegrees);
+    const viewer = createViewerRig(VIEW_PITCH_ASSIST_DEGREES);
     scene.add(viewer.group);
+    const applyM5Flight = createM5Flight(viewer.group);
 
-    applyM5Flight(viewer.group, { ...createNeutralControl(), roll: 0.5 }, 1);
+    applyM5Flight({ ...createNeutralControl(), roll: 0.5 }, 1);
     viewer.publish();
     const steeredQuaternion = viewer.group.quaternion.clone();
 

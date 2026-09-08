@@ -657,6 +657,17 @@ async function checkTechnicianControls(page: Page): Promise<void> {
     "none",
     "Empty M5 host really hides its preview",
   );
+  const hostInput = page.getByRole("textbox", { name: "M5 host" });
+  await hostInput.fill("");
+  await hostInput.pressSequentially("wasd.local");
+  await hostInput.press("ArrowLeft");
+  await hostInput.press("Backspace");
+  assert.equal(
+    await hostInput.inputValue(),
+    "wasd.locl",
+    "Unlocked desktop controls preserve text entry and cursor navigation",
+  );
+  await hostInput.fill("");
   let sequence = 0;
   let pitch = 0;
   let roll = 0;

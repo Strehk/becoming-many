@@ -134,6 +134,12 @@ context creation, viewport resize observation and GPU disposal. Hidden operator
 viewports retain a usable render size and resize when revealed. Texture canvases
 remain private rendering resources at their content owners.
 
+`src/control/desktop-controls.runtime.ts` owns pointer capture and held keys;
+keyboard navigation only captures events while pointer lock is active. Both
+Desktop and `m5-flight.runtime.ts` retain their reusable math buffers per Run.
+The shared view pitch correction is authored at `src/world/viewer-rig.ts`, not
+in flight settings; Run and Composition pass it to World, Start and Credits.
+
 `src/world/viewer-rig.ts` separates locomotion from local camera pose. Desktop
 look and WebXR tracking own the camera; desktop or M5 flight moves the rig. The
 combined world-space viewpoint is published to modules.
