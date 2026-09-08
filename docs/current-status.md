@@ -82,8 +82,8 @@ The #80 animal-connection removal is implemented below. Small additions remain i
 - Run releases loaded GLTF sources after all borrowers end, including skeletons
   and ImageBitmaps. Modules release their own derivatives. Late loads, XR adoption
   and Tone imports are awaited on cancellation; both audio owners close separately.
-- Complete Run end is available to entries. The existing New visitor command
-  still resets time/position; its replacement operating sequence remains open.
+- Complete Run end is available to entries. Conductor Stop immediately resets
+  time/position and pauses; a complete visitor-replacement sequence remains open.
 
 ## Implemented World and Senses
 
@@ -135,8 +135,10 @@ The #80 animal-connection removal is implemented below. Small additions remain i
   build no audio graph. Its cost is measured on desktop Chromium only (about
   0.1 ms median per update with all layers open); the four `AudioWorklet`
   Freeverb rooms are unmeasured on the target Windows-PCVR installation.
-- The conductor page provides transport, timeline, language, session reset,
-  WebXR entry, M5 controls, status, and technician-only details.
+- The conductor page provides Play/Pause, immediate Stop, language, an embedded
+  preview and the timeline as its sole time display. Module status is always
+  visible. Available XR starts on normal operator interaction; explicit XR and
+  M5 controls remain in technician tools.
 - The Bun station server serves `dist/`, `/config`, and `/health`; it carries no
   show state. Docker packaging and a Windows kiosk launcher are present.
 

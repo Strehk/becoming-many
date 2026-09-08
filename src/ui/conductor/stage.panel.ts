@@ -13,7 +13,7 @@ export function createStagePanel({
   stageMount,
 }: StagePanelOptions): ConductorPanel {
   if (!parent.contains(stageMount))
-    throw new Error("Stage viewport must belong to the technician drawer.");
+    throw new Error("Stage viewport must belong to the conductor page.");
   const overlay = requireElement(
     parent,
     ".conductor__stage-overlay",

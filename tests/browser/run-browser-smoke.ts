@@ -14,7 +14,6 @@ import { LEVEL_NAMES } from "../../shared/level-routes";
 import { narrationUrl } from "../../src/dramaturgy/narration-catalog";
 import { PIECE_SCHEDULE } from "../../src/dramaturgy/piece-schedule";
 import { M5_FIRMWARE_VERSION } from "../../src/m5/protocol";
-import { formatShowTime } from "../../src/ui/shared/show-time-format";
 import {
   assertRefactorBranch,
   collectBrowserErrors,
@@ -410,7 +409,6 @@ async function checkRehearsal(page: Page): Promise<void> {
     page,
     ".rehearsal__track",
     ".rehearsal button:first-child",
-    ".rehearsal output",
   );
 }
 
@@ -420,12 +418,11 @@ async function checkConductor(page: Page): Promise<boolean> {
   if (wakeRequired) await page.locator(".conductor__wake").click();
   await page.locator(".conductor__wake").waitFor({ state: "hidden" });
   await checkConductorTransport(page);
-  await checkConductorNextVisitor(page);
+  await checkConductorStop(page);
   await checkScrubbing(
     page,
     ".timeline__track",
     ".conductor__transport-button",
-    ".conductor__clock output",
   );
   await checkConductorKeyboard(page);
   return wakeRequired;
@@ -470,9 +467,8 @@ async function checkConductorKeyboard(page: Page): Promise<void> {
     .waitFor();
   await page.getByRole("button", { name: /Echo/ }).press("Space");
   await page.waitForFunction(
-    (time) =>
-      document.querySelector(".conductor__clock output")?.textContent === time,
-    formatShowTime(ECHO_START_SECONDS),
+    (seconds) => window.show?.sample().timeSeconds === seconds,
+    ECHO_START_SECONDS,
   );
   assert.equal(await transport.getAttribute("data-playing"), "false");
   await page.evaluate(() => (document.activeElement as HTMLElement)?.blur());
@@ -493,25 +489,23 @@ async function checkConductorTransport(page: Page): Promise<void> {
     .locator('.conductor__transport-button[data-playing="true"]')
     .waitFor();
   await page.waitForFunction(
-    () =>
-      document.querySelector(".conductor__clock output")?.textContent !==
-      "0:00",
+    () => (window.show?.sample().timeSeconds ?? 0) > 0.2,
   );
   await transport.click();
   await page
     .locator('.conductor__transport-button[data-playing="false"]')
     .waitFor();
-  const pausedTime = await page
-    .locator(".conductor__clock output")
-    .textContent();
+  const pausedTime = await page.evaluate(
+    () => window.show?.sample().timeSeconds,
+  );
   await page.waitForTimeout(PAUSE_OBSERVATION_MILLISECONDS);
   assert.equal(
-    await page.locator(".conductor__clock output").textContent(),
+    await page.evaluate(() => window.show?.sample().timeSeconds),
     pausedTime,
   );
 }
 
-async function checkConductorNextVisitor(page: Page): Promise<void> {
+async function checkConductorStop(page: Page): Promise<void> {
   const transport = page.locator(".conductor__transport-button");
   await page.getByRole("button", { name: "DE", exact: true }).click();
   await page
@@ -525,19 +519,16 @@ async function checkConductorNextVisitor(page: Page): Promise<void> {
     .waitFor();
   await page.keyboard.press(ECHO_CUE_KEY);
   await page.waitForFunction(
-    (expectedTime) =>
-      document.querySelector(".conductor__clock output")?.textContent ===
-      expectedTime,
-    formatShowTime(ECHO_START_SECONDS),
+    (seconds) => window.show?.sample().timeSeconds === seconds,
+    ECHO_START_SECONDS,
   );
-  await page.getByRole("button", { name: "New visitor", exact: true }).click();
-  await page
-    .getByRole("button", { name: "Tap again to reset", exact: true })
-    .click();
-  await page.waitForFunction(
-    () =>
-      document.querySelector(".conductor__clock output")?.textContent ===
-      "0:00",
+  await transport.click();
+  await page.waitForFunction(() => window.show?.sample().isPlaying === true);
+  await page.getByRole("button", { name: "Stop", exact: true }).click();
+  await page.waitForFunction(() => window.show?.sample().timeSeconds === 0);
+  assert.equal(
+    await page.evaluate(() => window.show?.sample().isPlaying),
+    false,
   );
   assert.equal(await transport.getAttribute("data-playing"), "false");
   await transport.click();
@@ -545,14 +536,12 @@ async function checkConductorNextVisitor(page: Page): Promise<void> {
     .locator('.conductor__transport-button[data-playing="true"]')
     .waitFor();
   await page.waitForFunction(
-    () =>
-      document.querySelector(".conductor__clock output")?.textContent !==
-      "0:00",
+    () => (window.show?.sample().timeSeconds ?? 0) > 0.2,
   );
   assert.equal(
     await page.locator("canvas").count(),
     1,
-    "A second visitor must not add a renderer",
+    "Restarting after Stop must not add a renderer",
   );
 }
 
@@ -561,7 +550,6 @@ async function checkScrubbing(
   page: Page,
   trackSelector: string,
   transportSelector: string,
-  readoutSelector: string,
 ): Promise<void> {
   const track = page.locator(trackSelector);
   const transport = page.locator(transportSelector).first();
@@ -609,9 +597,11 @@ async function checkScrubbing(
       },
       { selector: transportSelector, playing: resume },
     );
-    assert.match(
-      await page.locator(readoutSelector).innerText(),
-      /^1:4[0-9]/,
+    const seconds = await page.evaluate(
+      () => window.show?.sample().timeSeconds,
+    );
+    assert(
+      seconds !== undefined && seconds >= 100 && seconds < 110,
       "Drag seeks to the selected show position",
     );
   }
@@ -659,6 +649,33 @@ async function checkUiLayout(page: Page, route: string): Promise<void> {
         buttonBounds.height >= 72,
         "Operator transport retains its touch target",
       );
+      const stopBounds = await page
+        .locator(".conductor__restart-button")
+        .boundingBox();
+      assert(
+        stopBounds && stopBounds.height >= 72,
+        "Stop retains its touch target",
+      );
+      const languageBounds = await page
+        .locator(".conductor__session-bar")
+        .boundingBox();
+      assert(
+        languageBounds &&
+          languageBounds.y >=
+            Math.max(
+              buttonBounds.y + buttonBounds.height,
+              stopBounds.y + stopBounds.height,
+            ),
+        "Language controls remain below Play/Pause and Stop",
+      );
+      const previewBounds = await page
+        .locator(".conductor__stage-mount canvas")
+        .boundingBox();
+      assert(
+        previewBounds && previewBounds.width > 0 && previewBounds.height > 0,
+        "The main surface keeps a usable scene preview",
+      );
+      assert.equal(await page.locator(".conductor__drawer canvas").count(), 0);
       const colors = await button.evaluate((element) => {
         const style = getComputedStyle(element);
         return { background: style.backgroundColor, text: style.color };
@@ -680,14 +697,12 @@ async function checkUiLayout(page: Page, route: string): Promise<void> {
         page,
         ".timeline__track",
         ".conductor__transport-button",
-        ".conductor__clock output",
       );
     } else if (route === "/") {
       await checkScrubbing(
         page,
         ".rehearsal__track",
         ".rehearsal button:first-child",
-        ".rehearsal output",
       );
     }
     assertRefactorBranch();
@@ -705,6 +720,13 @@ async function checkUiLayout(page: Page, route: string): Promise<void> {
 
 async function checkTechnicianControls(page: Page): Promise<void> {
   const drawer = page.locator(".conductor__drawer");
+  const scenePreview = page.locator(".conductor__stage-mount canvas");
+  assert.equal(await scenePreview.isVisible(), true);
+  assert.equal(
+    await drawer.locator(".conductor__stream-button").count(),
+    1,
+    "Headset picture controls belong to technician tools",
+  );
   const toggle = page.getByRole("button", {
     name: "Technician tools",
     exact: true,
@@ -838,6 +860,7 @@ async function checkTechnicianControls(page: Page): Promise<void> {
     1,
     "Closing technician tools keeps the renderer mounted",
   );
+  assert.equal(await scenePreview.isVisible(), true);
 }
 
 async function checkFlash(page: Page): Promise<void> {

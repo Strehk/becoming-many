@@ -75,10 +75,6 @@ export function mountConductorPage({
 
   try {
     const masthead = requireElement(page, ".conductor__masthead", HTMLElement);
-    const station = requireElement(masthead, "[data-station]", HTMLElement);
-    station.textContent = stationName ?? "";
-    station.hidden = !stationName;
-
     let xrState: XrSessionState = {
       availability: "unknown",
       isSessionActive: false,
@@ -86,6 +82,28 @@ export function mountConductorPage({
     unsubscribeXr = xr.subscribe((state) => {
       xrState = state;
     });
+    // Immersive XR requires user activation; normal operation enables it by default.
+    function startHeadset(): void {
+      if (xrState.availability !== "available" || xrState.isSessionActive)
+        return;
+      void xr
+        .start()
+        .catch((reason: unknown) =>
+          console.warn("The headset session request failed.", reason),
+        );
+    }
+    page.addEventListener(
+      "click",
+      (event) => {
+        if (
+          event.target instanceof Element &&
+          event.target.closest(".conductor__drawer, .conductor__tech-button")
+        )
+          return;
+        startHeadset();
+      },
+      { signal },
+    );
     let scrubSeconds: number | undefined;
     const statusStrip = createStatusStrip({
       tilesParent: masthead,
@@ -105,7 +123,7 @@ export function mountConductorPage({
     });
     const panels: readonly ConductorPanel[] = [
       statusStrip,
-      createTransportPanel({ parent: page, schedule, show, signal }),
+      createTransportPanel({ parent: page, show, run, signal }),
       createShowTimeline({
         parent: page,
         schedule,
@@ -118,12 +136,11 @@ export function mountConductorPage({
       createSessionBar({
         parent: page,
         show,
-        run,
         xr,
         onToggleTechDrawer: drawer.toggle,
         signal,
       }),
-      createStagePanel({ parent: drawer.stageParent, stageMount }),
+      createStagePanel({ parent: page, stageMount }),
       createM5Panel({
         parent: drawer.m5Parent,
         initialHost: initialM5Host,
@@ -159,6 +176,7 @@ export function mountConductorPage({
         event.preventDefault();
         switch (action.kind) {
           case "toggleTransport":
+            startHeadset();
             show.togglePlayback();
             break;
           case "seekBy":

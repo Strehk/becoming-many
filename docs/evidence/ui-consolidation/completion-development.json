@@ -1,0 +1,234 @@
+{
+  "generatedAt": "2026-09-08T13:27:22.028Z",
+  "revision": "d2814fe9ab3c3da08ac013cad83b36836401339a",
+  "sourceDigest": "2d64c0d425b44215d4d2be55233fdb33e26cf522aa4bdaf3b6edbd3564b5669d",
+  "diffDigest": "f41159d22d651fee15c61310c837d2642aa37ee4092dee02aa0bb88fcb3b0b4a",
+  "dirtyFiles": [
+    "M .fallowrc.jsonc",
+    " M bun.lock",
+    " M package.json",
+    " M src/benchmark/README.md",
+    " M src/dramaturgy/README.md",
+    " M src/entry/flash.entry.ts",
+    " M src/m5/README.md",
+    " M src/m5/runtime/m5.runtime.ts",
+    " M src/m5/setup/serial-setup.ts",
+    " M src/ui/conductor.html",
+    " M src/ui/conductor/conductor.page.ts",
+    " M src/ui/conductor/show-timeline.panel.ts",
+    " M src/ui/conductor/technician-drawer.panel.ts",
+    " M src/ui/flash.html",
+    " M src/ui/flash/flash.page.ts",
+    " M src/ui/index.html",
+    " M src/ui/rehearsal/transport.panel.ts",
+    " M src/ui/test.html",
+    " M station/README.md",
+    " M tests/architecture/ui-markup-boundary.test.ts",
+    " M tests/browser/flash-acceptance.ts",
+    " M tests/browser/run-browser-smoke.ts",
+    " M tests/conductor/README.md",
+    " M tests/station/README.md",
+    "?? tests/browser/ui-mount-failure.ts",
+    "?? tests/m5/public-contract.test.ts"
+  ],
+  "platform": "darwin 25.6.0",
+  "cpu": "Apple M2 Max",
+  "bunVersion": "1.3.14",
+  "baseUrl": "http://127.0.0.1:5178",
+  "browserVersion": "151.0.7922.34",
+  "headless": false,
+  "dev": true,
+  "viewport": {
+    "width": 1280,
+    "height": 720
+  },
+  "deviceScaleFactor": 1,
+  "results": [
+    {
+      "route": "/",
+      "passed": true,
+      "errors": [],
+      "rendering": {
+        "vendor": "Google Inc. (Apple)",
+        "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M2 Max, Unspecified Version)",
+        "softwareRendering": false
+      }
+    },
+    {
+      "route": "/test.html",
+      "passed": true,
+      "errors": [],
+      "rendering": {
+        "vendor": "Google Inc. (Apple)",
+        "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M2 Max, Unspecified Version)",
+        "softwareRendering": false
+      }
+    },
+    {
+      "route": "/test.html?level=echo",
+      "passed": true,
+      "errors": [],
+      "rendering": {
+        "vendor": "Google Inc. (Apple)",
+        "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M2 Max, Unspecified Version)",
+        "softwareRendering": false
+      }
+    },
+    {
+      "route": "/test.html?level=start",
+      "passed": true,
+      "errors": [],
+      "rendering": {
+        "vendor": "Google Inc. (Apple)",
+        "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M2 Max, Unspecified Version)",
+        "softwareRendering": false
+      }
+    },
+    {
+      "route": "/conductor.html",
+      "passed": true,
+      "errors": [],
+      "conductorWakeRequired": false,
+      "rendering": {
+        "vendor": "Google Inc. (Apple)",
+        "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M2 Max, Unspecified Version)",
+        "softwareRendering": false
+      }
+    },
+    {
+      "route": "/flash.html",
+      "passed": true,
+      "errors": []
+    },
+    {
+      "route": "/start",
+      "passed": true,
+      "errors": [],
+      "rendering": {
+        "vendor": "Google Inc. (Apple)",
+        "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M2 Max, Unspecified Version)",
+        "softwareRendering": false
+      }
+    },
+    {
+      "route": "/white-world",
+      "passed": true,
+      "errors": [],
+      "rendering": {
+        "vendor": "Google Inc. (Apple)",
+        "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M2 Max, Unspecified Version)",
+        "softwareRendering": false
+      }
+    },
+    {
+      "route": "/scent",
+      "passed": true,
+      "errors": [],
+      "rendering": {
+        "vendor": "Google Inc. (Apple)",
+        "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M2 Max, Unspecified Version)",
+        "softwareRendering": false
+      }
+    },
+    {
+      "route": "/echo",
+      "passed": true,
+      "errors": [],
+      "rendering": {
+        "vendor": "Google Inc. (Apple)",
+        "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M2 Max, Unspecified Version)",
+        "softwareRendering": false
+      }
+    },
+    {
+      "route": "/motion",
+      "passed": true,
+      "errors": [],
+      "rendering": {
+        "vendor": "Google Inc. (Apple)",
+        "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M2 Max, Unspecified Version)",
+        "softwareRendering": false
+      }
+    },
+    {
+      "route": "/thermal",
+      "passed": true,
+      "errors": [],
+      "rendering": {
+        "vendor": "Google Inc. (Apple)",
+        "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M2 Max, Unspecified Version)",
+        "softwareRendering": false
+      }
+    },
+    {
+      "route": "/magnetic",
+      "passed": true,
+      "errors": [],
+      "rendering": {
+        "vendor": "Google Inc. (Apple)",
+        "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M2 Max, Unspecified Version)",
+        "softwareRendering": false
+      }
+    },
+    {
+      "route": "/connections",
+      "passed": true,
+      "errors": [],
+      "rendering": {
+        "vendor": "Google Inc. (Apple)",
+        "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M2 Max, Unspecified Version)",
+        "softwareRendering": false
+      }
+    },
+    {
+      "route": "/test",
+      "passed": true,
+      "errors": [],
+      "rendering": {
+        "vendor": "Google Inc. (Apple)",
+        "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M2 Max, Unspecified Version)",
+        "softwareRendering": false
+      }
+    },
+    {
+      "route": "/design-test",
+      "passed": true,
+      "errors": [],
+      "rendering": {
+        "vendor": "Google Inc. (Apple)",
+        "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M2 Max, Unspecified Version)",
+        "softwareRendering": false
+      }
+    },
+    {
+      "route": "startup-failure:/",
+      "passed": true,
+      "errors": []
+    },
+    {
+      "route": "startup-failure:/test.html",
+      "passed": true,
+      "errors": []
+    },
+    {
+      "route": "startup-failure:/conductor.html",
+      "passed": true,
+      "errors": []
+    },
+    {
+      "route": "ui-mount-failure:/",
+      "passed": true,
+      "errors": []
+    },
+    {
+      "route": "ui-mount-failure:/conductor.html",
+      "passed": true,
+      "errors": []
+    },
+    {
+      "route": "ui-mount-failure:/flash.html",
+      "passed": true,
+      "errors": []
+    }
+  ]
+}

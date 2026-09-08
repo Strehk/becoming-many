@@ -3,7 +3,7 @@
 ## Responsibility
 
 The operator UI at `/conductor.html` presents transport, timeline, language,
-headset and controller controls. The show runs in this same browser page.
+an embedded experience preview, and module status. The show runs in this same browser page.
 The target folder owns DOM, input bindings, gesture preview, confirmations,
 status presentation and UI cleanup. It owns no Show clock or visitor policy.
 
@@ -23,9 +23,16 @@ Panels draw a local view state and invoke only their needed public commands.
 confirmation timers are legitimate UI behavior. Schedule arithmetic remains
 in `dramaturgy`; device validity remains in M5.
 
+Play/Pause toggles playback. Stop immediately rewinds, resets flight and pauses
+through Run; the selected language is retained. The timeline is the only time
+display. Language selection sits below transport; the canvas stays in the main
+surface when technician tools open or close.
+
 The wake overlay displays suspended audio; Audio owns its user-activation
-listeners. The technician drawer keeps the canvas mounted. During XR the stage
-preview intentionally retains its last frame; no second render pass is added.
+listeners. Normal operator clicks and the playback shortcut request available XR
+by default, within the browser-required user activation. Explicit headset start/stop
+remains in technician tools. During XR the desktop preview is marked as paused;
+no second render pass is added.
 M5 preview observes accepted samples without consuming flight button edges.
 "Picture OK" is a browser-metric heuristic, not Windows-PCVR acceptance.
 

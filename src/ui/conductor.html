@@ -14,96 +14,111 @@
     </p>
     <main id="conductor-root" class="conductor" inert>
       <header class="conductor__masthead">
-        <div class="conductor__identity">
-          <span class="conductor__identity-piece">Becoming Many</span
-          ><span class="conductor__identity-station" data-station hidden></span>
-        </div>
         <section class="conductor__tiles" aria-label="Station status">
           <div class="conductor__tile" data-tile="sound">
-            <span class="conductor__tile-dot"></span>
+            <svg
+              class="lucide-icon"
+              width="32"
+              height="32"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+            >
+              <use
+                href="../../node_modules/lucide-static/icons/volume-2.svg?no-inline"
+              ></use>
+            </svg>
             <div class="conductor__tile-body">
               <span class="conductor__tile-label">Sound</span
               ><output class="conductor__tile-value">—</output>
             </div>
           </div>
           <div class="conductor__tile" data-tile="picture">
-            <span class="conductor__tile-dot"></span>
+            <svg
+              class="lucide-icon"
+              width="32"
+              height="32"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+            >
+              <use
+                href="../../node_modules/lucide-static/icons/image.svg?no-inline"
+              ></use>
+            </svg>
             <div class="conductor__tile-body">
               <span class="conductor__tile-label">Picture</span
               ><output class="conductor__tile-value">—</output>
             </div>
           </div>
           <div class="conductor__tile" data-tile="controller">
-            <span class="conductor__tile-dot"></span>
+            <svg
+              class="lucide-icon"
+              width="32"
+              height="32"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+            >
+              <use
+                href="../../node_modules/lucide-static/icons/gamepad-2.svg?no-inline"
+              ></use>
+            </svg>
             <div class="conductor__tile-body">
               <span class="conductor__tile-label">Controller</span
               ><output class="conductor__tile-value">—</output>
             </div>
           </div>
           <div class="conductor__tile" data-tile="headset">
-            <span class="conductor__tile-dot"></span>
+            <svg
+              class="lucide-icon"
+              width="32"
+              height="32"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+            >
+              <use
+                href="../../node_modules/lucide-static/icons/headset.svg?no-inline"
+              ></use>
+            </svg>
             <div class="conductor__tile-body">
               <span class="conductor__tile-label">Headset</span
               ><output class="conductor__tile-value">—</output>
             </div>
           </div>
         </section>
+        <button
+          type="button"
+          class="conductor__tech-button"
+          aria-label="Technician tools"
+          aria-controls="conductor-technician-tools"
+          aria-expanded="false"
+        >
+          <span class="conductor__button-icon"
+            ><svg
+              class="lucide-icon"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+            >
+              <use
+                href="../../node_modules/lucide-static/icons/wrench.svg?no-inline"
+              ></use>
+            </svg></span
+          >
+        </button>
       </header>
       <p class="conductor__banner" hidden>
         The hand controller is not answering as this station's own. The show
         keeps playing — call a technician before the next visitor steers.
       </p>
       <section class="conductor__transport" aria-label="Transport">
-        <div class="conductor__clock-block">
-          <div class="conductor__clock">
-            <output data-elapsed></output
-            ><span class="conductor__clock-total"></span>
-          </div>
-          <div class="conductor__status-line">
-            <span class="conductor__status-pill"></span
-            ><span class="conductor__remaining"></span>
-          </div>
-        </div>
-        <div class="conductor__cues">
-          <div data-cue="now">
-            <span class="conductor__cue-label">now </span
-            ><output class="conductor__cue-name"></output>
-            <span class="conductor__cue-label" data-detail></span>
-          </div>
-          <div data-cue="next">
-            <span class="conductor__cue-label">next </span
-            ><output class="conductor__cue-name"></output>
-            <span class="conductor__cue-label" data-detail></span>
-          </div>
-        </div>
         <div class="conductor__transport-controls">
-          <button
-            type="button"
-            class="conductor__nudge-button"
-            data-nudge="back"
-            aria-label="Back ten seconds"
-          >
-            <span
-              ><svg
-                class="lucide-icon"
-                width="26"
-                height="26"
-                viewBox="0 0 24 24"
-                aria-hidden="true"
-              >
-                <use
-                  href="../../node_modules/lucide-static/icons/chevrons-left.svg?no-inline"
-                ></use>
-              </svg></span
-            ><span data-nudge-label>10 s</span>
-          </button>
           <button type="button" class="conductor__transport-button">
             <span class="conductor__transport-icon"
               ><span data-play-icon
                 ><svg
                   class="lucide-icon"
-                  width="34"
-                  height="34"
+                  width="48"
+                  height="48"
                   viewBox="0 0 24 24"
                   aria-hidden="true"
                 >
@@ -114,8 +129,8 @@
               ><span data-pause-icon hidden
                 ><svg
                   class="lucide-icon"
-                  width="34"
-                  height="34"
+                  width="48"
+                  height="48"
                   viewBox="0 0 24 24"
                   aria-hidden="true"
                 >
@@ -128,25 +143,38 @@
           </button>
           <button
             type="button"
-            class="conductor__nudge-button"
-            data-nudge="forward"
-            aria-label="Forward ten seconds"
+            class="conductor__restart-button"
+            title="Reset time and flight position"
           >
-            <span
-              ><svg
-                class="lucide-icon"
-                width="26"
-                height="26"
-                viewBox="0 0 24 24"
-                aria-hidden="true"
-              >
-                <use
-                  href="../../node_modules/lucide-static/icons/chevrons-right.svg?no-inline"
-                ></use>
-              </svg></span
-            ><span data-nudge-label>10 s</span>
+            <svg
+              class="lucide-icon"
+              width="48"
+              height="48"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+            >
+              <use
+                href="../../node_modules/lucide-static/icons/square.svg?no-inline"
+              ></use>
+            </svg>
+            <span>Stop</span>
           </button>
         </div>
+        <section
+          class="conductor__session-bar conductor__language"
+          aria-label="Language"
+        >
+          <button type="button" data-language="en">EN</button
+          ><button type="button" data-language="de">DE</button>
+        </section>
+      </section>
+      <section class="conductor__stage-view" aria-label="Experience preview">
+        <div id="world-stage" class="conductor__stage-mount">
+          <canvas class="experience-canvas"></canvas>
+        </div>
+        <p class="conductor__stage-overlay" hidden>
+          Headset active · Desktop preview paused
+        </p>
       </section>
       <section class="conductor__timeline" aria-label="Show timeline">
         <svg class="timeline__track" aria-hidden="true">
@@ -170,52 +198,7 @@
           </button></template
         >
       </section>
-      <section class="conductor__session-bar" aria-label="Session">
-        <div class="conductor__language">
-          <span class="conductor__language-label">Language</span
-          ><button type="button" data-language="en">EN</button
-          ><button type="button" data-language="de">DE</button>
-        </div>
-        <button type="button" class="conductor__restart-button">
-          New visitor
-        </button>
-        <button type="button" class="conductor__stream-button">
-          <span class="conductor__button-icon"
-            ><svg
-              class="lucide-icon"
-              width="26"
-              height="26"
-              viewBox="0 0 24 24"
-              aria-hidden="true"
-            >
-              <use
-                href="../../node_modules/lucide-static/icons/headphones.svg?no-inline"
-              ></use>
-            </svg></span
-          ><span data-headset-label></span>
-        </button>
-        <button
-          type="button"
-          class="conductor__tech-button"
-          aria-label="Technician tools"
-          aria-controls="conductor-technician-tools"
-          aria-expanded="false"
-        >
-          <span class="conductor__button-icon"
-            ><svg
-              class="lucide-icon"
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              aria-hidden="true"
-            >
-              <use
-                href="../../node_modules/lucide-static/icons/wrench.svg?no-inline"
-              ></use>
-            </svg></span
-          >
-        </button>
-      </section>
+
       <aside
         class="conductor__drawer"
         id="conductor-technician-tools"
@@ -249,14 +232,23 @@
             handing the station back.
           </p>
         </div>
-        <div class="conductor__drawer-group" data-stage-parent>
-          <span class="conductor__drawer-heading">Stage view</span>
-          <div class="conductor__stage-view">
-            <div id="world-stage" class="conductor__stage-mount">
-              <canvas class="experience-canvas"></canvas>
-            </div>
-            <p class="conductor__stage-overlay" hidden>streaming — paused</p>
-          </div>
+        <div class="conductor__drawer-group">
+          <span class="conductor__drawer-heading">Headset picture</span>
+          <button type="button" class="conductor__stream-button">
+            <span class="conductor__button-icon"
+              ><svg
+                class="lucide-icon"
+                width="26"
+                height="26"
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+              >
+                <use
+                  href="../../node_modules/lucide-static/icons/headset.svg?no-inline"
+                ></use>
+              </svg></span
+            ><span data-headset-label></span>
+          </button>
         </div>
         <div class="conductor__drawer-group">
           <span class="conductor__drawer-heading">Rehearsal speed</span>

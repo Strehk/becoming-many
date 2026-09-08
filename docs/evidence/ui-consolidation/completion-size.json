@@ -1,0 +1,26 @@
+{
+  "checkpoint": {
+    "revision": "0e2c676",
+    "productionHtml": 62,
+    "documentation": 6629,
+    "productionCss": 967,
+    "productionTypeScript": 28841,
+    "testsAndToolingTypeScript": 13586
+  },
+  "handoff": {
+    "revision": "7375ff4",
+    "documentation": 6831,
+    "testsAndToolingTypeScript": 15672,
+    "productionTypeScript": 28919,
+    "productionCss": 977,
+    "productionHtml": 521
+  },
+  "completionCheckpoint": {
+    "revision": "67cfd64",
+    "documentation": 6859,
+    "testsAndToolingTypeScript": 16167,
+    "productionTypeScript": 28895,
+    "productionCss": 295,
+    "productionHtml": 529
+  }
+}

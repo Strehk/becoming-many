@@ -1,4 +1,3 @@
-/* Shared controls and surfaces; scene rendering stays with World. */
 :root {
   color-scheme: dark;
   --ground: #0d1311;
@@ -59,11 +58,11 @@ button[aria-pressed="true"],
   color: var(--ground);
   background: var(--warn);
 }
-button[data-armed="true"] {
+button[data-armed="true"],
+.conductor__restart-button {
   color: var(--ground);
   background: var(--alarm);
 }
-[data-state="running"],
 [data-state="live"] {
   color: var(--live);
 }
@@ -76,9 +75,6 @@ button[data-armed="true"] {
 .conductor__reload-button {
   color: var(--alarm);
 }
-.conductor__clock-total {
-  font-size: 14px;
-}
 :where(.conductor, .flash, .conductor__drawer, .rehearsal) {
   display: grid;
   gap: 16px;
@@ -88,7 +84,7 @@ button[data-armed="true"] {
   .conductor > section,
   .conductor__tile,
   .flash__panel,
-  .test-overlay__card,
+  .diagnostics-overlay__card,
   .rehearsal,
   .conductor__drawer
 ) {
@@ -98,9 +94,7 @@ button[data-armed="true"] {
 }
 :where(
   .conductor__masthead,
-  .conductor__tiles,
-  .conductor__transport,
-  .conductor__status-line,
+  .conductor__tile,
   .conductor__transport-controls,
   .conductor__language,
   .conductor__drawer-header,
@@ -120,8 +114,12 @@ button[data-armed="true"] {
   .conductor__drawer-group,
   .conductor__resets,
   .conductor__readouts,
+  .conductor__transport,
   .conductor__tile-body,
-  .test-overlay__card,
+  .conductor__chapter-button,
+  .conductor__chapters,
+  .conductor__tiles,
+  .diagnostics-overlay__card,
   .flash__panel,
   .flash__form,
   .flash__form label
@@ -132,30 +130,36 @@ button[data-armed="true"] {
 :where(.conductor) :where(button, input) {
   min-height: 56px;
 }
-.conductor__clock {
-  font-size: clamp(36px, 6vw, 80px);
+.conductor {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 440px), 1fr));
 }
-.conductor__transport-button {
-  min-width: 120px;
-  min-height: 96px;
-  font-size: 22px;
+.conductor__masthead,
+.conductor__banner,
+.conductor__timeline {
+  grid-column: 1 / -1;
 }
-.conductor__chapters,
-.conductor__session-bar {
-  display: grid;
-  grid-template-columns: repeat(
-      auto-fit,
-      minmax(min(100%, var(--column, 120px)), 1fr)
-    );
-  gap: 8px;
+.conductor__tile {
+  border-left: 4px solid currentColor;
 }
-.conductor__session-bar {
-  --column: 240px;
+.conductor__transport-button,
+.conductor__restart-button {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  min-height: 120px;
+  font-size: clamp(22px, 3vw, 48px);
+  font-weight: bold;
 }
+.conductor__tiles,
+.conductor__chapters {
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+}
+.conductor__tiles,
 .conductor__language button,
 .conductor__m5 button {
   flex: 1;
   min-width: 0;
+  height: 100%;
 }
 input {
   min-width: 0;
@@ -175,6 +179,7 @@ input {
 .conductor__stage-view {
   position: relative;
   aspect-ratio: 16 / 9;
+  padding: 0;
   overflow: hidden;
 }
 .conductor__stage-overlay,
@@ -231,7 +236,7 @@ input {
   pointer-events: none;
 }
 .timeline__slot,
-.test-overlay {
+.diagnostics-overlay {
   pointer-events: none;
 }
 body:has(> .app) {
@@ -247,17 +252,31 @@ body:has(> .app) {
   height: 100%;
 }
 .rehearsal,
-.test-overlay,
+.diagnostics-overlay,
 .xr-entry-button {
   position: fixed;
   z-index: 10;
   inset: 16px 16px auto;
 }
-.test-overlay {
+.diagnostics-overlay {
+  display: grid;
+  gap: 8px;
+  width: min(640px, calc(100vw - 32px));
+}
+.diagnostics-overlay__metrics {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
-  max-width: 420px;
+}
+.diagnostics-overlay__log {
+  max-height: calc(100dvh - 32px);
+  padding: 16px;
+  overflow: auto;
+  background: var(--ground);
+  border: 1px solid var(--edge);
+  font: inherit;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 .xr-entry-button {
   inset: auto auto 20px 50%;
@@ -267,8 +286,7 @@ body:has(> .app) {
   max-width: 760px;
   margin: auto;
 }
-.flash__log,
-.headset-diagnostics {
+.flash__log {
   overflow: auto;
   font: inherit;
   white-space: pre-wrap;
@@ -277,7 +295,6 @@ body:has(> .app) {
 .flash__log {
   height: 260px;
 }
-.headset-diagnostics,
 [data-startup-error] {
   position: fixed;
   inset: 0;
@@ -289,7 +306,6 @@ body:has(> .app) {
   bottom: auto;
   border: 1px solid var(--alarm);
 }
-/* Hidden remains authoritative over shared grid/flex presentation. */
 [hidden] {
   display: none;
 }

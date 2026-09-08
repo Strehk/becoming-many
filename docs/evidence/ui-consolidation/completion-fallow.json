@@ -1,0 +1,241 @@
+{
+  "before": {
+    "version": "3.23.0",
+    "unusedExports": [
+      {
+        "path": "src/modules/animal-passages/passage-definitions.ts",
+        "name": "BAT_PASSAGE"
+      },
+      {
+        "path": "src/sound/drone-organ/organ-timeline.ts",
+        "name": "STEP_LOOKAHEAD_SECONDS"
+      }
+    ],
+    "duplicateExports": ["ReadSwarmCrossing"],
+    "unresolvedHtmlImports": [],
+    "boundaryViolations": [],
+    "cloneGroups": 15,
+    "uiEntryComplexity": [
+      {
+        "path": "src/conductor/conductor.page.ts",
+        "name": "<arrow>",
+        "cyclomatic": 15,
+        "cognitive": 10
+      },
+      {
+        "path": "src/flash/flash.page.ts",
+        "name": "loadStoredSetup",
+        "cyclomatic": 7,
+        "cognitive": 6
+      },
+      {
+        "path": "src/dev/headset-diagnostics.ts",
+        "name": "safeFormat",
+        "cyclomatic": 6,
+        "cognitive": 6
+      },
+      {
+        "path": "src/dev/rehearsal.panel.ts",
+        "name": "draw",
+        "cyclomatic": 6,
+        "cognitive": 6
+      },
+      {
+        "path": "src/flash/serial-setup.ts",
+        "name": "readLines",
+        "cyclomatic": 6,
+        "cognitive": 9
+      },
+      {
+        "path": "src/dev/headset-diagnostics.ts",
+        "name": "write",
+        "cyclomatic": 5,
+        "cognitive": 5
+      }
+    ]
+  },
+  "handoff": {
+    "version": "3.23.0",
+    "unusedExports": [
+      {
+        "path": "src/modules/animal-passages/passage-definitions.ts",
+        "name": "BAT_PASSAGE"
+      },
+      {
+        "path": "src/sound/drone-organ/organ-timeline.ts",
+        "name": "STEP_LOOKAHEAD_SECONDS"
+      }
+    ],
+    "duplicateExports": ["ReadSwarmCrossing"],
+    "unresolvedHtmlImports": [
+      {
+        "path": "src/ui/conductor.html",
+        "specifier": "/entry/conductor.entry.ts"
+      },
+      {
+        "path": "src/ui/flash.html",
+        "specifier": "/entry/flash.entry.ts"
+      },
+      {
+        "path": "src/ui/index.html",
+        "specifier": "/entry/rehearsal.entry.ts"
+      },
+      {
+        "path": "src/ui/test.html",
+        "specifier": "/entry/test.entry.ts"
+      }
+    ],
+    "boundaryViolations": [],
+    "cloneGroups": 14,
+    "uiEntryComplexity": [
+      {
+        "path": "src/ui/conductor/conductor.page.ts",
+        "name": "<arrow>",
+        "cyclomatic": 15,
+        "cognitive": 10
+      },
+      {
+        "path": "src/entry/flash.entry.ts",
+        "name": "toggleConnection",
+        "cyclomatic": 10,
+        "cognitive": 13
+      },
+      {
+        "path": "src/entry/flash.entry.ts",
+        "name": "send",
+        "cyclomatic": 9,
+        "cognitive": 7
+      },
+      {
+        "path": "src/ui/flash/flash.page.ts",
+        "name": "loadStoredSetup",
+        "cyclomatic": 9,
+        "cognitive": 8
+      },
+      {
+        "path": "src/ui/rehearsal/transport.panel.ts",
+        "name": "draw",
+        "cyclomatic": 7,
+        "cognitive": 7
+      },
+      {
+        "path": "src/ui/test/headset-diagnostics.panel.ts",
+        "name": "safeFormat",
+        "cyclomatic": 6,
+        "cognitive": 6
+      },
+      {
+        "path": "src/entry/flash.entry.ts",
+        "name": "describeResponse",
+        "cyclomatic": 5,
+        "cognitive": 9
+      },
+      {
+        "path": "src/ui/flash/flash.page.ts",
+        "name": "updateControls",
+        "cyclomatic": 5,
+        "cognitive": 3
+      },
+      {
+        "path": "src/ui/test/headset-diagnostics.panel.ts",
+        "name": "write",
+        "cyclomatic": 5,
+        "cognitive": 5
+      }
+    ]
+  },
+  "completed": {
+    "version": "3.23.0",
+    "unusedExports": [
+      {
+        "path": "src/modules/animal-passages/passage-definitions.ts",
+        "name": "BAT_PASSAGE"
+      },
+      {
+        "path": "src/sound/drone-organ/organ-timeline.ts",
+        "name": "STEP_LOOKAHEAD_SECONDS"
+      }
+    ],
+    "duplicateExports": ["ReadSwarmCrossing"],
+    "unresolvedHtmlImports": [],
+    "boundaryViolations": [],
+    "cloneGroups": 14,
+    "uiEntryComplexity": [
+      {
+        "path": "src/ui/conductor/conductor.page.ts",
+        "name": "<arrow>",
+        "cyclomatic": 19,
+        "cognitive": 13
+      },
+      {
+        "path": "src/entry/flash.entry.ts",
+        "name": "toggleConnection",
+        "cyclomatic": 10,
+        "cognitive": 13
+      },
+      {
+        "path": "src/entry/flash.entry.ts",
+        "name": "send",
+        "cyclomatic": 9,
+        "cognitive": 7
+      },
+      {
+        "path": "src/ui/flash/flash.page.ts",
+        "name": "loadStoredSetup",
+        "cyclomatic": 9,
+        "cognitive": 8
+      },
+      {
+        "path": "src/ui/rehearsal/transport.panel.ts",
+        "name": "draw",
+        "cyclomatic": 7,
+        "cognitive": 8
+      },
+      {
+        "path": "src/ui/test/headset-diagnostics.panel.ts",
+        "name": "safeFormat",
+        "cyclomatic": 6,
+        "cognitive": 6
+      },
+      {
+        "path": "src/entry/flash.entry.ts",
+        "name": "describeResponse",
+        "cyclomatic": 5,
+        "cognitive": 9
+      },
+      {
+        "path": "src/ui/flash/flash.page.ts",
+        "name": "updateControls",
+        "cyclomatic": 5,
+        "cognitive": 3
+      },
+      {
+        "path": "src/ui/test/headset-diagnostics.panel.ts",
+        "name": "write",
+        "cyclomatic": 5,
+        "cognitive": 5
+      }
+    ]
+  },
+  "limits": "Before/handoff are read-only source exports for matching concrete findings, not complete repository audits. Final is the full live repository. The final snapshot precedes the separately committed M5 boundary refinement and Lucide dependency.",
+  "negativeFixtures": [
+    {
+      "from_path": "src/ui/conductor/conductor.page.ts",
+      "to_path": "src/levels/level.runtime.ts",
+      "from_zone": "ui",
+      "to_zone": "levels"
+    },
+    {
+      "from_path": "src/world/world-runtime.ts",
+      "to_path": "src/ui/shared/dom.ts",
+      "from_zone": "world",
+      "to_zone": "ui"
+    },
+    {
+      "from_path": "station/station-server.ts",
+      "to_path": "src/world/world-runtime.ts",
+      "from_zone": "station-backend",
+      "to_zone": "world"
+    }
+  ]
+}

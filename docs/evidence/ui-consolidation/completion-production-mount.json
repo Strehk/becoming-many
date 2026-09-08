@@ -1,0 +1,45 @@
+{
+  "revision": "1dffb0d0b5627f3d955e697db3f422028a52da06",
+  "sourceDigest": "17594bb810d342ff1c4ede3632d9f65571b749ead4eb614f4c696fb38b1e0129",
+  "diffDigest": "0265bb919c16a92a11a09b86e8f9261a884e7f464b9a9e35e2779264c8617df1",
+  "dirtyFiles": [
+    "M bun.lock",
+    " M package.json",
+    " M src/benchmark/README.md",
+    " M src/dramaturgy/README.md",
+    " M src/entry/flash.entry.ts",
+    " M src/ui/conductor.html",
+    " M src/ui/conductor/conductor.page.ts",
+    " M src/ui/conductor/show-timeline.panel.ts",
+    " M src/ui/conductor/technician-drawer.panel.ts",
+    " M src/ui/flash.html",
+    " M src/ui/flash/flash.page.ts",
+    " M src/ui/index.html",
+    " M src/ui/rehearsal/transport.panel.ts",
+    " M src/ui/test.html",
+    " M station/README.md",
+    " M tests/architecture/ui-markup-boundary.test.ts",
+    " M tests/browser/flash-acceptance.ts",
+    " M tests/browser/run-browser-smoke.ts",
+    " M tests/conductor/README.md",
+    " M tests/station/README.md",
+    "?? tests/browser/ui-mount-failure.ts"
+  ],
+  "platform": "darwin 25.6.0",
+  "cpu": "Apple M2 Max",
+  "bunVersion": "1.3.14",
+  "results": [
+    {
+      "route": "/",
+      "passed": true
+    },
+    {
+      "route": "/conductor.html",
+      "passed": true
+    },
+    {
+      "route": "/flash.html",
+      "passed": true
+    }
+  ]
+}

@@ -17,8 +17,6 @@ export interface TechDrawerOptions {
 
 export interface TechDrawer {
   readonly toggle: () => void;
-  /** Where the stage view panel mounts, above the controls. */
-  readonly stageParent: HTMLElement;
   /** Where the M5 host panel mounts, below the resets. */
   readonly m5Parent: HTMLElement;
   readonly panel: ConductorPanel;
@@ -61,7 +59,6 @@ export function createTechDrawer({
     { signal },
   );
   signal.addEventListener("abort", () => setOpen(false), { once: true });
-  const stageParent = requireElement(root, "[data-stage-parent]", HTMLElement);
   const m5Parent = requireElement(root, "[data-m5-parent]", HTMLElement);
   const rateButtons = CONDUCTOR_SETTINGS.timeScales.map((timeScale) => {
     const button = requireElement(
@@ -98,7 +95,6 @@ export function createTechDrawer({
 
   return {
     toggle,
-    stageParent,
     m5Parent,
     panel: {
       update(state): void {

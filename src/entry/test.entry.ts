@@ -14,11 +14,7 @@ import { FrameMetricsSampler } from "../diagnostics/frame-metrics";
 import { type Run, startLevel } from "../levels/level.runtime";
 import { LEVEL_CATALOG, resolveLevelName } from "../levels/level-catalog";
 import { mountVrEntryButton } from "../ui/shared/xr-entry-button";
-import { showHeadsetDiagnostics } from "../ui/test/headset-diagnostics.panel";
-import {
-  createTestOverlay,
-  type TestOverlay,
-} from "../ui/test/metrics-overlay.panel";
+import { createDiagnosticsOverlay } from "../ui/test/diagnostics-overlay.panel";
 import { loadDeploymentConfig } from "./deployment-config";
 import { loadTestLevelModules } from "./test-level-modules";
 
@@ -30,14 +26,14 @@ window.addEventListener("pagehide", (event) => {
   }
 });
 const request = new URLSearchParams(window.location.search);
+const container = requireElement(document, ".app", HTMLElement);
+const diagnostics = createDiagnosticsOverlay(
+  container,
+  request.get("diagnostics") !== null,
+);
 
 // A headset browser has no console, so explicit diagnostics make browser and
 // shader failures visible on the development page itself.
-const diagnostics =
-  request.get("diagnostics") !== null
-    ? showHeadsetDiagnostics(document.body)
-    : undefined;
-
 const requestedLevel =
   request.get("level") ?? levelNameFromPath(window.location.pathname) ?? null;
 const levelName = resolveLevelName(requestedLevel);
@@ -55,8 +51,6 @@ try {
   const preset = LEVEL_CATALOG[levelName];
   const frameMetrics =
     !benchmark && preset.testUi ? new FrameMetricsSampler() : undefined;
-  let overlay: TestOverlay | undefined;
-  const container = requireElement(document, ".app", HTMLElement);
   const canvas = requireElement(
     container,
     ".experience-canvas",
@@ -74,7 +68,7 @@ try {
       onFrame: frameMetrics
         ? (deltaSeconds) => {
             frameMetrics.add(deltaSeconds);
-            overlay?.update(deltaSeconds);
+            diagnostics.update(deltaSeconds);
           }
         : undefined,
       testModules,
@@ -82,13 +76,11 @@ try {
     },
   );
   lifetime.signal.throwIfAborted();
-  diagnostics?.showGraphics(level.readGraphicsInfo());
-  if (frameMetrics && container) {
-    overlay = createTestOverlay(container, level.renderCounters, () =>
-      frameMetrics.read(),
-    );
-    lifetime.signal.addEventListener("abort", overlay.unload, { once: true });
+  diagnostics.showGraphics(level.readGraphicsInfo());
+  if (frameMetrics) {
+    diagnostics.startMetrics(level.renderCounters, () => frameMetrics.read());
   }
+  lifetime.signal.addEventListener("abort", diagnostics.unload, { once: true });
 
   const unmountVr = mountVrEntryButton(document.body, level.xr);
   lifetime.signal.addEventListener("abort", unmountVr, { once: true });

@@ -1,9 +1,7 @@
 import { NARRATION_LANGUAGES } from "../../dramaturgy/narration-catalog";
-import type { Run } from "../../levels/level.runtime";
 import type { RunningShow } from "../../levels/show.runtime";
 import type { XrSessionControl } from "../../world/xr-session";
 import { requireElement, writeText } from "../shared/dom";
-import { bindConfirmation } from "./confirmation";
 import { resolveStreamButton } from "./headset-button-state";
 import type { ConductorPanel } from "./view-state";
 
@@ -11,7 +9,6 @@ export interface SessionBarOptions {
   readonly parent: HTMLElement;
   readonly signal: AbortSignal;
   readonly show: Pick<RunningShow, "setLanguage">;
-  readonly run: Pick<Run, "resetShowAndFlight">;
   readonly xr: Pick<XrSessionControl, "start" | "stop">;
   readonly onToggleTechDrawer: () => void;
 }
@@ -20,7 +17,6 @@ export function createSessionBar({
   parent,
   signal,
   show,
-  run,
   xr,
   onToggleTechDrawer,
 }: SessionBarOptions): ConductorPanel {
@@ -36,15 +32,9 @@ export function createSessionBar({
     });
     return button;
   });
-  bindConfirmation(
-    requireElement(root, ".conductor__restart-button", HTMLButtonElement),
-    "Tap again to reset",
-    run.resetShowAndFlight,
-    signal,
-  );
   let isSessionActive = false;
   const streamButton = requireElement(
-    root,
+    parent,
     ".conductor__stream-button",
     HTMLButtonElement,
   );
@@ -64,7 +54,7 @@ export function createSessionBar({
     { signal },
   );
   const techButton = requireElement(
-    root,
+    parent,
     ".conductor__tech-button",
     HTMLButtonElement,
   );

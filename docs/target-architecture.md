@@ -599,11 +599,11 @@ supports creating/replacing/disposing contexts; release nodes/ticker and await
 closure, then establish a fresh context before next-run nodes. Late imports
 must release acquired resources. Actual restart/worklet behavior remains unproved.
 
-#14 removes the additional GPU probe in
-[headset-diagnostics.ts](../src/ui/test/headset-diagnostics.panel.ts); the entry owns its
+#14 removes the additional GPU probe in the Test
+[diagnostics overlay](../src/ui/test/diagnostics-overlay.panel.ts); the entry owns its
 bounded diagnostic handle and restores hooks on end. World supplies the actual
 capability report on demand; startup errors stay visible. #35 makes Test own its
-overlay and sampler, with Conductor reading its own sampler directly. Run keeps
+diagnostics UI and sampler, with Conductor reading its own sampler directly. Run keeps
 only an optional `onFrame` input; the metrics type lives beside the sampler.
 World exposes read-only live draw counters without renderer mutation access.
 The root has no sampler; Conductor still reads every 500 ms; the lazy Test-module
