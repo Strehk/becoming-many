@@ -20,7 +20,10 @@ import {
   Vector3,
 } from "three";
 import type { GLTF } from "three/examples/jsm/loaders/GLTFLoader.js";
-import { createBirdBodies } from "../../src/modules/motion-sense/bird-bodies";
+import {
+  BIRD_BODY_ASSET,
+  createBirdBodies,
+} from "../../src/modules/motion-sense/bird-bodies";
 import { createBirdFlocks } from "../../src/modules/motion-sense/bird-flocks";
 import { createFlySwarms } from "../../src/modules/motion-sense/fly-swarms";
 import { createMotionSenseModule } from "../../src/modules/motion-sense/motion-sense";
@@ -854,6 +857,59 @@ describe("Motion Sense module", () => {
     ]);
 
     module.unload();
+  });
+
+  // The leak this guards: the pool draws a clone of the model, so disposing
+  // the pool leaves the loaded source untouched. Nothing else holds it, so
+  // the module that asked for it has to release it, exactly as the animal,
+  // rock and vegetation pools release theirs.
+  test("releases the loaded bird model when the sense unloads", () => {
+    const scene = new Scene();
+    const viewpoint: Viewpoint = {
+      worldPosition: new Vector3(),
+      viewDistanceMeters: 128,
+    };
+    const asset = createBirdGltf();
+    const source = asset.scene.children[0];
+    if (!(source instanceof Mesh)) throw new Error("Expected the model mesh");
+    const sourceMaterial = source.material;
+    if (Array.isArray(sourceMaterial)) throw new Error("Expected one material");
+
+    let releasedGeometries = 0;
+    let releasedMaterials = 0;
+    source.geometry.addEventListener("dispose", () => {
+      releasedGeometries += 1;
+    });
+    sourceMaterial.addEventListener("dispose", () => {
+      releasedMaterials += 1;
+    });
+
+    const { module } = createMotionSenseModule({
+      scene,
+      viewpoint,
+      parameters: createMotionParameters({
+        birds: {
+          ...createBirdParameters(),
+          body: { lengthMeters: 0.26, color: 0x171717 },
+        },
+      }),
+      groundYAt: () => 0,
+      zoneAt: () => "meadow",
+      birdBody: {
+        assets: new Map([[BIRD_BODY_ASSET.id, asset]]),
+        effects: [],
+      },
+    });
+
+    module.load();
+    // Flies, fly trails, bird trails, and the one instanced body pool.
+    expect(scene.children).toHaveLength(4);
+    expect(releasedGeometries).toBe(0);
+
+    module.unload();
+    expect(scene.children).toHaveLength(0);
+    expect(releasedGeometries).toBe(1);
+    expect(releasedMaterials).toBe(1);
   });
 });
 

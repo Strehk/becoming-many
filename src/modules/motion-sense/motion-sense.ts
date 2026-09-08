@@ -6,12 +6,19 @@
  */
 
 import type { Scene } from "three";
-import type { GLTF } from "three/examples/jsm/loaders/GLTFLoader.js";
+import {
+  disposeGltfAssets,
+  type GltfAssets,
+} from "../../utils/asset-loader/gltf-assets";
 import type { UnlitMaterialEffect } from "../../utils/asset-loader/material-effect";
 import type { WorldModule } from "../../world/module-runtime";
 import type { Viewpoint } from "../../world/viewer-rig";
 import type { WorldSurface } from "../../world-surface/world-surface";
-import { type BirdBodies, createBirdBodies } from "./bird-bodies";
+import {
+  BIRD_BODY_ASSET,
+  type BirdBodies,
+  createBirdBodies,
+} from "./bird-bodies";
 import {
   type BirdFlocks,
   createBirdFlocks,
@@ -45,12 +52,14 @@ export interface MotionSenseModuleOptions {
   readonly groundYAt: WorldSurface["groundYAt"];
   readonly zoneAt: WorldSurface["zoneAt"];
   /**
-   * The bird model, and what the show fades it through. Absent for a level
-   * that authors no bird bodies, and for one composed without a show: the
-   * trace is the sense, and a body only ever joins it.
+   * The loaded bird model, and what the show fades it through. Absent for a
+   * level that authors no bird bodies, and for one composed without a show:
+   * the trace is the sense, and a body only ever joins it. The module is
+   * handed the whole asset set rather than one model because it owns the
+   * set's lifecycle and releases it on unload.
    */
   readonly birdBody?: {
-    readonly asset: GLTF;
+    readonly assets: GltfAssets;
     readonly effects: readonly UnlitMaterialEffect[];
   };
 }
@@ -119,7 +128,7 @@ export function createMotionSenseModule(
       activate: () => setMotionSenseVisible(state, true),
       update: (deltaSeconds) => updateMotionSense(state, options, deltaSeconds),
       deactivate: () => setMotionSenseVisible(state, false),
-      unload: () => unloadMotionSense(state, options.scene),
+      unload: () => unloadMotionSense(state, options),
     },
     setIntensity: (intensity) => {
       senseFadeUniform.value = intensity;
@@ -200,11 +209,12 @@ function loadMotionSense(
 
   // A flock is a trace first: the bodies join only where a level authors
   // them, and even then a show decides when they may be seen.
+  const birdAsset = options.birdBody?.assets.get(BIRD_BODY_ASSET.id);
   const birdBodies =
-    birdFlocks && parameters.birds?.body && options.birdBody
+    birdFlocks && parameters.birds?.body && options.birdBody && birdAsset
       ? createBirdBodies({
           scene,
-          asset: options.birdBody.asset,
+          asset: birdAsset,
           appearance: parameters.birds.body,
           birdCount: getBirdCount(parameters.birds),
           effects: options.birdBody.effects,
@@ -274,12 +284,19 @@ function applyBirdBodyVisibility(state: MotionSenseState): void {
   );
 }
 
-function unloadMotionSense(state: MotionSenseState, scene: Scene): void {
+function unloadMotionSense(
+  state: MotionSenseState,
+  options: MotionSenseModuleOptions,
+): void {
   const resources = state.currentResources;
   if (!resources) return;
 
+  const scene = options.scene;
   state.currentResources = undefined;
   resources.birdBodies?.dispose();
+  // The pool draws a clone of the model; the loaded source is this module's
+  // to release too, exactly as the animal, rock and vegetation pools do.
+  if (options.birdBody) disposeGltfAssets(options.birdBody.assets);
   scene.remove(resources.flySwarms.points);
   resources.flySwarms.dispose();
   for (const printer of resources.printers) {

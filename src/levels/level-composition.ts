@@ -375,11 +375,11 @@ function createMotionSense(
   // haze with the heat view that reveals them. They circle well beyond that
   // view's reach, so like an unwarmed animal they keep the echo palette their
   // color is authored in.
-  const asset = setup.assets.birds.get(BIRD_BODY_ASSET.id);
-  const birdBody =
-    parameters.birds?.body && asset
-      ? { asset, effects: animalsFade ? [animalsFade] : [] }
-      : undefined;
+  // The module is handed the whole loaded set, not one model out of it, so
+  // that releasing it stays with the module that draws from it.
+  const birdBody = hasBirdBodies(setup.level)
+    ? { assets: setup.assets.birds, effects: animalsFade ? [animalsFade] : [] }
+    : undefined;
 
   return createMotionSenseModule({
     scene: setup.world.scene,
@@ -717,10 +717,20 @@ export async function loadLevelAssets(
         ? createStaticAssetRequests(ANIMALS_DEFINITION.species)
         : [],
     ),
-    loadGltfAssets(level.motion?.birds?.body ? [BIRD_BODY_ASSET] : []),
+    loadGltfAssets(hasBirdBodies(level) ? [BIRD_BODY_ASSET] : []),
   ]);
 
   return { vegetation, rocks, animals, birds };
+}
+
+/**
+ * Whether this level draws bird bodies at all. One answer for both the load
+ * and the composition: a model loaded for a sense that is never built would
+ * have no owner left to release it.
+ */
+function hasBirdBodies(level: WorldComposition): boolean {
+  const motion = level.motion;
+  return Boolean(motion && motion.intensity !== 0 && motion.birds?.body);
 }
 
 function createStaticAssetRequests(
