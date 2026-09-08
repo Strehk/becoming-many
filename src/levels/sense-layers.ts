@@ -14,6 +14,7 @@ import { MAGNETIC_SENSE } from "./authored/magnetic-sense";
 import { HEAT_MOTION_SENSE, MOTION_SENSE } from "./authored/motion-sense";
 import { ROCKS } from "./authored/rocks";
 import { SCENT_PARTICLES } from "./authored/scent-particles";
+import { SNAKES } from "./authored/snakes";
 import { ZONE_TERRAIN } from "./authored/terrain";
 import { THERMAL_PERCEPTION } from "./authored/thermal-perception";
 import { VEGETATION } from "./authored/vegetation";
@@ -51,11 +52,12 @@ export const MOTION_LAYER: Pick<WorldComposition, "motion"> = {
 
 export const THERMAL_LAYER: Pick<
   WorldComposition,
-  "motion" | "animals" | "thermal"
+  "motion" | "animals" | "thermal" | "snakes"
 > = {
   motion: HEAT_MOTION_SENSE,
   animals: WARM_ANIMALS,
   thermal: THERMAL_PERCEPTION,
+  snakes: SNAKES,
 };
 
 export const MAGNETIC_LAYER: Pick<WorldComposition, "magnetic"> = {

@@ -75,7 +75,9 @@ issue and a bounded implementation.
   flocks fly as pure trace; from Thermal on they also carry bodies, drawn as
   one instanced pool whose wings beat in the vertex shader.
 - Thermal: a viewer-centred false-colour material effect across terrain,
-  vegetation, rocks, and animals.
+  vegetation, rocks, and animals, plus the snake pool the same cue reveals —
+  a basking body is authored at the palette's hot stop and deliberately stays
+  outside that ramp.
 - Magnetic: one opaque camera-following sky dome; it does not patch terrain or
   other module materials.
 - Connections: a worker-generated, fixed-pool mycelium network connected to
