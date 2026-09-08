@@ -22,6 +22,14 @@ In another terminal, run the browser smoke against that exact server:
 bun run test:browser --base-url http://localhost:4180 --out benchmark-results/issue-75/smoke-1
 ```
 
+Repeat `--route` to check only affected surfaces and their startup/mount-failure
+scenarios. Routes must match the existing smoke catalog; omitting the option
+keeps the complete run. For shared UI changes:
+
+```sh
+bun run test:browser --base-url http://localhost:4180 --route / --route '/?level=echo' --route /conductor.html --route /flash.html --out benchmark-results/browser/ui-smoke
+```
+
 The browser is visible by default; `--headless` is an explicit functional-only
 alternative. Each route gets a fresh context at 1280 × 720 and device scale 1.
 Choose a new output directory per run; the final report refuses to overwrite

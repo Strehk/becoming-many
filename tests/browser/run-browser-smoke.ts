@@ -39,6 +39,7 @@ const { values } = parseArgs({
     out: { type: "string", default: `benchmark-results/browser/${Date.now()}` },
     headless: { type: "boolean", default: false },
     dev: { type: "boolean", default: false },
+    route: { type: "string", multiple: true },
   },
 });
 const baseUrl = new URL(values["base-url"]).origin;
@@ -56,6 +57,23 @@ await main();
 
 async function main(): Promise<void> {
   assertRefactorBranch();
+  const availableRoutes = [
+    "/",
+    "/?level=echo",
+    "/?level=start",
+    "/conductor.html",
+    "/flash.html",
+    ...LEVEL_NAMES.map((level) => `/${level}`),
+  ];
+  const selectedRoutes = values.route
+    ? [...new Set(values.route)]
+    : availableRoutes;
+  for (const route of selectedRoutes) {
+    assert(
+      availableRoutes.includes(route),
+      `Unknown smoke route: ${route}. Available routes: ${availableRoutes.join(", ")}`,
+    );
+  }
   const identity = readRunIdentity();
   const results: SmokeResult[] = [];
   await mkdir(outputDirectory, { recursive: true });
@@ -66,15 +84,7 @@ async function main(): Promise<void> {
       await checkStationHealth();
       await checkStationConfig();
     }
-    const routes = [
-      "/",
-      "/?level=echo",
-      "/?level=start",
-      "/conductor.html",
-      "/flash.html",
-      ...LEVEL_NAMES.map((level) => `/${level}`),
-    ];
-    for (const [index, route] of routes.entries()) {
+    for (const [index, route] of selectedRoutes.entries()) {
       const result = await runSmokeRoute(browser, route, index);
       results.push(result);
       console.log(
@@ -94,6 +104,7 @@ async function main(): Promise<void> {
       },
     ]) {
       for (const route of routes) {
+        if (!selectedRoutes.includes(route)) continue;
         const scenario = `${name}:${route}`;
         try {
           await check(
@@ -426,6 +437,7 @@ async function checkConductor(page: Page): Promise<boolean> {
     ".conductor__transport-button",
   );
   await checkConductorKeyboard(page);
+  await checkConductorTimelineKeyboard(page);
   return wakeRequired;
 }
 
@@ -513,13 +525,102 @@ async function checkConductorTransport(page: Page): Promise<void> {
     .locator('.conductor__transport-button[data-playing="true"]')
     .waitFor();
   await observeConductorTime(page);
+  await checkConductorTargets(page);
+  const frames = await page.evaluate(async () => {
+    const samples: { position: number; progress: number[] }[] = [];
+    for (let frame = 0; frame < 12; frame++) {
+      await new Promise<void>((resolve) =>
+        requestAnimationFrame(() => resolve()),
+      );
+      samples.push({
+        position: Number.parseFloat(
+          document.querySelector(".timeline__playhead")?.getAttribute("x1") ??
+            "",
+        ),
+        progress: [...document.querySelectorAll(".timeline__progress")].map(
+          (bar) => Number.parseFloat(bar.getAttribute("width") ?? ""),
+        ),
+      });
+    }
+    return samples;
+  });
+  for (const [index, frame] of frames.entries()) {
+    const previous = frames[index - 1];
+    if (!previous) continue;
+    assert(
+      frame.position >= previous.position,
+      "Playhead advances monotonically",
+    );
+    assert(
+      frame.progress.every((width, chapter) => {
+        const previousWidth = previous.progress[chapter];
+        return previousWidth !== undefined && width >= previousWidth;
+      }),
+      "Chapter progress advances monotonically",
+    );
+  }
+  const firstFrame = frames[0];
+  const lastFrame = frames.at(-1);
+  assert(firstFrame && lastFrame);
+  assert(
+    lastFrame.position > firstFrame.position,
+    "Playback animates the timeline",
+  );
   await transport.click();
   await page
     .locator('.conductor__transport-button[data-playing="false"]')
     .waitFor();
   const pausedTime = await observeConductorTime(page);
+  const pausedProgress = await page
+    .locator(".timeline__progress")
+    .evaluateAll((bars) => bars.map((bar) => bar.getAttribute("width")));
   await page.waitForTimeout(PAUSE_OBSERVATION_MILLISECONDS);
   assert.equal(await observeConductorTime(page), pausedTime);
+  assert.deepEqual(
+    await page
+      .locator(".timeline__progress")
+      .evaluateAll((bars) => bars.map((bar) => bar.getAttribute("width"))),
+    pausedProgress,
+    "Pause freezes chapter progress as well as the playhead",
+  );
+}
+
+/** The visible timeline exposes the same position to keyboard and assistive users. */
+async function checkConductorTimelineKeyboard(page: Page): Promise<void> {
+  const timeline = page.getByRole("slider");
+  assert.equal(await timeline.getAttribute("aria-valuemin"), "0");
+  assert.equal(
+    Number(await timeline.getAttribute("aria-valuemax")),
+    PIECE_SCHEDULE.durationSeconds,
+  );
+  for (const [key, seconds] of [
+    ["Home", 0],
+    ["ArrowRight", 5],
+    ["Shift+ArrowRight", 35],
+    ["ArrowLeft", 30],
+    ["ArrowUp", 35],
+    ["ArrowDown", 30],
+    ["End", PIECE_SCHEDULE.durationSeconds],
+  ] as const) {
+    await timeline.press(key);
+    await observeConductorTime(page, seconds);
+    assert.equal(Number(await timeline.getAttribute("aria-valuenow")), seconds);
+    assert(await timeline.getAttribute("aria-valuetext"));
+    assert.equal(
+      await page
+        .locator(".conductor__transport-button")
+        .getAttribute("data-playing"),
+      "false",
+      "Keyboard seeking preserves paused playback",
+    );
+  }
+  const currentChapter = page.locator(
+    '.conductor__chapters [aria-pressed="true"]',
+  );
+  assert.equal(await currentChapter.count(), 1);
+  assert.match(await currentChapter.innerText(), /Return/);
+  await timeline.press("Home");
+  await observeConductorTime(page, 0);
 }
 
 async function checkConductorStop(page: Page): Promise<void> {
@@ -667,6 +768,7 @@ async function checkUiLayout(page: Page, route: string): Promise<void> {
       "Authored UI has no inline styles",
     );
     if (route === "/conductor.html") {
+      await checkConductorTargets(page);
       const button = page.locator(".conductor__transport-button");
       const buttonBounds = await button.boundingBox();
       assert(buttonBounds);
@@ -675,14 +777,14 @@ async function checkUiLayout(page: Page, route: string): Promise<void> {
         "Operator transport retains its touch target",
       );
       const stopBounds = await page
-        .locator(".conductor__restart-button")
+        .locator(".conductor__stop-button")
         .boundingBox();
       assert(
         stopBounds && stopBounds.height >= 72,
         "Stop retains its touch target",
       );
       const languageBounds = await page
-        .locator(".conductor__session-bar")
+        .locator(".conductor__language")
         .boundingBox();
       assert(
         languageBounds &&
@@ -743,6 +845,29 @@ async function checkUiLayout(page: Page, route: string): Promise<void> {
   if (route === "/conductor.html") await checkTechnicianControls(page);
 }
 
+/** Imported glyphs must actually paint, and every operator button stays touchable. */
+async function checkConductorTargets(page: Page): Promise<void> {
+  for (const button of await page.locator(".conductor button:visible").all()) {
+    const bounds = await button.boundingBox();
+    assert(
+      bounds && bounds.width >= 56 && bounds.height >= 56,
+      `Button needs a 56px target: ${(await button.getAttribute("aria-label")) ?? (await button.innerText())}`,
+    );
+  }
+  for (const icon of await page
+    .locator(".conductor .lucide-icon:visible")
+    .all()) {
+    const glyph = await icon.evaluate((element) => {
+      const bounds = (element as SVGSVGElement).getBBox();
+      return { width: bounds.width, height: bounds.height };
+    });
+    assert(
+      glyph.width > 0 && glyph.height > 0,
+      "Visible Lucide icons contain painted geometry",
+    );
+  }
+}
+
 async function checkTechnicianControls(page: Page): Promise<void> {
   const drawer = page.locator(".conductor__drawer");
   const scenePreview = page.locator(".conductor__stage-mount canvas");
@@ -761,8 +886,8 @@ async function checkTechnicianControls(page: Page): Promise<void> {
     exact: true,
   });
   assert.equal(
-    await drawer.evaluate((element) => element.hasAttribute("inert")),
-    true,
+    await drawer.evaluate((element) => element.matches("dialog[open]")),
+    false,
   );
   await drawer
     .locator("button")
@@ -779,6 +904,81 @@ async function checkTechnicianControls(page: Page): Promise<void> {
   assert.equal(await toggle.getAttribute("aria-expanded"), "true");
   assert.equal(
     await close.evaluate((element) => element === document.activeElement),
+    true,
+  );
+  assert.equal(
+    await drawer.evaluate((element) => element.matches(":modal")),
+    true,
+  );
+  await checkConductorTargets(page);
+  const transport = page.locator(".conductor__transport-button");
+  await transport.evaluate((element) => element.focus());
+  assert.equal(
+    await transport.evaluate((element) => element === document.activeElement),
+    false,
+    "The modal prevents focus on covered transport controls",
+  );
+  const drawerControls = drawer.locator("button:enabled, input:enabled");
+  for (const [control, key] of [
+    [drawerControls.first(), "Shift+Tab"],
+    [drawerControls.last(), "Tab"],
+  ] as const) {
+    await control.focus();
+    await page.keyboard.press(key);
+    assert.equal(
+      await drawer.evaluate(
+        (element) =>
+          element.contains(document.activeElement) ||
+          document.activeElement === document.body,
+      ),
+      true,
+      "Tab boundaries never focus covered main controls",
+    );
+  }
+  await close.focus();
+  const heldTime = await observeConductorTime(page);
+  const heldLanguage = await page
+    .locator('.conductor__language [aria-pressed="true"]')
+    .innerText();
+  for (const key of ["Home", "ArrowRight", "Digit3", "KeyL", "KeyR"]) {
+    await close.press(key);
+  }
+  assert.equal(await observeConductorTime(page), heldTime);
+  assert.equal(
+    await page
+      .locator('.conductor__language [aria-pressed="true"]')
+      .innerText(),
+    heldLanguage,
+    "Technician tools do not invoke global language shortcuts",
+  );
+  for (const scale of [0.5, 1]) {
+    await drawer.locator(`[data-time-scale="${scale}"]`).click();
+    await page.waitForFunction(
+      (scale) =>
+        document
+          .querySelector(`[data-time-scale="${scale}"]`)
+          ?.getAttribute("aria-pressed") === "true",
+      scale,
+    );
+  }
+  await drawer.locator("[data-reset-show]").click();
+  await observeConductorTime(page, 0);
+  assert.equal(await transport.getAttribute("data-playing"), "false");
+  await drawer.locator("[data-reset-flight]").click();
+  await observeConductorTime(page, 0);
+  const reload = drawer.locator(".conductor__reload-button");
+  const reloadLabel = await reload.innerText();
+  await reload.click();
+  assert.equal(await reload.getAttribute("data-armed"), "true");
+  await page.waitForFunction(
+    () =>
+      document
+        .querySelector(".conductor__reload-button")
+        ?.getAttribute("data-armed") === "false",
+  );
+  assert.equal(await reload.innerText(), reloadLabel);
+  assert.equal(
+    await drawer.evaluate((element) => element.matches(":modal")),
     true,
   );
   const preview = page.locator(".conductor__m5-preview");
@@ -872,8 +1072,8 @@ async function checkTechnicianControls(page: Page): Promise<void> {
   assert.equal(await preview.isVisible(), false);
   await close.press("Escape");
   assert.equal(
-    await drawer.evaluate((element) => element.hasAttribute("inert")),
-    true,
+    await drawer.evaluate((element) => element.matches("dialog[open]")),
+    false,
   );
   assert.equal(await toggle.getAttribute("aria-expanded"), "false");
   assert.equal(
@@ -886,6 +1086,17 @@ async function checkTechnicianControls(page: Page): Promise<void> {
     "Closing technician tools keeps the renderer mounted",
   );
   assert.equal(await scenePreview.isVisible(), true);
+  await toggle.click();
+  assert.equal(
+    await drawer.evaluate((element) => element.matches(":modal")),
+    true,
+  );
+  await close.click();
+  assert.equal(await drawer.isVisible(), false);
+  assert.equal(
+    await toggle.evaluate((element) => element === document.activeElement),
+    true,
+  );
 }
 
 async function checkFlash(page: Page): Promise<void> {

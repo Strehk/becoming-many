@@ -22,9 +22,9 @@ import type { RunningShow } from "../../levels/show.runtime";
 import type { XrSessionState } from "../../world/xr-session";
 import { requireElement } from "../shared/dom";
 import { resolveConductorKey } from "./keyboard-shortcuts";
+import { createLanguagePanel } from "./language.panel";
 import { createM5Panel } from "./m5.panel";
 import { CONDUCTOR_SETTINGS } from "./operator-settings";
-import { createSessionBar } from "./session-bar.panel";
 import { createShowTimeline } from "./show-timeline.panel";
 import { createStagePanel } from "./stage.panel";
 import { createStatusStrip } from "./status-strip.panel";
@@ -147,6 +147,7 @@ export function mountConductorPage({
       show,
       run,
       reloadPage,
+      xr,
       signal,
     });
     const panels: readonly ConductorPanel[] = [
@@ -161,11 +162,9 @@ export function mountConductorPage({
           scrubSeconds = seconds;
         },
       }),
-      createSessionBar({
+      createLanguagePanel({
         parent: page,
         show,
-        xr,
-        onToggleTechDrawer: drawer.toggle,
         signal,
       }),
       createStagePanel({ parent: page, stageMount }),
@@ -183,7 +182,12 @@ export function mountConductorPage({
     window.addEventListener(
       "keydown",
       (event) => {
-        if (event.defaultPrevented || document.pointerLockElement) return;
+        if (
+          event.defaultPrevented ||
+          document.pointerLockElement ||
+          page.querySelector(".conductor__drawer[open]")
+        )
+          return;
         const target = event.target;
         if (
           event.code === "Space" &&

@@ -1,8 +1,10 @@
 import type { Run } from "../../levels/level.runtime";
 import type { RunningShow } from "../../levels/show.runtime";
 import type { M5Observation } from "../../m5/runtime/m5.runtime";
+import type { XrSessionControl } from "../../world/xr-session";
 import { requireElement, writeText } from "../shared/dom";
 import { bindConfirmation } from "./confirmation";
+import { resolveStreamButton } from "./headset-button-state";
 import { CONDUCTOR_SETTINGS } from "./operator-settings";
 import type { ConductorPanel } from "./view-state";
 
@@ -13,10 +15,10 @@ export interface TechDrawerOptions {
   readonly show: Pick<RunningShow, "setTimeScale" | "resetTime">;
   readonly run: Pick<Run, "resetFlight">;
   readonly reloadPage: () => void;
+  readonly xr: Pick<XrSessionControl, "start" | "stop">;
 }
 
 export interface TechDrawer {
-  readonly toggle: () => void;
   /** Where the M5 host panel mounts, below the resets. */
   readonly m5Parent: HTMLElement;
   readonly panel: ConductorPanel;
@@ -29,36 +31,56 @@ export function createTechDrawer({
   show,
   run,
   reloadPage,
+  xr,
 }: TechDrawerOptions): TechDrawer {
-  const root = requireElement(parent, ".conductor__drawer", HTMLElement);
+  const root = requireElement(parent, ".conductor__drawer", HTMLDialogElement);
   const closeButton = requireElement(
     root,
     ".conductor__drawer-close",
     HTMLButtonElement,
   );
-  let isOpen = false;
-  function setOpen(open: boolean): void {
-    isOpen = open;
-    root.inert = !open;
-    root.dataset.open = String(open);
-    trigger.setAttribute("aria-expanded", String(open));
-  }
-  function toggle(): void {
-    setOpen(!isOpen);
-    (isOpen ? closeButton : trigger).focus({ preventScroll: true });
-  }
-  setOpen(false);
-  closeButton.addEventListener("click", toggle, { signal });
-  root.addEventListener(
-    "keydown",
-    (event) => {
-      if (event.key !== "Escape" || !isOpen) return;
-      event.preventDefault();
-      toggle();
+  trigger.addEventListener(
+    "click",
+    () => {
+      root.showModal();
+      trigger.setAttribute("aria-expanded", "true");
     },
     { signal },
   );
-  signal.addEventListener("abort", () => setOpen(false), { once: true });
+  function close(): void {
+    root.close();
+    trigger.setAttribute("aria-expanded", "false");
+  }
+  closeButton.addEventListener("click", close, { signal });
+  root.addEventListener(
+    "cancel",
+    () => {
+      trigger.setAttribute("aria-expanded", "false");
+    },
+    { signal },
+  );
+  signal.addEventListener("abort", close, { once: true });
+  let isSessionActive = false;
+  const streamButton = requireElement(
+    root,
+    ".conductor__stream-button",
+    HTMLButtonElement,
+  );
+  const streamLabel = requireElement(
+    streamButton,
+    "[data-headset-label]",
+    HTMLElement,
+  );
+  streamButton.addEventListener(
+    "click",
+    () => {
+      const request = isSessionActive ? xr.stop() : xr.start();
+      request.catch((reason) =>
+        console.warn("The headset session request failed.", reason),
+      );
+    },
+    { signal },
+  );
   const m5Parent = requireElement(root, "[data-m5-parent]", HTMLElement);
   const rateButtons = CONDUCTOR_SETTINGS.timeScales.map((timeScale) => {
     const button = requireElement(
@@ -94,10 +116,15 @@ export function createTechDrawer({
   const language = readOutput(root, "language");
 
   return {
-    toggle,
     m5Parent,
     panel: {
       update(state): void {
+        isSessionActive = state.xr.isSessionActive;
+        const view = resolveStreamButton(state.xr);
+        writeText(streamLabel, view.label);
+        streamButton.disabled = !view.isEnabled;
+        streamButton.dataset.streaming = String(isSessionActive);
+
         rateButtons.forEach((button, index) => {
           button.setAttribute(
             "aria-pressed",

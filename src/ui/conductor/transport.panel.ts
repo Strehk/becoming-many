@@ -41,7 +41,7 @@ export function createTransportPanel({
   transportButton.addEventListener("click", show.togglePlayback, { signal });
   requireElement(
     root,
-    ".conductor__restart-button",
+    ".conductor__stop-button",
     HTMLButtonElement,
   ).addEventListener("click", run.resetShowAndFlight, { signal });
   let renderedPlaying: boolean | undefined;

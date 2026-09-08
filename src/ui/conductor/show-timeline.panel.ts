@@ -2,12 +2,12 @@ import type { NarrationSchedule } from "../../dramaturgy/narration-schedule";
 import { cueSlots } from "../../dramaturgy/schedule-layout";
 import type { RunningShow } from "../../levels/show.runtime";
 import { requireElement } from "../shared/dom";
+import { cueDisplayName, formatShowTime } from "../shared/show-time-format";
 import { attachScrubbing } from "../shared/transport-scrubbing";
+import { CONDUCTOR_SETTINGS } from "./operator-settings";
 import type { ConductorPanel } from "./view-state";
 
 type TimelineShow = Pick<RunningShow, "sample" | "play" | "pause" | "seekTo">;
-
-import { cueDisplayName, formatShowTime } from "../shared/show-time-format";
 
 export interface ShowTimelineOptions {
   readonly parent: HTMLElement;
@@ -46,6 +46,11 @@ export function createShowTimeline({
   const { durationSeconds } = schedule;
   const root = requireElement(parent, ".conductor__timeline", HTMLElement);
   const track = requireElement(root, ".timeline__track", SVGSVGElement);
+  const slider = requireElement(
+    root,
+    ".conductor__timeline-slider",
+    HTMLElement,
+  );
   const buttons = requireElement(root, ".conductor__chapters", HTMLElement);
   const playhead = requireElement(track, ".timeline__playhead", SVGLineElement);
   const slotTemplate = requireElement(
@@ -106,10 +111,54 @@ export function createShowTimeline({
     { once: true },
   );
   attachScrubbing({ track, durationSeconds, show, onScrubChange, signal });
+  slider.setAttribute("aria-valuemax", String(durationSeconds));
+  slider.setAttribute(
+    "aria-valuetext",
+    `0:00 of ${formatShowTime(durationSeconds)}`,
+  );
+  slider.addEventListener(
+    "keydown",
+    (event) => {
+      if (event.altKey || event.ctrlKey || event.metaKey) return;
+      const step = event.shiftKey
+        ? CONDUCTOR_SETTINGS.coarseNudgeSeconds
+        : CONDUCTOR_SETTINGS.nudgeSeconds;
+      let seconds: number;
+      switch (event.key) {
+        case "ArrowLeft":
+        case "ArrowDown":
+          seconds = show.sample().timeSeconds - step;
+          break;
+        case "ArrowRight":
+        case "ArrowUp":
+          seconds = show.sample().timeSeconds + step;
+          break;
+        case "Home":
+          seconds = 0;
+          break;
+        case "End":
+          seconds = durationSeconds;
+          break;
+        default:
+          return;
+      }
+      event.preventDefault();
+      show.seekTo(seconds);
+    },
+    { signal },
+  );
 
   return {
     update(state): void {
       const showTimeSeconds = state.showTimeSeconds;
+      const accessibleSeconds = String(Math.floor(showTimeSeconds));
+      if (slider.getAttribute("aria-valuenow") !== accessibleSeconds) {
+        slider.setAttribute("aria-valuenow", accessibleSeconds);
+        slider.setAttribute(
+          "aria-valuetext",
+          `${formatShowTime(showTimeSeconds)} of ${formatShowTime(durationSeconds)}`,
+        );
+      }
 
       const position = `${toPercent(showTimeSeconds, durationSeconds)}%`;
       playhead.setAttribute("x1", position);
@@ -118,7 +167,8 @@ export function createShowTimeline({
       for (const view of chapters) {
         const { startSeconds, endSeconds } = view.chapter;
         const isCurrent =
-          showTimeSeconds >= startSeconds && showTimeSeconds < endSeconds;
+          showTimeSeconds >= startSeconds &&
+          (showTimeSeconds < endSeconds || endSeconds === durationSeconds);
         const current = String(isCurrent);
         if (view.slot.dataset.current !== current) {
           view.slot.dataset.current = current;

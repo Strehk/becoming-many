@@ -26,7 +26,14 @@ in `dramaturgy`; device validity remains in M5.
 Play/Pause toggles playback. Stop immediately rewinds, resets flight and pauses
 through Run; the selected language is retained. The timeline is the only time
 display. Language selection sits below transport; the canvas stays in the main
-surface when technician tools open or close.
+surface when technician tools open or close. The timeline exposes its position
+as a keyboard-accessible slider: arrow keys seek by five seconds (thirty with
+Shift), Home and End jump to the bounds. Its geometry follows Show time directly.
+
+Technician tools use a native modal dialog: focus stays inside, Escape closes it
+and focus returns to the opener. Global show shortcuts are inactive while it is
+open. The language panel owns only language controls; the drawer owns its
+headset control, speed, resets and diagnostic readouts.
 
 The wake overlay displays suspended audio; Audio owns its user-activation
 listeners. Normal operator clicks and the playback shortcut request available XR

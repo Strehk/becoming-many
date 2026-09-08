@@ -1,0 +1,106 @@
+{
+  "generatedAt": "2026-09-08T14:34:47.443Z",
+  "revision": "dd8402390d135b0d027ed956dc3b2d46683cee79",
+  "sourceDigest": "e9a68cc6d4feccca77b3580fe7cb881724be352d74b8dcf0b312fb3e1c08a277",
+  "diffDigest": "177abfc0044526c399561517f5fc94753ff7dc046af00b6b836ca044dc724eaa",
+  "dirtyFiles": [
+    "M docs/README.md",
+    " M docs/evidence/README.md",
+    " M docs/performance.md",
+    " M src/ui/app.css",
+    " M src/ui/conductor.html",
+    " M src/ui/conductor/README.md",
+    " M src/ui/conductor/conductor.page.ts",
+    " D src/ui/conductor/session-bar.panel.ts",
+    " M src/ui/conductor/show-timeline.panel.ts",
+    " M src/ui/conductor/technician-drawer.panel.ts",
+    " M src/ui/conductor/transport.panel.ts",
+    " M tests/browser/README.md",
+    " M tests/browser/run-browser-smoke.ts",
+    "?? docs/evidence/performance-audit-2026-09-08/",
+    "?? docs/performance-audit-2026-09-08.md",
+    "?? src/ui/conductor/language.panel.ts"
+  ],
+  "platform": "darwin 25.6.0",
+  "cpu": "Apple M2 Max",
+  "bunVersion": "1.3.14",
+  "baseUrl": "http://127.0.0.1:4187",
+  "browserVersion": "151.0.7922.34",
+  "headless": false,
+  "dev": false,
+  "viewport": {
+    "width": 1280,
+    "height": 720
+  },
+  "deviceScaleFactor": 1,
+  "results": [
+    {
+      "route": "/conductor.html",
+      "passed": false,
+      "errors": [
+        "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n\n'true' !== 'false'\n"
+      ],
+      "conductorWakeRequired": false,
+      "rendering": {
+        "vendor": "Google Inc. (Apple)",
+        "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M2 Max, Unspecified Version)",
+        "softwareRendering": false
+      }
+    },
+    {
+      "route": "/",
+      "passed": true,
+      "errors": [],
+      "rendering": {
+        "vendor": "Google Inc. (Apple)",
+        "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M2 Max, Unspecified Version)",
+        "softwareRendering": false
+      }
+    },
+    {
+      "route": "/?level=echo",
+      "passed": true,
+      "errors": [],
+      "rendering": {
+        "vendor": "Google Inc. (Apple)",
+        "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M2 Max, Unspecified Version)",
+        "softwareRendering": false
+      }
+    },
+    {
+      "route": "/flash.html",
+      "passed": true,
+      "errors": []
+    },
+    {
+      "route": "startup-failure:/",
+      "passed": true,
+      "errors": []
+    },
+    {
+      "route": "startup-failure:/?level=echo",
+      "passed": true,
+      "errors": []
+    },
+    {
+      "route": "startup-failure:/conductor.html",
+      "passed": true,
+      "errors": []
+    },
+    {
+      "route": "ui-mount-failure:/",
+      "passed": true,
+      "errors": []
+    },
+    {
+      "route": "ui-mount-failure:/conductor.html",
+      "passed": true,
+      "errors": []
+    },
+    {
+      "route": "ui-mount-failure:/flash.html",
+      "passed": true,
+      "errors": []
+    }
+  ]
+}
