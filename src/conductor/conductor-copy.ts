@@ -255,7 +255,7 @@ const ENGLISH: ConductorCopy = {
 
   wake: {
     headline: "The station is asleep",
-    hint: "Tap anywhere on this screen to wake the sound.",
+    hint: "Tap anywhere on this screen.",
     pill: "Tap to wake",
   },
 };
@@ -356,7 +356,7 @@ const GERMAN: ConductorCopy = {
 
   wake: {
     headline: "Die Station schläft",
-    hint: "Tippe irgendwo auf diesen Bildschirm, um den Ton zu wecken.",
+    hint: "Tippe irgendwo auf diesen Bildschirm.",
     pill: "Zum Wecken tippen",
   },
 };

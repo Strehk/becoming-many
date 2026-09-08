@@ -61,7 +61,10 @@ live in the drawer's readouts, measured either way.
 `wake-overlay.ts` owns the suspended-audio state: a context that never
 received a gesture freezes show time while looking exactly like a pause, so
 until the audio runs the page is one full-screen "tap to wake" — the tap
-itself is handled by the show's own gesture listener.
+itself is handled by the show's own gesture listener. The screen is the
+masthead's identity at the size of a room, station name loudest, because the
+one thing a person crossing to a dark screen needs is which station it is; a
+deployment that names no station lets the piece carry the screen instead.
 
 `transport-panel.ts` holds the clock, the status pill, the now/next cue
 readouts, and the hold/play and ten-second-nudge buttons.

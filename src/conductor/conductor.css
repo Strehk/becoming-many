@@ -735,56 +735,74 @@ body {
   z-index: 3;
   display: flex;
   flex-direction: column;
-  gap: 36px;
+  gap: 28px;
   align-items: center;
   justify-content: center;
+  box-sizing: border-box;
+  padding: 48px;
   background: var(--ground);
   text-align: center;
 }
 
-.conductor__wake-station {
-  color: var(--muted);
-  font-size: 80px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-}
-
-.conductor__wake-title {
-  margin-top: -26px;
-  font-size: 80px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-}
-
-.conductor__wake-icon {
+/* The masthead's order at the size of a room: which station this is, is what
+ * a person crossing the room to a dark screen actually needs. */
+.conductor__wake-identity {
   display: grid;
-  place-items: center;
-  width: 160px;
-  height: 160px;
-  color: var(--live);
-  background: var(--panel);
-  border: 1px solid var(--edge-strong);
-  border-radius: 50%;
-  animation: conductor-wake-pulse 2.4s ease-in-out infinite;
+  gap: 6px;
+  justify-items: center;
+}
+
+.conductor__wake-piece {
+  color: var(--muted);
+  font-size: 40px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.conductor__wake-station {
+  font-size: clamp(56px, 9vw, 116px);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* Nothing is deployed under the name, so the piece carries the screen. */
+.conductor__wake-identity[data-named="false"] .conductor__wake-piece {
+  color: var(--ink);
+  font-size: clamp(48px, 7vw, 92px);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.conductor__wake-rule {
+  width: min(520px, 60vw);
+  height: 1px;
+  background: var(--edge-strong);
 }
 
 .conductor__wake-headline {
-  font-size: 52px;
+  font-size: 44px;
   font-weight: 700;
 }
 
 .conductor__wake-hint {
+  max-width: 26em;
   color: var(--muted);
   font-size: 22px;
+  line-height: 1.4;
 }
 
+/* The one moving thing on the screen, so a dark station still reads as awake
+ * enough to be tapped. */
 .conductor__wake-pill {
-  padding: 14px 28px;
+  padding: 20px 44px;
   color: var(--ground);
-  font-size: 20px;
+  font-size: 26px;
   font-weight: 700;
   background: var(--live);
   border-radius: 999px;
+  animation: conductor-wake-pulse 2.4s ease-in-out infinite;
 }
 
 /* `display: flex` above outranks the UA's [hidden] rule; restore it. */

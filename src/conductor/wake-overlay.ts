@@ -2,7 +2,8 @@
  * Purpose: Turn the suspended audio context into a full-screen "tap to wake".
  * Context: Show time derives from the audio clock, so a context that never
  *   received a gesture freezes the piece while looking exactly like a pause.
- * Responsibility: Cover the page until the audio runs, and say what one tap does.
+ * Responsibility: Cover the page until the audio runs, say which station this
+ *   is, and say what one tap does.
  * Boundary: The tap itself is handled by the show's own gesture listener; this
  *   overlay only has to not swallow it, so it never stops propagation.
  */
@@ -18,20 +19,30 @@ export function createWakeOverlay(
   root.className = "conductor__wake";
   root.hidden = true;
 
+  // The same order the masthead uses, at the size of a room rather than a
+  // desk: the piece names itself quietly and the station loudly, because a
+  // person walking up to a dark screen needs to know which station it is.
+  const identity = document.createElement("div");
+  identity.className = "conductor__wake-identity";
+
+  const piece = document.createElement("span");
+  piece.className = "conductor__wake-piece";
+  piece.textContent = "Becoming Many";
+  identity.append(piece);
+
   if (stationName) {
     const station = document.createElement("span");
     station.className = "conductor__wake-station";
     station.textContent = stationName;
-    root.append(station);
+    identity.append(station);
   }
 
-  const title = document.createElement("span");
-  title.className = "conductor__wake-title";
-  title.textContent = "Becoming Many";
+  // Without a deployed name the piece is the whole identity, and it takes the
+  // station's weight rather than leaving the screen top-heavy.
+  identity.dataset.named = String(Boolean(stationName));
 
-  const icon = document.createElement("div");
-  icon.className = "conductor__wake-icon";
-  icon.innerHTML = WAKE_ICON_SVG;
+  const rule = document.createElement("div");
+  rule.className = "conductor__wake-rule";
 
   const headline = document.createElement("span");
   headline.className = "conductor__wake-headline";
@@ -42,7 +53,7 @@ export function createWakeOverlay(
   const pill = document.createElement("span");
   pill.className = "conductor__wake-pill";
 
-  root.append(title, icon, headline, hint, pill);
+  root.append(identity, rule, headline, hint, pill);
   parent.append(root);
 
   let appliedCopy: ConductorCopy | undefined;
@@ -60,10 +71,3 @@ export function createWakeOverlay(
     },
   };
 }
-
-// A sleeping bell, drawn inline so it recolors with the page.
-const WAKE_ICON_SVG = `<svg width="72" height="72" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-  <path d="M8 4 a4 4 0 0 1 4 4 v6"></path>
-  <path d="M12 14 a4 4 0 1 0 8 0 a4 4 0 0 0 -8 0"></path>
-  <path d="M16 12 v2.5 l1.6 1.6"></path>
-</svg>`;
