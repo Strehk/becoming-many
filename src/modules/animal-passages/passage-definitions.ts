@@ -80,7 +80,7 @@ const BAT_ROUTE_INITIAL_DIRECTION = new Vector3(
  * visitor and is held clear of the ground, because its route runs low enough
  * to cut through a rise.
  */
-export const BAT_PASSAGE: PassageFlightDefinition = {
+const BAT_PASSAGE: PassageFlightDefinition = {
   passageId: "bat",
   modelUrl: "/passages/bat.glb",
   routeUrl: "/passages/bat-route.glb",

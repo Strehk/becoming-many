@@ -34,10 +34,17 @@ not create a separate render loop or import other concrete content modules.
   animal popping into the distance. Actor materials stay transparent for the
   whole loaded lifetime rather than toggling with the fade, which would
   recompile their patched shaders; they still write depth.
+- The population walks and re-homes around the viewer whenever the module is
+  updated, warming included, so the heat view opens on animals that already
+  live here instead of on a crowd that has stood still since load. Slot
+  selection and animation mixers stay behind the group's visibility, so an
+  unseen population costs only its movement.
 - Visible actors are reported once per frame as reused `AnimalBody` records —
   position, heading, height, and species — to every sense that asked for
-  them. The heat view warms the ground around them from it; the scent sense
-  prints their trail from it. Neither module is known here.
+  them, and only while the population is shown: a warming crowd must not print
+  scent trails with nothing visible carrying them. The heat view warms the
+  ground around them from it; the scent sense prints their trail from it.
+  Neither module is known here.
 - Unload stops mixers, releases cloned skeletons, removes actors, and disposes
   the shared source assets.
 

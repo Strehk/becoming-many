@@ -3,9 +3,10 @@
 ## Current
 
 The piece uses one typed baked schedule and one show clock. The authored show is
-8:41, including lead-in and the return to White World. Cue times select world
+8:45, including lead-in and the return to White World. Cue times select world
 states and narration; sense intensities and visual transitions are derived from
-the same show time.
+the same show time. A cue may let its world lead its recording; only the return
+does, so the closing words are spoken into a world that has already gone white.
 
 English and German share cue timing. Language selects assets addressed by cue
 id; `script/en.md` and `script/de.md` remain the authoritative wording. Changing

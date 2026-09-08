@@ -38,7 +38,10 @@ the browser Test UI.
 
 `level-catalog.ts` names only standalone presets. `show-composition.ts` owns the
 separate construction-only `ShowComposition` loaded once for the complete
-show. `show-levels.ts` owns the narrow presentation states the running show can
+show, and names the animal passages that cross it beside its sense layers — a
+passage is placed on the timeline rather than carried by a sense, so it sits
+next to `world` and not inside it. Without that entry no passage model or route
+is loaded at all, which is why a standalone preset costs nothing for them. `show-levels.ts` owns the narrow presentation states the running show can
 change. The bare `src/main.ts` route starts that show; `?level=<name>` and
 matching path names enter through `src/test-main.ts` and select one showless
 development preset. Benchmarks use that Test entry too.
@@ -70,9 +73,11 @@ modules do not import siblings; Level Composition performs cross-boundary
 wiring.
 
 During a show, the schedule selects a `ShowLevelState` and drives module
-activation, sense intensity, background blending, and World Fade without
-recreating the composition. Static `LevelPreset` objects are not read by the
-show. The opening show state is applied before modules size fixed spatial
-windows; later states remain driven by the same schedule and state map. Flight
-remains constrained against the shared surface through White World and every
-transition.
+standing, sense intensity, background blending, and World Fade without
+recreating the composition. Standing is the wider of the two: a gated module is
+warmed one prewarm window before the sense that reveals it — running, following
+the viewer, and drawn by nothing — so what the fade raises is already built.
+Static `LevelPreset` objects are not read by the show. The opening show state is
+applied before modules size fixed spatial windows; later states remain driven by
+the same schedule and state map. Flight remains constrained against the shared
+surface through White World and every transition.
