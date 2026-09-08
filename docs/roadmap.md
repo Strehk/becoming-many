@@ -116,18 +116,26 @@ training sound owner before combined #50 audio/render acceptance:
    spatial capacity. Initial layer roles are low bed, middle texture and sparse
    highlights; assign sources only after audition. No second sound runtime,
    global scheduler, context, listener writer or full-track soundtrack.
-3. Anchor atmosphere sources at fixed world positions around the course, not
-   to the player. Tone controls grains/envelopes/filtering; Three places the
-   direct sound. Use slower independent grain offsets/rates, restrained direct
-   gain and low-pass filtering for distance. Start with atmosphere grains of
+3. Bind each spatial layer to a concrete visible scene object or particle body,
+   including the tutorial goal. Composition selects actual object anchors;
+   their content owner supplies world positions through a narrow observation.
+   Sound never duplicates placement math or chooses unrelated coordinates.
+   Static objects remain fixed in world space; moving objects carry their sound,
+   and an ended/removed object retires its source. No source follows the player.
+   Tone controls grains/envelopes/filtering; Three places direct sound from the
+   same object position and the shared XR listener pose. Approaching an object
+   must make it louder, clearer and more direct; moving away must make it quieter,
+   darker and more reverberant. Use slower independent grain offsets/rates and
+   smooth distance-dependent filtering/direct-to-room balance without jumps. Start with atmosphere grains of
    200–400 ms and rates at most 1: at most 15 starts/s across three layers, plus
    the separately bounded goal voice (at most 25/s). Verify actual retained
    native sources, including scheduling lookahead and stop tails.
 4. Give those layers explicit sends to one training-owned, fully wet Tone.Reverb
    return, prepared once before readiness. Tune an initially 8–12 second tail
    and a low direct/reverberant ratio for distance. The diffuse return may be
-   non-positional; the quiet direct sources and current goal remain spatially
-   locatable. Do not put a reverb on every emitter, duplicate full-level output
+   non-positional, but its sends must respect each object's distance/level and
+   end with that object; a constant full-level wet bed must not erase the near/far
+   effect. Direct sources and the current goal remain spatially locatable. Do not put a reverb on every emitter, duplicate full-level output
    routes or regenerate the impulse during frames. Keep narration out of this
    effect and reduce ambience while speech plays. Reuse existing Tone/node
    patterns, not private drone-organ nodes.
@@ -136,7 +144,11 @@ training sound owner before combined #50 audio/render acceptance:
    only goal formation/crossing/dissolution, never learning from audio. End must
    stop grains and release filters, room/tails, sources and exclusive buffers.
    Measure all layers plus shared reverb with rendering, then verify head-turn
-   localization, distance, speech clarity, pause/restart and Windows-PCVR budget.
+   localization, speech clarity, pause/restart and Windows-PCVR budget. For each
+   selected object, test approach, retreat, passing beside it and turning the
+   head: perceived position stays with the object and the near/far change must
+   be clearly audible with all layers and reverb enabled. Also verify source
+   retirement when its object disappears. Record listening evidence explicitly.
 
 Layer selection, gain/filter/room values and excerpt durations are initial tuning
 choices, not measured acoustic acceptance. The current production recipe remains

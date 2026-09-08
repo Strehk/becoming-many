@@ -61,6 +61,12 @@ the actual Windows-PCVR USB-C installation. See [Performance](../../docs/perform
 On 2026-09-08 the user supplied eleven generated instrumentals for granular
 recomposition, with multiple spatial layers, substantial reverb and a distant
 character. They are source material, not a requested full-track soundtrack.
+The user further requires concrete object binding and an audible near/far
+relationship: each spatial layer belongs to a visible object/particle body and
+uses that owner's world position. Direct level, filtering and room balance must
+change smoothly with listener distance, while a diffuse hall must not mask
+localization or remain equally loud at every distance. Static emitters never
+follow the player; moving/removed objects move/end their own sound.
 Original bytes are preserved under `public/audio/granular/`, named
 `atmosphere-source-01.mp3` through `atmosphere-source-11.mp3`. Numbering maps
 exactly to the original download suffix, without invented timbre names.
