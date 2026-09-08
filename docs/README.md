@@ -57,7 +57,8 @@ planned, or open. Open decisions remain in
   still applies.
 - [Assets](assets/README.md) records shipping structure, provenance and current asset use.
 - [Moodboards](moodboards/) preserve visual references, not implementation
-  claims.
+  claims. [Connections atmosphere references](moodboards/connections-atmosphere-references.md)
+  support the stronger final reveal requested in #114.
 
 Keep documents concise. Replace stale claims instead of accumulating competing
 histories; keep dated evidence only when its date and scope remain explicit.

@@ -163,6 +163,16 @@ reference, product or physical acceptance follows from the desktop results.
 | M5 | Required #50/#51 and decision-bound encounter work. |
 | M6 | Complete #42/#54, repeated visitors, both stations, recovery and exact integration handover. |
 
+## Requested Connections Presentation — #114
+
+[#114](https://github.com/Strehk/becoming-many/issues/114) records a requested
+visual feature: strengthen the final Connections atmosphere with luminous
+mycelium and visibly transparent ground. The
+[three reference images](moodboards/connections-atmosphere-references.md) are
+preserved as visual direction. Implementation and visual/performance acceptance
+remain open; the issue owns their criteria. This does not reorder the current
+implementation checkpoint.
+
 ## Remaining Decision Gates
 
 | Decision | Required evidence / affected work |
