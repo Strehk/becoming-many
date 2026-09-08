@@ -225,3 +225,16 @@ responses in headed Chromium, including invalid input, wrong direction, neutral
 gating, held diagonals and reload. Unit checks cover hidden/inactive updates and
 resource disposal. Completion remains visible, costing placement and one guide
 draw per frame; deactivation hides it and stops its updates.
+
+
+## UI completion review — 2026-09-08
+
+The [completion evidence](evidence/ui-consolidation/README.md#performance-and-remaining-limits)
+compares unchanged `0e2c676` with the recorded corrected UI build in sequential
+headed Chromium full replays on Apple M2 Max, 1280 × 720. Connections and Test
+retain all renderer/streaming counters; median/p95/p99 show no regression in
+these individual samples. No speedup or installation acceptance is claimed.
+Actual served build hashes are preserved separately from the harness checkout.
+The supplementary normal-show baseline did not complete and was terminated;
+its page/context failures remain unresolved. No paired normal-show result exists.
+Subsequent Conductor/Entry changes require their own relevant verification.

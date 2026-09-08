@@ -69,3 +69,87 @@ changes from 62 to 521 lines and central CSS from 967 to 977. These surface-only
 counts exclude Entry orchestration, shared contracts, tests/tooling and the
 concurrently implemented Start/M5 work; they are not a repository-wide reduction
 claim. Runtime markup construction and duplicate scrub mechanics are removed.
+
+
+## Completion review
+
+This review starts at `7375ff4`. Corrections were preserved by the concurrent
+checkpoint `67cfd64`; functional evidence was preserved in `b0e676d`. These
+reports do not accept the subsequent Conductor redesign or standalone Entry
+changes being implemented by separate tasks.
+
+- Native Space activation now reaches focused buttons without triggering the
+  global transport shortcut; already-handled keyboard events remain handled.
+- Flash survives persisted pagehide and ends listeners/serial lifetime on final
+  exit. Its released root is inert and cleanup failures remain visible in logs.
+- Panels validate detached templates and required controls before binding or
+  attaching them, preventing partially mounted controls after startup failure.
+- Duplicate rendered-text state and readout forwarding wrappers are removed.
+  Relative HTML Entry imports resolve in both Vite and Fallow. Stale paths in
+  affected READMEs are corrected; the off-document credits canvas is retained.
+
+Verification: lint (311 files), TypeScript/Vite build and 561 Bun tests pass
+(29,025 assertions). The existing large-chunk advisory remains. The final added
+mount scenarios also passed type checking. Browser results are
+[19/19 Station scenarios](completion-production.json), supplemented by
+[3/3 Station mount failures](completion-production-mount.json), and
+[22/22 development scenarios](completion-development.json). Reports retain
+source/diff identities. Tests cover native keyboard actions, scrub/cancel,
+language, focus/inert/disabled states, M5 preview, Flash serial scenarios,
+persisted/final pagehide, declared canvas lifetime and malformed UI startup.
+
+All nine production surface/drawer captures were visually inspected, plus
+selected development and malformed-template captures. Retained examples:
+[Conductor desktop](completion-conductor-1280.png),
+[Conductor narrow](completion-conductor-390.png),
+[Rehearsal narrow](completion-rehearsal-390.png),
+[Test desktop](completion-test-1280.png), [Flash narrow](completion-flash-390.png).
+
+The first development attempt failed during concurrent Vite source reload and
+dependency optimization. The new rapid language test also aborted its own audio
+loads; it now awaits narration request completion before switching again.
+The stable repeat passes without suppressing request failures.
+
+[Fallow evidence](completion-fallow.json) records zero live boundary violations
+and unresolved imports after fixing four HTML references. Three export findings
+are matched to `0e2c676`, not merely called pre-existing: `BAT_PASSAGE`,
+`STEP_LOOKAHEAD_SECONDS`, and `ReadSwarmCrossing`. Three deliberately forbidden
+imports were rejected in a disposable source export. Fourteen clone groups and
+36 health findings remain; authored recipe duplication is intentional, while
+Flash/Start/M5 complexity is not all inherited. Native keyboard correctness adds
+branches (Conductor cyclomatic 15 to 19); this is justified bug-fix growth.
+The exported older snapshots establish matched findings, not complete audits.
+
+### Whole production balance
+
+[Physical line counts](completion-size.json) include Entry, shared contracts,
+engine and Station, rather than counting moved UI files as deletion.
+
+| Source | Production TS | HTML | CSS | Tests/tooling TS | Documentation |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| `0e2c676` | 28,841 | 62 | 967 | 13,586 | 6,629 |
+| `7375ff4` | 28,919 | 521 | 977 | 15,672 | 6,831 |
+| `67cfd64` | 28,895 | 529 | 295 | 16,167 | 6,859 |
+
+Counts include authored configuration/comments; simulator code is tooling in
+both locations. The mixed history includes independent Start/M5/Control/CSS and
+Lucide work. The original migration adds 547 production lines overall. The last
+checkpoint is 151 lines below the original, driven by the separately authorized
+CSS simplification; it is not an isolated UI TypeScript reduction. This review's
+six production TypeScript files grow by 15 lines for concrete lifecycle/keyboard
+fixes despite removing duplicate state and forwarding. A net TypeScript shrink
+is therefore not claimed. Documentation counts precede this evidence appendix.
+
+### Performance and remaining limits
+
+[Comparable replay evidence](completion-performance.json) preserves actual build
+identities separately from the runner checkout. Connections and Test retain all
+renderer and streaming counters. Median/p95/p99 milliseconds change from
+1.6/2.9/3.4 to 1.3/2.7/3.1 and 1.8/2.9/3.3 to 1.7/2.8/3.0 respectively.
+Single sequential runs show no regression in these samples and prove no speedup.
+
+The additional normal-show baseline attempt did not complete after more than
+14 minutes and was terminated. Its report retains page/context errors at Echo,
+Motion, Thermal and Return; the cause is unresolved. There is no valid paired
+normal-show comparison. Windows-PCVR USB-C 90 Hz, headset, physical M5 and venue
+acceptance remain open, as does the separately tracked #73 clock-progress issue.
