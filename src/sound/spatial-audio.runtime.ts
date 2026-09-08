@@ -8,6 +8,7 @@ import {
   Vector3,
 } from "three";
 import type { Context } from "tone";
+import { holdAudioParameter } from "./audio-parameter";
 
 export interface SpatialSourceParameters {
   readonly referenceDistanceMeters: number;
@@ -104,6 +105,18 @@ export async function createSpatialAudio(
     const scale = new Vector3();
     const forward = new Vector3();
     const up = new Vector3();
+    const nativeListener = context.rawContext.listener;
+    const listenerParameters = [
+      nativeListener.positionX,
+      nativeListener.positionY,
+      nativeListener.positionZ,
+      nativeListener.forwardX,
+      nativeListener.forwardY,
+      nativeListener.forwardZ,
+      nativeListener.upX,
+      nativeListener.upY,
+      nativeListener.upZ,
+    ];
     let hasPlacedListener = false;
     let framesSincePlacing = LISTENER_WRITE_INTERVAL_FRAMES;
     for (const gesture of RESUME_GESTURES)
@@ -124,6 +137,14 @@ export async function createSpatialAudio(
         sound.setDistanceModel("inverse");
         sound.panner.panningModel = "HRTF";
         sound.setNodeSource(input);
+        const placementParameters = [
+          sound.panner.positionX,
+          sound.panner.positionY,
+          sound.panner.positionZ,
+          sound.panner.orientationX,
+          sound.panner.orientationY,
+          sound.panner.orientationZ,
+        ];
         let isUnloaded = false;
         let isPlaced = false;
         const source: SpatialSource = {
@@ -138,6 +159,9 @@ export async function createSpatialAudio(
             )
               return;
             isPlaced = true;
+            const now = context.immediate();
+            for (const parameter of placementParameters)
+              holdAudioParameter(parameter, now);
             sound.position.set(x, y, z);
             sound.updateMatrixWorld(true);
           },
@@ -167,8 +191,10 @@ export async function createSpatialAudio(
         // Three's listener Timer measures time since the last matrix update.
         // With stationary-write suppression that would ramp the first movement
         // over the entire idle interval. Bound the native pose ramp explicitly.
-        const nativeListener = context.rawContext.listener;
-        const endSeconds = context.immediate() + LISTENER_RAMP_SECONDS;
+        const now = context.immediate();
+        for (const parameter of listenerParameters)
+          holdAudioParameter(parameter, now);
+        const endSeconds = now + LISTENER_RAMP_SECONDS;
         nativeListener.positionX.linearRampToValueAtTime(
           position.x,
           endSeconds,

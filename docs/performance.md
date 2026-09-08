@@ -448,3 +448,67 @@ handoffs and held Stop/restarts, plus standalone `/start` startup, formation and
 real-input flight checks. No browser errors or warnings occur. The Conductor
 canvas is 934×525 in a 1920×1080 viewport, so these are lifecycle checks, not the
 full-viewport comparison above. The standalone capture uses 1280×720 DPR1.
+
+
+### Bounded live AudioParam histories
+
+A focused CPU profile of `473a725` explains the granular candidate's increase.
+The bundled standardized-audio-context AudioParam wrappers and automation-events
+lists retain histories containing only past events: `flush(currentTime)` finds
+no future event and therefore removes nothing. Three's immediate source ramps
+and training's immediate target changes repeatedly scan these growing lists.
+The profile samples 382.55 ms in source `linearRampToValueAtTime`, 373.84 ms in
+training `setTargetAtTime`, and 292.36 ms in training `cancelScheduledValues`,
+plus their automation-list descendants. These are diagnostic sample totals,
+not uninstrumented frame timings. The local profile is
+`benchmark-results/issue-50/granular-cpu-profile/cpu-profile.json`.
+
+The existing owners now read each exclusive live parameter's rendered value,
+cancel its history from zero, and hold that value at the current instant before
+applying the existing target/ramp. Each training parameter retains at most two
+events after its update; a 3600-frame regression exercises continuous movement.
+Spatial parameters similarly retain a hold point and Three/listener ramp. The
+small shared operation never touches scheduled/modulated music controls, changes
+no context ownership and adds no timers or frame allocations. Public AudioParam
+[value](https://developer.mozilla.org/en-US/docs/Web/API/AudioParam/value) and
+[cancellation](https://developer.mozilla.org/en-US/docs/Web/API/AudioParam/cancelScheduledValues)
+operations are used without private native-context access. Render-quantum value
+sampling means sample-identical output is not claimed.
+
+The same unprofiled, full-root course on headed Chromium 151/M2 Max/Metal,
+1920×1080 DPR1 and normal VSync now measures:
+
+| Candidate | Frames | CPU median / p95 / p99 / max (ms) | GPU median / p95 / p99 / max (ms) | RAF p95 / max (ms) |
+| --- | ---: | --- | --- | --- |
+| Object-bound audio before bounded histories | 3048 | 0.8 / 2.4 / 2.7 / 5.2 | 0.157 / 0.355 / 0.528 / 0.855 | 17.2 / 17.7 |
+| Same audio with bounded histories | 3049 | 0.4 / 0.5 / 0.6 / 4.6 | 0.108 / 0.292 / 0.410 / 1.147 | 17.2 / 17.7 |
+
+The correction reduces measured tutorial CPU p95 by about 79%; it preserves all
+four sources and the eight-second hall. No isolated GPU improvement is claimed.
+The main segment's CPU p95 remains similar (2.1 versus 2.2 ms). Full flight and
+operator handoff complete without errors or warnings. Source base is `473a725`,
+served-assets SHA-256 `921d0887e8569c1b567005df5695b64feb47c3928f2ed5f5787177ebd832eda8`;
+raw local comparison is `benchmark-results/issue-50/granular-bounded-automation/`.
+The previous silent-training p95 of 0.4 ms is a different workload. This result
+addresses growing scheduling overhead, not physical Windows-PCVR 90 Hz acceptance.
+
+
+Post-correction signal assertions retain actual instrumental HRTF/near-far,
+speech ducking and zero paused/unloaded output. A separate connected-signal
+parameter probe brackets each of 80 before/hold/after observations with audio
+and wall time. All deviations stay below natural exponential progress over the
+measured interval plus one 128-sample render quantum; the largest normalized
+bound usage is 0.3723. Gain/cutoff converge to 0.25012/1401.47 after the return
+target of 0.25/1400. Shared context close/replacement and aborted startup pass.
+This rules out an additional getter-visible jump at that resolution; it does not
+prove sample-identical output or perceptual clicklessness.
+
+Retained diagnostic corrections: unconnected test nodes initially stayed at their
+initial values because they were not rendered. After connecting a quiet signal,
+an untimed 250 Hz cutoff threshold failed at 269.2 Hz (corresponding gain delta
+0.017711). Independent review found that a single quantum already permits about
+249 Hz of progress across this authored range, leaving no allowance for elapsed
+observation time. The final time-bracketed criterion derives its bound from the
+actual interval instead of raising an arbitrary threshold. These were diagnostic
+limitations, not passing evidence that was discarded. Compact results are in the
+[tutorial summary](evidence/issue-50/summary.json); direct listening stays open.

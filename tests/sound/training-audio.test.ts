@@ -173,8 +173,11 @@ test("four object voices share samples and hall, follow distance and speech, and
     import { mock } from "bun:test";
     import assert from "node:assert/strict";
     const voices = [], gains = [], filters = [], placements = [], rooms = [];
-    const param = () => ({ value: 0, target: 0, cancelScheduledValues(){},
-      setTargetAtTime(value){ this.target=value; }, setValueAtTime(value){this.target=value;} });
+    let audioTime = 1;
+    const param = () => ({ value: 0, target: 0, events: [],
+      cancelScheduledValues(time){this.events=this.events.filter(event=>event.time<time);},
+      setTargetAtTime(value,time){this.target=value;this.events.push({time});},
+      setValueAtTime(value,time){this.target=value;this.events.push({time});} });
     const node = () => ({ ends:0, gain:param(), connect(){}, disconnect(){this.ends++;} });
     class GrainPlayer {
       starts=0; stops=0; ends=0;
@@ -191,7 +194,7 @@ test("four object voices share samples and hall, follow distance and speech, and
     globalThis.fetch=async()=>new Response(new Uint8Array([1,2,3]));
     const {createTrainingAudio}=await import("./src/sound/training-audio.runtime.ts");
     const audio=await createTrainingAudio(${JSON.stringify(parameters)}, {
-      context:{ state:"running", now:()=>1, immediate:()=>1, destination:{},
+      context:{ state:"running", now:()=>audioTime+0.1, immediate:()=>audioTime, destination:{},
         decodeAudioData:async()=>{decodes++;return sample;},
         createGain:()=>{const value=node();gains.push(value);return value;},
         createBiquadFilter:()=>{const value={...node(),Q:param(),frequency:param()};filters.push(value);return value;},
@@ -228,6 +231,13 @@ test("four object voices share samples and hall, follow distance and speech, and
     frame.phase="crossed";frame.formationProgress=0;
     for(let i=0;i<100;i++)audio.update(frame,true);
     assert.ok(voices.every(voice=>voice.stops===2&&voice.starts===2),"dissolved objects do not schedule silent grains during speech holds");
+    for(let frameIndex=0;frameIndex<3600;frameIndex++){
+      audioTime+=1/60;
+      for(const placement of placements)placement.distance=10+frameIndex*0.1;
+      audio.update({...frame,phase:"flying",formationProgress:1},true);
+      for(const parameter of [...gains.map(gain=>gain.gain),...filters.map(filter=>filter.frequency)])
+        assert.ok(parameter.events.length<=2,"live parameter history remains bounded during continued flight");
+    }
     audio.unload();audio.unload();audio.update(frame,true);
     assert.ok([...voices,...gains,...filters,...placements,...rooms].every(resource=>resource.ends===1));
   `,

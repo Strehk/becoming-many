@@ -170,3 +170,28 @@ space; the ring sides and arrow supply the spatial sound anchors.
 Conductor after the second operator handoff and Stop. Play is available only
 after training graphics, excerpts and room have been prepared again. The static
 image records readiness and scene state; it does not establish audible quality.
+
+
+## Audio automation cost correction
+
+A follow-up profile identified growing live AudioParam histories as avoidable
+CPU cost. Source/listener positions and tutorial gain/filter targets now retire
+past automation while holding their rendered value; existing smoothing and
+spatial ownership remain unchanged. A 3600-frame regression bounds the retained
+events during continued flight. The independent reviewer confirmed the cause
+and the public-API approach, restricted to exclusive live parameters.
+
+The comparable full production course reduces CPU p95 from 2.4 to 0.5 ms with
+all four sources and the shared hall active. Build, four focused audio tests and
+mandatory lint pass. The full course/handoff remains error-free. See
+[the measured comparison](../../performance.md#bounded-live-audioparam-histories).
+This supersedes the earlier elevated CPU result as the current candidate;
+physical acceptance and approved narration remain open.
+
+
+Actual instrumental HRTF, distance, ducking and silence assertions still pass.
+The connected native gain/filter probe verifies progression and convergence
+within measured time plus render-quantum uncertainty; context close/replacement
+also passes. The report preserves the earlier unconnected-node and untimed-bound
+diagnostic failures and their explanations. Perceptual clicklessness and headset
+listening remain physical checks; no sample-identical output is claimed.

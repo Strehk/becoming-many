@@ -51,6 +51,13 @@ placements, filters, gains, shared room and exclusive buffers. Run awaits room
 preparation even when cancelled, so its asynchronous impulse cannot publish into
 a disposed owner. The ordinary non-positional sample bed is removed.
 
+Live gain/filter, source and listener parameters retire their previous automation
+history before each changed write, holding the rendered value first. Tone 14's
+bundled automation list otherwise retains past-only events and scans growing
+histories. `audio-parameter.ts` applies this only to exclusively owned,
+unmodulated live followers; it never cancels scheduled music controls. Existing
+80 ms target smoothing, listener ramp timing and Three placement remain in place.
+
 `narration-player.ts` remains the single media playback implementation. It
 accepts the recordings selected by Show, with measured durations. Main clips
 preload during integrated training; changing the prepared set retains unchanged

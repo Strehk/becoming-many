@@ -1,3 +1,4 @@
+import { holdAudioParameter } from "./audio-parameter";
 import type { SpatialAudio, SpatialSource } from "./spatial-audio.runtime";
 
 type TrainingObject = "ringLeft" | "ringRight" | "arrow";
@@ -194,7 +195,7 @@ export async function createTrainingAudio(
         const now = audio.context.immediate();
         const scheduled = audio.context.now();
         if (audible !== previousAudible || speech !== previousSpeech) {
-          wetOutput.gain.cancelScheduledValues(now);
+          holdAudioParameter(wetOutput.gain, now);
           if (!audible) wetOutput.gain.setValueAtTime(0, now);
           else
             wetOutput.gain.setTargetAtTime(
@@ -247,6 +248,7 @@ export async function createTrainingAudio(
                   (parameters.room.farDistanceMeters - reference),
               ),
             );
+            holdAudioParameter(entry.filter.frequency, now);
             entry.filter.frequency.setTargetAtTime(
               parameters.room.nearCutoffHz *
                 (parameters.room.farCutoffHz / parameters.room.nearCutoffHz) **
@@ -254,8 +256,8 @@ export async function createTrainingAudio(
               now,
               LEVEL_RAMP_SECONDS,
             );
-            entry.direct.gain.cancelScheduledValues(now);
-            entry.send.gain.cancelScheduledValues(now);
+            holdAudioParameter(entry.direct.gain, now);
+            holdAudioParameter(entry.send.gain, now);
             if (!playing) {
               entry.direct.gain.setValueAtTime(0, now);
               entry.send.gain.setValueAtTime(0, now);

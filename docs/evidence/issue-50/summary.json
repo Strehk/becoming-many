@@ -872,5 +872,91 @@
       "Approved DE narration use and EN policy",
       "First-visitor comprehension, comfort and Windows-PCVR USB-C 90 Hz"
     ]
+  },
+  "boundedAudioAutomation": {
+    "sourceBase": "473a725d5377a3f87a68035cb42a507afbffce0f",
+    "sourceDigest": "a2f6947e09bd0baf54d56a2aa139a537b6f87c64658dd20e0144c834b01adaf5",
+    "servedAssetsDigest": "921d0887e8569c1b567005df5695b64feb47c3928f2ed5f5787177ebd832eda8",
+    "profileMethod": "Separate diagnostic CDP CPU profile; not used as uninstrumented performance evidence",
+    "profileOwnTimeMilliseconds": {
+      "sourceLinearRamp": 382.55,
+      "trainingSetTarget": 373.84,
+      "trainingCancelScheduledValues": 292.36
+    },
+    "fullRootCourse": {
+      "frames": 3049,
+      "cpuMilliseconds": {
+        "median": 0.4,
+        "p95": 0.5,
+        "p99": 0.6,
+        "maximum": 4.6
+      },
+      "gpuMilliseconds": {
+        "median": 0.1081,
+        "p95": 0.2918,
+        "p99": 0.41,
+        "maximum": 1.1465
+      },
+      "rafMilliseconds": {
+        "p95": 17.2,
+        "maximum": 17.7
+      },
+      "errors": []
+    },
+    "nativeSignal": {
+      "near": {
+        "wetRms": 0.011702352803582958,
+        "directRms": 0.01110973351637943
+      },
+      "speech": {
+        "wetRms": 0.0022026894413181113,
+        "directRms": 0.002922560095422591
+      },
+      "far": {
+        "wetRms": 0.0003963388403896237,
+        "directRms": 0.0001883521708618745
+      },
+      "paused": {
+        "wetRms": 0,
+        "directRms": 0
+      },
+      "ended": {
+        "wetRms": 0,
+        "directRms": 0
+      },
+      "sourcePositions": [
+        [-3.5, 0, -5],
+        [3.5, 0, -5],
+        [-4.449999809265137, 0, -5],
+        [0, 0, -5]
+      ],
+      "sampleRate": 48000
+    },
+    "continuity": {
+      "steps": 80,
+      "quantumSeconds": 0.0026666666666666666,
+      "maximumGainReadDelta": 0.01771104335784912,
+      "maximumCutoffReadDeltaHz": 6.6123046875,
+      "maximumDeltaToDerivedBound": 0.372223133940915,
+      "final": [0.25011858344078064, 1401.4732666015625],
+      "passed": true,
+      "contextLifecycle": {
+        "oldState": "closed",
+        "nextState": "closed",
+        "replaced": true,
+        "cancelled": true
+      },
+      "criterion": "Each getter/hold/getter sequence is bracketed by audio and wall time. Range*(1-exp(-(max(elapsedAudio,elapsedWall)+128/sampleRate)/0.08)) plus float rounding bounds natural target progress. Range and convergence also asserted.",
+      "earlierDiagnosticFailures": "Unconnected nodes initially did not render. After connection, an untimed fixed 250Hz threshold failed at269.2Hz (.017711 gain); independent review identified elapsed-time/quantum observation uncertainty. The timed criterion replaces that unsupported assumption, not a product threshold. No sample-identical or click-free claim."
+    },
+    "verification": [
+      "4 focused audio tests, including3600frame bounded-history regression",
+      "production build",
+      "mandatory lint",
+      "full root course and handoff",
+      "native instrumental,HRTF,distance,duck,pause/unload signal assertions",
+      "timed native gain/filter progression and context replacement"
+    ],
+    "independentReview": "Cause and actual scoped diff reviewed; no blocking finding. Exclusive live parameters only, no change to envelope constants, scheduled music, Three placement or context ownership."
   }
 }

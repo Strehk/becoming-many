@@ -220,6 +220,11 @@ The #80 animal-connection removal is implemented below. Small additions remain i
   organ cost was measured on desktop Chromium only (about
   0.1 ms median per update with all layers open); the four `AudioWorklet`
   Freeverb rooms are unmeasured on the target Windows-PCVR installation.
+- Live tutorial gain/filter and shared source/listener parameters retire past
+  automation while holding their rendered value. This removes the measured
+  growing-history cost in Tone 14's bundled wrappers: the full audio-enabled
+  tutorial CPU p95 falls from 2.4 to 0.5 ms on the recorded Mac browser workload.
+  See [the comparison and limits](performance.md#bounded-live-audioparam-histories).
 - Five DE narration recordings were located in the predecessor tutorial
   repository. The literal recipe still omits `startNarration`. DE-use permission,
   EN fallback remain pending; source discovery does not establish narration
