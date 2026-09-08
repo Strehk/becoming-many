@@ -42,10 +42,16 @@ describe("passageProgressAt", () => {
     expect(passageProgressAt(SCHEDULE, "bat", 500)).toBeUndefined();
   });
 
+  /*
+   * Asked at an instant another passage does occupy, so the answer has to come
+   * from the queried passage's own window rather than from whatever crosses.
+   */
   test("answers nothing for a passage the schedule does not carry", () => {
-    expect(
-      passageProgressAt({ passages: [] }, "mosquitoes", 105),
-    ).toBeUndefined();
+    const batAlone: PassageSchedule = {
+      passages: [{ passageId: "bat", atSeconds: 100, durationSeconds: 10 }],
+    };
+
+    expect(passageProgressAt(batAlone, "mosquitoes", 105)).toBeUndefined();
   });
 
   test("keeps each passage to its own window", () => {
