@@ -1,0 +1,54 @@
+# Purpose: Catch a broken station image before a release depends on it.
+# Context: release-image.yml builds and pushes on a published release; if the
+#   Dockerfile is broken by then, the release is the place it is discovered.
+#   This gate runs the same build when the files it depends on change.
+# Responsibility: Build the image for the station architecture and keep it
+#   local — no registry login, no push, no tags.
+# Boundary: What the image contains stays the Dockerfile's decision; multi-arch
+#   and publication stay release-image.yml's.
+
+name: Image
+
+on:
+  pull_request:
+    paths:
+      - Dockerfile
+      - .dockerignore
+      - docker-compose*.yml
+      - package.json
+      - bun.lock
+      - .github/workflows/image.yml
+  push:
+    branches: [main]
+    paths:
+      - Dockerfile
+      - .dockerignore
+      - docker-compose*.yml
+      - package.json
+      - bun.lock
+      - .github/workflows/image.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: image-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      # amd64 only: the station PCs are x86, and the emulated arm64 leg is a
+      # cost a release can afford but a pull request should not pay.
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64
+          push: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
