@@ -26,6 +26,16 @@ export class FrameMetricsSampler {
     this.sampleCount = Math.min(this.sampleCount + 1, FRAME_SAMPLE_CAPACITY);
   }
 
+  /**
+   * Forget the window. The loop being measured has changed its rate — the
+   * headset took the render loop over, or handed it back — and an average
+   * spanning both would describe neither.
+   */
+  reset(): void {
+    this.sampleCount = 0;
+    this.nextSampleIndex = 0;
+  }
+
   read(): FrameMetrics | undefined {
     if (this.sampleCount === 0) return undefined;
 

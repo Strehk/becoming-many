@@ -35,7 +35,11 @@ else touches the clock.
 `status-strip.ts` answers "is everything all right" as four plain tiles —
 Sound, Picture, Controller, Headset — plus the one banner a fault that needs
 a person deserves (a stranger's device answering as this station's
-controller). The numbers behind the words live in the drawer's readouts.
+controller). Picture judges the frame rate only while a session presents,
+because the rate is the headset's only then: the preview runs at the station
+monitor's refresh, under the acceptance floor by construction, and a tile
+warning about it all evening would say nothing. The numbers behind the words
+live in the drawer's readouts, measured either way.
 `wake-overlay.ts` owns the suspended-audio state: a context that never
 received a gesture freezes show time while looking exactly like a pause, so
 until the audio runs the page is one full-screen "tap to wake" — the tap

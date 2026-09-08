@@ -87,6 +87,11 @@ export async function startConductorPage({
 
   const actions = createShowActions(level, show);
 
+  // Reading the metrics sorts a ring buffer, so the snapshot re-reads them on
+  // a beat rather than every frame.
+  let metrics: FrameMetrics | undefined;
+  let metricsReadAtMilliseconds = 0;
+
   // The one page-held copy of the session state, so every panel reads the
   // same instant of it from the snapshot instead of subscribing separately.
   let xrState: XrSessionState = {
@@ -94,6 +99,15 @@ export async function startConductorPage({
     isSessionActive: false,
   };
   level.xr.subscribe((state) => {
+    // The world renders on one loop, and its rate is the monitor's while the
+    // preview holds it and the headset's while a session presents. A window
+    // spanning that handover would average two different machines, so each
+    // edge starts the measurement — and the reading — again.
+    if (state.isSessionActive !== xrState.isSessionActive) {
+      frameMetrics.reset();
+      metrics = undefined;
+      metricsReadAtMilliseconds = 0;
+    }
     xrState = state;
   });
 
@@ -108,6 +122,12 @@ export async function startConductorPage({
 
   const panels: readonly ConductorPanel[] = [
     statusStrip,
+    createSessionBar({
+      parent: page,
+      actions,
+      xr: level.xr,
+      onToggleTechDrawer: drawer.toggle,
+    }),
     createTransportPanel({ parent: page, schedule, actions }),
     createShowTimeline({
       parent: page,
@@ -116,12 +136,6 @@ export async function startConductorPage({
       onScrubChange: (showTimeSeconds) => {
         scrubSeconds = showTimeSeconds;
       },
-    }),
-    createSessionBar({
-      parent: page,
-      actions,
-      xr: level.xr,
-      onToggleTechDrawer: drawer.toggle,
     }),
     createStagePanel({ parent: drawer.stageParent, stageMount }),
     createM5Panel({
@@ -155,11 +169,6 @@ export async function startConductorPage({
       actions,
     });
   });
-
-  // Reading the metrics sorts a ring buffer, so the snapshot re-reads them on
-  // a beat rather than every frame.
-  let metrics: FrameMetrics | undefined;
-  let metricsReadAtMilliseconds = 0;
 
   function readSnapshot(): ShowSnapshot {
     const showTime = show.clock.sample();

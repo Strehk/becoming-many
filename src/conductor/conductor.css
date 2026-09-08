@@ -2,7 +2,7 @@
  * Purpose: Style the conductor page for a lit room, a glance from a metre
  *   away, and a finger instead of a pointer.
  * Context: The page runs on the station's touch monitor while the show plays.
- * Responsibility: Define the masthead, transport, timeline, session bar,
+ * Responsibility: Define the masthead, session bar, transport, timeline,
  *   technician drawer, and the wake overlay, with every target thumb-sized.
  * Boundary: The immersive world and the development overlay are styled
  *   elsewhere.
@@ -28,8 +28,8 @@ body {
   flex-direction: column;
   gap: 20px;
   box-sizing: border-box;
-  /* Exactly the window, never taller: the session bar's `margin-top: auto`
-   * then rests it on the bottom edge whenever the content fits. */
+  /* Exactly the window, never taller: the panels stack from the masthead
+   * down and the slack, if any, stays below the last of them. */
   height: 100dvh;
   overflow: hidden;
   padding: 28px;
@@ -382,11 +382,13 @@ body {
 
 /* Session bar ------------------------------------------------------------ */
 
+/* Directly under the masthead: arming the next visitor is the job done most
+ * often, so it sits where a hand reaches first — and every target in it is
+ * sized for a thumb on the station's touch monitor rather than a pointer. */
 .conductor__session-bar {
   display: flex;
   gap: 20px;
   align-items: center;
-  margin-top: auto;
 }
 
 .conductor__language {
@@ -403,16 +405,16 @@ body {
 }
 
 .conductor__language-label {
-  padding: 0 12px;
+  padding: 0 14px;
   color: var(--muted);
-  font-size: 14px;
+  font-size: 16px;
 }
 
 .conductor__language button {
   flex: 1;
-  height: 60px;
+  height: 84px;
   color: var(--muted);
-  font-size: 20px;
+  font-size: 24px;
   font-weight: 700;
   background: transparent;
   border: 0;
@@ -426,8 +428,8 @@ body {
 .conductor__restart-button,
 .conductor__stream-button {
   flex: 1;
-  height: 76px;
-  font-size: 18px;
+  height: 100px;
+  font-size: 22px;
   font-weight: 700;
   border-radius: 14px;
 }
@@ -439,8 +441,8 @@ body {
 }
 
 .conductor__tech-button {
-  width: 100px;
-  height: 76px;
+  width: 124px;
+  height: 100px;
   color: var(--muted);
   background: transparent;
   border-color: var(--edge);

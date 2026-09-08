@@ -9,7 +9,7 @@
 
 import type { M5OperatorStatus } from "../m5/m5-adapter";
 import type { XrSessionState } from "../world/xr-session";
-import type { ConductorPanel, ConductorState } from "./conductor-state";
+import type { ConductorPanel } from "./conductor-state";
 
 type ReadingState = "idle" | "live" | "warn" | "alarm";
 
@@ -52,7 +52,7 @@ export function createStatusStrip({
       const { snapshot } = state;
 
       sound.write(...soundReading(snapshot.audioState));
-      picture.write(...pictureReading(state));
+      picture.write(...pictureReading(snapshot.framesPerSecond, snapshot.xr));
       controller.write(...controllerReading(snapshot.m5));
       headset.write(...headsetReading(snapshot.xr));
 
@@ -91,9 +91,21 @@ function controllerReading(status: M5OperatorStatus | undefined): ReadingText {
 /** The acceptance target from docs/performance.md is a stable 90 FPS. */
 const FRAME_RATE_FLOOR = 85;
 
-function pictureReading(state: ConductorState): ReadingText {
-  const { framesPerSecond } = state.snapshot;
-  if (framesPerSecond === undefined) return ["—", "idle"];
+/**
+ * The rate is the one the world's single render loop is running at, and that
+ * is the headset's only while a session presents. While the preview holds the
+ * loop it is the station monitor's refresh — 60 Hz on an ordinary display,
+ * below the floor by construction — so judging it there would light a warning
+ * at every station all evening for a picture nobody is watching. Until the
+ * headset takes the loop the tile therefore reports nothing; the raw rate
+ * stays readable in the technician drawer either way.
+ */
+export function pictureReading(
+  framesPerSecond: number | undefined,
+  xr: XrSessionState,
+): ReadingText {
+  if (!xr.isSessionActive) return ["—", "idle"];
+  if (framesPerSecond === undefined) return ["Measuring", "idle"];
 
   return framesPerSecond >= FRAME_RATE_FLOOR
     ? ["OK", "live"]
