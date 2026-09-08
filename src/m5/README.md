@@ -1,65 +1,92 @@
 # M5
 
-M5 owns device communication and the input produced by one M5StickS3. Browser
-UI lives in `src/ui`; flight equations remain in `src/control/m5-flight.runtime.ts`.
-Start here to follow the controller across its separate execution environments.
+M5 owns device communication and normalized input. Run owns its HTTP runtime;
+Flash Entry owns its USB setup session. UI consumes public capabilities; flight
+in `src/control/m5-flight.runtime.ts` consumes normalized input without device
+connection details. This document is the entry point across these environments.
 
-## Reading order and contracts
+## Public module boundary
 
-| File | Responsibility |
-| --- | --- |
-| `protocol.ts` | HTTP `M5State`, serial commands and validated replies. The browser's expected version must match the firmware release. |
-| `control-frame.ts` | Normalized steering axes and single-reader button edges. Quality zero means neutral steering. |
-| `runtime/m5.runtime.ts` | One host-bound poll lifetime, cancellation, `consumeFrame` and `readObservation`. Run creates and unloads it. |
-| `runtime/control-source.ts` | Identity, version, calibration, sequence and freshness gate; compose safety, neutralization, smoothing and button latching. No network or timers. |
-| `runtime/m5-settings.ts` | Existing poll, safety and filtering parameters. Flight-model tuning stays outside M5. |
-| `setup/serial-setup.ts` | USB port, reader, writer, bounded line framing and awaited cleanup. Flash Entry connects it to the UI independently of Run. |
+The public entry points are the existing files below, not every export under
+`src/m5`. Consumers import these directly; there is no forwarding barrel or
+second controller facade. `runtime/control-source.ts` and the filter/settings
+files are private implementation. Their exports serve the runtime and focused
+tests, not application consumers.
 
-`runtime/control-safety.ts`, `auto-neutralize.ts` and `control-smoothing.ts`
-keep the existing domain algorithms separate. The device itself owns
-`normalize → axis-map → calibrate`; browser filtering does not recalibrate it.
+| Public entry | Inputs and output | Ownership and failure contract |
+| --- | --- | --- |
+| `runtime/m5.runtime.ts` | Fixed expected device ID; `setHost(host)` accepts hostname, host:port or origin. `consumeFrame()` produces normalized input; `readObservation()` produces device status/sample/effective input. | Run constructs it without I/O, starts polling by setting the host and calls `unload`. Poll/parse failures become neutral input after expiry. Host replacement clears history; unload permanently stops new work. |
+| `control-frame.ts` | Pitch/roll in −1..1, quality in 0..1, button state and one-consumer edges. | Pure read-only contract with no host, firmware or transport facts. Flight borrows input and changes only its own rig. Neutral axes preserve glide/descent, not stop. |
+| `setup/serial-setup.ts` | `openSerialSetup(events)` returns an open USB channel. `send(command)` writes one newline-delimited command; events report validated responses. | Flash Entry creates/closes the channel. Picker/open/write/close failures reject; read errors use `onError` and end the channel. No concurrent writes or command queue. Closing awaits reader/writer release; repeat close shares completion. |
+| `protocol.ts` | Untrusted HTTP/serial text → validated wire values or null; serial commands and result discriminants. | Pure device contract shared by firmware tooling, simulator and adapters. Firmware implements the C++ side; export verifies the compatible version. It owns neither runtime state nor resources. |
 
-## Runtime observations and lifetime
+Observations never consume button edges. `consumeFrame` has one application
+reader in Run; first/reconnected samples establish the counter baseline without
+replaying earlier presses. Each returned frame is read-only and valid for that
+processing step. Retaining an observation does not keep its freshness current;
+call `readObservation` again. Accepted sample storage can be shared and must not
+be mutated; UI cannot obtain runtime cleanup or the frame consumer.
 
-Entry resolves deployment host/device identity and supplies commands to the
-operator UI. `setHost` replaces the entire poll and processing lifetime;
-late responses cannot publish into a replacement host. An empty host stops.
-`unload` aborts polling permanently and is safe to repeat.
+Serial response callbacks observe asynchronous device replies. A completed send
+is not an acknowledgement, and replies are not returned by `send`. Callbacks
+must not throw. The UI must not log the outgoing command/password; the adapter
+redacts echoes of the current transient password and omits unknown output.
+Firmware normalization/calibration and browser safety filtering remain distinct
+operations at their existing owners.
 
-Only Run calls `consumeFrame`, once per render frame. No host returns
-`undefined` and lets desktop input steer. A configured invalid/stale device
-returns a neutral frame; the existing glider continues its forward glide and
-descent. This is not a safety hold or automatic keyboard takeover.
+## Allowed dependencies
 
-`readObservation` samples one time without consuming events or polling again:
+Fallow distinguishes public runtime, private processing, setup, normalized input,
+wire protocol and device tools. Run may construct the runtime but cannot import
+its private processing. Entry may construct USB setup but cannot construct the
+Run-owned HTTP runtime. UI may import public observation/command types and use
+provided capabilities, never concrete factories. Flight can import only the
+normalized input type. Setup and runtime cannot import one another or UI. Device
+tools can import the wire contract, never the browser runtime. Pure contracts
+import no implementation. Type-only imports into private processing are also
+forbidden across the boundary.
 
-- `host`: the runtime's configured address.
-- `status`: device eligibility/freshness, including `off` without a host.
-- `sample`: latest accepted device pose, absent when rejected or stale.
-- `control`: effective filtered pitch/roll/quality, neutral while configured
-  input is invalid and absent only without a host. It exposes no button edges.
+## Physical organization
 
-A live device may have neutral effective input. UI must distinguish these
-facts instead of deriving steering readiness from `status === "live"`.
-Observations are read-only; consumers must never mutate the accepted sample.
+The current roots remain intentional: `src/m5` is the browser device module,
+`firmware/m5` contains the separately built device and executable tools,
+`public/firmware` contains delivery artifacts, and `src/ui` contains consumers.
+The common README and wire contract tie this feature together without making
+its execution environments depend on each other. A single repository-level M5
+package would currently move paths without removing state or indirection.
+No folder-rule exception, workspace package, additional build tool or mass move
+is introduced by this boundary refinement.
 
-## Setup, firmware and tools
+## Internal reading order
 
-The Flash page is `src/ui/flash/flash.page.ts`, connected by
-`src/entry/flash.entry.ts`. Sending a command confirms only a completed write;
-the typed device result confirms whether the operation succeeded. Configuration
-preserves omitted axis-mount options and replaces explicitly provided options.
-Passwords stay transient in the browser and are excluded/redacted from replies
-and logs. USB close cancels the owned reader before releasing the port.
+`runtime/m5.runtime.ts` creates one `control-source.ts` per host. The source
+validates identity, firmware, calibration, sequence and freshness, then runs
+`control-safety.ts → auto-neutralize.ts → control-smoothing.ts`. Settings stay
+in `runtime/m5-settings.ts`; flight tuning remains with Control. Private helper
+exports exist for this processing chain and its focused tests only.
 
-`firmware/m5/` contains device source and the independent Bun tools:
+`readObservation` uses one timestamp: `host` is the configured address, `status`
+is device eligibility/freshness, `sample` is the accepted raw pose and `control`
+is effective pitch/roll/quality. Invalid/stale samples are absent and configured
+input is neutral. With no host, control is undefined and desktop input can take
+over. A live device may still have neutral effective input. The UI must not infer
+steering readiness from connection status alone.
 
-- `bun run m5-sim`: typed HTTP simulator; no Station or browser runtime import.
-- `bun run m5-export`: build with PlatformIO, enforce compatible versions and
-  export the merged binary plus manifest to `public/firmware/m5-controller/`.
-- `bun run m5-test-config`: compile and execute the actual firmware configuration
-  logic locally after its ArduinoJson dependency has been installed by the build.
+## Firmware and executable tools
 
-See `firmware/m5/README.md` for build prerequisites and `tests/m5/README.md`
-for verification. Physical USB, calibration and installation flight acceptance
-remain separate from local software tests.
+Firmware owns `normalize → axis-map → calibrate`. Serial configuration preserves
+omitted mounting options and replaces explicit ones. The browser does not own
+persistent calibration or device storage.
+
+- `bun run m5-sim`: typed HTTP simulator in `firmware/m5/tools`.
+- `bun run m5-export`: PlatformIO build, version guard, merged binary and matching
+  manifest under `public/firmware/m5-controller`.
+- `bun run m5-test-config`: native execution of the actual C++ configuration
+  parser after the firmware build has installed ArduinoJson.
+
+See `firmware/m5/README.md` and `tests/m5/README.md` for prerequisites and tests.
+The boundary refinement passes type checking, 101 M5/Control tests and 14 isolated
+Fallow probes: five public dependencies accepted, nine forbidden dependencies
+rejected, including type-only access to internals. The real import graph has no
+boundary violations. No runtime behavior or folder ownership changes here;
+physical USB, calibration and installation flight acceptance remain separate.

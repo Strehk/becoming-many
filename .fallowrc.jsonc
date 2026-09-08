@@ -31,14 +31,11 @@
       { "name": "world-surface", "patterns": ["src/world-surface/**"] },
       { "name": "control", "patterns": ["src/control/**"] },
       { "name": "m5-protocol", "patterns": ["src/m5/protocol.ts"] },
-      {
-        "name": "m5",
-        "patterns": [
-          "src/m5/runtime/**",
-          "src/m5/setup/**",
-          "src/m5/control-frame.ts"
-        ]
-      },
+      { "name": "control-input", "patterns": ["src/m5/control-frame.ts"] },
+      { "name": "m5-runtime", "patterns": ["src/m5/runtime/m5.runtime.ts"] },
+      { "name": "m5-internal", "patterns": ["src/m5/runtime/**"] },
+      { "name": "m5-setup", "patterns": ["src/m5/setup/**"] },
+      { "name": "m5-tools", "patterns": ["firmware/m5/tools/**"] },
       { "name": "utils", "patterns": ["src/utils/**"] },
       {
         "name": "show-queries",
@@ -97,8 +94,20 @@
       },
       { "from": "world", "allow": ["utils"] },
       { "from": "world-surface", "allow": [] },
-      { "from": "control", "allow": ["m5", "world", "world-surface", "utils"] },
-      { "from": "m5", "allow": ["m5-protocol", "utils"] },
+      {
+        "from": "control",
+        "allow": ["world", "world-surface", "utils"],
+        "allowTypeOnly": ["control-input"]
+      },
+      {
+        "from": "m5-runtime",
+        "allow": ["m5-internal", "m5-protocol"],
+        "allowTypeOnly": ["control-input"]
+      },
+      { "from": "m5-internal", "allow": ["m5-protocol", "control-input"] },
+      { "from": "m5-setup", "allow": ["m5-protocol"] },
+      { "from": "m5-tools", "allow": ["m5-protocol"] },
+      { "from": "control-input", "allow": [] },
       { "from": "m5-protocol", "allow": [] },
       { "from": "utils", "allow": [] },
       { "from": "show-queries", "allow": [] },
@@ -117,7 +126,7 @@
         "allowTypeOnly": [
           "levels",
           "world",
-          "m5",
+          "m5-runtime",
           "m5-protocol",
           "shared",
           "diagnostics"
@@ -141,7 +150,7 @@
           "benchmark",
           "shared",
           "diagnostics",
-          "m5",
+          "m5-setup",
           "m5-protocol",
           "presets",
           "level-contracts",
@@ -161,7 +170,7 @@
           "world",
           "world-surface",
           "control",
-          "m5",
+          "m5-runtime",
           "utils",
           "dramaturgy",
           "show-queries",

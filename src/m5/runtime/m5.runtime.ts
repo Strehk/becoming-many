@@ -9,7 +9,11 @@ import { M5_SETTINGS } from "./m5-settings";
 
 export type M5DeviceStatus = M5ConnectionStatus | "off";
 
-/** A non-consuming snapshot; device samples and effective steering stay distinct. */
+/**
+ * Read-only observation at one timestamp. Sample storage may be shared across
+ * observations; never mutate it. Retained observations do not refresh freshness.
+ * control contains normalized axes/quality only, never consumable button edges.
+ */
 export interface M5Observation {
   readonly host: string;
   readonly status: M5DeviceStatus;
@@ -32,7 +36,11 @@ export interface M5Runtime {
   readonly unload: () => void;
 }
 
-/** Own one HTTP poll lifetime and its input processing; Run owns this runtime. */
+/**
+ * Run-owned HTTP input. Construction performs no I/O; setHost starts polling.
+ * expectedDeviceId is fixed for this runtime; missing identity prevents steering.
+ * Poll/parse failures age into neutral input rather than rejecting frame reads.
+ */
 export function createM5Runtime(expectedDeviceId?: string): M5Runtime {
   let closed = false;
   let source: ControlSource | undefined;

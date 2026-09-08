@@ -28,7 +28,12 @@ export function isWebSerialSupported(): boolean {
   return "serial" in navigator;
 }
 
-/** Prompt from a user gesture. This adapter owns every acquired stream and the port. */
+/**
+ * Flash Entry calls from a user gesture and owns the returned channel lifetime.
+ * Resolves after opening the port and starting reads; picker/open failures reject.
+ * Replies are asynchronous observations, not correlated send() return values.
+ * Callbacks must not throw. The adapter owns the port and both stream locks.
+ */
 export async function openSerialSetup(
   events: SerialSetupEvents,
 ): Promise<SerialSetupChannel> {
