@@ -39,7 +39,7 @@ export interface FlashPage {
 
 /** Bind authored HTML without owning the serial port or persisting passwords. */
 export function mountFlashPage(
-  container: Element,
+  container: HTMLElement,
   commands: FlashCommands,
   firmwareVersion: string,
   serialSupported: boolean,
@@ -61,22 +61,26 @@ export function mountFlashPage(
     HTMLButtonElement,
   );
   const log = requireElement(container, ".flash__log", HTMLPreElement);
-  const commandButtons = CONSOLE_COMMANDS.map((type) => {
-    const button = requireElement(
+  const commandButtons = CONSOLE_COMMANDS.map((type) => ({
+    type,
+    button: requireElement(
       container,
       `[data-command='${type}']`,
       HTMLButtonElement,
-    );
-    button.addEventListener("click", () => commands.send({ type }), options);
-    return button;
-  });
-  requireElement(
+    ),
+  }));
+  const version = requireElement(
     container,
     "[data-role='firmware-version']",
     HTMLElement,
-  ).textContent = firmwareVersion;
-  requireElement(container, ".flash__unsupported", HTMLElement).hidden =
-    serialSupported;
+  );
+  const unsupported = requireElement(
+    container,
+    ".flash__unsupported",
+    HTMLElement,
+  );
+  version.textContent = firmwareVersion;
+  unsupported.hidden = serialSupported;
 
   const stored = loadStoredSetup();
   if (stored) {
@@ -88,6 +92,9 @@ export function mountFlashPage(
   const lines: string[] = [];
   updateControls();
 
+  for (const { type, button } of commandButtons) {
+    button.addEventListener("click", () => commands.send({ type }), options);
+  }
   connectButton.addEventListener("click", commands.toggleConnection, options);
   form.addEventListener(
     "submit",
@@ -103,6 +110,7 @@ export function mountFlashPage(
     options,
   );
 
+  container.inert = false;
   return {
     setConnectionState(state) {
       connection = state;
@@ -120,6 +128,7 @@ export function mountFlashPage(
     },
     rememberSetup: saveStoredSetup,
     unload() {
+      container.inert = true;
       listeners.abort();
       password.value = "";
       lines.length = 0;
@@ -139,7 +148,8 @@ export function mountFlashPage(
       connection === "connecting" ||
       connection === "closing";
     sendButton.disabled = connection !== "connected" || sending;
-    for (const button of commandButtons) button.disabled = sendButton.disabled;
+    for (const { button } of commandButtons)
+      button.disabled = sendButton.disabled;
   }
 }
 

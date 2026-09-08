@@ -14,12 +14,54 @@ export async function checkFlashLifecycle(
   const url = new URL("/flash.html", baseUrl).href;
   await page.goto(url, { waitUntil: "load" });
   await checkResponsesAndDisconnect(page);
+  await checkCachedPageLifetime(page);
   await page.goto(url, { waitUntil: "load" });
   await checkLatePickerCleanup(page);
   await page.goto(url, { waitUntil: "load" });
   await checkUnsupportedSerial(page);
   // Leave a normal, mounted page for the caller's screenshots/layout checks.
   await page.reload({ waitUntil: "load" });
+}
+
+/** A cached page stays bound; its later final exit closes the active port once. */
+async function checkCachedPageLifetime(page: Page): Promise<void> {
+  const serial = await installSerial(page, false);
+  try {
+    await page.evaluate(() => {
+      window.dispatchEvent(
+        new PageTransitionEvent("pagehide", { persisted: true }),
+      );
+      window.dispatchEvent(
+        new PageTransitionEvent("pageshow", { persisted: true }),
+      );
+    });
+    await page
+      .getByRole("button", { name: "Connect console", exact: true })
+      .click();
+    await page
+      .getByRole("button", { name: "Disconnect console", exact: true })
+      .waitFor();
+    await page.locator('[name="password"]').fill(PASSWORD);
+    await page.evaluate(() =>
+      window.dispatchEvent(new PageTransitionEvent("pagehide")),
+    );
+    await page.waitForFunction((mock) => mock.status.closes === 1, serial);
+    assert.equal(await page.locator('[name="password"]').inputValue(), "");
+    assert.equal(
+      await page
+        .locator(".flash")
+        .evaluate((root) => root.hasAttribute("inert")),
+      true,
+    );
+    assert.equal(
+      await serial.evaluate((mock) => mock.status.closedWithUnlockedStreams),
+      true,
+    );
+    await page.locator('[data-action="connect"]').dispatchEvent("click");
+    assert.equal(await serial.evaluate((mock) => mock.status.requests), 1);
+  } finally {
+    await serial.dispose();
+  }
 }
 
 async function checkResponsesAndDisconnect(page: Page): Promise<void> {

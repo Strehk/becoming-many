@@ -2,7 +2,7 @@
 Purpose: Explain what is verified about the station deployment contract.
 Context: The pages act on config arriving from a server they do not control.
 Responsibility: Route station tests and say what they deliberately leave out.
-Boundary: The implementation lives in ../../src/station and ../../station.
+Boundary: The implementation lives in ../../shared and ../../station.
 -->
 
 # Station tests

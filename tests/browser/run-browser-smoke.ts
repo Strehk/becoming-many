@@ -11,6 +11,7 @@ import { join } from "node:path";
 import { parseArgs } from "node:util";
 import { type Browser, chromium, type Page } from "playwright";
 import { LEVEL_NAMES } from "../../shared/level-routes";
+import { narrationUrl } from "../../src/dramaturgy/narration-catalog";
 import { PIECE_SCHEDULE } from "../../src/dramaturgy/piece-schedule";
 import { M5_FIRMWARE_VERSION } from "../../src/m5/protocol";
 import { formatShowTime } from "../../src/ui/shared/show-time-format";
@@ -24,6 +25,7 @@ import {
 import { checkFlashLifecycle } from "./flash-acceptance";
 import { checkStartLevel, prepareStartInput } from "./start-acceptance";
 import { checkStartupFailure } from "./startup-failure";
+import { checkUiMountFailure } from "./ui-mount-failure";
 
 const READY_TIMEOUT_MILLISECONDS = 90_000;
 const PAUSE_OBSERVATION_MILLISECONDS = 1_100;
@@ -81,27 +83,40 @@ async function main(): Promise<void> {
         `${result.passed ? "PASS" : "FAIL"} ${route}: ${result.errors.join("; ")}`,
       );
     }
-    for (const route of ["/", "/test.html", "/conductor.html"]) {
-      const scenario = `startup-failure:${route}`;
-      try {
-        await checkStartupFailure(
-          browser,
-          baseUrl,
-          route,
-          join(
-            outputDirectory,
-            `startup-failure-${route === "/" ? "rehearsal" : route.slice(1)}.png`,
-          ),
-        );
-        results.push({ route: scenario, passed: true, errors: [] });
-        console.log(`PASS ${scenario}`);
-      } catch (error) {
-        results.push({
-          route: scenario,
-          passed: false,
-          errors: [String(error)],
-        });
-        console.log(`FAIL ${scenario}: ${String(error)}`);
+    for (const { name, routes, check } of [
+      {
+        name: "startup-failure",
+        routes: ["/", "/test.html", "/conductor.html"],
+        check: checkStartupFailure,
+      },
+      {
+        name: "ui-mount-failure",
+        routes: ["/", "/conductor.html", "/flash.html"],
+        check: checkUiMountFailure,
+      },
+    ]) {
+      for (const route of routes) {
+        const scenario = `${name}:${route}`;
+        try {
+          await check(
+            browser,
+            baseUrl,
+            route,
+            join(
+              outputDirectory,
+              `${name}-${route === "/" ? "rehearsal" : route.slice(1)}.png`,
+            ),
+          );
+          results.push({ route: scenario, passed: true, errors: [] });
+          console.log(`PASS ${scenario}`);
+        } catch (error) {
+          results.push({
+            route: scenario,
+            passed: false,
+            errors: [String(error)],
+          });
+          console.log(`FAIL ${scenario}: ${String(error)}`);
+        }
       }
     }
   } catch (error) {
@@ -187,15 +202,20 @@ async function runSmokeRoute(
       await checkUiLayout(page, route);
       if (route === "/flash.html") await checkFlashLifecycle(page, baseUrl);
     }
-    if (route === "/conductor.html") {
+    if (["/", "/test.html", "/conductor.html"].includes(route)) {
       await page.evaluate(() =>
         window.dispatchEvent(
           new PageTransitionEvent("pagehide", { persisted: true }),
         ),
       );
       assert.equal(
-        await page.locator("canvas").count(),
-        1,
+        await page.evaluate(() =>
+          document
+            .querySelector("canvas")
+            ?.getContext("webgl2")
+            ?.isContextLost(),
+        ),
+        false,
         "A persisted page keeps its Run",
       );
       await page.evaluate(() =>
@@ -209,6 +229,13 @@ async function runSmokeRoute(
         1,
         "Page exit releases WebGL while preserving declared page structure",
       );
+      if (route === "/") {
+        assert.equal(await page.evaluate(() => window.show), undefined);
+        assert.equal(await page.locator("[data-rehearsal]").isVisible(), false);
+        assert.equal(await page.locator("[data-sections] button").count(), 0);
+      }
+      if (route === "/test.html")
+        assert.equal(await page.locator("[data-xr-entry]").isVisible(), false);
     }
     assert.equal(errors.length, 0, errors.join("\n"));
   } catch (error) {
@@ -400,7 +427,63 @@ async function checkConductor(page: Page): Promise<boolean> {
     ".conductor__transport-button",
     ".conductor__clock output",
   );
+  await checkConductorKeyboard(page);
   return wakeRequired;
+}
+
+/** Native focused controls and global transport shortcuts must both remain usable. */
+async function checkConductorKeyboard(page: Page): Promise<void> {
+  const transport = page.locator(".conductor__transport-button");
+  for (const language of ["de", "en"] as const) {
+    // Let this language's preload finish before replacing its audio elements.
+    const recordings = Promise.all(
+      PIECE_SCHEDULE.narration.map((cue) =>
+        page.waitForEvent("requestfinished", {
+          predicate: (request) =>
+            new URL(request.url()).pathname ===
+            narrationUrl(cue.cueId, language),
+        }),
+      ),
+    );
+    const button = page.getByRole("button", {
+      name: language.toUpperCase(),
+      exact: true,
+    });
+    await button.press("Space");
+    await recordings;
+    await page.waitForFunction(
+      (name) =>
+        document
+          .querySelector(`[data-language="${name}"]`)
+          ?.getAttribute("aria-pressed") === "true",
+      language.toLowerCase(),
+    );
+    assert.equal(await transport.getAttribute("data-playing"), "false");
+  }
+  await transport.press("Space");
+  await page
+    .locator('.conductor__transport-button[data-playing="true"]')
+    .waitFor();
+  await transport.press("Space");
+  await page
+    .locator('.conductor__transport-button[data-playing="false"]')
+    .waitFor();
+  await page.getByRole("button", { name: /Echo/ }).press("Space");
+  await page.waitForFunction(
+    (time) =>
+      document.querySelector(".conductor__clock output")?.textContent === time,
+    formatShowTime(ECHO_START_SECONDS),
+  );
+  assert.equal(await transport.getAttribute("data-playing"), "false");
+  await page.evaluate(() => (document.activeElement as HTMLElement)?.blur());
+  await page.keyboard.press("Space");
+  await page
+    .locator('.conductor__transport-button[data-playing="true"]')
+    .waitFor();
+  await page.keyboard.press("Space");
+  await page
+    .locator('.conductor__transport-button[data-playing="false"]')
+    .waitFor();
 }
 
 async function checkConductorTransport(page: Page): Promise<void> {
@@ -645,7 +728,7 @@ async function checkTechnicianControls(page: Page): Promise<void> {
     false,
     "Closed drawer cannot take focus",
   );
-  await toggle.click();
+  await toggle.press("Space");
   assert.equal(await toggle.getAttribute("aria-expanded"), "true");
   assert.equal(
     await close.evaluate((element) => element === document.activeElement),
@@ -740,7 +823,7 @@ async function checkTechnicianControls(page: Page): Promise<void> {
   });
   await page.getByRole("button", { name: "Clear", exact: true }).click();
   assert.equal(await preview.isVisible(), false);
-  await close.click();
+  await close.press("Escape");
   assert.equal(
     await drawer.evaluate((element) => element.hasAttribute("inert")),
     true,

@@ -17,6 +17,10 @@ Frame metrics live outside UI in `src/diagnostics/`; the Test module loader
 belongs to Entry. Device validity stays in M5, whose `readObservation()` never
 consumes frame input.
 
+Icons reference individual `lucide-static` SVG assets with declarative `<use>`
+elements. Keep `?no-inline` on their URLs: browsers reject data URLs in SVG
+references, so Vite must emit external files.
+
 Flash is independent of Run. Its [page](flash/README.md) binds setup controls;
 Entry connects them to the serial adapter. The [Conductor](conductor/README.md)
 documents operator-specific contracts. See the

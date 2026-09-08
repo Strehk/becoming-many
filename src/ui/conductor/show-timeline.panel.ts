@@ -77,7 +77,6 @@ export function createShowTimeline({
     requireElement(slot, "text", SVGTextElement).textContent = cueDisplayName(
       chapter.cueId,
     );
-    track.insertBefore(slotFragment, playhead);
     const buttonFragment = document.importNode(buttonTemplate.content, true);
     const button = requireElement(buttonFragment, "button", HTMLButtonElement);
     requireElement(button, "[data-name]", HTMLElement).textContent =
@@ -87,12 +86,15 @@ export function createShowTimeline({
       ".conductor__chapter-time",
       HTMLElement,
     ).textContent = formatShowTime(chapter.startSeconds);
+    return { chapter, slot, progress, button } satisfies ChapterView;
+  });
+  for (const { chapter, slot, button } of chapters) {
     button.addEventListener("click", () => show.seekTo(chapter.startSeconds), {
       signal,
     });
-    buttons.append(buttonFragment);
-    return { chapter, slot, progress, button } satisfies ChapterView;
-  });
+    track.insertBefore(slot, playhead);
+    buttons.append(button);
+  }
   signal.addEventListener(
     "abort",
     () => {

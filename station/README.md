@@ -3,7 +3,7 @@ Purpose: Document the one-process station server and its Docker deployment.
 Context: A station PC runs this process and opens one browser window on it.
 Responsibility: Explain what the process does, its endpoints, its env vars,
   and what it deliberately does not do.
-Boundary: The deployment-config contract the pages read lives in ../src/station.
+Boundary: The deployment-config contract the pages read lives in ../shared.
 -->
 
 # Station server

@@ -6,6 +6,7 @@
       "name": "becoming_many_new",
       "dependencies": {
         "esp-web-tools": "^10.4.0",
+        "lucide-static": "^1.43.0",
         "three": "^0.185.1",
         "tone": "14.8.49",
       },
@@ -191,6 +192,8 @@
     "lit-element": ["lit-element@4.2.2", "", { "dependencies": { "@lit-labs/ssr-dom-shim": "^1.5.0", "@lit/reactive-element": "^2.1.0", "lit-html": "^3.3.0" } }, "sha512-aFKhNToWxoyhkNDmWZwEva2SlQia+jfG0fjIWV//YeTaWrVnOxD89dPKfigCUspXFmjzOEUQpOkejH5Ly6sG0w=="],
 
     "lit-html": ["lit-html@3.3.3", "", { "dependencies": { "@types/trusted-types": "^2.0.2" } }, "sha512-el8M6jK2o3RXBnrSHX3ZKrsN8zEV63pSExTO1wYJz7QndGYZ8353e2a5PPX+qHe2aGayfnchQmkAojaWAREOIA=="],
+
+    "lucide-static": ["lucide-static@1.43.0", "", {}, "sha512-w7vdVFqh4vv7RxWHN4sSeylA0s3GHV5vpyGqZI0q22MINKJyhMNWSMd90RyTUYWBRNYqdZVZzrMmijVxU3Cl9A=="],
 
     "meshoptimizer": ["meshoptimizer@1.1.1", "", {}, "sha512-oRFNWJRDA/WTrVj7NWvqa5HqE1t9MYDj2VaWirQCzCCrAd2GHrqR/sQezCxiWATPNlKTcRaPRHPJwIRoPBAp5g=="],
 

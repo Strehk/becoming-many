@@ -2,7 +2,7 @@
 Purpose: Explain what is verified about the conductor page.
 Context: The page is DOM-bound, but the decisions behind it are not.
 Responsibility: Route conductor tests and say what they deliberately leave out.
-Boundary: The implementation lives in ../../src/conductor.
+Boundary: The implementation lives in ../../src/ui/conductor.
 -->
 
 # Conductor tests

@@ -5,7 +5,7 @@ import {
 import type { NarrationSchedule } from "../../dramaturgy/narration-schedule";
 import { cueSlots } from "../../dramaturgy/schedule-layout";
 import type { RunningShow } from "../../levels/show.runtime";
-import { requireElement } from "../shared/dom";
+import { requireElement, writeText } from "../shared/dom";
 import { cueDisplayName, formatShowTime } from "../shared/show-time-format";
 import { attachScrubbing } from "../shared/transport-scrubbing";
 
@@ -59,38 +59,41 @@ export function mountRehearsalTransport({
     "[data-tick-template]",
     HTMLTemplateElement,
   );
-  const languageButtons = NARRATION_LANGUAGES.map((language) => {
-    const button = requireElement(
+  const languageButtons = NARRATION_LANGUAGES.map((language) => ({
+    language,
+    button: requireElement(
       bar,
       `[data-language="${language}"]`,
       HTMLButtonElement,
-    );
-    button.addEventListener("click", () => show.setLanguage(language), {
-      signal,
-    });
-    return button;
-  });
+    ),
+  }));
 
-  const chapterNodes: Element[] = [];
   // Both languages share cue slots; the first chapter includes the silent pre-roll.
-  cueSlots(schedule, "en").forEach((slot, index) => {
+  const chapters = cueSlots(schedule, "en").map((slot, index) => {
     const startSeconds = index === 0 ? 0 : slot.atSeconds;
     const sectionContent = document.importNode(sectionTemplate.content, true);
     const button = requireElement(sectionContent, "button", HTMLButtonElement);
     button.textContent = cueDisplayName(slot.cueId);
-    button.addEventListener("click", () => show.seekTo(startSeconds), {
-      signal,
-    });
-    sections.append(sectionContent);
     const tickContent = document.importNode(tickTemplate.content, true);
     const tick = requireElement(tickContent, "line", SVGLineElement);
     const position = `${toPercent(startSeconds, durationSeconds)}%`;
     tick.setAttribute("x1", position);
     tick.setAttribute("x2", position);
-    track.append(tick);
-    chapterNodes.push(button, tick);
+    return { startSeconds, button, tick };
   });
 
+  for (const { language, button } of languageButtons) {
+    button.addEventListener("click", () => show.setLanguage(language), {
+      signal,
+    });
+  }
+  for (const { startSeconds, button, tick } of chapters) {
+    button.addEventListener("click", () => show.seekTo(startSeconds), {
+      signal,
+    });
+    sections.append(button);
+    track.append(tick);
+  }
   transportButton.addEventListener("click", show.togglePlayback, { signal });
   let scrubSeconds: number | undefined;
   attachScrubbing({
@@ -103,7 +106,6 @@ export function mountRehearsalTransport({
     },
   });
   let renderedPlaying: boolean | undefined;
-  let renderedText: string | undefined;
   let renderedPlayheadLeft: string | undefined;
   let renderedLanguage: NarrationLanguage | undefined;
 
@@ -114,11 +116,10 @@ export function mountRehearsalTransport({
       renderedPlaying = sample.isPlaying;
       transportButton.textContent = sample.isPlaying ? "Hold" : "Play";
     }
-    const text = `${formatShowTime(showTimeSeconds)} / ${formatShowTime(durationSeconds)}`;
-    if (renderedText !== text) {
-      renderedText = text;
-      readout.textContent = text;
-    }
+    writeText(
+      readout,
+      `${formatShowTime(showTimeSeconds)} / ${formatShowTime(durationSeconds)}`,
+    );
     const position = `${toPercent(showTimeSeconds, durationSeconds).toFixed(PLAYHEAD_DECIMALS)}%`;
     if (renderedPlayheadLeft !== position) {
       renderedPlayheadLeft = position;
@@ -128,12 +129,12 @@ export function mountRehearsalTransport({
     const language = show.readLanguage();
     if (renderedLanguage !== language) {
       renderedLanguage = language;
-      languageButtons.forEach((button, index) => {
-        button.setAttribute(
+      for (const entry of languageButtons) {
+        entry.button.setAttribute(
           "aria-pressed",
-          String(NARRATION_LANGUAGES[index] === language),
+          String(entry.language === language),
         );
-      });
+      }
     }
     animationFrame = requestAnimationFrame(draw);
   }
@@ -144,7 +145,10 @@ export function mountRehearsalTransport({
     if (signal.aborted) return;
     lifetime.abort();
     cancelAnimationFrame(animationFrame);
-    for (const node of chapterNodes) node.remove();
+    for (const { button, tick } of chapters) {
+      button.remove();
+      tick.remove();
+    }
     bar.hidden = true;
   };
 }

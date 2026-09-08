@@ -192,12 +192,8 @@ input {
   position: fixed;
   z-index: 30;
 }
-.conductor-icon-outline {
-  fill: none;
-  stroke: currentColor;
-}
-.conductor-icon-solid {
-  fill: currentColor;
+.lucide-icon {
+  display: block;
 }
 .timeline__track,
 .rehearsal__track,

@@ -90,11 +90,11 @@ export function createTechDrawer({
     reloadPage,
     signal,
   );
-  const frames = bindReadout(root, "frames");
-  const m5 = bindReadout(root, "m5");
-  const level = bindReadout(root, "level");
-  const audio = bindReadout(root, "audio");
-  const language = bindReadout(root, "language");
+  const frames = readOutput(root, "frames");
+  const m5 = readOutput(root, "m5");
+  const level = readOutput(root, "level");
+  const audio = readOutput(root, "audio");
+  const language = readOutput(root, "language");
 
   return {
     toggle,
@@ -109,30 +109,21 @@ export function createTechDrawer({
           );
         });
 
-        frames.write(frameText(state.framesPerSecond, state.p95Milliseconds));
-        m5.write(m5Text(state.m5));
-        level.write(state.activeLevel);
-        audio.write(state.audioState);
-        language.write(state.language.toUpperCase());
+        writeText(
+          frames,
+          frameText(state.framesPerSecond, state.p95Milliseconds),
+        );
+        writeText(m5, m5Text(state.m5));
+        writeText(level, state.activeLevel);
+        writeText(audio, state.audioState);
+        writeText(language, state.language.toUpperCase());
       },
     },
   };
 }
 
-function bindReadout(
-  parent: HTMLElement,
-  name: string,
-): { write: (text: string) => void } {
-  const output = requireElement(
-    parent,
-    `[data-reading="${name}"]`,
-    HTMLOutputElement,
-  );
-  return {
-    write(text): void {
-      writeText(output, text);
-    },
-  };
+function readOutput(parent: HTMLElement, name: string): HTMLOutputElement {
+  return requireElement(parent, `[data-reading="${name}"]`, HTMLOutputElement);
 }
 
 function frameText(

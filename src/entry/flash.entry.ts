@@ -33,16 +33,18 @@ const page = mountFlashPage(
   isWebSerialSupported(),
 );
 
-window.addEventListener(
-  "pagehide",
-  () => {
-    disposed = true;
-    page.unload();
-    // A pending browser port picker cannot be cancelled; close its result below.
-    void channel?.close().catch(() => {});
-  },
-  { once: true },
-);
+window.addEventListener("pagehide", onPageHide);
+
+function onPageHide(event: PageTransitionEvent): void {
+  if (event.persisted) return;
+  window.removeEventListener("pagehide", onPageHide);
+  disposed = true;
+  page.unload();
+  // A pending browser port picker cannot be cancelled; close its result below.
+  void channel
+    ?.close()
+    .catch((error: unknown) => console.error("Flash cleanup failed", error));
+}
 
 async function toggleConnection(): Promise<void> {
   if (disposed || connecting) return;

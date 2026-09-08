@@ -51,7 +51,7 @@ Counters from `renderer.info` are exact integers and repeat across machines.
 Frame times are measurements and only compare against a run on the same
 machine and rendering path. The two never mix in one pass/fail decision.
 
-The overlay from `src/test-ui` stays off during a run so its DOM writes do not
+The overlay from `src/ui/test` stays off during a run so its DOM writes do not
 enter the samples.
 
 Viewport size is part of the workload and must be pinned by the caller.

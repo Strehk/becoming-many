@@ -138,8 +138,14 @@ export function mountConductorPage({
     window.addEventListener(
       "keydown",
       (event) => {
-        if (document.pointerLockElement) return;
+        if (event.defaultPrevented || document.pointerLockElement) return;
         const target = event.target;
+        if (
+          event.code === "Space" &&
+          target instanceof Element &&
+          target.closest("button, a[href], summary")
+        )
+          return;
         const action = resolveConductorKey({
           code: event.code,
           isShiftHeld: event.shiftKey,
