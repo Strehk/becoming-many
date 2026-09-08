@@ -7,6 +7,7 @@
 
 import { type Scene, Vector3 } from "three";
 import type { WorldModule } from "../../world/module-runtime";
+import type { ReadSwarmCrossing } from "../passage-crossing";
 import { getMotionRandom } from "./motion-random";
 import type { MotionSenseParameters } from "./motion-sense-settings";
 import {
@@ -40,14 +41,6 @@ const MIN_BUZZ_HERTZ = 14;
 const BUZZ_HERTZ_RANGE = 14;
 const MIN_BUZZ_METERS = 0.06;
 const BUZZ_METERS_RANGE = 0.06;
-
-/**
- * Where the swarm's centre is at this instant and how long it has been
- * crossing, or undefined while it is away. The seconds are what every point's
- * buzz is derived from, so the cloud is a pure function of show time like the
- * rest of a passage: a seek lands it mid-crossing rather than restarting it.
- */
-export type ReadSwarmCrossing = (centre: Vector3) => number | undefined;
 
 export interface PassageSwarmOptions {
   readonly scene: Scene;

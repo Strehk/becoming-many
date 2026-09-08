@@ -285,9 +285,12 @@ test("Animals expose the visible actor positions within their budget", () => {
   expect(positions[1] ?? 0).toBeCloseTo(visibleActor.position.y, 4);
   expect(positions[2] ?? 0).toBeCloseTo(visibleActor.position.z, 4);
 
+  // Put away but still updated — the warming state a show holds a layer in
+  // before its sense reveals it: the actors keep walking and give up their
+  // visible slots, so nothing off screen is reported as visible.
   handle.module.deactivate();
   handle.module.update?.(0.25);
-  expect(handle.getVisibleWorldPositions()).toHaveLength(3);
+  expect(handle.getVisibleWorldPositions()).toHaveLength(0);
   handle.module.unload();
 });
 

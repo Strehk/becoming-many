@@ -1,0 +1,28 @@
+# Purpose: Hold the automated test gate on every pull request.
+# Context: `bun test` covers what the codebase decides before it touches a
+#   browser, an audio graph, or the DOM, and needs no display or device.
+# Responsibility: Run the full Bun test suite.
+# Boundary: The deterministic browser benchmark is a separate, build-dependent
+#   run (`bun run benchmark`) and deliberately stays outside this gate.
+
+name: Test
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: test-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  bun-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+      - run: bun test

@@ -33,6 +33,17 @@ export interface NarrationCue {
    * cue's level, so the lead-in opens the first world (`showLevelAt`).
    */
   readonly level: ShowLevelName;
+
+  /**
+   * How long before the recording this cue's world arrives. Zero for all but
+   * one cue: a sense grows in *under* the narration that names it, which is
+   * the whole reason a fade starts at its cue. The piece closes the other way
+   * round — the world must already be white before the last words start — and
+   * a lead is what separates the two instants without a second schedule.
+   * `show-levels.ts` reads the world at `atSeconds - worldLeadSeconds`;
+   * narration playback keeps `atSeconds`.
+   */
+  readonly worldLeadSeconds?: number;
 }
 
 /**

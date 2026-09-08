@@ -28,6 +28,10 @@ import { createUnlitMaterial } from "../../utils/asset-loader/unlit-material";
 import type { WorldModule } from "../../world/module-runtime";
 import type { Viewpoint } from "../../world/viewer-rig";
 import type { WorldSurface } from "../../world-surface/world-surface";
+import type {
+  PassageSwarmCrossing,
+  ReadSwarmCrossing,
+} from "../passage-crossing";
 import {
   MOSQUITO_PASSAGE,
   PASSAGE_FLIGHTS,
@@ -45,14 +49,6 @@ export interface PassageResources {
   readonly models: GltfAssets;
   readonly routes: ReadonlyMap<PassageId, PassageRoute>;
 }
-
-/**
- * Where the swarm passage's centre is now and how long it has been crossing,
- * or undefined while it is away. This is the whole contract between a passage
- * and the trail ring that draws it: the passage owns the route and the
- * schedule, and knows nothing about how a swarm is printed.
- */
-export type ReadSwarmCrossing = (centre: Vector3) => number | undefined;
 
 export interface AnimalPassagesModuleOptions {
   readonly scene: Scene;
@@ -74,11 +70,12 @@ export interface AnimalPassagesModuleHandle {
    */
   readonly followShowTime: (showTimeSeconds: number) => void;
   /**
-   * Where the swarm passage stands, for the trail ring that draws it. It reads
-   * the show time the last `followShowTime` was given, so the swarm and the
-   * flown animals answer the same instant.
+   * The swarm crossing and the cloud that prints it, for whatever draws it —
+   * or undefined when the schedule holds no swarm passage. Its reader answers
+   * from the show time the last `followShowTime` was given, so the swarm and
+   * the flown animals stand at the same instant.
    */
-  readonly readSwarmCrossing: ReadSwarmCrossing;
+  readonly swarm: PassageSwarmCrossing | undefined;
 }
 
 /**
@@ -90,9 +87,7 @@ export async function loadPassageResources(
   schedule: PassageSchedule,
 ): Promise<PassageResources> {
   const definitions = scheduledFlights(schedule);
-  const swarmScheduled = schedule.passages.some(
-    ({ passageId }) => passageId === MOSQUITO_PASSAGE.passageId,
-  );
+  const swarmScheduled = isSwarmScheduled(schedule);
   const [models, routes, swarmRoute] = await Promise.all([
     loadGltfAssets(
       definitions.map(({ passageId, modelUrl }) => ({
@@ -144,6 +139,36 @@ export function createAnimalPassagesModule(
   let showTime = 0;
   const swarmPoint = new Vector3();
 
+  const readSwarmCrossing: ReadSwarmCrossing = (centre) => {
+    const route = options.resources.routes.get(MOSQUITO_PASSAGE.passageId);
+    const progress = passageProgressAt(
+      options.schedule,
+      MOSQUITO_PASSAGE.passageId,
+      showTime,
+    );
+    if (!route || progress === undefined) return undefined;
+
+    const crossingSeconds = progress * MOSQUITO_PASSAGE.durationSeconds;
+    samplePassageRoute(route, crossingSeconds, swarmPoint);
+    // The route is authored around the visitor, like every passage, so the
+    // world centre is their position plus the route offset. Nothing turns
+    // it: the mosquitoes carry no compass meaning, and turning the cloud
+    // would only move which side of the flight it passes on.
+    centre
+      .copy(options.viewpoint.worldPosition)
+      .add(swarmPoint)
+      .setY(
+        Math.max(
+          options.viewpoint.worldPosition.y + swarmPoint.y,
+          options.worldSurface.groundYAt(
+            options.viewpoint.worldPosition.x + swarmPoint.x,
+            options.viewpoint.worldPosition.z + swarmPoint.z,
+          ) + MOSQUITO_PASSAGE.groundClearanceMeters,
+        ),
+      );
+    return crossingSeconds;
+  };
+
   return {
     module: {
       load: () => stagePassages(staged, options),
@@ -183,35 +208,16 @@ export function createAnimalPassagesModule(
       }
     },
 
-    readSwarmCrossing: (centre: Vector3): number | undefined => {
-      const route = options.resources.routes.get(MOSQUITO_PASSAGE.passageId);
-      const progress = passageProgressAt(
-        options.schedule,
-        MOSQUITO_PASSAGE.passageId,
-        showTime,
-      );
-      if (!route || progress === undefined) return undefined;
-
-      const crossingSeconds = progress * MOSQUITO_PASSAGE.durationSeconds;
-      samplePassageRoute(route, crossingSeconds, swarmPoint);
-      // The route is authored around the visitor, like every passage, so the
-      // world centre is their position plus the route offset. Nothing turns
-      // it: the mosquitoes carry no compass meaning, and turning the cloud
-      // would only move which side of the flight it passes on.
-      centre
-        .copy(options.viewpoint.worldPosition)
-        .add(swarmPoint)
-        .setY(
-          Math.max(
-            options.viewpoint.worldPosition.y + swarmPoint.y,
-            options.worldSurface.groundYAt(
-              options.viewpoint.worldPosition.x + swarmPoint.x,
-              options.viewpoint.worldPosition.z + swarmPoint.z,
-            ) + MOSQUITO_PASSAGE.groundClearanceMeters,
-          ),
-        );
-      return crossingSeconds;
-    },
+    // The cloud shape is authored beside the route it flies, so it travels
+    // with the reader rather than being read out of this module from outside.
+    swarm: isSwarmScheduled(options.schedule)
+      ? {
+          pointCount: MOSQUITO_PASSAGE.pointCount,
+          cloudRadiusMeters: MOSQUITO_PASSAGE.cloudRadiusMeters,
+          cloudHeightMeters: MOSQUITO_PASSAGE.cloudHeightMeters,
+          read: readSwarmCrossing,
+        }
+      : undefined,
   };
 }
 
@@ -324,6 +330,13 @@ function measureSpan(model: Object3D): number {
     throw new Error("Passage model has no measurable span");
   }
   return span;
+}
+
+/** Whether the schedule places the one passage that crosses as a swarm. */
+function isSwarmScheduled(schedule: PassageSchedule): boolean {
+  return schedule.passages.some(
+    ({ passageId }) => passageId === MOSQUITO_PASSAGE.passageId,
+  );
 }
 
 /**
