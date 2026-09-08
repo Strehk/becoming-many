@@ -103,6 +103,17 @@ a tunnel made of particles/rings. Formation, traversal and dissolution should
 read as one flowing world. The existing manually controlled locomotion remains
 binding; the world provides spatial guidance, not automatic steering.
 
+The user's [flight-world sketch](direction/tutorial-flight-sketch.png), supplied
+as inspiration on 2026-09-09, adds a clear spatial rhythm: open curved flight,
+individual gates, large directional arrows, and a denser group of rings forming
+a tunnel, followed by open flight again. Generate that alternation along one
+continuous route instead of making every section a tunnel. Gate spacing and
+orientation follow the local curve; nearby sections remain visible together.
+The drawn layout is a reference for composition, not a fixed coordinate list.
+The yellow dotted line is interpreted as a route annotation in the drawing;
+a visible path line, automatic steering and an exact loop are not inferred.
+The original PNG is archived unchanged from `Bildschirmfoto 2026-09-08 um 23.17.55.png`.
+
 Research at `c18967a` identified two concrete causes of the static presentation:
 Air contains 80 points per 64 m cube (about 1.3 within a 10 m sphere), while Start
 reduces formed drift from 18 cm to 4.5 mm and draws a 90 cm, nearly planar arrow.
@@ -118,7 +129,8 @@ The implementation should replace that presentation at its existing owners:
 2. Start generates bounded curve sections once in world space, joining each
    section to the preceding endpoint and tangent. Place large volumetric particle
    arrows before the bends and orient successive tunnel cross-sections along
-   the curve. Distribute particles between the rings to give the tunnel depth.
+   the curve. Vary spacing between individual gates and denser tunnel groups;
+   distribute particles within tunnel groups to give them depth.
 3. Replace the current single moving cloud with a fixed pool for the retiring,
    current and next section. Each section's local drifting particles gather into
    its arrow/tunnel and disperse in place; the next section begins forming before

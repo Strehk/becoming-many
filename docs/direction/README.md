@@ -13,6 +13,12 @@ Every document distinguishes:
   claim;
 - **Open** — a choice or hardware fact that needs evidence or discussion.
 
+## Visual References
+
+- [Tutorial flight sketch](tutorial-flight-sketch.png) — user-supplied spatial
+  inspiration, archived unchanged. Its interpretation and implementation status
+  belong to the [procedural flight-world plan](../roadmap.md#procedural-flight-world--2026-09-09).
+
 ## Documents
 
 - [Open Decisions](open-decisions.md) — unresolved choices that must not be
