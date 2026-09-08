@@ -65,6 +65,8 @@ if (show) {
     container: document.body,
     schedule: PIECE_SCHEDULE,
     clock: show.clock,
+    readLanguage: show.readLanguage,
+    setLanguage: show.setLanguage,
   });
 }
 

@@ -60,7 +60,7 @@ src/
 ├── levels/          typed presets, startup coordination, and world composition
 ├── m5/              untrusted controller protocol and polling adapter
 ├── modules/         unloadable visual and world content
-├── sound/           narration playback and the audio timebase
+├── sound/           narration, the audio timebase, and the drone organ
 ├── station/         browser-side deployment facts
 ├── test-ui/         browser-only frame metrics and diagnostic overlay
 ├── test-main.ts     standalone level and benchmark browser entry
@@ -137,6 +137,16 @@ synchronize narration, and fade in the end credits at the authored
 construction so fixed spatial pools use its authored view distance. A requested
 standalone level or benchmark does not start a show, so neither builds the
 credits panel.
+
+`show-runtime.ts` also drives the drone organ in `src/sound/drone-organ/`
+through one per-frame contract: the show time sample, the strength of each
+voice as `organ-score.ts` derives it, the listener pose, ground height, and
+the live bird-flock and fly-swarm centres that Motion Sense reports through
+`ShowWorldReach`. Sound never reads the schedule and keeps no clock: the
+organ's rhythmic voices step on grids of show seconds that the runtime places
+onto audio time each frame. Tone.js arrives through a dynamic import inside
+`drone-organ.ts`, and the organ plays on the context Tone builds for itself —
+see [Architecture Decisions](architecture-decisions.md).
 
 ## Station and Control Boundaries
 

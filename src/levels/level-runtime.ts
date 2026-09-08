@@ -123,7 +123,7 @@ export async function startLevel(
 
   const level =
     request.kind === "static" ? request.preset : request.composition.world;
-  const assets = await loadLevelAssets(level);
+  const assets = await loadLevelAssets(level, request.kind === "show");
   let running: RunningLevel | undefined;
   await startWorld(container, {
     setupWorld: async (world) => {
@@ -182,6 +182,7 @@ async function setupLevel(
     benchmark,
     world,
     reach,
+    worldSurface,
   });
   const staticMaximumGroundClearanceMeters =
     request.kind === "static"
@@ -336,13 +337,19 @@ interface OptionalShowOptions {
   readonly benchmark: BenchmarkRun | undefined;
   readonly world: WorldContext;
   readonly reach: ShowWorldReach;
+  readonly worldSurface: WorldSurface;
 }
 
 function createOptionalShow(
   options: OptionalShowOptions,
 ): ShowRuntime | undefined {
   if (options.benchmark || options.request.kind !== "show") return undefined;
-  return createShowRuntime(options.request.show, options.world, options.reach);
+  return createShowRuntime(
+    options.request.show,
+    options.world,
+    options.reach,
+    options.worldSurface,
+  );
 }
 
 interface LevelFrameOptions {

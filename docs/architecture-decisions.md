@@ -73,6 +73,15 @@ history belongs in Git; unresolved product and deployment questions belong in
 
 - The show clock and typed narration schedule are the sole authorities for show
   time, cues, and world-state timing.
+- A staged one-shot moment is scheduled data, not a triggered event. The animal
+  passages are the second facet of the one authored schedule, read by the pure
+  lookup `passageProgressAt(schedule, id, showTime)`, so a scrub lands an animal
+  where playing through would have put it — which a rising edge over an event
+  bus could not. Their authored routes and constants are transcribed from the
+  predecessor project rather than re-derived, because direction and closeness
+  are the tuning. A passage is ungated and undecorated: a crossing happens
+  between senses, so no sense strength may put it away and it wears none of
+  their effects.
 - The default page runs only the complete show. The explicit Test entry owns
   standalone levels, benchmarks, headset diagnostics, and direct-M5 requests.
 - Content a sense reveals is stood up before that sense, hidden: a module runs
@@ -86,6 +95,27 @@ history belongs in Git; unresolved product and deployment questions belong in
   no show transport or session state.
 - Browser pages validate deployment and controller data at their boundaries.
   Installation secrets must not be persisted or logged.
+- The drone organ lives in `src/sound/drone-organ/` as a sound engine without
+  the patch-cable interface it was played through. How its voices sound is
+  typed configuration in `drone-organ-settings.ts`; which voice sounds when,
+  and to what pulse, is the score in `src/dramaturgy/organ-score.ts`. The port
+  carries only the voices and world signals the composition reaches for.
+- The show clock is the organ's only clock. Tone's transport is not used:
+  every rhythmic voice steps on a grid of show seconds placed onto audio time
+  just ahead of the playhead, and every generative draw is a hash of its step,
+  so pause, seek, and rehearsal speed reach the organ exactly as they reach
+  the narration.
+- The organ plays on the `AudioContext` Tone.js builds for itself, not on the
+  show timebase's. Tone's `AudioWorklet` nodes only come up on a context its
+  own audio library created; sharing the timebase's context was measured to
+  silence every voice room. The two contexts never mix audio, and both resume
+  on the same first gesture. A master gain across narration and organ remains
+  unbuilt.
+- Tone.js loads through a dynamic import, so a benchmark run and a bare
+  `?level=` page build no audio graph. The production build emits the organ as
+  its own chunk.
+- Organ voices fade on the score's derived ramp, the same ramp a sense fades
+  on. A voice at zero strength puts its lane to sleep and schedules nothing.
 
 ## Performance Evidence
 

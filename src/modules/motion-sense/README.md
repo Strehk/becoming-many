@@ -75,6 +75,15 @@ to the existing paths. Upgrading the point birds to bm-base's rigged
 wing-vertex sampling is recorded in
 `docs/levels/04-motion-perception/README.md`.
 
+## Where the clouds are
+
+Besides the point streams the trails print from, both actors report where
+their *clouds* sit: one packed world position per bird flock and per fly
+swarm, read through `readActorCenters` on the module handle. Spatial audio
+places a voice on the nearest cloud of a group through it, so it never has
+to scan hundreds of individual actors. The module answers with an empty
+array for a group this level does not carry, and while it is unloaded.
+
 ## Known simplifications
 
 - Flies are held above a plane fitted to the ground under their anchor, not
@@ -88,5 +97,7 @@ wing-vertex sampling is recorded in
 - Trail length is authored in rendered frames for bm-base parity; a
   fixed-cadence spawn accumulator is the known fix for frame-rate
   dependence.
-- The current swarms are persistent and statically authored. A path-flyby event
-  would be a new product feature and needs its own issue and capacity budget.
+- The ambient swarms are persistent and statically authored. The one
+  route-following swarm is the mosquito passage, printed by `passage-swarm.ts`
+  and composed beside this module: it crosses before the sense it announces, so
+  it can ride neither this module's gate nor its fade.

@@ -78,6 +78,14 @@ issue and a bounded implementation.
   other module materials.
 - Connections: a worker-generated, fixed-pool mycelium network connected to
   deterministic and live world anchors.
+- Animal passages: three animals cross the show on routes carried over from the
+  predecessor project — the bat, the mosquito swarm, and the bird — each
+  entering six seconds before the cue that opens the sense it announces, and
+  gone once that sense has faded in. Their pose is derived from show time, so a
+  scrub lands them on their route. They are ungated and wear no sense effects,
+  because a crossing happens between senses. The swarm has no body: what
+  crosses is the trail it prints, through its own ring composed beside Motion
+  Sense at full strength, since the sense it announces still stands at zero.
 - The `test` and `design-test` presets remain integration/diagnostic surfaces;
   they are not narrative states.
 
@@ -89,6 +97,19 @@ issue and a bounded implementation.
   handling remain open issues.
 - Narration uses typed schedules and one audio timebase. Browser audio suspension
   stops show time until a gesture wakes the context.
+- The drone organ in `sound/drone-organ/` plays under the show: nine Tone.js
+  voices brought in by the score in `dramaturgy/organ-score.ts`, which lists
+  the voices each world state carries and fades each one on the sense ramp.
+  The organ has no transport: its rhythmic voices step on grids of show
+  seconds and every note is hashed from its step, so pause, seek, and
+  rehearsal speed reach it. Two wing-beat voices are placed on the nearest
+  bird flock and fly swarm through `Panner3D`, and two voices follow flight
+  height and the compass. How the voices sound is `drone-organ-settings.ts`.
+- The organ plays on Tone's own `AudioContext`, not the show timebase's, and
+  Tone.js loads through a dynamic import so benchmarks and bare level pages
+  build no audio graph. Its cost is measured on desktop Chromium only (about
+  0.1 ms median per update with all layers open); the four `AudioWorklet`
+  Freeverb rooms are unmeasured on the PICO.
 - The conductor page provides transport, timeline, language, session reset,
   WebXR entry, M5 controls, status, and technician-only details.
 - The Bun station server serves `dist/`, `/config`, and `/health`; it carries no
@@ -96,9 +117,10 @@ issue and a bounded implementation.
 
 ## Verification Snapshot
 
-Verified on 2026-09-03 after the entry-point isolation:
+Verified on 2026-09-03 after the animal passages joined the drone organ on the
+show clock:
 
-- `bun test`: 421 passed, 0 failed across 56 files.
+- `bun test`: 490 passed, 0 failed across 65 files.
 - `bun run check`: passed.
 - `bun run lint`: passed.
 - `bun run build`: passed with existing Vite warnings about one extensionless
@@ -117,7 +139,8 @@ startup also remains unverified.
 The authoritative work list is the repository's open GitHub issues, summarized
 in [roadmap.md](roadmap.md). The largest risks are:
 
-- physical PICO performance and transition spikes;
+- physical PICO performance and transition spikes, including the drone
+  organ's unmeasured audio cost;
 - PCVR startup and delivery-platform validation;
 - diagnostics, lifecycle, M5, and shader-patch robustness;
 - remaining module-ownership cleanup;
