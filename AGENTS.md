@@ -66,6 +66,9 @@ narration assets, and audience-facing copy.
   `docker compose up -d --build` for a complete station container.
 - Before checkpoints and commits, run `bun test`, `bun run check`,
   `bun run lint`, `bun run build`, and `bunx fallow`.
+- `.github/workflows/` runs those same gates on every pull request, one
+  workflow per gate so they run concurrently. Fallow reports as annotations and
+  a job summary and never blocks a merge; the others do.
 - `bun run benchmark` replays a deterministic browser route after a current
   build. It is separate from the standard test suite.
 

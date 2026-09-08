@@ -11,7 +11,7 @@
  */
 
 import type { NarrationSchedule, ShowLevelName } from "./narration-schedule";
-import { rampValueAt } from "./show-levels";
+import { rampValueAt, worldTimeOf } from "./show-levels";
 
 /** Every voice the organ can play, named after what it is heard as. */
 export type OrganVoiceName =
@@ -102,15 +102,19 @@ export function organVoiceStrengthAt(
   let rampTarget = 0;
 
   for (const cue of schedule.narration) {
-    if (cue.atSeconds > showTimeSeconds) break;
+    // The organ is scored on worlds, not on recordings, so it turns where the
+    // world does: a cue whose world leads its narration takes its voices with
+    // it, and the return's last words are spoken over the wind alone.
+    const worldTime = worldTimeOf(cue);
+    if (worldTime > showTimeSeconds) break;
 
     rampStartValue = rampValueAt(
       rampStartSeconds,
       rampStartValue,
       rampTarget,
-      cue.atSeconds,
+      worldTime,
     );
-    rampStartSeconds = cue.atSeconds;
+    rampStartSeconds = worldTime;
     rampTarget = score.voices[cue.level].includes(voice) ? 1 : 0;
   }
 

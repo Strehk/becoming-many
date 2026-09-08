@@ -66,21 +66,37 @@ const float SCENT_DRIFT_DETAIL_SHARE = 0.62;
  * air around the plant too still.
  */
 const float SCENT_DRIFT_SPREAD_POWER = 1.05;
+/*
+ * The share of the show's fade window one particle takes for itself. Scaling
+ * every speck by the same sense strength makes the whole field cross the one
+ * pixel it needs to rasterize in the same instant, which reads as the scent
+ * appearing at once rather than gathering. Each particle instead starts its
+ * own ramp at its own point of the window, so the field condenses speck by
+ * speck and thins out the same way.
+ */
+const float SCENT_SENSE_ARRIVAL_SHARE = 0.4;
 
 float scentSizeScale = 0.0;
+
+/** This particle's share of the sense fade, from the phase it already has. */
+float scentSenseArrival(float scrambled) {
+  float start = scrambled * (1.0 - SCENT_SENSE_ARRIVAL_SHARE);
+  return smoothstep(start, start + SCENT_SENSE_ARRIVAL_SHARE, scentSenseFade);
+}
 
 vec3 animateScentParticle(vec3 restingPosition) {
   float age = fract(scentTime / scentRiseDuration + scentPhase);
 
-  // Particles of emitters without a source-zone anchor never rasterize.
-  scentSizeScale = scentVisible * scentIntensity * scentSenseFade
-    * smoothstep(0.0, SCENT_FADE_IN_PORTION, age)
-    * (1.0 - smoothstep(1.0 - SCENT_FADE_OUT_PORTION, 1.0, age));
-
   // The drift phase is the particle's own, not its position's. Deriving it
   // from the resting place alone gave every particle of one plant nearly the
   // same phase, so the cloud slid about as a rigid block instead of churning.
+  // It doubles as this particle's place in the sense fade.
   float scrambled = fract(scentPhase * SCENT_PHASE_SCRAMBLE + SCENT_PHASE_OFFSET);
+
+  // Particles of emitters without a source-zone anchor never rasterize.
+  scentSizeScale = scentVisible * scentIntensity * scentSenseArrival(scrambled)
+    * smoothstep(0.0, SCENT_FADE_IN_PORTION, age)
+    * (1.0 - smoothstep(1.0 - SCENT_FADE_OUT_PORTION, 1.0, age));
   float ownPhase = scrambled * SCENT_TAU;
   float placePhase = dot(restingPosition, vec3(0.083, 0.059, 0.101));
   float driftPhase = ownPhase + placePhase;

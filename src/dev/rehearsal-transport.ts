@@ -8,11 +8,19 @@
  *   Slot arithmetic belongs to the dramaturgy layout.
  */
 
+import {
+  NARRATION_LANGUAGES,
+  type NarrationLanguage,
+} from "../dramaturgy/narration-catalog";
 import type { NarrationSchedule } from "../dramaturgy/narration-schedule";
 import { cueSlots } from "../dramaturgy/schedule-layout";
 import type { ShowClock } from "../dramaturgy/show-clock";
 
 const SECONDS_PER_MINUTE = 60;
+
+// Shared with the language highlight, which restores it on the button
+// that loses the active language.
+const BUTTON_BACKGROUND = "rgba(255,255,255,0.85)";
 
 // The playhead is placed to a tenth of a percent — under half a second of an
 // eight-minute show, and finer than the track can show. Rounding to it is what
@@ -23,6 +31,8 @@ export interface RehearsalTransportOptions {
   readonly container: HTMLElement;
   readonly schedule: NarrationSchedule;
   readonly clock: ShowClock;
+  readonly readLanguage: () => NarrationLanguage;
+  readonly setLanguage: (language: NarrationLanguage) => void;
 }
 
 /**
@@ -34,6 +44,8 @@ export function mountRehearsalTransport({
   container,
   schedule,
   clock,
+  readLanguage,
+  setLanguage,
 }: RehearsalTransportOptions): void {
   const { durationSeconds } = schedule;
 
@@ -77,7 +89,9 @@ export function mountRehearsalTransport({
   ].join(";");
   track.append(playhead);
 
-  topRow.append(transportButton, readout, track);
+  const languageSwitch = createLanguageSwitch(readLanguage, setLanguage);
+
+  topRow.append(transportButton, readout, track, ...languageSwitch.buttons);
 
   const sections = document.createElement("div");
   sections.style.cssText = "display:flex;flex-wrap:wrap;gap:6px";
@@ -147,10 +161,52 @@ export function mountRehearsalTransport({
       playhead.style.left = playheadLeft;
     }
 
+    languageSwitch.draw();
+
     requestAnimationFrame(draw);
   }
 
   requestAnimationFrame(draw);
+}
+
+interface LanguageSwitch {
+  readonly buttons: readonly HTMLButtonElement[];
+  /** Repaints only when the armed language changed, like the rest of the bar. */
+  readonly draw: () => void;
+}
+
+/**
+ * One button per narration language, the armed one shown inverted. Switching
+ * narration holds the show, the same move the conductor's language buttons
+ * make; the transport button then resumes the run.
+ */
+function createLanguageSwitch(
+  readLanguage: () => NarrationLanguage,
+  setLanguage: (language: NarrationLanguage) => void,
+): LanguageSwitch {
+  const buttons = NARRATION_LANGUAGES.map((language) => {
+    const button = createBarButton(language.toUpperCase());
+    button.addEventListener("click", () => setLanguage(language));
+    return button;
+  });
+
+  let renderedLanguage: NarrationLanguage | undefined;
+
+  return {
+    buttons,
+    draw: (): void => {
+      const language = readLanguage();
+      if (renderedLanguage === language) return;
+
+      renderedLanguage = language;
+      buttons.forEach((button, index) => {
+        const isActive = NARRATION_LANGUAGES[index] === language;
+        button.setAttribute("aria-pressed", String(isActive));
+        button.style.background = isActive ? "#111111" : BUTTON_BACKGROUND;
+        button.style.color = isActive ? "#ffffff" : "#111111";
+      });
+    },
+  };
 }
 
 interface ScrubbingOptions {
@@ -257,7 +313,7 @@ function createBarButton(label: string): HTMLButtonElement {
     "padding:6px 10px",
     "border:1px solid #111111",
     "border-radius:4px",
-    "background:rgba(255,255,255,0.85)",
+    `background:${BUTTON_BACKGROUND}`,
     "color:#111111",
     "font:13px sans-serif",
     "cursor:pointer",

@@ -1,0 +1,22 @@
+# Purpose: Give every CI gate the same Bun toolchain and installed dependencies.
+# Context: The gates live in separate workflow files so they run concurrently;
+#   without a shared step they would each carry their own copy of the Bun
+#   version and install flags, and drift apart one gate at a time.
+# Responsibility: Install Bun and the locked dependency tree, nothing else.
+# Boundary: Checking out the repository stays with the caller, because each
+#   gate decides how much git history it needs.
+
+name: Set up Bun project
+description: Install Bun and this repository's locked dependencies.
+
+runs:
+  using: composite
+  steps:
+    # Tracks the Dockerfile's `oven/bun:1`, so a gate and a release image see
+    # the same runtime.
+    - uses: oven-sh/setup-bun@v2
+      with:
+        bun-version: "1.x"
+
+    - run: bun install --frozen-lockfile
+      shell: bash

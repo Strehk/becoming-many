@@ -6,6 +6,8 @@
  */
 
 import type { NarrationSchedule } from "./narration-schedule";
+import type { PassageSchedule } from "./passage-schedule";
+import { SENSE_FADE_SECONDS } from "./show-levels";
 
 /**
  * The piece opens on five seconds of silence. The visitor is on the rig and
@@ -27,16 +29,21 @@ import type { NarrationSchedule } from "./narration-schedule";
  * in the full Connections synthesis — and the return strips back to White
  * World, so the piece closes where it opened.
  *
- * The result is 8:41 and is reflected in the current experience and direction
+ * The return is the one cue whose world runs ahead of its recording. Every
+ * other sense grows in under the words that name it; the closing words are
+ * spoken into a world that has already gone white, so the cue leads its
+ * narration by exactly the fade it starts.
+ *
+ * The result is 8:45 and is reflected in the current experience and direction
  * documentation.
  */
 export const PIECE_SCHEDULE: NarrationSchedule = {
-  durationSeconds: 521, // Last cue, its longer recording, and slot margin.
-  // The return recording ends at 515.6 s in English and 519.9 s in German, so
+  durationSeconds: 525, // Last cue, its longer recording, and slot margin.
+  // The return recording ends at 519.6 s in English and 523.9 s in German, so
   // the panel comes up just after the English last word and over the final
-  // German lines. Four seconds of fade puts it at full opacity at 520 s, a
+  // German lines. Four seconds of fade puts it at full opacity at 524 s, a
   // second before the clock clamps and holds it there.
-  creditsAtSeconds: 516,
+  creditsAtSeconds: 520,
   narration: [
     // Five seconds of lead-in before the first word; every later cue carries
     // that offset, so the slots below are unchanged by it.
@@ -46,7 +53,65 @@ export const PIECE_SCHEDULE: NarrationSchedule = {
     { cueId: "motion", atSeconds: 167, level: "motion" }, // Slot 63 s, longest recording 58.4.
     { cueId: "thermal", atSeconds: 230, level: "thermal" }, // Slot 49 s, longest recording 44.6.
     { cueId: "magnetic", atSeconds: 279, level: "magnetic" }, // Slot 56 s, longest recording 51.0.
-    { cueId: "finale", atSeconds: 335, level: "connections" }, // Slot 111 s, longest recording 106.9.
-    { cueId: "return", atSeconds: 446, level: "white-world" }, // Slot 75 s, longest recording 73.8.
+    { cueId: "finale", atSeconds: 335, level: "connections" }, // Slot 115 s, longest recording 106.9.
+    // The world starts going white at 446 s, where the finale's longer
+    // recording has just finished, and the voice comes in at 450 s into a
+    // world that is already white again.
+    {
+      cueId: "return",
+      atSeconds: 450,
+      level: "white-world",
+      worldLeadSeconds: SENSE_FADE_SECONDS,
+    }, // Slot 75 s, longest recording 73.8.
+  ],
+};
+
+/**
+ * How long before its cue boundary an animal enters. The passage runs across
+ * the boundary rather than up to it: the animal arrives while the old world
+ * still stands, and is gone by the time the new sense has faded in over
+ * `SENSE_FADE_SECONDS`. That is the difference between an animal that
+ * introduces a sense and one that illustrates it.
+ */
+const PASSAGE_LEAD_SECONDS = 6;
+
+/**
+ * The three animals that cross the piece, each entering before the cue that
+ * opens the sense named after it: the bat before Echolocation, the mosquitoes
+ * before Motion Perception, the bird before Magnetic Field Perception.
+ *
+ * Every duration is the authored route's own length plus its exit, carried
+ * unchanged from the routes these passages were tuned against — the bat's
+ * 10.4-second track plus a six-second exit, the mosquito track at the half
+ * speed it was played back at, the bird's approach, route, and long exit.
+ * Editing a start time is editing one number here; the durations belong to the
+ * routes and should follow them.
+ *
+ * The mosquitoes keep the same six-second lead as the others even though what
+ * they leave behind is motion trails, which is the Motion Perception sense's
+ * own material. That is why the swarm carries its own trail ring at full
+ * strength instead of the sense's: on the sense's it would be invisible for
+ * exactly the seconds in which it is supposed to be announcing it.
+ */
+export const PIECE_PASSAGES: PassageSchedule = {
+  passages: [
+    // Enters at 128, gone by 144.4 — the echo cue opens at 134.
+    {
+      passageId: "bat",
+      atSeconds: 134 - PASSAGE_LEAD_SECONDS,
+      durationSeconds: 16.416667,
+    },
+    // Enters at 161, gone by 176 — the motion cue opens at 167.
+    {
+      passageId: "mosquitoes",
+      atSeconds: 167 - PASSAGE_LEAD_SECONDS,
+      durationSeconds: 15,
+    },
+    // Enters at 273, gone by 298.5 — the magnetic cue opens at 279.
+    {
+      passageId: "bird",
+      atSeconds: 279 - PASSAGE_LEAD_SECONDS,
+      durationSeconds: 25.5,
+    },
   ],
 };
