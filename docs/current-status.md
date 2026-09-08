@@ -6,7 +6,7 @@ details.
 ## Product State
 
 The core experience is largely implemented. The default browser page starts the
-complete 8:41 show, layers the seven narrative world states, plays synchronized
+complete 8:45 show, layers the seven narrative world states, plays synchronized
 English or German narration, returns to White World, and closes on the end
 credits. The project is now in
 a stabilization and refinement phase rather than an MVP construction phase.
@@ -54,6 +54,13 @@ issue and a bounded implementation.
   while the clock is clamped, until staff restart the experience.
 - Fixed chunk windows and the bounded `StreamQueue` recycle module-owned
   resources as the viewer moves.
+- A module a sense reveals is warmed 20 seconds before its cue: it runs,
+  streams, and follows the viewer while nothing of it is drawn, so a world
+  state fades in already built instead of assembling itself under the fade.
+  Verified on desktop Chromium only.
+- The two opaque point layers — scent particles and fly swarms — spread the
+  sense fade across their own particles, so a field arrives speck by speck
+  rather than crossing the one-pixel rasterization threshold together.
 - GLTF assets are loaded once before the world starts; concrete modules retain
   ownership of their Three.js and GPU resources.
 
@@ -113,7 +120,7 @@ issue and a bounded implementation.
 Verified on 2026-09-03 after the animal passages were fitted to the level
 composition contracts:
 
-- `bun test`: 473 passed, 0 failed across 64 files.
+- `bun test`: 493 passed, 0 failed across 65 files.
 - `bun run check`: passed.
 - `bun run lint`: passed.
 - `bun run build`: passed with existing Vite warnings about one extensionless
