@@ -6,12 +6,12 @@
  *   composition is fixed; nothing about it is played live.
  * Responsibility: Own the organ's lifetime and the per-frame contract the show
  *   drives it through.
- * Boundary: Tone.js and the whole audio graph hang below `organ-runtime.ts`,
- *   which this file loads only once a show actually asks for the organ. When
- *   a voice sounds, and to what pulse, is decided in `src/dramaturgy`.
+ * Boundary: Run owns the shared Tone context; this lazy follower owns the
+ *   organ graph below `organ-runtime.ts`. Voice timing comes from dramaturgy.
  */
 
 import type { OrganVoiceName } from "../../dramaturgy/organ-score";
+import type { SpatialAudio } from "../spatial-audio.runtime";
 import type { OrganPlacementGroup } from "./drone-organ-settings";
 import type { OrganRuntime } from "./organ-runtime";
 import type { ListenerPose } from "./organ-signals";
@@ -52,19 +52,20 @@ export interface DroneOrgan {
 }
 
 /**
- * Start the organ. Tone.js arrives with the dynamic import below and not
- * before: importing it builds an AudioContext of its own — the one the organ
- * then plays on — and a benchmark run or a bare level page must not pay for
- * one. Until the import lands the returned organ accepts frames and does
- * nothing with them.
+ * Lazily build organ followers on the Run-owned Tone context. The organ owns
+ * its nodes and pending import; it neither writes listener pose nor closes
+ * the borrowed context. A cancelled import never publishes live voices.
  */
-export function createDroneOrgan(options: DroneOrganOptions): DroneOrgan {
+export function createDroneOrgan(
+  options: DroneOrganOptions,
+  audio: SpatialAudio,
+): DroneOrgan {
   let runtime: OrganRuntime | undefined;
   const cancellation = new AbortController();
   let unloading: Promise<void> | undefined;
   const loading = import("./organ-runtime").then(
     async ({ startOrganRuntime }) => {
-      runtime = await startOrganRuntime(options, cancellation.signal);
+      runtime = await startOrganRuntime(options, audio, cancellation.signal);
     },
   );
   // Observe a failed lazy start immediately; unload still returns that failure.

@@ -6,6 +6,8 @@
  * Boundary: Where a number comes from is decided by the caller.
  */
 
+import type { RunningShow } from "../../levels/show.runtime";
+
 const SECONDS_PER_MINUTE = 60;
 
 /**
@@ -23,4 +25,16 @@ export function formatShowTime(seconds: number): string {
 /** A cue id reads as a chapter name: "prologue" is the chapter "Prologue". */
 export function cueDisplayName(cueId: string): string {
   return cueId.charAt(0).toUpperCase() + cueId.slice(1);
+}
+
+/** The approved four-direction tutorial is displayed separately from show time. */
+export function formatTutorialStatus(
+  tutorial: NonNullable<ReturnType<RunningShow["readTutorial"]>>,
+): string {
+  if (tutorial.phase === "loading") return "Flight tutorial · Preparing audio";
+  if (tutorial.phase === "failed")
+    return "Flight tutorial · Preparation failed · Reset to retry";
+  const completed = tutorial.phase === "complete";
+  const direction = completed ? "Complete" : cueDisplayName(tutorial.direction);
+  return `Flight tutorial · ${direction} · ${completed ? 4 : tutorial.goalIndex + 1}/4`;
 }

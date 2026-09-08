@@ -93,11 +93,12 @@ export function createTechDrawer({
     });
     return button;
   });
-  requireElement(root, "[data-reset-show]", HTMLButtonElement).addEventListener(
-    "click",
-    show.resetTime,
-    { signal },
+  const resetShow = requireElement(
+    root,
+    "[data-reset-show]",
+    HTMLButtonElement,
   );
+  resetShow.addEventListener("click", show.resetTime, { signal });
   requireElement(
     root,
     "[data-reset-flight]",
@@ -126,11 +127,13 @@ export function createTechDrawer({
         streamButton.dataset.streaming = String(isSessionActive);
 
         rateButtons.forEach((button, index) => {
+          button.disabled = Boolean(state.tutorial);
           button.setAttribute(
             "aria-pressed",
             String(CONDUCTOR_SETTINGS.timeScales[index] === state.timeScale),
           );
         });
+        resetShow.disabled = Boolean(state.tutorial);
 
         writeText(
           frames,

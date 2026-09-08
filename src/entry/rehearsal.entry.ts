@@ -13,6 +13,7 @@ import { SHOW_LEVEL_STATES } from "../dramaturgy/show-levels";
 import { level as connectionsLevel } from "../levels/connections.level";
 import { type Run, startLevel } from "../levels/level.runtime";
 import type { RunningShow } from "../levels/show.runtime";
+import { level as tutorialLevel } from "../levels/start.level";
 import { mountRehearsalTransport } from "../ui/rehearsal/transport.panel";
 import { mountVrEntryButton } from "../ui/shared/xr-entry-button";
 import { loadDeploymentConfig } from "./deployment-config";
@@ -38,6 +39,8 @@ declare global {
       | "resetTime"
       | "readLanguage"
       | "setLanguage"
+      | "readTutorial"
+      | "continueToExperience"
     >;
   }
 }
@@ -69,6 +72,7 @@ try {
       signal: lifetime.signal,
       kind: "show",
       preset: connectionsLevel,
+      tutorial: tutorialLevel,
       show: {
         schedule: PIECE_SCHEDULE,
         language: resolveNarrationLanguage(request.get("language")),
@@ -90,14 +94,7 @@ try {
 
   const show = level.show;
   if (show) {
-    // The rehearsal page starts the piece by itself: a run-through begins at
-    // the top without anyone reaching for the console, and the transport bar
-    // is there to hold, scrub, and jump once it runs. Show time still waits on
-    // the audio timebase, which a browser keeps suspended until the first
-    // gesture in this window — so the piece opens the moment the page is
-    // touched, not silently behind a suspended context.
-    show.play();
-
+    // A deliberate transport gesture releases the required tutorial.
     const unmountTransport = mountRehearsalTransport({
       container: document.body,
       schedule: PIECE_SCHEDULE,

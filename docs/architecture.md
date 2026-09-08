@@ -67,6 +67,15 @@ awaits World-owned GPU preparation for Show, connects controls and optional
 show following, then starts the single loop. Presentation is applied before
 any module derives a fixed spatial window from the camera.
 
+The full Show also composes the literal Start recipe as exclusive training
+content. It prepares the main world once and keeps those modules inactive until
+the approved tutorial handoff. Run then unloads training, removes its module
+registrations/references, resets the flight rig and activates the prepared main
+modules. Its interim Stop operation can recreate retired training content without
+rebuilding the main world; playback remains held until any configured training
+sample is ready. A preparation failure remains visible and can be retried. This
+is not the unresolved complete visitor replacement.
+
 `Run.unload()` stops the loop and starts input/audio/XR cleanup,
 awaits pending preparation and children, ends modules in reverse order, releases
 borrowed GLTF sources, then releases World and its WebGL context. The declared
@@ -230,8 +239,31 @@ clock select those states, drive sense intensities and background transitions,
 synchronize narration, and fade in the end credits at the authored
 `creditsAtSeconds`. The schedule's opening state is also applied before module
 construction so fixed spatial pools use its authored view distance. A requested
-standalone level or benchmark does not start a show, so neither builds the
-credits panel.
+standalone level or benchmark builds no credits panel. Standalone Start alone
+borrows Show transport/narration for practice without main-show presentation.
+
+Start replaces the held-M5-gesture prototype with four world-space ring goals:
+right, left, up, down. The existing shared viewpoint supplies consecutive poses
+for swept passage checks; desktop and M5/XR use identical learning rules. There
+is no deadline, and a missed goal remains active with heading-based guidance.
+Learning owns one crossing result; the optional effect copies goal/arrow poses,
+formation and the crossing wake into uniforms for 1,400 fixed points in one draw.
+GPU drift, gathering, sparkle and wake create no frame buffers or independent
+loop. Background Air Particles remains separate at 80 particles per chunk.
+
+Show starts held and owns the interactive tutorial within its existing clock.
+Public main-show time stays zero until completion and operator handoff rebase
+that clock to the main schedule. Pause holds training and flight; seeking/rate
+changes are blocked and language changes repeat the current instruction. A current
+recording finishes before the next instruction/goal is presented, so an early
+crossing cannot truncate the introduction. Audio ending never completes a flight
+goal. All four passages and the final configured
+recording must finish before the completion command is available. Standalone
+Start keeps the same transport while omitting the main-experience handoff.
+The current literal recipe omits `startAudio` and `startNarration`: production
+training is silent pending DE-use permission, EN fallback and sample selection.
+Standalone Start therefore creates only Show's native timebase; it acquires the
+Tone spatial context only when `startAudio` is explicitly configured.
 
 `show.runtime.ts` also drives the drone organ in `src/sound/drone-organ/`
 through one per-frame contract: the show time sample, the strength of each
@@ -239,9 +271,15 @@ voice as `organ-score.ts` derives it, the listener pose, ground height, and
 the live bird-flock and fly-swarm centres that Motion Sense reports through
 `ShowWorldReach`. Sound never reads the schedule and keeps no clock: the
 organ's rhythmic voices step on grids of show seconds that the runtime places
-onto audio time each frame. Tone.js arrives through a dynamic import inside
-`drone-organ.ts`, and the organ plays on the context Tone builds for itself —
-see [Architecture Decisions](architecture-decisions.md).
+onto audio time each frame. Run's `sound/spatial-audio.runtime.ts` dynamically acquires
+the Tone-created context for the organ and lends it to configured training sound. The organ
+owns its nodes only; Run ends borrowers before closing that context. Show's
+native timebase remains separate. One Three.js AudioListener, outside the rendered
+scene graph, is the spatial context's only listener-pose writer. It retains the
+existing three-frame cadence and skips stationary poses; Three updates nine
+native pose parameters for a changed pose. Training sources use bounded HRTF
+placements; the existing organ's equal-power placement/mix remains unchanged.
+See [Sound](../src/sound/README.md) and [Architecture Decisions](architecture-decisions.md).
 
 ## Station and Control Boundaries
 

@@ -1,16 +1,54 @@
 # Current Development Status
 
-As-built snapshot: 2026-09-08, UI/Entry and M5 consolidation implemented on
-`david_refactor`. Combined local checks and browser acceptance pass; see
+As-built snapshot: 2026-09-08, required flight tutorial implementation on
+`david_refactor`; local software verification is complete, with content and
+physical acceptance still open. The earlier UI/Entry
+and M5 consolidation passed its local checks and browser acceptance; see
 [UI evidence](evidence/ui-consolidation/README.md). The previous
 #36/#84/#11 and audio-wake results remain dated evidence for their tested code.
 Dated measurement packets retain the earlier exact identities they tested;
 the current checkout is the authority for runtime details.
+The combined tutorial change passes `bun test` (572 tests), `bun run build` and
+`bun run lint`. The final targeted lifetime/control/audio/geometry checks are
+included in that suite. The production browser passes 7/7 combined scenarios
+(Root, Conductor, Start and startup/mount failures) plus 4/4 shared-UI scenarios
+(Echo and Flash, including their failures). Root and Conductor each traverse all
+four rings through the real M5 adapter with simulated firmware responses, use the
+explicit handoff and retain main playback/language/seek/scrubbing checks. Conductor
+Stop recreates held orientation using the same renderer. Desktop and narrow
+layouts, focus, scrolling and page-end behavior pass. These are functional checks,
+not real hardware or fresh-visitor calibration evidence. Subsequent visual review
+widened only Start's desktop vertical view to 80 degrees, keeping its level ring
+inside the existing 30-degree assisted view. A headed standalone screenshot and
+regression test verify the visible ring and restoration of the original main
+projection; XR keeps the headset projection. The optional audio follower also
+stops silent grains while a dissolved goal waits for speech.
+
+The local reports are `benchmark-results/issue-50/combined-smoke-1/smoke.json`
+(source digest `da9bc9f33504ece467cda64a1dfff96fa30a9778b2ae667be43a3d9463134fb6`)
+and `benchmark-results/issue-50/shared-ui-smoke-1/smoke.json`
+(source digest `be362fd71f5171ddcc648b92f5ce3b51b57a5eb0cc2c7939ceadf2848d2d2a83`).
+The original M5 browser attempt omitted the glide already occurring during its
+five-second wait; the corrected fixture estimates travel from Play. Separately,
+Run no longer applies the prepared main terrain's invisible lower bound during
+Start; the normal main-world ground rule resumes after handoff. Native automated
+pointer lock still fails with `WrongDocumentError` under #83; M5 success does not
+close that desktop gap. `observe:show` now waits for a manual tutorial/handoff
+before measuring the main show; no new 521-second observation is claimed.
+
+Fallow 3.23.0 audit reports zero dead-code and boundary violations, but its overall
+verdict remains fail: 10 introduced complexity findings and four introduced CSS
+selector warnings (including modified surrounding selectors). The explicit
+lifecycle/phase branches and scoped existing styling are retained without
+suppressions or baseline changes. This feature adds behavior and code; it is not a
+code-reduction result. Local rendering/audio measurements and their limits are
+recorded in [Performance](performance.md#flight-tutorial--2026-09-08).
 
 ## Product State
 
-The core experience is largely implemented. The default browser page starts the
-complete 8:41 show, layers the seven narrative world states, plays synchronized
+The core experience is largely implemented. The default browser page prepares
+the required flight tutorial and waits for Play. After four spatial goals and
+the operator handoff, the existing 8:41 show layers the seven narrative world states, plays synchronized
 English or German narration, returns to White World, and closes on the end
 credits. The project is now in
 a stabilization and refinement phase rather than an MVP construction phase.
@@ -35,7 +73,8 @@ The #80 animal-connection removal is implemented below. Small additions remain i
 
 ## Runnable Surfaces
 
-- `/` starts the full show on load and mounts the rehearsal transport.
+- `/` prepares tutorial and full show, initially held, and mounts the rehearsal
+  transport. Main-show seeking becomes available after the tutorial handoff.
 - `?language=de|en` selects narration for the full show.
 - `/?level=<name>` or `/<name>` opens one preset without the show.
   Known names are `start`, `white-world`, `scent`, `echo`, `motion`, `thermal`,
@@ -45,8 +84,10 @@ The #80 animal-connection removal is implemented below. Small additions remain i
   development tools. Its one diagnostics overlay reads the existing renderer,
   retains the first fatal error, and releases its hooks on exit. All three
   application entries show startup failures.
-- `/start` provides standalone steering practice using the existing M5 input and
-  World lifecycle. It does not implement the full visitor/calibration handoff.
+- `/start` and `/?level=start` provide the same spatial flight tutorial with
+  desktop or M5/XR locomotion and shared Play/Pause/language controls. Standalone
+  practice has no main-show handoff or chapters. It does not implement fresh
+  visitor calibration or replacement.
 - `/conductor.html` is the station/operator page and hosts the show in-process.
 - `/flash.html` installs the bundled M5 firmware and configures the controller
   through Web Serial. Entry owns connection lifetime; UI owns form/status.
@@ -83,13 +124,33 @@ The #80 animal-connection removal is implemented below. Small additions remain i
   resources as the viewer moves.
 - Run releases loaded GLTF sources after all borrowers end, including skeletons
   and ImageBitmaps. Modules release their own derivatives. Late loads, XR adoption
-  and Tone imports are awaited on cancellation; both audio owners close separately.
+  and Tone imports are awaited on cancellation. Show closes its native timebase;
+  Run ends all sound borrowers before closing the shared Tone-created context.
 - Complete Run end is available to entries. Conductor Stop immediately resets
   time/position and pauses; a complete visitor-replacement sequence remains open.
 
 ## Implemented World and Senses
 
 - White World: atmosphere through background, fog, and Air Particles.
+- Start: four world-space ring goals (right, left, up, down), without a deadline.
+  Consecutive shared world poses detect actual passage, including movement
+  between frames. Missed goals remain active with directional guidance. One
+  optional 1,400-point draw drifts, gathers into ring/arrow contours and disperses
+  with a local trajectory wake; independent Air Particles uses 80 particles per
+  chunk. Horizontal targets share the arrival height, later targets are 60 m
+  apart, and a missed target behind the heading receives a turn-around cue.
+  The held-M5-gesture rules and opaque arrow are removed.
+- Show owns training transport/current instruction and waits for every passage
+  and the final configured recording before exposing operator handoff. Pause
+  holds flight, seek/rate changes are blocked and language changes repeat the
+  current instruction. Presentation waits for a playing instruction to finish
+  before the next goal, preserving the introduction after an early crossing;
+  learning progress still requires spatial passage. One existing clock supports the interactive phase and
+  rebases to the main schedule; public main-show time stays zero during training.
+  Run retires training resources and registrations without rebuilding the main
+  world. Interim Stop restores orientation/time and hold; only retired training
+  content is recreated, without claiming a fresh visitor lifetime. Playback stays
+  held until any configured sample is ready; failure is visible and retryable.
 - Scent: deterministic plant and animal scent sources plus one bounded points
   system. Reassigned plant slots stay hidden until bounded queued work completes;
   queue rejection no longer triggers a synchronous fill.
@@ -132,11 +193,23 @@ The #80 animal-connection removal is implemented below. Small additions remain i
   rehearsal speed reach it. Two wing-beat voices are placed on the nearest
   bird flock and fly swarm through `Panner3D`, and two voices follow flight
   height and the compass. How the voices sound is `drone-organ-settings.ts`.
-- The organ plays on Tone's own `AudioContext`, not the show timebase's, and
-  Tone.js loads through a dynamic import so benchmarks and bare level pages
-  build no audio graph. Its cost is measured on desktop Chromium only (about
+- Run owns the Tone-created `AudioContext` shared by organ and training audio;
+  Show's native timebase stays separate. A single Three.js listener retains the
+  existing three-frame update interval, skips unchanged poses and writes nine
+  native pose parameters per changed update. Organ owns only its nodes. Tone
+  loads dynamically; benchmarks and ordinary standalone levels build no audio
+  graph. Standalone Start acquires Tone only when `startAudio` is configured;
+  the current recipe omits it, creating only Show's native timebase. Historical
+  organ cost was measured on desktop Chromium only (about
   0.1 ms median per update with all layers open); the four `AudioWorklet`
   Freeverb rooms are unmeasured on the target Windows-PCVR installation.
+- Five DE narration recordings were located in the predecessor tutorial
+  repository. The literal recipe currently omits both `startAudio` and
+  `startNarration`, so production training remains silent. DE-use permission,
+  EN fallback and final sample selection are pending; source discovery does not
+  establish acceptance. These content decisions, human
+  listening/comprehension and Windows-PCVR spatial-audio/90 Hz acceptance remain
+  open; no successful local test substitutes for them.
 - The conductor page provides Play/Pause, immediate Stop, language, an embedded
   preview and the timeline as its sole time display. Module status is always
   visible. Available XR starts on normal operator interaction; explicit XR and

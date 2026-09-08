@@ -32,11 +32,17 @@ import {
   showLevelAt,
 } from "../dramaturgy/show-levels";
 import type { MotionActorGroup } from "../modules/motion-sense/motion-sense";
+import type {
+  StartModuleHandle,
+  StartParameters,
+} from "../modules/start/start.module";
 import type { WorldFadeEffect } from "../modules/world-fade/world-fade";
 import { createAudioTimebase } from "../sound/audio-timebase";
 import { createDroneOrgan } from "../sound/drone-organ/drone-organ";
 import type { OrganPlacementGroup } from "../sound/drone-organ/drone-organ-settings";
+import type { NarrationRecording } from "../sound/narration-player";
 import { createNarrationPlayer } from "../sound/narration-player";
+import type { SpatialAudio } from "../sound/spatial-audio.runtime";
 import type { WorldModule } from "../world/module-runtime";
 import type { WorldContext } from "../world/world-runtime";
 import type { WorldSurface } from "../world-surface/world-surface";
@@ -47,7 +53,17 @@ export interface ShowRequest {
   readonly states: Record<ShowLevelName, ShowLevelState>;
 }
 
+export interface TutorialStatus {
+  readonly phase: string;
+  readonly goalIndex: number;
+  readonly direction: "right" | "left" | "up" | "down";
+  readonly crossingCount: number;
+  readonly readyToContinue: boolean;
+}
+
 export interface RunningShow {
+  readonly readTutorial: () => TutorialStatus | undefined;
+  readonly continueToExperience: () => void;
   readonly sample: ShowClock["sample"];
   readonly play: ShowClock["play"];
   readonly pause: ShowClock["pause"];
@@ -110,7 +126,20 @@ type MutableListenerPose = {
   pitchRadians: number;
 };
 
+interface ShowTutorial {
+  readonly start: StartModuleHandle;
+  readonly parameters: StartParameters;
+  readonly recordings?: Readonly<
+    Record<NarrationLanguage, readonly NarrationRecording[]>
+  >;
+  /** Run removes training resources and releases the prepared main world. */
+  readonly finish: () => void;
+}
+
 export interface ShowRuntime {
+  readonly setTutorial: (tutorial: ShowTutorial) => void;
+  /** Run holds playback until an exclusive training sample is prepared. */
+  readonly setPreparationState: (state: "loading" | "ready" | "failed") => void;
   readonly update: () => void;
   readonly readActiveLevelState: () => ShowLevelState;
   readonly running: RunningShow;
@@ -122,8 +151,16 @@ export async function createShowRuntime(
   world: ShowWorld,
   reach: ShowWorldReach,
   worldSurface: WorldSurface,
+  audio: SpatialAudio | undefined,
+  standalone = false,
+  initialTutorial?: ShowTutorial,
 ): Promise<ShowRuntime> {
   const { schedule, states } = request;
+  if (
+    !Number.isFinite(schedule.durationSeconds) ||
+    schedule.durationSeconds <= 0
+  )
+    throw new RangeError("Show duration must be positive and finite");
   const openingLevel = showLevelAt(schedule, 0);
   if (!openingLevel) throw new Error("A show schedule needs at least one cue");
 
@@ -134,6 +171,11 @@ export async function createShowRuntime(
   let narration: ReturnType<typeof createNarrationPlayer> | undefined;
   let droneOrgan: ReturnType<typeof createDroneOrgan> | undefined;
   let unloading: Promise<void> | undefined;
+  let tutorial: ShowTutorial | undefined;
+  let instruction = "right";
+  let instructionStartSeconds = 0;
+  let tutorialGoalIndex = 0;
+  let preparationState: "loading" | "ready" | "failed" = "ready";
   function unload(): Promise<void> {
     clock?.pause();
     unloading ??= (async () => {
@@ -151,14 +193,21 @@ export async function createShowRuntime(
     return unloading;
   }
   try {
+    // The same clock runs the unbounded interactive segment, then rebases to
+    // the finite main schedule. No parallel tutorial clock or timer exists.
     clock = createShowClock(schedule.durationSeconds, timebase.readSeconds);
-    narration = createNarrationPlayer({ language, cueIds });
+    if (!standalone && !initialTutorial)
+      narration = createNarrationPlayer({ language, cueIds });
     // The organ follows the same clock but plays on Tone's own context, which
     // is the only context its rooms come up on. It loads Tone.js by itself, so
     // the world runs on before the organ makes a sound.
-    droneOrgan = createDroneOrgan({
-      pulseSeconds: ORGAN_SCORE.pulseSeconds,
-    });
+    if (!standalone && audio)
+      droneOrgan = createDroneOrgan(
+        {
+          pulseSeconds: ORGAN_SCORE.pulseSeconds,
+        },
+        audio,
+      );
     let activeLevel: ShowLevelName | undefined;
     // Scratch state, so following the show allocates nothing per frame.
     const voiceStrengths: Record<OrganVoiceName, number> = {
@@ -272,6 +321,34 @@ export async function createShowRuntime(
       reach.followPassages?.(showTimeSeconds);
     }
 
+    function readTutorial(): TutorialStatus | undefined {
+      if (preparationState !== "ready")
+        return {
+          phase: preparationState,
+          goalIndex: 0,
+          direction: "right",
+          crossingCount: 0,
+          readyToContinue: false,
+        };
+      if (!tutorial) return undefined;
+      const observed = tutorial.start.readObservation();
+      const recording = tutorial.recordings?.[language].find(
+        (clip) => clip.cueId === instruction,
+      );
+      return {
+        phase: observed.phase,
+        goalIndex: observed.goalIndex,
+        direction: observed.direction,
+        crossingCount: observed.crossingCount,
+        readyToContinue:
+          !standalone &&
+          instruction === "complete" &&
+          observed.phase === "complete" &&
+          clock.sample().timeSeconds - instructionStartSeconds >=
+            (recording?.durationSeconds ?? 0),
+      };
+    }
+
     // The organ is a follower like the narration: the score says how strong
     // each voice stands at this instant, and the clock says what instant it is.
     function followOrgan(showTime: ShowTimeSample): void {
@@ -295,13 +372,85 @@ export async function createShowRuntime(
       });
     }
 
-    followWorld(0);
+    if (!standalone) followWorld(0);
+
+    function setTutorial(next: ShowTutorial): void {
+      clock.pause();
+      if (!standalone) followOrgan({ ...clock.sample(), isPlaying: false });
+      clock.seekTo(0);
+      clock.setTimeScale(1);
+      clock.setDuration(undefined);
+      tutorial = next;
+      tutorial.start.reset();
+      tutorial.start.setPlaying(false);
+      tutorial.start.setGoalAdvanceAllowed(false);
+      instruction = next.parameters.goals[0].direction;
+      tutorialGoalIndex = 0;
+      instructionStartSeconds = 0;
+      narration?.unload();
+      narration = createNarrationPlayer({
+        recordings: next.recordings?.[language] ?? [],
+      });
+    }
+    if (initialTutorial) setTutorial(initialTutorial);
 
     return {
       unload,
+      setTutorial,
+      setPreparationState(state): void {
+        preparationState = state;
+        if (state !== "ready") {
+          clock.pause();
+          if (!standalone) followOrgan({ ...clock.sample(), isPlaying: false });
+          tutorial?.start.setPlaying(false);
+        }
+        if (state === "failed") {
+          tutorial = undefined;
+          narration?.unload();
+          narration = undefined;
+        }
+      },
       update: (): void => {
-        if (unloading) return;
+        if (unloading || preparationState !== "ready") return;
         const showTime = clock.sample();
+        if (tutorial) {
+          const observed = tutorial.start.readObservation();
+          const currentRecording = tutorial.recordings?.[language].find(
+            (clip) => clip.cueId === instruction,
+          );
+          const instructionFinished =
+            showTime.timeSeconds - instructionStartSeconds >=
+            (currentRecording?.durationSeconds ?? 0);
+          const nextInstruction =
+            observed.crossingCount === tutorial.parameters.goals.length &&
+            instructionFinished
+              ? "complete"
+              : observed.direction;
+          if (
+            nextInstruction !== instruction ||
+            observed.goalIndex !== tutorialGoalIndex
+          ) {
+            instruction = nextInstruction;
+            tutorialGoalIndex = observed.goalIndex;
+            instructionStartSeconds = showTime.timeSeconds;
+          }
+          tutorial.start.setGoalAdvanceAllowed(instructionFinished);
+          tutorial.start.setPlaying(
+            preparationState === "ready" &&
+              showTime.isPlaying &&
+              timebase.readState() === "running",
+          );
+          narration?.follow({
+            position: {
+              cueId: instruction,
+              offsetSeconds: showTime.timeSeconds - instructionStartSeconds,
+            },
+            isPlaying: showTime.isPlaying,
+            timeScale: 1,
+          });
+          return;
+        }
+        if (standalone) return;
         narration?.follow({
           position: narrationCueAt(schedule, showTime.timeSeconds),
           isPlaying: showTime.isPlaying,
@@ -314,19 +463,69 @@ export async function createShowRuntime(
       readActiveLevelState: () => states[activeLevel ?? openingLevel],
 
       running: {
-        sample: clock.sample,
-        play: clock.play,
-        pause: clock.pause,
-        seekTo: clock.seekTo,
-        seekBy: clock.seekBy,
-        setTimeScale: clock.setTimeScale,
+        readTutorial,
+        continueToExperience(): void {
+          if (!tutorial || !readTutorial()?.readyToContinue || standalone)
+            return;
+          const completed = tutorial;
+          tutorial = undefined;
+          narration?.unload();
+          narration = undefined;
+          completed.finish();
+          narration = createNarrationPlayer({ language, cueIds });
+          clock.seekTo(0);
+          clock.setTimeScale(1);
+          clock.setDuration(schedule.durationSeconds);
+          activeLevel = undefined;
+          followWorld(0);
+          clock.play();
+        },
+        sample: () => {
+          const sample = clock.sample();
+          return {
+            ...sample,
+            timeSeconds: tutorial ? 0 : sample.timeSeconds,
+            isPlaying:
+              sample.isPlaying &&
+              preparationState === "ready" &&
+              (!tutorial || timebase.readState() === "running"),
+          };
+        },
+        play: () => {
+          if (preparationState === "ready") clock.play();
+        },
+        pause: () => {
+          clock.pause();
+          tutorial?.start.setPlaying(false);
+        },
+        seekTo: (seconds) => {
+          if (!tutorial && preparationState === "ready") clock.seekTo(seconds);
+        },
+        seekBy: (seconds) => {
+          if (!tutorial && preparationState === "ready") clock.seekBy(seconds);
+        },
+        setTimeScale: (scale) => {
+          if (!tutorial && preparationState === "ready")
+            clock.setTimeScale(scale);
+        },
         togglePlayback: () => {
-          if (clock.sample().isPlaying) clock.pause();
-          else clock.play();
+          if (preparationState !== "ready") return;
+          if (clock.sample().isPlaying) {
+            clock.pause();
+            tutorial?.start.setPlaying(false);
+          } else clock.play();
         },
         resetTime: () => {
           clock.seekTo(0);
           clock.pause();
+          if (tutorial) {
+            tutorial.start.reset();
+            tutorial.start.setPlaying(false);
+            tutorial.start.setGoalAdvanceAllowed(false);
+            instruction = tutorial.parameters.goals[0].direction;
+            instructionStartSeconds = 0;
+            tutorialGoalIndex = 0;
+          }
         },
         readLanguage: () => language,
         readActiveLevel: () => activeLevel ?? openingLevel,
@@ -336,7 +535,16 @@ export async function createShowRuntime(
 
           narration?.unload();
           language = next;
-          narration = createNarrationPlayer({ language, cueIds });
+          if (preparationState === "failed") return;
+          narration = tutorial
+            ? createNarrationPlayer({
+                recordings: tutorial.recordings?.[language] ?? [],
+              })
+            : createNarrationPlayer({ language, cueIds });
+          if (tutorial) {
+            instructionStartSeconds = clock.sample().timeSeconds;
+            tutorial.start.setGoalAdvanceAllowed(false);
+          }
         },
       },
     };

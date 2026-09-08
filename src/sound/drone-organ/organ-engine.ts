@@ -3,7 +3,7 @@
  * Context: Every voice mixes into one master chain and sends into one room, so
  *   the layers of the organ sound like one instrument rather than nine.
  * Responsibility: Build master, limiter, and reverb on Tone's own context,
- *   resume that context on a gesture, and hold the resolved harmony.
+ *   and hold the resolved harmony. Run owns the shared context and audio wake.
  * Boundary: Voices and their mix strips live beside this file; time is the
  *   show clock's, carried in through the organ's timeline — the engine keeps
  *   no transport.
@@ -33,7 +33,7 @@ export interface OrganEngine {
 }
 
 /**
- * Use the organ's Tone-created context. The native Show clock context broke
+ * Borrow the Run's Tone-created context. The native Show clock context broke
  * the rooms' AudioWorklets in Chromium; that compatibility evidence and the
  * two owners are recorded in docs/target-architecture.md.
  */
@@ -42,11 +42,9 @@ export async function createOrganEngine(
   pulseSeconds: number,
   context: Context,
 ): Promise<OrganEngine> {
-  const releaseGesture = resumeOnGesture(context);
   const nodes: ToneAudioNode[] = [];
   let reverb: Reverb | undefined;
   async function unload(): Promise<void> {
-    releaseGesture();
     const errors: unknown[] = [];
     try {
       await reverb?.ready;
@@ -68,9 +66,9 @@ export async function createOrganEngine(
     // Master → limiter → speakers. The composition leaves the equalizer and the
     // master filter neutral and its delay silent, so neither is built: an unused
     // biquad still costs a headset frame budget it does not have to.
-    const master = new Gain(composition.masterVolume);
+    const master = new Gain({ context, gain: composition.masterVolume });
     nodes.push(master);
-    const limiter = new Limiter(-1);
+    const limiter = new Limiter({ context, threshold: -1 });
     nodes.push(limiter);
     master.connect(limiter);
     limiter.toDestination();
@@ -79,6 +77,7 @@ export async function createOrganEngine(
     // post-fader send. Tone renders the impulse response in the background; the
     // organ simply starts dry and grows its room a moment later.
     reverb = new Reverb({
+      context,
       decay: composition.room.decaySeconds,
       preDelay: composition.room.preDelaySeconds,
       wet: 1,
@@ -109,25 +108,4 @@ export async function createOrganEngine(
     }
     throw error;
   }
-}
-
-/**
- * Keep gesture resume available through later suspensions and rejected attempts.
- * The engine releases these listeners when its lifetime ends.
- */
-function resumeOnGesture(context: Context): () => void {
-  const events = ["pointerdown", "keydown"] as const;
-
-  function release(): void {
-    for (const eventName of events)
-      window.removeEventListener(eventName, resume);
-  }
-
-  function resume(): void {
-    if (context.state === "running") return;
-    void context.resume().catch(() => undefined);
-  }
-
-  for (const eventName of events) window.addEventListener(eventName, resume);
-  return release;
 }

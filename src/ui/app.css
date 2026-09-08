@@ -146,6 +146,9 @@ button[data-armed="true"],
 .conductor__transport {
   grid-template-rows: 2fr 1fr;
 }
+.conductor__transport:has([data-tutorial-status]:not([hidden])) {
+  grid-template-rows: auto auto 1fr;
+}
 .conductor__chapter-button {
   flex-direction: column;
   gap: 0;
@@ -285,6 +288,11 @@ body:has(.conductor__drawer[open]) {
   flex: 1 120px;
   height: 44px;
 }
+.rehearsal__track[aria-disabled="true"],
+.conductor__timeline[inert] {
+  opacity: 0.5;
+  pointer-events: none;
+}
 .conductor__m5-pad {
   width: 84px;
 }
@@ -334,6 +342,9 @@ body:has(> .app) {
   display: grid;
   gap: 8px;
   width: min(640px, calc(100vw - 32px));
+}
+body:has(.rehearsal:not([hidden])) .diagnostics-overlay {
+  inset-block: auto 80px;
 }
 .diagnostics-overlay__metrics {
   display: grid;

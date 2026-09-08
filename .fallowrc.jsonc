@@ -71,7 +71,12 @@
       {
         "from": "level-contracts",
         "allow": [],
-        "allowTypeOnly": ["modules", "module-contracts"]
+        "allowTypeOnly": [
+          "modules",
+          "module-contracts",
+          "sound",
+          "show-queries"
+        ]
       },
       {
         "from": "modules",

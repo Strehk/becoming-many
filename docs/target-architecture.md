@@ -16,8 +16,9 @@ code is not removal. No extra coordinator, forwarding layer or audit system.
 
 **Confirmed** names direction; **Observed** names code or dated evidence;
 **Open** names a concrete remaining choice, never permission to silently choose.
-Restart operation (including a possible page reload) and tutorial/credits details need
-small reviewable proposals before their dependent changes. None of these gates
+Restart operation (including a possible page reload), tutorial audio-content
+acceptance and credits details need their specific decisions before dependent
+changes. The four-goal tutorial flow is confirmed below. None of these gates
 reopens the confirmed owner decisions. The [workflow](refactor-workflow.md) and
 [test plan](refactor-test-plan.md) own implementation and verification cadence:
 finish a coherent issue before targeted testing; no fixed milestone review loop.
@@ -37,7 +38,8 @@ The application must support:
   deterministic benchmark entry.
 - One show with accumulated senses, scheduled animal passages, English/German
   narration, organ, tutorial and closing credits in one prepared world per visit.
-  The current 8:41 schedule is observed; tutorial/credits timing remains a decision.
+  The main schedule remains 8:41; the preceding interactive tutorial has no deadline.
+  Credits timing remains a separate decision.
 - Rehearsal controls or an in-process Conductor, with pause, seek, language
   selection and a complete end followed by a fresh run for the next visitor.
   The concrete restart/start interaction is still to be approved.
@@ -54,9 +56,9 @@ do not share show state. The platform is a Windows PC transmitting VR over
 USB-C, targeting stable 90 Hz on the actual PC/transport/headset installation.
 Standalone PICO belongs to a separate later project: add no speculative path.
 Mac browser runs detect development regressions, not platform acceptance.
-Passthrough, encounter retiming and concrete tutorial/credits semantics remain
-[product decisions](direction/open-decisions.md). Tutorial and credits are
-required; this does not approve passthrough or encounter changes.
+Passthrough, encounter retiming, tutorial audio-content acceptance and credits
+semantics remain separate product decisions. The approved tutorial sequence and
+handoff do not approve passthrough or encounter changes.
 Existing diagnostic routes remain real consumers.
 
 ## 3. Target structure
@@ -117,9 +119,10 @@ flowchart TB
 ```
 
 Run owns source GLTF assets until every borrower ends. Module/resource owners
-release their own derivatives. Show owns the native timebase and its audio
-followers; the organ retains its separate Tone context, with no second Show
-clock. The concrete next-visitor operation still requires the operating decision.
+release their own derivatives. Show owns the native timebase and follower policy;
+Run owns the separate Tone-created spatial context/listener and closes it after
+its borrowers end. Organ and training own their nodes, with no second Show clock.
+The concrete next-visitor operation still requires the operating decision.
 
 ### Direct commands and observations
 
@@ -228,7 +231,7 @@ not counted as deleting its capability.
 | **Flight controls** (`control/`) | Desktop capture and input-specific navigation state | Selected desktop/M5 input → rig locomotion; Surface-based limits | Created/reset/disposed by Run; capture and movement math remain local. No protocol parsing or headset-pose overwrite. |
 | **M5** (`m5/`) | Host-bound poll/sample/filter/calibration/button state | Untrusted HTTP → flight ControlFrame and observational UI status | Existing adapter replaces host state and invalidates late work. Run owns its lifetime. No show commands or transforms. |
 | **Show** (`show.runtime.ts`, `dramaturgy/`) | Clock origins/rate/play state, language, native timebase, audio followers, bounded scratch | Authored schedule/state/score and composed ports → current commands/observations | Run creates/ticks/ends it. Pure lookups remain calculations. No content construction or rig movement. |
-| **Audio** (`sound/`) | Narration media; organ nodes, scheduling cursors and Tone context | One Show sample, strengths and spatial signals → sound/status | Show owns follower lifetime; organ releases nodes/context including late imports. No independent show clock. |
+| **Audio** (`sound/`) | Narration media; organ/training nodes and scheduling cursors; Run-owned Tone context and one spatial listener | One Show sample, strengths and spatial signals → sound/status | Followers end their nodes; Run closes shared spatial context after borrowers, including late imports. Show retains separate native timebase. No independent show clock. |
 | **World Surface** (`world-surface/`) | Physical conditions, zone thresholds and continuous transition weights | Height/zone facts for content and flight; identical weights for Clipmap, Vegetation and Rocks | Created in Composition; pure queries, no render lifecycle. Content owns derived coverage/density and placement, never parallel zone rules. |
 | **Content** (`modules/`) | Own CPU/GPU pools, derivatives, slot assignments and worker where needed | Borrowed sources, Surface/viewpoint/ports → scene and specific provider facts | Composition constructs; ModuleRuntime runs lifecycle. No sibling imports or private schedule. |
 | **Station / Flash / firmware** | Independent backend, Entry-owned serial connection, UI bindings, device sensing | Files/config/health, typed setup commands and responses | Outside Run; serial adapter awaits port release, UI clears transient credentials. Writes do not confirm application. No broker or shared Show state. |
@@ -311,10 +314,22 @@ reconstruct the world at cues.
 
 Preparation, first use and bounded background work follow one strategy at the
 existing World/Run owners. No per-level transition workaround or uncontrolled
-rebuild; measure first/repeated transitions. The current entries differ in
-initial playback (Rehearsal plays, Conductor holds); the next visitor's explicit
-start operation remains a decision. Audio suspension still prevents Show's
-timebase from advancing.
+rebuild; measure first/repeated transitions. Confirmed for #50 on 2026-09-08:
+Rehearsal, Conductor and standalone training initially hold for explicit Play.
+Four spatial goals run right/left/up/down without a deadline; misses keep the
+goal active with guidance. Pause holds training and flight, seek/rate changes
+are blocked, and language changes repeat the current instruction. A current
+recording finishes before the next goal is presented; its duration does not
+complete a spatial goal. All passages and the final configured recording precede
+operator handoff. The same Show
+clock serves this unbounded interactive phase, then rebases to the main schedule.
+Run unloads/removes training registrations and references while retaining the
+prepared main world. This does not decide complete visitor replacement or fresh
+headset calibration. Reset after handoff stays held until configured sample
+preparation succeeds; failure remains visible and retryable. The current Start
+recipe omits audio/recordings pending content acceptance, so standalone training
+creates the native timebase without Tone. Audio suspension still prevents Show
+time from advancing.
 
 Preserve the current dependency order:
 
@@ -597,8 +612,12 @@ lifecycle are not simpler equivalent alternatives.
 Keep both audio contexts: `61cbf79` records silent voice rooms/32 errors with the
 shared native context; `d6b7303` already removed Tone.Transport's second timeline.
 [Tone guidance](https://github.com/tonejs/tone.js/wiki/AudioContext) supports custom
-contexts generally, so this is local compatibility evidence. The organ must
-own its Tone-created context, including import side effects. Installed 14.8.49
+contexts generally, so this is local compatibility evidence. Run's spatial-audio
+owner now owns the Tone-created context, including import side effects, and lends
+it to organ and training. One Three.js listener outside the rendered scene graph
+keeps the existing three-frame pose-write cadence; stationary poses write nothing.
+The organ owns its nodes and does not write/close the shared listener/context.
+Installed 14.8.49
 supports creating/replacing/disposing contexts; release nodes/ticker and await
 closure, then establish a fresh context before next-run nodes. Late imports
 must release acquired resources. Actual restart/worklet behavior remains unproved.
@@ -769,7 +788,7 @@ their actual dependent work:
 | --- | --- | --- |
 | Visitor restart, including page reload | Complete restart implementation in existing Run | Early Windows-PCVR/USB-C test of XR end/re-entry, audio wake and next-visitor operation; no automatic-XR assumption |
 | Exact benchmark reference | #78 update | Bounded fixed-scene investigation, repeatable counters and explained differences; current numeric candidate remains unapproved |
-| Tutorial/credits details | Their concrete content, timing and control changes | Required features; propose content, duration, audio rights, start behavior and movement during credits using existing owners |
+| Tutorial audio / credits | Audio-content integration and credits changes | Tutorial flow is approved; resolve narration rights, language fallback/final samples, and separate credits timing/movement using existing owners |
 | Clipmap culling correction | #72 selects conservative construction-time bounds | Two fixed views match disabled culling with six fewer draws each; geometric and physical acceptance remain separate |
 
 Routine implementation choices are autonomous. Additional owners/abstractions,
@@ -812,9 +831,10 @@ Three unresolved flow choices deserve explicit human decisions:
   Choose to adapt/replace the existing passages or reject those requirements.
   Never retain two encounter systems. Bat meshes and swarm trails still need
   different render mechanisms.
-- **Tutorial/credits (#50/#51):** both are required. Consolidate and complete
-  existing implementations; no second timeline. Propose content, duration,
-  audio-use rights, start interaction and credits movement. Current credits
+- **Tutorial audio / credits (#50/#51):** both features are required. The four-goal
+  tutorial and operator handoff are confirmed and use the existing owners/clock.
+  Tutorial audio-use rights, language fallback and final samples remain distinct
+  from credits content/timing/movement. Current credits
   start at 516 seconds before the longest Return ending around 519.8 seconds;
   resolve that overlap explicitly. Platform is Windows-PCVR over USB-C;
   passthrough and the concrete experience semantics remain separate decisions.

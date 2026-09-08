@@ -22,6 +22,7 @@ import {
 const VIEWPORT = { width: 1280, height: 720 };
 const TRANSITION_LEAD_SECONDS = 2;
 const TRANSITION_DURATION_SECONDS = 10;
+const TUTORIAL_COMPLETION_TIMEOUT_MILLISECONDS = 10 * 60 * 1000;
 const REFERENCE_FRAME_MS = 1000 / 90;
 const MAX_AUDIO_RECORDS = 100;
 const { values } = parseArgs({
@@ -178,6 +179,17 @@ async function loadShow(page: Page, url: URL) {
   await page.locator("canvas").first().waitFor({ state: "visible" });
   const readinessMs = performance.now() - startedAt;
   await page.bringToFront();
+  if (await page.evaluate(() => Boolean(window.show?.readTutorial()))) {
+    console.log(
+      "Complete the flight tutorial and select Begin experience in the visible browser. Main-show observation starts afterward (10-minute limit per fresh Run).",
+    );
+    await page.waitForFunction(
+      () =>
+        window.show !== undefined && window.show.readTutorial() === undefined,
+      undefined,
+      { timeout: TUTORIAL_COMPLETION_TIMEOUT_MILLISECONDS },
+    );
+  }
   await page.getByRole("button", { name: "Hold", exact: true }).click();
   const selectedLanguage = page.getByRole("button", {
     name: language.toUpperCase(),

@@ -13,7 +13,7 @@ export interface WorldModule {
   readonly unload: () => void;
 }
 
-type ModuleState = "inactive" | "active" | "unloaded";
+type ModuleState = "inactive" | "active";
 
 /**
  * Public lifecycle coordinator used by the Level Runtime composition root.
@@ -23,7 +23,7 @@ export class ModuleRuntime {
 
   load(module: WorldModule): void {
     const state = this.states.get(module);
-    if (state && state !== "unloaded") return;
+    if (state) return;
 
     this.states.set(module, "inactive");
     module.load();
@@ -50,14 +50,14 @@ export class ModuleRuntime {
   }
 
   unload(module: WorldModule): void {
-    if (this.states.get(module) === "unloaded") return;
+    if (!this.states.has(module)) return;
     const errors: unknown[] = [];
     try {
       this.deactivate(module);
     } catch (error) {
       errors.push(error);
     }
-    this.states.set(module, "unloaded");
+    this.states.delete(module);
     try {
       module.unload();
     } catch (error) {

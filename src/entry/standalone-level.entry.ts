@@ -11,9 +11,11 @@ import { levelNameFromPath } from "../../shared/level-routes";
 import { createBenchmarkRun } from "../benchmark/benchmark-run";
 import { isBenchmarkProfileName } from "../benchmark/benchmark-settings";
 import { FrameMetricsSampler } from "../diagnostics/frame-metrics";
+import { PIECE_SCHEDULE } from "../dramaturgy/piece-schedule";
 import { type Run, startLevel } from "../levels/level.runtime";
 import { LEVEL_CATALOG, resolveLevelName } from "../levels/level-catalog";
 import { createDiagnosticsOverlay } from "../ui/diagnostics/diagnostics-overlay.panel";
+import { mountRehearsalTransport } from "../ui/rehearsal/transport.panel";
 import { mountVrEntryButton } from "../ui/shared/xr-entry-button";
 import { loadDeploymentConfig } from "./deployment-config";
 
@@ -78,6 +80,15 @@ try {
   }
   const unmountVr = mountVrEntryButton(document.body, level.xr);
   lifetime.signal.addEventListener("abort", unmountVr, { once: true });
+  if (level.training && !benchmark) {
+    const unmountTransport = mountRehearsalTransport({
+      container: document.body,
+      schedule: PIECE_SCHEDULE,
+      show: level.training,
+      standalone: true,
+    });
+    lifetime.signal.addEventListener("abort", unmountTransport, { once: true });
+  }
 
   const m5Host = request.get("m5") ?? deployment.m5Host;
   if (m5Host) level.m5?.setHost(m5Host);

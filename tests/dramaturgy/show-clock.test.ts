@@ -159,3 +159,21 @@ function createTestClock() {
     },
   };
 }
+
+test("one clock supports unbounded training then restores the main show's seek limits", () => {
+  let now = 0;
+  const clock = createShowClock(10, () => now);
+  clock.setDuration(undefined);
+  clock.play();
+  now = 1000;
+  expect(clock.sample().timeSeconds).toBe(1000);
+  clock.pause();
+  clock.setDuration(10);
+  clock.seekTo(0);
+  clock.play();
+  now = 2000;
+  expect(clock.sample().timeSeconds).toBe(10);
+  clock.seekBy(-2);
+  expect(clock.sample().timeSeconds).toBe(8);
+  expect(() => clock.setDuration(0)).toThrow();
+});

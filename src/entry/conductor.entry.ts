@@ -4,6 +4,7 @@ import { PIECE_SCHEDULE } from "../dramaturgy/piece-schedule";
 import { SHOW_LEVEL_STATES } from "../dramaturgy/show-levels";
 import { level as connectionsLevel } from "../levels/connections.level";
 import { type Run, startLevel } from "../levels/level.runtime";
+import { level as tutorialLevel } from "../levels/start.level";
 /** Resolve browser inputs, start one Run and connect the operator UI. */
 import { mountConductorPage } from "../ui/conductor/conductor.page";
 import { requireElement } from "../ui/shared/dom";
@@ -39,6 +40,7 @@ try {
       signal: lifetime.signal,
       kind: "show",
       preset: connectionsLevel,
+      tutorial: tutorialLevel,
       show: {
         schedule: PIECE_SCHEDULE,
         language: resolveNarrationLanguage(request.get("language")),

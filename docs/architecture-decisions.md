@@ -126,10 +126,19 @@ history belongs in Git; unresolved product and deployment questions belong in
   language and time; existing Run owns complete visitor restart; UI owns only
   presentation/input. Remove forwarding adapters, duplicate reset/language/play
   rules and competing UI state. No command bus or generic control framework.
-- Tutorial and credits are required. Complete/consolidate existing owners;
-  there is no second tutorial, credits or time system. Concrete content,
-  duration, audio rights, start interaction and credits movement need small
-  proposals before their implementation.
+- Tutorial and credits are required, using existing owners and no second time
+  system. Confirmed for #50 on 2026-09-08: four spatial goals in right/left/up/down
+  order, no deadline, missed goals remain active with guidance, and operator
+  handoff after all passages and the final configured recording. Initial Play
+  is explicit; pause holds flight, seek/rate changes are blocked, changing language
+  repeats the current instruction, and reset restores rig orientation/position.
+  An active recording may finish before presentation advances to the next goal;
+  elapsed audio never substitutes for spatial passage. Reset after handoff holds
+  until a configured sample is ready, with visible failure and retry.
+  Show owns this interactive phase and rebases its existing clock for the main
+  schedule. Run retires training and reuses the prepared main world. Audio rights,
+  language fallback/sample selection and physical acceptance remain separate;
+  credits timing/movement and complete visitor replacement are not decided here.
 - The Bun station server serves files, health, and deployment facts. It carries
   no show transport or session state.
 - Browser pages validate deployment and controller data at their boundaries.
@@ -144,15 +153,22 @@ history belongs in Git; unresolved product and deployment questions belong in
   just ahead of the playhead, and every generative draw is a hash of its step,
   so pause, seek, and rehearsal speed reach the organ exactly as they reach
   the narration.
-- The organ plays on the `AudioContext` Tone.js builds for itself, not on the
+- The organ plays on the `AudioContext` Tone.js builds, not on the
   show timebase's. Tone's `AudioWorklet` nodes only come up on a context its
   own audio library created; sharing the timebase's context was measured to
   silence every voice room. The two contexts never mix audio, and both resume
   on the same first gesture. A master gain across narration and organ remains
-  unbuilt.
-- Tone.js loads through a dynamic import, so a benchmark run and a bare
-  `?level=` page build no audio graph. The production build emits the organ as
-  its own chunk.
+  unbuilt. Run's `spatial-audio.runtime.ts` now owns that Tone-created context and its
+  single Three.js listener; organ and training sound borrow it and end their
+  own nodes before Run closes it. This does not combine the contexts or change
+  Show's timebase. Listener writes preserve the existing three-frame cadence
+  and omit unchanged poses; the listener stays outside World's rendered graph.
+- Tone.js loads through a dynamic import. Benchmarks and ordinary standalone
+  presets build no audio graph. Standalone Start borrows Show's native timebase
+  and creates shared spatial sound only when `startAudio` is configured. The
+  current recipe omits it and `startNarration` pending audio-content acceptance;
+  locating the predecessor recordings does not authorize their production use.
+  The production build keeps the organ separate from static content.
 - Organ voices fade on the score's derived ramp, the same ramp a sense fades
   on. A voice at zero strength puts its lane to sleep and schedules nothing.
 

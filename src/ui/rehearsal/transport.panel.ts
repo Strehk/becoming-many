@@ -6,7 +6,11 @@ import type { NarrationSchedule } from "../../dramaturgy/narration-schedule";
 import { cueSlots } from "../../dramaturgy/schedule-layout";
 import type { RunningShow } from "../../levels/show.runtime";
 import { requireElement, writeText } from "../shared/dom";
-import { cueDisplayName, formatShowTime } from "../shared/show-time-format";
+import {
+  cueDisplayName,
+  formatShowTime,
+  formatTutorialStatus,
+} from "../shared/show-time-format";
 import { attachScrubbing } from "../shared/transport-scrubbing";
 
 export interface RehearsalTransportOptions {
@@ -21,7 +25,10 @@ export interface RehearsalTransportOptions {
     | "seekTo"
     | "readLanguage"
     | "setLanguage"
+    | "readTutorial"
+    | "continueToExperience"
   >;
+  readonly standalone?: boolean;
 }
 
 // A tenth of a percent is finer than the track displays; cache writes at that precision.
@@ -35,6 +42,7 @@ export function mountRehearsalTransport({
   container,
   schedule,
   show,
+  standalone = false,
 }: RehearsalTransportOptions): () => void {
   const lifetime = new AbortController();
   const { signal } = lifetime;
@@ -46,6 +54,16 @@ export function mountRehearsalTransport({
     HTMLButtonElement,
   );
   const readout = requireElement(bar, "[data-readout]", HTMLOutputElement);
+  const tutorialStatus = requireElement(
+    bar,
+    "[data-tutorial-status]",
+    HTMLOutputElement,
+  );
+  const continueButton = requireElement(
+    bar,
+    "[data-continue-experience]",
+    HTMLButtonElement,
+  );
   const track = requireElement(bar, "[data-track]", SVGSVGElement);
   const playhead = requireElement(track, "[data-playhead]", SVGLineElement);
   const sections = requireElement(bar, "[data-sections]", HTMLElement);
@@ -69,18 +87,24 @@ export function mountRehearsalTransport({
   }));
 
   // Both languages share cue slots; the first chapter includes the silent pre-roll.
-  const chapters = cueSlots(schedule, "en").map((slot, index) => {
-    const startSeconds = index === 0 ? 0 : slot.atSeconds;
-    const sectionContent = document.importNode(sectionTemplate.content, true);
-    const button = requireElement(sectionContent, "button", HTMLButtonElement);
-    button.textContent = cueDisplayName(slot.cueId);
-    const tickContent = document.importNode(tickTemplate.content, true);
-    const tick = requireElement(tickContent, "line", SVGLineElement);
-    const position = `${toPercent(startSeconds, durationSeconds)}%`;
-    tick.setAttribute("x1", position);
-    tick.setAttribute("x2", position);
-    return { startSeconds, button, tick };
-  });
+  const chapters = (standalone ? [] : cueSlots(schedule, "en")).map(
+    (slot, index) => {
+      const startSeconds = index === 0 ? 0 : slot.atSeconds;
+      const sectionContent = document.importNode(sectionTemplate.content, true);
+      const button = requireElement(
+        sectionContent,
+        "button",
+        HTMLButtonElement,
+      );
+      button.textContent = cueDisplayName(slot.cueId);
+      const tickContent = document.importNode(tickTemplate.content, true);
+      const tick = requireElement(tickContent, "line", SVGLineElement);
+      const position = `${toPercent(startSeconds, durationSeconds)}%`;
+      tick.setAttribute("x1", position);
+      tick.setAttribute("x2", position);
+      return { startSeconds, button, tick };
+    },
+  );
 
   for (const { language, button } of languageButtons) {
     button.addEventListener("click", () => show.setLanguage(language), {
@@ -95,12 +119,16 @@ export function mountRehearsalTransport({
     track.append(tick);
   }
   transportButton.addEventListener("click", show.togglePlayback, { signal });
+  continueButton.addEventListener("click", show.continueToExperience, {
+    signal,
+  });
   let scrubSeconds: number | undefined;
   attachScrubbing({
     track,
     durationSeconds,
     show,
     signal,
+    isEnabled: () => !standalone && !show.readTutorial(),
     onScrubChange: (seconds) => {
       scrubSeconds = seconds;
     },
@@ -108,9 +136,29 @@ export function mountRehearsalTransport({
   let renderedPlaying: boolean | undefined;
   let renderedPlayheadLeft: string | undefined;
   let renderedLanguage: NarrationLanguage | undefined;
+  let renderedTutorial: boolean | undefined;
+  let renderedReady: boolean | undefined;
 
   function draw(): void {
     const sample = show.sample();
+    const tutorial = show.readTutorial();
+    const inTutorial = Boolean(tutorial);
+    if (renderedTutorial !== inTutorial) {
+      renderedTutorial = inTutorial;
+      tutorialStatus.hidden = !tutorial;
+      readout.hidden = inTutorial || standalone;
+      track.toggleAttribute("hidden", standalone);
+      track.setAttribute("aria-disabled", String(inTutorial));
+      sections.hidden = standalone;
+      sections.inert = inTutorial;
+      for (const chapter of chapters) chapter.button.disabled = inTutorial;
+    }
+    if (tutorial) writeText(tutorialStatus, formatTutorialStatus(tutorial));
+    const ready = !standalone && Boolean(tutorial?.readyToContinue);
+    if (renderedReady !== ready) {
+      renderedReady = ready;
+      continueButton.hidden = !ready;
+    }
     const showTimeSeconds = scrubSeconds ?? sample.timeSeconds;
     if (renderedPlaying !== sample.isPlaying) {
       renderedPlaying = sample.isPlaying;
@@ -140,7 +188,8 @@ export function mountRehearsalTransport({
   }
 
   bar.hidden = false;
-  let animationFrame = requestAnimationFrame(draw);
+  let animationFrame = 0;
+  draw();
   return () => {
     if (signal.aborted) return;
     lifetime.abort();

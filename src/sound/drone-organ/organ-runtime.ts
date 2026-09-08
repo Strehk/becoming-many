@@ -9,7 +9,7 @@
  *   stands is decided by the show; how a voice sounds is decided by the voice.
  */
 
-import { Context, getContext, setContext } from "tone";
+import type { SpatialAudio } from "../spatial-audio.runtime";
 import type { DroneOrganFrame, DroneOrganOptions } from "./drone-organ";
 import {
   DRONE_ORGAN_COMPOSITION,
@@ -34,15 +34,6 @@ const PLACEMENT_GLIDE = 0.45;
 
 /** A source jumping further than this was recycled, not moved. Follow it. */
 const PLACEMENT_SNAP_METERS = 120;
-
-/**
- * Frames between listener writes. Placing the listener costs six audio-param
- * writes, measured at 0.2 ms of the organ's 0.3 ms per-frame cost in desktop
- * Chromium — by far the most expensive thing it does per frame. Writing every
- * third frame still follows the head at 30 Hz, which is the rate a panner is
- * heard at anyway, and leaves the glide running at full frame rate.
- */
-const LISTENER_WRITE_INTERVAL_FRAMES = 3;
 
 /** One patched pad axis, ready to answer with the control value it stands at. */
 interface PadAxis {
@@ -71,18 +62,10 @@ export interface OrganRuntime {
 
 export async function startOrganRuntime(
   options: DroneOrganOptions,
+  audio: SpatialAudio,
   signal: AbortSignal,
 ): Promise<OrganRuntime | undefined> {
-  // The first import already made this context. A later run replaces it only
-  // after its previous owner has completed unload, including native close.
-  const previousContext = getContext();
-  if (!(previousContext instanceof Context))
-    throw new Error("The organ needs a live Tone context");
-  const context =
-    !signal.aborted && previousContext.state === "closed"
-      ? new Context()
-      : previousContext;
-  if (context !== previousContext) setContext(context);
+  const { context } = audio;
   const layers: RunningLayer[] = [];
   let engine: OrganEngine | undefined;
   let unloading: Promise<void> | undefined;
@@ -95,18 +78,6 @@ export async function startOrganRuntime(
       const errors = results.flatMap((result) =>
         result.status === "rejected" ? [result.reason] : [],
       );
-      // dispose() starts close without returning its Promise in Tone 14.8.49.
-      // Calling it first would make another close() return before native close.
-      try {
-        await context.close();
-      } catch (error) {
-        errors.push(error);
-      }
-      try {
-        context.dispose();
-      } catch (error) {
-        errors.push(error);
-      }
       if (errors.length)
         throw new AggregateError(errors, "Organ cleanup failed");
     })();
@@ -130,18 +101,7 @@ export async function startOrganRuntime(
     const timeline = createOrganTimeline(() =>
       context.state === "running" ? context.now() : undefined,
     );
-    const listener = context.listener;
     const nearest: AnchorPoint = { x: 0, y: 0, z: 0 };
-    // The pose the listener currently stands at, so a visitor holding still —
-    // or a held show — writes nothing at all.
-    const placedPose = {
-      x: Number.NaN,
-      y: Number.NaN,
-      z: Number.NaN,
-      yawRadians: Number.NaN,
-      pitchRadians: Number.NaN,
-    };
-    let framesSincePlacing = LISTENER_WRITE_INTERVAL_FRAMES;
 
     for (const [index, settings] of composition.layers.entries()) {
       const layer = createOrganLayer(
@@ -189,38 +149,6 @@ export async function startOrganRuntime(
         running.writtenPadY = y;
         running.layer.setPad(x, y);
       }
-    }
-
-    function followListener(frame: DroneOrganFrame): void {
-      framesSincePlacing += 1;
-      if (framesSincePlacing < LISTENER_WRITE_INTERVAL_FRAMES) return;
-
-      const pose = frame.listener;
-      if (
-        pose.x === placedPose.x &&
-        pose.y === placedPose.y &&
-        pose.z === placedPose.z &&
-        pose.yawRadians === placedPose.yawRadians &&
-        pose.pitchRadians === placedPose.pitchRadians
-      ) {
-        return;
-      }
-      framesSincePlacing = 0;
-      placedPose.x = pose.x;
-      placedPose.y = pose.y;
-      placedPose.z = pose.z;
-      placedPose.yawRadians = pose.yawRadians;
-      placedPose.pitchRadians = pose.pitchRadians;
-
-      listener.positionX.value = pose.x;
-      listener.positionY.value = pose.y;
-      listener.positionZ.value = pose.z;
-
-      const pitchCosine = Math.cos(pose.pitchRadians);
-      listener.forwardX.value = Math.sin(pose.yawRadians) * pitchCosine;
-      listener.forwardY.value = Math.sin(pose.pitchRadians);
-      listener.forwardZ.value = Math.cos(pose.yawRadians) * pitchCosine;
-      // Up stays world up: a banked turn is a roll, and a roll is not heard.
     }
 
     function followPlacements(frame: DroneOrganFrame): void {
@@ -272,7 +200,6 @@ export async function startOrganRuntime(
         followStrengths(frame);
         followPads(frame);
         timeline.follow(frame);
-        followListener(frame);
         followPlacements(frame);
       },
 

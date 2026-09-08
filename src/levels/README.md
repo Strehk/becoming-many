@@ -32,8 +32,10 @@ is an explicit standalone URL option.
 `level-catalog.ts` names standalone presets. The Show uses the Connections
 preset for its once-prepared world; changing these module parameters affects both
 runs. `show-levels.ts` owns the presentation states the running Show can change. The bare `src/entry/rehearsal.entry.ts` route starts that show; `?level=<name>` and
-matching path names enter through `src/entry/standalone-level.entry.ts` and select one showless
-development preset. Benchmarks use that standalone-level entry too.
+matching path names enter through `src/entry/standalone-level.entry.ts` and select one
+development preset. Standalone Start borrows the same Show transport and narration
+owner without constructing the main experience. Other standalone presets and
+benchmarks remain showless.
 
 An unknown requested name warns and falls back to Connections. That fallback is
 for explicit development selection, not the behavior of the bare show route.
@@ -57,12 +59,16 @@ frame coordination. It:
 Its local frame handles benchmark placement or live input, Show updates and
 height limits in order. World then publishes the viewpoint, updates
 modules and streaming, renders, and reports the finished benchmark frame.
-Existing flight reset remains unchanged pending the separate fresh-run gate.
+Flight reset restores rig orientation/position and restarts active training;
+the complete fresh-visitor operation remains a separate gate.
 
 `level-composition.ts` loads the required GLTF assets, creates the shared World
 Surface, constructs the concrete modules, orders material effects, and wires
 neutral provider contracts. It returns the surface, module list, ground presence, `ShowWorldReach` and
-an optional Start handle. Start stays outside Show sense gates.
+an optional Start handle and its exclusive module list. Start stays outside Show
+sense gates. A Show prepares its main composition once and activates training
+first. At the approved handoff, Run unloads training, removes its module
+registrations and references, and activates the already prepared main modules.
 
 Preset files create no resources and import no module implementation. Concrete
 modules do not import siblings; Level Composition performs cross-boundary
@@ -88,27 +94,48 @@ and connects; World coordinates module lifecycle; modules release their own
 derivatives. UI releases only its own presentation resources. The existing
 `unload()` path is implemented; full next-visitor operation remains #9/#46.
 
-## Standalone Start MVP
+## Required Flight Tutorial
 
-`start.level.ts` explicitly selects White World air particles and the Start
-module. `/start` and `/?level=start` use the existing standalone-level entry and Run;
-`shared/level-routes.ts` and the catalog own registration. The root Show is unchanged.
+`start.level.ts` supplies the same training content to `/start`, `/?level=start`
+and the opening of the full Show. Existing route/catalog registration is retained.
+The approved sequence is right, left, up, down, without a deadline. Consecutive
+world poses detect passage through each ring with the existing desktop or M5/XR
+locomotion. A missed ring remains active and the heading-based arrow guides the
+visitor back. Device-specific neutral/held gestures and the opaque guide are removed.
 
-The guide follows flight heading using the same resource-free pose calculation
-as End Credits. One opaque arrow teaches right, left, up and down. Each direction
-requires valid neutral input first, then 0.5 seconds of matching intention.
-Invalid input disarms the current gesture; elapsed time alone never completes
-it. A smaller green arrow marks completion and stays visible until teardown.
-The module uses World lifecycle and frame updates, with no private clock or loop.
+Start's learning module owns goal progression and one crossing observation.
+Its optional particle effect owns 1,400 fixed particles in one draw: a drifting
+cloud gathers into a world-fixed ring and a compact assistance arrow, then
+disperses with a bounded trajectory wake. Background Air Particles stays independent
+at 80 particles per chunk. Composition can omit the effect without changing
+learning or creating presentation resources.
 
-Run consumes one M5 frame, translates the existing flight axes through Control,
-and supplies its validated intention to Start. Configure an identified M5 host
-through Station or `?m5=`; keyboard/mouse remain available for visual navigation
-but do not complete the tutorial. The browser acceptance uses isolated HTTP
-responses to exercise the full input path without hardware.
+Show owns Play/Pause, language, current instruction and the completion command.
+The same clock supports an interactive tutorial of unbounded duration, then
+rebases to the main schedule at handoff; public main-show time remains zero
+during training. Entry initially presents Play. Pause holds training and flight,
+seek/rate commands are blocked, and changing language repeats the current cue.
+Presentation waits for an active instruction to finish before advancing to the
+next goal, preserving the introduction even after a fast first crossing. Audio
+duration never supplies the required spatial passage.
+Only completing all goals and the final configured recording makes the full Show's
+operator handoff available. Standalone Start exposes the same transport without
+chapters or a main-experience handoff.
 
-This is a standalone software MVP for #50. Production calibration, visitor
-replacement and Show handoff remain the #9/#46/#50 decisions. Narration, final
-content, physical polarity and Windows-PCVR acceptance remain open. The existing
-benchmark can measure the waiting scene; it does not exercise gesture completion
-and no new numerical reference is accepted by this change.
+Run owns the shared spatial-audio context/listener and releases training sound
+before retiring training. The organ borrows that context; Show's native timebase
+remains separate. Stop resets time/orientation and holds. If training was already
+retired, only its exclusive content is recreated; the main world is retained.
+Playback waits for configured sample preparation, with visible failure and retry.
+This is the existing interim reset, not complete visitor replacement or fresh
+headset calibration (#9/#46).
+
+Five DE narration recordings were located in the predecessor tutorial repository.
+Audio rights, the language fallback and final sample selection still require their
+specific content acceptance; locating the files does not approve shipping them.
+The recipe therefore omits `startAudio` and `startNarration`: production training
+is silent, and standalone Start creates only Show's native timebase. Tone spatial
+audio is acquired for standalone training only when `startAudio` is configured.
+Visitor comprehension, listening, XR comfort and Windows-PCVR 90 Hz remain
+physical acceptance. The existing benchmark measures a fixed waiting scene,
+not visitor completion, and its numerical reference is unchanged.

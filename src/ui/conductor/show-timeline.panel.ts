@@ -7,7 +7,10 @@ import { attachScrubbing } from "../shared/transport-scrubbing";
 import { CONDUCTOR_SETTINGS } from "./operator-settings";
 import type { ConductorPanel } from "./view-state";
 
-type TimelineShow = Pick<RunningShow, "sample" | "play" | "pause" | "seekTo">;
+type TimelineShow = Pick<
+  RunningShow,
+  "sample" | "play" | "pause" | "seekTo" | "readTutorial"
+>;
 
 export interface ShowTimelineOptions {
   readonly parent: HTMLElement;
@@ -110,7 +113,14 @@ export function createShowTimeline({
     },
     { once: true },
   );
-  attachScrubbing({ track, durationSeconds, show, onScrubChange, signal });
+  attachScrubbing({
+    track,
+    durationSeconds,
+    show,
+    onScrubChange,
+    signal,
+    isEnabled: () => !show.readTutorial(),
+  });
   slider.setAttribute("aria-valuemax", String(durationSeconds));
   slider.setAttribute(
     "aria-valuetext",
@@ -119,7 +129,8 @@ export function createShowTimeline({
   slider.addEventListener(
     "keydown",
     (event) => {
-      if (event.altKey || event.ctrlKey || event.metaKey) return;
+      if (event.altKey || event.ctrlKey || event.metaKey || show.readTutorial())
+        return;
       const step = event.shiftKey
         ? CONDUCTOR_SETTINGS.coarseNudgeSeconds
         : CONDUCTOR_SETTINGS.nudgeSeconds;
@@ -150,6 +161,10 @@ export function createShowTimeline({
 
   return {
     update(state): void {
+      root.inert = Boolean(state.tutorial);
+      slider.setAttribute("aria-disabled", String(Boolean(state.tutorial)));
+      for (const chapter of chapters)
+        chapter.button.disabled = Boolean(state.tutorial);
       const showTimeSeconds = state.showTimeSeconds;
       const accessibleSeconds = String(Math.floor(showTimeSeconds));
       if (slider.getAttribute("aria-valuenow") !== accessibleSeconds) {

@@ -22,7 +22,12 @@ import {
 } from "./browser-evidence";
 
 import { checkFlashLifecycle } from "./flash-acceptance";
-import { checkStartLevel, prepareStartInput } from "./start-acceptance";
+import {
+  checkStartLevel,
+  flyStartCourse,
+  prepareStartInput,
+  type StartSimulation,
+} from "./start-acceptance";
 import { checkStartupFailure } from "./startup-failure";
 import { checkUiMountFailure } from "./ui-mount-failure";
 
@@ -189,18 +194,23 @@ async function runSmokeRoute(
         }),
       );
     }
-    const startInput =
-      route === "/start" || route === "/?level=start"
-        ? await prepareStartInput(page, baseUrl)
-        : undefined;
+    const startInput = [
+      "/start",
+      "/?level=start",
+      "/",
+      "/conductor.html",
+    ].includes(route)
+      ? await prepareStartInput(page, baseUrl, route !== "/conductor.html")
+      : undefined;
     await page.goto(`${baseUrl}${route}`, { waitUntil: "load" });
     assert.equal(
       page.url(),
       `${baseUrl}${route}`,
       "Entry URL must remain the requested route",
     );
-    observation = await checkEntry(page, route);
-    if (startInput) await checkStartLevel(page, startInput, artifactBase);
+    observation = await checkEntry(page, route, startInput);
+    if (startInput && (route === "/start" || route === "/?level=start"))
+      await checkStartLevel(page, startInput, artifactBase);
     assertRefactorBranch();
     await page.screenshot({
       path: `${artifactBase}-ready.png`,
@@ -213,6 +223,7 @@ async function runSmokeRoute(
       await checkUiLayout(page, route);
       if (route === "/flash.html") await checkFlashLifecycle(page, baseUrl);
     }
+    if (route === "/conductor.html") await checkConductorStop(page);
     if (["/", "/?level=echo", "/conductor.html"].includes(route)) {
       await page.evaluate(() =>
         window.dispatchEvent(
@@ -294,6 +305,7 @@ type EntryObservation = Pick<
 async function checkEntry(
   page: Page,
   route: string,
+  startInput: StartSimulation | undefined,
 ): Promise<EntryObservation> {
   if (route === "/flash.html") {
     await checkFlash(page);
@@ -301,13 +313,16 @@ async function checkEntry(
   }
   if (route === "/conductor.html") {
     return {
-      conductorWakeRequired: await checkConductor(page),
+      conductorWakeRequired: await checkConductor(page, startInput),
       rendering: await readRenderingInfo(page),
     };
   }
   await waitForLevel(page);
-  if (route === "/") await checkRehearsal(page);
-  else
+  if (route === "/") {
+    assert(startInput);
+    await flyStartCourse(page, startInput);
+    await checkRehearsal(page);
+  } else
     assert.equal(
       await page.evaluate(() => window.show),
       undefined,
@@ -437,13 +452,36 @@ async function checkRehearsal(page: Page): Promise<void> {
   );
 }
 
-async function checkConductor(page: Page): Promise<boolean> {
+async function checkConductor(
+  page: Page,
+  startInput: StartSimulation | undefined,
+): Promise<boolean> {
   await page.locator(".conductor:not([inert])").waitFor();
   const wakeRequired = await page.locator(".conductor__wake").isVisible();
   if (wakeRequired) await page.locator(".conductor__wake").click();
   await page.locator(".conductor__wake").waitFor({ state: "hidden" });
+  assert(startInput);
+  await page
+    .getByRole("button", { name: "Technician tools", exact: true })
+    .click();
+  await page.getByRole("textbox", { name: "M5 host" }).fill("http://m5.test");
+  await page.getByRole("button", { name: "Set", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Close technician tools", exact: true })
+    .click();
+  await flyStartCourse(page, startInput);
+  await page
+    .getByRole("button", { name: "Technician tools", exact: true })
+    .click();
+  await page.getByRole("button", { name: "Clear", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Close technician tools", exact: true })
+    .click();
+  await page.locator(".conductor__transport-button").click();
+  await page
+    .locator('.conductor__transport-button[data-playing="false"]')
+    .waitFor();
   await checkConductorTransport(page);
-  await checkConductorStop(page);
   await checkScrubbing(
     page,
     ".timeline__track",
@@ -687,11 +725,21 @@ async function checkConductorStop(page: Page): Promise<void> {
   await page
     .locator('.conductor__transport-button[data-playing="true"]')
     .waitFor();
-  await observeConductorTime(page);
+  await page.locator("[data-tutorial-status]").waitFor({ state: "visible" });
+  assert.match(
+    await page.locator("[data-tutorial-status]").innerText(),
+    /Right · 1\/4/,
+  );
+  assert.equal(
+    await page.locator("[data-continue-experience]").isVisible(),
+    false,
+  );
+  await page.waitForTimeout(PAUSE_OBSERVATION_MILLISECONDS);
+  await observeConductorTime(page, 0);
   assert.equal(
     await page.locator("canvas").count(),
     1,
-    "Restarting after Stop must not add a renderer",
+    "Restarting tutorial after Stop must reuse the existing renderer",
   );
 }
 

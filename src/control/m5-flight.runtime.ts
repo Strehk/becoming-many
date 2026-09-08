@@ -8,40 +8,23 @@ interface FlightTransform {
   readonly quaternion: Quaternion;
 }
 
-/** Semantic steering shared by flight and input-driven content. */
-export interface FlightInput {
-  turnRight: number;
-  climb: number;
-}
-
-/** Translate calibrated axes without allocation; validity remains owned by M5. */
-export function readM5FlightInput(
-  frame: ControlFrame,
-  target: FlightInput,
-): void {
-  target.turnRight = -frame.roll;
-  target.climb = -frame.pitch;
-}
-
 const MINIMUM_PLANAR_DIRECTION_LENGTH = 1e-6;
 
 /** Own reusable flight math for one rig; no timers or external resources. */
 export function createM5Flight(
   flight: FlightTransform,
 ): (frame: ControlFrame, deltaSeconds: number) => void {
-  const flightInput: FlightInput = { turnRight: 0, climb: 0 };
   const worldUp = new Vector3(0, 1, 0);
   const yawStep = new Quaternion();
   const glideDirection = new Vector3();
 
   return (frame, deltaSeconds): void => {
-    readM5FlightInput(frame, flightInput);
+    const turnRight = -frame.roll;
+    const climb = -frame.pitch;
     // World-up yaw preserves a level horizon and independent local head pose.
     yawStep.setFromAxisAngle(
       worldUp,
-      -flightInput.turnRight *
-        FLIGHT_SETTINGS.yawRateRadiansPerSecond *
-        deltaSeconds,
+      -turnRight * FLIGHT_SETTINGS.yawRateRadiansPerSecond * deltaSeconds,
     );
     flight.quaternion.premultiply(yawStep);
 
@@ -57,7 +40,7 @@ export function createM5Flight(
     }
 
     const verticalSpeedMetersPerSecond =
-      flightInput.climb * FLIGHT_SETTINGS.climbRateMetersPerSecond -
+      climb * FLIGHT_SETTINGS.climbRateMetersPerSecond -
       FLIGHT_SETTINGS.neutralDescentMetersPerSecond;
     flight.position.y += verticalSpeedMetersPerSecond * deltaSeconds;
   };

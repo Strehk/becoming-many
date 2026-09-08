@@ -1,12 +1,13 @@
 import type { Run } from "../../levels/level.runtime";
 import type { RunningShow } from "../../levels/show.runtime";
-import { requireElement } from "../shared/dom";
+import { requireElement, writeText } from "../shared/dom";
+import { formatTutorialStatus } from "../shared/show-time-format";
 import type { ConductorPanel } from "./view-state";
 
 export interface TransportPanelOptions {
   readonly parent: HTMLElement;
   readonly signal: AbortSignal;
-  readonly show: Pick<RunningShow, "togglePlayback">;
+  readonly show: Pick<RunningShow, "togglePlayback" | "continueToExperience">;
   readonly run: Pick<Run, "resetShowAndFlight">;
 }
 
@@ -39,6 +40,19 @@ export function createTransportPanel({
     HTMLElement,
   );
   transportButton.addEventListener("click", show.togglePlayback, { signal });
+  const tutorialStatus = requireElement(
+    root,
+    "[data-tutorial-status]",
+    HTMLOutputElement,
+  );
+  const continueButton = requireElement(
+    root,
+    "[data-continue-experience]",
+    HTMLButtonElement,
+  );
+  continueButton.addEventListener("click", show.continueToExperience, {
+    signal,
+  });
   requireElement(
     root,
     ".conductor__stop-button",
@@ -48,6 +62,10 @@ export function createTransportPanel({
 
   return {
     update(state): void {
+      tutorialStatus.hidden = !state.tutorial;
+      if (state.tutorial)
+        writeText(tutorialStatus, formatTutorialStatus(state.tutorial));
+      continueButton.hidden = !state.tutorial?.readyToContinue;
       if (renderedPlaying === state.isPlaying) return;
       renderedPlaying = state.isPlaying;
       transportButton.dataset.playing = String(state.isPlaying);

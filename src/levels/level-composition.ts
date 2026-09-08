@@ -50,6 +50,7 @@ import {
   createStartModule,
   type StartModuleHandle,
 } from "../modules/start/start.module";
+import { createStartParticleEffect } from "../modules/start/start-particles.effect";
 import { createGroundOccluder } from "../modules/terrain/ground-occluder";
 import { createTerrainModule } from "../modules/terrain/terrain";
 import { createTerrainColors } from "../modules/terrain/terrain-colors";
@@ -107,10 +108,12 @@ interface LevelCompositionOptions {
   readonly level: LevelPreset;
   readonly assets: LoadedLevelAssets;
   readonly forShow: boolean;
+  readonly tutorial?: LevelPreset;
 }
 
 export interface ComposedLevel {
   readonly start: StartModuleHandle | undefined;
+  readonly trainingModules: readonly WorldModule[];
   readonly worldSurface: WorldSurface;
   readonly modules: readonly WorldModule[];
   readonly reach: ShowWorldReach;
@@ -122,6 +125,7 @@ export async function composeLevel({
   level,
   assets,
   forShow,
+  tutorial,
 }: LevelCompositionOptions): Promise<ComposedLevel> {
   const worldSurface = createWorldSurface(
     WORLD_SURFACE_SETTINGS,
@@ -238,19 +242,14 @@ export async function composeLevel({
     add(undefined, passages?.module);
     add(undefined, passageSwarm);
     add(undefined, endCredits?.module);
-    const start = level.start
-      ? createStartModule({
-          scene: world.scene,
-          viewpoint: world.viewpoint,
-          viewerRig: world.viewerRig,
-          viewPitchDegrees: VIEW_PITCH_ASSIST_DEGREES,
-          parameters: level.start,
-        })
-      : undefined;
-    add(undefined, start?.module);
+    const training = composeTraining(tutorial ?? level, world, !!tutorial);
+    const start = training?.start;
+    const trainingModules = training?.modules ?? [];
+    for (const module of trainingModules) add(undefined, module);
 
     return {
       start,
+      trainingModules,
       worldSurface,
       modules,
       hasGround: level.invisibleGround === true || hasVisibleSurface(level),
@@ -704,4 +703,37 @@ export async function loadLevelAssets(
     animals: animals.value,
     passages: passages.value,
   };
+}
+
+/** Construct only the removable training content, including its own background. */
+export function composeTraining(
+  preset: LevelPreset,
+  world: LevelCompositionOptions["world"],
+  includeBackground: boolean,
+): { start: StartModuleHandle; modules: WorldModule[] } | undefined {
+  if (!preset.start) return undefined;
+  const start = createStartModule({
+    viewpoint: world.viewpoint,
+    viewerRig: world.viewerRig,
+    viewPitchDegrees: VIEW_PITCH_ASSIST_DEGREES,
+    parameters: preset.start,
+    particles: preset.start.particles
+      ? createStartParticleEffect({
+          scene: world.scene,
+          parameters: preset.start.particles,
+        })
+      : undefined,
+  });
+  const modules: WorldModule[] = [];
+  if (includeBackground && preset.airParticles)
+    modules.push(
+      createAirParticlesModule({
+        scene: world.scene,
+        viewpoint: world.viewpoint,
+        streamQueue: world.streamQueue,
+        parameters: preset.airParticles,
+      }),
+    );
+  modules.push(start.module);
+  return { start, modules };
 }

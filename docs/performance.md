@@ -111,6 +111,80 @@ Timing distributions overlap; no stable speedup is established. Initial and
 interleaved variability, source identities and open tuning/device criteria are
 retained in [#32](https://github.com/Strehk/becoming-many/issues/32).
 
+## Flight Tutorial — 2026-09-08
+
+The existing quick benchmark compared the old Start MVP against the particle
+tutorial on Apple M2 Max, headed Chromium 151.0.7922.34 with Metal, 640 × 360,
+240 warmup and 210 measured frames. Local result files are
+`benchmark-results/tutorial-before/quick.json` and
+`benchmark-results/tutorial-after/quick.json`; the baseline was clean checkpoint
+`1adc872c6a706c6ef082dae80b482e75ea3d74a3`. The first measured candidate predates the
+latest instruction-pacing/reset fixes and final goal spacing. The JS asset
+manifest in `/tmp/tutorial-measured-build.sha256` has SHA-256
+`39adf86b812ddf1301a2fa3cb06270015540e23c4a30ee46c4ad1dccd55ea60e`.
+
+| Measurement | Before | Particle tutorial |
+| --- | ---: | ---: |
+| Draw calls | 2 | 2 |
+| Triangles | 5 | 0 |
+| Geometries / textures / programs | 2 / 0 / 2 | 2 / 0 / 2 |
+| Maximum stream queue | 0 | 0 |
+| Median / p95 / p99 frame interval | 0.1 / 0.2 / 0.5 ms | 0.1 / 0.3 / 0.4 ms |
+| Maximum frame interval | 1.4 ms | 2.5 ms |
+
+The final recipe keeps horizontal goals level and separates later goals by 60 m,
+so the unchanged 5 m/s glide does not routinely overtake their 7.5 s visual
+transition. The follow-up at `benchmark-results/tutorial-final/quick.json`
+(source digest `09631279727bb6899d16c69643775a3f0116d769e4e5d082942c489ee3e4205d`)
+retains all particle counters above and records 0.1 / 0.2 / 0.4 / 0.8 ms
+median/p95/p99/maximum. The earlier p95/max increase did not persist; these
+small samples establish no speedup or installation timing tolerance.
+
+A separate build with only `sparkle` and `glow` set to zero records
+0.1 / 0.3 / 0.4 / 0.7 ms and the same counters in
+`benchmark-results/tutorial-highlights-disabled/quick.json` (source digest
+`420145956e7f328bfd94d5c24022f359f33f32ca5c293bb93ba130f648c0b353`).
+The final authored values were restored and rebuilt. Enabling these point-local
+accents adds no resources or observed timing penalty; both variants retain
+the same spatial learning. The benchmark replaces controls/time and contains no production
+tutorial audio. Its exact numerical reference remains unchanged. The fixed
+1,400-particle draw replaces the opaque guide while separate Air Particles uses
+80 particles per chunk; neither particles nor the wake allocate frame buffers.
+
+Final visual review found the level ring below the original narrow desktop
+view. Start now authors an 80-degree vertical desktop field of view; Run restores
+the main projection on handoff, and immersive XR retains its headset projection.
+The final headed screenshot `benchmark-results/issue-50/start-readable-ring.png`
+shows the complete ring and the near-field arrow at the unchanged assisted head
+pitch, with no browser errors. The subsequent quick result at
+`benchmark-results/tutorial-delivery/quick.json` (source digest
+`d9ecc29e6617f8d39b80589cc83a50f701d18ff03742373d89cb072cc5638304`)
+retains 2 draws / 0 triangles / 2 geometries / 0 textures / 2 programs, no queued
+work, and 0.1 / 0.2 / 0.4 / 0.7 ms median/p95/p99/maximum. This changes only the
+Start view and does not establish a headset frame-rate claim.
+
+A separate headed Chromium audio-only probe used an empty 1280 × 720 DPR1 page
+and a generated two-second sine sample, not production audio or a rendered world.
+The initial 40 ms grain limit reached 15 scheduled/active sources and scheduling
+tick costs of 1.5 ms mean / 3.6 ms maximum. Raising the minimum grain size to 80 ms
+bounded the measured peak to 10 at maximum overlap/rate; tick cost was 0.943 ms
+mean / 1.9 ms maximum. Frame-update JavaScript was 0.062 ms mean / 1.2 ms maximum.
+Pause and unload left zero sources; late decode cancellation passed. The source
+pool rejected a fifth spatial placement. Left/right HRTF RMS favored the expected
+ear by about 1.56×, and yaw/roll listener placement passed. This verifies routing
+and lifecycle, not perceived front/back localization or speech intelligibility.
+
+The probe result `/tmp/becoming-many-audio-probe.json` records source digest
+`a67f43eeb958e55a1847bea48cde055b8ee9811637a968b891927522cd4a0825`.
+The final focused placement/replacement rerun
+`/tmp/becoming-many-audio-placement-probe.json` passed at digest
+`2dbda0b7e0e248e172cf296f785a682185a2fa98f5502c176e74085d9e9371b4`.
+These are local temporary probe files; the relevant findings and identities are
+retained here. JavaScript timing excludes audio-worklet CPU, a simultaneous
+renderer and the headset. The current literal Start recipe omits audio pending
+DE-use permission, EN fallback and sample selection. Windows-PCVR USB-C 90 Hz,
+listening/comprehension and the existing #73/#75/#78/#79 findings remain open.
+
 ## Dated Evidence
 
 - The [2026-09-08 browser audit](performance-audit-2026-09-08.md) records a frozen
@@ -213,7 +287,8 @@ headset acceptance. Missing physical measurements remain pending.
 
 ## Standalone Start MVP — 2026-09-08
 
-Start adds one opaque arrow to the unchanged White World air-particle recipe.
+The superseded Start MVP added one opaque arrow to the unchanged White World
+air-particle recipe.
 The existing headed quick replay on Apple M2 Max (Chromium 151, 640 × 360,
 240 warmup frames) records 2 draw calls, 5 triangles, 2 geometries, 0 textures
 and 2 programs; White World records 1, 0, 1, 0 and 1 respectively.

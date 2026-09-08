@@ -9,10 +9,7 @@
 import { describe, expect, test } from "bun:test";
 import { Group, Vector3 } from "three";
 import { FLIGHT_SETTINGS } from "../../src/control/flight-settings";
-import {
-  createM5Flight,
-  readM5FlightInput,
-} from "../../src/control/m5-flight.runtime";
+import { createM5Flight } from "../../src/control/m5-flight.runtime";
 import {
   type ControlFrame,
   createNeutralControl,
@@ -86,15 +83,3 @@ describe("m5 flight", () => {
 function flightForward(rig: Group): Vector3 {
   return new Vector3(0, 0, -1).applyQuaternion(rig.quaternion);
 }
-
-test("tutorial intention agrees with actual flight direction", () => {
-  const input = { turnRight: 0, climb: 0 };
-  const frame = liveFrame({ roll: -0.7, pitch: -0.6 });
-  readM5FlightInput(frame, input);
-  expect(input).toEqual({ turnRight: 0.7, climb: 0.6 });
-  const rig = new Group();
-  const applyM5Flight = createM5Flight(rig);
-  applyM5Flight(frame, 0.1);
-  expect(flightForward(rig).x).toBeGreaterThan(0);
-  expect(rig.position.y).toBeGreaterThan(0);
-});

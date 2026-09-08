@@ -11,12 +11,12 @@ Live issues own acceptance. Do not create a second implementation plan.
 | Field | Current state |
 | --- | --- |
 | Branch | `david_refactor` only. Commit/push completed, tested blocks to `origin/david_refactor` and verify success; no main, force-push or additional branches. |
-| Current request | Complete the approved declarative UI/Entry refactor, coordinate concurrent M5 and Start work, run combined checks and extensive browser/screenshot acceptance, then commit/push. Product/physical decisions stay open. |
-| Source checkpoint | `0e2c676` preserves the state before UI consolidation. Later `5b1302b` preserves the shared work before the concurrent Start implementation. Earlier #36/#84/#11 and audio-wake evidence retains its original identities. |
-| Next implementation | UI/Entry and M5 consolidation plus standalone Start are implemented and locally verified. Preserve the [combined evidence](evidence/ui-consolidation/README.md); continue remaining explicit product/physical decisions rather than repeat this migration. |
+| Current request | Complete #50 and its actual #109–#113 prerequisites: spatial tutorial, existing Show/Run integration, bounded particle/sound presentation, combined verification and targeted commit/push. Preserve explicit audio-content and physical acceptance. |
+| Source checkpoint | `1adc872` preserves the clean source before the spatial tutorial. Earlier UI/M5 and audio-wake evidence retains its own source identities. |
+| Next implementation | Spatial Start and Show/Run handoff pass local tests, build, lint and production-browser interaction. Production training is silent: `startAudio`/`startNarration` remain absent pending DE-use permission, EN fallback and sample selection. Preserve prior [UI evidence](evidence/ui-consolidation/README.md) and separate physical acceptance. |
 | Confirmed direction | Conductor is UI only; Entry connects UI to the existing browser Engine. Show owns transport/language, Run owns lifetime, World owns rendering, M5 owns validity. Backend remains Station delivery/config/health. Affected role filenames and `src/ui/app.css` are implemented. |
 | Existing software | Direct startup, complete child/source cleanup, entry diagnostics, explicit literal levels, legacy Grass retirement, shared zone influences, approved bank clearance and shared Rocks/Vegetation lifecycle are implemented. Their distinct remaining issue acceptance is preserved. |
-| Current visitor behavior | New visitor remains time/position reset and hold. Complete replacement operation and calibration/start interaction remain #9/#46 decisions. |
+| Current visitor behavior | Initial Play, four spatial goals without a deadline, then operator handoff. Interim Stop resets rig/time and holds; after handoff it recreates only retired training content. Complete replacement and fresh calibration remain #9/#46 decisions. |
 | Unresolved evidence | #73 Motion clock-progress failure, #78 exact reference approval and real Windows-PCVR USB-C 90 Hz/transport/headset/M5/venue acceptance remain open. CSS fixes do not resolve them. |
 
 The previous detailed checkpoint, source identities and historical counts remain
@@ -59,14 +59,32 @@ includes imports, HTML/Vite entry references, tooling paths, tests and documents
 keep stable browser routes and remove old aliases. Role-bearing files outside the
 affected owners migrate with their later coherent refactor, not a mass-rename task.
 
-## Start-level handoff
+## Required Tutorial — #50
 
-The implementation path is documented in [Levels](../src/levels/README.md#implementing-the-next-start-level):
-a literal `start.level.ts`, stable route/catalog registration and existing Run /
-Composition / Show owners. UI contains no experience sequencing. A standalone
-Start scene needs no new architecture owner; the calibrated visitor/tutorial
-handoff still requires #9/#46/#50 decisions. The standalone Start practice is
-implemented at `a136bcc`, with its real M5 simulation exercised in both browser modes.
+The current contract is documented in [Levels](../src/levels/README.md#required-flight-tutorial).
+The literal Start recipe replaces the `a136bcc` held-gesture/opaque-arrow MVP
+on its existing routes and also opens the full Show. The approved sequence is
+right/left/up/down, without a deadline; misses retain the goal and guidance.
+Show owns explicit Play/Pause, instruction/language and operator completion,
+using its existing clock before rebasing to the main schedule. Run retires
+exclusive training resources/registrations and keeps the main world prepared.
+World, locomotion and background particles retain their existing responsibilities.
+
+#109/#110/#113 implement the fixed particle cloud, swept ring passage and bounded
+wake/appearance. Sound and narration reuse existing owners for #111/#112. Five
+DE recordings were located in the predecessor tutorial source, but rights,
+language fallback and final samples still need their specific content acceptance.
+The production recipe therefore contains no tutorial audio or recordings; standalone
+Start uses only the native Show timebase. Configured instruction playback can finish
+before the next goal is presented, and post-handoff reset remains held until its
+sample is ready, with visible failure/retry. Earlier full and subsequent focused
+tests passed; final lint/build/browser checks remain in progress. Fallow has no
+dead-code/boundary violations but retains complexity/style findings. Local
+rendering/audio comparisons are recorded in [Performance](performance.md#flight-tutorial--2026-09-08).
+Visitor
+comprehension, listening, XR comfort and real Windows-PCVR USB-C performance
+remain physical acceptance. The approved software flow does not resolve #9/#46
+visitor replacement or fresh calibration.
 
 #20's completed shader-contract implementation is closed under the current
 workflow; its old three-issue review gate no longer blocks source work. Other
@@ -80,7 +98,7 @@ flowchart LR
   Hardware["#42 / #54<br/>Actual installation facts"] --> Restart["#9<br/>Decide and implement visitor replacement"]
   Restart --> Calibration["#46<br/>Calibrated start and flight release"]
   Calibration --> Flight["#33<br/>Physical XR flight acceptance"]
-  Calibration --> Tutorial["#50<br/>Required tutorial integration"]
+  Calibration --> Tutorial["#50<br/>Physical tutorial acceptance"]
 ```
 
 - **#9:** awaited Run/child/source cleanup already exists. Preserve that evidence;
@@ -127,7 +145,7 @@ reference, product or physical acceptance follows from the desktop results.
 | #13/#72/#71 | Legacy Grass is retired; conservative Clipmap bounds and shared continuous World Surface influences are implemented. Integrated visual and Windows-PCVR acceptance remain separate. |
 | #81/#41/#28 | Approved 1 m analytic-bank clearance, shared Rocks/Vegetation lifecycle and surviving wind checks are complete. Do not rebuild their removed alternatives. |
 | #27/#26/#32 | Scent source typing and bounded queue path and Thermal corrections have evidence. Preserve remaining measured/physical acceptance and unexplained replay findings. |
-| #50/#51 | Tutorial and credits are required; content, timing, rights and start/movement details remain explicitly scoped decisions. No second timeline, tutorial runtime or credits renderer. |
+| #50/#51 | Four-goal tutorial and operator handoff are approved and implemented at existing owners. Audio-content and physical acceptance remain; credits timing/movement is separate. No second timeline, tutorial runtime or credits renderer. |
 | #29/#47–#49 | Reconcile current animal motion/passages against each real issue before changing timing, gaze or content. No parallel encounter implementation. |
 | #79/#83 | Existing audio scheduling and automated pointer-lock findings retain their exact evidence and limits. UI migration does not resolve them. |
 
@@ -149,7 +167,7 @@ reference, product or physical acceptance follows from the desktop results.
 | --- | --- |
 | Visitor replacement mechanism | Compare the smallest complete sequence, including page reload if suitable, on actual Windows-PCVR: XR exit/re-entry, audio wake, retained settings and staff actions. #9/#46 own implementation after the decision. |
 | Exact benchmark reference | Defined workload/pose/assets, repeatable counters and explained differences; #78 candidate remains unapproved. |
-| Tutorial/credits details | Content, duration, rights, start behavior and movement during credits; #50/#51. |
+| Tutorial audio / credits | #50 narration rights, language fallback and final samples; #51 content/timing/rights and credits movement. The four-goal tutorial flow is approved. |
 | Physical flow and encounters | Calibration, hold/play, flight, safety/see-through and existing motion/gaze/timing choices; their respective issues only. |
 
 Windows-PCVR over USB-C is settled; standalone PICO is a later separate project.

@@ -75,7 +75,14 @@ test("audio owners recover gesture resume and await complete disposal", async ()
     };
     const contexts = [];
     class Context {
-      state = "suspended"; currentTime = 0; listener = {}; disposed = 0; closing = false;
+      state = "suspended"; currentTime = 0; disposed = 0;
+      listener = Object.fromEntries(["positionX", "positionY", "positionZ", "forwardX", "forwardY", "forwardZ", "upX", "upY", "upZ"].map(name => [name, {
+        value: 0, endSeconds: 0,
+        linearRampToValueAtTime(value, endSeconds) { this.value = value; this.endSeconds = endSeconds; },
+      }])); closing = false;
+      rawContext = this;
+      createGain() { return new Node(this); }
+      immediate() { return this.currentTime; }
       release; closeCalls = 0; resumeCalls = 0; rejectResume = false;
       constructor() { contexts.push(this); }
       resume() {
@@ -99,7 +106,8 @@ test("audio owners recover gesture resume and await complete disposal", async ()
     let built = 0, ended = 0, layers = 0, releasedLayers = 0, failLayer = false;
     class Node {
       ready = Promise.resolve();
-      connect() {} toDestination() {} dispose() {}
+      constructor(context) { this.context = context; }
+      connect() {} disconnect() {} toDestination() {} dispose() {}
     }
     mock.module("tone", () => ({
       Context, getContext: () => context, setContext: next => { context = next; },
@@ -120,16 +128,21 @@ test("audio owners recover gesture resume and await complete disposal", async ()
       assert.equal(audio.resumeCalls, 3); assert.equal(audio.state, "running");
       audio.state = "suspended";
     }
-    const { createOrganEngine } = await import("./src/sound/drone-organ/organ-engine.ts");
-    const { DRONE_ORGAN_COMPOSITION } = await import("./src/sound/drone-organ/drone-organ-settings.ts");
-    const resumeContext = new Context();
-    const gestureEngine = await createOrganEngine(DRONE_ORGAN_COMPOSITION, 1, resumeContext);
-    await checkGestureResume(resumeContext);
-    const gestureEngineEnd = gestureEngine.unload();
-    window.dispatchEvent(new Event("pointerdown"));
-    window.dispatchEvent(new Event("keydown")); await turn();
-    assert.equal(resumeContext.resumeCalls, 3);
-    await gestureEngineEnd;
+    const { PerspectiveCamera } = await import("three");
+    const { createSpatialAudio } = await import("./src/sound/spatial-audio.runtime.ts");
+    const camera = new PerspectiveCamera();
+    const audio = await createSpatialAudio(camera, new AbortController().signal);
+    await checkGestureResume(context);
+    context.state = "running";
+    audio.update();
+    await new Promise(resolve => setTimeout(resolve, 90));
+    context.currentTime = 100;
+    camera.position.set(2, 3, 4);
+    audio.update(); audio.update(); audio.update();
+    assert.equal(context.listener.positionX.value, 2);
+    assert.ok(context.listener.positionX.endSeconds <= 100.034,
+      "head movement after idle must not ramp over the entire idle interval");
+    context.state = "suspended";
     mock.module("./src/sound/drone-organ/organ-engine.ts", () => ({
       createOrganEngine: async () => { built++; return { unload: async () => { ended++; } }; },
     }));
@@ -140,38 +153,52 @@ test("audio owners recover gesture resume and await complete disposal", async ()
       },
     }));
     const { createDroneOrgan } = await import("./src/sound/drone-organ/drone-organ.ts");
-    const cancelled = createDroneOrgan({ pulseSeconds: 1 });
-    const closing = cancelled.unload();
-    assert.equal(cancelled.unload(), closing);
-    await until(() => context.closing);
+    const cancelled = createDroneOrgan({ pulseSeconds: 1 }, audio);
+    const cancelledEnd = cancelled.unload();
+    assert.equal(cancelled.unload(), cancelledEnd);
+    await cancelledEnd;
     assert.equal(built, 0);
+    assert.equal(context.closing, false, "a follower cannot close a shared context");
+    const next = createDroneOrgan({ pulseSeconds: 1 }, audio);
+    await until(() => built === 1);
+    await next.unload();
+    assert.equal(ended, 1);
+    assert.equal(releasedLayers, 9);
+    assert.equal(context.closing, false);
+    failLayer = true;
+    console.error = () => {};
+    const failed = createDroneOrgan({ pulseSeconds: 1 }, audio);
+    await until(() => ended === 2);
+    await assert.rejects(failed.unload(), /voice construction failed/);
+    assert.equal(releasedLayers, 10);
+    assert.equal(context.closing, false);
+    const closing = audio.unload();
+    assert.equal(audio.unload(), closing);
+    await until(() => context.closing);
     assert.equal(context.closing, true);
     assert.equal(context.disposed, 0);
+    window.dispatchEvent(new Event("pointerdown"));
+    window.dispatchEvent(new Event("keydown")); await turn();
+    assert.equal(context.resumeCalls, 3);
     let finished = false;
     void closing.then(() => { finished = true; });
     await turn(); assert.equal(finished, false);
     context.release(); await closing;
     assert.equal(context.disposed, 1);
     const old = context;
-    const next = createDroneOrgan({ pulseSeconds: 1 });
-    await until(() => built === 1);
+    const replacement = await createSpatialAudio(camera, new AbortController().signal);
     assert.notEqual(context, old);
-    assert.equal(built, 1);
-    const nextClosing = next.unload();
-    await until(() => context.closing); assert.equal(ended, 1);
-    assert.equal(releasedLayers, 9);
-    assert.equal(context.disposed, 0);
-    context.release(); await nextClosing;
-    assert.equal(old.disposed, 1);
-    failLayer = true;
-    console.error = () => {};
-    const failed = createDroneOrgan({ pulseSeconds: 1 });
-    await until(() => context !== old && context.closing && ended === 2);
-    assert.equal(context.closing, true);
-    context.release(); await turn();
-    await assert.rejects(failed.unload(), /voice construction failed/);
+    const replacementEnd = replacement.unload();
+    await until(() => context.closing);
+    context.release(); await replacementEnd;
     assert.equal(context.disposed, 1);
-    assert.equal(releasedLayers, 10);
+    const cancellation = new AbortController();
+    cancellation.abort();
+    const cancelledAudio = createSpatialAudio(camera, cancellation.signal);
+    const cancellationFailure = assert.rejects(cancelledAudio, error => error.name === "AbortError");
+    await until(() => context.closing && context.disposed === 0);
+    context.release(); await cancellationFailure;
+    assert.equal(context.disposed, 1);
 
     globalThis.window = new EventTarget();
     globalThis.AudioContext = Context;
@@ -189,6 +216,7 @@ test("audio owners recover gesture resume and await complete disposal", async ()
 
     let releaseOrgan, organEnded = false, narrationCount = 0, follows = 0;
     let narrationUnloads = 0, failNarrationCleanup = false;
+    const narrationOptions = [], narrationFrames = [];
     mock.module("./src/sound/drone-organ/drone-organ.ts", () => ({
       createDroneOrgan: () => ({
         update: () => { follows++; },
@@ -196,9 +224,9 @@ test("audio owners recover gesture resume and await complete disposal", async ()
       }),
     }));
     mock.module("./src/sound/narration-player.ts", () => ({
-      createNarrationPlayer: () => {
-        narrationCount++;
-        return { follow: () => { follows++; }, unload: () => {
+      createNarrationPlayer: options => {
+        narrationCount++; narrationOptions.push(options);
+        return { follow: frame => { follows++; narrationFrames.push(frame); }, unload: () => {
           narrationUnloads++;
           if (failNarrationCleanup) throw new Error("media cleanup failed");
         } };
@@ -210,9 +238,10 @@ test("audio owners recover gesture resume and await complete disposal", async ()
     const show = await createShowRuntime(
       { schedule: PIECE_SCHEDULE, language: "en", states: SHOW_LEVEL_STATES },
       { camera: { updateProjectionMatrix() {} }, renderer: { setClearColor() {} } },
-      { gates: new Map(), senses: {}, worldFades: {} }, {},
+      { gates: new Map(), senses: {}, worldFades: {} }, {}, audio,
     );
     const showNative = contexts.at(-1);
+    showNative.state = "running";
     const commands = show.running;
     assert.equal("clock" in commands, false);
     commands.play(); showNative.currentTime = 2;
@@ -248,13 +277,113 @@ test("audio owners recover gesture resume and await complete disposal", async ()
     show.update(); show.running.setLanguage("en");
     assert.equal(follows, 0); assert.equal(narrationCount, 3);
     releaseOrgan(); showNative.release(); await showFailure;
+    const contextCount = contexts.length;
     const invalidStart = createShowRuntime(
       { schedule: { ...PIECE_SCHEDULE, durationSeconds: -1 }, language: "en", states: SHOW_LEVEL_STATES },
-      {}, {}, {},
+      {}, {}, {}, audio,
     );
-    const failedStartEnd = assert.rejects(invalidStart, /Show duration/);
-    assert.equal(contexts.at(-1).closing, true);
-    contexts.at(-1).release(); await failedStartEnd;
+    await assert.rejects(invalidStart, /Show duration/);
+    assert.equal(contexts.length, contextCount, "invalid schedules allocate no audio context");
+
+    failNarrationCleanup = false;
+    const tutorialWorld = {
+      camera: new PerspectiveCamera(),
+      renderer: { setClearColor() {} },
+      modules: { activate() {}, deactivate() {} },
+      viewpoint: { worldPosition: { x: 0, y: 0, z: 0 } },
+    };
+    const trainingShow = await createShowRuntime(
+      { schedule: PIECE_SCHEDULE, language: "en", states: SHOW_LEVEL_STATES },
+      tutorialWorld, { gates: new Map(), senses: {}, worldFades: {} },
+      { groundYAt: () => 0 }, audio,
+    );
+    const trainingNative = contexts.at(-1);
+    trainingNative.state = "running";
+    let playing = false, resetCount = 0, finishes = 0, mayReadTraining = true;
+    let observation, advanceAllowed;
+    const training = {
+      reset() {
+        resetCount++;
+        observation = { phase: "arrival", direction: "right", goalIndex: 0, crossingCount: 0 };
+      },
+      setPlaying(next) { playing = next; },
+      setGoalAdvanceAllowed(next) { advanceAllowed = next; },
+      readObservation() {
+        assert.ok(mayReadTraining, "released training must not be read after handoff");
+        return observation;
+      },
+    };
+    const recordings = language => ["right", "left", "up", "down", "complete"].map(cueId => ({
+      cueId, url: "/approved/" + language + "/" + cueId + ".wav", durationSeconds: 3,
+    }));
+    const tutorialDefinition = {
+      start: training,
+      parameters: {
+        goals: ["right", "left", "up", "down"].map(direction => ({ direction })),
+      },
+      recordings: { en: recordings("en"), de: recordings("de") },
+      finish: () => { finishes++; mayReadTraining = false; },
+    };
+    trainingShow.setTutorial(tutorialDefinition);
+    const tutorialCommands = trainingShow.running;
+    assert.equal(resetCount, 1); assert.equal(playing, false);
+    trainingShow.setPreparationState("loading");
+    tutorialCommands.play(); tutorialCommands.togglePlayback();
+    assert.equal(tutorialCommands.sample().isPlaying, false);
+    assert.equal(tutorialCommands.readTutorial().phase, "loading");
+    trainingShow.setPreparationState("failed");
+    assert.equal(tutorialCommands.readTutorial().phase, "failed");
+    tutorialCommands.play(); assert.equal(tutorialCommands.sample().isPlaying, false);
+    trainingShow.setTutorial(tutorialDefinition);
+    resetCount = 1;
+    trainingShow.setPreparationState("ready");
+    tutorialCommands.play(); trainingNative.currentTime = 1; trainingShow.update();
+    assert.equal(playing, true);
+    assert.equal(advanceAllowed, false, "a fast crossing cannot interrupt speech");
+    assert.equal(narrationFrames.at(-1).position.cueId, "right");
+    assert.equal(narrationFrames.at(-1).position.offsetSeconds, 1);
+    tutorialCommands.pause(); trainingNative.currentTime = 2; trainingShow.update();
+    assert.equal(playing, false);
+    assert.equal(narrationFrames.at(-1).position.offsetSeconds, 1);
+    tutorialCommands.play(); trainingNative.currentTime = 3;
+    tutorialCommands.seekTo(100); tutorialCommands.seekBy(20); tutorialCommands.setTimeScale(2);
+    trainingShow.update();
+    assert.equal(tutorialCommands.sample().timeScale, 1);
+    assert.equal(tutorialCommands.sample().timeSeconds, 0);
+    assert.equal(narrationFrames.at(-1).position.offsetSeconds, 2);
+    tutorialCommands.setLanguage("de"); trainingShow.update();
+    assert.equal(narrationFrames.at(-1).position.offsetSeconds, 0);
+    assert.ok(narrationOptions.at(-1).recordings[0].url.includes("/de/"));
+    observation = { phase: "flying", direction: "left", goalIndex: 1, crossingCount: 1 };
+    trainingNative.currentTime = 4; trainingShow.update();
+    assert.equal(narrationFrames.at(-1).position.cueId, "left");
+    assert.equal(narrationFrames.at(-1).position.offsetSeconds, 0);
+    tutorialCommands.resetTime(); trainingShow.update();
+    assert.equal(resetCount, 2); assert.equal(playing, false);
+    assert.equal(tutorialCommands.readTutorial().phase, "arrival");
+    assert.equal(narrationFrames.at(-1).position.cueId, "right");
+    assert.equal(narrationFrames.at(-1).position.offsetSeconds, 0);
+    tutorialCommands.play(); trainingNative.currentTime = 5; trainingShow.update();
+    observation = { phase: "crossed", direction: "down", goalIndex: 3, crossingCount: 4 };
+    trainingNative.currentTime = 6; trainingShow.update();
+    tutorialCommands.continueToExperience();
+    assert.equal(finishes, 0);
+    observation.phase = "complete";
+    trainingNative.currentTime = 7; trainingShow.update();
+    assert.equal(tutorialCommands.readTutorial().readyToContinue, false);
+    tutorialCommands.continueToExperience(); assert.equal(finishes, 0);
+    trainingNative.currentTime = 9; trainingShow.update();
+    assert.equal(narrationFrames.at(-1).position.cueId, "complete");
+    trainingNative.currentTime = 12; trainingShow.update();
+    assert.equal(tutorialCommands.readTutorial().readyToContinue, true);
+    assert.equal(finishes, 0, "completion waits for the operator after the final spoken clip");
+    tutorialCommands.continueToExperience(); tutorialCommands.continueToExperience();
+    assert.equal(finishes, 1); assert.equal(tutorialCommands.readTutorial(), undefined);
+    tutorialCommands.seekTo(20); tutorialCommands.seekBy(-5); tutorialCommands.setTimeScale(2);
+    trainingNative.currentTime = 13; trainingShow.update();
+    assert.deepEqual(tutorialCommands.sample(), { timeSeconds: 17, isPlaying: true, timeScale: 2 });
+    const trainingShowEnd = trainingShow.unload();
+    releaseOrgan(); trainingNative.release(); await trainingShowEnd;
 
 
   `,

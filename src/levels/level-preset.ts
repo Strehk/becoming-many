@@ -5,6 +5,7 @@
  * Boundary: This file contains types only and creates no browser or Three.js resources.
  */
 
+import type { NarrationLanguage } from "../dramaturgy/narration-catalog";
 import type { AirParticlesParameters } from "../modules/air-particles/air-particles";
 import type { AnimalsPreset } from "../modules/animals/animals";
 import type { EchoDepthParameters } from "../modules/echo-depth/echo-depth";
@@ -19,6 +20,8 @@ import type { StaticPopulationPreset } from "../modules/static-population";
 import type { TerrainColors } from "../modules/terrain/terrain-colors";
 import type { ThermalPerceptionParameters } from "../modules/thermal-perception/thermal-perception";
 import type { VegetationPreset } from "../modules/vegetation/vegetation";
+import type { NarrationRecording } from "../sound/narration-player";
+import type { TrainingAudioParameters } from "../sound/training-audio.runtime";
 
 export interface TerrainPreset {
   readonly opacity: number;
@@ -54,7 +57,13 @@ export type WorldComposition = {
 
 /** A complete world recipe used by standalone routes, benchmarks and the Show. */
 export type LevelPreset = WorldComposition & {
+  readonly startAudio?: TrainingAudioParameters;
+  readonly startNarration?: Readonly<
+    Record<NarrationLanguage, readonly NarrationRecording[]>
+  >;
   readonly backgroundColor: number;
   readonly viewDistance: number;
+  /** Vertical desktop view angle; immersive XR retains the headset projection. */
+  readonly desktopFieldOfViewDegrees?: number;
   readonly maximumGroundClearanceMeters: number;
 };

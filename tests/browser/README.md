@@ -95,6 +95,15 @@ bun run observe:show --mode full --language en --base-url http://localhost:4180 
 bun run observe:show --mode full --language de --base-url http://localhost:4180 --out benchmark-results/issue-75/full-show-de-1
 ```
 
+These observations now require a pilot/operator to complete the flight tutorial
+and select **Begin experience** in each fresh browser Run. The runner prints a
+prompt and waits up to ten minutes before measuring the main show. Startup
+readiness is recorded before that wait. Transition mode creates a fresh Run for
+each cue, so the tutorial must be completed for each cue. There is no tutorial
+skip or simulated M5 input in this observer. The retained #83 pointer-lock failure
+can prevent desktop completion in automated Chromium; this change does not
+establish a new full-show observation result.
+
 Transitions use a fresh context per scheduled cue and compare first/repeated
 sought crossings (two seconds before, ten seconds of real playback). They do
 not reproduce the entire natural workload leading into that cue. Full mode

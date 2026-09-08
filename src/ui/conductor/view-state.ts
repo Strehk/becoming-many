@@ -1,5 +1,6 @@
 import type { NarrationLanguage } from "../../dramaturgy/narration-catalog";
 import type { ShowLevelName } from "../../dramaturgy/narration-schedule";
+import type { RunningShow } from "../../levels/show.runtime";
 import type { M5Observation } from "../../m5/runtime/m5.runtime";
 import type { XrSessionState } from "../../world/xr-session";
 
@@ -19,6 +20,7 @@ export interface ConductorViewState {
   readonly m5: M5Observation | undefined;
   /** The headset session, so every panel reads the same instant of it. */
   readonly xr: XrSessionState;
+  readonly tutorial: ReturnType<RunningShow["readTutorial"]>;
 }
 
 /** A UI region with local gesture/display state and no experience policy. */

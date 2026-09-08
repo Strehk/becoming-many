@@ -1,229 +1,250 @@
-import { expect, spyOn, test } from "bun:test";
-import { Group, Mesh, MeshBasicMaterial, Scene, Vector3 } from "three";
+import { expect, mock, test } from "bun:test";
+import { Group, Vector3 } from "three";
 import {
   createStartModule,
-  type StartInput,
+  type StartParameters,
 } from "../../src/modules/start/start.module";
+import type { StartParticleFrame } from "../../src/modules/start/start-particles.effect";
 import { ModuleRuntime } from "../../src/world/module-runtime";
 
-const NEUTRAL: StartInput = { turnRight: 0, climb: 0 };
-const RIGHT: StartInput = { turnRight: 1, climb: 0 };
-const LEFT: StartInput = { turnRight: -1, climb: 0 };
-const UP: StartInput = { turnRight: 0, climb: 1 };
-const DOWN: StartInput = { turnRight: 0, climb: -1 };
+const PARAMETERS: StartParameters = {
+  arrivalSeconds: 0.2,
+  formationSeconds: 0.3,
+  dissolutionSeconds: 0.4,
+  guideDistanceMeters: 3,
+  goals: [
+    { direction: "right", offsetMeters: [2, 0, -5], radiusMeters: 1 },
+    { direction: "left", offsetMeters: [-2, 0, -10], radiusMeters: 1 },
+    { direction: "up", offsetMeters: [-2, 3, -15], radiusMeters: 1 },
+    { direction: "down", offsetMeters: [0, -1, -20], radiusMeters: 1 },
+  ],
+};
 
-function createStart() {
-  const scene = new Scene();
-  const worldPosition = new Vector3(0, 2, 0);
+function createPractice() {
+  const worldPosition = new Vector3(0, 4, 0);
   const start = createStartModule({
-    scene,
     viewpoint: { worldPosition, viewDistanceMeters: 100 },
     viewerRig: new Group(),
     viewPitchDegrees: 0,
-    parameters: { guideDistanceMeters: 3 },
+    parameters: PARAMETERS,
   });
   const runtime = new ModuleRuntime();
   runtime.load(start.module);
   runtime.activate(start.module);
+  runtime.update(0);
 
-  function input(intention: StartInput | undefined, frames = 1): void {
-    start.setInput(intention);
-    for (let frame = 0; frame < frames; frame += 1) runtime.update(0.1);
+  function formGoal(): Vector3 {
+    runtime.update(PARAMETERS.arrivalSeconds);
+    runtime.update(PARAMETERS.formationSeconds);
+    expect(start.readObservation().phase).toBe("flying");
+    return start.readObservation().goalPosition.clone();
   }
 
-  return { scene, worldPosition, start, runtime, input };
+  function moveTo(position: Vector3, deltaSeconds = 0.1): void {
+    worldPosition.copy(position);
+    // Run publishes playback every frame; an unchanged command cannot erase travel.
+    start.setPlaying(true);
+    runtime.update(deltaSeconds);
+  }
+
+  return { start, runtime, worldPosition, formGoal, moveTo };
 }
 
-test("requires neutral arrival and a continuous matching gesture for each direction", () => {
-  const { start, input } = createStart();
-  input(undefined, 20);
-  input(RIGHT, 20);
-  expect(start.readPhase()).toBe("arrival");
+test("all four spatial goals require passage and remain open without a time limit", () => {
+  const { start, runtime, formGoal, moveTo } = createPractice();
+  for (const [index, direction] of (
+    ["right", "left", "up", "down"] as const
+  ).entries()) {
+    const center = formGoal();
+    expect(start.readObservation().direction).toBe(direction);
+    runtime.update(1_000);
+    expect(start.readObservation().phase).toBe("flying");
+    expect(start.readObservation().crossingCount).toBe(index);
 
-  input(NEUTRAL);
-  expect(start.readPhase()).toBe("right");
-  input(LEFT, 20);
-  input({ turnRight: 0.4, climb: 0 }, 20);
-  expect(start.readPhase()).toBe("right");
-  input(RIGHT, 4);
-  expect(start.readPhase()).toBe("right");
-  input(RIGHT);
-  expect(start.readPhase()).toBe("left");
+    // Pass the plane outside the aperture, then return without entering the disk.
+    moveTo(center.clone().add(new Vector3(3, 0, 2)));
+    moveTo(center.clone().add(new Vector3(3, 0, -2)));
+    expect(start.readObservation().phase).toBe("flying");
+    expect(start.readObservation().goalPosition).toEqual(center);
+    moveTo(center.clone().add(new Vector3(3, 0, 2)));
+    moveTo(center.clone().add(new Vector3(0, 0, 2)));
+    moveTo(center.clone().add(new Vector3(0, 0, -20)), 0.5);
+    expect(start.readObservation().phase).toBe("crossed");
+    expect(start.readObservation().crossingCount).toBe(index + 1);
 
-  for (const [direction, phase] of [
-    [LEFT, "up"],
-    [UP, "down"],
-    [DOWN, "complete"],
-  ] as const) {
-    input(NEUTRAL);
-    input(direction, 5);
-    expect(start.readPhase()).toBe(phase);
+    // Reversing inside the completion phase cannot count the same goal twice.
+    moveTo(center.clone().add(new Vector3(0, 0, 2)), 0);
+    moveTo(center.clone().add(new Vector3(0, 0, -2)), 0);
+    expect(start.readObservation().crossingCount).toBe(index + 1);
+    runtime.update(PARAMETERS.dissolutionSeconds);
   }
-  input(undefined, 20);
-  input(NEUTRAL, 20);
-  input(RIGHT, 20);
-  expect(start.readPhase()).toBe("complete");
-});
-
-test("interruptions discard held progress and invalid input requires a new neutral", () => {
-  const { start, input } = createStart();
-  input(NEUTRAL);
-  input(RIGHT, 4);
-  input(LEFT);
-  input(RIGHT, 4);
-  expect(start.readPhase()).toBe("right");
-
-  input(undefined);
-  input(RIGHT, 20);
-  expect(start.readPhase()).toBe("right");
-  input(NEUTRAL);
-  input(RIGHT, 4);
-  expect(start.readPhase()).toBe("right");
-  input(RIGHT);
-  expect(start.readPhase()).toBe("left");
-});
-
-test("a held diagonal cannot advance the following direction before neutral", () => {
-  const { start, input } = createStart();
-  input(NEUTRAL);
-  input(RIGHT, 5);
-  input(NEUTRAL);
-  const leftAndUp = { turnRight: -1, climb: 1 };
-  input(leftAndUp, 5);
-  expect(start.readPhase()).toBe("up");
-  input(leftAndUp, 20);
-  expect(start.readPhase()).toBe("up");
-  input(undefined);
-  input(UP, 20);
-  expect(start.readPhase()).toBe("up");
-  input(NEUTRAL);
-  input(UP, 5);
-  expect(start.readPhase()).toBe("down");
-});
-
-test("copies input and does not turn a delayed frame into a completed gesture", () => {
-  const { start, runtime, input } = createStart();
-  input(NEUTRAL);
-  const borrowedInput = { turnRight: 1, climb: 0 };
-  start.setInput(borrowedInput);
-  borrowedInput.turnRight = -1;
-  runtime.update(10);
-  expect(start.readPhase()).toBe("right");
-  for (let frame = 0; frame < 4; frame += 1) runtime.update(0.1);
-  expect(start.readPhase()).toBe("left");
-});
-
-test("deactivation hides and stops the guide without resetting learning", () => {
-  const { scene, worldPosition, start, runtime, input } = createStart();
-  const anchor = scene.children[0];
-  if (!anchor) throw new Error("Start guide is missing");
-  const guide = anchor.children[0];
-  if (
-    !(guide instanceof Mesh) ||
-    !(guide.material instanceof MeshBasicMaterial)
-  )
-    throw new Error("Start guide mesh is missing");
-  expect(guide.material.transparent).toBe(false);
-
-  input(NEUTRAL);
-  input(RIGHT, 5);
-  expect(start.readPhase()).toBe("left");
-  input(NEUTRAL);
-  const previousPosition = anchor.position.clone();
-  const previousScale = guide.scale.clone();
-  runtime.deactivate(start.module);
-  worldPosition.x = 10;
-  input(LEFT, 20);
-  expect(anchor.visible).toBe(false);
-  expect(anchor.position).toEqual(previousPosition);
-  expect(guide.scale).toEqual(previousScale);
-  expect(start.readPhase()).toBe("left");
-
-  runtime.activate(start.module);
-  input(LEFT, 5);
-  expect(anchor.visible).toBe(true);
-  expect(anchor.position.x).toBe(10);
-  expect(start.readPhase()).toBe("up");
-
-  const disposeGeometry = spyOn(guide.geometry, "dispose");
-  const disposeMaterial = spyOn(guide.material, "dispose");
+  expect(start.readObservation().phase).toBe("complete");
+  runtime.update(1_000);
+  expect(start.readObservation().crossingCount).toBe(4);
+  expect(start.readObservation().phase).toBe("complete");
   runtime.unload(start.module);
-  start.module.unload();
-  expect(scene.children).toHaveLength(0);
-  expect(disposeGeometry).toHaveBeenCalledTimes(1);
-  expect(disposeMaterial).toHaveBeenCalledTimes(1);
+});
+
+test("a wake begins at the actual intersection and follows the travelled direction", () => {
+  const { start, runtime, formGoal, moveTo } = createPractice();
+  const center = formGoal();
+  moveTo(center.clone().add(new Vector3(-1.6, 0.3, 5)));
+  moveTo(center.clone().add(new Vector3(2.4, 0.3, -5)));
+  const wake = start.readObservation().wake;
+  expect(wake).toBeDefined();
+  expect(wake?.position.x).toBeCloseTo(center.x + 0.4);
+  expect(wake?.position.y).toBeCloseTo(center.y + 0.3);
+  expect(wake?.position.z).toBeCloseTo(center.z);
+  const direction = new Vector3(4, 0, -10).normalize();
+  expect(wake?.direction.x).toBeCloseTo(direction.x);
+  expect(wake?.direction.y).toBeCloseTo(direction.y);
+  expect(wake?.direction.z).toBeCloseTo(direction.z);
+  expect(wake?.ageSeconds).toBe(0);
+  runtime.update(0.1);
+  expect(start.readObservation().wake?.ageSeconds).toBeCloseTo(0.1);
+  runtime.unload(start.module);
+});
+
+test("pause and inactive lifetimes never count movement that happened invisibly", () => {
+  const { start, runtime, worldPosition, formGoal, moveTo } = createPractice();
+  const center = formGoal();
+  moveTo(center.clone().add(new Vector3(0, 0, 2)));
+  start.setPlaying(false);
+  worldPosition.copy(center).add(new Vector3(0, 0, -2));
+  runtime.update(100);
+  expect(start.readObservation().phase).toBe("flying");
+  start.setPlaying(true);
+  runtime.update(0.1);
+  expect(start.readObservation().crossingCount).toBe(0);
+
+  // Also cover a suspended tab without any paused World frames.
+  start.setPlaying(false);
+  worldPosition.copy(center).add(new Vector3(0, 0, 2));
+  start.setPlaying(true);
+  runtime.update(0.1);
+  expect(start.readObservation().crossingCount).toBe(0);
+
+  runtime.deactivate(start.module);
+  worldPosition.copy(center).add(new Vector3(0, 0, -2));
+  runtime.update(100);
+  runtime.activate(start.module);
+  runtime.update(0.1);
+  expect(start.readObservation().crossingCount).toBe(0);
+  moveTo(center.clone().add(new Vector3(0, 0, 2)));
+  expect(start.readObservation().crossingCount).toBe(1);
+  runtime.unload(start.module);
+});
+
+test("pause freezes formation and reset or reload starts fresh at the new arrival pose", () => {
+  const { start, runtime, worldPosition, formGoal, moveTo } = createPractice();
+  runtime.update(PARAMETERS.arrivalSeconds);
+  runtime.update(0.1);
+  const progress = start.readObservation().formationProgress;
+  start.setPlaying(false);
+  runtime.update(100);
+  expect(start.readObservation().formationProgress).toBe(progress);
+  start.setPlaying(true);
+  start.reset();
+  worldPosition.set(20, 8, 30);
+  runtime.update(0);
+  const center = formGoal();
+  expect(center).toEqual(new Vector3(22, 8, 25));
+  moveTo(center.clone().add(new Vector3(0, 0, -2)));
+  expect(start.readObservation().crossingCount).toBe(1);
+
+  runtime.unload(start.module);
+  runtime.load(start.module);
+  runtime.activate(start.module);
+  runtime.update(0);
+  expect(start.readObservation().phase).toBe("arrival");
+  expect(start.readObservation().crossingCount).toBe(0);
+  expect(start.readObservation().wake).toBeUndefined();
+  runtime.unload(start.module);
+});
+
+test("the selected presentation ends after a partial load and receives no inactive frames", () => {
+  const worldPosition = new Vector3();
+  const failure = new Error("Particle preparation failed");
+  const load = mock(() => {});
+  const update = mock((_frame: StartParticleFrame) => {});
+  const setVisible = mock((_visible: boolean) => {});
+  const unload = mock(() => {});
+  const start = createStartModule({
+    viewpoint: { worldPosition, viewDistanceMeters: 100 },
+    viewerRig: new Group(),
+    viewPitchDegrees: 0,
+    parameters: PARAMETERS,
+    particles: { load, update, setVisible, unload },
+  });
+  const runtime = new ModuleRuntime();
+  load.mockImplementationOnce(() => {
+    throw failure;
+  });
+  expect(() => runtime.load(start.module)).toThrow(failure);
+  runtime.unload(start.module);
+  runtime.unload(start.module);
+  expect(unload).toHaveBeenCalledTimes(1);
+  runtime.update(1);
+  expect(update).not.toHaveBeenCalled();
 
   runtime.load(start.module);
   runtime.activate(start.module);
-  expect(start.readPhase()).toBe("arrival");
+  runtime.update(0.1);
+  expect(setVisible).toHaveBeenLastCalledWith(true);
+  expect(update).toHaveBeenCalledTimes(1);
+  runtime.deactivate(start.module);
+  expect(setVisible).toHaveBeenLastCalledWith(false);
+  runtime.update(100);
+  expect(update).toHaveBeenCalledTimes(1);
+  runtime.unload(start.module);
+  expect(unload).toHaveBeenCalledTimes(2);
+});
+
+test("Show can finish speech after a crossing without completing any unflown goal", () => {
+  const { start, runtime, formGoal, moveTo } = createPractice();
+  const center = formGoal();
+  start.setGoalAdvanceAllowed(false);
+  moveTo(center.clone().add(new Vector3(0, 0, -2)));
+  runtime.update(30);
+  expect(start.readObservation().phase).toBe("crossed");
+  expect(start.readObservation().crossingCount).toBe(1);
+  expect(start.readObservation().formationProgress).toBe(0);
+  start.setGoalAdvanceAllowed(true);
+  runtime.update(0.1);
+  expect(start.readObservation().direction).toBe("left");
+  expect(start.readObservation().crossingCount).toBe(1);
+  formGoal();
+  runtime.update(100);
+  expect(start.readObservation().phase).toBe("flying");
   runtime.unload(start.module);
 });
 
-test("completion remains visible and still follows the visitor without pulsing", () => {
-  const { scene, worldPosition, start, input } = createStart();
-  for (const direction of [RIGHT, LEFT, UP, DOWN]) {
-    input(NEUTRAL);
-    input(direction, 5);
-  }
-  const anchor = scene.children[0];
-  const guide = anchor?.children[0];
-  if (!anchor || !(guide instanceof Mesh))
-    throw new Error("Start guide is missing");
-  const completedScale = guide.scale.clone();
-  worldPosition.x = 4;
-  input(RIGHT, 20);
-  expect(start.readPhase()).toBe("complete");
-  expect(anchor.visible).toBe(true);
-  expect(anchor.position.x).toBe(4);
-  expect(guide.scale).toEqual(completedScale);
-});
-
-test("rejects an unusable guide distance before creating resources", () => {
-  for (const guideDistanceMeters of [0, -1, Number.NaN, Infinity]) {
-    const scene = new Scene();
-    expect(() =>
-      createStartModule({
-        scene,
-        viewpoint: { worldPosition: new Vector3(), viewDistanceMeters: 100 },
-        viewerRig: new Group(),
-        viewPitchDegrees: 0,
-        parameters: { guideDistanceMeters },
-      }),
-    ).toThrow("guideDistanceMeters");
-    expect(scene.children).toHaveLength(0);
-  }
-});
-
-test("failed scene attachment releases the created resources", () => {
-  const scene = new Scene();
-  const attachmentError = new Error("Scene attachment failed");
-  let disposedGeometry = 0;
-  let disposedMaterial = 0;
-  spyOn(scene, "add").mockImplementation((...objects) => {
-    const guide = objects[0]?.children[0];
-    if (
-      !(guide instanceof Mesh) ||
-      !(guide.material instanceof MeshBasicMaterial)
-    )
-      throw new Error("Start guide mesh is missing");
-    guide.geometry.addEventListener("dispose", () => {
-      disposedGeometry += 1;
-    });
-    guide.material.addEventListener("dispose", () => {
-      disposedMaterial += 1;
-    });
-    throw attachmentError;
-  });
+test("a missed goal behind the heading shows a horizontal turn-around cue", () => {
+  const worldPosition = new Vector3();
+  let arrowAngle = 0;
   const start = createStartModule({
-    scene,
-    viewpoint: { worldPosition: new Vector3(), viewDistanceMeters: 100 },
+    viewpoint: { worldPosition, viewDistanceMeters: 100 },
     viewerRig: new Group(),
-    viewPitchDegrees: 0,
-    parameters: { guideDistanceMeters: 3 },
+    viewPitchDegrees: 30,
+    parameters: PARAMETERS,
+    particles: {
+      load() {},
+      unload() {},
+      setVisible() {},
+      update(frame) {
+        arrowAngle = frame.arrowAngleRadians;
+      },
+    },
   });
-  expect(start.module.load).toThrow(attachmentError);
+  start.module.load();
+  start.module.activate();
+  start.module.update?.(0);
+  worldPosition.set(10, 0, -10);
+  start.module.update?.(0.1);
+  expect(arrowAngle).toBe(Math.PI);
+  worldPosition.x = -10;
+  start.module.update?.(0.1);
+  expect(arrowAngle).toBe(0);
+  expect(start.readObservation().crossingCount).toBe(0);
   start.module.unload();
-  expect(scene.children).toHaveLength(0);
-  expect(disposedGeometry).toBe(1);
-  expect(disposedMaterial).toBe(1);
 });

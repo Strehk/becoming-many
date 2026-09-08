@@ -11,7 +11,6 @@ import {
   narrationDurationSeconds,
   narrationUrl,
 } from "../dramaturgy/narration-catalog";
-import type { NarrationCuePosition } from "../dramaturgy/narration-schedule";
 
 // How far playback may sit from the show before it is pulled back. A re-seek
 // is audible, so raise this before lowering it. Unmeasured on the PICO.
@@ -20,7 +19,9 @@ const SYNC_TOLERANCE_SECONDS = 0.25;
 /** One sampled show instant, as the narration needs to see it. */
 export interface NarrationFollowState {
   /** Undefined in a gap, before the first cue, and after the show ends. */
-  readonly position: NarrationCuePosition | undefined;
+  readonly position:
+    | { readonly cueId: string; readonly offsetSeconds: number }
+    | undefined;
   readonly isPlaying: boolean;
   /** Mirrored onto playback rate, or the correction would fight the clock. */
   readonly timeScale: number;
@@ -31,22 +32,41 @@ export interface NarrationPlayer {
   readonly unload: () => void;
 }
 
-export interface NarrationPlayerOptions {
-  readonly language: NarrationLanguage;
-  /** Only these recordings are fetched; one fixed element each. */
-  readonly cueIds: readonly NarrationCueId[];
+/** An approved clip, selected by Show; duration is measured from shipped bytes. */
+export interface NarrationRecording {
+  readonly cueId: string;
+  readonly url: string;
+  readonly durationSeconds: number;
 }
 
-export function createNarrationPlayer({
-  language,
-  cueIds,
-}: NarrationPlayerOptions): NarrationPlayer {
-  const elements = new Map<NarrationCueId, HTMLAudioElement>();
+export type NarrationPlayerOptions =
+  | {
+      readonly language: NarrationLanguage;
+      readonly cueIds: readonly NarrationCueId[];
+    }
+  | { readonly recordings: readonly NarrationRecording[] };
+
+/** Own only the requested clips, for main-show or interactive tutorial cues. */
+export function createNarrationPlayer(
+  options: NarrationPlayerOptions,
+): NarrationPlayer {
+  const recordings =
+    "recordings" in options
+      ? options.recordings
+      : options.cueIds.map((cueId) => ({
+          cueId,
+          url: narrationUrl(cueId, options.language),
+          durationSeconds: narrationDurationSeconds(cueId, options.language),
+        }));
+  const clips = new Map<
+    string,
+    { element: HTMLAudioElement; durationSeconds: number }
+  >();
   let isUnloaded = false;
   function unload(): void {
     isUnloaded = true;
     const errors: unknown[] = [];
-    for (const element of elements.values()) {
+    for (const { element } of clips.values()) {
       try {
         element.pause();
         element.removeAttribute("src");
@@ -55,13 +75,19 @@ export function createNarrationPlayer({
         errors.push(error);
       }
     }
-    elements.clear();
+    clips.clear();
     if (errors.length)
       throw new AggregateError(errors, "Narration cleanup failed");
   }
   try {
-    for (const cueId of cueIds)
-      elements.set(cueId, createCueElement(cueId, language));
+    for (const recording of recordings) {
+      const element = new Audio(recording.url);
+      element.preload = "auto";
+      clips.set(recording.cueId, {
+        element,
+        durationSeconds: recording.durationSeconds,
+      });
+    }
   } catch (error) {
     try {
       unload();
@@ -74,13 +100,13 @@ export function createNarrationPlayer({
     throw error;
   }
 
-  let activeCueId: NarrationCueId | undefined;
+  let activeCueId: string | undefined;
   let hasReportedBlockedPlayback = false;
 
   function stopActiveCue(): void {
     if (activeCueId === undefined) return;
 
-    elements.get(activeCueId)?.pause();
+    clips.get(activeCueId)?.element.pause();
     activeCueId = undefined;
   }
 
@@ -96,13 +122,18 @@ export function createNarrationPlayer({
       // A slot is sized for the longer language, so the shorter recording runs
       // out before its slot does; past that end there is simply silence.
       // Without this the drift correction would seek past the end forever.
-      if (!position || hasPlayedOut(position, language)) {
+      if (isUnloaded) return;
+      const clip = position ? clips.get(position.cueId) : undefined;
+      if (
+        !position ||
+        !clip ||
+        position.offsetSeconds >= clip.durationSeconds
+      ) {
         stopActiveCue();
         return;
       }
 
-      const element = elements.get(position.cueId);
-      if (!element) return;
+      const { element } = clip;
 
       const isNewCue = position.cueId !== activeCueId;
       if (isNewCue) {
@@ -152,28 +183,6 @@ function matchRecording(
     return;
   }
   if (element.paused) void element.play().catch(onBlocked);
-}
-
-function createCueElement(
-  cueId: NarrationCueId,
-  language: NarrationLanguage,
-): HTMLAudioElement {
-  const element = new Audio(narrationUrl(cueId, language));
-  // Buffering the session's own language up front — about 7.4 MB across eight
-  // recordings — keeps a seek into any of them instant, which is the point of
-  // scrubbing. The element streams; it is never decoded to PCM.
-  element.preload = "auto";
-
-  return element;
-}
-
-function hasPlayedOut(
-  position: NarrationCuePosition,
-  language: NarrationLanguage,
-): boolean {
-  return (
-    position.offsetSeconds >= narrationDurationSeconds(position.cueId, language)
-  );
 }
 
 /** Seeking before metadata arrives is ignored, so a later frame retries. */
