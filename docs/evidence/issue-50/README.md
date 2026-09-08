@@ -195,3 +195,40 @@ within measured time plus render-quantum uncertainty; context close/replacement
 also passes. The report preserves the earlier unconnected-node and untimed-bound
 diagnostic failures and their explanations. Perceptual clicklessness and headset
 listening remain physical checks; no sample-identical output is claimed.
+
+
+## Procedural course correction
+
+The placement review replaces authored ring coordinates with bounded procedural
+rules in the same literal Start recipe. Each goal is generated once; reset
+samples a fresh course. The approved right/left/up/down sequence, world anchoring,
+shared locomotion and geometry-owned sound attachments remain intact. Only
+placement consumes randomness, with no new frame job, resource pool or runtime.
+Show exposes the generated passage target through its existing observation;
+Rehearsal and Conductor offer the same Show console access for inspection.
+
+Ten Start logic tests include range extremes, all four passages, pause/miss
+stability and fresh reset sampling. The combined focused set has 27 passing
+tests across Start, particles, Run and audio; build and mandatory lint pass.
+One stale audio-lifetime fixture lacked the existing AudioParam cancellation
+methods and was corrected. The first Conductor probe exposed its missing Show
+console observation; after aligning that entry access, two full courses,
+operator handoffs and held Stop/restarts pass without errors or warnings.
+Full-root flight also passes; its measured cost is recorded in
+[Performance](../../performance.md#procedural-tutorial-placement).
+Conductor restart probe served-assets SHA-256:
+`bb46985637ea156ef8e7a79ba65055176ffbab159fe2118bd087573c365e49ca`.
+
+Approved narration/EN behavior, spatial listening, visitor comprehension and
+actual Windows-PCVR 90 Hz acceptance remain open.
+
+
+Screenshot review caught a partially clipped first ring at the initial 30–34 m
+range. The final first-distance range is 44–48 m. Standalone Start passes both
+initial formation and reload with a pixel assertion that the blue target is
+visible and does not touch the viewport edge; normal input interaction still
+passes. The same pixel inspector correctly rejects the earlier clipped screenshot
+and accepts the corrected image. Later goal spacing remains 58–62 m. These are bounded generation rules,
+not fixed world positions.
+
+![Procedurally placed first target, fully visible after formation](procedural-formed-goal.png)

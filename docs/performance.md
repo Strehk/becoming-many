@@ -512,3 +512,28 @@ observation time. The final time-bracketed criterion derives its bound from the
 actual interval instead of raising an arbitrary threshold. These were diagnostic
 limitations, not passing evidence that was discarded. Compact results are in the
 [tutorial summary](evidence/issue-50/summary.json); direct listening stays open.
+
+
+## Procedural tutorial placement
+
+The follow-up to `4bacaec` replaces authored ring coordinates with bounded goal
+sampling. Start samples only on first placement and goal advancement; reset
+starts a fresh course. Ordinary frames reuse the same vectors, particle buffer,
+audio sources and renderer. No new frame job or resource owner is introduced.
+
+The production root course passes all four actual M5-driven passages and operator
+handoff on the same headed Chromium 151 / M2 Max / Metal, 1920×1080 DPR1 setup.
+Across 3041 tutorial frames, CPU median/p95/p99/max is 0.3/0.4/0.5/4.3 ms and GPU
+is 0.088/0.247/0.298/1.152 ms. The preceding bounded-audio course measured CPU
+p95 0.5 ms and GPU p95 0.292 ms. Geometry and flight paths now vary, so these
+observations show no additional rendering/CPU cost rather than an optimization.
+RAF median remains 16.7 ms; p95/max is 18.2/18.8 ms versus 17.2/17.7 ms before.
+The following main segment has CPU/GPU p95 2.4/1.150 ms and RAF max 18.7 ms.
+Desktop scheduling variation and these short runs do not establish installation
+90 Hz or sustained frame pacing.
+
+Served-assets SHA-256:
+`fb038c05dda0b6bef7517953c5a019a2a9670a75e79f85b72c6767bf5e5cb3ab`.
+Local evidence: `benchmark-results/issue-50/procedural-visible-course/probe.json`.
+No browser errors or warnings occurred. Hardware, listening and narration
+acceptance remain open.

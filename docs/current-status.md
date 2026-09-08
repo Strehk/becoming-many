@@ -6,6 +6,9 @@ physical acceptance still open. The earlier UI/Entry
 and M5 consolidation passed its local checks and browser acceptance; see
 [UI evidence](evidence/ui-consolidation/README.md). The previous
 #36/#84/#11 and audio-wake results remain dated evidence for their tested code.
+Start now generates its four-goal course from distance, displacement and radius
+ranges instead of authored coordinates. Restart samples a fresh course, while
+placed targets and their sound anchors remain in world space.
 Dated measurement packets retain the earlier exact identities they tested;
 the current checkout is the authority for runtime details.
 The combined tutorial change passes `bun test` (572 tests), `bun run build` and

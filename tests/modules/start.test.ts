@@ -11,20 +11,26 @@ const PARAMETERS: StartParameters = {
   arrivalSeconds: 0.2,
   formationSeconds: 0.3,
   dissolutionSeconds: 0.4,
-  goals: [
-    { direction: "right", offsetMeters: [2, 0, -5], radiusMeters: 1 },
-    { direction: "left", offsetMeters: [-2, 0, -10], radiusMeters: 1 },
-    { direction: "up", offsetMeters: [-2, 3, -15], radiusMeters: 1 },
-    { direction: "down", offsetMeters: [0, -1, -20], radiusMeters: 1 },
-  ],
+  directions: ["right", "left", "up", "down"],
+  course: {
+    firstDistanceMeters: [5, 5],
+    spacingMeters: [5, 5],
+    horizontalOffsetMeters: [2, 2],
+    verticalOffsetMeters: [3, 3],
+    radiusMeters: [1, 1],
+  },
 };
 
-function createPractice() {
+function createPractice(
+  parameters: StartParameters = PARAMETERS,
+  random: () => number = () => 0.5,
+) {
   const worldPosition = new Vector3(0, 4, 0);
   const start = createStartModule({
     viewpoint: { worldPosition, viewDistanceMeters: 100 },
     viewerRig: new Group(),
-    parameters: PARAMETERS,
+    parameters,
+    random,
   });
   const runtime = new ModuleRuntime();
   runtime.load(start.module);
@@ -32,8 +38,8 @@ function createPractice() {
   runtime.update(0);
 
   function formGoal(): Vector3 {
-    runtime.update(PARAMETERS.arrivalSeconds);
-    runtime.update(PARAMETERS.formationSeconds);
+    runtime.update(parameters.arrivalSeconds);
+    runtime.update(parameters.formationSeconds);
     expect(start.readObservation().phase).toBe("flying");
     return start.readObservation().goalPosition.clone();
   }
@@ -281,4 +287,90 @@ test("cloud and formed targets keep their world anchor through player translatio
   expect(start.readObservation().phase).toBe("flying");
   expect(start.readObservation().crossingCount).toBe(0);
   start.module.unload();
+});
+
+test("generated courses respect direction and distance bounds at both sampling extremes", () => {
+  const parameters: StartParameters = {
+    ...PARAMETERS,
+    course: {
+      firstDistanceMeters: [5, 7],
+      spacingMeters: [8, 12],
+      horizontalOffsetMeters: [2, 4],
+      verticalOffsetMeters: [3, 5],
+      radiusMeters: [1, 1],
+    },
+  };
+  for (const fraction of [0, 0.5, 1]) {
+    const random = mock(() => fraction);
+    const { start, runtime, formGoal, moveTo } = createPractice(
+      parameters,
+      random,
+    );
+    const previous = new Vector3(0, 4, 0);
+    for (const [index, direction] of parameters.directions.entries()) {
+      const center = formGoal();
+      const step = center.clone().sub(previous);
+      expect(step.z).toBeCloseTo(
+        -(index === 0 ? 5 + 2 * fraction : 8 + 4 * fraction),
+      );
+      if (direction === "right" || direction === "left") {
+        expect(step.x).toBeCloseTo(
+          (2 + 2 * fraction) * (direction === "right" ? 1 : -1),
+        );
+        expect(step.y).toBe(0);
+      } else {
+        expect(step.x).toBe(0);
+        expect(step.y).toBeCloseTo(
+          (3 + 2 * fraction) * (direction === "up" ? 1 : -1),
+        );
+      }
+      const sampled = random.mock.calls.length;
+      runtime.update(100);
+      start.setPlaying(false);
+      runtime.update(100);
+      expect(random.mock.calls.length).toBe(sampled);
+      expect(start.readObservation().goalTarget).toEqual(center);
+      moveTo(center.clone().add(new Vector3(0, 0, 2)));
+      moveTo(center.clone().add(new Vector3(0, 0, -2)));
+      expect(start.readObservation().crossingCount).toBe(index + 1);
+      previous.copy(center);
+      runtime.update(parameters.dissolutionSeconds);
+    }
+    expect(start.readObservation().phase).toBe("complete");
+    runtime.unload(start.module);
+  }
+});
+
+test("restart samples a fresh course without accumulating the previous course offset", () => {
+  let fraction = 0;
+  const parameters: StartParameters = {
+    ...PARAMETERS,
+    course: { ...PARAMETERS.course, firstDistanceMeters: [5, 7] },
+  };
+  const { start, runtime, formGoal } = createPractice(
+    parameters,
+    () => fraction,
+  );
+  expect(formGoal().z).toBe(-5);
+  fraction = 1;
+  start.reset();
+  runtime.update(0);
+  expect(formGoal().z).toBe(-7);
+  runtime.unload(start.module);
+});
+
+test("invalid course ranges fail before presentation resources are acquired", () => {
+  for (const range of [
+    [0, 1],
+    [2, 1],
+    [1, Infinity],
+    [NaN, 1],
+  ] as const) {
+    expect(() =>
+      createPractice({
+        ...PARAMETERS,
+        course: { ...PARAMETERS.course, spacingMeters: range },
+      }),
+    ).toThrow("ordered distance ranges");
+  }
 });

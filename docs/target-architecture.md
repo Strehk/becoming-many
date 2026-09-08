@@ -317,7 +317,11 @@ existing World/Run owners. No per-level transition workaround or uncontrolled
 rebuild; measure first/repeated transitions. Confirmed for #50 on 2026-09-08:
 Rehearsal, Conductor and standalone training initially hold for explicit Play.
 Four spatial goals run right/left/up/down without a deadline; misses keep the
-goal active with guidance. Pause holds training and flight, seek/rate changes
+goal active with guidance. Confirmed in the subsequent placement review: Start
+generates each goal from bounded ranges in the literal recipe, samples a fresh
+course on reset, and retains each placed world target independently of the
+visitor. Rendering and sound borrow that generated geometry. Pause holds
+training and flight, seek/rate changes
 are blocked, and language changes repeat the current instruction. A current
 recording finishes before the next goal is presented; its duration does not
 complete a spatial goal. All passages and the final configured recording precede

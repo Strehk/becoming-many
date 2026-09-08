@@ -12,6 +12,7 @@ export const level: LevelPreset = {
       { id: "source-03", url: "/audio/granular/atmosphere-grain-03.wav" },
       { id: "source-08", url: "/audio/granular/atmosphere-grain-08.wav" },
     ],
+    // Attach to the current generated geometry; these are not world positions.
     layers: [
       {
         object: "ringLeft",
@@ -71,12 +72,14 @@ export const level: LevelPreset = {
     arrivalSeconds: 2.5,
     formationSeconds: 2,
     dissolutionSeconds: 3,
-    goals: [
-      { direction: "right", offsetMeters: [12, 0, -32], radiusMeters: 3.5 },
-      { direction: "left", offsetMeters: [-12, 0, -92], radiusMeters: 3.5 },
-      { direction: "up", offsetMeters: [-12, 16, -152], radiusMeters: 3.5 },
-      { direction: "down", offsetMeters: [0, 0, -212], radiusMeters: 3.5 },
-    ],
+    directions: ["right", "left", "up", "down"],
+    course: {
+      firstDistanceMeters: [44, 48],
+      spacingMeters: [58, 62],
+      horizontalOffsetMeters: [10, 14],
+      verticalOffsetMeters: [14, 18],
+      radiusMeters: [3.25, 3.75],
+    },
     particles: {
       count: 1400,
       sizeMeters: 0.065,

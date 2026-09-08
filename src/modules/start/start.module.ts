@@ -8,15 +8,20 @@ import type {
   StartParticleParameters,
 } from "./start-particles.effect";
 
-export interface StartGoal {
-  readonly direction: "right" | "left" | "up" | "down";
-  /** Offset from the arrival eye in the initial flight heading, in metres. */
-  readonly offsetMeters: readonly [number, number, number];
-  readonly radiusMeters: number;
-}
+export type StartDirection = "right" | "left" | "up" | "down";
+
+type DistanceRange = readonly [minimum: number, maximum: number];
 
 export interface StartParameters {
-  readonly goals: readonly [StartGoal, ...StartGoal[]];
+  readonly directions: readonly [StartDirection, ...StartDirection[]];
+  /** Sampled once per goal, relative to the previous goal in the arrival heading. */
+  readonly course: {
+    readonly firstDistanceMeters: DistanceRange;
+    readonly spacingMeters: DistanceRange;
+    readonly horizontalOffsetMeters: DistanceRange;
+    readonly verticalOffsetMeters: DistanceRange;
+    readonly radiusMeters: DistanceRange;
+  };
   readonly arrivalSeconds: number;
   readonly formationSeconds: number;
   readonly dissolutionSeconds: number;
@@ -35,8 +40,10 @@ export type StartPhase =
 export interface StartObservation {
   readonly phase: StartPhase;
   readonly goalIndex: number;
-  readonly direction: StartGoal["direction"];
+  readonly direction: StartDirection;
   readonly goalPosition: Readonly<Vector3>;
+  /** Fixed passage target, including while particles are arriving. */
+  readonly goalTarget: Readonly<Vector3>;
   readonly formationProgress: number;
   readonly crossingCount: number;
   readonly objects?: StartParticleObjects;
@@ -62,6 +69,8 @@ export interface StartModuleHandle {
 }
 
 interface StartModuleOptions {
+  /** Optional reproducible sampling; only goal creation consumes randomness. */
+  readonly random?: () => number;
   readonly viewpoint: Viewpoint;
   readonly viewerRig: Group;
   readonly parameters: StartParameters;
@@ -74,6 +83,7 @@ export function createStartModule(
   options: StartModuleOptions,
 ): StartModuleHandle {
   const { parameters, particles, viewpoint, viewerRig } = options;
+  const random = options.random ?? Math.random;
   const positive = [
     parameters.arrivalSeconds,
     parameters.formationSeconds,
@@ -81,19 +91,19 @@ export function createStartModule(
   ];
   if (
     positive.some((number) => !Number.isFinite(number) || number <= 0) ||
-    !parameters.goals.length ||
-    parameters.goals.some(
-      (goal) =>
-        !Number.isFinite(goal.radiusMeters) ||
-        goal.radiusMeters <= 0 ||
-        goal.offsetMeters.some((number) => !Number.isFinite(number)),
+    !parameters.directions.length ||
+    Object.values(parameters.course).some(
+      ([minimum, maximum]) =>
+        !Number.isFinite(minimum) ||
+        !Number.isFinite(maximum) ||
+        minimum <= 0 ||
+        maximum < minimum,
     )
   )
-    throw new Error(
-      "Start needs finite positive timings, distances and spatial goals",
-    );
+    throw new Error("Start needs positive timings and ordered distance ranges");
 
   const origin = new Vector3();
+  const courseOffset = new Vector3();
   const initialHeading = new Quaternion();
   const previousPosition = new Vector3();
   const previousGoalPosition = new Vector3();
@@ -111,8 +121,9 @@ export function createStartModule(
   const observation = {
     phase: "arrival" as StartPhase,
     goalIndex: 0,
-    direction: parameters.goals[0].direction,
+    direction: parameters.directions[0],
     goalPosition,
+    goalTarget: targetPosition,
     formationProgress: 0,
     crossingCount: 0,
     objects: undefined as StartParticleObjects | undefined,
@@ -122,7 +133,7 @@ export function createStartModule(
     elapsedSeconds: 0,
     goalPosition,
     goalNormal,
-    ringRadiusMeters: parameters.goals[0].radiusMeters,
+    ringRadiusMeters: parameters.course.radiusMeters[0],
     arrowAngleRadians: 0,
     formationProgress: 0,
     completionProgress: 0,
@@ -173,12 +184,13 @@ export function createStartModule(
 
   function reset(): void {
     initialized = false;
+    courseOffset.set(0, 0, 0);
     goalAdvanceAllowed = true;
     phaseSeconds = 0;
     particleFrame.elapsedSeconds = 0;
     observation.phase = "arrival";
     observation.goalIndex = 0;
-    observation.direction = parameters.goals[0].direction;
+    observation.direction = parameters.directions[0];
     observation.formationProgress = 0;
     observation.crossingCount = 0;
     observation.wake = undefined;
@@ -186,23 +198,40 @@ export function createStartModule(
   }
 
   function placeGoal(): void {
-    const goal = parameters.goals[observation.goalIndex];
-    if (!goal)
-      throw new Error("Start goal index is outside its authored capacity");
+    const direction = parameters.directions[observation.goalIndex];
+    if (!direction)
+      throw new Error("Start goal index is outside its lesson sequence");
+    const course = parameters.course;
+    courseOffset.z -= sample(
+      observation.goalIndex === 0
+        ? course.firstDistanceMeters
+        : course.spacingMeters,
+    );
+    if (direction === "right" || direction === "left")
+      courseOffset.x +=
+        sample(course.horizontalOffsetMeters) *
+        (direction === "right" ? 1 : -1);
+    else
+      courseOffset.y +=
+        sample(course.verticalOffsetMeters) * (direction === "up" ? 1 : -1);
     targetPosition
-      .fromArray(goal.offsetMeters)
+      .copy(courseOffset)
       .applyQuaternion(initialHeading)
       .add(origin);
-    observation.direction = goal.direction;
+    observation.direction = direction;
     particleFrame.arrowAngleRadians =
-      goal.direction === "right"
+      direction === "right"
         ? 0
-        : goal.direction === "left"
+        : direction === "left"
           ? Math.PI
-          : goal.direction === "up"
+          : direction === "up"
             ? Math.PI / 2
             : -Math.PI / 2;
-    particleFrame.ringRadiusMeters = goal.radiusMeters;
+    particleFrame.ringRadiusMeters = sample(course.radiusMeters);
+  }
+
+  function sample([minimum, maximum]: DistanceRange): number {
+    return minimum + (maximum - minimum) * random();
   }
 
   function update(deltaSeconds: number): void {
@@ -279,7 +308,7 @@ export function createStartModule(
       observation.formationProgress =
         1 - Math.min(1, phaseSeconds / parameters.dissolutionSeconds);
       if (observation.formationProgress === 0 && goalAdvanceAllowed) {
-        if (observation.goalIndex + 1 === parameters.goals.length)
+        if (observation.goalIndex + 1 === parameters.directions.length)
           observation.phase = "complete";
         else {
           previousGoalPosition.copy(targetPosition);

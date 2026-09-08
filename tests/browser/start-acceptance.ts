@@ -2,10 +2,8 @@
 import assert from "node:assert/strict";
 import type { Page } from "playwright";
 import { FLIGHT_SETTINGS } from "../../src/control/flight-settings";
-import { level as startLevel } from "../../src/levels/start.level";
 import { M5_FIRMWARE_VERSION } from "../../src/m5/protocol";
 import { M5_SETTINGS } from "../../src/m5/runtime/m5-settings";
-import type { StartGoal } from "../../src/modules/start/start.module";
 import { assertRefactorBranch } from "./browser-evidence";
 
 const FORMATION_MILLISECONDS = 5_000;
@@ -145,11 +143,23 @@ export async function checkStartLevel(
     let darkPixels = 0;
     do {
       const screenshot = await canvas.screenshot();
-      darkPixels = await countVisibleParticles(
+      const pixels = await inspectVisibleParticles(
         page,
         screenshot.toString("base64"),
       );
+      darkPixels = pixels.darkPixels;
       if (darkPixels > 100) {
+        if (name.startsWith("formed-goal")) {
+          assert(
+            pixels.trainingPixels > 100,
+            "The formed target must be visible",
+          );
+          assert.equal(
+            pixels.trainingTouchesEdge,
+            false,
+            "The formed target must fit inside the viewport",
+          );
+        }
         assertRefactorBranch();
         await page.screenshot({
           path: `${artifactBase}-start-${name}.png`,
@@ -166,7 +176,14 @@ export async function checkStartLevel(
 }
 
 /** Inspect screenshots without reading application state or the WebGL buffer. */
-async function countVisibleParticles(page: Page, png: string): Promise<number> {
+async function inspectVisibleParticles(
+  page: Page,
+  png: string,
+): Promise<{
+  darkPixels: number;
+  trainingPixels: number;
+  trainingTouchesEdge: boolean;
+}> {
   return page.evaluate(async (encoded) => {
     const image = new Image();
     image.src = `data:image/png;base64,${encoded}`;
@@ -179,27 +196,35 @@ async function countVisibleParticles(page: Page, png: string): Promise<number> {
     context.drawImage(image, 0, 0);
     const pixels = context.getImageData(0, 0, image.width, image.height).data;
     let darkPixels = 0;
+    let trainingPixels = 0;
+    let trainingTouchesEdge = false;
     for (let index = 0; index < pixels.length; index += 4) {
       const red = pixels[index] ?? 255;
       const green = pixels[index + 1] ?? 255;
       const blue = pixels[index + 2] ?? 255;
       if (Math.max(red, green, blue) < 200) darkPixels += 1;
+      // The authored blue training particles differ from neutral background Air.
+      if (blue - red > 12 && blue < 200) {
+        trainingPixels++;
+        const x = (index / 4) % image.width;
+        const y = Math.floor(index / 4 / image.width);
+        if (x < 2 || y < 2 || x >= image.width - 2 || y >= image.height - 2)
+          trainingTouchesEdge = true;
+      }
     }
-    return darkPixels;
+    return { darkPixels, trainingPixels, trainingTouchesEdge };
   }, png);
 }
 
 /**
- * Fly the authored course through the real M5 adapter, then use its public handoff.
- * The sensor fixture estimates its own travel to steer; only rendered tutorial
- * status establishes passage. No scene, camera or private progress API is read.
+ * Fly the generated course through the real M5 adapter and its public handoff.
+ * The sensor fixture estimates its own travel toward the public goal observation;
+ * only rendered tutorial status establishes passage. No private state is changed.
  */
 export async function flyStartCourse(
   page: Page,
   simulation: StartSimulation,
 ): Promise<void> {
-  const goals = startLevel.start?.goals;
-  assert(goals?.length);
   const status = page.locator("[data-tutorial-status]");
   await status.waitFor({ state: "visible" });
   const transport = page.locator(
@@ -223,9 +248,10 @@ export async function flyStartCourse(
       );
       lastStatus = text;
     }
-    const goalNumber = Number(text.match(/(\d)\/4/)?.[1]);
-    const goal: StartGoal | undefined = goals[goalNumber - 1];
-    assert(goal, `Expected a public course goal: ${text}`);
+    const goal = await page.evaluate(
+      () => window.show?.readTutorial()?.goalTarget,
+    );
+    assert(goal, `Expected an observed generated course goal: ${text}`);
     const now = performance.now();
     const delivery = simulation.readDelivery();
     if (delivery !== previousDelivery) {
@@ -241,20 +267,19 @@ export async function flyStartCourse(
     }
     integrate(previousDelivery, (now - previousMilliseconds) / 1000);
     previousMilliseconds = now;
-    const [goalX, goalY, goalZ] = goal.offsetMeters;
-    const dx = goalX - estimate.x;
-    const dz = goalZ - estimate.z;
+    const dx = goal.x - estimate.x;
+    const dz = goal.z - estimate.z;
     const distance = Math.hypot(dx, dz);
     const desiredHeading = Math.atan2(dx, -dz);
     const headingError = Math.atan2(
       Math.sin(desiredHeading - estimate.heading),
       Math.cos(desiredHeading - estimate.heading),
     );
-    const passedPlane = estimate.z < goalZ;
+    const passedPlane = estimate.z < goal.z;
     const roll = passedPlane ? 0 : -clamp(headingError * 2, -0.5, 0.5);
     const climb = passedPlane
       ? 0
-      : clamp(((goalY - estimate.y) * 5) / Math.max(distance, 2), -2.5, 2.5);
+      : clamp(((goal.y - estimate.y) * 5) / Math.max(distance, 2), -2.5, 2.5);
     simulation.set(
       -(climb + FLIGHT_SETTINGS.neutralDescentMetersPerSecond) /
         FLIGHT_SETTINGS.climbRateMetersPerSecond,

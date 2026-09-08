@@ -31,8 +31,10 @@ policy out of Conductor does not move rendering or Show state to that server.
 
 Entry resolves deployment/browser choices and starts/cancels one Run. Conductor
 page/panels own only DOM, gestures and observations. Show exposes direct transport
-and language commands; its clock stays internal. Rehearsal's `window.show`
-console surface uses those same commands (for example `window.show.seekTo(90)`).
+and language commands; its clock stays internal. Rehearsal and Conductor expose
+`window.show`; its console surface uses those same commands (for example
+`window.show.seekTo(90)`) and the current generated tutorial target. Entry removes
+that reference when its Run ends.
 Run exposes the current `resetShowAndFlight` operation and narrow M5/XR
 capabilities; UI cannot consume controller edges or unload those children.
 The shared XR button lives in `src/ui/shared/`; session mechanics stay in World.

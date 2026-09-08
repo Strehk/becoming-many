@@ -97,7 +97,7 @@ test("Run gates training preparation and releases failed or cancelled restart ch
       const request = {
         kind:"show", preset:{backgroundColor:0xffffff,viewDistance:128},
         show:{schedule:PIECE_SCHEDULE,states:SHOW_LEVEL_STATES,language:"en"},
-        tutorial:{backgroundColor:0xffffff,viewDistance:128,desktopFieldOfViewDegrees:80,start:{goals:[{direction:"right"}]},startAudio:{}},
+        tutorial:{backgroundColor:0xffffff,viewDistance:128,desktopFieldOfViewDegrees:80,start:{directions:["right"]},startAudio:{}},
       };
       const run = await startLevel({}, request);
       deferGraphics = true;

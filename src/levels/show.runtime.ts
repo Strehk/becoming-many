@@ -58,6 +58,8 @@ export interface ShowRequest {
 }
 
 export interface TutorialStatus {
+  /** Borrowed world-space passage target; absent during preparation. */
+  readonly goalTarget?: Readonly<{ x: number; y: number; z: number }>;
   readonly phase: string;
   readonly goalIndex: number;
   readonly direction: "right" | "left" | "up" | "down";
@@ -353,6 +355,7 @@ export async function createShowRuntime(
       );
       return {
         phase: observed.phase,
+        goalTarget: observed.goalTarget,
         goalIndex: observed.goalIndex,
         direction: observed.direction,
         crossingCount: observed.crossingCount,
@@ -400,7 +403,7 @@ export async function createShowRuntime(
       tutorial.start.reset();
       tutorial.start.setPlaying(false);
       tutorial.start.setGoalAdvanceAllowed(false);
-      instruction = next.parameters.goals[0].direction;
+      instruction = next.parameters.directions[0];
       tutorialGoalIndex = 0;
       instructionStartSeconds = 0;
       prepareNarration(next);
@@ -436,7 +439,7 @@ export async function createShowRuntime(
             showTime.timeSeconds - instructionStartSeconds >=
             (currentRecording?.durationSeconds ?? 0);
           const nextInstruction =
-            observed.crossingCount === tutorial.parameters.goals.length &&
+            observed.crossingCount === tutorial.parameters.directions.length &&
             instructionFinished
               ? "complete"
               : observed.direction;
@@ -534,7 +537,7 @@ export async function createShowRuntime(
             tutorial.start.reset();
             tutorial.start.setPlaying(false);
             tutorial.start.setGoalAdvanceAllowed(false);
-            instruction = tutorial.parameters.goals[0].direction;
+            instruction = tutorial.parameters.directions[0];
             instructionStartSeconds = 0;
             tutorialGoalIndex = 0;
           }

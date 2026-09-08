@@ -98,7 +98,12 @@ derivatives. UI releases only its own presentation resources. The existing
 
 `start.level.ts` supplies the same training content to `/start`, `/?level=start`
 and the opening of the full Show. Existing route/catalog registration is retained.
-The approved sequence is right, left, up, down, without a deadline. Consecutive
+The approved sequence is right, left, up, down, without a deadline. Start generates
+each goal once from bounded distance, displacement and radius ranges in the
+arrival heading. The recipe contains no authored ring coordinates. Restart samples
+a new course; ordinary frames, misses and pauses never resample a placed target.
+Sound attachments borrow the generated geometry, so their distance and position
+follow the actual ring and arrow. Consecutive
 world poses detect passage through each ring with the existing desktop or M5/XR
 locomotion. A missed ring and its world-anchored arrow remain active. Device-specific neutral/held gestures and the opaque guide are removed.
 

@@ -21,11 +21,9 @@ import { loadDeploymentConfig } from "./deployment-config";
 declare global {
   interface Window {
     /**
-     * Rehearsal transport. The console commands the show through it; nothing
-     * under `src` reads it back, so removing it changes no behavior. It is
-     * set on every default run rather than gated on the build mode because
-     * rehearsal happens in the headset, against a production build, without
-     * the conductor page's transport at hand.
+     * Show console access in Rehearsal and Conductor. Commands and observations
+     * use the same owner as UI. Entry clears the reference when its Run ends.
+     * Available in production for headset rehearsal and generated-course inspection.
      */
     show?: Pick<
       RunningShow,

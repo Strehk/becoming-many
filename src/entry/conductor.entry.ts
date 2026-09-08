@@ -54,6 +54,7 @@ try {
   lifetime.signal.throwIfAborted();
   const { show, m5 } = run;
   if (!show) throw new Error("The conductor requires a Show");
+  window.show = show;
   const initialM5Host = deployment.m5Host ?? readStoredM5Host();
   if (initialM5Host) m5?.setHost(initialM5Host);
   unmountUi = mountConductorPage({
@@ -108,6 +109,7 @@ function unload(): Promise<void> {
   if (unloading) return unloading;
   window.removeEventListener("pagehide", onPageHide);
   lifetime.abort();
+  if (window.show === run?.show) delete window.show;
   unmountUi?.();
   unloading = (async () => {
     const running = run ?? (await pendingStart?.catch(() => undefined));

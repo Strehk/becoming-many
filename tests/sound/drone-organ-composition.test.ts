@@ -78,6 +78,8 @@ test("audio owners recover gesture resume and await complete disposal", async ()
       state = "suspended"; currentTime = 0; disposed = 0;
       listener = Object.fromEntries(["positionX", "positionY", "positionZ", "forwardX", "forwardY", "forwardZ", "upX", "upY", "upZ"].map(name => [name, {
         value: 0, endSeconds: 0,
+        cancelScheduledValues() {},
+        setValueAtTime(value) { this.value = value; },
         linearRampToValueAtTime(value, endSeconds) { this.value = value; this.endSeconds = endSeconds; },
       }])); closing = false;
       rawContext = this;
@@ -313,7 +315,7 @@ test("audio owners recover gesture resume and await complete disposal", async ()
     const tutorialDefinition = {
       start: training,
       parameters: {
-        goals: ["right", "left", "up", "down"].map(direction => ({ direction })),
+        directions: ["right", "left", "up", "down"],
       },
       recordings: { en: recordings("en"), de: recordings("de") },
       finish: () => { finishes++; mayReadTraining = false; },
