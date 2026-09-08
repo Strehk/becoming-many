@@ -1,6 +1,6 @@
 <!--
 Purpose: Document what the Animal Passages module owns.
-Context: One animal announces each sense that names one, across its cue boundary.
+Context: An authored crossing announces a sense across its cue boundary.
 Responsibility: Explain the passage contract, the route port, and what is deliberately absent.
 Boundary: Placement in the show lives in src/dramaturgy; the population lives in src/modules/animals.
 -->
@@ -12,15 +12,19 @@ It is not part of the animal population: the population lives in the world all
 the time and is bounded by habitat, while a passage happens once, at a moment
 the schedule names, and then leaves.
 
-Each passage announces the sense whose animal names it —
-`docs/experience.md` gives Bat for Echolocation, Frog and insects for Motion
-Perception, and Migratory birds for Magnetic Field Perception. The animal
-enters six seconds before that cue, while the previous world still stands, and
-is gone once the new sense has faded in: it introduces the sense rather than
-illustrating it.
+Each passage announces the sense whose animal names it — `script/en.md` gives
+Bat for Echolocation, Insect for Motion Perception, and Migratory Bird for
+Magnetic Field Perception. The animal enters six seconds before that cue, while
+the previous world still stands, and is gone once the new sense has faded in:
+it introduces the sense rather than illustrating it.
 
-Two of the three cross as bodies flying a route and are staged here. The
-mosquitoes have no body — in the project these come from, their particles were
+Two of those three are authored: the bat and the mosquitoes. Magnetic Field
+Perception carries no crossing — what announced it was a single bird leaving
+due north, and one animal pointing is a thin way to carry a sense that is about
+a bearing, so that cue opens with nothing ahead of it.
+
+Of the two, only the bat crosses as a body flying a route and is staged here.
+The mosquitoes have no body — in the project these come from, their particles were
 never drawn, and what the visitor saw was only the trail their movement
 printed. They are staged as a swarm in `src/modules/motion-sense`, where trail
 printing lives, and this module gives it the route and the schedule through one
@@ -64,24 +68,29 @@ the approach speed into a cruise so it still finishes on its authored length.
 
 The route frame follows `viewpoint.worldPosition` every frame. A crossing
 authored around where the visitor is would otherwise be left behind within
-seconds of gliding. Only the bat's route turns to the visitor's heading, once,
-as it enters; the bird's keeps fixed world axes, because it is the world's bird
-and not the visitor's.
+seconds of gliding. The bat's route turns to the visitor's heading, once, as
+it enters; a route may instead hold fixed world axes, for a crossing that
+belongs to the world rather than to the visitor.
 
 ## The departure can carry a bearing
 
-The authored route is the sweep: the bird passes between four and a half and
-fifteen metres away across a 204-degree bow, which is what makes the crossing
-land whichever way the visitor happens to be flying. That shape is left alone.
+An authored route is left exactly as it was tuned: how close the animal passes
+and how wide it sweeps *is* that route data, and it is what makes a crossing
+land whichever way the visitor happens to be flying.
 
 The *exit* is different — it was always procedural, never authored in Blender —
-so a passage may give it a compass bearing. The bird has one, because the sense
-it announces is the one migratory birds navigate by: its authored track ends
-running very nearly due south, and the exit banks from that heading onto north
-across its first stretch. The first leg holds the arriving heading exactly, so
-the hand-off has no kink; taking most of a half turn inside four metres would
-read as a hinge rather than as flight. Passages without a bearing, the bat
-among them, leave straight on as before.
+so a passage may give it a compass bearing, and the exit banks from the heading
+its route ends on onto that bearing across its first stretch. The first leg
+holds the arriving heading exactly, so the hand-off has no kink; taking most of
+a half turn inside four metres would read as a hinge rather than as flight.
+
+No authored passage carries a bearing at present. The one that did was the
+bird, whose departure meant something because the sense it announced is the one
+migratory birds navigate by; with it out, every crossing leaves straight on the
+heading its route ends with. The bearing stays in the contract because it is a
+property a definition may claim, not a property of that one animal — but
+nothing exercises it, so a passage that claims one again should be flown before
+it is trusted.
 
 ## Not decorated by the senses
 
@@ -92,7 +101,7 @@ the heat view could see would simply be missing there.
 
 ## The swarm carries its own trails
 
-The mosquitoes keep the same six-second lead as the other two, and that has one
+The mosquitoes keep the same six-second lead as the bat, and that has one
 consequence worth stating: they cannot print through the Motion Sense module,
 because that module is gated on the very sense they are announcing and stands
 at zero strength while they cross. The swarm therefore owns its own trail ring
@@ -111,6 +120,9 @@ authored against the same crossing, so nothing outside this folder reaches into
 
 - **Passages for Scent, Thermal, and Connections.** Those three senses have no
   animal in the authored set. Their absence is a choice, not a gap.
+- **A passage for Magnetic Field Perception.** This one is an opening rather
+  than a choice: the cue lost the bird that announced it and is waiting for a
+  crossing that carries a direction rather than points in one.
 - **Ground clearance under a moving frame.** The bat's route is lifted against
   the live ground each frame, which is correct, but the exit curve is built
   once from the route's end pose. Over strongly sloping ground the departure
