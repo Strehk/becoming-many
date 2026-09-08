@@ -2,11 +2,14 @@
  * Purpose: Style the conductor page for a lit room, a glance from a metre
  *   away, and a finger instead of a pointer.
  * Context: The page runs on the station's touch monitor while the show plays.
- * Responsibility: Define the masthead, transport, timeline, session bar,
+ * Responsibility: Define the masthead, session bar, transport, timeline,
  *   technician drawer, and the wake overlay, with every target thumb-sized.
  * Boundary: The immersive world and the development overlay are styled
- *   elsewhere.
+ *   elsewhere; the typeface is declared in src/fonts.css, which every
+ *   operator page shares.
  */
+
+@import "../fonts.css";
 
 /* The page owns the station's one window: no default margin, no scrollbar. */
 body {
@@ -28,22 +31,29 @@ body {
   flex-direction: column;
   gap: 20px;
   box-sizing: border-box;
-  /* Exactly the window, never taller: the session bar's `margin-top: auto`
-   * then rests it on the bottom edge whenever the content fits. */
+  /* Exactly the window, never taller: the panels stack from the masthead
+   * down and the slack, if any, stays below the last of them. */
   height: 100dvh;
   overflow: hidden;
   padding: 28px;
   background: var(--ground);
   color: var(--ink);
-  font-family:
-    ui-monospace, "SFMono-Regular", Menlo, Monaco, Consolas, monospace;
+  font-family: "Rubik", ui-sans-serif, system-ui, "Segoe UI", sans-serif;
+  /* The clock redraws every frame; proportional digits would make it dance. */
   font-variant-numeric: tabular-nums;
   touch-action: manipulation;
 }
 
 /* Buttons ---------------------------------------------------------------- */
 
-.conductor button {
+/*
+ * The shared look every button starts from. `:where` keeps it at the
+ * specificity of `.conductor` alone, so a panel's own `.conductor__x-button`
+ * rule outranks it by class order rather than losing to the descendant
+ * selector — which is what silently held the transport button dark and every
+ * button's type at 15px however large the panel asked for.
+ */
+.conductor :where(button) {
   display: flex;
   gap: 8px;
   align-items: center;
@@ -263,6 +273,7 @@ body {
   gap: 4px;
   width: 96px;
   height: 96px;
+  font-size: 18px;
   font-weight: 700;
   border-radius: 16px;
 }
@@ -272,7 +283,7 @@ body {
   width: 280px;
   height: 132px;
   color: var(--ground);
-  font-size: 28px;
+  font-size: 32px;
   font-weight: 700;
   background: var(--live);
   border: 0;
@@ -368,25 +379,27 @@ body {
   flex: 1;
   flex-direction: column;
   gap: 3px;
-  height: 76px;
-  font-size: 17px;
+  height: 84px;
+  font-size: 19px;
   font-weight: 700;
   border-radius: 12px;
 }
 
 .conductor__chapter-time {
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 400;
   opacity: 0.7;
 }
 
 /* Session bar ------------------------------------------------------------ */
 
+/* Directly under the masthead: arming the next visitor is the job done most
+ * often, so it sits where a hand reaches first — and every target in it is
+ * sized for a thumb on the station's touch monitor rather than a pointer. */
 .conductor__session-bar {
   display: flex;
   gap: 20px;
   align-items: center;
-  margin-top: auto;
 }
 
 .conductor__language {
@@ -403,16 +416,16 @@ body {
 }
 
 .conductor__language-label {
-  padding: 0 12px;
+  padding: 0 14px;
   color: var(--muted);
-  font-size: 14px;
+  font-size: 18px;
 }
 
 .conductor__language button {
   flex: 1;
-  height: 60px;
+  height: 84px;
   color: var(--muted);
-  font-size: 20px;
+  font-size: 26px;
   font-weight: 700;
   background: transparent;
   border: 0;
@@ -426,8 +439,13 @@ body {
 .conductor__restart-button,
 .conductor__stream-button {
   flex: 1;
-  height: 76px;
-  font-size: 18px;
+  height: 100px;
+  /* Two of these hold a whole sentence in German; let a long one wrap
+   * rather than run past its own edge. */
+  padding: 10px 20px;
+  font-size: 26px;
+  line-height: 1.15;
+  text-align: center;
   font-weight: 700;
   border-radius: 14px;
 }
@@ -439,8 +457,8 @@ body {
 }
 
 .conductor__tech-button {
-  width: 100px;
-  height: 76px;
+  width: 124px;
+  height: 100px;
   color: var(--muted);
   background: transparent;
   border-color: var(--edge);
@@ -522,6 +540,18 @@ body {
   font-weight: 700;
 }
 
+/* The page's own language, laid out like the speeds above it. */
+.conductor__page-languages {
+  display: flex;
+  gap: 8px;
+}
+
+.conductor__page-languages button {
+  flex: 1;
+  height: 56px;
+  font-weight: 700;
+}
+
 .conductor__resets {
   display: grid;
   gap: 8px;
@@ -535,6 +565,27 @@ body {
   color: var(--alarm);
   font-weight: 700;
   border-color: var(--alarm);
+}
+
+/* A link out of the page, dressed as one of the drawer's own buttons and
+ * marked as leaving: the arrow is the only hint a new tab is coming. */
+.conductor__drawer-link {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+  height: 56px;
+  color: var(--ink);
+  font-size: 15px;
+  text-decoration: none;
+  background: var(--ground);
+  border: 1px solid var(--edge-strong);
+  border-radius: 10px;
+}
+
+.conductor__drawer-link::after {
+  content: "↗";
+  color: var(--muted);
 }
 
 .conductor__readouts {
@@ -684,56 +735,74 @@ body {
   z-index: 3;
   display: flex;
   flex-direction: column;
-  gap: 36px;
+  gap: 28px;
   align-items: center;
   justify-content: center;
+  box-sizing: border-box;
+  padding: 48px;
   background: var(--ground);
   text-align: center;
 }
 
-.conductor__wake-station {
-  color: var(--muted);
-  font-size: 80px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-}
-
-.conductor__wake-title {
-  margin-top: -26px;
-  font-size: 80px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-}
-
-.conductor__wake-icon {
+/* The masthead's order at the size of a room: which station this is, is what
+ * a person crossing the room to a dark screen actually needs. */
+.conductor__wake-identity {
   display: grid;
-  place-items: center;
-  width: 160px;
-  height: 160px;
-  color: var(--live);
-  background: var(--panel);
-  border: 1px solid var(--edge-strong);
-  border-radius: 50%;
-  animation: conductor-wake-pulse 2.4s ease-in-out infinite;
+  gap: 6px;
+  justify-items: center;
+}
+
+.conductor__wake-piece {
+  color: var(--muted);
+  font-size: 40px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.conductor__wake-station {
+  font-size: clamp(56px, 9vw, 116px);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* Nothing is deployed under the name, so the piece carries the screen. */
+.conductor__wake-identity[data-named="false"] .conductor__wake-piece {
+  color: var(--ink);
+  font-size: clamp(48px, 7vw, 92px);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.conductor__wake-rule {
+  width: min(520px, 60vw);
+  height: 1px;
+  background: var(--edge-strong);
 }
 
 .conductor__wake-headline {
-  font-size: 52px;
+  font-size: 44px;
   font-weight: 700;
 }
 
 .conductor__wake-hint {
+  max-width: 26em;
   color: var(--muted);
   font-size: 22px;
+  line-height: 1.4;
 }
 
+/* The one moving thing on the screen, so a dark station still reads as awake
+ * enough to be tapped. */
 .conductor__wake-pill {
-  padding: 14px 28px;
+  padding: 20px 44px;
   color: var(--ground);
-  font-size: 20px;
+  font-size: 26px;
   font-weight: 700;
   background: var(--live);
   border-radius: 999px;
+  animation: conductor-wake-pulse 2.4s ease-in-out infinite;
 }
 
 /* `display: flex` above outranks the UA's [hidden] rule; restore it. */

@@ -22,8 +22,12 @@ read it too.
 
 Everything committed to this repository is written in English: code,
 identifiers, file names, comments, commit messages, documentation, and log
-output. German is limited to experience content such as `script/de.md`,
-narration assets, and audience-facing copy.
+output. German is limited to the words a person at the venue reads or hears:
+experience content such as `script/de.md` and the narration assets, and the
+station's own operator copy in `src/conductor/conductor-copy.ts`, which
+front-of-house staff read while running the piece. Everything around those
+catalogues — their identifiers, comments, and the code that picks between
+them — stays English.
 
 ## Working Method
 

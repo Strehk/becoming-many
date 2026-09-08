@@ -9,6 +9,7 @@ import type { NarrationLanguage } from "../dramaturgy/narration-catalog";
 import type { ShowLevelName } from "../dramaturgy/narration-schedule";
 import type { M5OperatorStatus } from "../m5/m5-adapter";
 import type { XrSessionState } from "../world/xr-session";
+import type { ConductorCopy } from "./conductor-copy";
 
 /** One reading of the show this page hosts, taken fresh every frame. */
 export interface ShowSnapshot {
@@ -32,13 +33,23 @@ export interface ShowSnapshot {
 export interface ConductorState {
   readonly snapshot: ShowSnapshot;
 
+  /**
+   * The words the page is currently read in. Panels compare the reference to
+   * know a switch happened; the catalogue itself never changes in place.
+   */
+  readonly copy: ConductorCopy;
+
   /** The snapshot's clock, or the operator's own position while scrubbing. */
   readonly showTimeSeconds: number;
 
   readonly isScrubbing: boolean;
 }
 
-/** One panel of the page. Panels never hold state; they only render it. */
+/**
+ * One panel of the page. Panels never hold show state; they only render it —
+ * the labels they last wrote are the one thing they may remember, so a
+ * language switch costs one comparison a frame instead of a rewrite.
+ */
 export interface ConductorPanel {
   readonly update: (state: ConductorState) => void;
 }

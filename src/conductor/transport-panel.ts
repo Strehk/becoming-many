@@ -13,10 +13,11 @@ import {
   narrationCueAt,
 } from "../dramaturgy/narration-schedule";
 import { nextCueAt } from "../dramaturgy/schedule-layout";
+import type { ConductorCopy, TransportStatus } from "./conductor-copy";
 import { CONDUCTOR_SETTINGS } from "./conductor-settings";
 import type { ConductorPanel } from "./conductor-state";
 import type { ShowActions } from "./show-actions";
-import { cueDisplayName, formatShowTime } from "./time-format";
+import { formatShowTime } from "./time-format";
 
 export interface TransportPanelOptions {
   readonly parent: HTMLElement;
@@ -31,7 +32,6 @@ export function createTransportPanel({
 }: TransportPanelOptions): ConductorPanel {
   const root = document.createElement("section");
   root.className = "conductor__transport";
-  root.setAttribute("aria-label", "Transport");
 
   const clockBlock = document.createElement("div");
   clockBlock.className = "conductor__clock-block";
@@ -56,13 +56,13 @@ export function createTransportPanel({
 
   const cues = document.createElement("div");
   cues.className = "conductor__cues";
-  const nowLine = createCueLine(cues, "now");
-  const nextLine = createCueLine(cues, "next");
+  const nowLine = createCueLine(cues);
+  const nextLine = createCueLine(cues);
 
   const controls = document.createElement("div");
   controls.className = "conductor__transport-controls";
 
-  createNudgeButton(controls, "back", () =>
+  const backButton = createNudgeButton(controls, "back", () =>
     actions.seekBy(-CONDUCTOR_SETTINGS.touchNudgeSeconds),
   );
 
@@ -75,7 +75,7 @@ export function createTransportPanel({
   transportButton.append(transportIcon, transportLabel);
   controls.append(transportButton);
 
-  createNudgeButton(controls, "forward", () =>
+  const forwardButton = createNudgeButton(controls, "forward", () =>
     actions.seekBy(CONDUCTOR_SETTINGS.touchNudgeSeconds),
   );
 
@@ -89,46 +89,67 @@ export function createTransportPanel({
     else actions.play();
   });
 
-  // The icon is parsed markup, so it only redraws when the answer changes.
+  // The icon is parsed markup, so it only redraws when the answer changes —
+  // and the words beside it change with the language, not only with the show.
   let renderedPlaying: boolean | undefined;
+  let appliedCopy: ConductorCopy | undefined;
 
   return {
     update(state): void {
+      const { copy } = state;
       isShowPlaying = state.snapshot.isPlaying;
 
-      if (renderedPlaying !== isShowPlaying) {
+      const isNewCopy = appliedCopy !== copy;
+      if (isNewCopy) {
+        appliedCopy = copy;
+        root.setAttribute("aria-label", copy.transport.ariaLabel);
+        nowLine.setLabel(copy.transport.now);
+        nextLine.setLabel(copy.transport.next);
+        const nudge = copy.transport.nudge(
+          CONDUCTOR_SETTINGS.touchNudgeSeconds,
+        );
+        backButton.setLabel(nudge);
+        forwardButton.setLabel(nudge);
+      }
+
+      if (isNewCopy || renderedPlaying !== isShowPlaying) {
         renderedPlaying = isShowPlaying;
         transportButton.dataset.playing = String(isShowPlaying);
         transportIcon.innerHTML = isShowPlaying
           ? PAUSE_ICON_SVG
           : PLAY_ICON_SVG;
-        transportLabel.textContent = isShowPlaying ? "Hold" : "Play";
+        transportLabel.textContent = isShowPlaying
+          ? copy.transport.hold
+          : copy.transport.play;
         statusPill.dataset.state = isShowPlaying ? "running" : "held";
       }
 
-      statusPill.textContent = statusText(
-        isShowPlaying,
-        state.showTimeSeconds >= schedule.durationSeconds,
-      );
+      statusPill.textContent =
+        copy.transport.statuses[
+          transportStatus(
+            isShowPlaying,
+            state.showTimeSeconds >= schedule.durationSeconds,
+          )
+        ];
 
-      writeClock(state.showTimeSeconds);
-      writeCues(state.showTimeSeconds);
+      writeClock(state.showTimeSeconds, copy);
+      writeCues(state.showTimeSeconds, copy);
     },
   };
 
-  function writeClock(showTimeSeconds: number): void {
+  function writeClock(showTimeSeconds: number, copy: ConductorCopy): void {
     elapsed.textContent = formatShowTime(showTimeSeconds);
-    remaining.textContent = `${formatShowTime(
-      schedule.durationSeconds - showTimeSeconds,
-    )} left`;
+    remaining.textContent = copy.transport.remaining(
+      formatShowTime(schedule.durationSeconds - showTimeSeconds),
+    );
   }
 
-  function writeCues(showTimeSeconds: number): void {
+  function writeCues(showTimeSeconds: number, copy: ConductorCopy): void {
     // Before the first word the first chapter is already underway: the
     // pre-roll belongs to it as far as an operator is concerned.
     const now =
       narrationCueAt(schedule, showTimeSeconds) ?? schedule.narration[0];
-    nowLine.write(now ? cueDisplayName(now.cueId) : "—", "");
+    nowLine.write(now ? copy.timeline.chapter(now.cueId) : "—", "");
 
     const next = nextCueAt(schedule, showTimeSeconds);
     if (!next) {
@@ -137,29 +158,32 @@ export function createTransportPanel({
     }
 
     nextLine.write(
-      cueDisplayName(next.cueId),
-      `in ${formatShowTime(next.atSeconds - showTimeSeconds)}`,
+      copy.timeline.chapter(next.cueId),
+      copy.transport.until(formatShowTime(next.atSeconds - showTimeSeconds)),
     );
   }
 }
 
 /** The pill in one sentence: playing wins, then a run-out reads as done. */
-function statusText(isPlaying: boolean, isAtEnd: boolean): string {
-  if (isPlaying) return "Running";
+function transportStatus(
+  isPlaying: boolean,
+  isAtEnd: boolean,
+): TransportStatus {
+  if (isPlaying) return "running";
 
-  return isAtEnd ? "Finished" : "On hold";
+  return isAtEnd ? "finished" : "held";
 }
 
 interface CueLine {
+  readonly setLabel: (text: string) => void;
   readonly write: (name: string, detail: string) => void;
 }
 
-function createCueLine(parent: HTMLElement, labelText: string): CueLine {
+function createCueLine(parent: HTMLElement): CueLine {
   const line = document.createElement("div");
 
   const label = document.createElement("span");
   label.className = "conductor__cue-label";
-  label.textContent = `${labelText} `;
 
   const name = document.createElement("output");
   name.className = "conductor__cue-name";
@@ -171,6 +195,9 @@ function createCueLine(parent: HTMLElement, labelText: string): CueLine {
   parent.append(line);
 
   return {
+    setLabel(text): void {
+      label.textContent = `${text} `;
+    },
     write(nextName, nextDetail): void {
       name.textContent = nextName;
       detail.textContent = nextDetail;
@@ -178,11 +205,15 @@ function createCueLine(parent: HTMLElement, labelText: string): CueLine {
   };
 }
 
+interface NudgeButton {
+  readonly setLabel: (text: string) => void;
+}
+
 function createNudgeButton(
   parent: HTMLElement,
   direction: "back" | "forward",
   onClick: () => void,
-): HTMLButtonElement {
+): NudgeButton {
   const button = document.createElement("button");
   button.type = "button";
   button.className = "conductor__nudge-button";
@@ -192,11 +223,15 @@ function createNudgeButton(
   icon.innerHTML = direction === "back" ? BACK_ICON_SVG : FORWARD_ICON_SVG;
 
   const label = document.createElement("span");
-  label.textContent = `${CONDUCTOR_SETTINGS.touchNudgeSeconds} s`;
 
   button.append(icon, label);
   parent.append(button);
-  return button;
+
+  return {
+    setLabel(text): void {
+      label.textContent = text;
+    },
+  };
 }
 
 const PLAY_ICON_SVG = `<svg width="34" height="34" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4.5 L20 12 L7 19.5 Z"></path></svg>`;

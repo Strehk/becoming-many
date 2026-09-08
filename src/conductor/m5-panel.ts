@@ -11,6 +11,7 @@
  */
 
 import type { M5State } from "../m5/protocol";
+import type { ConductorCopy } from "./conductor-copy";
 import type { ConductorPanel } from "./conductor-state";
 import type { ShowActions } from "./show-actions";
 
@@ -35,20 +36,17 @@ export function createM5Panel({
 }: M5PanelOptions): ConductorPanel {
   const root = document.createElement("section");
   root.className = "conductor__m5";
-  root.setAttribute("aria-label", "M5 controller");
 
   const label = document.createElement("label");
   label.className = "conductor__m5-label";
-  label.textContent = "M5 host";
+  const labelText = document.createElement("span");
+  label.append(labelText);
 
   const host = document.createElement("input");
   host.type = "text";
   host.placeholder = "bm-station-a-m5.local";
   host.value = lockedHost ?? loadStoredHost();
   host.readOnly = lockedHost !== undefined;
-  if (lockedHost !== undefined) {
-    host.title = "Set by the station's deployment config";
-  }
   label.append(host);
 
   const preview = createPreview(actions.readM5State);
@@ -61,13 +59,27 @@ export function createM5Panel({
     preview.setHost(nextHost);
   };
 
+  // Words the panel writes whatever shape it takes: the locked panel has a
+  // label and a reason, the editable one two buttons as well.
+  let appliedCopy: ConductorCopy | undefined;
+  function applyCopy(copy: ConductorCopy): boolean {
+    if (appliedCopy === copy) return false;
+
+    appliedCopy = copy;
+    root.setAttribute("aria-label", copy.m5.ariaLabel);
+    labelText.textContent = copy.m5.host;
+    if (lockedHost !== undefined) host.title = copy.m5.lockedTitle;
+    return true;
+  }
+
   if (lockedHost !== undefined) {
     root.append(label, preview.element);
     parent.append(root);
     applyHost(lockedHost);
 
     return {
-      update(): void {
+      update(state): void {
+        applyCopy(state.copy);
         preview.render();
       },
     };
@@ -75,11 +87,9 @@ export function createM5Panel({
 
   const apply = document.createElement("button");
   apply.type = "button";
-  apply.textContent = "Set";
 
   const clear = document.createElement("button");
   clear.type = "button";
-  clear.textContent = "Clear";
 
   root.append(label, apply, clear, preview.element);
   parent.append(root);
@@ -100,7 +110,12 @@ export function createM5Panel({
   else preview.setHost("");
 
   return {
-    update(): void {
+    update(state): void {
+      if (applyCopy(state.copy)) {
+        apply.textContent = state.copy.m5.set;
+        clear.textContent = state.copy.m5.clear;
+      }
+
       preview.render();
     },
   };

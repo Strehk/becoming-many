@@ -10,7 +10,13 @@ provides:
 - flight reset and WebXR entry;
 - M5 host configuration, preview, and status;
 - sound, picture, controller, and headset status summaries;
-- a technician drawer with raw details and destructive controls.
+- a technician drawer with raw details, destructive controls, and the
+  language the page itself is read in.
+
+Its own language is English or German, chosen in the technician drawer and
+remembered in the station browser; it is not the narration language, which the
+operator arms per visitor and which the venue may well want in the other
+tongue.
 
 The page reads the running level once per frame and commands it through one
 typed actions contract. It does not own a second schedule or show clock. During

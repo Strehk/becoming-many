@@ -9,6 +9,26 @@
       "sourcePage": "https://fonts.google.com/specimen/Rubik",
       "sha256": "2fb105e3a66c3540e2308321e7c5bd786ce98a232930cd31c62e20d47747ad20",
       "weight": 700
+    },
+    {
+      "id": "rubik-latin",
+      "file": "/fonts/rubik/rubik-latin.woff2",
+      "sourcePage": "https://fonts.google.com/specimen/Rubik",
+      "sourceUrl": "https://fonts.gstatic.com/s/rubik/v31/iJWKBXyIfDnIV7nBrXyw023e.woff2",
+      "sha256": "99ec7ccb40cf143f977c893649deece6cc2dcc7c0ff82ebf84b6584090f207ea",
+      "weight": "300 900",
+      "subset": "latin",
+      "note": "The web page font, served by src/fonts.css. Google's woff2 carries the weight axis, so one file covers every weight the UI asks for; the .ttf beside it stays because the end-credits canvas loads its own face."
+    },
+    {
+      "id": "rubik-latin-ext",
+      "file": "/fonts/rubik/rubik-latin-ext.woff2",
+      "sourcePage": "https://fonts.google.com/specimen/Rubik",
+      "sourceUrl": "https://fonts.gstatic.com/s/rubik/v31/iJWKBXyIfDnIV7nPrXyw023e1Ik.woff2",
+      "sha256": "b11446f4d0b897435488492cdc6cd612f33748e2b010ac79eff74ea861cf8970",
+      "weight": "300 900",
+      "subset": "latin-ext",
+      "note": "Fetched only when a glyph outside the latin subset is drawn — a station name, most likely, since neither operator language needs it."
     }
   ]
 }

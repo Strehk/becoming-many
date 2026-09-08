@@ -14,6 +14,24 @@ opened at `/conductor.html` — the world runs in-process behind the page, and
 the headset stream starts from this page's own button. The default page at `/`
 stays the bare rehearsal show; development worlds use `/test.html`.
 
+The page is set in **Rubik**, declared in `src/fonts.css` from files under
+`public/fonts/rubik` — a venue network may have no route to a font service,
+and every operator page shares the one declaration. The clock keeps
+`font-variant-numeric: tabular-nums`, which Rubik honours, so digits changing
+every frame do not shift the layout under the operator's eye.
+
+The page is read in **English or German**. `conductor-copy.ts` holds both
+catalogues as typed data — every word the page speaks, including the chapter
+names the schedule's cue ids stand for — and `operator-language.ts` resolves
+which one a station opens in: the technician's stored choice, else the
+browser's own language, else English. The switch is in the drawer because a
+venue fixes it once; the session bar's language switch is the *visitor's*
+narration and is a different decision entirely. Panels are built wordless and
+take their labels from the page's first draw, then rewrite them only when the
+catalogue reference changes, so a switch costs one comparison a frame. A
+reading — "the picture is OK", "the headset is streaming" — names a value,
+never a word; the copy turns it into one.
+
 The surface is **touch-first and plain-worded**, because the station is run by
 front-of-house staff, not technicians: every target is thumb-sized, the
 readings are words like "OK" and "Check" rather than numbers, and everything
@@ -35,11 +53,18 @@ else touches the clock.
 `status-strip.ts` answers "is everything all right" as four plain tiles —
 Sound, Picture, Controller, Headset — plus the one banner a fault that needs
 a person deserves (a stranger's device answering as this station's
-controller). The numbers behind the words live in the drawer's readouts.
+controller). Picture judges the frame rate only while a session presents,
+because the rate is the headset's only then: the preview runs at the station
+monitor's refresh, under the acceptance floor by construction, and a tile
+warning about it all evening would say nothing. The numbers behind the words
+live in the drawer's readouts, measured either way.
 `wake-overlay.ts` owns the suspended-audio state: a context that never
 received a gesture freezes show time while looking exactly like a pause, so
 until the audio runs the page is one full-screen "tap to wake" — the tap
-itself is handled by the show's own gesture listener.
+itself is handled by the show's own gesture listener. The screen is the
+masthead's identity at the size of a room, station name loudest, because the
+one thing a person crossing to a dark screen needs is which station it is; a
+deployment that names no station lets the piece carry the screen instead.
 
 `transport-panel.ts` holds the clock, the status pill, the now/next cue
 readouts, and the hold/play and ten-second-nudge buttons.
@@ -60,7 +85,11 @@ toggle.
 
 `tech-drawer.ts` is where the breaking and misleading controls live:
 rehearsal speeds, rewind-and-hold, the flight reset, the two-tap page reload,
-the M5 host panel, the raw readouts, and the stage view. The drawer slides
+the M5 host panel, a link to the flash page, the raw readouts, the stage
+view, and the page's own language — the one control there that breaks
+nothing, kept out of front-of-house's reach because it is set once per venue
+rather than per visitor. The flash link opens a tab of its own: leaving this
+page would tear down the show it hosts. The drawer slides
 rather than unmounts so the world's canvas inside it keeps its layout size.
 `stage-panel.ts` frames that stage view; while a session streams, Three.js
 renders into the headset and the view holds its last frame under a

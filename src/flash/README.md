@@ -1,7 +1,8 @@
 # Flash
 
 The operator/technician page at `/flash.html` that flashes and configures an
-M5 controller over USB. Flashing installs the committed merged binary from
+M5 controller over USB. The conductor's technician drawer links here, in a new
+tab — the station window hosts the running show and must not navigate away. Flashing installs the committed merged binary from
 `public/firmware/` via esp-web-tools; configuration and diagnostics speak the
 newline-JSON serial commands from `src/m5/protocol.ts` through Web Serial
 (`serial-setup.ts`). The current page persists the last-used credentials in

@@ -2,8 +2,11 @@
  * Purpose: Style the M5 flash and setup page for a technician at a desk.
  * Context: The page is used rarely, with a device in one hand; clarity over polish.
  * Responsibility: Page layout, panels, form, and the device log.
- * Boundary: The conductor and show pages are styled elsewhere.
+ * Boundary: The conductor and show pages are styled elsewhere; the typeface
+ *   is declared in src/fonts.css, which every operator page shares.
  */
+
+@import "../fonts.css";
 
 .flash {
   --ground: #0d1311;
@@ -23,8 +26,7 @@
   margin: 0 auto;
   background: var(--ground);
   color: var(--ink);
-  font-family:
-    ui-monospace, "SFMono-Regular", Menlo, Monaco, Consolas, monospace;
+  font-family: "Rubik", ui-sans-serif, system-ui, "Segoe UI", sans-serif;
 }
 
 body:has(.flash) {

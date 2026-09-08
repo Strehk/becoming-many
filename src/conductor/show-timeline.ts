@@ -11,10 +11,11 @@
 
 import type { NarrationSchedule } from "../dramaturgy/narration-schedule";
 import { cueSlots } from "../dramaturgy/schedule-layout";
+import type { ConductorCopy } from "./conductor-copy";
 import { CONDUCTOR_SETTINGS } from "./conductor-settings";
 import type { ConductorPanel } from "./conductor-state";
 import type { ShowActions } from "./show-actions";
-import { cueDisplayName, formatShowTime } from "./time-format";
+import { formatShowTime } from "./time-format";
 
 const MILLISECONDS_PER_SECOND = 1_000;
 
@@ -42,6 +43,8 @@ interface ChapterView {
   readonly slot: HTMLElement;
   readonly progress: HTMLElement;
   readonly button: HTMLButtonElement;
+  /** The chapter reads in the page's language, on the track and the button. */
+  readonly setName: (name: string) => void;
 }
 
 export function createShowTimeline({
@@ -53,7 +56,6 @@ export function createShowTimeline({
   const { durationSeconds } = schedule;
   const root = document.createElement("section");
   root.className = "conductor__timeline";
-  root.setAttribute("aria-label", "Show timeline");
 
   const track = document.createElement("div");
   track.className = "timeline__track";
@@ -64,6 +66,8 @@ export function createShowTimeline({
   const chapters = readChapters(schedule).map((chapter) =>
     createChapterView(track, buttons, chapter, durationSeconds, actions),
   );
+
+  let appliedCopy: ConductorCopy | undefined;
 
   const playhead = document.createElement("div");
   playhead.className = "timeline__playhead";
@@ -76,6 +80,14 @@ export function createShowTimeline({
   return {
     update(state): void {
       const showTimeSeconds = state.showTimeSeconds;
+
+      if (appliedCopy !== state.copy) {
+        appliedCopy = state.copy;
+        root.setAttribute("aria-label", state.copy.timeline.ariaLabel);
+        for (const view of chapters) {
+          view.setName(state.copy.timeline.chapter(view.chapter.cueId));
+        }
+      }
 
       // The scrub gesture reads this to know whether to resume afterwards.
       track.dataset.playing = String(state.snapshot.isPlaying);
@@ -124,7 +136,6 @@ function createChapterView(
 
   const name = document.createElement("span");
   name.className = "timeline__slot-name";
-  name.textContent = cueDisplayName(chapter.cueId);
 
   const progress = document.createElement("div");
   progress.className = "timeline__progress";
@@ -137,7 +148,6 @@ function createChapterView(
   button.className = "conductor__chapter-button";
 
   const buttonName = document.createElement("span");
-  buttonName.textContent = cueDisplayName(chapter.cueId);
   const buttonTime = document.createElement("span");
   buttonTime.className = "conductor__chapter-time";
   buttonTime.textContent = formatShowTime(chapter.startSeconds);
@@ -146,7 +156,16 @@ function createChapterView(
   button.addEventListener("click", () => actions.seekTo(chapter.startSeconds));
   buttons.append(button);
 
-  return { chapter, slot, progress, button };
+  return {
+    chapter,
+    slot,
+    progress,
+    button,
+    setName(nextName): void {
+      name.textContent = nextName;
+      buttonName.textContent = nextName;
+    },
+  };
 }
 
 interface ScrubbingOptions {
