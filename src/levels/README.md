@@ -100,12 +100,11 @@ derivatives. UI releases only its own presentation resources. The existing
 and the opening of the full Show. Existing route/catalog registration is retained.
 The approved sequence is right, left, up, down, without a deadline. Consecutive
 world poses detect passage through each ring with the existing desktop or M5/XR
-locomotion. A missed ring remains active and the heading-based arrow guides the
-visitor back. Device-specific neutral/held gestures and the opaque guide are removed.
+locomotion. A missed ring and its world-anchored arrow remain active. Device-specific neutral/held gestures and the opaque guide are removed.
 
 Start's learning module owns goal progression and one crossing observation.
 Its optional particle effect owns 1,400 fixed particles in one draw: a drifting
-cloud gathers into a world-fixed ring and a compact assistance arrow, then
+cloud gathers into a ring and compact arrow sharing one world-fixed goal pose, then
 disperses with a bounded trajectory wake. Background Air Particles stays independent
 at 80 particles per chunk. Composition can omit the effect without changing
 learning or creating presentation resources.

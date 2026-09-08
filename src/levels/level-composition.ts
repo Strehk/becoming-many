@@ -715,7 +715,6 @@ export function composeTraining(
   const start = createStartModule({
     viewpoint: world.viewpoint,
     viewerRig: world.viewerRig,
-    viewPitchDegrees: VIEW_PITCH_ASSIST_DEGREES,
     parameters: preset.start,
     particles: preset.start.particles
       ? createStartParticleEffect({

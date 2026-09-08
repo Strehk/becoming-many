@@ -33,8 +33,6 @@ function createFrame(): StartParticleFrame {
     elapsedSeconds: 0,
     goalPosition: new Vector3(2, 3, -8),
     goalNormal: new Vector3(0, 0, 1),
-    arrowPosition: new Vector3(2, 5, -8),
-    arrowNormal: new Vector3(0, 0, 1),
     ringRadiusMeters: 1.5,
     arrowAngleRadians: 0,
     formationProgress: 0,
@@ -105,7 +103,7 @@ test("one fixed cloud forms both targets without reallocating or uploading frame
   effect.unload();
 });
 
-test("copies independent poses and one wake without retaining borrowed frame vectors", () => {
+test("copies the shared world pose and one wake without retaining borrowed frame vectors", () => {
   const scene = new Scene();
   const effect = createStartParticleEffect({ scene, parameters: PARAMETERS });
   effect.load();
@@ -135,41 +133,8 @@ test("copies independent poses and one wake without retaining borrowed frame vec
   expect(shader.uniforms.startGoalPose?.value).toEqual(
     new Matrix4().makeTranslation(2, 3, -8),
   );
-  expect(shader.uniforms.startArrowPose?.value).toEqual(
-    new Matrix4().makeTranslation(2, 5, -8),
-  );
   effect.update(createFrame());
   expect(shader.uniforms.startWakeStrength?.value).toBe(0);
-  effect.unload();
-});
-
-test("the assistance arrow preserves heading right and up after turning around", () => {
-  const scene = new Scene();
-  const effect = createStartParticleEffect({ scene, parameters: PARAMETERS });
-  effect.load();
-  effect.setVisible(true);
-  const shader = compileMaterial(readPoints(scene).material);
-  const pitchRadians = Math.PI / 6;
-  for (const headingRadians of [0, Math.PI / 2, Math.PI, -Math.PI / 2]) {
-    const arrowNormal = new Vector3(
-      Math.sin(headingRadians) * Math.cos(pitchRadians),
-      Math.sin(pitchRadians),
-      Math.cos(headingRadians) * Math.cos(pitchRadians),
-    );
-    effect.update({ ...createFrame(), arrowNormal });
-    const pose = shader.uniforms.startArrowPose?.value;
-    if (!(pose instanceof Matrix4)) throw new Error("Arrow pose is missing");
-    const right = new Vector3().setFromMatrixColumn(pose, 0);
-    const up = new Vector3().setFromMatrixColumn(pose, 1);
-    const expectedRight = new Vector3(
-      Math.cos(headingRadians),
-      0,
-      -Math.sin(headingRadians),
-    );
-    expect(right.dot(expectedRight)).toBeCloseTo(1);
-    expect(up.y).toBeGreaterThan(0);
-    expect(up.dot(arrowNormal)).toBeCloseTo(0);
-  }
   effect.unload();
 });
 

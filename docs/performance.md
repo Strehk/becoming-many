@@ -235,6 +235,26 @@ Early preload is retained, but complete media readiness and audible onset are
 not established by this measurement. Production tutorial audio remains absent;
 combined approved voice/sample/render cost and Windows-PCVR acceptance are open.
 
+### World-anchored tutorial particles
+
+The user clarified that particles must never follow player translation or rotation.
+Start now uses one goal pose for its cloud, ring and arrow; the former per-frame
+heading-guide calculation and second pose uniform are removed. Background Air
+already uses stable world-keyed chunks. A browser probe observes the actual WebGL
+uniform: the goal matrix remains unchanged through arrival, formation, forward
+flight and turning, with no separate arrow pose. The focused 24-test set, build
+and lint pass. The complete four-goal root course and handoff pass without errors.
+
+The same full-viewport diagnostic used above records 3,047 course frames, JS
+median/p95/p99/max 0.3/0.4/0.4/6.2 ms, GPU 0.190/0.249/0.319/1.340 ms and animation
+interval 16.7/17.7/17.7/17.8 ms. Two draws remain until the main-world handoff.
+The previous full-viewport sample remains the comparator: JS p95 0.4 ms and GPU
+p95 0.292 ms, with different maxima. No general speedup or headset acceptance is
+claimed. Served-asset digest:
+`8ccece2f29f6a0a770c972e3aab157f995e6de1212db8f25a154defd0cee079e`.
+Scratch report: `benchmark-results/issue-50/world-anchored-course/probe.json`,
+SHA-256 `3e12223de3562f26083e50134425a0941d25675a332d53e4fb49bd8aa12f357c`.
+
 ## Dated Evidence
 
 - The [2026-09-08 browser audit](performance-audit-2026-09-08.md) records a frozen

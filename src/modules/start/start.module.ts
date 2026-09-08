@@ -1,7 +1,6 @@
 import { type Group, Quaternion, Vector3 } from "three";
 import type { WorldModule } from "../../world/module-runtime";
 import type { Viewpoint } from "../../world/viewer-rig";
-import { createHeadingPanelPose } from "../heading-panel-pose";
 import { crossesFlightRing } from "./flight-goals";
 import type {
   StartParticleEffect,
@@ -20,7 +19,6 @@ export interface StartParameters {
   readonly arrivalSeconds: number;
   readonly formationSeconds: number;
   readonly dissolutionSeconds: number;
-  readonly guideDistanceMeters: number;
   /** Omission creates no particle resources or presentation work. */
   readonly particles?: StartParticleParameters;
 }
@@ -64,7 +62,6 @@ export interface StartModuleHandle {
 interface StartModuleOptions {
   readonly viewpoint: Viewpoint;
   readonly viewerRig: Group;
-  readonly viewPitchDegrees: number;
   readonly parameters: StartParameters;
   /** Composition selects presentation; this module owns its complete lifetime. */
   readonly particles?: StartParticleEffect;
@@ -79,7 +76,6 @@ export function createStartModule(
     parameters.arrivalSeconds,
     parameters.formationSeconds,
     parameters.dissolutionSeconds,
-    parameters.guideDistanceMeters,
   ];
   if (
     positive.some((number) => !Number.isFinite(number) || number <= 0) ||
@@ -102,9 +98,6 @@ export function createStartModule(
   const targetPosition = new Vector3();
   const goalPosition = new Vector3();
   const goalNormal = new Vector3();
-  const arrowNormal = new Vector3();
-  const relativeGoal = new Vector3();
-  const inverseHeading = new Quaternion();
   const wakePosition = new Vector3();
   const wakeDirection = new Vector3();
   const wake = {
@@ -122,16 +115,10 @@ export function createStartModule(
     crossingCount: 0,
     wake: undefined as StartObservation["wake"],
   };
-  const guidePose = createHeadingPanelPose({
-    distanceMeters: parameters.guideDistanceMeters,
-    viewPitchDegrees: options.viewPitchDegrees,
-  });
   const particleFrame = {
     elapsedSeconds: 0,
     goalPosition,
     goalNormal,
-    arrowPosition: guidePose.position,
-    arrowNormal,
     ringRadiusMeters: parameters.goals[0].radiusMeters,
     arrowAngleRadians: 0,
     formationProgress: 0,
@@ -201,6 +188,14 @@ export function createStartModule(
       .applyQuaternion(initialHeading)
       .add(origin);
     observation.direction = goal.direction;
+    particleFrame.arrowAngleRadians =
+      goal.direction === "right"
+        ? 0
+        : goal.direction === "left"
+          ? Math.PI
+          : goal.direction === "up"
+            ? Math.PI / 2
+            : -Math.PI / 2;
     particleFrame.ringRadiusMeters = goal.radiusMeters;
   }
 
@@ -292,24 +287,6 @@ export function createStartModule(
     }
     previousPosition.copy(viewpoint.worldPosition);
     if (!particles) return;
-    guidePose.place(viewpoint.worldPosition, viewerRig.quaternion);
-    arrowNormal.copy(guidePose.lookTarget).sub(guidePose.position).normalize();
-    inverseHeading.copy(viewerRig.quaternion).invert();
-    relativeGoal
-      .copy(targetPosition)
-      .sub(viewpoint.worldPosition)
-      .applyQuaternion(inverseHeading);
-    const pitch = (options.viewPitchDegrees * Math.PI) / 180;
-    const projectedY =
-      relativeGoal.y * Math.cos(pitch) + relativeGoal.z * Math.sin(pitch);
-    // A missed goal behind the flight heading needs a turn-around cue, not a
-    // misleading vertical projection. The goal stays fixed until crossed.
-    particleFrame.arrowAngleRadians =
-      relativeGoal.z > 0
-        ? relativeGoal.x >= 0
-          ? 0
-          : Math.PI
-        : Math.atan2(projectedY, relativeGoal.x);
     particleFrame.formationProgress = observation.formationProgress;
     particleFrame.completionProgress = observation.phase === "crossed" ? 1 : 0;
     particleFrame.wake = observation.wake;

@@ -42,8 +42,6 @@ export interface StartParticleFrame {
   readonly goalPosition: Readonly<Vector3>;
   /** Unit-length goal-plane normal. */
   readonly goalNormal: Readonly<Vector3>;
-  readonly arrowPosition: Readonly<Vector3>;
-  readonly arrowNormal: Readonly<Vector3>;
   readonly ringRadiusMeters: number;
   /** Counterclockwise in the arrow plane; zero points right. */
   readonly arrowAngleRadians: number;
@@ -66,8 +64,6 @@ const MINIMUM_PARTICLE_COUNT = 32;
 const MAXIMUM_PARTICLE_COUNT = 16_384;
 const RANDOM_RANGE = 0x1_0000_0000;
 const LOCAL_NORMAL = new Vector3(0, 0, 1);
-const LOCAL_ORIGIN = new Vector3();
-const WORLD_UP = new Vector3(0, 1, 0);
 const UNIT_SCALE = new Vector3(1, 1, 1);
 const ARROW_OUTLINE = [
   [-0.55, -0.1],
@@ -92,7 +88,6 @@ export function createStartParticleEffect({
   const uniforms = {
     startTime: { value: 0 },
     startGoalPose: { value: new Matrix4() },
-    startArrowPose: { value: new Matrix4() },
     startRadius: { value: 1 },
     startArrowAngle: { value: 0 },
     startFormation: { value: 0 },
@@ -156,8 +151,8 @@ export function createStartParticleEffect({
       points = new Points(geometry, material);
       points.name = "StartTrainingParticles";
       points.visible = false;
-      // The ring and heading arrow move independently in the shader. This small,
-      // fixed draw avoids invalid CPU bounds without rebuilding buffers per eye.
+      // Shader-authored world positions share one goal anchor. Keep this fixed
+      // draw visible without rebuilding CPU bounds for formation and wake.
       points.frustumCulled = false;
       scene.add(points);
     } catch (error) {
@@ -177,11 +172,6 @@ export function createStartParticleEffect({
       goalRotation,
       UNIT_SCALE,
     );
-    // The heading guide has no roll. Preserving world-up keeps its directional
-    // angle readable after turning around, including the opposite hemisphere.
-    uniforms.startArrowPose.value
-      .lookAt(frame.arrowNormal, LOCAL_ORIGIN, WORLD_UP)
-      .setPosition(frame.arrowPosition);
     uniforms.startTime.value = frame.elapsedSeconds;
     uniforms.startRadius.value = frame.ringRadiusMeters;
     uniforms.startArrowAngle.value = frame.arrowAngleRadians;

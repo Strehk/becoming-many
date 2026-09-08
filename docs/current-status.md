@@ -151,7 +151,10 @@ The #80 animal-connection removal is implemented below. Small additions remain i
   optional 1,400-point draw drifts, gathers into ring/arrow contours and disperses
   with a local trajectory wake; independent Air Particles uses 80 particles per
   chunk. Horizontal targets share the arrival height, later targets are 60 m
-  apart, and a missed target behind the heading receives a turn-around cue.
+  apart. Following the user's world-space correction, cloud, ring and arrow
+  share a fixed goal anchor. The arrow stays beside its ring; player translation
+  and rotation never reposition or reorient these particles. Autonomous drift,
+  formation and wake remain. The former heading-following guide is removed.
   The held-M5-gesture rules and opaque arrow are removed.
 - Show owns training transport/current instruction and waits for every passage
   and the final configured recording before exposing operator handoff. Pause

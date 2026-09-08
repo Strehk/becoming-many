@@ -2,7 +2,6 @@
  * facts animate the same visible particles without CPU simulation or uploads. */
 uniform float startTime;
 uniform mat4 startGoalPose;
-uniform mat4 startArrowPose;
 uniform float startRadius;
 uniform float startArrowAngle;
 uniform float startFormation;
@@ -22,9 +21,10 @@ attribute float startPhase;
 varying float startBrightnessPhase;
 varying float startShapePresence;
 
-// The near-field assistance arrow stays compact as authored ring apertures grow.
+// The world-space arrow sits outside the aperture and points into the ring.
 const float START_ARROW_WIDTH_METERS = 0.9;
 const float START_ARROW_SOURCE_WIDTH = 1.1;
+const float START_ARROW_GAP_METERS = 0.5;
 
 vec3 animateStartParticle(vec3 cloudPosition) {
   float time = startTime * startDriftSpeed;
@@ -39,14 +39,13 @@ vec3 animateStartParticle(vec3 cloudPosition) {
     : startRadius;
   vec3 target = startTarget * shapeScale;
   if (startArrowParticle > 0.5) {
+    target.x -= startRadius + START_ARROW_GAP_METERS + START_ARROW_WIDTH_METERS / 2.0;
     float cosine = cos(startArrowAngle);
     float sine = sin(startArrowAngle);
     target.xy = mat2(cosine, sine, -sine, cosine) * target.xy;
   }
   vec3 localPosition = mix(cloudPosition + drift, target + drift * 0.025, formation);
-  vec3 worldPosition = startArrowParticle > 0.5
-    ? (startArrowPose * vec4(localPosition, 1.0)).xyz
-    : (startGoalPose * vec4(localPosition, 1.0)).xyz;
+  vec3 worldPosition = (startGoalPose * vec4(localPosition, 1.0)).xyz;
 
   // One crossing has finite support and smoothly returns to unperturbed drift.
   // The initial displacement is zero, so starting a wake never snaps particles.

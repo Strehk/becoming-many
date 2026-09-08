@@ -10,7 +10,6 @@ export const level: LevelPreset = {
     arrivalSeconds: 2.5,
     formationSeconds: 2,
     dissolutionSeconds: 3,
-    guideDistanceMeters: 4,
     goals: [
       { direction: "right", offsetMeters: [12, 0, -32], radiusMeters: 3.5 },
       { direction: "left", offsetMeters: [-12, 0, -92], radiusMeters: 3.5 },

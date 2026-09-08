@@ -11,7 +11,6 @@ const PARAMETERS: StartParameters = {
   arrivalSeconds: 0.2,
   formationSeconds: 0.3,
   dissolutionSeconds: 0.4,
-  guideDistanceMeters: 3,
   goals: [
     { direction: "right", offsetMeters: [2, 0, -5], radiusMeters: 1 },
     { direction: "left", offsetMeters: [-2, 0, -10], radiusMeters: 1 },
@@ -25,7 +24,6 @@ function createPractice() {
   const start = createStartModule({
     viewpoint: { worldPosition, viewDistanceMeters: 100 },
     viewerRig: new Group(),
-    viewPitchDegrees: 0,
     parameters: PARAMETERS,
   });
   const runtime = new ModuleRuntime();
@@ -172,7 +170,6 @@ test("the selected presentation ends after a partial load and receives no inacti
   const start = createStartModule({
     viewpoint: { worldPosition, viewDistanceMeters: 100 },
     viewerRig: new Group(),
-    viewPitchDegrees: 0,
     parameters: PARAMETERS,
     particles: { load, update, setVisible, unload },
   });
@@ -219,32 +216,54 @@ test("Show can finish speech after a crossing without completing any unflown goa
   runtime.unload(start.module);
 });
 
-test("a missed goal behind the heading shows a horizontal turn-around cue", () => {
-  const worldPosition = new Vector3();
-  let arrowAngle = 0;
+test("cloud and formed targets keep their world anchor through player translation and rotation", () => {
+  const worldPosition = new Vector3(5, 4, 3);
+  const viewerRig = new Group();
+  viewerRig.rotation.y = Math.PI / 3;
+  let rendered: StartParticleFrame | undefined;
   const start = createStartModule({
     viewpoint: { worldPosition, viewDistanceMeters: 100 },
-    viewerRig: new Group(),
-    viewPitchDegrees: 30,
+    viewerRig,
     parameters: PARAMETERS,
     particles: {
       load() {},
       unload() {},
       setVisible() {},
       update(frame) {
-        arrowAngle = frame.arrowAngleRadians;
+        rendered = {
+          ...frame,
+          goalPosition: frame.goalPosition.clone(),
+          goalNormal: frame.goalNormal.clone(),
+        };
       },
     },
   });
   start.module.load();
   start.module.activate();
   start.module.update?.(0);
-  worldPosition.set(10, 0, -10);
-  start.module.update?.(0.1);
-  expect(arrowAngle).toBe(Math.PI);
-  worldPosition.x = -10;
-  start.module.update?.(0.1);
-  expect(arrowAngle).toBe(0);
+  const anchor = rendered?.goalPosition.clone();
+  const normal = rendered?.goalNormal.clone();
+  const angle = rendered?.arrowAngleRadians;
+  for (const seconds of [
+    0,
+    PARAMETERS.arrivalSeconds,
+    PARAMETERS.formationSeconds,
+  ]) {
+    start.module.update?.(seconds);
+    const phase = start.readObservation().phase;
+    for (const heading of [0, Math.PI / 2, Math.PI, -Math.PI / 2]) {
+      start.setPlaying(false);
+      worldPosition.set(100 + heading, 20, -100);
+      viewerRig.rotation.set(0.2, heading, -0.3);
+      start.module.update?.(0);
+      expect(rendered?.goalPosition).toEqual(anchor);
+      expect(rendered?.goalNormal).toEqual(normal);
+      expect(rendered?.arrowAngleRadians).toBe(angle);
+      expect(start.readObservation().phase).toBe(phase);
+      start.setPlaying(true);
+    }
+  }
+  expect(start.readObservation().phase).toBe("flying");
   expect(start.readObservation().crossingCount).toBe(0);
   start.module.unload();
 });

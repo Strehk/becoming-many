@@ -14,6 +14,18 @@ becomes ready, and retains preloaded main narration across the tutorial handoff.
 [Performance](../../performance.md#flight-tutorial--2026-09-08) owns measurements
 and their limits; [current status](../../current-status.md) owns current readiness.
 
+## World-space correction
+
+The user subsequently clarified that all particles must stay anchored in the
+world rather than follow the player. The original near-field guide shown below
+is superseded: all training particles now share the ring's world pose, and the
+arrow forms beside that ring. Player translation or rotation cannot move either
+particle cloud. Time-driven drift, formation and the local crossing wake remain.
+Background Air already uses stable world-space chunk positions. The correction
+passes 24 focused tests, build/lint, actual WebGL pose observations during flight
+and turning, and a full four-goal browser course with handoff. Its measurements
+are recorded in [Performance](../../performance.md#world-anchored-tutorial-particles).
+
 ## Browser evidence
 
 ![Formed right-hand ring and near-field direction arrow](formed-goal.png)
