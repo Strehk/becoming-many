@@ -282,10 +282,6 @@ export async function startLevel(
           tutorialPreset.desktopFieldOfViewDegrees ?? mainFieldOfViewDegrees;
         runningWorld.camera.far = tutorialPreset.viewDistance;
         runningWorld.camera.updateProjectionMatrix();
-        if (!tutorialPreset.startAudio || !audio) {
-          show.setPreparationState("ready");
-          return;
-        }
         const preparation = new AbortController();
         trainingPreparation = preparation;
         const pendingStart = start;
@@ -294,23 +290,28 @@ export async function startLevel(
           !preparation.signal.aborted &&
           trainingPreparation === preparation &&
           start === pendingStart;
-        trainingLoading = createTrainingAudio(
-          tutorialPreset.startAudio,
-          audio,
-          AbortSignal.any([signal, preparation.signal]),
-        ).then(
-          (created) => {
+        trainingLoading = (async () => {
+          try {
+            await runningWorld.prepareRenderer();
+            if (!isCurrentPreparation()) return;
+            const created =
+              tutorialPreset.startAudio && audio
+                ? await createTrainingAudio(
+                    tutorialPreset.startAudio,
+                    audio,
+                    AbortSignal.any([signal, preparation.signal]),
+                  )
+                : undefined;
             if (!isCurrentPreparation()) {
-              created.unload();
+              created?.unload();
               return;
             }
             trainingAudio = created;
             show?.setPreparationState("ready");
-          },
-          (error: unknown) => {
+          } catch (error) {
             if (isCurrentPreparation()) throw failTraining(error);
-          },
-        );
+          }
+        })();
         void trainingLoading.catch(() => undefined);
       } catch (error) {
         failTraining(error);

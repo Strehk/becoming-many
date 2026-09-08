@@ -218,6 +218,9 @@ export function createWorld(
     renderer.setAnimationLoop((time) => {
       if (lifetime.signal.aborted) return;
       timer.update(time);
+      // Recreated content must finish first-use work before the visible frame.
+      // Keep sampling the timer so preparation time never becomes a flight step.
+      if (preparation) return;
       const deltaSeconds = frameControl
         ? frameControl.fixedDeltaSeconds
         : timer.getDelta();
@@ -257,6 +260,7 @@ export function createWorld(
       const previousTarget = renderer.getRenderTarget();
       const previousCubeFace = renderer.getActiveCubeFace();
       const previousMipmapLevel = renderer.getActiveMipmapLevel();
+      const previousXrEnabled = renderer.xr.enabled;
       const target = new WebGLRenderTarget(1, 1);
       target.texture.colorSpace = renderer.outputColorSpace;
       const visibility: [Object3D, boolean, boolean][] = [];
@@ -268,6 +272,7 @@ export function createWorld(
           object.visible = true;
           object.frustumCulled = false;
         });
+        renderer.xr.enabled = false;
         renderer.setRenderTarget(target);
         renderer.render(scene, camera);
       } finally {
@@ -280,9 +285,12 @@ export function createWorld(
           previousCubeFace,
           previousMipmapLevel,
         );
+        renderer.xr.enabled = previousXrEnabled;
         target.dispose();
       }
-    })();
+    })().finally(() => {
+      preparation = undefined;
+    });
     return preparation;
   }
 

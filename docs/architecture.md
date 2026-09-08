@@ -72,9 +72,11 @@ content. It prepares the main world once and keeps those modules inactive until
 the approved tutorial handoff. Run then unloads training, removes its module
 registrations/references, resets the flight rig and activates the prepared main
 modules. Its interim Stop operation can recreate retired training content without
-rebuilding the main world; playback remains held until any configured training
-sample is ready. A preparation failure remains visible and can be retried. This
-is not the unresolved complete visitor replacement.
+rebuilding the main world; playback remains held until training graphics and
+the optional sample are ready. World deduplicates in-flight preparation,
+holds its visible loop while sampling the existing timer, and warms recreated
+resources offscreen before readiness. A preparation failure remains visible and
+can be retried. This is not the unresolved complete visitor replacement.
 
 `Run.unload()` stops the loop and starts input/audio/XR cleanup,
 awaits pending preparation and children, ends modules in reverse order, releases

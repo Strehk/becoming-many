@@ -226,7 +226,8 @@ test("audio owners recover gesture resume and await complete disposal", async ()
     mock.module("./src/sound/narration-player.ts", () => ({
       createNarrationPlayer: options => {
         narrationCount++; narrationOptions.push(options);
-        return { follow: frame => { follows++; narrationFrames.push(frame); }, unload: () => {
+        return { setRecordings: recordings => { narrationOptions.push({ recordings }); },
+          follow: frame => { follows++; narrationFrames.push(frame); }, unload: () => {
           narrationUnloads++;
           if (failNarrationCleanup) throw new Error("media cleanup failed");
         } };
@@ -258,14 +259,14 @@ test("audio owners recover gesture resume and await complete disposal", async ()
     assert.equal(commands.sample().timeSeconds, 17);
     assert.equal(commands.readLanguage(), "de");
     commands.setLanguage("de");
-    assert.equal(narrationUnloads, 1); assert.equal(narrationCount, 2);
+    assert.equal(narrationUnloads, 0); assert.equal(narrationCount, 1);
     showNative.currentTime = 4;
     assert.deepEqual(commands.sample(), { timeSeconds: 19, isPlaying: true, timeScale: 2 });
     commands.pause(); commands.setLanguage("en");
     showNative.currentTime = 5;
     assert.deepEqual(commands.sample(), { timeSeconds: 19, isPlaying: false, timeScale: 2 });
     assert.equal(commands.readLanguage(), "en");
-    assert.equal(narrationUnloads, 2); assert.equal(narrationCount, 3);
+    assert.equal(narrationUnloads, 0); assert.equal(narrationCount, 1);
     commands.play(); commands.resetTime();
     assert.deepEqual(commands.sample(), { timeSeconds: 0, isPlaying: false, timeScale: 2 });
     failNarrationCleanup = true;
@@ -275,7 +276,7 @@ test("audio owners recover gesture resume and await complete disposal", async ()
     assert.equal(organEnded, true);
     assert.equal(showNative.closing, true);
     show.update(); show.running.setLanguage("en");
-    assert.equal(follows, 0); assert.equal(narrationCount, 3);
+    assert.equal(follows, 0); assert.equal(narrationCount, 1);
     releaseOrgan(); showNative.release(); await showFailure;
     const contextCount = contexts.length;
     const invalidStart = createShowRuntime(
@@ -292,13 +293,6 @@ test("audio owners recover gesture resume and await complete disposal", async ()
       modules: { activate() {}, deactivate() {} },
       viewpoint: { worldPosition: { x: 0, y: 0, z: 0 } },
     };
-    const trainingShow = await createShowRuntime(
-      { schedule: PIECE_SCHEDULE, language: "en", states: SHOW_LEVEL_STATES },
-      tutorialWorld, { gates: new Map(), senses: {}, worldFades: {} },
-      { groundYAt: () => 0 }, audio,
-    );
-    const trainingNative = contexts.at(-1);
-    trainingNative.state = "running";
     let playing = false, resetCount = 0, finishes = 0, mayReadTraining = true;
     let observation, advanceAllowed;
     const training = {
@@ -324,7 +318,16 @@ test("audio owners recover gesture resume and await complete disposal", async ()
       recordings: { en: recordings("en"), de: recordings("de") },
       finish: () => { finishes++; mayReadTraining = false; },
     };
-    trainingShow.setTutorial(tutorialDefinition);
+    const trainingShow = await createShowRuntime(
+      { schedule: PIECE_SCHEDULE, language: "en", states: SHOW_LEVEL_STATES },
+      tutorialWorld, { gates: new Map(), senses: {}, worldFades: {} },
+      { groundYAt: () => 0 }, audio, false, tutorialDefinition,
+    );
+    const trainingNative = contexts.at(-1);
+    trainingNative.state = "running";
+    assert.equal(narrationOptions.at(-1).recordings.length, PIECE_SCHEDULE.narration.length + 5);
+    assert.ok(narrationOptions.at(-1).recordings.some(clip => clip.cueId === "prologue"),
+      "main speech must already be prepared before the first tutorial frame");
     const tutorialCommands = trainingShow.running;
     assert.equal(resetCount, 1); assert.equal(playing, false);
     trainingShow.setPreparationState("loading");
@@ -353,7 +356,7 @@ test("audio owners recover gesture resume and await complete disposal", async ()
     assert.equal(narrationFrames.at(-1).position.offsetSeconds, 2);
     tutorialCommands.setLanguage("de"); trainingShow.update();
     assert.equal(narrationFrames.at(-1).position.offsetSeconds, 0);
-    assert.ok(narrationOptions.at(-1).recordings[0].url.includes("/de/"));
+    assert.ok(narrationOptions.at(-1).recordings.every(clip => clip.url.includes("/de/")));
     observation = { phase: "flying", direction: "left", goalIndex: 1, crossingCount: 1 };
     trainingNative.currentTime = 4; trainingShow.update();
     assert.equal(narrationFrames.at(-1).position.cueId, "left");
@@ -377,13 +380,40 @@ test("audio owners recover gesture resume and await complete disposal", async ()
     trainingNative.currentTime = 12; trainingShow.update();
     assert.equal(tutorialCommands.readTutorial().readyToContinue, true);
     assert.equal(finishes, 0, "completion waits for the operator after the final spoken clip");
+    const preparedNarratorCount = narrationCount;
     tutorialCommands.continueToExperience(); tutorialCommands.continueToExperience();
+    assert.equal(narrationCount, preparedNarratorCount, "handoff reuses the prepared owner");
+    assert.equal(narrationOptions.at(-1).recordings.length, PIECE_SCHEDULE.narration.length);
+    assert.ok(narrationOptions.at(-1).recordings.every(clip => !clip.url.includes("/approved/")),
+      "handoff retires only tutorial recordings");
     assert.equal(finishes, 1); assert.equal(tutorialCommands.readTutorial(), undefined);
     tutorialCommands.seekTo(20); tutorialCommands.seekBy(-5); tutorialCommands.setTimeScale(2);
     trainingNative.currentTime = 13; trainingShow.update();
     assert.deepEqual(tutorialCommands.sample(), { timeSeconds: 17, isPlaying: true, timeScale: 2 });
     const trainingShowEnd = trainingShow.unload();
     releaseOrgan(); trainingNative.release(); await trainingShowEnd;
+
+    for (const standalone of [false, true]) {
+      mayReadTraining = true;
+      const silentTutorial = await createShowRuntime(
+        { schedule: PIECE_SCHEDULE, language: "en", states: SHOW_LEVEL_STATES },
+        tutorialWorld, { gates: new Map(), senses: {}, worldFades: {} },
+        { groundYAt: () => 0 }, undefined, standalone,
+        { ...tutorialDefinition, recordings: undefined },
+      );
+      assert.equal(narrationOptions.at(-1).recordings.length,
+        standalone ? 0 : PIECE_SCHEDULE.narration.length,
+        "a silent integrated tutorial preloads main clips; standalone never does");
+      silentTutorial.setTutorial(tutorialDefinition);
+      assert.equal(narrationOptions.at(-1).recordings.length,
+        standalone ? 5 : PIECE_SCHEDULE.narration.length + 5);
+      silentTutorial.running.setLanguage("de");
+      assert.equal(narrationOptions.at(-1).recordings.length,
+        standalone ? 5 : PIECE_SCHEDULE.narration.length + 5);
+      const silentNative = contexts.at(-1);
+      const silentEnd = silentTutorial.unload();
+      silentNative.release(); await silentEnd;
+    }
 
 
   `,

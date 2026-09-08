@@ -77,8 +77,10 @@ language fallback and final samples still need their specific content acceptance
 The production recipe therefore contains no tutorial audio or recordings; standalone
 Start uses only the native Show timebase. Configured instruction playback can finish
 before the next goal is presented, and post-handoff reset remains held until its
-sample is ready, with visible failure/retry. Earlier full and subsequent focused
-tests passed; final lint/build/browser checks remain in progress. Fallow has no
+graphics and optional sample are ready, with visible failure/retry. The combined
+implementation passes its local tests, lint, build and browser checks; the
+[review and screenshot packet](evidence/issue-50/README.md) records the subsequent
+preparation correction and extended measurement. Fallow has no
 dead-code/boundary violations but retains complexity/style findings. Local
 rendering/audio comparisons are recorded in [Performance](performance.md#flight-tutorial--2026-09-08).
 Visitor

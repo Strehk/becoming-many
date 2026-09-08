@@ -5,13 +5,6 @@
  * Boundary: Show time and cue selection are decided before this is called.
  */
 
-import {
-  type NarrationCueId,
-  type NarrationLanguage,
-  narrationDurationSeconds,
-  narrationUrl,
-} from "../dramaturgy/narration-catalog";
-
 // How far playback may sit from the show before it is pulled back. A re-seek
 // is audible, so raise this before lowering it. Unmeasured on the PICO.
 const SYNC_TOLERANCE_SECONDS = 0.25;
@@ -29,6 +22,8 @@ export interface NarrationFollowState {
 
 export interface NarrationPlayer {
   readonly follow: (state: NarrationFollowState) => void;
+  /** Replace the prepared clip set, retaining unchanged recordings without reloading. */
+  readonly setRecordings: (recordings: readonly NarrationRecording[]) => void;
   readonly unload: () => void;
 }
 
@@ -39,29 +34,15 @@ export interface NarrationRecording {
   readonly durationSeconds: number;
 }
 
-export type NarrationPlayerOptions =
-  | {
-      readonly language: NarrationLanguage;
-      readonly cueIds: readonly NarrationCueId[];
-    }
-  | { readonly recordings: readonly NarrationRecording[] };
-
-/** Own only the requested clips, for main-show or interactive tutorial cues. */
-export function createNarrationPlayer(
-  options: NarrationPlayerOptions,
-): NarrationPlayer {
-  const recordings =
-    "recordings" in options
-      ? options.recordings
-      : options.cueIds.map((cueId) => ({
-          cueId,
-          url: narrationUrl(cueId, options.language),
-          durationSeconds: narrationDurationSeconds(cueId, options.language),
-        }));
+/** Own the prepared clips and play only the cue selected by Show. */
+export function createNarrationPlayer(options: {
+  readonly recordings: readonly NarrationRecording[];
+}): NarrationPlayer {
   const clips = new Map<
     string,
-    { element: HTMLAudioElement; durationSeconds: number }
+    { element: HTMLAudioElement; url: string; durationSeconds: number }
   >();
+  let activeCueId: string | undefined;
   let isUnloaded = false;
   function unload(): void {
     isUnloaded = true;
@@ -79,28 +60,51 @@ export function createNarrationPlayer(
     if (errors.length)
       throw new AggregateError(errors, "Narration cleanup failed");
   }
-  try {
-    for (const recording of recordings) {
-      const element = new Audio(recording.url);
-      element.preload = "auto";
-      clips.set(recording.cueId, {
-        element,
-        durationSeconds: recording.durationSeconds,
-      });
-    }
-  } catch (error) {
+  function setRecordings(recordings: readonly NarrationRecording[]): void {
+    if (isUnloaded) return;
     try {
-      unload();
-    } catch (cleanupError) {
-      throw new AggregateError(
-        [error, cleanupError],
-        "Narration startup failed",
-      );
+      stopActiveCue();
+      for (const [cueId, clip] of clips) {
+        if (
+          recordings.some(
+            (recording) =>
+              recording.cueId === cueId && recording.url === clip.url,
+          )
+        )
+          continue;
+        clip.element.pause();
+        clip.element.removeAttribute("src");
+        clip.element.load();
+        clips.delete(cueId);
+      }
+      for (const recording of recordings) {
+        const existing = clips.get(recording.cueId);
+        if (existing) {
+          existing.durationSeconds = recording.durationSeconds;
+          continue;
+        }
+        const element = new Audio(recording.url);
+        element.preload = "auto";
+        clips.set(recording.cueId, {
+          element,
+          url: recording.url,
+          durationSeconds: recording.durationSeconds,
+        });
+      }
+    } catch (error) {
+      try {
+        unload();
+      } catch (cleanupError) {
+        throw new AggregateError(
+          [error, cleanupError],
+          "Narration preparation failed",
+        );
+      }
+      throw error;
     }
-    throw error;
   }
+  setRecordings(options.recordings);
 
-  let activeCueId: string | undefined;
   let hasReportedBlockedPlayback = false;
 
   function stopActiveCue(): void {
@@ -150,6 +154,7 @@ export function createNarrationPlayer(
       });
     },
 
+    setRecordings,
     unload,
   };
 }

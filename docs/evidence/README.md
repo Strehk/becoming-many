@@ -5,6 +5,7 @@ human decisions live only in the [roadmap](../roadmap.md).
 
 | Packet | Scope |
 | --- | --- |
+| [#50 required flight tutorial](issue-50/README.md) | Spatial course, independent performance review, reset preparation and screenshots; open content/physical acceptance |
 | [2026-09-08 performance audit](../performance-audit-2026-09-08.md) | Frozen-build full show, ten-level CPU/GPU diagnostics, source attribution and [measurement summary](performance-audit-2026-09-08/summary.json) |
 | [UI consolidation](ui-consolidation/README.md) | Declarative surfaces, shared gestures, Entry/World ownership; production/dev browser acceptance and screenshots |
 | [#75](issue-75/README.md) | Original tooling gates, smoke, all-level replay, sought transitions and failed English attempt |

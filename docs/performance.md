@@ -145,8 +145,11 @@ A separate build with only `sparkle` and `glow` set to zero records
 `benchmark-results/tutorial-highlights-disabled/quick.json` (source digest
 `420145956e7f328bfd94d5c24022f359f33f32ca5c293bb93ba130f648c0b353`).
 The final authored values were restored and rebuilt. Enabling these point-local
-accents adds no resources or observed timing penalty; both variants retain
-the same spatial learning. The benchmark replaces controls/time and contains no production
+accents adds no resources; both variants retain the same spatial learning.
+Zero values leave the shader calculations in place, so this is not an isolation
+of marginal GPU cost. The quick timings are animation-loop timestamp intervals
+with VSync disabled, not CPU/GPU durations. All 210 measured frames remain in
+the first goal's flying phase; passage, wake, dissolution and handoff were absent. The benchmark replaces controls/time and contains no production
 tutorial audio. Its exact numerical reference remains unchanged. The fixed
 1,400-particle draw replaces the opaque guide while separate Air Particles uses
 80 particles per chunk; neither particles nor the wake allocate frame buffers.
@@ -184,6 +187,53 @@ retained here. JavaScript timing excludes audio-worklet CPU, a simultaneous
 renderer and the headset. The current literal Start recipe omits audio pending
 DE-use permission, EN fallback and sample selection. Windows-PCVR USB-C 90 Hz,
 listening/comprehension and the existing #73/#75/#78/#79 findings remain open.
+
+### Independent review and complete-course measurement
+
+The [independent review and screenshots](evidence/issue-50/README.md) extend the
+quick replay with sequential real M5-course interactions on frozen production
+builds. Baseline is `1818a88`; the review candidate has source digest
+`d914f01e6223e4263613d8c8f2e5893f2541f5e9f19ad99375942f647e38e80b`.
+[Summary and raw-report hashes](evidence/issue-50/summary.json) retain exact served
+asset digests. Subsequent source README edits change the source digest but not
+those served assets. Both builds complete two full Conductor courses, handoffs
+and Stop resets without errors. The candidate also completes the root course
+at 1920 × 1080. Each course lasts approximately 51 seconds.
+
+Headed Chromium 151.0.7922.34 uses Apple M2 Max / ANGLE Metal, DPR1 and normal
+approximately 60 Hz VSync, without concurrent browser work, tracing or profiling.
+The Conductor canvas is 934 × 525 within a 1920 × 1080 viewport. Reused temporary
+RAF/WebGL instrumentation measures callback JavaScript and asynchronous GPU
+queries separately; instrumentation affects absolute timing. No disjoint GPU
+query was observed. Screenshot phases are excluded. Desktop background activity
+is not fully controlled.
+
+| Workload | Baseline | Review candidate |
+| --- | --- | --- |
+| First/repeated course JS p95 | 0.4 / 0.4 ms | 0.4 / 0.4 ms |
+| First/repeated course GPU p95 | 0.289 / 0.309 ms | 0.244 / 0.256 ms |
+| First/repeated course animation interval p95 | 17.1 / 17.1 ms | 17.7 / 17.7 ms |
+| Reset buffer allocations / program creations inside visible callbacks, each reset | 6 / 1 | 0 / 0 |
+| First/repeated reset callback JS maximum | 3.3 / 3.3 ms | 1.6 / 1.3 ms |
+| First/repeated reset animation interval maximum | 17.6 / 17.3 ms | 33.7 / 34.3 ms |
+
+The reviewed correction moves newly created training buffers/programs into
+World's preparation, while transport and visible frames remain held. The longer
+reset interval is deliberate: readiness follows preparation. The first visible
+training callback still performs ordinary bounded Air streaming updates; this
+is not a claim that every upload disappears. Reset GPU maxima are 1.313 / 2.537 ms
+for the candidate, versus 0.944 / 0.785 ms before. These small diagnostic samples
+show the relocation of first-use work, not an overall speedup or an accepted
+installation timing budget. The course keeps two draws except its handoff frame;
+the prepared main world then resumes its existing work.
+
+At the full 1920 × 1080 root viewport, the candidate's complete course records
+JS p95/p99/max 0.4 / 0.5 / 3.9 ms, GPU 0.292 / 0.444 / 0.817 ms and animation
+interval 17.1 / 17.5 / 17.7 ms. The first main speech uses the pre-created English
+prologue element; its first play call observes metadata readiness (state 1).
+Early preload is retained, but complete media readiness and audible onset are
+not established by this measurement. Production tutorial audio remains absent;
+combined approved voice/sample/render cost and Windows-PCVR acceptance are open.
 
 ## Dated Evidence
 

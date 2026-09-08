@@ -39,8 +39,10 @@ Run's cancellation signal and late decode/import results cannot publish nodes.
 The ambient player alone has a non-positional destination route.
 
 `narration-player.ts` remains the single media playback implementation. It
-accepts either main-show cue IDs/language or approved tutorial recordings with
-measured durations. Show supplies the selected cue and offset, including pause
+accepts the recordings selected by Show, with measured durations. Main clips
+preload during integrated training; changing the prepared set retains unchanged
+cue/URL elements and releases tutorial-exclusive clips at handoff. Standalone
+Start prepares only its own recordings. Show supplies the selected cue and offset, including pause
 and language-repeat behavior. Reaching a recording's end leaves silence while
 a spatial goal remains; audio completion never completes a learning task.
 

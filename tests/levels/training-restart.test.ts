@@ -11,7 +11,8 @@ test("Run gates training preparation and releases failed or cancelled restart ch
       import { Group, PerspectiveCamera } from "three";
       import { ModuleRuntime } from "./src/world/module-runtime.ts";
       const turn = () => new Promise(resolve => setTimeout(resolve, 0));
-      const modules = [], audioRequests = [], voices = [];
+      const modules = [], audioRequests = [], graphicsRequests = [], voices = [];
+      let deferGraphics = false;
       let failLoad = false, trainingCount = 0, audioCount = 0;
       let sharedEnds = 0, worldEnds = 0, resets = 0;
       let show, frame;
@@ -52,7 +53,10 @@ test("Run gates training preparation and releases failed or cancelled restart ch
         createWorld: () => ({
           camera, viewerRig:rig,
           renderer:{setClearColor(){},domElement:{}}, modules:new ModuleRuntime(),
-          prepareRenderer:async()=>{}, start(update){frame=update;}, stop:async()=>{},
+          prepareRenderer:()=>deferGraphics
+            ? new Promise((resolve,reject)=>graphicsRequests.push({resolve,reject}))
+            : Promise.resolve(),
+          start(update){frame=update;}, stop:async()=>{},
           unload:async()=>{worldEnds++;}, readGraphicsInfo(){}, renderCounters:{}, xr:{},
         }),
       }));
@@ -90,11 +94,13 @@ test("Run gates training preparation and releases failed or cancelled restart ch
       const { startLevel } = await import("./src/levels/level.runtime.ts");
       const { PIECE_SCHEDULE } = await import("./src/dramaturgy/piece-schedule.ts");
       const { SHOW_LEVEL_STATES } = await import("./src/dramaturgy/show-levels.ts");
-      const run = await startLevel({}, {
+      const request = {
         kind:"show", preset:{backgroundColor:0xffffff,viewDistance:128},
         show:{schedule:PIECE_SCHEDULE,states:SHOW_LEVEL_STATES,language:"en"},
         tutorial:{backgroundColor:0xffffff,viewDistance:128,desktopFieldOfViewDegrees:80,start:{goals:[{direction:"right"}]},startAudio:{}},
-      });
+      };
+      const run = await startLevel({}, request);
+      deferGraphics = true;
       assert.equal(camera.fov,80,"training keeps level goals visible below the assisted view");
       frame(0.1);
       assert.equal(rig.position.y,0,"prepared invisible terrain cannot block Start goals");
@@ -104,12 +110,15 @@ test("Run gates training preparation and releases failed or cancelled restart ch
       assert.equal(rig.position.y,101,"main ground clearance resumes after handoff");
       assert.equal(voices[0].ends,1);assert.equal(main.ends,0);assert.equal(sharedEnds,0);
       run.resetShowAndFlight();
-      assert.equal(show.state,"loading");assert.equal(audioRequests.length,1);
+      assert.equal(show.state,"loading");assert.equal(audioRequests.length,0);
+      assert.equal(graphicsRequests.length,1);
       assert.equal(camera.fov,80,"recreated training restores its own projection");
       const resetting = resets;
       run.resetShowAndFlight();
-      assert.ok(resets>resetting);assert.equal(audioRequests.length,1);
+      assert.ok(resets>resetting);assert.equal(graphicsRequests.length,1);
       assert.equal(show.state,"loading","reset must not release the preparation gate");
+      graphicsRequests[0].resolve();await turn();
+      assert.equal(show.state,"loading","graphics readiness still waits for the sample");
       const prepared=voice();audioRequests[0].resolve(prepared);await turn();
       assert.equal(show.state,"ready");
       show.finish();assert.equal(prepared.ends,1);assert.equal(sharedEnds,0);
@@ -120,13 +129,15 @@ test("Run gates training preparation and releases failed or cancelled restart ch
       assert.equal(audioRequests.length,1,"failed synchronous loading never starts sample preparation");
       failLoad=false;
       run.resetShowAndFlight();
-      assert.equal(show.state,"loading");assert.equal(audioRequests.length,2);
+      assert.equal(show.state,"loading");
+      graphicsRequests[1].resolve();await turn();assert.equal(audioRequests.length,2);
       audioRequests[1].reject(new Error("sample decode failed"));await turn();
       assert.equal(show.state,"failed");assert.equal(show.tutorial,undefined);
       assert.equal(modules.at(-2).ends,1);assert.equal(modules.at(-1).ends,1);
       assert.equal(main.ends,0);assert.equal(sharedEnds,0);
       run.resetShowAndFlight();
-      assert.equal(show.state,"loading");assert.equal(audioRequests.length,3);
+      assert.equal(show.state,"loading");
+      graphicsRequests[2].resolve();await turn();assert.equal(audioRequests.length,3);
       const writesBeforeEnd=show.stateWrites.length;
       const ending=run.unload();await turn();
       assert.equal(audioRequests[2].signal.aborted,true);assert.equal(sharedEnds,0);
@@ -137,6 +148,29 @@ test("Run gates training preparation and releases failed or cancelled restart ch
       const creationsAfterEnd=trainingCount;
       run.resetShowAndFlight();
       assert.equal(trainingCount,creationsAfterEnd,"ended Runs cannot recreate training children");
+
+      // Silent production training needs the same graphics gate and cancellation.
+      deferGraphics = false;
+      delete request.tutorial.startAudio;
+      const silent = await startLevel({},request);
+      deferGraphics = true;
+      show.finish();silent.resetShowAndFlight();
+      assert.equal(show.state,"loading");assert.equal(graphicsRequests.length,4);
+      graphicsRequests[3].reject(new Error("shader compilation failed"));await turn();
+      assert.equal(show.state,"failed");assert.equal(show.tutorial,undefined);
+      assert.equal(modules.at(-2).ends,1);assert.equal(modules.at(-1).ends,1);
+      silent.resetShowAndFlight();assert.equal(show.state,"loading");
+      graphicsRequests[4].resolve();await turn();
+      assert.equal(show.state,"ready");assert.equal(audioRequests.length,3);
+      show.finish();silent.resetShowAndFlight();
+      const silentWrites=show.stateWrites.length;
+      const silentEnding=silent.unload();await turn();
+      assert.equal(modules.at(-2).ends,0,"pending graphics retain their children until settled");
+      assert.equal(modules.at(-1).ends,0);
+      graphicsRequests[5].resolve();await silentEnding;
+      assert.equal(modules.at(-2).ends,1);assert.equal(modules.at(-1).ends,1);
+      assert.equal(show.stateWrites.length,silentWrites,"late graphics cannot publish ready");
+      assert.equal(audioRequests.length,3,"silent restarts create no audio sources");
       `,
     ],
     { stdout: "pipe", stderr: "pipe" },

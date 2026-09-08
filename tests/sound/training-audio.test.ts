@@ -77,8 +77,39 @@ test("interactive clips reuse narration pause, cue replacement and full cleanup"
       const playCount = elements[1].plays;
       follow("left", 8);
       assert.equal(elements[1].plays, playCount, "finished speech must not loop while a goal remains");
+      const mainRecording = { cueId: "prologue", url: "/main/prologue.mp3", durationSeconds: 72 };
+      player.setRecordings([
+        { cueId: "right", url: "/approved/right.wav", durationSeconds: 7 },
+        mainRecording,
+      ]);
+      assert.equal(elements.length, 3, "unchanged recordings retain their preloaded element");
+      assert.equal(elements[1].src, "", "removed tutorial recordings release their source");
+      const preparedMain = elements[2];
+      player.setRecordings([mainRecording]);
+      assert.equal(elements.length, 3, "handoff does not allocate or reload main speech");
+      assert.equal(preparedMain.loads, 0);
+      assert.equal(elements[0].src, "");
+      follow("prologue", 0);
+      assert.equal(preparedMain.plays, 1);
+      player.setRecordings([mainRecording,
+        { cueId: "right", url: "/approved/right.wav", durationSeconds: 7 },
+      ]);
+      assert.equal(elements.length, 4, "restart adds only the retired tutorial recording");
+      assert.equal(preparedMain.loads, 0);
+      assert.equal(preparedMain.paused, true);
+      player.setRecordings([
+        { ...mainRecording, url: "/main/de/prologue.mp3" },
+        { cueId: "right", url: "/approved/right.wav", durationSeconds: 7 },
+      ]);
+      assert.equal(elements.length, 5, "a language change replaces only changed URLs");
+      assert.equal(preparedMain.src, "");
+      assert.equal(preparedMain.loads, 1);
+      follow("prologue", 0);
+      assert.equal(elements[4].plays, 1);
       player.unload(); player.unload();
       follow("right", 0);
+      player.setRecordings([mainRecording]);
+      assert.equal(elements.length, 5, "an unloaded owner cannot prepare more clips");
       assert.ok(elements.every(element => element.paused && !element.src && element.loads === 1));
 
       const { createTrainingAudio } = await import("./src/sound/training-audio.runtime.ts");

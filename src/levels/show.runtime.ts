@@ -7,7 +7,11 @@
 
 import { Color } from "three";
 import { endCreditsPresenceAt } from "../dramaturgy/end-credits";
-import type { NarrationLanguage } from "../dramaturgy/narration-catalog";
+import {
+  type NarrationLanguage,
+  narrationDurationSeconds,
+  narrationUrl,
+} from "../dramaturgy/narration-catalog";
 import {
   type NarrationSchedule,
   narrationCueAt,
@@ -196,8 +200,19 @@ export async function createShowRuntime(
     // The same clock runs the unbounded interactive segment, then rebases to
     // the finite main schedule. No parallel tutorial clock or timer exists.
     clock = createShowClock(schedule.durationSeconds, timebase.readSeconds);
-    if (!standalone && !initialTutorial)
-      narration = createNarrationPlayer({ language, cueIds });
+    function prepareNarration(nextTutorial?: ShowTutorial): void {
+      const recordings: NarrationRecording[] = standalone
+        ? []
+        : cueIds.map((cueId) => ({
+            cueId,
+            url: narrationUrl(cueId, language),
+            durationSeconds: narrationDurationSeconds(cueId, language),
+          }));
+      recordings.push(...(nextTutorial?.recordings?.[language] ?? []));
+      if (narration) narration.setRecordings(recordings);
+      else narration = createNarrationPlayer({ recordings });
+    }
+    if (!initialTutorial) prepareNarration();
     // The organ follows the same clock but plays on Tone's own context, which
     // is the only context its rooms come up on. It loads Tone.js by itself, so
     // the world runs on before the organ makes a sound.
@@ -387,10 +402,7 @@ export async function createShowRuntime(
       instruction = next.parameters.goals[0].direction;
       tutorialGoalIndex = 0;
       instructionStartSeconds = 0;
-      narration?.unload();
-      narration = createNarrationPlayer({
-        recordings: next.recordings?.[language] ?? [],
-      });
+      prepareNarration(next);
     }
     if (initialTutorial) setTutorial(initialTutorial);
 
@@ -469,10 +481,8 @@ export async function createShowRuntime(
             return;
           const completed = tutorial;
           tutorial = undefined;
-          narration?.unload();
-          narration = undefined;
+          prepareNarration();
           completed.finish();
-          narration = createNarrationPlayer({ language, cueIds });
           clock.seekTo(0);
           clock.setTimeScale(1);
           clock.setDuration(schedule.durationSeconds);
@@ -533,14 +543,9 @@ export async function createShowRuntime(
         setLanguage: (next): void => {
           if (unloading || next === language) return;
 
-          narration?.unload();
           language = next;
           if (preparationState === "failed") return;
-          narration = tutorial
-            ? createNarrationPlayer({
-                recordings: tutorial.recordings?.[language] ?? [],
-              })
-            : createNarrationPlayer({ language, cueIds });
+          prepareNarration(tutorial);
           if (tutorial) {
             instructionStartSeconds = clock.sample().timeSeconds;
             tutorial.start.setGoalAdvanceAllowed(false);

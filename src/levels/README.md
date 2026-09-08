@@ -126,7 +126,9 @@ Run owns the shared spatial-audio context/listener and releases training sound
 before retiring training. The organ borrows that context; Show's native timebase
 remains separate. Stop resets time/orientation and holds. If training was already
 retired, only its exclusive content is recreated; the main world is retained.
-Playback waits for configured sample preparation, with visible failure and retry.
+Playback waits for World-owned graphics preparation and the optional sample,
+with visible failure and retry. Main narration preloads during training and stays
+with its existing owner across handoff.
 This is the existing interim reset, not complete visitor replacement or fresh
 headset calibration (#9/#46).
 

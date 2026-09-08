@@ -24,6 +24,19 @@ regression test verify the visible ring and restoration of the original main
 projection; XR keeps the headset projection. The optional audio follower also
 stops silent grains while a dissolved goal waits for speech.
 
+
+The subsequent independent performance review found missing GPU preparation
+when Stop recreated training. World/Run now await repeatable offscreen preparation,
+including silent training and cancellation; main narration also preloads during
+training and remains in the same media owner at handoff. The correction passes
+10 focused tests, build, lint and a fresh 3/3 root browser smoke (course, main
+transport/language and startup/mount failures). Fallow was rerun with the same
+10 introduced complexity and four CSS findings, zero dead-code/boundary issues.
+Two full Conductor courses with handoff/reset per build and one 1920 × 1080 root
+course complete without browser errors. The [screenshot/review packet](evidence/issue-50/README.md)
+and [performance measurements](performance.md#independent-review-and-complete-course-measurement)
+retain exact build identities and the intentionally held reset interval.
+
 The local reports are `benchmark-results/issue-50/combined-smoke-1/smoke.json`
 (source digest `da9bc9f33504ece467cda64a1dfff96fa30a9778b2ae667be43a3d9463134fb6`)
 and `benchmark-results/issue-50/shared-ui-smoke-1/smoke.json`

@@ -1,0 +1,720 @@
+{
+  "date": "2026-09-08",
+  "baselineCommit": "1818a88155e6d0b82e2168171e8e67e4d2b765e6",
+  "candidateSourceDigest": "d914f01e6223e4263613d8c8f2e5893f2541f5e9f19ad99375942f647e38e80b",
+  "conditions": "Sequential headed Chromium, Apple M2 Max ANGLE Metal, 1920x1080 viewport, DPR1; Conductor canvas934x525, root1920x1080; normal VSync; RAF/WebGL hooks and asynchronous GPU queries, no tracing/profiling; synthetic M5 through existing adapter, production tutorial silent. Screenshot phases excluded. Other desktop activity not controlled.",
+  "method": "Reuse of temporary performance-audit probe and tests/browser/start-acceptance.ts. JS includes injected instrumentation; GPU query covers rendered callback; animation intervals measure cadence, not isolated work. Build digest hashes sorted dist/assets names followed by bytes. Raw frames remain ignored scratch artifacts.",
+  "runs": [
+    {
+      "name": "course-before",
+      "rawReportSha256": "b6d3d5308e134a7bb57d6f227adde9cb77458f0d5ccc675f549f6133fb981daf",
+      "servedAssetsDigest": "b52fff0cad49c22ecd493c9300133e5edd5eb298d98542276a368ca2edd9f9a6",
+      "browser": "151.0.7922.34",
+      "observations": [
+        {
+          "rendering": {
+            "vendor": "Google Inc. (Apple)",
+            "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M2 Max, Unspecified Version)",
+            "softwareRendering": false
+          },
+          "canvas": {
+            "width": 934,
+            "height": 525
+          }
+        },
+        {
+          "pass": 0,
+          "status": "Flight tutorial \u00b7 Right \u00b7 1/4",
+          "hidden": false
+        },
+        {
+          "pass": 1,
+          "status": "Flight tutorial \u00b7 Right \u00b7 1/4",
+          "hidden": false
+        }
+      ],
+      "gpuQueriesSupported": true,
+      "gpuDisjointEvents": 0,
+      "querySkipped": 0,
+      "errors": [],
+      "failure": null,
+      "firstMediaPlay": null,
+      "phases": [
+        {
+          "name": "course-0",
+          "animationIntervalMs": {
+            "samples": 3055,
+            "median": 16.7,
+            "p95": 17.1,
+            "p99": 17.6,
+            "max": 17.7
+          },
+          "callbackJsMs": {
+            "samples": 3055,
+            "median": 0.3,
+            "p95": 0.4,
+            "p99": 0.5,
+            "max": 5.3
+          },
+          "gpuQueryMs": {
+            "samples": 3055,
+            "median": 0.1935,
+            "p95": 0.289,
+            "p99": 0.4743,
+            "max": 0.8723
+          },
+          "drawCountDistribution": {
+            "2": 3054,
+            "10": 1
+          },
+          "callbackBufferUploadBytes": 517120,
+          "allocationEvents": []
+        },
+        {
+          "name": "main-0",
+          "animationIntervalMs": {
+            "samples": 393,
+            "median": 16.7,
+            "p95": 17.2,
+            "p99": 17.6,
+            "max": 17.7
+          },
+          "callbackJsMs": {
+            "samples": 393,
+            "median": 0.5,
+            "p95": 2.3,
+            "p99": 2.6,
+            "max": 3.1
+          },
+          "gpuQueryMs": {
+            "samples": 393,
+            "median": 0.9628,
+            "p95": 1.2068,
+            "p99": 1.3322,
+            "max": 1.7125
+          },
+          "drawCountDistribution": {
+            "10": 258,
+            "12": 135
+          },
+          "callbackBufferUploadBytes": 3509988,
+          "allocationEvents": [
+            {
+              "method": "bufferData",
+              "location": "visibleCallback",
+              "count": 2
+            }
+          ]
+        },
+        {
+          "name": "reset-0",
+          "animationIntervalMs": {
+            "samples": 62,
+            "median": 16.7,
+            "p95": 16.9,
+            "p99": 17.6,
+            "max": 17.6
+          },
+          "callbackJsMs": {
+            "samples": 62,
+            "median": 0.3,
+            "p95": 0.4,
+            "p99": 0.5,
+            "max": 3.3
+          },
+          "gpuQueryMs": {
+            "samples": 62,
+            "median": 0.2187,
+            "p95": 0.422,
+            "p99": 0.7785,
+            "max": 0.944
+          },
+          "drawCountDistribution": {
+            "10": 2,
+            "2": 60
+          },
+          "callbackBufferUploadBytes": 497920,
+          "allocationEvents": [
+            {
+              "method": "bufferData",
+              "location": "visibleCallback",
+              "count": 6
+            },
+            {
+              "method": "createProgram",
+              "location": "visibleCallback",
+              "count": 1
+            }
+          ]
+        },
+        {
+          "name": "course-1",
+          "animationIntervalMs": {
+            "samples": 3054,
+            "median": 16.7,
+            "p95": 17.1,
+            "p99": 17.6,
+            "max": 17.7
+          },
+          "callbackJsMs": {
+            "samples": 3054,
+            "median": 0.3,
+            "p95": 0.4,
+            "p99": 0.4,
+            "max": 1.4
+          },
+          "gpuQueryMs": {
+            "samples": 3054,
+            "median": 0.2163,
+            "p95": 0.3088,
+            "p99": 0.4564,
+            "max": 1.9705
+          },
+          "drawCountDistribution": {
+            "2": 3053,
+            "10": 1
+          },
+          "callbackBufferUploadBytes": 571840,
+          "allocationEvents": []
+        },
+        {
+          "name": "main-1",
+          "animationIntervalMs": {
+            "samples": 392,
+            "median": 16.7,
+            "p95": 17.1,
+            "p99": 17.6,
+            "max": 17.6
+          },
+          "callbackJsMs": {
+            "samples": 392,
+            "median": 0.4,
+            "p95": 0.7,
+            "p99": 1,
+            "max": 1.3
+          },
+          "gpuQueryMs": {
+            "samples": 392,
+            "median": 0.8695,
+            "p95": 1.1652,
+            "p99": 1.2617,
+            "max": 1.4101
+          },
+          "drawCountDistribution": {
+            "10": 256,
+            "12": 136
+          },
+          "callbackBufferUploadBytes": 3338560,
+          "allocationEvents": []
+        },
+        {
+          "name": "reset-1",
+          "animationIntervalMs": {
+            "samples": 62,
+            "median": 16.7,
+            "p95": 16.8,
+            "p99": 17.3,
+            "max": 17.3
+          },
+          "callbackJsMs": {
+            "samples": 62,
+            "median": 0.3,
+            "p95": 0.4,
+            "p99": 0.4,
+            "max": 3.3
+          },
+          "gpuQueryMs": {
+            "samples": 62,
+            "median": 0.0525,
+            "p95": 0.2361,
+            "p99": 0.7736,
+            "max": 0.7849
+          },
+          "drawCountDistribution": {
+            "10": 2,
+            "2": 60
+          },
+          "callbackBufferUploadBytes": 497920,
+          "allocationEvents": [
+            {
+              "method": "bufferData",
+              "location": "visibleCallback",
+              "count": 6
+            },
+            {
+              "method": "createProgram",
+              "location": "visibleCallback",
+              "count": 1
+            }
+          ]
+        }
+      ],
+      "longTasks": [
+        {
+          "start": 478.7000000178814,
+          "duration": 213,
+          "phase": "startup"
+        },
+        {
+          "start": 736.5999999940395,
+          "duration": 125,
+          "phase": "startup"
+        },
+        {
+          "start": 869.5999999940395,
+          "duration": 242,
+          "phase": "startup"
+        },
+        {
+          "start": 1173.300000011921,
+          "duration": 160,
+          "phase": "startup"
+        }
+      ]
+    },
+    {
+      "name": "course-after",
+      "rawReportSha256": "70ec88c88f090dfb837a35d6b49d84c38e5882e28c80aef8dc947bff0aa7f33e",
+      "servedAssetsDigest": "0e3020348bf5dc4dc8b93d01732d9c4e825ec446142b219cf6bbfe3dfc4b095d",
+      "browser": "151.0.7922.34",
+      "observations": [
+        {
+          "rendering": {
+            "vendor": "Google Inc. (Apple)",
+            "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M2 Max, Unspecified Version)",
+            "softwareRendering": false
+          },
+          "canvas": {
+            "width": 934,
+            "height": 525
+          }
+        },
+        {
+          "pass": 0,
+          "status": "Flight tutorial \u00b7 Right \u00b7 1/4",
+          "hidden": false
+        },
+        {
+          "pass": 1,
+          "status": "Flight tutorial \u00b7 Right \u00b7 1/4",
+          "hidden": false
+        }
+      ],
+      "gpuQueriesSupported": true,
+      "gpuDisjointEvents": 0,
+      "querySkipped": 0,
+      "errors": [],
+      "failure": null,
+      "firstMediaPlay": null,
+      "phases": [
+        {
+          "name": "course-0",
+          "animationIntervalMs": {
+            "samples": 3053,
+            "median": 16.7,
+            "p95": 17.7,
+            "p99": 17.7,
+            "max": 17.8
+          },
+          "callbackJsMs": {
+            "samples": 3053,
+            "median": 0.3,
+            "p95": 0.4,
+            "p99": 0.5,
+            "max": 4.8
+          },
+          "gpuQueryMs": {
+            "samples": 3053,
+            "median": 0.2096,
+            "p95": 0.2441,
+            "p99": 0.3519,
+            "max": 1.0475
+          },
+          "drawCountDistribution": {
+            "2": 3052,
+            "10": 1
+          },
+          "callbackBufferUploadBytes": 521440,
+          "allocationEvents": []
+        },
+        {
+          "name": "main-0",
+          "animationIntervalMs": {
+            "samples": 392,
+            "median": 16.7,
+            "p95": 17.7,
+            "p99": 17.7,
+            "max": 17.8
+          },
+          "callbackJsMs": {
+            "samples": 392,
+            "median": 0.5,
+            "p95": 2.1,
+            "p99": 2.9,
+            "max": 3.1
+          },
+          "gpuQueryMs": {
+            "samples": 392,
+            "median": 0.944,
+            "p95": 1.1641,
+            "p99": 1.1911,
+            "max": 1.4702
+          },
+          "drawCountDistribution": {
+            "10": 256,
+            "12": 136
+          },
+          "callbackBufferUploadBytes": 3343108,
+          "allocationEvents": [
+            {
+              "method": "bufferData",
+              "location": "visibleCallback",
+              "count": 2
+            }
+          ]
+        },
+        {
+          "name": "reset-0",
+          "animationIntervalMs": {
+            "samples": 61,
+            "median": 16.7,
+            "p95": 17.7,
+            "p99": 17.7,
+            "max": 33.7
+          },
+          "callbackJsMs": {
+            "samples": 61,
+            "median": 0.3,
+            "p95": 0.4,
+            "p99": 0.4,
+            "max": 1.6
+          },
+          "gpuQueryMs": {
+            "samples": 61,
+            "median": 0.235,
+            "p95": 0.4004,
+            "p99": 1.105,
+            "max": 1.3126
+          },
+          "drawCountDistribution": {
+            "10": 2,
+            "2": 59
+          },
+          "callbackBufferUploadBytes": 76800,
+          "allocationEvents": [
+            {
+              "method": "createProgram",
+              "location": "outsideCallback",
+              "count": 2
+            },
+            {
+              "method": "bufferData",
+              "location": "outsideCallback",
+              "count": 6
+            }
+          ]
+        },
+        {
+          "name": "course-1",
+          "animationIntervalMs": {
+            "samples": 3047,
+            "median": 16.7,
+            "p95": 17.7,
+            "p99": 17.7,
+            "max": 17.8
+          },
+          "callbackJsMs": {
+            "samples": 3047,
+            "median": 0.3,
+            "p95": 0.4,
+            "p99": 0.5,
+            "max": 1.4
+          },
+          "gpuQueryMs": {
+            "samples": 3047,
+            "median": 0.236,
+            "p95": 0.2564,
+            "p99": 0.3707,
+            "max": 0.9887
+          },
+          "drawCountDistribution": {
+            "2": 3046,
+            "10": 1
+          },
+          "callbackBufferUploadBytes": 521440,
+          "allocationEvents": []
+        },
+        {
+          "name": "main-1",
+          "animationIntervalMs": {
+            "samples": 393,
+            "median": 16.7,
+            "p95": 17.7,
+            "p99": 17.7,
+            "max": 17.8
+          },
+          "callbackJsMs": {
+            "samples": 393,
+            "median": 0.5,
+            "p95": 0.7,
+            "p99": 1,
+            "max": 1.2
+          },
+          "gpuQueryMs": {
+            "samples": 393,
+            "median": 0.9577,
+            "p95": 1.2049,
+            "p99": 1.2227,
+            "max": 1.4051
+          },
+          "drawCountDistribution": {
+            "10": 257,
+            "12": 136
+          },
+          "callbackBufferUploadBytes": 3168480,
+          "allocationEvents": []
+        },
+        {
+          "name": "reset-1",
+          "animationIntervalMs": {
+            "samples": 61,
+            "median": 16.7,
+            "p95": 17.7,
+            "p99": 17.8,
+            "max": 34.3
+          },
+          "callbackJsMs": {
+            "samples": 61,
+            "median": 0.3,
+            "p95": 0.4,
+            "p99": 0.5,
+            "max": 1.3
+          },
+          "gpuQueryMs": {
+            "samples": 61,
+            "median": 0.2211,
+            "p95": 0.3242,
+            "p99": 0.9463,
+            "max": 2.5371
+          },
+          "drawCountDistribution": {
+            "10": 2,
+            "2": 59
+          },
+          "callbackBufferUploadBytes": 76800,
+          "allocationEvents": [
+            {
+              "method": "createProgram",
+              "location": "outsideCallback",
+              "count": 2
+            },
+            {
+              "method": "bufferData",
+              "location": "outsideCallback",
+              "count": 6
+            }
+          ]
+        }
+      ],
+      "longTasks": [
+        {
+          "start": 351.90000000596046,
+          "duration": 220,
+          "phase": "startup"
+        },
+        {
+          "start": 615.6999999880791,
+          "duration": 139,
+          "phase": "startup"
+        },
+        {
+          "start": 762.3000000119209,
+          "duration": 271,
+          "phase": "startup"
+        },
+        {
+          "start": 1097.0999999940395,
+          "duration": 171,
+          "phase": "startup"
+        }
+      ]
+    },
+    {
+      "name": "course-full-viewport",
+      "rawReportSha256": "c00cba6d41474d38c6544a96d973588b334aa56f6b2b33a1670d087be02e50ef",
+      "servedAssetsDigest": "0e3020348bf5dc4dc8b93d01732d9c4e825ec446142b219cf6bbfe3dfc4b095d",
+      "browser": "151.0.7922.34",
+      "observations": [
+        {
+          "rendering": {
+            "vendor": "Google Inc. (Apple)",
+            "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M2 Max, Unspecified Version)",
+            "softwareRendering": false
+          },
+          "canvas": {
+            "width": 1920,
+            "height": 1080
+          }
+        }
+      ],
+      "gpuQueriesSupported": true,
+      "gpuDisjointEvents": 0,
+      "querySkipped": 0,
+      "errors": [],
+      "failure": null,
+      "firstMediaPlay": [
+        {
+          "url": "http://localhost:4180/audio/narration/en/prologue.mp3",
+          "readyState": 1,
+          "currentTime": 0.013333,
+          "at": 57137.90000000596
+        }
+      ],
+      "phases": [
+        {
+          "name": "course-0",
+          "animationIntervalMs": {
+            "samples": 3042,
+            "median": 16.7,
+            "p95": 17.1,
+            "p99": 17.5,
+            "max": 17.7
+          },
+          "callbackJsMs": {
+            "samples": 3042,
+            "median": 0.3,
+            "p95": 0.4,
+            "p99": 0.5,
+            "max": 3.9
+          },
+          "gpuQueryMs": {
+            "samples": 3042,
+            "median": 0.0919,
+            "p95": 0.2924,
+            "p99": 0.4437,
+            "max": 0.8173
+          },
+          "drawCountDistribution": {
+            "2": 3041,
+            "10": 1
+          },
+          "callbackBufferUploadBytes": 508480,
+          "allocationEvents": []
+        },
+        {
+          "name": "main-0",
+          "animationIntervalMs": {
+            "samples": 392,
+            "median": 16.7,
+            "p95": 17.2,
+            "p99": 17.6,
+            "max": 17.7
+          },
+          "callbackJsMs": {
+            "samples": 392,
+            "median": 0.4,
+            "p95": 2.6,
+            "p99": 2.9,
+            "max": 3.4
+          },
+          "gpuQueryMs": {
+            "samples": 392,
+            "median": 0.9095,
+            "p95": 1.1673,
+            "p99": 1.3235,
+            "max": 1.5175
+          },
+          "drawCountDistribution": {
+            "10": 257,
+            "12": 135
+          },
+          "callbackBufferUploadBytes": 3356068,
+          "allocationEvents": [
+            {
+              "method": "bufferData",
+              "location": "visibleCallback",
+              "count": 2
+            }
+          ]
+        }
+      ],
+      "longTasks": [
+        {
+          "start": 271,
+          "duration": 216,
+          "phase": "startup"
+        },
+        {
+          "start": 507.80000001192093,
+          "duration": 125,
+          "phase": "startup"
+        },
+        {
+          "start": 659,
+          "duration": 232,
+          "phase": "startup"
+        },
+        {
+          "start": 942.3000000119209,
+          "duration": 171,
+          "phase": "startup"
+        }
+      ]
+    }
+  ],
+  "finalFunctionalSmoke": {
+    "sourceDigest": "4a73a4c04c597f07a81fbf635ffe34405a956be5a5de6b9b03c6c4349bd2d14b",
+    "browserVersion": "151.0.7922.34",
+    "viewport": {
+      "width": 1280,
+      "height": 720
+    },
+    "results": [
+      {
+        "route": "/",
+        "passed": true,
+        "errors": [],
+        "rendering": {
+          "vendor": "Google Inc. (Apple)",
+          "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M2 Max, Unspecified Version)",
+          "softwareRendering": false
+        }
+      },
+      {
+        "route": "startup-failure:/",
+        "passed": true,
+        "errors": []
+      },
+      {
+        "route": "ui-mount-failure:/",
+        "passed": true,
+        "errors": []
+      }
+    ],
+    "rawReportSha256": "864da04b4c3955e0a7cc887b8f52b81b22bcf2a20f94611d57760a2089811d8c"
+  },
+  "fallow": {
+    "version": "3.23.0",
+    "verdict": "fail",
+    "base_ref": "1adc872",
+    "summary": {
+      "dead_code_issues": 0,
+      "dead_code_has_errors": false,
+      "complexity_findings": 23,
+      "max_cyclomatic": 47,
+      "duplication_clone_groups": 3
+    },
+    "attribution": {
+      "gate": "new-only",
+      "dead_code_introduced": 0,
+      "dead_code_inherited": 0,
+      "complexity_introduced": 10,
+      "complexity_inherited": 13,
+      "duplication_introduced": 0,
+      "duplication_inherited": 3,
+      "styling_introduced": 4,
+      "styling_inherited": 5,
+      "duplication_demoted": 0
+    }
+  }
+}
