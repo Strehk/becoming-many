@@ -32,8 +32,17 @@ const float SCENT_MINIMUM_VISIBLE_SCALE = 0.01;
 const float SCENT_TRAIL_SPREAD_POWER = 1.6;
 // Each print keeps its own direction, so a route frays instead of sliding.
 const float SCENT_TRAIL_DIRECTION_SPREAD = 1.0;
+// The share of the show's fade window one print takes for itself, as in the
+// plant layer: prints arrive and leave one by one rather than as one block.
+const float SCENT_SENSE_ARRIVAL_SHARE = 0.4;
 
 float scentSizeScale = 0.0;
+
+/** This print's share of the sense fade, from the phase it already has. */
+float scentSenseArrival() {
+  float start = scentPhase * (1.0 - SCENT_SENSE_ARRIVAL_SHARE);
+  return smoothstep(start, start + SCENT_SENSE_ARRIVAL_SHARE, scentSenseFade);
+}
 
 vec3 animateScentTrailParticle(vec3 printedPosition) {
   // The looping clock wraps, so the age is the wrapped difference. Lifetimes
@@ -45,7 +54,7 @@ vec3 animateScentTrailParticle(vec3 printedPosition) {
   float age = ageSeconds / scentTrailLifetime;
 
   // Slots never printed, and prints older than one lifetime, never rasterize.
-  scentSizeScale = scentVisible * scentIntensity * scentSenseFade
+  scentSizeScale = scentVisible * scentIntensity * scentSenseArrival()
     * step(age, 1.0)
     * smoothstep(0.0, SCENT_TRAIL_FADE_IN, age)
     * (1.0 - smoothstep(SCENT_TRAIL_HOLD, 1.0, age));

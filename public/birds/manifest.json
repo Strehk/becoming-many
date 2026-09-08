@@ -2,7 +2,7 @@
   "version": 1,
   "author": "Becoming Many project",
   "license": "UNRECORDED",
-  "note": "Carried over from https://github.com/Strehk/uni-becoming-many, which recorded no provenance for this file. The same model flies the passages in PR #58; both come from public/creatures/bird_erasmus.glb there, and one of the two copies should go once that branch lands. Author and licence need confirming before release \u2014 see docs/direction/open-decisions.md.",
+  "note": "Carried over from https://github.com/Strehk/uni-becoming-many, which recorded no provenance for this file. /passages/bird.glb comes from the same original: that copy keeps its rig and its four primitives for the one animated flyby, while this one is baked static and merged into a single primitive for the sixty-instance pool. Whether one bake could serve both is unsettled. Author and licence need confirming before release \u2014 see docs/direction/open-decisions.md.",
   "assets": [
     {
       "id": "bird",

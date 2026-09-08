@@ -68,6 +68,12 @@ the authored 720 flies); age, fade, outward drift, and collapse derive
 GPU-only from one advancing `motionFrame` uniform. Deactivation stops
 printing and hides both objects; nothing per-particle is ever rewritten.
 
+The show's sense fade also scales the fly point size, so the pool would cross
+the pixel it needs to rasterize in one frame and the swarms would appear at
+once. One fixed per-fly attribute, written at load and never touched again,
+gives each speck its own share of the fade window; the trails need none,
+because their fade is already an alpha per print.
+
 ## The `MotionPointSource` seam
 
 Every actor prints trails through the same seam: a trail ring consumes
@@ -100,8 +106,12 @@ array for a group this level does not carry, and while it is unloaded.
 - Trail length is authored in rendered frames for bm-base parity; a
   fixed-cadence spawn accumulator is the known fix for frame-rate
   dependence.
-- The current swarms are persistent and statically authored. A path-flyby event
-  would be a new product feature and needs its own issue and capacity budget.
+- The ambient swarms are persistent and statically authored. The one
+  route-following swarm is the mosquito passage, printed by `passage-swarm.ts`
+  and composed beside this module: it crosses before the sense it announces, so
+  it can ride neither this module's gate nor its fade. It reads where that
+  cloud stands through `src/modules/passage-crossing.ts`, the same kind of
+  neutral seam as `connection-nodes.ts`, so neither module imports the other.
 - Bird bodies carry the authored echo tone rather than the heat view's false
   colour. The flocks circle 30 to 90 metres out, well beyond the heat view's
   35 m reach, so they read like an unwarmed animal; a bird that came closer

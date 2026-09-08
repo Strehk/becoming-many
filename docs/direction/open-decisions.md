@@ -26,7 +26,10 @@ and confirmed.
 
 The smallest candidate is a local Conductor-owned phase model around boarding,
 active show, return, and safety exit. Do not introduce a global event bus,
-service locator, remote operator service, or second schedule authority.
+service locator, remote operator service, or second schedule authority. One-shot
+staged moments — the animal passages — are scheduled data read by a show-time
+lookup, so they are not an argument for a trigger channel; see
+[An Animal Passage Is Scheduled Data, Not a Triggered Event](../architecture-decisions.md).
 
 ## 3. Additional Installation Runtimes
 
@@ -39,10 +42,10 @@ keep its protocol narrow, and record how it degrades when unavailable.
 
 ## 4. Provenance of the Carried-Over Models
 
-The models carried over from `Strehk/uni-becoming-many` — the flock bird today,
-the passage bird and bat on the branch that stages them — arrive with no author
-and no licence recorded, and their manifests say so in place of a claim. Every
-other asset in `public/` names Quaternius and CC0-1.0.
+The models carried over from `Strehk/uni-becoming-many` — the flock bird, the
+passage bird, and the bat — arrive with no author and no licence recorded, and
+their manifests say so in place of a claim. Every other asset in `public/`
+names Quaternius and CC0-1.0.
 
 Decide before release, not before use: name the author and licence of each
 carried-over file in its manifest, or replace the file. An installation that

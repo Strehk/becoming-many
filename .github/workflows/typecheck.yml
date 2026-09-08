@@ -1,0 +1,29 @@
+# Purpose: Hold the TypeScript gate on every pull request.
+# Context: `bun run build` typechecks before bundling, so a type error would
+#   also fail the build gate — but as "the build broke". Running `tsc` as its
+#   own check names the failure and lets the bundle gate answer only for the
+#   bundle.
+# Responsibility: Run `bun run check` against the whole project.
+# Boundary: Compiler strictness is tsconfig.json's decision.
+
+name: Typecheck
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: typecheck-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  tsc:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+      - run: bun run check

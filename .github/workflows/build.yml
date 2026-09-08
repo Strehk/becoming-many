@@ -1,0 +1,29 @@
+# Purpose: Prove the application still bundles.
+# Context: `bun run build` is `tsc --noEmit && vite build`; the typecheck gate
+#   already owns the first half, so this gate runs the bundler directly rather
+#   than typechecking a second time in a second runner.
+# Responsibility: Produce a complete Vite build from a clean checkout.
+# Boundary: What gets bundled is vite.config.ts's decision. The built output is
+#   not published here — release-image.yml owns what ships.
+
+name: Build
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  bundle:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+      - run: bunx vite build

@@ -6,7 +6,7 @@ details.
 ## Product State
 
 The core experience is largely implemented. The default browser page starts the
-complete 8:41 show, layers the seven narrative world states, plays synchronized
+complete 8:45 show, layers the seven narrative world states, plays synchronized
 English or German narration, returns to White World, and closes on the end
 credits. The project is now in
 a stabilization and refinement phase rather than an MVP construction phase.
@@ -54,6 +54,13 @@ issue and a bounded implementation.
   while the clock is clamped, until staff restart the experience.
 - Fixed chunk windows and the bounded `StreamQueue` recycle module-owned
   resources as the viewer moves.
+- A module a sense reveals is warmed 20 seconds before its cue: it runs,
+  streams, and follows the viewer while nothing of it is drawn, so a world
+  state fades in already built instead of assembling itself under the fade.
+  Verified on desktop Chromium only.
+- The two opaque point layers — scent particles and fly swarms — spread the
+  sense fade across their own particles, so a field arrives speck by speck
+  rather than crossing the one-pixel rasterization threshold together.
 - GLTF assets are loaded once before the world starts; concrete modules retain
   ownership of their Three.js and GPU resources.
 
@@ -73,6 +80,14 @@ issue and a bounded implementation.
   other module materials.
 - Connections: a worker-generated, fixed-pool mycelium network connected to
   deterministic and live world anchors.
+- Animal passages: three animals cross the show on routes carried over from the
+  predecessor project — the bat, the mosquito swarm, and the bird — each
+  entering six seconds before the cue that opens the sense it announces, and
+  gone once that sense has faded in. Their pose is derived from show time, so a
+  scrub lands them on their route. They are ungated and wear no sense effects,
+  because a crossing happens between senses. The swarm has no body: what
+  crosses is the trail it prints, through its own ring composed beside Motion
+  Sense at full strength, since the sense it announces still stands at zero.
 - The `test` and `design-test` presets remain integration/diagnostic surfaces;
   they are not narrative states.
 
@@ -104,16 +119,18 @@ issue and a bounded implementation.
 
 ## Verification Snapshot
 
-Verified on 2026-09-03 after the drone organ was moved onto the show clock:
+Verified on 2026-09-03 after the animal passages were fitted to the level
+composition contracts:
 
-- `bun test`: 447 passed, 0 failed across 62 files.
+- `bun test`: 493 passed, 0 failed across 65 files.
 - `bun run check`: passed.
 - `bun run lint`: passed.
 - `bun run build`: passed with existing Vite warnings about one extensionless
   config import and a large output chunk.
-- `bunx fallow`: found no dead files or exports. The remaining unused dependency
-  override, duplication, complexity, and hotspot findings are tracked as
-  cleanup issues; Fallow is not currently clean.
+- `bunx fallow`: found no dead files and one unused export,
+  `STEP_LOOKAHEAD_SECONDS` in `src/sound/drone-organ/organ-timeline.ts`. The
+  remaining unused dependency override, duplication, complexity, and hotspot
+  findings are tracked as cleanup issues; Fallow is not currently clean.
 
 The deterministic benchmark has accepted renderer-counter baselines, but its
 frame times are machine-specific. The grass clipmap and the complete current

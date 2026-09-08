@@ -172,10 +172,16 @@ function updateAnimals(
   options: AnimalsModuleOptions,
   deltaSeconds: number,
 ): void {
-  if (!state.population?.group.visible) return;
+  // Loaded, not seen: the population walks and re-homes around the viewer
+  // while the show warms it behind the sense that will reveal it, so the heat
+  // view opens on animals that live here rather than on a frozen crowd.
+  if (!state.population) return;
 
   updateAnimalActors(state.population, options.viewpoint, deltaSeconds);
-  if (!options.onBodiesUpdated) return;
+  // Bodies are reported only once the population is shown: a warming crowd
+  // must not print scent trails that would drift through the air with nothing
+  // visible carrying them.
+  if (!options.onBodiesUpdated || !state.population.group.visible) return;
 
   readVisibleAnimalBodies(state.population, state.bodies);
   options.onBodiesUpdated(state.bodies);
