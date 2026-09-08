@@ -26,7 +26,7 @@
 
 namespace {
 
-constexpr const char *FirmwareVersion = "0.3.2-bm-http";
+constexpr const char *FirmwareVersion = "0.3.3-bm-http";
 constexpr const char *PreferencesNamespace = "bm-m5";
 constexpr const char *FallbackDeviceId = "bm-station-a-m5";
 
@@ -301,9 +301,9 @@ DeviceConfig readConfigFromDocument(JsonDocument &document) {
   nextConfig.ssid = document["ssid"] | "";
   nextConfig.password = document["password"] | "";
   nextConfig.deviceId = document["deviceId"] | "";
-  nextConfig.swapPitchRoll = document["swapPitchRoll"] | false;
-  nextConfig.invertPitch = document["invertPitch"] | false;
-  nextConfig.invertRoll = document["invertRoll"] | false;
+  nextConfig.swapPitchRoll = document["swapPitchRoll"] | config.swapPitchRoll;
+  nextConfig.invertPitch = document["invertPitch"] | config.invertPitch;
+  nextConfig.invertRoll = document["invertRoll"] | config.invertRoll;
   nextConfig.ssid.trim();
   nextConfig.deviceId.trim();
   return nextConfig;

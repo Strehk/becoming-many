@@ -15,13 +15,14 @@ import { resetFlightPose } from "../control/flight-reset";
 import { FLIGHT_SETTINGS } from "../control/flight-settings";
 import { applyM5Flight } from "../control/m5-flight";
 import { showLevelStateAt } from "../dramaturgy/show-levels";
-import { createM5Adapter, type M5Adapter } from "../m5/m5-adapter";
+import { createM5Runtime, type M5Runtime } from "../m5/runtime/m5.runtime";
 import { disposeGltfAssets } from "../utils/asset-loader/gltf-assets";
 import type { WorldModule } from "../world/module-runtime";
 import {
   createWorld,
   type GraphicsInfo,
   type RenderCounters,
+  type WorldSurface,
 } from "../world/world-runtime";
 import type { XrSessionControl } from "../world/xr-session";
 import {
@@ -59,7 +60,7 @@ export interface Run {
    * a deployment config, or a `?m5=` request). Undefined under a benchmark.
    */
   readonly m5:
-    | Pick<M5Adapter, "setHost" | "readOperatorStatus" | "readLatestState">
+    | Pick<M5Runtime, "setHost" | "readObservation">
     | undefined;
 
   /** The renderer's WebXR session, for the page that owns the entry button. */
@@ -90,13 +91,9 @@ export interface ShowLevelRequest extends CommonLevelRequest {
 export type LevelStartRequest = StaticLevelRequest | ShowLevelRequest;
 
 export async function startLevel(
-  container: Element | null,
+  surface: WorldSurface,
   request: LevelStartRequest,
 ): Promise<Run> {
-  if (!(container instanceof HTMLElement)) {
-    throw new Error("Missing level container element");
-  }
-
   const level = request.preset;
   const presentation = initialLevelPresentation(request);
   const benchmark = request.kind === "static" ? request.benchmark : undefined;
@@ -104,7 +101,7 @@ export async function startLevel(
   let world: ReturnType<typeof createWorld> | undefined;
   let modules: readonly WorldModule[] = [];
   let desktop: ReturnType<typeof createDesktopControls> | undefined;
-  let m5: M5Adapter | undefined;
+  let m5: M5Runtime | undefined;
   let show: ShowRuntime | undefined;
   let unloading: Promise<void> | undefined;
   const signal = request.signal;
@@ -113,7 +110,7 @@ export async function startLevel(
   try {
     assets = await loadLevelAssets(level, request.kind === "show", signal);
     signal?.throwIfAborted();
-    world = createWorld(container, {
+    world = createWorld(surface, {
       frameControl: benchmark,
       viewPitchAssistDegrees: FLIGHT_SETTINGS.viewPitchAssistDegrees,
     });
@@ -146,7 +143,7 @@ export async function startLevel(
           world.renderer.domElement,
         );
     // Without a host, the adapter owns no timer or network work.
-    m5 = benchmark ? undefined : createM5Adapter(request.m5ExpectedDeviceId);
+    m5 = benchmark ? undefined : createM5Runtime(request.m5ExpectedDeviceId);
     // Static runs (including benchmarks) never create show time or audio.
     show =
       request.kind === "show"

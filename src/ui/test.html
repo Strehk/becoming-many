@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#ffffff" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="./app.css" />
+    <title>Becoming Many — Test</title>
+  </head>
+  <body>
+    <main class="app">
+      <canvas class="experience-canvas"></canvas>
+      <p role="alert" data-startup-error hidden>Unable to start Becoming Many. Please reload.</p>
+      <aside class="test-overlay" aria-label="Performance metrics" data-metrics hidden>
+        <div class="test-overlay__card">
+          <span class="test-overlay__label">FPS</span>
+          <output class="test-overlay__value" data-metric="fps">--</output>
+        </div>
+        <div class="test-overlay__card">
+          <span class="test-overlay__label">P95</span>
+          <output class="test-overlay__value" data-metric="p95">--</output>
+        </div>
+        <div class="test-overlay__card">
+          <span class="test-overlay__label">DRAW CALLS</span>
+          <output class="test-overlay__value" data-metric="draw-calls">--</output>
+        </div>
+        <div class="test-overlay__card">
+          <span class="test-overlay__label">DREIECKE</span>
+          <output class="test-overlay__value" data-metric="triangles">--</output>
+        </div>
+      </aside>
+    </main>
+    <pre class="headset-diagnostics" data-headset-diagnostics hidden></pre>
+    <button type="button" class="xr-entry-button" data-xr-entry hidden disabled>VR not available</button>
+    <script type="module" src="../entry/test.entry.ts"></script>
+  </body>
+</html>

@@ -1,7 +1,7 @@
 <!--
-Purpose: Explain how to build, flash, and configure the M5StickS3 controller firmware.
-Context: The firmware is a PlatformIO project outside the web toolchain; humans build it.
-Responsibility: Document the build, the merged-binary export for the flash page, and the serial setup channel.
+Purpose: Explain how to build, export, simulate, and configure the M5StickS3 controller firmware.
+Context: The firmware is a PlatformIO project outside the browser runtime.
+Responsibility: Document the device tools, release export, and serial setup channel.
 Boundary: The wire contract lives in src/m5/protocol.ts; direction in docs/direction/controls-m5.md.
 -->
 
@@ -11,8 +11,8 @@ The controller is an [M5StickS3](https://docs.m5stack.com/en/core/StickS3)
 strapped to the ICAROS rig. It samples its IMU, runs the device-owned pipeline
 stages (`normalize → axis-map → calibrate`), and serves the result as JSON on
 `GET /state` — a plain HTTP server on the station network that clients poll.
-`src/m5/protocol.ts` is the shared wire contract; keep `FirmwareVersion` in
-`src/main.cpp` in sync with `M5_FIRMWARE_VERSION` there.
+`src/m5/protocol.ts` is the shared wire contract. The export command verifies
+that `FirmwareVersion` in `src/main.cpp` matches `M5_FIRMWARE_VERSION` there.
 
 The StickS3 uses an ESP32-S3
 with native USB (no UART bridge), a BMI270 IMU behind M5Unified, an M5PM1
@@ -37,18 +37,33 @@ pio device monitor      # watch the newline-JSON serial channel
 ## Export the merged binary for the flash page
 
 The browser flash page (`/flash.html`, esp-web-tools) installs one merged
-image from `public/firmware/m5-controller/`. The pioarduino platform already merges
-bootloader, partitions, boot_app0, and app on every build, so after a
-release-worthy build the export is one copy:
+image from `public/firmware/m5-controller/`. From the repository root, with
+PlatformIO's `pio` command on `PATH`, run:
 
 ```sh
-pio run
-cp .pio/build/m5stick-s3/firmware.factory.bin ../../public/firmware/m5-controller/m5-controller.bin
+bun run m5-export
 ```
 
-Then bump the `version` in `public/firmware/m5-controller/manifest.json` to match
-`FirmwareVersion`. CI automation for this step is planned but not built
-([Quality and Operations](../../docs/direction/quality-operations.md)).
+`tools/export-firmware.ts` checks the firmware/protocol versions before starting
+PlatformIO, builds `m5stick-s3`, then copies its merged `firmware.factory.bin`
+and generates the installer manifest using the verified version. Version
+mismatch or build failure leaves the published artifacts unchanged. The
+pioarduino build owns merging bootloader, partitions, boot_app0, and application;
+the exporter adds no alternate image format. Commit both exported artifacts with
+the release's source changes. `.pio/` remains local ignored build output.
+
+## Firmware regression and simulator
+
+After a firmware build has installed ArduinoJson, run `bun run m5-test-config`
+from the repository root. This native C++ test compiles the actual configuration
+struct and parser from `src/main.cpp` against the installed ArduinoJson headers.
+It requires a C++ compiler on `PATH` and tests preserved omitted mount flags,
+explicit flag replacement, fresh-device defaults, and normal network updates.
+It does not require or access a physical controller.
+
+`bun run m5-sim` starts `tools/simulator.ts`, an independent Bun HTTP process
+using the shared `M5State` contract. `--port`, `--device`, and `--firmware` keep
+their existing behavior; the latter two can exercise device/version rejection.
 
 ## Serial setup channel
 
@@ -57,7 +72,8 @@ and answers are typed in `src/m5/protocol.ts`:
 
 - `{"type":"configure","ssid":"…","password":"…","deviceId":"bm-station-a-m5"}`
   — optional `swapPitchRoll` / `invertPitch` / `invertRoll` booleans for the
-  mount's axis map.
+  mount's axis map. Omitted flags retain their stored values; explicit `true`
+  or `false` replaces them. Fresh devices default all flags to `false`.
 - `{"type":"getConfig"}` — stored state, password redacted.
 - `{"type":"diagnose"}` — network and IMU self-test.
 - `{"type":"calibrate"}` / `{"type":"clearCalibration"}` — adopt or clear the

@@ -1,5 +1,5 @@
 import { expectTypeOf, test } from "bun:test";
-import type { ConductorPageOptions } from "../../src/conductor/conductor.page";
+import type { ConductorPageOptions } from "../../src/ui/conductor/conductor.page";
 import type { Run } from "../../src/levels/level.runtime";
 import type { RunningShow } from "../../src/levels/show.runtime";
 

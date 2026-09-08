@@ -7,7 +7,7 @@
  */
 
 import { describe, expect, test } from "bun:test";
-import { parseDeploymentConfig } from "../../src/station/deployment-config";
+import { parseDeploymentConfig } from "../../shared/deployment-config";
 
 describe("parseDeploymentConfig", () => {
   test("keeps every named field", () => {

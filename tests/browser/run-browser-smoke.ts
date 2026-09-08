@@ -10,9 +10,9 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { parseArgs } from "node:util";
 import { type Browser, chromium, type Page } from "playwright";
-import { formatShowTime } from "../../src/conductor/time-format";
+import { formatShowTime } from "../../src/ui/shared/show-time-format";
 import { PIECE_SCHEDULE } from "../../src/dramaturgy/piece-schedule";
-import { LEVEL_NAMES } from "../../src/levels/level-names";
+import { LEVEL_NAMES } from "../../shared/level-routes";
 import { M5_FIRMWARE_VERSION } from "../../src/m5/protocol";
 import {
   assertRefactorBranch,
@@ -144,6 +144,8 @@ async function runSmokeRoute(
       "Entry URL must remain the requested route",
     );
     observation = await checkEntry(page, route);
+    assertRefactorBranch();
+    await page.screenshot({ path: `${artifactBase}-ready.png`, fullPage: true });
     if (["/", "/test.html", "/conductor.html", "/flash.html"].includes(route)) {
       await checkUiLayout(page, route);
     }
@@ -161,11 +163,13 @@ async function runSmokeRoute(
       await page.evaluate(() =>
         window.dispatchEvent(new PageTransitionEvent("pagehide")),
       );
-      await page.locator(".conductor__masthead").waitFor({ state: "detached" });
+      await page.waitForFunction(() =>
+        document.querySelector("canvas")?.getContext("webgl2")?.isContextLost(),
+      );
       assert.equal(
         await page.locator("canvas").count(),
-        0,
-        "Page exit removes UI and its Run canvas",
+        1,
+        "Page exit releases WebGL while preserving declared page structure",
       );
     }
     assert.equal(errors.length, 0, errors.join("\n"));
@@ -560,7 +564,11 @@ async function checkUiLayout(page: Page, route: string): Promise<void> {
         ".rehearsal button:first-child",
         ".rehearsal output",
       );
-    }
+    }    assertRefactorBranch();
+    await page.screenshot({
+      path: join(outputDirectory, `${route === "/" ? "rehearsal" : route.slice(1).replace(".html", "")}-${width}.png`),
+      fullPage: true,
+    });
   }
   if (route === "/conductor.html") await checkTechnicianControls(page);
 }
@@ -656,6 +664,8 @@ async function checkTechnicianControls(page: Page): Promise<void> {
     await page.locator(".conductor__m5-dot").getAttribute("cy"),
     "71",
   );
+  assertRefactorBranch();
+  await page.screenshot({ path: join(outputDirectory, "conductor-technician.png"), fullPage: true });
   await page.getByRole("button", { name: "Clear", exact: true }).click();
   assert.equal(await preview.isVisible(), false);
   await close.click();
@@ -729,6 +739,7 @@ async function checkFlash(page: Page): Promise<void> {
       value: {
         requestPort: async () => ({
           open: () => Promise.resolve(),
+          close: () => Promise.resolve(),
           readable: new ReadableStream<Uint8Array>(),
           writable: new WritableStream<Uint8Array>({
             write(chunk) {

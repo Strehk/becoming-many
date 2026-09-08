@@ -9,11 +9,11 @@
  */
 
 import { join } from "node:path";
-import { levelNameFromPath } from "../src/levels/level-names";
+import { levelNameFromPath } from "../shared/level-routes";
 import {
   type DeploymentConfig,
   parseDeploymentConfig,
-} from "../src/station/deployment-config";
+} from "../shared/deployment-config";
 
 const DIST_DIRECTORY = join(import.meta.dir, "../dist");
 const DEFAULT_PORT = 7823;

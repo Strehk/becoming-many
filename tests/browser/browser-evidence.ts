@@ -89,6 +89,7 @@ export function readRunIdentity() {
     "src",
     "public",
     "station",
+    "shared",
     "package.json",
     "bun.lock",
     "vite.config.ts",

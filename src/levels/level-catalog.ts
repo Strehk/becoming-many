@@ -8,7 +8,7 @@
 import { level as connectionsLevel } from "./connections.level";
 import { level as designTestLevel } from "./designTest.level";
 import { level as echoLevel } from "./echo.level";
-import { isLevelName, LEVEL_NAMES, type LevelName } from "./level-names";
+import { isLevelName, LEVEL_NAMES, type LevelName } from "../../shared/level-routes";
 import type { LevelPreset } from "./level-preset";
 import { level as magneticLevel } from "./magnetic.level";
 import { level as motionLevel } from "./motion.level";
@@ -30,7 +30,7 @@ export const LEVEL_CATALOG = {
   "design-test": designTestLevel,
 } as const satisfies Record<LevelName, LevelPreset>;
 
-export { isLevelName, LEVEL_NAMES, type LevelName } from "./level-names";
+export { isLevelName, LEVEL_NAMES, type LevelName } from "../../shared/level-routes";
 
 /** The level the browser entry opens without an explicit request. */
 const DEFAULT_LEVEL_NAME: LevelName = "connections";

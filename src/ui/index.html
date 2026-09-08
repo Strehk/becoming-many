@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#ffffff" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="./app.css" />
+    <title>Becoming Many</title>
+  </head>
+  <body>
+    <main class="app">
+      <canvas class="experience-canvas"></canvas>
+      <p role="alert" data-startup-error hidden>Unable to start Becoming Many. Please reload.</p>
+    </main>
+    <div class="rehearsal" data-rehearsal hidden>
+      <div class="rehearsal__top-row">
+        <button type="button" class="rehearsal__transport" data-transport>Hold</button>
+        <output class="rehearsal__readout" data-readout></output>
+        <svg class="rehearsal__track" data-track aria-hidden="true">
+          <line class="rehearsal__playhead" data-playhead y2="100%"></line>
+        </svg>
+        <button type="button" data-language="en">EN</button>
+        <button type="button" data-language="de">DE</button>
+      </div>
+      <div class="rehearsal__sections" data-sections></div>
+      <template data-section-template><button type="button"></button></template>
+      <template data-tick-template>
+        <svg aria-hidden="true"><line class="rehearsal__tick" y2="100%"></line></svg>
+      </template>
+    </div>
+    <button type="button" class="xr-entry-button" data-xr-entry hidden disabled>VR not available</button>
+    <script type="module" src="../entry/rehearsal.entry.ts"></script>
+  </body>
+</html>

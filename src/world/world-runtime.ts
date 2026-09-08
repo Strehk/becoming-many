@@ -77,6 +77,12 @@ interface FrameControl {
   readonly afterFrame: (frame: WorldFrame) => boolean;
 }
 
+/** DOM placement belongs to the page; World borrows these elements until unload. */
+export interface WorldSurface {
+  readonly canvas: HTMLCanvasElement;
+  readonly viewport: HTMLElement;
+}
+
 interface WorldOptions {
   readonly frameControl?: FrameControl;
   readonly viewPitchAssistDegrees?: number;
@@ -84,7 +90,7 @@ interface WorldOptions {
 
 /** Create the stopped world; its caller prepares content before starting frames. */
 export function createWorld(
-  container: HTMLElement,
+  { canvas, viewport }: WorldSurface,
   options: WorldOptions = {},
 ): WorldContext & {
   readonly renderCounters: RenderCounters;
@@ -105,7 +111,7 @@ export function createWorld(
   scene.add(viewer.group);
   const camera = viewer.camera;
   const lifetime = new AbortController();
-  const renderer = createWorldRenderer(lifetime.signal);
+  const renderer = createWorldRenderer(canvas, lifetime.signal);
   const timer = new Timer();
   const modules = new ModuleRuntime();
   const streamQueue = new StreamQueue(
@@ -113,7 +119,6 @@ export function createWorld(
     frameControl?.readStreamTimeMilliseconds,
   );
 
-  container.replaceChildren(renderer.domElement);
   const xr = createXrSessionControl(renderer);
   let resizeObserver: ResizeObserver | undefined;
   let preparation: Promise<void> | undefined;
@@ -156,7 +161,6 @@ export function createWorld(
         for (const release of [
           () => renderer.dispose(),
           () => renderer.forceContextLoss(),
-          () => renderer.domElement.remove(),
           () => scene.clear(),
         ]) {
           try {
@@ -206,7 +210,7 @@ export function createWorld(
     lifetime.signal.throwIfAborted();
     resizeRenderer();
     resizeObserver ??= new ResizeObserver(resizeRenderer);
-    resizeObserver.observe(container);
+    resizeObserver.observe(viewport);
 
     let frameIndex = 0;
 
@@ -288,8 +292,8 @@ export function createWorld(
   function resizeRenderer(): void {
     if (lifetime.signal.aborted || renderer.xr.isPresenting) return;
 
-    const width = container.clientWidth;
-    const height = container.clientHeight;
+    const width = viewport.clientWidth;
+    const height = viewport.clientHeight;
     if (width === 0 || height === 0) return;
 
     renderer.setSize(width, height, false);
@@ -302,8 +306,10 @@ export function createWorld(
  * One WebGL2 context, XR-compatible from creation so that starting a headset
  * session never has to migrate adapters underneath the running renderer.
  */
-function createWorldRenderer(signal: AbortSignal): WebGLRenderer {
-  const canvas = document.createElement("canvas");
+function createWorldRenderer(
+  canvas: HTMLCanvasElement,
+  signal: AbortSignal,
+): WebGLRenderer {
   const attributes: WebGLContextAttributes = WORLD_RUNTIME_SETTINGS.renderer;
   const context = canvas.getContext("webgl2", attributes);
   if (context === null) {

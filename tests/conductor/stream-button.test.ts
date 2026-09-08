@@ -6,7 +6,7 @@
  */
 
 import { describe, expect, test } from "bun:test";
-import { resolveStreamButton } from "../../src/conductor/stream-button";
+import { resolveStreamButton } from "../../src/ui/conductor/headset-button-state";
 
 describe("resolveStreamButton", () => {
   test("offers the start while a headset runtime is available", () => {

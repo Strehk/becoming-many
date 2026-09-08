@@ -30,7 +30,7 @@ services:
   m5-sim:
     profiles: ["sim"]
     image: ghcr.io/strehk/becoming-many:latest
-    command: ["bun", "station/m5-sim.ts"]
+    command: ["bun", "firmware/m5/tools/simulator.ts"]
     ports:
       - "${SIM_PORT:-5183}:5183"
     restart: unless-stopped

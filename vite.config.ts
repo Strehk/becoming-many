@@ -1,5 +1,6 @@
+import { resolve } from "node:path";
 import { defineConfig, type Plugin } from "vite";
-import { levelNameFromPath } from "./src/levels/level-names.ts";
+import { levelNameFromPath } from "./shared/level-routes.ts";
 
 function rewriteLevelRequest(request: { url?: string }): void {
   if (!request.url) return;
@@ -27,16 +28,20 @@ const levelEntryRoutes: Plugin = {
 };
 
 export default defineConfig({
+  root: resolve(import.meta.dirname, "src/ui"),
+  publicDir: resolve(import.meta.dirname, "public"),
   plugins: [levelEntryRoutes],
   build: {
-    rollupOptions: {
+    outDir: resolve(import.meta.dirname, "dist"),
+    emptyOutDir: true,
+    rolldownOptions: {
       // Listing the entries replaces Vite's default index.html discovery, so
       // the show page has to be named here beside the conductor page.
       input: {
-        main: "index.html",
-        test: "test.html",
-        conductor: "conductor.html",
-        flash: "flash.html",
+        main: resolve(import.meta.dirname, "src/ui/index.html"),
+        test: resolve(import.meta.dirname, "src/ui/test.html"),
+        conductor: resolve(import.meta.dirname, "src/ui/conductor.html"),
+        flash: resolve(import.meta.dirname, "src/ui/flash.html"),
       },
     },
   },

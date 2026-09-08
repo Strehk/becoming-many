@@ -20,9 +20,9 @@ FROM oven/bun:1-slim AS runtime
 WORKDIR /app
 
 # Bun executes the server's TypeScript directly; it imports only from
-# station/ and src/, so no node_modules ships.
+# station/ and shared/, so no node_modules ships.
 COPY station ./station
-COPY src ./src
+COPY shared ./shared
 COPY --from=build /app/dist ./dist
 
 ENV NODE_ENV=production

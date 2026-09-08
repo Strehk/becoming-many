@@ -11,7 +11,7 @@ import {
   LEVEL_NAMES,
   resolveLevelName,
 } from "../../src/levels/level-catalog";
-import { levelNameFromPath } from "../../src/levels/level-names";
+import { levelNameFromPath } from "../../shared/level-routes";
 
 test("every catalog name resolves to itself", () => {
   for (const name of LEVEL_NAMES) {

@@ -13,7 +13,9 @@
     "preview": "vite preview",
     "check": "tsc --noEmit",
     "lint": "biome check .",
-    "m5-sim": "bun station/m5-sim.ts"
+    "m5-sim": "bun firmware/m5/tools/simulator.ts",
+    "m5-export": "bun firmware/m5/tools/export-firmware.ts",
+    "m5-test-config": "bun firmware/m5/tools/test-config.ts"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.9",
