@@ -25,6 +25,13 @@ export interface AnimalsDefinition {
 }
 
 /*
+ * The population is larger than what may be seen at once: the visible slots
+ * are filled from the nearest actors per direction, so a bigger pool is what
+ * decides how often one is near enough to be filled by a fox rather than by
+ * the same deer again. Twenty animals across four species keep every species
+ * in reach of a flight without raising the frame's cost, which `maxVisible`
+ * alone bounds.
+ *
  * Every walking speed here was lowered by seven percent from the first set
  * that read correctly in scale: at the earlier values the animals covered
  * ground faster than their own size suggests, which reads as hurrying rather
@@ -32,13 +39,21 @@ export interface AnimalsDefinition {
  */
 export const ANIMALS_DEFINITION: AnimalsDefinition = {
   seed: 953, // Keeps animal homes stable across level loads.
-  maxVisible: 4, // Bounds animated models and their draw calls on PICO.
+  /*
+   * How many animals may stand in the world at once. Four made a flight over
+   * a whole landscape meet a fox once, which reads as an empty place rather
+   * than a bounded one; six is what a run-through found it takes to keep
+   * meeting something without the population ever crowding the view. This is
+   * the animal cost of a frame: six animated models and their draw calls,
+   * measured on desktop only.
+   */
+  maxVisible: 6,
   activeRadiusMeters: 96, // Repositions animals that fall well behind the player.
   species: [
     {
       id: "deer",
       url: "/animals/deer.glb",
-      count: 3,
+      count: 5,
       heightMeters: 1.4,
       speedMetersPerSecond: 0.65,
       allowedZones: ["meadow", "deciduousForest"],
@@ -47,7 +62,7 @@ export const ANIMALS_DEFINITION: AnimalsDefinition = {
     {
       id: "stag",
       url: "/animals/stag.glb",
-      count: 2,
+      count: 3,
       heightMeters: 1.6,
       speedMetersPerSecond: 0.605,
       allowedZones: ["coniferForest", "deciduousForest"],
@@ -56,7 +71,7 @@ export const ANIMALS_DEFINITION: AnimalsDefinition = {
     {
       id: "fox",
       url: "/animals/fox.glb",
-      count: 2,
+      count: 6,
       heightMeters: 0.7,
       speedMetersPerSecond: 0.79,
       allowedZones: ["coniferForest", "deciduousForest", "shrubSlope"],
@@ -65,7 +80,7 @@ export const ANIMALS_DEFINITION: AnimalsDefinition = {
     {
       id: "rat",
       url: "/animals/rat.glb",
-      count: 3,
+      count: 6,
       heightMeters: 0.25,
       speedMetersPerSecond: 0.325,
       allowedZones: ["meadow", "shrubSlope"],
