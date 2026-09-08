@@ -4,8 +4,9 @@
  *   preview runs at the station monitor's refresh, under the headset floor by
  *   construction, and must not read as a fault.
  * Responsibility: Cover the session × measurement matrix behind the tile.
- * Boundary: The DOM around the reading lives in the status strip, untested by
- *   design.
+ * Boundary: A reading names a value, never a word; which word says it is the
+ *   conductor copy's business. The DOM around it lives in the status strip,
+ *   untested by design.
  */
 
 import { describe, expect, test } from "bun:test";
@@ -17,22 +18,22 @@ const idle = { availability: "available", isSessionActive: false } as const;
 describe("pictureReading", () => {
   test("reports nothing while the preview holds the render loop", () => {
     // A station monitor's 60 Hz is not a fault, and used to read as one.
-    expect(pictureReading(60, idle)).toEqual(["—", "idle"]);
+    expect(pictureReading(60, idle)).toEqual(["none", "idle"]);
   });
 
   test("stays quiet even when the preview runs above the floor", () => {
-    expect(pictureReading(120, idle)).toEqual(["—", "idle"]);
+    expect(pictureReading(120, idle)).toEqual(["none", "idle"]);
   });
 
   test("waits for the first samples of a fresh session", () => {
-    expect(pictureReading(undefined, streaming)).toEqual(["Measuring", "idle"]);
+    expect(pictureReading(undefined, streaming)).toEqual(["measuring", "idle"]);
   });
 
   test("reads OK once the headset holds the acceptance rate", () => {
-    expect(pictureReading(90, streaming)).toEqual(["OK", "live"]);
+    expect(pictureReading(90, streaming)).toEqual(["ok", "live"]);
   });
 
   test("asks for a look when the headset picture drops below the floor", () => {
-    expect(pictureReading(72, streaming)).toEqual(["Check", "warn"]);
+    expect(pictureReading(72, streaming)).toEqual(["check", "warn"]);
   });
 });

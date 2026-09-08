@@ -19,6 +19,11 @@ import type { RunningShow } from "../levels/show-runtime";
 import type { DeploymentConfig } from "../station/deployment-config";
 import { FrameMetricsSampler } from "../test-ui/frame-metrics";
 import type { XrSessionState } from "../world/xr-session";
+import {
+  CONDUCTOR_COPY,
+  type ConductorCopy,
+  type OperatorLanguage,
+} from "./conductor-copy";
 import { type ConductorAction, resolveConductorKey } from "./conductor-keys";
 import { CONDUCTOR_SETTINGS } from "./conductor-settings";
 import type {
@@ -27,6 +32,10 @@ import type {
   ShowSnapshot,
 } from "./conductor-state";
 import { createM5Panel } from "./m5-panel";
+import {
+  loadOperatorLanguage,
+  saveOperatorLanguage,
+} from "./operator-language";
 import { createSessionBar } from "./session-bar";
 import { createShowActions, type ShowActions } from "./show-actions";
 import { createShowTimeline } from "./show-timeline";
@@ -64,6 +73,10 @@ export async function startConductorPage({
 
   // A parameter cannot stay narrowed inside the closures below.
   const page = container;
+
+  // The words the page is read in. The visitor's narration language is a
+  // separate choice; this one belongs to the station.
+  const pageLanguage = createPageLanguage();
 
   // The masthead names the station and carries the health tiles: the two
   // things a person reads from across the room.
@@ -118,7 +131,11 @@ export async function startConductorPage({
     bannerParent: page,
   });
 
-  const drawer = createTechDrawer({ parent: page, actions });
+  const drawer = createTechDrawer({
+    parent: page,
+    actions,
+    onSetLanguage: pageLanguage.choose,
+  });
 
   const panels: readonly ConductorPanel[] = [
     statusStrip,
@@ -201,6 +218,7 @@ export async function startConductorPage({
 
     return {
       snapshot,
+      copy: pageLanguage.read(),
       // While dragging, the operator's own position wins: a clock sampled a
       // frame behind the pointer would fight it.
       showTimeSeconds: scrubSeconds ?? snapshot.showTimeSeconds,
@@ -219,7 +237,39 @@ export async function startConductorPage({
     requestAnimationFrame(draw);
   }
 
-  requestAnimationFrame(draw);
+  // Panels are built wordless and take their labels from the first draw, so
+  // that draw happens before the browser paints rather than a frame into it.
+  draw();
+}
+
+interface PageLanguage {
+  /** The catalogue the page is currently read in. */
+  readonly read: () => ConductorCopy;
+  readonly choose: (operatorLanguage: OperatorLanguage) => void;
+}
+
+/**
+ * The page's own language, applied to the document as well as the panels so
+ * assistive technology and hyphenation read the same answer. Only a chosen
+ * language is written down: opening the page must not turn the browser's own
+ * language into a stored decision a station that later changes it has to undo.
+ */
+function createPageLanguage(): PageLanguage {
+  let copy = CONDUCTOR_COPY[loadOperatorLanguage()];
+  apply(copy.language);
+
+  function apply(operatorLanguage: OperatorLanguage): void {
+    copy = CONDUCTOR_COPY[operatorLanguage];
+    document.documentElement.lang = operatorLanguage;
+  }
+
+  return {
+    read: () => copy,
+    choose(operatorLanguage): void {
+      apply(operatorLanguage);
+      saveOperatorLanguage(operatorLanguage);
+    },
+  };
 }
 
 /**

@@ -524,6 +524,18 @@ body {
   font-weight: 700;
 }
 
+/* The page's own language, laid out like the speeds above it. */
+.conductor__page-languages {
+  display: flex;
+  gap: 8px;
+}
+
+.conductor__page-languages button {
+  flex: 1;
+  height: 56px;
+  font-weight: 700;
+}
+
 .conductor__resets {
   display: grid;
   gap: 8px;

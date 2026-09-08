@@ -14,6 +14,18 @@ opened at `/conductor.html` — the world runs in-process behind the page, and
 the headset stream starts from this page's own button. The default page at `/`
 stays the bare rehearsal show; development worlds use `/test.html`.
 
+The page is read in **English or German**. `conductor-copy.ts` holds both
+catalogues as typed data — every word the page speaks, including the chapter
+names the schedule's cue ids stand for — and `operator-language.ts` resolves
+which one a station opens in: the technician's stored choice, else the
+browser's own language, else English. The switch is in the drawer because a
+venue fixes it once; the session bar's language switch is the *visitor's*
+narration and is a different decision entirely. Panels are built wordless and
+take their labels from the page's first draw, then rewrite them only when the
+catalogue reference changes, so a switch costs one comparison a frame. A
+reading — "the picture is OK", "the headset is streaming" — names a value,
+never a word; the copy turns it into one.
+
 The surface is **touch-first and plain-worded**, because the station is run by
 front-of-house staff, not technicians: every target is thumb-sized, the
 readings are words like "OK" and "Check" rather than numbers, and everything
@@ -64,7 +76,10 @@ toggle.
 
 `tech-drawer.ts` is where the breaking and misleading controls live:
 rehearsal speeds, rewind-and-hold, the flight reset, the two-tap page reload,
-the M5 host panel, the raw readouts, and the stage view. The drawer slides
+the M5 host panel, the raw readouts, the stage view, and the page's own
+language — the one control there that breaks nothing, kept out of
+front-of-house's reach because it is set once per venue rather than per
+visitor. The drawer slides
 rather than unmounts so the world's canvas inside it keeps its layout size.
 `stage-panel.ts` frames that stage view; while a session streams, Three.js
 renders into the headset and the view holds its last frame under a

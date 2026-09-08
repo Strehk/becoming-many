@@ -7,6 +7,7 @@
  *   overlay only has to not swallow it, so it never stops propagation.
  */
 
+import type { ConductorCopy } from "./conductor-copy";
 import type { ConductorPanel } from "./conductor-state";
 
 export function createWakeOverlay(
@@ -34,21 +35,27 @@ export function createWakeOverlay(
 
   const headline = document.createElement("span");
   headline.className = "conductor__wake-headline";
-  headline.textContent = "The station is asleep";
 
   const hint = document.createElement("span");
   hint.className = "conductor__wake-hint";
-  hint.textContent = "Tap anywhere on this screen to wake the sound.";
 
   const pill = document.createElement("span");
   pill.className = "conductor__wake-pill";
-  pill.textContent = "Tap to wake";
 
   root.append(title, icon, headline, hint, pill);
   parent.append(root);
 
+  let appliedCopy: ConductorCopy | undefined;
+
   return {
     update(state): void {
+      if (appliedCopy !== state.copy) {
+        appliedCopy = state.copy;
+        headline.textContent = state.copy.wake.headline;
+        hint.textContent = state.copy.wake.hint;
+        pill.textContent = state.copy.wake.pill;
+      }
+
       root.hidden = state.snapshot.audioState === "running";
     },
   };

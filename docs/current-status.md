@@ -115,7 +115,9 @@ issue and a bounded implementation.
   0.1 ms median per update with all layers open); the four `AudioWorklet`
   Freeverb rooms are unmeasured on the PICO.
 - The conductor page provides transport, timeline, language, session reset,
-  WebXR entry, M5 controls, status, and technician-only details.
+  WebXR entry, M5 controls, status, and technician-only details. It reads in
+  English or German — a technician's choice, remembered per station browser
+  and separate from the narration language a visitor is armed with.
 - The Bun station server serves `dist/`, `/config`, and `/health`; it carries no
   show state. Docker packaging and a Windows kiosk launcher are present.
 

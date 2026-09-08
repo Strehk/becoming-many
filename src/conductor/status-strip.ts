@@ -4,16 +4,19 @@
  * Responsibility: Render the Sound, Picture, Controller, and Headset tiles,
  *   and the one banner a fault that needs a person deserves.
  * Boundary: The page decides what the readings mean; this only shows them.
- *   The numbers behind the words live in the technician drawer.
+ *   A reading names a value, never a word — which word says it is the copy's
+ *   business. The numbers behind the words live in the technician drawer.
  */
 
 import type { M5OperatorStatus } from "../m5/m5-adapter";
 import type { XrSessionState } from "../world/xr-session";
+import type { ConductorCopy, StatusValue } from "./conductor-copy";
 import type { ConductorPanel } from "./conductor-state";
 
 type ReadingState = "idle" | "live" | "warn" | "alarm";
 
 interface Tile {
+  readonly setLabel: (text: string) => void;
   readonly write: (text: string, state: ReadingState) => void;
 }
 
@@ -30,12 +33,11 @@ export function createStatusStrip({
 }: StatusStripOptions): ConductorPanel {
   const root = document.createElement("div");
   root.className = "conductor__tiles";
-  root.setAttribute("aria-label", "Station status");
 
-  const sound = createTile(root, "Sound");
-  const picture = createTile(root, "Picture");
-  const controller = createTile(root, "Controller");
-  const headset = createTile(root, "Headset");
+  const sound = createTile(root);
+  const picture = createTile(root);
+  const controller = createTile(root);
+  const headset = createTile(root);
   tilesParent.append(root);
 
   // The one fault a front-of-house person must act on: a stranger's device is
@@ -43,35 +45,58 @@ export function createStatusStrip({
   const banner = document.createElement("p");
   banner.className = "conductor__banner";
   banner.hidden = true;
-  banner.textContent =
-    "The hand controller is not answering as this station's own. The show keeps playing — call a technician before the next visitor steers.";
   bannerParent.append(banner);
+
+  let appliedCopy: ConductorCopy | undefined;
 
   return {
     update(state): void {
-      const { snapshot } = state;
+      const { snapshot, copy } = state;
 
-      sound.write(...soundReading(snapshot.audioState));
-      picture.write(...pictureReading(snapshot.framesPerSecond, snapshot.xr));
-      controller.write(...controllerReading(snapshot.m5));
-      headset.write(...headsetReading(snapshot.xr));
+      if (appliedCopy !== copy) {
+        appliedCopy = copy;
+        root.setAttribute("aria-label", copy.status.ariaLabel);
+        sound.setLabel(copy.status.sound);
+        picture.setLabel(copy.status.picture);
+        controller.setLabel(copy.status.controller);
+        headset.setLabel(copy.status.headset);
+        banner.textContent = copy.status.wrongDeviceBanner;
+      }
+
+      const { values } = copy.status;
+      writeTile(sound, values, soundReading(snapshot.audioState));
+      writeTile(
+        picture,
+        values,
+        pictureReading(snapshot.framesPerSecond, snapshot.xr),
+      );
+      writeTile(controller, values, controllerReading(snapshot.m5));
+      writeTile(headset, values, headsetReading(snapshot.xr));
 
       banner.hidden = snapshot.m5?.state !== "wrong-device";
     },
   };
 }
 
-type ReadingText = readonly [text: string, state: ReadingState];
+type Reading = readonly [value: StatusValue, state: ReadingState];
 
-/** Anything but "running" freezes show time; the wake overlay says how. */
-function soundReading(audioState: AudioContextState): ReadingText {
-  return audioState === "running" ? ["OK", "live"] : ["Asleep", "warn"];
+function writeTile(
+  tile: Tile,
+  values: Readonly<Record<StatusValue, string>>,
+  [value, state]: Reading,
+): void {
+  tile.write(values[value], state);
 }
 
-function headsetReading(xr: XrSessionState): ReadingText {
-  if (xr.isSessionActive) return ["Streaming", "live"];
+/** Anything but "running" freezes show time; the wake overlay says how. */
+function soundReading(audioState: AudioContextState): Reading {
+  return audioState === "running" ? ["ok", "live"] : ["asleep", "warn"];
+}
 
-  return xr.availability === "available" ? ["Ready", "idle"] : ["—", "idle"];
+function headsetReading(xr: XrSessionState): Reading {
+  if (xr.isSessionActive) return ["streaming", "live"];
+
+  return xr.availability === "available" ? ["ready", "idle"] : ["none", "idle"];
 }
 
 /**
@@ -80,12 +105,12 @@ function headsetReading(xr: XrSessionState): ReadingText {
  * mismatch reads as "Check" so a drifted flash never hides behind a green OK;
  * the mismatch itself is spelled out in the technician drawer.
  */
-function controllerReading(status: M5OperatorStatus | undefined): ReadingText {
-  if (status === undefined || status.state === "off") return ["—", "idle"];
-  if (status.state === "wrong-device") return ["Check", "alarm"];
-  if (status.state === "connecting") return ["Connecting", "warn"];
+function controllerReading(status: M5OperatorStatus | undefined): Reading {
+  if (status === undefined || status.state === "off") return ["none", "idle"];
+  if (status.state === "wrong-device") return ["check", "alarm"];
+  if (status.state === "connecting") return ["connecting", "warn"];
 
-  return status.hasFirmwareMismatch ? ["Check", "warn"] : ["OK", "live"];
+  return status.hasFirmwareMismatch ? ["check", "warn"] : ["ok", "live"];
 }
 
 /** The acceptance target from docs/performance.md is a stable 90 FPS. */
@@ -103,16 +128,16 @@ const FRAME_RATE_FLOOR = 85;
 export function pictureReading(
   framesPerSecond: number | undefined,
   xr: XrSessionState,
-): ReadingText {
-  if (!xr.isSessionActive) return ["—", "idle"];
-  if (framesPerSecond === undefined) return ["Measuring", "idle"];
+): Reading {
+  if (!xr.isSessionActive) return ["none", "idle"];
+  if (framesPerSecond === undefined) return ["measuring", "idle"];
 
   return framesPerSecond >= FRAME_RATE_FLOOR
-    ? ["OK", "live"]
-    : ["Check", "warn"];
+    ? ["ok", "live"]
+    : ["check", "warn"];
 }
 
-function createTile(root: HTMLElement, labelText: string): Tile {
+function createTile(root: HTMLElement): Tile {
   const tile = document.createElement("div");
   tile.className = "conductor__tile";
 
@@ -124,7 +149,6 @@ function createTile(root: HTMLElement, labelText: string): Tile {
 
   const label = document.createElement("span");
   label.className = "conductor__tile-label";
-  label.textContent = labelText;
 
   const value = document.createElement("output");
   value.className = "conductor__tile-value";
@@ -135,6 +159,9 @@ function createTile(root: HTMLElement, labelText: string): Tile {
   root.append(tile);
 
   return {
+    setLabel(text): void {
+      label.textContent = text;
+    },
     write(text, state): void {
       value.textContent = text;
       tile.dataset.state = state;

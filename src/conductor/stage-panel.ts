@@ -7,6 +7,7 @@
  *   mount's children.
  */
 
+import type { ConductorCopy } from "./conductor-copy";
 import type { ConductorPanel } from "./conductor-state";
 
 export interface StagePanelOptions {
@@ -26,15 +27,21 @@ export function createStagePanel({
   stageMount.className = "conductor__stage-mount";
   const overlay = document.createElement("p");
   overlay.className = "conductor__stage-overlay";
-  overlay.textContent = "streaming — paused";
   overlay.hidden = true;
   view.append(stageMount, overlay);
   parent.append(view);
+
+  let appliedCopy: ConductorCopy | undefined;
 
   return {
     // While a session runs, Three.js renders into the headset and the canvas
     // holds its last frame — said out loud so a frozen preview reads as normal.
     update(state): void {
+      if (appliedCopy !== state.copy) {
+        appliedCopy = state.copy;
+        overlay.textContent = state.copy.stage.streamingOverlay;
+      }
+
       overlay.hidden = !state.snapshot.xr.isSessionActive;
     },
   };

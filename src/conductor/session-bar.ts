@@ -5,11 +5,13 @@
  * Responsibility: Render the language switch, the headset button, the
  *   "New visitor" reset, and the technician-drawer toggle.
  * Boundary: Session rules live in docs/direction/session-operator.md; the
- *   show is commanded only through the actions contract.
+ *   show is commanded only through the actions contract. The language here is
+ *   the visitor's narration, never the language this page is read in.
  */
 
 import { NARRATION_LANGUAGES } from "../dramaturgy/narration-catalog";
 import type { XrSessionControl } from "../world/xr-session";
+import type { ConductorCopy } from "./conductor-copy";
 import type { ConductorPanel } from "./conductor-state";
 import { createButton, createConfirmButton } from "./panel-buttons";
 import type { ShowActions } from "./show-actions";
@@ -30,13 +32,11 @@ export function createSessionBar({
 }: SessionBarOptions): ConductorPanel {
   const root = document.createElement("section");
   root.className = "conductor__session-bar";
-  root.setAttribute("aria-label", "Session");
 
   const languageGroup = document.createElement("div");
   languageGroup.className = "conductor__language";
   const languageLabel = document.createElement("span");
   languageLabel.className = "conductor__language-label";
-  languageLabel.textContent = "Language";
   languageGroup.append(languageLabel);
 
   const languageButtons = NARRATION_LANGUAGES.map((language) =>
@@ -50,13 +50,10 @@ export function createSessionBar({
   );
 
   // The confirm cycle rewrites the button's text, so it stays icon-free.
-  const restartButton = createConfirmButton(
-    root,
-    "New visitor",
-    "Tap again to reset",
-    () => actions.restartExperience(),
+  const restartButton = createConfirmButton(root, () =>
+    actions.restartExperience(),
   );
-  restartButton.classList.add("conductor__restart-button");
+  restartButton.element.classList.add("conductor__restart-button");
 
   root.prepend(languageGroup);
 
@@ -74,14 +71,27 @@ export function createSessionBar({
 
   const techButton = createButton(root, "", onToggleTechDrawer);
   techButton.classList.add("conductor__tech-button");
-  techButton.setAttribute("aria-label", "Technician tools");
   techButton.append(createIcon(WRENCH_ICON_SVG));
 
   parent.append(root);
 
+  let appliedCopy: ConductorCopy | undefined;
+
   return {
     update(state): void {
-      const { language, xr: xrState } = state.snapshot;
+      const { snapshot, copy } = state;
+      const { language, xr: xrState } = snapshot;
+
+      if (appliedCopy !== copy) {
+        appliedCopy = copy;
+        root.setAttribute("aria-label", copy.session.ariaLabel);
+        languageLabel.textContent = copy.session.narrationLanguage;
+        restartButton.setLabels(
+          copy.session.restart,
+          copy.session.restartArmed,
+        );
+        techButton.setAttribute("aria-label", copy.session.techToggle);
+      }
 
       languageButtons.forEach((button, index) => {
         button.setAttribute(
@@ -92,7 +102,7 @@ export function createSessionBar({
 
       isSessionActive = xrState.isSessionActive;
       const view = resolveStreamButton(xrState);
-      streamLabel.textContent = view.label;
+      streamLabel.textContent = copy.session.stream[view.action];
       streamButton.disabled = !view.isEnabled;
       streamButton.dataset.streaming = String(xrState.isSessionActive);
     },
