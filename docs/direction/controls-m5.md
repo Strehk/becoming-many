@@ -2,43 +2,36 @@
 
 ## Current
 
-Keyboard flight remains a complete fallback. The M5StickS3 path is implemented
-as another input adapter:
+M5 device communication and input processing are consolidated in `src/m5`.
+`runtime/` owns HTTP polling and the shared validity/filter pipeline; `setup/`
+owns USB communication. The shared wire contract stays in `protocol.ts`.
+M5/Flash presentation belongs to `src/ui` and is connected by `src/entry`.
+See [M5](../../src/m5/README.md) for the contracts and reading order.
 
-```text
-HTTP /state payload
-→ validation and device checks
-→ normalized ControlFrame
-→ safety, auto-neutralization, smoothing
-→ shared viewer-rig flight
-```
+The firmware owns normalization, mounting axes and calibration. The browser
+validates identity, version, calibration, advancing sequence and freshness,
+then applies safety, neutralization and smoothing before rig locomotion.
+Host replacement aborts requests and replaces all derived input history.
 
-`ControlFrame` exposes normalized pitch/roll, quality, and one-frame button
-edges. `quality: 0` means neutral steering rather than a fatal error. The
-controller is polled by one page; Conductor reuses the show's samples for its
-preview.
+One Run reader consumes button events. UI observes a shared snapshot with
+separate device status, accepted pose and effective steering; it cannot steal
+button edges. A live device can have neutral input. Quality zero preserves
+the current glider behavior; keyboard input returns only without a configured
+host. Physical polarity acceptance remains open.
 
-The repository contains PlatformIO firmware, a merged browser-flash binary,
-`/flash.html` for Web Serial setup, and an M5 simulator. Firmware and browser
-share a versioned protocol contract. Each response carries a device id and
-monotonic button counters.
+Firmware source and its typed simulator/export tools are under `firmware/m5`.
+The export command builds a merged image, checks firmware/browser compatibility
+and produces the Flash manifest. Reconfiguring WiFi preserves omitted mounting
+options. Serial replies distinguish completed writes from confirmed operations;
+browser passwords are transient and excluded/redacted from logs.
 
-## Known Gaps
+## Physical acceptance
 
-- Changing the host does not yet fully isolate old in-flight polls (#17).
-- Sequence, calibration, firmware, liveness, and wrong-device behavior need a
-  stricter enforcement policy (#18 and #38).
-- #12 now keeps passwords transient and redacts logs; its current wave awaits
-  cumulative human review. Physical flash/setup acceptance remains separate.
-- The firmware binary is built manually; release automation and physical
-  flash/setup acceptance are not recorded.
+Technician setup remains separate from normal operation. Actual hardware must
+still verify flash, configure, calibrate, reboot, reconnect, wrong/stale device,
+controller removal and installation flight. Local browser and native tests do
+not establish this evidence. The existing #18/#38 and installation acceptance
+remain open where physical criteria are unmet.
 
-## Planned
-
-Keep setup technician-only and separate from normal station operation. Physical
-acceptance must test flash, configure, calibrate, reboot, reconnect, wrong
-device, stale device, and controller removal. Keyboard fallback must continue to
-work when no device is configured.
-
-Do not add BLE, relays, pairing infrastructure, or another control protocol
+Do not add BLE, relays, pairing infrastructure or another control protocol
 without a demonstrated deployment requirement.

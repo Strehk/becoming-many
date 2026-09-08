@@ -5,7 +5,10 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const firmwareDirectory = fileURLToPath(new URL("../", import.meta.url));
-const firmware = await readFile(join(firmwareDirectory, "src/main.cpp"), "utf8");
+const firmware = await readFile(
+  join(firmwareDirectory, "src/main.cpp"),
+  "utf8",
+);
 const configStruct = firmware.match(/struct DeviceConfig \{[\s\S]*?\n\};/)?.[0];
 const configParser = firmware.match(
   /DeviceConfig readConfigFromDocument\(JsonDocument &document\) \{[\s\S]*?\n\}/,

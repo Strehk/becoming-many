@@ -1,11 +1,16 @@
 {
   "name": "Becoming Many M5 Controller",
-  "version": "0.3.2-bm-http",
+  "version": "0.3.3-bm-http",
   "new_install_prompt_erase": true,
   "builds": [
     {
       "chipFamily": "ESP32-S3",
-      "parts": [{ "path": "m5-controller.bin", "offset": 0 }]
+      "parts": [
+        {
+          "path": "m5-controller.bin",
+          "offset": 0
+        }
+      ]
     }
   ]
 }

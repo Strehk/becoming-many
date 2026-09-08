@@ -83,7 +83,7 @@ const RESULT = {
   message: "Configuration saved",
   firmwareVersion: "test",
   deviceId: "station-m5",
-};
+} satisfies M5SerialResponse;
 
 async function flushReads(): Promise<void> {
   await new Promise((resolve) => setTimeout(resolve, 0));

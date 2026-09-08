@@ -5,7 +5,10 @@ import { fileURLToPath } from "node:url";
 import { M5_FIRMWARE_VERSION } from "../../../src/m5/protocol";
 
 const projectDirectory = fileURLToPath(new URL("../", import.meta.url));
-const source = await readFile(resolve(projectDirectory, "src/main.cpp"), "utf8");
+const source = await readFile(
+  resolve(projectDirectory, "src/main.cpp"),
+  "utf8",
+);
 const firmwareVersion = source.match(
   /constexpr const char \*FirmwareVersion = "([^"]+)";/,
 )?.[1];
@@ -17,7 +20,14 @@ if (firmwareVersion !== M5_FIRMWARE_VERSION) {
 }
 
 const build = Bun.spawn(
-  ["pio", "run", "--project-dir", projectDirectory, "--environment", "m5stick-s3"],
+  [
+    "pio",
+    "run",
+    "--project-dir",
+    projectDirectory,
+    "--environment",
+    "m5stick-s3",
+  ],
   { stdout: "inherit", stderr: "inherit" },
 );
 const exitCode = await build.exited;

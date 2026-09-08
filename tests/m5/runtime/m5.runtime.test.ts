@@ -120,7 +120,7 @@ describe("M5 runtime", () => {
   ] as const)(
     "keeps %s neutral at the network boundary",
     async (_reason, respond) => {
-      const fetchMock = spyOn(globalThis, "fetch").mockImplementation(respond);
+      const fetchMock = spyOn(globalThis, "fetch").mockReturnValue(respond());
       const runtime = createM5Runtime(BASE_STATE.deviceId);
       try {
         runtime.setHost("rig.local");

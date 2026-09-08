@@ -1,13 +1,24 @@
-<!--
-Purpose: Explain the M5 test scope.
-Context: The polling adapter must honor the ControlFrame contract without hardware.
-Responsibility: Route tests for the wire parser and the pure control pipeline under src/m5.
-Boundary: The network poller and the flight application are verified by running them.
--->
-
 # M5 Tests
 
-This folder verifies the untrusted `/state` parser and the pure control
-pipeline: safety flattening, rest-pose auto-neutralize (with injected
-timestamps — no test sleeps), smoothing, and the control source's counter-diff
-button edges, consume-on-read latching, staleness, and wrong-device rejection.
+`bun test tests/m5 tests/control` checks the device boundary and its consumers:
+
+- `protocol.test.ts`: untrusted HTTP parsing and normalized ranges.
+- `runtime/`: filtering, neutralization, smoothing, eligibility and exact stale
+  boundaries; observation versus effective steering; single-reader button
+  events; host replacement, late responses, failed polls and permanent unload.
+- `setup/`: typed serial replies, secret redaction, actual stream cancellation,
+  write/close failures and device disconnection without physical hardware.
+- `firmware/`: release version guards and failed builds that cannot publish
+  firmware artifacts.
+
+`bun run m5-export` performs the actual PlatformIO build and publishes the
+matching merged binary/manifest locally. After that, `bun run m5-test-config`
+compiles the actual C++ configuration function against the installed ArduinoJson
+headers and exercises omitted and explicit mounting options. It is separate
+from normal Bun tests because it requires a native compiler and the firmware
+build dependencies.
+
+The existing production browser smoke covers the operator observation and USB
+setup UI, including transient synthetic credentials. The simulator and local
+native checks do not establish physical controller calibration, flash success,
+headset behavior or installation performance.

@@ -5,6 +5,7 @@ import {
   mkdir,
   mkdtemp,
   readFile,
+  realpath,
   rm,
   writeFile,
 } from "node:fs/promises";
@@ -67,7 +68,10 @@ process.exit(${buildExitCode});
   const child = Bun.spawn(
     [process.execPath, join(firmware, "tools/export-firmware.ts")],
     {
-      env: { ...process.env, PATH: `${join(project, "bin")}:${process.env.PATH}` },
+      env: {
+        ...process.env,
+        PATH: `${join(project, "bin")}:${process.env.PATH}`,
+      },
       stdout: "pipe",
       stderr: "pipe",
     },
@@ -126,11 +130,17 @@ test("exports the merged binary and a manifest with the verified version", async
       },
     ],
   });
-  expect(await Bun.file(join(firmware, "build-called")).json()).toEqual([
+  const buildArguments: string[] = await Bun.file(
+    join(firmware, "build-called"),
+  ).json();
+  expect(buildArguments).toEqual([
     "run",
     "--project-dir",
-    firmware,
+    expect.any(String),
     "--environment",
     "m5stick-s3",
   ]);
+  expect(await realpath(buildArguments[2] as string)).toBe(
+    await realpath(firmware),
+  );
 });

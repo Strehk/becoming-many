@@ -1,5 +1,8 @@
 import { describe, expect, it } from "bun:test";
-import { parseM5SerialResponse } from "../../../src/m5/protocol";
+import {
+  type M5SerialResponse,
+  parseM5SerialResponse,
+} from "../../../src/m5/protocol";
 
 const IDENTITY = { deviceId: "station-m5", firmwareVersion: "test" };
 const CONFIG = {
@@ -13,7 +16,7 @@ const CONFIG = {
   isCalibrated: true,
   pitchOffset: 0.2,
   rollOffset: -0.1,
-};
+} satisfies M5SerialResponse;
 const DIAGNOSIS = {
   ...IDENTITY,
   type: "diagnoseResult",
@@ -26,7 +29,7 @@ const DIAGNOSIS = {
   imuPresent: true,
   lastPollAgeMs: -1,
   isCalibrated: true,
-};
+} satisfies M5SerialResponse;
 
 describe("M5 serial response contract", () => {
   it.each([
@@ -35,7 +38,7 @@ describe("M5 serial response contract", () => {
     "factoryResetResult",
     "rebootResult",
     "commandResult",
-  ])(
+  ] as const)(
     "accepts the real firmware result discriminant %s with true or false status",
     (type) => {
       for (const ok of [true, false]) {
