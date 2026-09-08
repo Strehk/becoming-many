@@ -110,17 +110,18 @@ issue and a bounded implementation.
 
 ## Verification Snapshot
 
-Verified on 2026-09-03 after the animal passages joined the drone organ on the
-show clock:
+Verified on 2026-09-03 after the animal passages were fitted to the level
+composition contracts:
 
-- `bun test`: 481 passed, 0 failed across 69 files.
+- `bun test`: 473 passed, 0 failed across 64 files.
 - `bun run check`: passed.
 - `bun run lint`: passed.
 - `bun run build`: passed with existing Vite warnings about one extensionless
   config import and a large output chunk.
-- `bunx fallow`: found no dead files or exports. The remaining unused dependency
-  override, duplication, complexity, and hotspot findings are tracked as
-  cleanup issues; Fallow is not currently clean.
+- `bunx fallow`: found no dead files and one unused export,
+  `STEP_LOOKAHEAD_SECONDS` in `src/sound/drone-organ/organ-timeline.ts`. The
+  remaining unused dependency override, duplication, complexity, and hotspot
+  findings are tracked as cleanup issues; Fallow is not currently clean.
 
 The deterministic benchmark has accepted renderer-counter baselines, but its
 frame times are machine-specific. The grass clipmap and the complete current

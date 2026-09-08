@@ -6,6 +6,7 @@
  */
 
 import { expect, test } from "bun:test";
+import { PIECE_PASSAGES } from "../../src/dramaturgy/piece-schedule";
 import {
   HEAT_MOTION_SENSE,
   MOTION_SENSE,
@@ -526,4 +527,22 @@ test("Design Test authors semantic colors without development diagnostics", () =
   expect(designTestLevel.vegetation?.colors.trunkColor).toBe(0x51447b);
   expect(designTestLevel.rocks?.colors.lightColor).toBe(0x739fa8);
   expect(designTestLevel.animals?.colors.furColor).toBe(0xf3d34f);
+});
+
+test("the show names the animals that cross it", () => {
+  // The composition is what the show is made of, so the passages are named
+  // here beside the layers rather than reached for inside the runtime.
+  expect(SHOW_COMPOSITION.passages).toBe(PIECE_PASSAGES);
+});
+
+test("a scheduled swarm passage carries the layer that prints it", () => {
+  // The swarm has no body: it is drawn by a Motion Sense trail ring in the
+  // level's own trail appearance. A world that schedules it without the motion
+  // layer would drop the crossing silently, so the pairing is locked here.
+  const swarmScheduled = SHOW_COMPOSITION.passages?.passages.some(
+    ({ passageId }) => passageId === "mosquitoes",
+  );
+
+  expect(swarmScheduled).toBe(true);
+  expect(SHOW_COMPOSITION.world.motion).toBeDefined();
 });

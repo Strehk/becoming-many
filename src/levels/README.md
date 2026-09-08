@@ -38,7 +38,10 @@ the browser Test UI.
 
 `level-catalog.ts` names only standalone presets. `show-composition.ts` owns the
 separate construction-only `ShowComposition` loaded once for the complete
-show. `show-levels.ts` owns the narrow presentation states the running show can
+show, and names the animal passages that cross it beside its sense layers — a
+passage is placed on the timeline rather than carried by a sense, so it sits
+next to `world` and not inside it. Without that entry no passage model or route
+is loaded at all, which is why a standalone preset costs nothing for them. `show-levels.ts` owns the narrow presentation states the running show can
 change. The bare `src/main.ts` route starts that show; `?level=<name>` and
 matching path names enter through `src/test-main.ts` and select one showless
 development preset. Benchmarks use that Test entry too.

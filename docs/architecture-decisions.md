@@ -76,12 +76,19 @@ history belongs in Git; unresolved product and deployment questions belong in
 - A staged one-shot moment is scheduled data, not a triggered event. The animal
   passages are the second facet of the one authored schedule, read by the pure
   lookup `passageProgressAt(schedule, id, showTime)`, so a scrub lands an animal
-  where playing through would have put it — which a rising edge over an event
-  bus could not. Their authored routes and constants are transcribed from the
-  predecessor project rather than re-derived, because direction and closeness
-  are the tuning. A passage is ungated and undecorated: a crossing happens
-  between senses, so no sense strength may put it away and it wears none of
-  their effects.
+  at the point on its route that playing through would have reached — which a
+  rising edge over an event bus could not. Position along the route is derived;
+  the frame a route is turned in is not, where that frame follows the visitor:
+  the bat takes the heading the visitor holds as it enters, so scrubbing out and
+  back in can send it across on a different bearing. Their authored routes and
+  constants are transcribed from the predecessor project rather than re-derived,
+  because direction and closeness are the tuning. A passage is ungated and
+  undecorated: a crossing happens between senses, so no sense strength may put
+  it away and it wears none of their effects.
+- Which animals cross is composition data. `ShowComposition` names its passage
+  schedule beside its sense layers, so the world a show builds is described in
+  one place; Level Composition constructs from what it is given rather than
+  importing the piece's schedule or a module's own definitions.
 - The default page runs only the complete show. The explicit Test entry owns
   standalone levels, benchmarks, headset diagnostics, and direct-M5 requests.
 - The viewer rig owns locomotion while the camera owns local desktop-look or
