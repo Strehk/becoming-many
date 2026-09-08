@@ -2,10 +2,27 @@
 
 ## Responsibility
 
-The operator UI at `/conductor.html` presents transport, timeline, language,
-an embedded experience preview, and module status. The show runs in this same browser page.
+The operator UI at `/conductor.html` controls the local station.
+The show and embedded experience preview run in this same browser page.
 The target folder owns DOM, input bindings, gesture preview, confirmations,
 status presentation and UI cleanup. It owns no Show clock or visitor policy.
+
+## Operator layout
+
+- Top: Sound, Picture, Controller and Headset status, plus technician tools.
+- Main: large Play/Pause and Stop controls, EN/DE below, and the live preview
+  alongside them on desktop. Narrow layouts stack controls and preview.
+- Bottom: one continuous timeline with chapter progress and chapter jump buttons.
+  There is no separate elapsed-time display.
+
+Status combines an icon, readable text and color. Icons stay visible regardless
+of device connection; a dash is a status value, not a missing icon. The M5Stick
+uses Lucide's rectangular `smartphone` glyph with a small button. Icons are
+individual SVG assets from the installed package, bound to declared SVG elements.
+
+The existing dark palette and square surfaces are retained. Operator buttons
+have at least 56px touch targets; brighter borders, distinct selected states and
+readable disabled labels provide contrast without a separate styling system.
 
 ## Entry and Engine boundary
 
@@ -52,3 +69,13 @@ All authored styling lives in `src/ui/app.css` under the [Engineering Standards]
 The [target architecture](../../../docs/target-architecture.md#3-target-structure)
 owns diagrams and placement; the [roadmap](../../../docs/roadmap.md) owns order.
 The full visitor restart and XR/calibration operation remain #9/#46.
+
+## Verification record
+
+The [design review and evidence](../../../docs/evidence/conductor-ui/design-qa.md)
+record the mockup comparison, independent structure/accessibility reviews,
+desktop/narrow screenshots, interaction checks and the dialog close-state fix.
+The [language follow-up](../../../docs/evidence/conductor-ui/language-smoke.json)
+records successful browser checks for continuous EN/DE switching and preserved
+pause state. Implementation validation included lint, build and focused tests;
+these records do not establish physical PICO/M5 or Windows-PCVR acceptance.
