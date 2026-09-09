@@ -713,3 +713,53 @@ native workload. Final report:
 `benchmark-results/issue-50/narration-final-integration/probe.json`.
 Its three raw media cancellation errors remain visible; functional assertions,
 console, HTTP and shader checks have no failure.
+
+
+## Repeated forward recycling memory — 2026-09-09
+
+Source `295604f`, served-assets digest
+`e4d58d7020ddc2b9124797f9591c6777fde9fcc8baceab03fc69a50e4852d9d3`;
+headed Chromium 151.0.7922.34 / M2 Max / Metal, root DE route, 1280×720 DPR1.
+The existing M5 fixture drives neutral forward flight through twelve consecutive
+misses and automatic replacements, without changing private progress or poses.
+Every sampled phase reports zero successful passages, and the tab stays visible.
+After the last replacement the actual Pause control holds the world for ten seconds.
+
+Samples use [CDP Runtime.getHeapUsage](https://chromedevtools.github.io/devtools-protocol/tot/Runtime/#method-getHeapUsage)
+after explicit garbage collection and a 150 ms event-settling interval. This is
+isolate-level diagnostic memory, not total process/decoder/GPU memory. Forced GC
+and WebAudio inspection perturb execution, so this run supplies no frame-time
+comparison; the ordinary timing runs above remain authoritative for that claim.
+
+| Sample | Elapsed (s) | Retained JS (MiB) | Embedder heap (MiB) | Backing storage (bytes) |
+| --- | ---: | ---: | ---: | ---: |
+| Ready | 1.3 | 17.287 | 1.810 | 77,970,430 |
+| First section | 25.1 | 16.764 | 1.972 | 77,968,713 |
+| 3 misses | 76.4 | 17.111 | 2.168 | 77,968,713 |
+| 6 misses | 125.7 | 17.463 | 2.153 | 77,968,714 |
+| 9 misses | 174.0 | 17.449 | 2.501 | 77,968,715 |
+| 12 misses | 221.4 | 17.369 | 2.573 | 77,968,940 |
+| Paused, tails settled | 231.6 | 16.941 | 2.367 | 77,968,715 |
+
+WebGL create/delete counters stay constant at 508 buffers, 46 programs,
+58 textures, 3 framebuffers and 108 vertex arrays for the entire prepared root
+world. No new object of these kinds is created during twelve replacements.
+These counts include retained main resources, not just Start's two draws.
+DOM counters remain two documents and 193 nodes after first playback.
+
+WebAudio creation/destruction notifications observe 37–39 AudioBufferSource nodes
+and 1,049–1,053 Gains at the flying checkpoints; after Pause they return to the
+initial 28/1,032. This diagnostic inventory includes main/offline-context nodes
+and may retain notifications until browser destruction; it is not an audible
+voice count or proof of immediate native release. The authored four voices and
+three shared samples are unchanged. No continuing JS growth appears between
+misses 6/9/12; embedder memory varies and is 0.557 MiB above initial Ready after
+Pause. Do not infer a full native-memory plateau, indefinite endurance or PCVR
+acceptance from this 232-second observation.
+
+Local report: `benchmark-results/issue-50/recycling-memory-295604f/probe.json`.
+Functional assertions pass, with no console, HTTP or shader failures and no
+warnings. The strict probe still exits nonzero for two recorded media preload
+`ERR_ABORTED` requests. The [actual final screenshot](evidence/issue-50/recycling-endurance.png)
+is taken after Pause and is excluded from memory samples. Runtime remains
+unchanged; this adds evidence only, without a benchmark-reference update.

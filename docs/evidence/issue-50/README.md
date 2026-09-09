@@ -135,6 +135,28 @@ visual/course evidence above applies to unchanged geometry and flow. Physical
 listening and Windows-PCVR USB-C 90 Hz, full decoder/driver memory plateau, and
 the English tutorial voice decision remain open.
 
+## Repeated forward recycling — memory observation, 2026-09-09
+
+A further headed production-browser check closes the missing longer recycling
+observation. On `295604f` the real M5 adapter receives a neutral forward flight
+fixture: twelve missed sections retire and regenerate ahead, with zero awarded
+passages. The last target is beyond world Z −1,132 m. The same point/material
+resources remain allocated throughout the 232-second observation. After warmup,
+retained JavaScript heap is 17.463/17.449/17.369 MiB at misses 6/9/12; backing
+storage stays within 227 bytes of 74.357 MiB. The brief sample series shows no
+continuing JS growth after warmup, not an installation-duration leak guarantee.
+
+Ten seconds after Pause, observed AudioBufferSource/Gain counts return to their
+initial values. These CDP counters include prepared main and offline-context
+nodes; they are not the number of audible voices. Main assets remain prepared.
+The [measurement details](../../performance.md#repeated-forward-recycling-memory--2026-09-09)
+separate JS/backing storage from unmeasured decoder/driver memory and distinguish
+forced-GC diagnostics from ordinary frame timing. The run has no functional,
+console, HTTP or shader failure; its strict report retains two media preload
+`ERR_ABORTED` requests. No production source or numerical reference changed.
+
+![Actual root experience after twelve missed and regenerated sections](recycling-endurance.png)
+
 ## Cloud revision — 2026-09-09
 
 The latest visual handoff is implemented as independent procedural geometry,
