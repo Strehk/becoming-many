@@ -859,3 +859,17 @@ measurements show no demonstrated material change; neither an improvement nor
 Windows-PCVR 90 Hz acceptance follows. Zero course-time GPU resource creation;
 upload p99 zero, peak 34,560 bytes for Air streaming. See
 [conditions, overdraw proxy and limits](evidence/issue-50/README.md#arrow-first-turn-triggered-tunnel--2026-09-09).
+
+
+## Spoken tutorial staging — 2026-09-09
+
+`4bb726a` hides the opening Air field until its spoken mention and requires a
+formed arrow before the helping rings. Shorter ring sections keep the complete
+learning route within one minute. Their initial near-field overdraw increase
+was removed with a four-pixel training point cap (same 32k/6k capacities and
+1,408,000 training attribute bytes; maximum sprite-square proxy 512,000 pixels).
+Headed 1920×1080 DPR1 final GPU median/p95 is 0.099500/0.286291 ms against preceding
+0.103375/0.307708 ms; CPU remains 0.3/0.4 ms. No course-time GPU resource creation.
+The draw-only probe's empty-opening gap must not be interpreted as a render-loop
+stall. [Full comparison, failure/correction and timing evidence](evidence/issue-50/README.md#spoken-line-staging--2026-09-09).
+Physical Windows-PCVR remains unverified.

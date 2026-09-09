@@ -781,3 +781,36 @@ no interaction assertion failed. Local raw evidence:
 
 ![Before the room is mentioned](spoken-before-room.png)
 ![Room established without an arrow](spoken-room.png)
+
+
+Final combined verification at `4bb726a`: 37 focused Start/Air/Show/audio/restart
+tests, repository lint and production build/typecheck passed. The first course
+with longer arrow readability exceeded the minute; the preserved timeout worked,
+but successful practice was too long. Authored ring lead ranges were shortened
+to 10–11 m initially and 9–10 m subsequently, still expanded for narrow views.
+Preview rings begin farther along the short curve, after their formation time.
+The corrected course finished four real passages with zero misses and retained
+the complete closing, handing off at about 69.6 s. Native arrow onsets were
+19.314/1.150/2.661/1.054 s; every ring reveal followed its arrow by about 2.2 s.
+No closing-list mention generated another direction cue.
+
+Shorter nearby rings initially increased GPU median/p95 to 0.160750/0.321250 ms.
+The final four-pixel point-size cap preserves all 32k training/6k Air particles
+while reducing the conservative training sprite-square coverage bound from
+1,152,000 to 512,000 pixels. At 1920×1080 DPR1, the final 3,953 measured draw frames
+had CPU median/p95/p99 0.3/0.4/0.5 ms and GPU 0.099500/0.286291/0.379749 ms.
+The preceding arrow-first baseline was 0.103375/0.307708 ms GPU median/p95.
+For the common 20–55 s practice window, GPU median/p95 changed from
+0.127749/0.319458 to 0.112374/0.299625 ms. No course-time buffer/program/texture
+creation; upload p99 zero, bounded Air face-update peak 49,920 bytes. RAF median/
+p95/p99 was 16.7/18.1/18.5 ms. The 4.317 s gap between recorded draws is the
+intentionally empty opening: this probe records draw frames only, and recorded
+no corresponding course long task. It is not a multi-second render-loop stall.
+No Windows-PCVR acceptance or statistically isolated speedup is inferred.
+
+Raw final evidence: `benchmark-results/issue-50/spoken-staging-bounded/probe.json`,
+served asset digest `dfaa349afded276d6b4d6520d75c366558eddf792d8f8aa254d149d368153603`.
+The browser assertions passed; raw native media cancellations at replacement/
+disposal remain reported as ERR_ABORTED by the harness. The source change is a
+scoped staging feature, not a code-reduction claim. EN voice policy and physical
+listening/comprehension/90 Hz acceptance remain open.
