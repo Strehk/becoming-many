@@ -1,13 +1,3 @@
-/**
- * Purpose: Prove polls become render frames without losing edges or trust.
- * Context: Polls arrive at ~6Hz and the render loop reads at up to 90Hz;
- *   the source bridges the rates and guards against the neighbour rig.
- * Responsibility: Cover edge diffing and latching, staleness, wrong-device
- *   rejection, the firmware-mismatch report, and the non-consuming read a
- *   second view uses.
- * Boundary: The individual pipeline stages have their own tests.
- */
-
 import { describe, expect, it } from "bun:test";
 import { M5_FIRMWARE_VERSION, type M5State } from "../../../src/m5/protocol";
 import { createControlSource } from "../../../src/m5/runtime/control-source";
@@ -34,7 +24,7 @@ function state(overrides: Partial<M5State> = {}): M5State {
 
 describe("control source", () => {
   it("derives both edges from a press-and-release between two polls", () => {
-    const source = createControlSource(BASE_STATE.deviceId);
+    const source = createControlSource();
     source.pushState(state(), 0);
     source.pushState(
       state({ seq: 2, buttonPressCount: 1, buttonReleaseCount: 1 }),
@@ -47,7 +37,7 @@ describe("control source", () => {
   });
 
   it("delivers a latched edge exactly once across many render frames", () => {
-    const source = createControlSource(BASE_STATE.deviceId);
+    const source = createControlSource();
     source.pushState(state(), 0);
     source.pushState(
       state({ seq: 2, buttonPressCount: 1, buttonPressed: true }),
@@ -60,7 +50,7 @@ describe("control source", () => {
   });
 
   it("discards pending edges once polls become stale", () => {
-    const source = createControlSource(BASE_STATE.deviceId);
+    const source = createControlSource();
     source.pushState(state({ pitch: 0.4 }), 0);
     source.pushState(state({ seq: 2, pitch: 0.4, buttonPressCount: 1 }), 50);
 
@@ -75,7 +65,7 @@ describe("control source", () => {
   });
 
   it("eases a live pose up from neutral instead of snapping", () => {
-    const source = createControlSource(BASE_STATE.deviceId);
+    const source = createControlSource();
     source.pushState(state({ pitch: 0.4 }), 0);
 
     // One smoothing step: 0.625 of the way from 0 toward 0.4.
@@ -87,45 +77,29 @@ describe("control source", () => {
     });
   });
 
-  it.each([
-    ["missing-id", {}, ""],
-    ["wrong-device", { deviceId: "other-rig" }, BASE_STATE.deviceId],
-    ["incompatible-firmware", { firmwareVersion: "old" }, BASE_STATE.deviceId],
-    ["uncalibrated", { isCalibrated: false }, BASE_STATE.deviceId],
-    ["stalled", { seq: 2 }, BASE_STATE.deviceId],
-    ["stalled", { seq: 1 }, BASE_STATE.deviceId],
-    ["stalled", { seq: 1, uptimeMs: 10 }, BASE_STATE.deviceId],
-  ] as const)(
-    "neutralizes %s and recovers without old edges",
-    (reason, rejected, expectedId) => {
-      const source = createControlSource(expectedId);
-      source.pushState(state({ pitch: 0.4 }), 0);
-      source.pushState(state({ seq: 2, pitch: 0.4, buttonPressCount: 1 }), 50);
-      for (let poll = 0; poll < 3; poll++) {
-        source.pushState(state({ seq: 3, ...rejected }), 60 + poll);
-        const frame = source.consumeFrame(65);
-        expect(frame.quality).toBe(0);
-        expect(frame.buttonDown).toBe(false);
-        expect(source.readObservation(65)).toEqual({
-          status: reason,
-          sample: undefined,
-          control: { pitch: 0, roll: 0, quality: 0 },
-        });
-      }
+  it("accepts metadata differences, zero device quality, uncalibrated poses and repeated sequences", () => {
+    const source = createControlSource();
+    for (let index = 0; index < 3; index++) {
       source.pushState(
-        state({ seq: "uptimeMs" in rejected ? rejected.seq : 2 }),
-        66,
+        state({
+          deviceId: "another-device",
+          firmwareVersion: "old",
+          isCalibrated: false,
+          seq: 0,
+          uptimeMs: 0,
+          pitch: 0.9,
+          quality: 0,
+        }),
+        index * 50,
       );
-      expect(source.consumeFrame(67).quality).toBe(0);
-      source.pushState(state({ seq: 4, pitch: 0.4, buttonPressCount: 12 }), 70);
-      const recovered = source.consumeFrame(75);
-      expect(recovered.pitch).toBeCloseTo(expectedId ? 0.25 : 0);
-      expect(recovered.buttonDown).toBe(false);
-    },
-  );
+      expect(source.readObservation(index * 50).status).toBe("live");
+      expect(source.consumeFrame(index * 50).pitch).toBeGreaterThan(0.5);
+      expect(source.consumeFrame(index * 50).quality).toBe(1);
+    }
+  });
 
   it("hands a glanceable reader the newest poll without eating an edge", () => {
-    const source = createControlSource(BASE_STATE.deviceId);
+    const source = createControlSource();
     source.pushState(state(), 0);
     source.pushState(state({ seq: 2, pitch: 0.4, buttonPressCount: 1 }), 50);
 
@@ -140,28 +114,17 @@ describe("control source", () => {
     expect(source.consumeFrame(101).buttonDown).toBe(false);
   });
 
-  it("shows a valid extreme sample separately from safety-neutralized steering", () => {
-    const source = createControlSource(BASE_STATE.deviceId);
-    source.pushState(state({ pitch: 0.9 }), 0);
-    expect(source.readObservation(10)).toEqual({
-      status: "live",
-      sample: state({ pitch: 0.9 }),
-      control: { pitch: 0, roll: 0, quality: 0 },
-    });
-    source.pushState(state({ seq: 2, pitch: 0.9, buttonPressCount: 1 }), 50);
-    expect(source.readObservation(60).control.quality).toBe(0);
-    expect(source.consumeFrame(60).buttonDown).toBe(true);
-    expect(source.consumeFrame(61).buttonDown).toBe(false);
-    source.pushState(state({ seq: 3, pitch: 0.4, buttonPressCount: 1 }), 100);
-    expect(source.readObservation(110).control).toEqual({
-      pitch: 0.25,
-      roll: 0,
-      quality: 1,
-    });
+  it("keeps large poses and sudden direction changes available to steering", () => {
+    const source = createControlSource();
+    source.pushState(state({ pitch: 1 }), 0);
+    expect(source.consumeFrame(0).pitch).toBeCloseTo(0.625);
+    source.pushState(state({ pitch: -1 }), 50);
+    expect(source.consumeFrame(50).pitch).toBeLessThan(0);
+    expect(source.consumeFrame(50).quality).toBe(1);
   });
 
   it("observes the exact freshness boundary consistently without consuming pending edges", () => {
-    const source = createControlSource(BASE_STATE.deviceId);
+    const source = createControlSource();
     source.pushState(state(), 0);
     source.pushState(state({ seq: 2, pitch: 0.4, buttonPressCount: 1 }), 50);
     const lastFresh = 50 + M5_SETTINGS.staleAfterMilliseconds;
@@ -184,17 +147,17 @@ describe("control source", () => {
     });
   });
 
-  it("resets a rebooted device's counter baseline and accepts only subsequent progress", () => {
-    const source = createControlSource(BASE_STATE.deviceId);
+  it("accepts a rebooted device immediately and derives new button edges", () => {
+    const source = createControlSource();
     source.pushState(
       state({ seq: 50, uptimeMs: 9_000, buttonPressCount: 8 }),
       0,
     );
     source.pushState(state({ seq: 1, uptimeMs: 10, buttonPressCount: 0 }), 50);
-    expect(source.readObservation(60).status).toBe("stalled");
+    expect(source.readObservation(60).status).toBe("live");
     source.pushState(state({ seq: 2, uptimeMs: 60, buttonPressCount: 1 }), 100);
     expect(source.readObservation(110).status).toBe("live");
-    expect(source.consumeFrame(110).buttonDown).toBe(false);
+    expect(source.consumeFrame(110).buttonDown).toBe(true);
     source.pushState(
       state({ seq: 3, uptimeMs: 110, buttonPressCount: 2 }),
       150,
@@ -203,7 +166,7 @@ describe("control source", () => {
   });
 
   it("keeps a stable rig at exact zero across render reads and releases on movement", () => {
-    const source = createControlSource(BASE_STATE.deviceId);
+    const source = createControlSource();
     const stableUntil = M5_SETTINGS.stableDurationMilliseconds;
     for (let now = 0; now <= stableUntil; now += 100) {
       source.pushState(

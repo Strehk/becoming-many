@@ -13,7 +13,7 @@ export interface ControlFrame {
   readonly pitch: number;
   /** Right-positive inclination, -1..1, preserving M5State.roll. */
   readonly roll: number;
-  /** Signal strength, 0..1. **0 means "neutral", not "broken"** — see `createNeutralControl`. */
+  /** Effective input availability, 0..1. **0 means "neutral", not "broken"** — see `createNeutralControl`. */
   readonly quality: number;
   readonly buttonPressed: boolean;
   /** True on the single frame the button went down. */
@@ -23,8 +23,7 @@ export interface ControlFrame {
 }
 
 /**
- * The at-rest control. Published whenever input is missing, stale, implausible
- * or unsafe — `quality: 0` is the caller's cue that nothing is steering, and is
+ * The at-rest control. Published whenever input is missing or stale — `quality: 0` is the caller's cue that nothing is steering, and is
  * a normal operating state (keyboard control, no device configured), not an
  * error.
  */

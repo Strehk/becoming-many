@@ -487,8 +487,11 @@ otherwise fix authoritative state locally and defer that extraction. Evaluate
 existing audio-seek throttling before removal.
 No command bus, UI store or generic input strategy is needed.
 
+The 2026-09-09 user decision removes identity, firmware, calibration, sequence
+and extreme-pose eligibility gates. The configured host selects the controller;
+every parsed response is accepted. This supersedes the earlier strict #18 policy.
 For M5 (#17/#18/#38), host change invalidates sample, smoothing, neutralization,
-sequence and button history together. Wrong/stale input yields neither steering
+sequence and button history together. Late replies from a replaced host and expired input yield neither steering
 nor edges; one flight reader consumes edges, status views only observe. Remove
 old-host publication and single-valued `controllerType`; consolidate axis
 meaning at flight conversion after physical polarity is confirmed. Neutral

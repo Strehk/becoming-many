@@ -1,8 +1,10 @@
 # Current Development Status
 
-The current kiosk correction embeds the last parsed M5 `/state` reply and required
-firmware in the technician drawer, including incompatible replies. Steering
-validation remains unchanged. World mirrors the rendered left XR eye to the
+The current kiosk correction embeds the last parsed M5 `/state` reply and bundled
+firmware in the technician drawer. The subsequent user-approved simplification
+accepts all parsed replies from the configured host: identity, firmware,
+calibration, sequence and reported device quality no longer block input. Extreme-pose and sudden-step
+filters are deleted; smoothing and rest-pose neutralization remain. World mirrors the rendered left XR eye to the
 desktop canvas without a second scene render. Local browser and WebGL checks
 pass; the office controller and physical headset still require verification.
 See the [kiosk evidence](evidence/issue-50/README.md#kiosk-diagnostics-and-headset-preview--2026-09-09).
@@ -270,9 +272,10 @@ The #80 animal-connection removal is implemented below. Small additions remain i
   Wind and object recipe gains are reduced. Human listening and PCVR acceptance remain open.
 
 - Desktop pointer-lock flight and WebXR flight use the same viewer rig.
-- M5 host lifetimes are isolated. Steering requires a configured matching ID,
-  compatible firmware, calibration and fresh advancing samples. Rejection
-  neutralizes input and names its reason; physical acceptance remains open.
+- M5 host lifetimes are isolated. Every parsed reply from the configured host
+  is accepted regardless of ID, firmware, calibration or sequence progress.
+  Large and abrupt pose changes are smoothed without being rejected. A one-second
+  response timeout still ends stale input; physical acceptance remains open.
 - Narration uses typed schedules and one audio timebase. Browser audio suspension
   stops show time until a gesture wakes the context.
 - The drone organ in `sound/drone-organ/` plays under the show: nine Tone.js

@@ -78,7 +78,6 @@ interface CommonLevelRequest {
   readonly signal?: AbortSignal;
   readonly preset: LevelPreset;
   readonly language?: NarrationLanguage;
-  readonly m5ExpectedDeviceId?: string;
   /** Entry-owned diagnostic work; absent from normal Experience runs. */
   readonly onFrame?: (deltaSeconds: number) => void;
 }
@@ -178,7 +177,7 @@ export async function startLevel(
           world.renderer.domElement,
         );
     // Without a host, the adapter owns no timer or network work.
-    m5 = benchmark ? undefined : createM5Runtime(request.m5ExpectedDeviceId);
+    m5 = benchmark ? undefined : createM5Runtime();
     // Standalone training borrows Show's transport/narration policy without a main show.
     if (!benchmark && (request.kind === "show" || start)) {
       if (

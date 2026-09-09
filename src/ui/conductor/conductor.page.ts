@@ -134,7 +134,6 @@ export function mountConductorPage({
     let scrubSeconds: number | undefined;
     const statusStrip = createStatusStrip({
       tilesParent: masthead,
-      bannerParent: page,
     });
     const drawer = createTechDrawer({
       parent: page,

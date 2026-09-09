@@ -1298,3 +1298,23 @@ and Windows-PCVR frame budget remain open. Earlier arrow visibility findings
 above are not resolved by this kiosk correction.
 
 ![Actual kiosk drawer with simulated incompatible firmware](kiosk-controller-state.png)
+
+
+## M5 acceptance simplification — 2026-09-09
+
+User decision after checkpoint `5b2e0f1` supersedes the strict policy tested in
+the preceding kiosk section. The configured host now supplies steering without
+ID, firmware, calibration, sequence or reported-quality gates. The pose safety
+module, thresholds, expected-ID plumbing and wrong-device banner are removed.
+Raw quality stays diagnostic; effective quality follows fresh response availability.
+This also resolves the review finding that quality-zero axes could otherwise
+steer while the UI displayed Neutral.
+
+27 focused runtime tests (341 assertions), build/typecheck and lint pass. The
+headed production browser accepted a different device ID, firmware 0.3.2, false
+calibration, fixed sequence/uptime and quality zero while full-range axes changed.
+Disconnect/reconnect, Play/Stop and the 390 px drawer passed without page errors.
+The screenshot uses simulated HTTP replies. Physical office M5 steering remains
+the final installation check; no new PCVR performance claim is made.
+
+![Configured controller accepted despite differing metadata](kiosk-open-acceptance.png)

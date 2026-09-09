@@ -26,8 +26,9 @@ Use [current status](current-status.md), live issue results and the
 The older checkpoint's issue order is superseded by the order below.
 
 The kiosk correction adds Controller state inside the technician drawer and a
-World-owned XR eye copy for the desktop preview. Firmware mismatch diagnostics
-are locally verified; the actual office M5 reply and physical Windows headset
+World-owned XR eye copy for the desktop preview. The subsequent user decision removes firmware, identity, calibration, sequence
+and extreme-pose gates; the configured host supplies input directly. Local
+compatibility and reconnect checks pass; the actual office M5 reply and physical Windows headset
 output remain to be checked. Windows deployment changes are preserved.
 
 ## Immediate tutorial corrections after independent review
@@ -253,7 +254,7 @@ reference, product or physical acceptance follows from the desktop results.
 | --- | --- |
 | #73, #9, #16, #14/#35 | Startup forwarding, child/source cleanup, renderer preparation and entry-owned diagnostics have implementation evidence. Preserve the one loop and existing sampler timing; #73 clock, #9 visitor operation and issue-specific physical/performance gates remain. |
 | #85, #25 | Explicit independent literal levels and active-state naming are implemented; #85/#25 are closed. Connections constructs the Show once; Show states control presentation. |
-| #17/#18/#38 | Host lifetime, eligibility and axis-boundary software is implemented; physical calibration/polarity acceptance remains. Do not change flight equations during interface narrowing. |
+| #17/#18/#38 | Host lifetime and axis-boundary software is implemented; strict #18 eligibility was removed by the 2026-09-09 user decision; physical calibration/polarity acceptance remains. Do not change flight equations during interface narrowing. |
 | #80 | Moving-animal Connections path is retired. Preserve vegetation including bushes, rocks, fixed forest-clearing anchors and soil; animal motion and Scent/Thermal body facts remain. Physical acceptance stays open. |
 | #13/#72/#71 | Legacy Grass is retired; conservative Clipmap bounds and shared continuous World Surface influences are implemented. Integrated visual and Windows-PCVR acceptance remain separate. |
 | #81/#41/#28 | Approved 1 m analytic-bank clearance, shared Rocks/Vegetation lifecycle and surviving wind checks are complete. Do not rebuild their removed alternatives. |

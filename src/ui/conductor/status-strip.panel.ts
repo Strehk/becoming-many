@@ -3,7 +3,7 @@ import type { XrSessionState } from "../../world/xr-session";
 import { requireElement, writeText } from "../shared/dom";
 import type { ConductorPanel, ConductorViewState } from "./view-state";
 
-type ReadingState = "idle" | "live" | "warn" | "alarm";
+type ReadingState = "idle" | "live" | "warn";
 
 interface Tile {
   readonly write: (text: string, state: ReadingState) => void;
@@ -12,24 +12,16 @@ interface Tile {
 export interface StatusStripOptions {
   /** The masthead row the tiles sit in, beside the station identity. */
   readonly tilesParent: HTMLElement;
-  /** The page column the fault banner drops into, under the masthead. */
-  readonly bannerParent: HTMLElement;
 }
 
 export function createStatusStrip({
   tilesParent,
-  bannerParent,
 }: StatusStripOptions): ConductorPanel {
   const root = requireElement(tilesParent, ".conductor__tiles", HTMLElement);
   const sound = bindTile(root, "sound");
   const picture = bindTile(root, "picture");
   const controller = bindTile(root, "controller");
   const headset = bindTile(root, "headset");
-  const banner = requireElement(
-    bannerParent,
-    ".conductor__banner",
-    HTMLElement,
-  );
 
   return {
     update(state): void {
@@ -37,8 +29,6 @@ export function createStatusStrip({
       picture.write(...pictureReading(state));
       controller.write(...controllerReading(state.m5));
       headset.write(...headsetReading(state.xr));
-
-      banner.hidden = state.m5?.status !== "wrong-device";
     },
   };
 }
@@ -59,14 +49,12 @@ function headsetReading(xr: XrSessionState): ReadingText {
 /**
  * An absent adapter means a benchmark build; `off` means no host is set —
  * both read as "no device", which is a normal state, not a fault. A
- * rejected sample reads as "Check"; the technician drawer names the reason.
+ * live reply supplies steering; metadata stays in the technician drawer.
  */
 function controllerReading(status: M5Observation | undefined): ReadingText {
   if (status === undefined || status.status === "off") return ["—", "idle"];
-  if (status.status === "wrong-device") return ["Check", "alarm"];
   if (status.status === "connecting") return ["Connecting", "warn"];
 
-  if (status.status !== "live") return ["Check", "warn"];
   return (status.control?.quality ?? 0) > 0
     ? ["OK", "live"]
     : ["Neutral", "idle"];

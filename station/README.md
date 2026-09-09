@@ -21,7 +21,7 @@ so Vite never bundles it and it exports nothing.
 `bun run m5-sim` starts a second small Bun process from this folder: a stand-in
 M5 controller answering `GET /state` with a slow tilt sweep, for developing the
 polling chain without hardware (`--device` and `--firmware` flags exercise the
-wrong-device and firmware-mismatch warnings).
+diagnostic metadata without restricting steering).
 
 ## Endpoints
 
@@ -45,7 +45,8 @@ for the full descriptions.
 - `PORT` — listen port (default 7823).
 - `M5_HOST` — this station's M5 controller; the conductor page arms the show
   with it from startup.
-- `M5_DEVICE_ID` — deviceId every M5 payload must carry.
+- `M5_DEVICE_ID` — retained deployment metadata; it no longer restricts which
+  device can steer. `M5_HOST` selects the controller.
 - `STATION_NAME` — label telling a technician which station this is.
 
 ## Docker

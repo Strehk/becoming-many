@@ -253,3 +253,16 @@ controls while training exists and restores their ordinary speeds on handoff.
 Input sensitivity, head pose, main timing and lifecycle ownership are unchanged.
 If the flight ceiling makes the current gaze infeasible, formation waits for a
 reachable visible target. Retrying repeats the instruction portion of its clip.
+
+
+## M5 acceptance in the closed installation — 2026-09-09
+
+The user explicitly replaces the strict #18 device-eligibility policy. The
+configured HTTP host selects the controller. Every parsed state is accepted
+without expected-ID matching, firmware-version matching, calibration status or
+sequence-progress requirements. Extreme-resume and abrupt-step rejection are
+removed. Metadata remains visible in technician diagnostics. Raw device quality is
+also diagnostic; effective control quality denotes a fresh parsed response. Existing schema
+parsing, response timeout, host-lifetime cancellation, smoothing, rest-pose
+neutralization and single-consumer button edges retain their existing owners.
+This requires no additional adapter, compatibility mode or firmware flash.

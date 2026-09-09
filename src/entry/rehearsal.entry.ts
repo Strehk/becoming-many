@@ -76,7 +76,6 @@ try {
         language: resolveNarrationLanguage(request.get("language")),
         states: SHOW_LEVEL_STATES,
       },
-      m5ExpectedDeviceId: deployment.m5DeviceId,
     },
   );
   lifetime.signal.throwIfAborted();

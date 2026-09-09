@@ -57,8 +57,7 @@ button[aria-pressed="true"],
   color: var(--ground);
   background: var(--live);
 }
-[data-playing="true"],
-.conductor__banner {
+[data-playing="true"] {
   color: var(--ground);
   background: var(--warn);
 }
@@ -139,7 +138,6 @@ button[data-armed="true"],
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 .conductor__masthead,
-.conductor__banner,
 .conductor__timeline {
   grid-column: 1 / -1;
 }

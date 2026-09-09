@@ -118,7 +118,7 @@ export function createTechDrawer({
   );
   requireElement(
     root,
-    "[data-m5-required-firmware]",
+    "[data-m5-bundled-firmware]",
     HTMLOutputElement,
   ).textContent = M5_FIRMWARE_VERSION;
   let receivedState: M5Observation["receivedState"];
@@ -190,8 +190,6 @@ function frameText(
 function m5Text(status: M5Observation | undefined): string {
   if (status === undefined || status.status === "off") return "—";
 
-  if (status.status === "incompatible-firmware")
-    return `firmware ${status.receivedState?.firmwareVersion ?? "unknown"} · needs ${M5_FIRMWARE_VERSION}`;
   if (status.status !== "live") return status.status.replaceAll("-", " ");
 
   return `live · input q${(status.control?.quality ?? 0).toFixed(2)}`;

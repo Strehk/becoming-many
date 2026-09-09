@@ -18,7 +18,7 @@ export interface M5Observation {
   readonly host: string;
   readonly status: M5DeviceStatus;
   readonly sample: M5State | undefined;
-  /** Last parsed reply for diagnostics only, including rejected firmware. */
+  /** Last parsed reply for diagnostics only, regardless of firmware version. */
   readonly receivedState?: M5State;
   readonly control:
     | Readonly<Pick<ControlFrame, "pitch" | "roll" | "quality">>
@@ -30,7 +30,7 @@ export interface M5Runtime {
   readonly setHost: (host: string) => void;
   /**
    * Exactly one render-frame reader consumes button edges. Undefined without
-   * a host; stale or rejected configured input yields neutral steering.
+   * a host; stale configured input yields neutral steering.
    */
   readonly consumeFrame: () => ControlFrame | undefined;
   readonly readObservation: () => M5Observation;
@@ -40,10 +40,10 @@ export interface M5Runtime {
 
 /**
  * Run-owned HTTP input. Construction performs no I/O; setHost starts polling.
- * expectedDeviceId is fixed for this runtime; missing identity prevents steering.
+ * The configured host selects the controller; metadata is diagnostic only.
  * Poll/parse failures age into neutral input rather than rejecting frame reads.
  */
-export function createM5Runtime(expectedDeviceId?: string): M5Runtime {
+export function createM5Runtime(): M5Runtime {
   let closed = false;
   let source: ControlSource | undefined;
   let currentHost = "";
@@ -59,7 +59,7 @@ export function createM5Runtime(expectedDeviceId?: string): M5Runtime {
     currentHost = host.trim();
     if (!currentHost) return;
 
-    const currentSource = createControlSource(expectedDeviceId);
+    const currentSource = createControlSource();
     source = currentSource;
     const lifetime = new AbortController();
     const origin = currentHost.includes("://")

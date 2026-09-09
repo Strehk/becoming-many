@@ -59,8 +59,8 @@ remains in technician tools. During XR World copies the rendered left eye to the
 same frame, capped at 1280 × 720; no second scene render is added.
 M5 preview observes accepted samples without consuming flight button edges.
 The expandable Controller state section shows the last parsed `/state` reply
-and required firmware inside the drawer, including rejected replies. It reuses
-the existing poll; diagnostic replies never bypass the steering validity gate.
+and bundled firmware inside the drawer. It reuses the existing poll; metadata
+differences never prevent steering from the configured host.
 "Picture OK" is a browser-metric heuristic, not Windows-PCVR acceptance.
 
 ## Resources and styling

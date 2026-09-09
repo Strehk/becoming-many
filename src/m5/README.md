@@ -15,7 +15,7 @@ tests, not application consumers.
 
 | Public entry | Inputs and output | Ownership and failure contract |
 | --- | --- | --- |
-| `runtime/m5.runtime.ts` | Fixed expected device ID; `setHost(host)` accepts hostname, host:port or origin. `consumeFrame()` produces normalized input; `readObservation()` produces device status/sample/effective input. | Run constructs it without I/O, starts polling by setting the host and calls `unload`. Poll/parse failures become neutral input after expiry. Host replacement clears history; unload permanently stops new work. |
+| `runtime/m5.runtime.ts` | `setHost(host)` accepts hostname, host:port or origin. `consumeFrame()` produces normalized input; `readObservation()` produces device status/sample/effective input. | Run constructs it without I/O, starts polling by setting the host and calls `unload`. Poll/parse failures become neutral input after expiry. Host replacement clears history; unload permanently stops new work. |
 | `control-frame.ts` | Pitch/roll in −1..1, quality in 0..1, button state and one-consumer edges. | Pure read-only contract with no host, firmware or transport facts. Flight borrows input and changes only its own rig. Neutral axes preserve glide/descent, not stop. |
 | `setup/serial-setup.ts` | `openSerialSetup(events)` returns an open USB channel. `send(command)` writes one newline-delimited command; events report validated responses. | Flash Entry creates/closes the channel. Picker/open/write/close failures reject; read errors use `onError` and end the channel. No concurrent writes or command queue. Closing awaits reader/writer release; repeat close shares completion. |
 | `protocol.ts` | Untrusted HTTP/serial text → validated wire values or null; serial commands and result discriminants. | Pure device contract shared by firmware tooling, simulator and adapters. Firmware implements the C++ side; export verifies the compatible version. It owns neither runtime state nor resources. |
@@ -31,8 +31,9 @@ Serial response callbacks observe asynchronous device replies. A completed send
 is not an acknowledgement, and replies are not returned by `send`. Callbacks
 must not throw. The UI must not log the outgoing command/password; the adapter
 redacts echoes of the current transient password and omits unknown output.
-Firmware normalization/calibration and browser safety filtering remain distinct
-operations at their existing owners.
+Firmware owns normalization/calibration. Browser smoothing and rest-pose
+neutralization remain at their existing owners; neither metadata nor large
+pose changes impose a steering eligibility gate.
 
 ## Allowed dependencies
 
@@ -60,13 +61,16 @@ is introduced by this boundary refinement.
 ## Internal reading order
 
 `runtime/m5.runtime.ts` creates one `control-source.ts` per host. The source
-validates identity, firmware, calibration, sequence and freshness, then runs
-`control-safety.ts → auto-neutralize.ts → control-smoothing.ts`. Settings stay
+accepts every parsed reply from the configured host, then runs
+`auto-neutralize.ts → control-smoothing.ts`. Firmware, identity, calibration and
+sequence and device quality are diagnostic fields only. Effective control
+quality is one for each fresh parsed reply, and zero after response expiry. A one-second response timeout handles
+connection loss; no advancing sequence is required. Settings stay
 in `runtime/m5-settings.ts`; flight tuning remains with Control. Private helper
 exports exist for this processing chain and its focused tests only.
 
 `readObservation` uses one timestamp: `host` is the configured address, `status`
-is device eligibility/freshness, `sample` is the accepted raw pose and `control`
+is connection freshness, `sample` is the accepted raw pose and `control`
 is effective pitch/roll/quality. Invalid/stale samples are absent and configured
 input is neutral. With no host, control is undefined and desktop input can take
 over. A live device may still have neutral effective input. The UI must not infer

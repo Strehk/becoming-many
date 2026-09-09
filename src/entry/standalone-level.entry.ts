@@ -71,7 +71,6 @@ try {
             diagnostics?.update(deltaSeconds);
           }
         : undefined,
-      m5ExpectedDeviceId: deployment.m5DeviceId,
     },
   );
   lifetime.signal.throwIfAborted();

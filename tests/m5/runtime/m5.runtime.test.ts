@@ -24,19 +24,19 @@ function state(overrides: Partial<M5State> = {}): M5State {
 }
 
 describe("M5 runtime", () => {
-  it("retains a rejected reply for kiosk diagnostics without admitting its controls", async () => {
+  it("reads older firmware from the configured host without blocking steering", async () => {
     const reply = state({ firmwareVersion: "0.3.2-bm-http", pitch: 0.8 });
     const fetchMock = spyOn(globalThis, "fetch").mockResolvedValue(
       Response.json(reply),
     );
-    const runtime = createM5Runtime(BASE_STATE.deviceId);
+    const runtime = createM5Runtime();
     try {
       runtime.setHost("controller.local");
       await Bun.sleep(0);
-      expect(runtime.readObservation().status).toBe("incompatible-firmware");
+      expect(runtime.readObservation().status).toBe("live");
       expect(runtime.readObservation().receivedState).toEqual(reply);
-      expect(runtime.readObservation().sample).toBeUndefined();
-      expect(runtime.consumeFrame()?.quality).toBe(0);
+      expect(runtime.readObservation().sample).toEqual(reply);
+      expect(runtime.consumeFrame()?.quality).toBe(1);
       runtime.setHost("");
       expect(runtime.readObservation().receivedState).toBeUndefined();
     } finally {
@@ -55,7 +55,7 @@ describe("M5 runtime", () => {
           state({ pitch: -0.4, buttonPressCount: 12, buttonReleaseCount: 12 }),
         ),
       );
-    const runtime = createM5Runtime(BASE_STATE.deviceId);
+    const runtime = createM5Runtime();
     try {
       runtime.setHost("first.local");
       await Bun.sleep(0);
@@ -94,7 +94,7 @@ describe("M5 runtime", () => {
     const fetchMock = spyOn(globalThis, "fetch").mockReturnValue(
       response.promise,
     );
-    const runtime = createM5Runtime(BASE_STATE.deviceId);
+    const runtime = createM5Runtime();
     try {
       expect(runtime.consumeFrame()).toBeUndefined();
       expect(runtime.readObservation()).toEqual({
@@ -142,7 +142,7 @@ describe("M5 runtime", () => {
     "keeps %s neutral at the network boundary",
     async (_reason, respond) => {
       const fetchMock = spyOn(globalThis, "fetch").mockReturnValue(respond());
-      const runtime = createM5Runtime(BASE_STATE.deviceId);
+      const runtime = createM5Runtime();
       try {
         runtime.setHost("rig.local");
         await Bun.sleep(0);
@@ -161,7 +161,7 @@ describe("M5 runtime", () => {
     const fetchMock = spyOn(globalThis, "fetch").mockReturnValue(
       response.promise,
     );
-    const runtime = createM5Runtime(BASE_STATE.deviceId);
+    const runtime = createM5Runtime();
     try {
       runtime.setHost("rig.local");
       await Bun.sleep(M5_SETTINGS.pollIntervalMilliseconds * 2 + 10);

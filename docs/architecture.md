@@ -358,13 +358,15 @@ Show owns playback/language/time, and Run owns complete termination and the
 current time/flight reset. The concrete fresh-visitor operation remains #9/#46;
 a reset does not establish a new lifetime.
 
-The M5 runtime owns one cancellable HTTP host lifetime. ControlSource owns the
-identity/firmware/calibration/sequence/freshness gate. UI reads one non-consuming
+The M5 runtime owns one cancellable HTTP host lifetime. ControlSource accepts each parsed response from that host and owns response
+freshness, smoothing, rest-pose neutralization and button-edge derivation.
+Identity, firmware version, calibration, sequence and reported device quality
+do not gate steering. Effective control quality denotes a fresh parsed reply. UI reads one non-consuming
 `readObservation()` snapshot: `status` is a string tag, `sample` is the accepted
 device reading and `control` holds effective steering/quality. Optional
 `receivedState` retains only the last parsed reply for technician diagnostics,
-including firmware-rejected replies; changing the host clears it. Only Run calls
-`consumeFrame()` for button edges. Rejected input is neutral and cannot publish
+regardless of firmware version; changing the host clears it. Only Run calls
+`consumeFrame()` for button edges. Expired input is neutral and cannot publish
 old edges; UI neither validates devices nor unloads the runtime.
 
 Flash runs independently of Run. `src/entry/flash.entry.ts` owns connection

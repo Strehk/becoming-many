@@ -47,7 +47,6 @@ try {
         states: SHOW_LEVEL_STATES,
       },
       onFrame: (deltaSeconds) => frameMetrics.add(deltaSeconds),
-      m5ExpectedDeviceId: deployment.m5DeviceId,
     },
   );
   run = await pendingStart;

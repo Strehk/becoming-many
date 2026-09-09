@@ -3,7 +3,7 @@
  * Context: The firmware runs normalize → axis-map → calibrate on the device;
  *   the client stages configured here run per station, tuned to the physical
  *   rig — changing one changes the flight behavior.
- * Responsibility: Own the transport, safety, auto-neutralize, and smoothing
+ * Responsibility: Own the transport, auto-neutralize, and smoothing
  *   numbers in one typed place.
  * Boundary: Flight-model tuning belongs to src/control/flight-settings.ts.
  */
@@ -16,18 +16,6 @@ export const M5_SETTINGS = {
   pollIntervalMilliseconds: 167,
   // No accepted poll for this long means the device is gone: steer nothing.
   staleAfterMilliseconds: 1_000,
-  // A configured matching identity is required before any device may steer.
-  expectedDeviceId: "",
-
-  // Resuming from quality 0 at or beyond this deflection is an unsafe pose,
-  // not intent — a person lies on the machine.
-  resumePoseLimit: 0.85,
-  // A single-poll change this large is a glitch, not a human movement: at the
-  // 167ms poll and the firmware's 45° range it is 243°/s of rig tilt, still
-  // well past a brisk full-range sweep. The limit is per poll, not per second,
-  // so it has to be revisited whenever the poll rate moves.
-  abruptStepLimit: 0.9,
-
   // Rig rest pose in -1..1 units. The device calibrates its own zero at the
   // rig, so the parked rig reads true zero; the neutralizer only pins drift.
   restPitch: 0,

@@ -7,8 +7,7 @@
  */
 
 /**
- * Must match `FirmwareVersion` in `firmware/m5/src/main.cpp`. A client that
- * sees a different value rejects steering and reports the incompatibility.
+ * Must match `FirmwareVersion` in `firmware/m5/src/main.cpp`. Runtime reads other versions too; this identifies the bundled firmware.
  */
 export const M5_FIRMWARE_VERSION = "0.3.3-bm-http";
 
