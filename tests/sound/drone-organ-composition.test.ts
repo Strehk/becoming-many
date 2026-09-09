@@ -174,6 +174,10 @@ test("audio owners recover gesture resume and await complete disposal", async ()
     await assert.rejects(failed.unload(), /voice construction failed/);
     assert.equal(releasedLayers, 10);
     assert.equal(context.closing, false);
+    failLayer = false;
+    const windOnly = createDroneOrgan({pulseSeconds:1, voices:["wind"]},audio);
+    await until(()=>built===3); await windOnly.unload();
+    assert.equal(releasedLayers,11,"standalone wind creates and releases only one existing voice");
     const closing = audio.unload();
     assert.equal(audio.unload(), closing);
     await until(() => context.closing);
@@ -220,9 +224,10 @@ test("audio owners recover gesture resume and await complete disposal", async ()
     let narrationUnloads = 0, failNarrationCleanup = false;
     const narrationOptions = [], narrationFrames = [];
     let narrationLag = 0;
+    const organFrames = [];
     mock.module("./src/sound/drone-organ/drone-organ.ts", () => ({
       createDroneOrgan: () => ({
-        update: () => { follows++; },
+        update: frame => { follows++; organFrames.push({...frame, voiceStrengths:{...frame.voiceStrengths}}); },
         unload: () => { organEnded = true; return new Promise(resolve => { releaseOrgan = resolve; }); },
       }),
     }));
@@ -230,6 +235,7 @@ test("audio owners recover gesture resume and await complete disposal", async ()
       createNarrationPlayer: options => {
         narrationCount++; narrationOptions.push(options);
         return { setRecordings: recordings => { narrationOptions.push({ recordings }); },
+          readIsPlaying: () => true,
           readOffsetSeconds: () => (narrationFrames.at(-1)?.position?.offsetSeconds ?? 0) - narrationLag,
           follow: frame => { follows++; narrationFrames.push(frame); }, unload: () => {
           narrationUnloads++;
@@ -320,6 +326,7 @@ test("audio owners recover gesture resume and await complete disposal", async ()
       setRoomPresence: presence => { roomPresence = presence; },
       parameters: {
         formationSeconds: 1,
+        windStrength: 0.22,
         maximumPracticeSeconds: 60,
         directions: ["right", "left", "up", "down"],
       },
@@ -352,12 +359,15 @@ test("audio owners recover gesture resume and await complete disposal", async ()
     tutorialCommands.play(); trainingNative.currentTime = 1; trainingShow.update();
     assert.equal(playing, true);
     assert.equal(roomPresence, 0.5, "room forms during its spoken line before the arrow");
+    assert.equal(organFrames.at(-1).voiceStrengths.wind, 0.055, "existing wind follows room presence and speech ducking");
+    assert.ok(Object.entries(organFrames.at(-1).voiceStrengths).every(([name,strength])=>name==="wind"||strength===0));
     assert.equal(advanceAllowed, false, "a fast crossing cannot interrupt speech");
     assert.equal(formationAllowed, false, "presentation waits for the spoken instruction onset");
     assert.equal(narrationFrames.at(-1).position.cueId, "right");
     assert.equal(narrationFrames.at(-1).position.offsetSeconds, 1);
     tutorialCommands.pause(); trainingNative.currentTime = 2; trainingShow.update();
     assert.equal(playing, false);
+    assert.equal(organFrames.at(-1).voiceStrengths.wind, 0, "tutorial pause silences wind");
     assert.equal(narrationFrames.at(-1).position.offsetSeconds, 1);
     tutorialCommands.play(); trainingNative.currentTime = 3;
     tutorialCommands.seekTo(100); tutorialCommands.seekBy(20); tutorialCommands.setTimeScale(2);

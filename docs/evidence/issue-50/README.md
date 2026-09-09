@@ -814,3 +814,39 @@ The browser assertions passed; raw native media cancellations at replacement/
 disposal remain reported as ERR_ABORTED by the harness. The source change is a
 scoped staging feature, not a code-reduction claim. EN voice policy and physical
 listening/comprehension/90 Hz acceptance remain open.
+
+
+## Tutorial wind and ring variation — 2026-09-09
+
+Tutorial playback now borrows the existing organ wind at strength 0.22, scaled
+by the spoken room reveal and halved during narration. Show retains transport
+and organ ownership; integrated playback reuses the prepared organ, while
+standalone practice creates only its wind layer. Pause silences its input.
+Ring voices switch among the same three decoded samples and choose bounded
+new offsets on each goal/attempt, avoiding immediate sample repetition. Pause
+retains the selection; the arrow remains authored. No additional sample fetches,
+players, reverb instances or per-frame randomization are introduced.
+
+Repository lint, production build/typecheck and 11 targeted sound/restart tests
+passed. Tests exercise 100 course changes and 3,600 unchanged frames with three
+decodes, four granular voices and one granular reverb, plus wind-only disposal.
+The headed production-browser course completed all four goals and the main
+handoff. Its audio diagnostic observed silence before room formation (RMS
+1.54e-10 at 5 s), then wind output (4.66e-5 at 16 s, 1.15e-4 at 18 s), and three
+reused native grain buffers across the course. Standalone `/start?language=de`
+produced wind RMS 9.23e-5 at 16.01 s before any grain starts; Pause and navigation
+completed without page errors. These are signal checks, not listening approval.
+
+Raw integrated evidence: `benchmark-results/issue-50/tutorial-wind-variety/probe.json`.
+Served asset digest: `5e436ac878abc09f5400cb128a7cae23b982f0b3c81130894c69c50da858ea2c`.
+Course assertions passed. The generic harness still exits nonzero for two
+reported native narration ERR_ABORTED cancellations at replacement/disposal;
+there was no course assertion failure. This audio diagnostic inserts an analyser
+at the native destination and is not an isolated rendering-performance comparison.
+Windows-PCVR and physical sound balance/listening acceptance remain open.
+
+Tone 14.8.49's existing
+[ToneAudioBuffer.set](https://github.com/Tonejs/Tone.js/blob/14.8.49/Tone/core/context/ToneAudioBuffer.ts)
+retains the native buffer reference; the existing
+[GrainPlayer](https://github.com/Tonejs/Tone.js/blob/14.8.49/Tone/source/buffer/GrainPlayer.ts)
+accepts the chosen start offset. No dependency or alternate audio runtime was added.

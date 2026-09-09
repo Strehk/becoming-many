@@ -178,7 +178,11 @@ export async function startLevel(
     m5 = benchmark ? undefined : createM5Runtime(request.m5ExpectedDeviceId);
     // Standalone training borrows Show's transport/narration policy without a main show.
     if (!benchmark && (request.kind === "show" || start)) {
-      if (request.kind === "show" || tutorialPreset?.startAudio)
+      if (
+        request.kind === "show" ||
+        tutorialPreset?.startAudio ||
+        tutorialPreset?.start?.windStrength
+      )
         audio = await createSpatialAudio(world.camera, signal);
       signal.throwIfAborted();
       if (tutorialPreset?.startAudio && audio)

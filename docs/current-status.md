@@ -16,7 +16,10 @@ The spoken-line review keeps the opening empty until the room phrase at 13.12 s.
 Show gates arrows at DE 19.30/1.14/2.66/1.04 s against actual native speech progress;
 rings wait for a readable arrow and the matching turn. Run
 uses 2 m/s tutorial translation through existing controls. The preplanned
-rig-heading course is removed.
+rig-heading course is removed. Tutorial sound now borrows the existing wind
+voice at a quiet, speech-ducked level; standalone practice builds only that
+organ voice. Ring voices choose new predecoded samples and offsets per course
+or retry, retaining the selection through Pause.
 The latest user timing revision adds a visible Tutorial chapter to Rehearsal and
 Conductor. Show allows 60 playing seconds of integrated practice; four timely
 passages keep the complete successful closing voice (up to about 74 seconds),

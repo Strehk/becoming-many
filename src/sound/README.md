@@ -161,3 +161,13 @@ content integration must align that orientation period with the unchanged
 continuous M5 glide; preventing speech truncation alone does not establish
 first-visitor pacing. The English tutorial policy remains a content decision.
 Instrumental source material is now user-supplied above; excerpt/mix suitability and speech intelligibility still need actual listening. Script sources are unchanged.
+
+
+Tutorial audio borrows the organ's wind voice through Show: integrated playback
+uses the already prepared organ, standalone practice selects only wind. Its
+literal strength is 0.22, multiplied by the spoken room reveal and halved during
+narration; tutorial Pause silences it. Main score strengths are unchanged.
+The three ring-associated GrainPlayers choose a different buffer and random valid
+offset at each course/attempt change. Their pool remains at most three decoded
+mono buffers, shared with the unchanged arrow voice. Pause/resume keeps the
+selection; no frame-time downloads, decodes or additional voices are introduced.

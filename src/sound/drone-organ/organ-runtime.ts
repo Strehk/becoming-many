@@ -104,6 +104,7 @@ export async function startOrganRuntime(
     const nearest: AnchorPoint = { x: 0, y: 0, z: 0 };
 
     for (const [index, settings] of composition.layers.entries()) {
+      if (options.voices && !options.voices.includes(settings.name)) continue;
       const layer = createOrganLayer(
         engine,
         timeline.createLane(),

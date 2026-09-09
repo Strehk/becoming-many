@@ -226,10 +226,11 @@ export async function createShowRuntime(
     // The organ follows the same clock but plays on Tone's own context, which
     // is the only context its rooms come up on. It loads Tone.js by itself, so
     // the world runs on before the organ makes a sound.
-    if (!standalone && audio)
+    if (audio && (!standalone || initialTutorial?.parameters.windStrength))
       droneOrgan = createDroneOrgan(
         {
           pulseSeconds: ORGAN_SCORE.pulseSeconds,
+          voices: standalone ? ["wind"] : undefined,
         },
         audio,
       );
@@ -372,12 +373,18 @@ export async function createShowRuntime(
     // each voice stands at this instant, and the clock says what instant it is.
     function followOrgan(showTime: ShowTimeSample): void {
       for (const voice of ORGAN_VOICES) {
-        voiceStrengths[voice] = organVoiceStrengthAt(
-          schedule,
-          ORGAN_SCORE,
-          voice,
-          showTime.timeSeconds,
-        );
+        voiceStrengths[voice] = tutorial
+          ? voice === "wind" && showTime.isPlaying
+            ? (tutorial.parameters.windStrength ?? 0) *
+              roomPresence *
+              (narration?.readIsPlaying() ? 0.5 : 1)
+            : 0
+          : organVoiceStrengthAt(
+              schedule,
+              ORGAN_SCORE,
+              voice,
+              showTime.timeSeconds,
+            );
       }
       readListenerPose(world, listenerPose);
       droneOrgan?.update({
@@ -402,13 +409,13 @@ export async function createShowRuntime(
           "Tutorial practice duration must be positive and finite",
         );
       clock.pause();
-      if (!standalone) followOrgan({ ...clock.sample(), isPlaying: false });
       clock.seekTo(0);
       clock.setTimeScale(1);
       clock.setDuration(undefined);
       tutorial = next;
       roomPresence = 0;
       tutorial.setRoomPresence?.(0);
+      followOrgan({ ...clock.sample(), isPlaying: false });
       mainStartSeconds = standalone
         ? 0
         : next.parameters.maximumPracticeSeconds;
@@ -559,7 +566,7 @@ export async function createShowRuntime(
               showTime.isPlaying &&
               timebase.readState() === "running",
           );
-
+          followOrgan(showTime);
           return;
         }
         if (standalone) return;

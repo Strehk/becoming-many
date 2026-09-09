@@ -20,6 +20,8 @@ const MINIMUM_TRAVEL_SQUARED = 0.000001;
 type DistanceRange = readonly [minimum: number, maximum: number];
 
 export interface StartParameters {
+  /** Relative level of the existing organ wind during practice, 0..1. */
+  readonly windStrength?: number;
   /** Show limits integrated practice; standalone Start remains an independent test. */
   readonly maximumPracticeSeconds: number;
   readonly directions: readonly [StartDirection, ...StartDirection[]];

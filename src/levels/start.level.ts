@@ -105,6 +105,7 @@ export const level: LevelPreset = {
     },
   },
   start: {
+    windStrength: 0.22,
     maximumPracticeSeconds: 60,
     arrivalSeconds: 0.5,
     formationSeconds: 2,

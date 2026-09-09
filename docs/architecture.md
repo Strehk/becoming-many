@@ -292,7 +292,12 @@ observation for spoken-word gates only; Show remains the time authority. Start
 waits for the arrow to form before opening the helping tunnel. Run supplies
 2 m/s tutorial translation through the existing controls and restores ordinary
 main speeds on handoff; directional sensitivity is unchanged. The EN voice policy remains open. Run owns the shared Tone spatial context when audio is configured;
-Show retains its existing native timebase and narration owner.
+Show retains its existing native timebase and narration owner. It drives the
+existing organ wind alone during practice, at the literal tutorial strength and
+with speech attenuation; the prepared full organ resumes its normal score at
+handoff. Standalone training selects only the wind layer from the same organ
+implementation. Training audio owns course/attempt-based random sample and offset
+selection across its fixed decoded pool, never loading samples during a frame.
 
 `show.runtime.ts` also drives the drone organ in `src/sound/drone-organ/`
 through one per-frame contract: the show time sample, the strength of each

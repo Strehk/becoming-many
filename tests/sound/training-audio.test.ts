@@ -181,22 +181,25 @@ test("four object voices share samples and hall, follow distance and speech, and
       setValueAtTime(value,time){this.target=value;this.events.push({time});} });
     const node = () => ({ ends:0, gain:param(), connect(){}, disconnect(){this.ends++;} });
     class GrainPlayer {
-      starts=0; stops=0; ends=0;
+      starts=0; stops=0; ends=0; buffers=[]; offsets=[];
+      buffer={set:sample=>{this.buffers.push(sample);}};
       constructor(options){ this.options=options; voices.push(this); }
-      connect(){} start(){this.starts++;} stop(){this.stops++;} dispose(){this.ends++;}
+      connect(){} start(time,offset){this.starts++;this.offsets.push(offset);} stop(){this.stops++;} dispose(){this.ends++;}
     }
     class Reverb {
       ready=Promise.resolve(); ends=0;
       constructor(){rooms.push(this);} connect(){} dispose(){this.ends++;}
     }
     mock.module("tone",()=>({GrainPlayer, Reverb, connect(){}}));
-    let decodes=0;
-    const sample={duration:10,numberOfChannels:1,sampleRate:48000};
+    let decodes=0, randomCalls=0;
+    const samples=[10,11,12].map(duration=>({duration,numberOfChannels:1,sampleRate:48000}));
     globalThis.fetch=async()=>new Response(new Uint8Array([1,2,3]));
     const {createTrainingAudio}=await import("./src/sound/training-audio.runtime.ts");
-    const audio=await createTrainingAudio(${JSON.stringify(parameters)}, {
+    const parameters=${JSON.stringify(parameters)};
+    parameters.samples.push({id:"b",url:"/audio/b.wav"},{id:"c",url:"/audio/c.wav"});
+    const audio=await createTrainingAudio(parameters, {
       context:{ state:"running", now:()=>audioTime+0.1, immediate:()=>audioTime, destination:{},
-        decodeAudioData:async()=>{decodes++;return sample;},
+        decodeAudioData:async()=>samples[decodes++],
         createGain:()=>{const value=node();gains.push(value);return value;},
         createBiquadFilter:()=>{const value={...node(),Q:param(),frequency:param()};filters.push(value);return value;},
       },
@@ -204,10 +207,10 @@ test("four object voices share samples and hall, follow distance and speech, and
         readDistanceMeters(){return this.distance;},
         setPosition(x,y,z){this.position=[x,y,z];},unload(){this.ends++;}};
         placements.push(source);return source;},
-    },new AbortController().signal);
-    assert.equal(decodes,1);assert.equal(voices.length,4);assert.equal(rooms.length,1);
-    assert.ok(voices.every(voice=>voice.options.url===sample));
-    const frame={phase:"forming",formationProgress:0.5,goalPosition:{x:0,y:0,z:-8},
+    },new AbortController().signal,()=>{randomCalls++;return (randomCalls%7)/7;});
+    assert.equal(decodes,3);assert.equal(voices.length,4);assert.equal(rooms.length,1);
+    assert.ok(voices.every(voice=>voice.options.url===samples[0]));
+    const frame={goalIndex:0,attempt:0,phase:"forming",formationProgress:0.5,goalPosition:{x:0,y:0,z:-8},
       objects:{ringLeft:{x:-3,y:0,z:-8},ringRight:{x:3,y:0,z:-8},arrow:{x:5,y:0,z:-8}}};
     audio.update({...frame,objects:undefined},true);
     assert.ok(voices.every(voice=>voice.starts===0),"absent graphics must not schedule invisible emitters");
@@ -237,6 +240,9 @@ test("four object voices share samples and hall, follow distance and speech, and
     assert.ok(voices.every(voice=>voice.stops===1));
     assert.ok(gains.every(gain=>gain.gain.target===0),"pause mutes direct sound, sends and hall tails immediately");
     audio.update(frame,true);assert.ok(voices.every(voice=>voice.starts===2));
+    assert.equal(randomCalls,6,"pause, speech, distance and repeated frames do not choose another sound");
+    for(const voice of [voices[0],voices[1],voices[3]])
+      assert.equal(voice.offsets[0],voice.offsets[1],"resume retains the course offset");
     frame.phase="crossed";frame.formationProgress=0;
     for(let i=0;i<100;i++)audio.update(frame,true);
     assert.ok(voices.every(voice=>voice.stops===2&&voice.starts===2),"dissolved objects do not schedule silent grains during speech holds");
@@ -247,6 +253,24 @@ test("four object voices share samples and hall, follow distance and speech, and
       for(const parameter of [...gains.map(gain=>gain.gain),...filters.map(filter=>filter.frequency)])
         assert.ok(parameter.events.length<=2,"live parameter history remains bounded during continued flight");
     }
+    assert.equal(randomCalls,6,"steady flight does not run random selection");
+    frame.phase="forming";frame.formationProgress=0.5;
+    for(let course=1;course<=100;course++){
+      frame.goalIndex=Math.floor(course/5);frame.attempt=course%5;
+      audio.update(frame,true);
+      for(const voice of [voices[0],voices[1],voices[3]]){
+        const previous=voice.buffers.at(-2),current=voice.buffers.at(-1);
+        assert.notEqual(current,previous,"each new goal or retry changes sample");
+        assert.ok(samples.includes(current),"only the three predecoded buffers are reused");
+        const offset=voice.offsets.at(-1);
+        const span=(voice.options.grainSize/voice.options.playbackRate+voice.options.overlap)*
+          2**((voice.options.detune+(voice===voices[3]?500:0))/1200);
+        assert.ok(offset>=0&&offset+span<=current.duration,"random offsets fit a full grain and its tail");
+      }
+    }
+    assert.equal(voices[2].buffers.length,0,"arrow keeps its authored sound");
+    assert.equal(decodes,3);assert.equal(voices.length,4);assert.equal(rooms.length,1);
+    assert.equal(gains.length,9);assert.equal(filters.length,4);assert.equal(placements.length,4);
     audio.unload();audio.unload();audio.update(frame,true);
     assert.ok([...voices,...gains,...filters,...placements,...rooms].every(resource=>resource.ends===1));
   `,

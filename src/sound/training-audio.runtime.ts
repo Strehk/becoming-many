@@ -39,6 +39,8 @@ export interface TrainingAudioParameters {
 
 /** Borrowed visual/speech facts; sound never decides learning or transport. */
 export interface TrainingAudioFrame {
+  readonly goalIndex: number;
+  readonly attempt: number;
   readonly phase:
     | "arrival"
     | "turning"
@@ -80,6 +82,7 @@ export async function createTrainingAudio(
   parameters: TrainingAudioParameters,
   audio: SpatialAudio,
   signal: AbortSignal,
+  random: () => number = Math.random,
 ): Promise<TrainingAudio> {
   validateTrainingAudioParameters(parameters);
   const samples = new Map<string, AudioBuffer>();
@@ -141,6 +144,10 @@ export async function createTrainingAudio(
     wetOutput.gain.value = 0;
     room.connect(wetOutput);
     connect(wetOutput, audio.context.destination);
+    const samplePool = [...samples.values()];
+    releases.push(() => {
+      samplePool.length = 0;
+    });
     const recipes = [...parameters.layers, parameters.goal];
     const voices = recipes.map((recipe, index) => {
       const sample = samples.get(recipe.sampleId);
@@ -184,6 +191,8 @@ export async function createTrainingAudio(
         filter,
         direct,
         send,
+        sampleIndex: samplePool.indexOf(sample),
+        offsetSeconds: recipe.offsetSeconds ?? 0,
         playing: false,
         distance: -1,
         strength: -1,
@@ -191,6 +200,8 @@ export async function createTrainingAudio(
     });
     let previousAudible = false;
     let previousSpeech = false;
+    let previousGoalIndex = -1;
+    let previousAttempt = -1;
     return {
       update(frame, isPlaying, speechActive = false): void {
         if (isUnloaded) return;
@@ -202,6 +213,11 @@ export async function createTrainingAudio(
         const speech = speechActive;
         const now = audio.context.immediate();
         const scheduled = audio.context.now();
+        const newCourse =
+          frame.goalIndex !== previousGoalIndex ||
+          frame.attempt !== previousAttempt;
+        previousGoalIndex = frame.goalIndex;
+        previousAttempt = frame.attempt;
         if (audible !== previousAudible || speech !== previousSpeech) {
           holdAudioParameter(wetOutput.gain, now);
           if (!audible) wetOutput.gain.setValueAtTime(0, now);
@@ -218,6 +234,32 @@ export async function createTrainingAudio(
           const entry = voices[index];
           if (!entry) continue;
           const isGoal = index === parameters.layers.length;
+          if (newCourse && entry.object !== "arrow") {
+            if (entry.playing) {
+              entry.voice.stop(scheduled);
+              entry.playing = false;
+            }
+            // Skip the previous sample without retry loops or new decoded buffers.
+            if (samplePool.length > 1)
+              entry.sampleIndex =
+                (entry.sampleIndex +
+                  1 +
+                  Math.floor(random() * (samplePool.length - 1))) %
+                samplePool.length;
+            const sample = samplePool[entry.sampleIndex];
+            if (sample) {
+              entry.voice.buffer.set(sample);
+              const grainSpan =
+                (entry.recipe.grainSizeSeconds / entry.recipe.playbackRate +
+                  entry.recipe.overlapSeconds) *
+                2 **
+                  ((entry.recipe.detuneCents +
+                    (isGoal ? CROSSING_DETUNE_CENTS : 0)) /
+                    1200);
+              entry.offsetSeconds =
+                random() * Math.max(0, sample.duration - grainSpan);
+            }
+          }
           const position = entry.object
             ? frame.objects?.[entry.object]
             : frame.goalPosition;
@@ -239,8 +281,7 @@ export async function createTrainingAudio(
           const playing = strength > 0;
           if (playing !== entry.playing) {
             entry.playing = playing;
-            if (playing)
-              entry.voice.start(scheduled, entry.recipe.offsetSeconds ?? 0);
+            if (playing) entry.voice.start(scheduled, entry.offsetSeconds);
             else entry.voice.stop(scheduled);
           }
           const distance = entry.placement.readDistanceMeters();

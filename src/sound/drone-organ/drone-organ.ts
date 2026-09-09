@@ -20,6 +20,8 @@ import type { OrganClock } from "./organ-timeline";
 export interface DroneOrganOptions {
   /** One beat of the score's pulse, in show seconds. */
   readonly pulseSeconds: number;
+  /** Omission builds the full score; standalone practice borrows only wind. */
+  readonly voices?: readonly OrganVoiceName[];
 }
 
 /**
