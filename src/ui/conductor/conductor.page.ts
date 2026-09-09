@@ -1,7 +1,7 @@
 /** Mount the operator UI against existing owner commands and observations. */
 
 import alarmClockIcon from "lucide-static/icons/alarm-clock.svg?no-inline";
-import headsetIcon from "lucide-static/icons/headset.svg?no-inline";
+import glassesIcon from "lucide-static/icons/glasses.svg?no-inline";
 import imageIcon from "lucide-static/icons/image.svg?no-inline";
 import pauseIcon from "lucide-static/icons/pause.svg?no-inline";
 import playIcon from "lucide-static/icons/play.svg?no-inline";
@@ -90,7 +90,7 @@ export function mountConductorPage({
     // Vite resolves imported SVG URLs consistently in development and production.
     for (const [name, url] of Object.entries({
       "alarm-clock": alarmClockIcon,
-      headset: headsetIcon,
+      headset: glassesIcon,
       image: imageIcon,
       pause: pauseIcon,
       play: playIcon,
