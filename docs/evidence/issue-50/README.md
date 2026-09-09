@@ -640,3 +640,80 @@ and accepts the corrected image. Later goal spacing remains 58–62 m. These are
 not fixed world positions.
 
 ![Procedurally placed first target, fully visible after formation](procedural-formed-goal.png)
+
+
+## Arrow-first turn-triggered tunnel — 2026-09-09
+
+The next user review replaces simultaneous arrow/ring formation. A six-metre
+particle arrow captures the current eye ray at the spoken cue, with at least
+12 m lead distance. Its world pose stays fixed. Start compares actual travel
+against the captured approach: a signed directional change of 0.12 sustained
+for 0.2 s opens the tunnel; rotating the head alone cannot do so. Current travel
+predicts the curve inside the visible corridor. Arrow-only misses dissolve after
+leaving view for 0.8 s (or passing its plane), then repeat the instruction portion
+at a fresh anchor. The arrow dissolves as the tunnel forms, avoiding the former
+overlapping symbols. Preview passages trigger individual immediate silver/6.5%
+expansion and drag-damped dispersal, fading within 1.4 s; only the final ring
+counts toward right/left/up/down. Existing 60 s/full-closing/UI-skip policy remains.
+
+The effect solves a critically damped mass-spring response analytically in the
+existing vertex shader; crossing impulses decay under linear drag. This is a
+reduced physical particle model, not a general collision/fluid engine. Reversing
+an unfinished formation retains the achieved displacement, avoiding a visible
+jump. One Points draw and immutable particle attributes remain. Official Three
+r185 guidance was checked through Context7 and the official
+[Material](https://threejs.org/docs/pages/Material.html),
+[BufferGeometry](https://threejs.org/docs/pages/BufferGeometry.html) and
+[GPUComputationRenderer](https://threejs.org/docs/pages/GPUComputationRenderer.html)
+documentation. Ping-pong computation textures were unnecessary for these
+analytically solvable forces. No dependency, renderer or time owner was added.
+
+Verification: 17 Start, 11 particle-effect, 5 training-audio and 5 composed
+Show/audio tests passed; production build/typecheck and repository lint passed.
+Tests cover real directional travel, head-only rejection, fixed anchors, all four
+passages, preview feedback without progress, pause, ceiling feasibility, 100
+recycles and complete cleanup. The combined check caught an arrow-miss phantom
+ring; fixing presence ownership removed it. Audio follows the independently
+visible arrow before ring sources begin.
+
+Actual headed Chromium production runs used the existing M5 response fixture.
+All four goals completed with zero misses, followed by the complete German closing
+and automatic handoff at about 65.3 s. Separate standalone captures verify no
+rings at arrow onset, world-fixed arrow pose after turning, delayed tunnel
+formation, paused animation and fresh spoken retry. The dense arrow is readable
+alone; the tunnel has volumetric grain bodies and dispersed surrounding particles
+instead of the old small overlapping symbols. White composition and fine gray
+points retain the inspiration's restraint; photographic lighting/fluid fidelity
+is not claimed. Physical comfort, visual approval and spatial speech listening
+on Windows-PCVR remain open, as does EN content policy.
+
+Comparable 1920×1080 DPR1 headed Chromium measurement (no screenshots during the
+measured course): 3,955 frames, CPU median/p95/p99 0.3/0.4/0.5 ms; GPU
+0.103375/0.307708/0.36975 ms; RAF 16.7/18.1/18.6 ms. Previous gaze-coupled GPU
+median/p95 was 0.104333/0.296125 ms; the first candidate was 0.10054/0.29412 ms.
+These nearby desktop results do not establish a performance improvement or a
+90 Hz installation result. No buffer/program/texture creation occurred during
+the course; upload p99 was zero and maximum 34,560 bytes from existing Air
+streaming. Capacity remains 32,000 training + 6,000 Air points. Training attribute
+storage remains 1,408,000 bytes; physical release origins add two fixed vec2
+uniforms (16 bytes), preview ages one fixed three-float uniform (12 bytes).
+The six-pixel cap bounds training sprite-square coverage to 1,152,000 pixels
+before clipping/alpha rejection; this is a conservative overdraw proxy, not
+measured fragment invocations. No new long-duration heap-plateau claim is made.
+
+Raw local comparison: `benchmark-results/issue-50/turn-triggered-release/probe.json`,
+served asset digest `6128816d3fd19a9d6c615ba1851fcc76f0aa6ec6744f528e00a097e068fbcf0b`.
+The final dead-configuration cleanup removes unused former wake knobs/uniforms;
+it does not change the measured rendered motion. Procedural routes vary across
+runs; these are comparable experience measurements, not isolated shader timings. Native audio request cancellation logged
+`ERR_ABORTED` on introduction replacement and completed closing disposal; no
+functional, shader or console warning occurred. The harness reports those raw
+cancellations as nonzero exit despite all interaction assertions passing.
+
+![Arrow appears alone](turn-arrow-only.png)
+![Tunnel forms after turning](turn-tunnel-gathering.png)
+![Formed tunnel](turn-tunnel-formed.png)
+
+This is feature growth, not a code-reduction claim: production +259 lines,
+tests −28 lines, with documentation/evidence updated separately. The simultaneous
+formation path was replaced rather than retained as a second mode.

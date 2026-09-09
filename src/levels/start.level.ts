@@ -110,7 +110,7 @@ export const level: LevelPreset = {
     dissolutionSeconds: 1.5,
     directions: ["right", "left", "up", "down"],
     course: {
-      firstDistanceMeters: [16, 18],
+      firstDistanceMeters: [12, 14],
       spacingMeters: [12, 14],
       horizontalOffsetMeters: [4, 5],
       verticalOffsetMeters: [4, 5],
@@ -120,7 +120,7 @@ export const level: LevelPreset = {
       count: 32000,
       sizeMeters: 0.075,
       color: 0x92979b,
-      arrowLengthMeters: 3.5,
+      arrowLengthMeters: 6,
       ringThicknessRatio: 0.24,
       hazeFraction: 0.12,
       maximumPointSizePixels: 6,
@@ -130,9 +130,6 @@ export const level: LevelPreset = {
       driftSpeed: 0.65,
       sparkle: 0.08,
       glow: 0.12,
-      wakeRadiusMeters: 8,
-      wakeDurationSeconds: 2.4,
-      wakeDistanceMeters: 2.5,
     },
   },
   airParticles: {

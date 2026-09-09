@@ -211,6 +211,8 @@ test("four object voices share samples and hall, follow distance and speech, and
       objects:{ringLeft:{x:-3,y:0,z:-8},ringRight:{x:3,y:0,z:-8},arrow:{x:5,y:0,z:-8}}};
     audio.update({...frame,objects:undefined},true);
     assert.ok(voices.every(voice=>voice.starts===0),"absent graphics must not schedule invisible emitters");
+    audio.update({...frame,phase:"turning",formationProgress:0,arrowFormationProgress:0.5},true);
+    assert.deepEqual(voices.map(voice=>voice.starts),[0,0,1,0],"only the visible arrow emits before the turn");
     audio.update(frame,true);audio.update(frame,true);
     audio.update({...frame,phase:"crossed",wake:{strength:1}},true);
     assert.equal(voices[3].detune,500,"passage raises only the existing goal voice");

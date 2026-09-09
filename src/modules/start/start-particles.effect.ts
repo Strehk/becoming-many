@@ -29,9 +29,6 @@ export interface StartParticleParameters {
   /** Restrained brightness and point-edge accents in [0, 1]; zero disables each. */
   readonly sparkle: number;
   readonly glow: number;
-  readonly wakeRadiusMeters: number;
-  readonly wakeDurationSeconds: number;
-  readonly wakeDistanceMeters: number;
 }
 
 /** One crossing's world-space trajectory; direction is unit length, age is seconds. */
@@ -60,12 +57,19 @@ export interface StartParticleFrame {
   /** Zero is drifting cloud, one is the fully gathered shape. */
   readonly formationProgress: number;
   readonly sectionPresence?: number;
+  readonly arrowPresence?: number;
+  readonly arrowFormation?: number;
+  readonly ringPresence?: number;
+  readonly arrowNormal?: Readonly<Vector3>;
+  readonly arrowUp?: Readonly<Vector3>;
   readonly wake?: StartParticleWake;
   /** Presentation-only guide rings; at most three are rendered. */
   readonly previews?: readonly StartParticlePreview[];
 }
 
 export interface StartParticlePreview {
+  /** First swept passage, supplied by Start; undefined means not crossed. */
+  readonly crossingAgeSeconds?: number;
   readonly goalPosition: Readonly<Vector3>;
   readonly goalNormal: Readonly<Vector3>;
   readonly ringRadiusMeters: number;
@@ -95,7 +99,8 @@ const ORIGIN = new Vector3();
 const UNIT_SCALE = new Vector3(1, 1, 1);
 const ARROW_SOURCE_WIDTH = 1.1;
 const CROSSING_EXPANSION = 0.065;
-const CROSSING_PULSE_SECONDS = 0.9;
+const MAXIMUM_DISPERSAL_MARGIN_METERS = 2.5;
+const CROSSING_PULSE_DECAY = 4;
 
 /** Own one fixed Points draw; Start supplies its pose, transition and crossing facts. */
 export function createStartParticleEffect({
@@ -116,6 +121,9 @@ export function createStartParticleEffect({
     () => new Matrix4(),
   );
   const previewRadii = new Float32Array(MAXIMUM_PREVIEWS);
+  const previewCrossingAges = new Float32Array(MAXIMUM_PREVIEWS).fill(-1);
+  let previousFormation = 0;
+  let previousArrowFormation = 0;
   const previewRotation = new Quaternion();
   const objects = {
     ringLeft: new Vector3(),
@@ -134,22 +142,24 @@ export function createStartParticleEffect({
     startThickness: { value: thickness },
     startPreviewPoses: { value: previewPoses },
     startPreviewRadii: { value: previewRadii },
+    startPreviewCrossingAges: { value: previewCrossingAges },
     startPreviewCount: { value: 0 },
-    startCrossingPulse: { value: 0 },
     startMaximumPointSize: { value: parameters.maximumPointSizePixels ?? 24 },
     startFormation: { value: 0 },
-    startSectionPresence: { value: 1 },
+    startDissolving: { value: 0 },
+    startReleaseOrigin: { value: new Float32Array([1, 1]) },
+    startArrowFormation: { value: 0 },
+    startArrowDissolving: { value: 0 },
+    startArrowReleaseOrigin: { value: new Float32Array([1, 1]) },
+    startArrowPresence: { value: 0 },
+    startRingPresence: { value: 0 },
     startDriftAmplitude: { value: parameters.driftAmplitudeMeters },
     startDriftSpeed: { value: parameters.driftSpeed },
     startSparkle: { value: parameters.sparkle },
     startGlow: { value: parameters.glow },
-    startWakePosition: { value: new Vector3() },
     startWakeDirection: { value: new Vector3() },
     startWakeStrength: { value: 0 },
     startWakeAge: { value: 0 },
-    startWakeRadius: { value: parameters.wakeRadiusMeters },
-    startWakeDuration: { value: parameters.wakeDurationSeconds },
-    startWakeDistance: { value: parameters.wakeDistanceMeters },
   };
   let points: Points<BufferGeometry, PointsMaterial> | undefined;
 
@@ -201,7 +211,7 @@ export function createStartParticleEffect({
             "#include <color_fragment>\napplyStartParticleAppearance(diffuseColor);",
           );
       };
-      material.customProgramCacheKey = () => "start-cloud-particles-v2";
+      material.customProgramCacheKey = () => "start-cloud-particles-v3";
       points = new Points(geometry, material);
       points.name = "StartTrainingParticles";
       points.visible = false;
@@ -232,21 +242,61 @@ export function createStartParticleEffect({
       frame.previewElapsedSeconds ?? frame.elapsedSeconds;
     uniforms.startRadius.value = frame.ringRadiusMeters;
     uniforms.startArrowAngle.value = frame.arrowAngleRadians;
+    goalRotation.setFromRotationMatrix(
+      orientation.lookAt(
+        frame.arrowNormal ?? frame.goalNormal,
+        ORIGIN,
+        frame.arrowUp ?? frame.goalUp,
+      ),
+    );
     uniforms.startArrowPose.value.compose(
       frame.arrowPosition,
       goalRotation,
       UNIT_SCALE,
     );
+    const arrowFormation = frame.arrowFormation ?? frame.formationProgress;
+    if (
+      frame.formationProgress < previousFormation &&
+      !uniforms.startDissolving.value
+    ) {
+      uniforms.startReleaseOrigin.value[0] = previousFormation;
+      uniforms.startReleaseOrigin.value[1] = springGather(
+        previousFormation,
+        false,
+      );
+    }
+    if (
+      arrowFormation < previousArrowFormation &&
+      !uniforms.startArrowDissolving.value
+    ) {
+      uniforms.startArrowReleaseOrigin.value[0] = previousArrowFormation;
+      uniforms.startArrowReleaseOrigin.value[1] = springGather(
+        previousArrowFormation,
+        false,
+      );
+    }
+    if (frame.formationProgress !== previousFormation)
+      uniforms.startDissolving.value = Number(
+        frame.formationProgress < previousFormation,
+      );
+    if (arrowFormation !== previousArrowFormation)
+      uniforms.startArrowDissolving.value = Number(
+        arrowFormation < previousArrowFormation,
+      );
+    previousFormation = frame.formationProgress;
+    previousArrowFormation = arrowFormation;
     uniforms.startFormation.value = frame.formationProgress;
-    uniforms.startSectionPresence.value = frame.sectionPresence ?? 1;
+    uniforms.startArrowFormation.value = arrowFormation;
+    uniforms.startArrowPresence.value =
+      frame.arrowPresence ?? frame.sectionPresence ?? 1;
+    uniforms.startRingPresence.value =
+      frame.ringPresence ?? frame.sectionPresence ?? 1;
     const wake = frame.wake;
     uniforms.startWakeStrength.value = wake?.strength ?? 0;
-    const pulseAge = Math.min(
-      1,
-      Math.max(0, (wake?.ageSeconds ?? 0) / CROSSING_PULSE_SECONDS),
-    );
-    const pulse = Math.sin(pulseAge * Math.PI) * (wake?.strength ?? 0);
-    uniforms.startCrossingPulse.value = pulse;
+    const pulse = wake
+      ? Math.exp(-Math.max(0, wake.ageSeconds) * CROSSING_PULSE_DECAY) *
+        wake.strength
+      : 0;
     const expandedRadius =
       frame.ringRadiusMeters *
       (1 + thickness) *
@@ -259,7 +309,7 @@ export function createStartParticleEffect({
         0,
         Math.sin(frame.elapsedSeconds * 0.65) *
           0.12 *
-          smoothstep(frame.formationProgress),
+          smoothstep(arrowFormation),
       )
       .applyMatrix4(uniforms.startArrowPose.value);
     updateObjectAnchor(objects.ringLeft, frame);
@@ -283,6 +333,7 @@ export function createStartParticleEffect({
       );
       pose.compose(preview.goalPosition, previewRotation, UNIT_SCALE);
       previewRadii[index] = preview.ringRadiusMeters;
+      previewCrossingAges[index] = preview.crossingAgeSeconds ?? -1;
       largestRadius = Math.max(largestRadius, preview.ringRadiusMeters);
       bounds.expandByPoint(preview.goalPosition);
     }
@@ -294,14 +345,17 @@ export function createStartParticleEffect({
         arrowLength,
       ) +
         parameters.driftAmplitudeMeters +
-        parameters.wakeDistanceMeters +
+        MAXIMUM_DISPERSAL_MARGIN_METERS +
         1,
     );
     if (points.geometry.boundingSphere)
       bounds.getBoundingSphere(points.geometry.boundingSphere);
-    anchorsReady = (frame.sectionPresence ?? 1) > 0;
+    anchorsReady =
+      Math.max(
+        uniforms.startArrowPresence.value,
+        uniforms.startRingPresence.value,
+      ) > 0;
     if (!wake) return;
-    uniforms.startWakePosition.value.copy(wake.position);
     uniforms.startWakeDirection.value.copy(wake.direction);
     uniforms.startWakeAge.value = wake.ageSeconds;
   }
@@ -310,24 +364,16 @@ export function createStartParticleEffect({
     anchor: Vector3,
     frame: StartParticleFrame,
   ): void {
-    const formation = smoothstep(frame.formationProgress);
+    const formation = springGather(
+      frame.formationProgress,
+      uniforms.startDissolving.value > 0,
+      uniforms.startReleaseOrigin.value,
+    );
     anchor.multiplyScalar(formation).applyMatrix4(uniforms.startGoalPose.value);
     const wake = frame.wake;
     if (!wake) return;
-    const age = Math.min(
-      1,
-      Math.max(0, wake.ageSeconds / parameters.wakeDurationSeconds),
-    );
-    const envelope = Math.sin(age * Math.PI) * (1 - age);
-    const influence =
-      1 -
-      smoothstep(
-        anchor.distanceTo(wake.position) / parameters.wakeRadiusMeters,
-      );
-    anchor.addScaledVector(
-      wake.direction,
-      parameters.wakeDistanceMeters * wake.strength * influence * envelope,
-    );
+    const travel = (1 - Math.exp(-Math.max(0, wake.ageSeconds) * 1.8)) / 1.8;
+    anchor.addScaledVector(wake.direction, 1.5 * travel);
   }
 
   function unload(): void {
@@ -335,10 +381,31 @@ export function createStartParticleEffect({
     const releasedPoints = points;
     points = undefined;
     anchorsReady = false;
+    previousFormation = 0;
+    previousArrowFormation = 0;
     scene.remove(releasedPoints);
     releasedPoints.geometry.dispose();
     releasedPoints.material.dispose();
   }
+}
+
+function springGather(
+  progress: number,
+  dissolving: boolean,
+  releaseOrigin?: Float32Array,
+): number {
+  const originProgress = releaseOrigin?.[0] ?? 1;
+  const originFormation = releaseOrigin?.[1] ?? 1;
+  const age = Math.min(
+    1,
+    Math.max(
+      0,
+      dissolving ? 1 - progress / Math.max(0.0001, originProgress) : progress,
+    ),
+  );
+  const response =
+    (1 - (1 + 8 * age) * Math.exp(-8 * age)) / (1 - 9 * Math.exp(-8));
+  return dissolving ? originFormation * (1 - response) : response;
 }
 
 function smoothstep(progress: number): number {
@@ -449,17 +516,11 @@ function validateParameters(parameters: StartParticleParameters): void {
     "sizeMeters",
     "cloudRadiusMeters",
     "cloudDepthMeters",
-    "wakeRadiusMeters",
-    "wakeDurationSeconds",
   ] as const) {
     if (!Number.isFinite(parameters[key]) || parameters[key] <= 0)
       throw new Error(`Start particle ${key} must be positive and finite`);
   }
-  for (const key of [
-    "driftAmplitudeMeters",
-    "driftSpeed",
-    "wakeDistanceMeters",
-  ] as const) {
+  for (const key of ["driftAmplitudeMeters", "driftSpeed"] as const) {
     if (!Number.isFinite(parameters[key]) || parameters[key] < 0)
       throw new Error(`Start particle ${key} must be non-negative and finite`);
   }

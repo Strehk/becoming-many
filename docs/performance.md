@@ -844,3 +844,18 @@ The existing fixed pools and resource lifecycle are preserved; earlier memory
 observations remain evidence for those unchanged owners, not a new whole-process
 memory measurement. Physical Windows-PCVR, first-visitor comfort and spatial
 listening remain open. [Screenshots and review](evidence/issue-50/README.md#gaze-coupled-instruction-and-slower-flight--2026-09-09).
+
+
+## Arrow-first tutorial — 2026-09-09
+
+The turn-triggered revision retains 32k training/6k Air capacities, one training
+Points draw, immutable 1,408,000-byte training attributes and six-pixel sprite cap.
+Spring/drag physics is evaluated analytically in the existing shader; three
+preview ages and two release-origin vec2 uniforms add 28 fixed bytes, without
+compute targets or per-frame particle uploads. A headed 1920×1080 DPR1 Chromium
+course measured CPU median/p95 0.3/0.4 ms, GPU 0.103375/0.307708 ms and RAF
+16.7/18.1 ms. Prior gaze revision GPU was 0.104333/0.296125 ms. These nearby
+measurements show no demonstrated material change; neither an improvement nor
+Windows-PCVR 90 Hz acceptance follows. Zero course-time GPU resource creation;
+upload p99 zero, peak 34,560 bytes for Air streaming. See
+[conditions, overdraw proxy and limits](evidence/issue-50/README.md#arrow-first-turn-triggered-tunnel--2026-09-09).

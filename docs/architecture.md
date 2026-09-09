@@ -277,8 +277,14 @@ The current literal recipe enables bounded object-bound granular audio from
 three user-supplied excerpts and the five user-requested German tutorial recordings.
 At each authored instruction onset, Start samples the current world-space eye
 direction and conservative projection cone published by World. It places the
-arrow on that ray and the current ring/three previews within the view, then
-retains their world anchors. This replaces preplanned rig-heading targets. Show
+large arrow on that ray and retains its world anchor. Only a sustained change
+in actual travel toward the requested direction creates the ring/three previews.
+The curve predicts current travel constrained to the visible corridor. Head rotation
+alone does not open the tunnel. Off-screen arrows dissolve and retry; each crossed
+preview emits its own local visual pulse without counting a lesson. The effect
+uses analytical mass-spring gathering and drag-decaying crossing impulses in the
+existing vertex shader, with fixed buffers and no additional simulation loop.
+This replaces simultaneous arrow/tunnel formation. Show
 opens formation separately from allowing post-crossing progression. Run supplies
 2 m/s tutorial translation through the existing controls and restores ordinary
 main speeds on handoff; directional sensitivity is unchanged. The EN voice policy remains open. Run owns the shared Tone spatial context when audio is configured;

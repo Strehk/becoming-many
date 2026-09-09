@@ -24,9 +24,6 @@ const PARAMETERS: StartParticleParameters = {
   driftSpeed: 0.65,
   sparkle: 0.08,
   glow: 0.12,
-  wakeRadiusMeters: 3,
-  wakeDurationSeconds: 2.4,
-  wakeDistanceMeters: 2.5,
 };
 
 function createFrame(): StartParticleFrame {
@@ -127,9 +124,6 @@ test("copies the shared world pose and one wake without retaining borrowed frame
   });
   wakePosition.set(20, 20, 20);
   wakeDirection.set(1, 0, 0);
-  expect(shader.uniforms.startWakePosition?.value).toEqual(
-    new Vector3(1, 2, 3),
-  );
   expect(shader.uniforms.startWakeDirection?.value).toEqual(
     new Vector3(0, 0, -1),
   );
@@ -217,9 +211,9 @@ test("invalid particle capacities and physical extents fail before resource crea
   expect(() =>
     createStartParticleEffect({
       scene: new Scene(),
-      parameters: { ...PARAMETERS, wakeDurationSeconds: 0 },
+      parameters: { ...PARAMETERS, cloudRadiusMeters: 0 },
     }),
-  ).toThrow("wakeDurationSeconds");
+  ).toThrow("cloudRadiusMeters");
 });
 
 test("object anchors share the formed geometry pose and disappear with their owner", () => {
@@ -271,20 +265,37 @@ test("body anchors gather with formation and follow finite crossing wake", () =>
   expect(effect.readObjectAnchors()?.arrow).toEqual(frame.arrowPosition);
   expect(effect.readObjectAnchors()?.ringLeft).toEqual(frame.goalPosition);
   effect.update({ ...frame, formationProgress: 0.5 });
-  expect(effect.readObjectAnchors()?.ringLeft.x).toBeCloseTo(1.07);
+  expect(effect.readObjectAnchors()?.ringLeft.x).toBeCloseTo(
+    2 - 1.86 * ((1 - 5 * Math.exp(-4)) / (1 - 9 * Math.exp(-8))),
+  );
   const wake = {
     position: frame.goalPosition,
     direction: new Vector3(0, 0, -1),
     strength: 1,
-    ageSeconds: PARAMETERS.wakeDurationSeconds / 2,
+    ageSeconds: 1.2,
   };
   effect.update({ ...frame, wake });
-  expect(effect.readObjectAnchors()?.ringLeft.z).toBeCloseTo(-9.25);
+  expect(effect.readObjectAnchors()?.ringLeft.z).toBeCloseTo(
+    -8 - (1.5 * (1 - Math.exp(-1.2 * 1.8))) / 1.8,
+  );
   effect.update({
     ...frame,
-    wake: { ...wake, ageSeconds: PARAMETERS.wakeDurationSeconds },
+    wake: { ...wake, ageSeconds: 2.4 },
   });
-  expect(effect.readObjectAnchors()?.ringLeft.z).toBe(-8);
+  expect(effect.readObjectAnchors()?.ringLeft.z).toBeCloseTo(
+    -8 - (1.5 * (1 - Math.exp(-2.4 * 1.8))) / 1.8,
+  );
+  effect.update({
+    ...frame,
+    wake: { ...wake, direction: new Vector3(0.6, 0, -0.8) },
+  });
+  const travel = (1 - Math.exp(-1.2 * 1.8)) / 1.8;
+  expect(effect.readObjectAnchors()?.ringLeft.x).toBeCloseTo(
+    2 + 0.6 * 1.5 * travel,
+  );
+  expect(effect.readObjectAnchors()?.ringLeft.z).toBeCloseTo(
+    -8 - 0.8 * 1.5 * travel,
+  );
   effect.unload();
 });
 
@@ -385,12 +396,11 @@ test("three preview poses are copied, culled conservatively and never upload par
   effect.unload();
 });
 
-test("local expansion and arrow motion update sound anchors then settle completely", () => {
+test("immediate local expansion and drag transport keep sound anchored to the ring", () => {
   const scene = new Scene();
   const effect = createStartParticleEffect({ scene, parameters: PARAMETERS });
   effect.load();
   effect.setVisible(true);
-  const shader = compileMaterial(readPoints(scene).material);
   const frame = { ...createFrame(), formationProgress: 1, elapsedSeconds: 1 };
   const wake = {
     position: frame.goalPosition,
@@ -399,18 +409,70 @@ test("local expansion and arrow motion update sound anchors then settle complete
     strength: 1,
   };
   effect.update({ ...frame, wake });
-  expect(shader.uniforms.startCrossingPulse?.value).toBeCloseTo(1);
   expect(effect.readObjectAnchors()?.ringLeft.x).toBeCloseTo(
-    2 - 1.5 * 1.24 * 1.065,
+    2 - 1.5 * 1.24 * (1 + 0.065 * Math.exp(-0.45 * 4)),
   );
   expect(effect.readObjectAnchors()?.arrow.z).toBeCloseTo(
     -4 + Math.sin(0.65) * 0.12,
   );
   effect.update({ ...frame, wake: { ...wake, ageSeconds: 10 } });
-  expect(shader.uniforms.startCrossingPulse?.value as number).toBeLessThan(
-    0.000001,
-  );
   expect(effect.readObjectAnchors()?.ringLeft.x).toBeCloseTo(0.14);
-  expect(effect.readObjectAnchors()?.ringLeft.z).toBe(-8);
+  expect(effect.readObjectAnchors()?.ringLeft.z).toBeCloseTo(-8 - 1.5 / 1.8);
+  effect.unload();
+});
+
+test("arrow pose and presence stay independent as tunnel rings form and cross", () => {
+  const scene = new Scene();
+  const effect = createStartParticleEffect({ scene, parameters: PARAMETERS });
+  effect.load();
+  effect.setVisible(true);
+  const points = readPoints(scene);
+  const shader = compileMaterial(points.material);
+  const arrowNormal = new Vector3(0, 0, 1);
+  const frame = {
+    ...createFrame(),
+    arrowNormal,
+    arrowUp: new Vector3(0, 1, 0),
+    arrowFormation: 1,
+    arrowPresence: 1,
+    ringPresence: 0,
+  };
+  effect.update(frame);
+  const borrowedArrowPose = shader.uniforms.startArrowPose?.value;
+  if (!(borrowedArrowPose instanceof Matrix4))
+    throw new Error("Expected the captured arrow pose");
+  const arrowPose = borrowedArrowPose.clone();
+  expect(shader.uniforms.startRingPresence?.value).toBe(0);
+  expect(shader.uniforms.startArrowPresence?.value).toBe(1);
+  effect.update({
+    ...frame,
+    goalNormal: new Vector3(1, 0, 0),
+    ringPresence: 1,
+    arrowPresence: 0.5,
+    previews: [
+      {
+        goalPosition: new Vector3(2, 0, -7),
+        goalNormal: new Vector3(1, 0, 0),
+        ringRadiusMeters: 2,
+        crossingAgeSeconds: 0,
+      },
+    ],
+  });
+  expect(shader.uniforms.startArrowPose?.value).toEqual(arrowPose);
+  const ages = shader.uniforms.startPreviewCrossingAges?.value as Float32Array;
+  expect(ages[0]).toBe(0);
+  expect(ages).toHaveLength(3);
+  effect.update({
+    ...frame,
+    previews: [
+      {
+        goalPosition: new Vector3(2, 0, -7),
+        goalNormal: new Vector3(1, 0, 0),
+        ringRadiusMeters: 2,
+      },
+    ],
+  });
+  expect(ages[0]).toBe(-1);
+  expect(shader.uniforms.startPreviewCrossingAges?.value).toBe(ages);
   effect.unload();
 });

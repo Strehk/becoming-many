@@ -7,7 +7,11 @@ and M5 consolidation passed its local checks and browser acceptance; see
 [UI evidence](evidence/ui-consolidation/README.md). The previous
 #36/#84/#11 and audio-wake results remain dated evidence for their tested code.
 The latest gaze/voice revision captures each instruction’s current eye direction
-and view cone, places its arrow ahead, and keeps formed objects world-fixed.
+and view cone, places a large arrow ahead, and keeps formed objects world-fixed.
+The subsequent turn-triggered revision reveals the tunnel only after actual
+movement in the requested direction. Each passed preview reacts immediately;
+only the final target counts. Arrow misses recycle with spoken retries. Gathering
+and release use bounded analytical spring/drag particle physics.
 Show releases formation at authored spoken onsets (DE 19.16/0.9/1/0.65 s); Run
 uses 2 m/s tutorial translation through existing controls. The preplanned
 rig-heading course is removed.

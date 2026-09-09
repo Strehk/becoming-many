@@ -41,6 +41,7 @@ export interface TrainingAudioParameters {
 export interface TrainingAudioFrame {
   readonly phase:
     | "arrival"
+    | "turning"
     | "forming"
     | "flying"
     | "crossed"
@@ -49,6 +50,7 @@ export interface TrainingAudioFrame {
   readonly goalPosition: Position;
   readonly objects?: Readonly<Record<TrainingObject, Position>>;
   readonly formationProgress: number;
+  readonly arrowFormationProgress?: number;
   readonly wake?: { readonly strength: number };
 }
 
@@ -223,7 +225,16 @@ export async function createTrainingAudio(
             entry.placement.setPosition(position.x, position.y, position.z);
           const strength =
             audible && (!isGoal || frame.phase !== "arrival")
-              ? Math.max(0, Math.min(1, frame.formationProgress))
+              ? Math.max(
+                  0,
+                  Math.min(
+                    1,
+                    entry.object === "arrow"
+                      ? (frame.arrowFormationProgress ??
+                          frame.formationProgress)
+                      : frame.formationProgress,
+                  ),
+                )
               : 0;
           const playing = strength > 0;
           if (playing !== entry.playing) {
