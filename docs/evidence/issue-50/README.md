@@ -59,7 +59,8 @@ before Show's next frame published the closing span; it now waits for that publi
 observation before checking the full remaining recording duration.
 
 43 focused Start, Show/audio, Run restart, timeline and scrubbing tests pass
-(1,278 assertions); mandatory lint passes. The Show tests include success at
+(1,278 assertions); mandatory lint and production build/typecheck pass. Vite
+retains its existing large-chunk warning. The Show tests include success at
 59.9 seconds, a full closing recording, paused wall time, repeated language
 selection, early/idempotent skip, main cue offsets and standalone isolation.
 A focused independent diff review found no blocking owner/lifetime/cost issue;
@@ -72,6 +73,26 @@ functional failure or other console error is recorded. These reports are not
 claimed as clean all-error browser passes or physical audibility evidence.
 [Performance](../../performance.md#timed-tutorial-and-timeline--2026-09-09)
 records the measured candidate identity and cost.
+
+The Conductor production run also completes the spoken success path and passes
+transport, keyboard seeking, scrubbing and desktop/narrow layouts. Its later
+technician fixture still expected absolute zero after main-only Reset show;
+that obsolete assertion now expects the retained main-start prefix. A focused
+rerun passes the entire technician helper. A second fixture clicked Play during
+asynchronous Stop preparation; it now waits for the public arrival observation.
+The focused Stop/restart/Play/direct-skip scenario then passes. These concrete
+failed results are retained, without relaxing the expected behavior.
+
+Final Conductor UI verification uses `ffc495b` plus the fixture corrections,
+Chromium 151 and served-assets digest
+`7ca0a47e25c6c9544272f197175518774c1ca6cf7019a7432986ea89ba324b17`.
+This includes the separately committed headset-icon update `0044943`; the root
+performance measurement keeps its original asset identity. Lint and typecheck
+also pass after the fixture corrections. Strict reports retain the same two
+media-request aborts. Startup-failure and UI-mount-failure Conductor scenarios
+pass; no physical device claim follows from those simulated checks.
+
+![Actual Conductor after Stop and renewed Play](timed-tutorial-conductor.png)
 
 ![Actual running tutorial and timeline at 26 seconds](timed-tutorial-timeline.png)
 ![Held tutorial with direct transition at narrow width](timed-tutorial-narrow.png)

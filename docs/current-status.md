@@ -13,16 +13,21 @@ then transition automatically. Timeout and the prepared Begin experience command
 enter main playback without unearned success speech. The timeline retains actual
 tutorial duration; main score timings remain relative and unchanged. Pause holds
 the budget, and reset restores a fresh minute. Standalone Start stays a separate
-practice surface. This supersedes older unlimited/operator-only behavior below.
+practice surface. The timed revision passes 43 focused tests, build/typecheck and lint; actual
+success, timeout, pause and direct UI transition are exercised in production.
+Raw browser media-request aborts and the corrected legacy reset fixture are
+recorded in the [current evidence](evidence/issue-50/README.md).
+This supersedes older unlimited/operator-only behavior below.
 Start now generates its four-goal course from distance, displacement and radius
 ranges instead of authored coordinates. Restart samples a fresh course. Missed or spatially abandoned sections fade and
 recycle ahead of the current flight pose without increasing the success count.
 Placed targets and sound anchors remain fixed during each attempt.
 Dated measurement packets retain the earlier exact identities they tested;
 the current checkout is the authority for runtime details.
-The combined tutorial change passes `bun test` (572 tests), `bun run build` and
-`bun run lint`. The final targeted lifetime/control/audio/geometry checks are
-included in that suite. The production browser passes 7/7 combined scenarios
+Before the timed revision, the combined tutorial baseline passed `bun test`
+(572 tests), `bun run build` and `bun run lint`, including its targeted
+lifetime/control/audio/geometry checks. That baseline production browser passed
+7/7 combined scenarios
 (Root, Conductor, Start and startup/mount failures) plus 4/4 shared-UI scenarios
 (Echo and Flash, including their failures). Root and Conductor each traverse all
 four rings through the real M5 adapter with simulated firmware responses, use the

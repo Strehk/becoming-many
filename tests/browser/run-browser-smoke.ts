@@ -765,6 +765,9 @@ async function checkConductorStop(page: Page): Promise<void> {
   await page.getByRole("button", { name: "Stop", exact: true }).click();
   await observeConductorTime(page, 0);
   assert.equal(await transport.getAttribute("data-playing"), "false");
+  await page.waitForFunction(
+    () => window.show?.readTutorial()?.phase === "arrival",
+  );
   await transport.click();
   await page
     .locator('.conductor__transport-button[data-playing="true"]')
@@ -1103,11 +1106,12 @@ async function checkTechnicianControls(page: Page): Promise<void> {
       scale,
     );
   }
+  const mainStartSeconds = await readConductorMainStart(page);
   await drawer.locator("[data-reset-show]").click();
-  await observeConductorTime(page, 0);
+  await observeConductorTime(page, mainStartSeconds);
   assert.equal(await transport.getAttribute("data-playing"), "false");
   await drawer.locator("[data-reset-flight]").click();
-  await observeConductorTime(page, 0);
+  await observeConductorTime(page, mainStartSeconds);
   const reload = drawer.locator(".conductor__reload-button");
   const reloadLabel = await reload.innerText();
   await reload.click();
