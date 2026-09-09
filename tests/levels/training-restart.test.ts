@@ -36,7 +36,7 @@ test("Run gates training preparation and releases failed or cancelled restart ch
         };
       };
       const voice = () => {
-        const created = { ends:0, releasing:false, released:false, update() {}, beginRelease(){this.releasing=true;}, updateRelease(){return this.released;}, unload() { this.ends++; } };
+        const created = { ends:0, releasing:false, released:false, resets:0, reset(){this.resets++;}, update() {}, beginRelease(){this.releasing=true;}, updateRelease(){return this.released;}, unload() { this.ends++; } };
         voices.push(created); return created;
       };
       const main = makeModule("main");
@@ -104,6 +104,9 @@ test("Run gates training preparation and releases failed or cancelled restart ch
       assert.equal(camera.fov,80,"training keeps level goals visible below the assisted view");
       frame(0.1);
       assert.equal(rig.position.y,0,"prepared invisible terrain cannot block Start goals");
+      const audioResets=voices[0].resets;
+      run.resetShowAndFlight();
+      assert.equal(voices[0].resets,audioResets+1,"a retained tutorial audio owner resets with the flight and visual lesson");
       show.finish();
       frame(0.1);
       assert.equal(camera.fov,50,"handoff restores the original main projection");

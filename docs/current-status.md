@@ -340,3 +340,10 @@ transition request. The actual timeline includes that tail and breathing space.
 Earned closing remains complete, so total practice can exceed the earlier
 approximate 74-second estimate by the breathing interval or native playback delay.
 The existing four-second sound drain continues into main playback.
+
+Independent browser review on 2026-09-09 does **not** grant full tutorial
+acceptance: fully formed arrow silhouettes remain clipped (especially Up), and
+sideways gaze at birth can leave a cue outside the visible corridor. The reviewed
+source also exposed and repaired retained handoff state blocking main language
+changes, wind reveal surviving reset, and a cold native initial seek being lost.
+See the current independent review in `docs/evidence/issue-50/README.md`.

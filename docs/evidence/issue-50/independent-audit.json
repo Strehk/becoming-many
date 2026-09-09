@@ -1,0 +1,98 @@
+{
+  "sourceBaseline": "ff9e8a2",
+  "finalBuildDigest": "fd9f258f8bafd3820d99bfa0c836121715c7b1b5c56e54034f4357c79710c373",
+  "browser": "151.0.7922.34",
+  "fullCourseFailure": null,
+  "expectedMediaCancellations": [
+    "request: http://localhost:4180/audio/tutorial/de/introduction-right.wav: net::ERR_ABORTED",
+    "request: http://localhost:4180/audio/tutorial/de/complete.wav: net::ERR_ABORTED",
+    "request: http://localhost:4180/audio/narration/de/prologue.mp3: net::ERR_ABORTED"
+  ],
+  "firstObservedMainSeconds": 74.336,
+  "resetBrowser": {
+    "firstSourceStarts": 8,
+    "earlyWindRestarts": 0,
+    "passed": true
+  },
+  "baselineSmokeResults": [
+    {
+      "route": "/start",
+      "passed": false,
+      "errors": [
+        "request: http://localhost:4180/audio/tutorial/de/introduction-right.wav: net::ERR_ABORTED",
+        "request: http://localhost:4180/audio/tutorial/de/complete.wav: net::ERR_ABORTED",
+        "request: http://localhost:4180/audio/tutorial/de/introduction-right.wav: net::ERR_ABORTED",
+        "AssertionError [ERR_ASSERTION]: The input did not match the regular expression /Right \\u00B7 1\\/4/. Input:\n\n'Flight tutorial \u00b7 Missed \u00b7 New target ahead \u00b7 0/4 passed'\n"
+      ],
+      "rendering": {
+        "vendor": "Google Inc. (Apple)",
+        "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M2 Max, Unspecified Version)",
+        "softwareRendering": false
+      }
+    },
+    {
+      "route": "/",
+      "passed": false,
+      "errors": [
+        "request: http://localhost:4180/audio/tutorial/de/introduction-right.wav: net::ERR_ABORTED",
+        "request: http://localhost:4180/audio/tutorial/de/complete.wav: net::ERR_ABORTED",
+        "TimeoutError: waitFor: Timeout 90000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('button[aria-pressed=\"true\"]').filter({ hasText: /^EN$/ }) to be visible\u001b[22m\n"
+      ]
+    },
+    {
+      "route": "/conductor.html",
+      "passed": false,
+      "errors": [
+        "request: http://localhost:4180/audio/tutorial/de/introduction-right.wav: net::ERR_ABORTED",
+        "request: http://localhost:4180/audio/tutorial/de/complete.wav: net::ERR_ABORTED",
+        "TimeoutError: waitForEvent: Timeout 90000ms exceeded while waiting for event \"requestfinished\"\n=========================== logs ===========================\nwaiting for event \"requestfinished\"\n============================================================"
+      ]
+    },
+    {
+      "route": "/?level=echo",
+      "passed": true,
+      "errors": [],
+      "rendering": {
+        "vendor": "Google Inc. (Apple)",
+        "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M2 Max, Unspecified Version)",
+        "softwareRendering": false
+      }
+    },
+    {
+      "route": "startup-failure:/",
+      "passed": true,
+      "errors": []
+    },
+    {
+      "route": "startup-failure:/?level=echo",
+      "passed": true,
+      "errors": []
+    },
+    {
+      "route": "startup-failure:/conductor.html",
+      "passed": true,
+      "errors": []
+    },
+    {
+      "route": "ui-mount-failure:/",
+      "passed": true,
+      "errors": []
+    },
+    {
+      "route": "ui-mount-failure:/conductor.html",
+      "passed": true,
+      "errors": []
+    }
+  ],
+  "openVisualFindings": [
+    "Full arrow silhouette is clipped during formation, especially Up; captured on final build.",
+    "Read-only production-recipe probe: 45 degree birth gaze -> center36.8deg plus20.3deg extent;90degreegaze -> center83.36deg, cue missed after2.1s without rig motion."
+  ],
+  "scopeNote": "Baseline tutorial/conductor pages loaded before corrections. Later static/failure scenarios may use rebuilt assets; they are smoke evidence only, not an unchanged-build performance comparison. Final course and reset use final digest above.",
+  "timeoutBrowser": {
+    "passed": true,
+    "mainStartSeconds": 61.519999999999996,
+    "unearnedSuccess": false,
+    "mainEnglishSwitch": "passed"
+  }
+}

@@ -449,6 +449,8 @@ export async function createShowRuntime(
       const completed = tutorial;
       mainStartSeconds = clock.sample().timeSeconds;
       tutorial = undefined;
+      transitionRequested = false;
+      breathStartSeconds = undefined;
       prepareNarration();
       completed.finish();
       clock.seekTo(0);

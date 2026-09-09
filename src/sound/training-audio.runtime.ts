@@ -74,6 +74,8 @@ export interface TrainingAudio {
     isPlaying: boolean,
     speechActive?: boolean,
   ) => void;
+  /** Reset the retained practice reveal and passage baseline before the next frame. */
+  readonly reset: () => void;
   /** Retire sources at their last world positions and drain the shared hall. */
   readonly beginRelease: () => void;
   /** Called by the existing frame owner; true means the bounded tail has ended. */
@@ -305,7 +307,8 @@ export async function createTrainingAudio(
       )
         effects.roomRevealed = true;
       const windPlaying = audible && effects.roomRevealed;
-      if (windPlaying !== effects.windPlaying) {
+      const windChanged = windPlaying !== effects.windPlaying;
+      if (windChanged) {
         if (windPlaying) {
           // Tone evaluates scheduled source state. A rapid resume must start
           // after its pending fade/stop, otherwise that stop kills the new loop.
@@ -358,6 +361,7 @@ export async function createTrainingAudio(
       const level = audible ? (speech ? parameters.room.speechGain : 1) : 0;
       const distance = effects.placement.readDistanceMeters();
       if (
+        !windChanged &&
         level === effects.previousLevel &&
         Math.abs(distance - effects.previousDistance) <= 0.05
       )
@@ -380,7 +384,11 @@ export async function createTrainingAudio(
           (reference +
             parameters.rolloffFactor *
               (Math.max(reference, distance) - reference));
-        effects.windGain.gain.setTargetAtTime(level, now, LEVEL_RAMP_SECONDS);
+        effects.windGain.gain.setTargetAtTime(
+          windPlaying ? level : 0,
+          now,
+          windPlaying ? LEVEL_RAMP_SECONDS : PAUSE_RELEASE_SECONDS / 4,
+        );
         effects.direct.gain.setTargetAtTime(
           level * parameters.room.dryGain,
           now,
@@ -627,6 +635,11 @@ export async function createTrainingAudio(
               (frame.phase === "missed" ? -1 : (frame.wake?.strength ?? 0)) *
                 CROSSING_DETUNE_CENTS;
         }
+      },
+      reset(): void {
+        if (!effects || isUnloaded || releaseStartedAt !== undefined) return;
+        effects.roomRevealed = false;
+        effects.previousPassageCount = -1;
       },
       beginRelease,
       updateRelease,

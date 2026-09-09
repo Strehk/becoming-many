@@ -25,6 +25,15 @@ Use [current status](current-status.md), live issue results and the
 [evidence index](evidence/README.md) for current software and measurement facts.
 The older checkpoint's issue order is superseded by the order below.
 
+## Immediate tutorial corrections after independent review
+
+The 2026-09-09 independent browser review leaves #50 visually unaccepted. Prioritize
+full arrow silhouette framing at birth and after formation under forward travel,
+including side gaze; preserve fixed anchors and reachable ring entry. Current
+screenshots show clipped Up/Right/Left cues. Language-after-handoff, retained wind
+reset and cold initial narration seek were corrected during the audit. These
+local visual defects are additional to physical PCVR/listening acceptance.
+
 ## Immediate UI and Engine Migration
 
 The earlier #36/#84/#11 block is implemented and locally verified at its recorded

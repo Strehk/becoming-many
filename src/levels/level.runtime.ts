@@ -394,6 +394,7 @@ export async function startLevel(
     }
 
     function resetFlight(): void {
+      trainingAudio?.reset();
       start?.reset();
       resetFlightPose(
         runningWorld.viewerRig.position,

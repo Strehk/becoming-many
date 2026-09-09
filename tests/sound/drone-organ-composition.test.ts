@@ -503,6 +503,13 @@ test("audio owners recover gesture resume and await complete disposal", async ()
           }
         }
       }
+      if (ending !== "standalone") {
+        const mainTime = command.sample().timeSeconds;
+        command.setLanguage("en");
+        assert.equal(command.readLanguage(), "en", "main language remains changeable after every tutorial handoff");
+        assert.ok(narrationOptions.at(-1).recordings.every(clip => clip.url.includes("/en/")));
+        assert.equal(command.sample().timeSeconds, mainTime, "main language change preserves the timeline");
+      }
       const end = timed.unload(); native.release(); await end;
     }
 

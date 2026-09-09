@@ -56,6 +56,7 @@ interface PreparedNarration {
   playAttempt?: Promise<void>;
   playbackFailed?: boolean;
   requestedOffsetSeconds?: number;
+  pendingStartSeconds?: number;
 }
 
 /** Own the prepared clips and play only the cue selected by Show. */
@@ -138,6 +139,7 @@ export function createNarrationPlayer(options: {
       clip.playAttempt = undefined;
       clip.heldSeekSeconds = undefined;
       clip.requestedOffsetSeconds = undefined;
+      clip.pendingStartSeconds = undefined;
       clip.playbackFailed = false;
       clip.element.pause();
     }
@@ -209,6 +211,8 @@ export function createNarrationPlayer(options: {
         clip.requestedOffsetSeconds !== undefined &&
         offsetSeconds + SYNC_TOLERANCE_SECONDS < clip.requestedOffsetSeconds;
       clip.requestedOffsetSeconds = offsetSeconds;
+      if (preserveNaturalEnd && (isNewCue || restarting))
+        clip.pendingStartSeconds = offsetSeconds;
       if (preserveNaturalEnd && element.ended && !isNewCue && !restarting)
         return;
       if (element.playbackRate !== timeScale) element.playbackRate = timeScale;
@@ -216,6 +220,7 @@ export function createNarrationPlayer(options: {
       const needsPosition =
         isNewCue ||
         restarting ||
+        clip.pendingStartSeconds !== undefined ||
         (!preserveNaturalEnd &&
           (!isPlaying ||
             Math.abs(element.currentTime - offsetSeconds) >
@@ -225,9 +230,11 @@ export function createNarrationPlayer(options: {
         element.readyState >= HTMLMediaElement.HAVE_METADATA &&
         (isPlaying || clip.heldSeekSeconds !== offsetSeconds)
       ) {
-        if (element.currentTime !== offsetSeconds)
-          element.currentTime = offsetSeconds;
-        clip.heldSeekSeconds = offsetSeconds;
+        const seekSeconds = clip.pendingStartSeconds ?? offsetSeconds;
+        if (element.currentTime !== seekSeconds)
+          element.currentTime = seekSeconds;
+        clip.heldSeekSeconds = seekSeconds;
+        clip.pendingStartSeconds = undefined;
       }
 
       if (!isPlaying) {

@@ -482,7 +482,15 @@ test("optional wind and passage effects reuse two players, duck, pause without r
     assert.equal(wind.stops,1,"quiet wind continues while the earned closing narration finishes");
     now+=14;update();assert.equal(wind.stops,1);
     assert.equal(audio.updateRelease(true),false,"completion does not retire the owner before Run handoff");
-    audio.beginRelease();assert.equal(wind.stops,2);
+    audio.reset();
+    frame.phase="arrival";frame.formationProgress=0;frame.arrowFormationProgress=0;frame.passageCount=0;
+    update();assert.equal(wind.stops,2,"reset retires the retained loop instead of replaying it in the empty opening");
+    assert.equal(gains[9].gain.target,0,"the wind gain fades before its scheduled stop even when playback remains active");
+    const startsAfterReset=wind.starts;
+    now+=10;update();assert.equal(wind.starts,startsAfterReset,"the reveal latch belongs to one practice run");
+    frame.phase="turning";frame.arrowFormationProgress=0.4;update();
+    assert.equal(wind.starts,startsAfterReset+1,"the next visible cue can reveal the retained wind again");
+    audio.beginRelease();assert.equal(wind.stops,3);
     assert.equal(audio.updateRelease(true),false);now+=4.1;assert.equal(audio.updateRelease(true),true);
     audio.unload();audio.unload();update();
     assert.ok([...players,...grains,...gains,...filters,...placements,...rooms].every(resource=>resource.ends===1));

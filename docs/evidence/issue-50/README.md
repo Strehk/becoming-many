@@ -1198,3 +1198,75 @@ The final guard also prevents an unusually early fourth crossing from replacing
 unfinished directional speech with the closing. The focused Show test exercises
 that case; the recorded native browser course already ended every directional
 clip before its next cue. The handoff path and audio release are unchanged.
+
+
+## Independent browser acceptance review — 2026-09-09
+
+**Result: not fully accepted.** Two independent reviewers examined spatial flow
+and audio/lifecycle separately, without modifying source during their reviews
+or running competing GPU workloads. The browser checks then reproduced current
+behavior. Passing a steered course does not prove full visual readability.
+
+### Remaining concrete visual failures
+
+- **P1: full silhouettes are clipped.** The final-build Up screenshot shows the
+  arrow at the lower edge with its shaft outside the viewport. Right/Left also
+  lose parts of their shafts. The 2-second formation, 2 m/s approach, 6 m length
+  and 8–9 m lead have not been jointly tuned for full-frame readability.
+- **P1: birth gaze is not fully respected.** The independent read-only probe using
+  production recipe/view angle finds a 45-degree head yaw leaves the arrow center
+  36.8 degrees off-axis plus 20.3 degrees of extent. At 90-degree yaw the center
+  remains 83.36 degrees away, and the unseen cue becomes missed after 2.1 seconds
+  without rig movement. The bounded 1.25 m gaze correction is insufficient.
+  This is a deterministic code probe, not a physical headset/browser gaze test.
+
+A correction must jointly satisfy full silhouette visibility during formation,
+reachable ring entry and immutable appeared anchors. This review does not claim
+that changing the broad-face roll fixed those placement constraints.
+
+### Confirmed findings repaired during review
+
+1. Show retained its transition flag after handoff, blocking main EN/DE selection.
+   Finalizing handoff now clears that state; real course and timeout language
+   changes work again.
+2. Retained training audio kept wind revealed after Stop. Run now resets that
+   owner's reveal and passage state through its existing lifecycle boundary;
+   a real Conductor Stop/Play has zero early wind restarts. Fades remain bounded.
+3. Natural narration could lose a nonzero initial seek while metadata was absent.
+   The existing owner retains that seek until it can apply it; its focused test
+   verifies a 19.3-second retry start without reintroducing drift correction.
+
+### Browser and targeted verification
+
+The repository smoke ran `/start`, `/`, `/conductor.html`, `/?level=echo`, plus
+startup/UI failure scenarios. Six scenarios passed and three route checks failed.
+The baseline root and Conductor failures exposed the language handoff problem;
+the standalone check expected a fixed Right phase at 26 seconds but observed a
+procedural Missed phase. This old fixed-time assertion is not a reliable new-flow
+acceptance rule; the actual visual defects above remain independently confirmed.
+The broad suite is **not** reported green. Raw failure screenshots/traces remain
+in the ignored `benchmark-results/issue-50/independent-browser-audit/` directory;
+essential results are retained in [the compact report](independent-audit.json).
+
+After corrections, a fresh 1920×1080 headed browser course using real M5-shaped
+input completes all four goals, closing and breathing space. Main is first
+observed at 74.336 seconds; all four cue screenshots below are from that run.
+A separate real Conductor run observes wind, presses Stop, then Play: no wind
+source restart occurs in the opening six seconds. A separate full missed-goal
+run transitions at 61.52 seconds without success speech; EN selection works in
+main afterward. Thirteen focused audio/Show/Run tests, build and lint pass.
+Expected native media request cancellations are retained separately from logical
+assertion results; no assertion was removed to turn a failing run green.
+
+The shared overlay, world-fixed anchors, active-turn gating, ring passage checks,
+preview/goal separation, bounded pools and sound release remain supported by
+code review, focused tests and the successful real course. Physical XR gaze,
+headset listening, first-visitor comprehension and Windows-PCVR USB-C 90 Hz
+remain unverified. This traced/functional audit makes no new performance claim.
+
+![Actual right cue](audit-arrow-right.png)
+![Actual left cue](audit-arrow-left.png)
+![Actual upward cue with clipped shaft — open failure](audit-arrow-up.png)
+![Actual downward cue](audit-arrow-down.png)
+![Conductor after reset](audit-reset.png)
+![Main after unsuccessful timeout](audit-timeout.png)

@@ -119,6 +119,23 @@ test("narration writes changed native intent once and bounds rejected or pending
     const plays = clip.plays;
     follow(4, true);
     assert.equal(clip.plays, plays);
+
+    const coldPlayer = createNarrationPlayer({ recordings: [
+      { cueId: "retry", url: "/retry.wav", durationSeconds: 30 },
+    ] });
+    const coldClip = clips.at(-1);
+    const coldFollow = offsetSeconds => coldPlayer.follow({
+      position: { cueId: "retry", offsetSeconds }, isPlaying: true,
+      timeScale: 1, preserveNaturalEnd: true,
+    });
+    coldFollow(19.3);
+    assert.equal(coldClip.seeks, 0);
+    coldClip.readyState = 2;
+    coldFollow(19.4);
+    assert.equal(coldClip.position, 19.3, "metadata arrival applies the retained instruction start");
+    coldFollow(20);
+    assert.equal(coldClip.seeks, 1, "natural playback does not become drift seeking");
+    coldPlayer.unload();
   `,
     ],
     { stdout: "pipe", stderr: "pipe" },
