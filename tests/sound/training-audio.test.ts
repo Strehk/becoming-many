@@ -189,6 +189,7 @@ test("four object voices share samples and hall, follow distance and speech, and
     let audioTime = 1;
     const param = () => ({ value: 0, target: 0, events: [],
       cancelScheduledValues(time){this.events=this.events.filter(event=>event.time<time);},
+      linearRampToValueAtTime(value,time){this.target=value;this.events.push({time});},
       setTargetAtTime(value,time){this.target=value;this.events.push({time});},
       setValueAtTime(value,time){this.target=value;this.events.push({time});} });
     const node = () => ({ ends:0, gain:param(), connect(){}, disconnect(){this.ends++;} });
@@ -249,14 +250,16 @@ test("four object voices share samples and hall, follow distance and speech, and
     assert.equal(gains[0].gain.target,0.3,"existing hall tails duck with speech");
     assert.ok(gains[1].gain.target<nearDirect*0.3);
     audio.update(frame,false);
+    assert.ok(voices.every(voice=>voice.stops===0),"pause ramps before stopping the grain clock");
+    audioTime+=0.1; audio.update(frame,false);
     assert.ok(voices.every(voice=>voice.stops===1));
-    assert.ok(gains.every(gain=>gain.gain.target===0),"pause mutes direct sound, sends and hall tails immediately");
+    assert.ok(gains.every(gain=>gain.gain.target===0),"pause targets silence for direct sound, sends and hall with a click-free ramp");
     audio.update(frame,true);assert.ok(voices.every(voice=>voice.starts===2));
     assert.equal(randomCalls,6,"pause, speech, distance and repeated frames do not choose another sound");
     for(const voice of [voices[0],voices[1],voices[3]])
       assert.equal(voice.offsets[0],voice.offsets[1],"resume retains the course offset");
     frame.phase="crossed";frame.formationProgress=0;
-    for(let i=0;i<100;i++)audio.update(frame,true);
+    for(let i=0;i<100;i++){audioTime+=1/60;audio.update(frame,true);}
     assert.ok(voices.every(voice=>voice.stops===2&&voice.starts===2),"dissolved objects do not schedule silent grains during speech holds");
     for(let frameIndex=0;frameIndex<3600;frameIndex++){
       audioTime+=1/60;
@@ -269,7 +272,10 @@ test("four object voices share samples and hall, follow distance and speech, and
     frame.phase="forming";frame.formationProgress=0.5;
     for(let course=1;course<=100;course++){
       frame.goalIndex=Math.floor(course/5);frame.attempt=course%5;
+      const oldPosition=[...placements[0].position];
       audio.update(frame,true);
+      assert.deepEqual(placements[0].position,oldPosition,"retiring source remains at its prior world anchor");
+      audioTime+=1.3;audio.update(frame,true);
       for(const voice of [voices[0],voices[1],voices[3]]){
         const previous=voice.buffers.at(-2),current=voice.buffers.at(-1);
         assert.notEqual(current,previous,"each new goal or retry changes sample");
@@ -283,6 +289,15 @@ test("four object voices share samples and hall, follow distance and speech, and
     assert.equal(voices[2].buffers.length,0,"arrow keeps its authored sound");
     assert.equal(decodes,3);assert.equal(voices.length,4);assert.equal(rooms.length,1);
     assert.equal(gains.length,9);assert.equal(filters.length,4);assert.equal(placements.length,4);
+    const startsBeforeRelease=voices.map(voice=>voice.starts);
+    const positionsBeforeRelease=placements.map(source=>[...source.position]);
+    audio.beginRelease();audio.beginRelease();
+    assert.equal(audio.updateRelease(true),false);
+    audio.update({...frame,goalPosition:{x:999,y:999,z:999}},true);
+    assert.deepEqual(placements.map(source=>source.position),positionsBeforeRelease,"handoff tail stays in the departed world");
+    audioTime+=1.3;assert.equal(audio.updateRelease(true),false,"the hall outlives its input voices");
+    assert.deepEqual(voices.map(voice=>voice.starts),startsBeforeRelease);
+    audioTime+=2.8;assert.equal(audio.updateRelease(true),true,"handoff tail has a four-second resource bound");
     audio.unload();audio.unload();audio.update(frame,true);
     assert.ok([...voices,...gains,...filters,...placements,...rooms].every(resource=>resource.ends===1));
   `,
@@ -399,13 +414,14 @@ test("optional wind and passage effects reuse two players, duck, pause without r
     let now=1, decodes=0;
     const param=()=>({value:0,target:0,events:[],
       cancelScheduledValues(time){this.events=this.events.filter(event=>event.time<time);},
+      linearRampToValueAtTime(value,time){this.target=value;this.events.push({time});},
       setTargetAtTime(value,time){this.target=value;this.events.push({time});},
       setValueAtTime(value,time){this.target=value;this.events.push({time});}});
     const node=()=>({ends:0,gain:param(),connect(){},disconnect(){this.ends++;}});
     class Player {
-      starts=0; stops=0; ends=0; offsets=[];
+      starts=0; stops=0; ends=0; offsets=[]; startTimes=[]; stopTimes=[];
       constructor(options){this.options=options;players.push(this);}
-      connect(){} start(time,offset){this.starts++;this.offsets.push(offset);} stop(){this.stops++;} dispose(){this.ends++;}
+      connect(){} start(time,offset){this.starts++;this.offsets.push(offset);this.startTimes.push(time);} stop(time){this.stops++;this.stopTimes.push(time);} dispose(){this.ends++;}
     }
     class GrainPlayer {
       buffer={set(){}}; ends=0;
@@ -433,7 +449,7 @@ test("optional wind and passage effects reuse two players, duck, pause without r
     const frame={goalIndex:0,attempt:0,phase:"arrival",formationProgress:0,arrowFormationProgress:0,
       passageCount:0,passagePosition:{x:0,y:0,z:-10},goalPosition:{x:0,y:0,z:-20},
       objects:{ringLeft:{x:-3,y:0,z:-20},ringRight:{x:3,y:0,z:-20},arrow:{x:5,y:0,z:-20}}};
-    const update=(playing=true,speech=false)=>{now+=0.1;audio.update(frame,playing,speech);};
+    const update=(playing=true,speech=false,delta=0.1)=>{now+=delta;audio.update(frame,playing,speech);};
     update();assert.equal(wind.starts,0,"wind waits until the scene reveals a visible body");
     frame.phase="turning";frame.arrowFormationProgress=0.4;
     update();assert.equal(wind.starts,1);
@@ -444,14 +460,16 @@ test("optional wind and passage effects reuse two players, duck, pause without r
     assert.deepEqual(placements[4].position,[0,0,-10],"a playing passage remains at the copied world location");
     update(true,true);assert.equal(gains[9].gain.target,0.3);assert.equal(gains[10].gain.target,0.3*0.7);
     update(false);assert.equal(wind.stops,1);assert.equal(passage.stops,1);
-    assert.ok(gains.every(gain=>gain.gain.target===0),"pause immediately silences all outputs including the shared hall");
-    frame.passageCount=2;update(false);update();
+    assert.ok(gains.every(gain=>gain.gain.target===0),"pause smoothly targets silence on all outputs including the shared hall");
+    frame.passageCount=2;update(false,false,0.01);update(true,false,0.01);
+    assert.ok(wind.startTimes[1]>wind.stopTimes[0],"rapid resume starts after the pending fade-stop instead of being cancelled by it");
     assert.equal(wind.starts,2);assert.equal(passage.starts,1,"events while paused are consumed without replay");
     assert.ok(wind.offsets[1]>0,"wind resumes at its retained loop position");
     frame.phase="missed";frame.passageCount=3;update();assert.equal(passage.starts,1,"misses cannot trigger success effects");
     frame.phase="flying";frame.formationProgress=1;
     frame.passageCount=6;update();assert.equal(passage.starts,2,"multiple crossings in one frame coalesce into one effect");
-    frame.passageCount=7;update();assert.equal(passage.starts,3);assert.equal(passage.stops,2,"the one voice replaces its previous tail");
+    frame.passageCount=7;update();assert.equal(passage.starts,2,"close hits keep the audible source fixed instead of truncating it");
+    now+=0.3;frame.passageCount=8;update();assert.equal(passage.starts,3);assert.equal(passage.stops,1,"natural sample endings need no forced stop");
     placements[4].distance=20;update();const nearSend=gains[11].gain.target;
     placements[4].distance=200;update();assert.ok(gains[11].gain.target<nearSend);
     frame.passageCount=0;update();assert.equal(passage.starts,3,"reset establishes a new event baseline");
@@ -460,7 +478,12 @@ test("optional wind and passage effects reuse two players, duck, pause without r
       for(const gain of gains)assert.ok(gain.gain.events.length<=2,"automation histories stay bounded");
     }
     assert.equal(players.length,2);assert.equal(decodes,3);assert.equal(gains.length,12);assert.equal(placements.length,5);
-    frame.phase="complete";update();assert.equal(wind.stops,2);
+    frame.phase="complete";frame.objects=undefined;update();
+    assert.equal(wind.stops,1,"quiet wind continues while the earned closing narration finishes");
+    now+=14;update();assert.equal(wind.stops,1);
+    assert.equal(audio.updateRelease(true),false,"completion does not retire the owner before Run handoff");
+    audio.beginRelease();assert.equal(wind.stops,2);
+    assert.equal(audio.updateRelease(true),false);now+=4.1;assert.equal(audio.updateRelease(true),true);
     audio.unload();audio.unload();update();
     assert.ok([...players,...grains,...gains,...filters,...placements,...rooms].every(resource=>resource.ends===1));
   `,

@@ -109,6 +109,9 @@ export async function startLevel(
   let modules: WorldModule[] = [];
   let audio: SpatialAudio | undefined;
   let trainingAudio: TrainingAudio | undefined;
+  let retiringTrainingAudio: TrainingAudio | undefined;
+  let audioRelease: Promise<void> | undefined;
+  let resolveAudioRelease: (() => void) | undefined;
   let trainingPreparation: AbortController | undefined;
   let trainingLoading: Promise<void> | undefined;
   let desktop: ReturnType<typeof createDesktopControls> | undefined;
@@ -301,6 +304,8 @@ export async function startLevel(
           try {
             await runningWorld.prepareRenderer();
             if (!isCurrentPreparation()) return;
+            await audioRelease;
+            if (!isCurrentPreparation()) return;
             const created =
               tutorialPreset.startAudio && audio
                 ? await createTrainingAudio(
@@ -347,6 +352,14 @@ export async function startLevel(
     }
 
     function finishTraining(): void {
+      if (trainingAudio) {
+        retiringTrainingAudio = trainingAudio;
+        trainingAudio = undefined;
+        retiringTrainingAudio.beginRelease();
+        audioRelease = new Promise<void>((resolve) => {
+          resolveAudioRelease = resolve;
+        });
+      }
       unloadTraining();
       runningWorld.camera.fov = mainFieldOfViewDegrees;
       runningWorld.camera.updateProjectionMatrix();
@@ -410,6 +423,12 @@ export async function startLevel(
 
       show?.update();
       audio?.update();
+      if (
+        retiringTrainingAudio?.updateRelease(
+          show?.running.sample().isPlaying ?? true,
+        )
+      )
+        finishAudioRelease();
       if (start && trainingAudio)
         trainingAudio.update(
           start.readObservation(),
@@ -450,6 +469,18 @@ export async function startLevel(
     throw error;
   }
 
+  function finishAudioRelease(): void {
+    const retired = retiringTrainingAudio;
+    retiringTrainingAudio = undefined;
+    try {
+      retired?.unload();
+    } finally {
+      resolveAudioRelease?.();
+      resolveAudioRelease = undefined;
+      audioRelease = undefined;
+    }
+  }
+
   function onAbort(): void {
     void unload().catch((error: unknown) =>
       console.error("Level cleanup failed", error),
@@ -474,6 +505,11 @@ export async function startLevel(
         if (result.status === "rejected") errors.push(result.reason);
       }
       trainingPreparation?.abort();
+      try {
+        finishAudioRelease();
+      } catch (error) {
+        errors.push(error);
+      }
       try {
         await trainingLoading;
       } catch (error) {

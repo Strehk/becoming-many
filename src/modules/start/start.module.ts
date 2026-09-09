@@ -1,4 +1,4 @@
-import { Quaternion, Vector3 } from "three";
+import { CubicBezierCurve3, Quaternion, Vector3 } from "three";
 import { FLIGHT_SETTINGS } from "../../control/flight-settings";
 import type { WorldModule } from "../../world/module-runtime";
 import type { Viewpoint } from "../../world/viewer-rig";
@@ -18,13 +18,16 @@ const ARROW_OUT_OF_VIEW_SECONDS = 2;
 const ARROW_FADE_SECONDS = 3;
 const ARROW_FORWARD_COMPONENT = 0.8;
 const ARROW_TURN_COMPONENT = 0.6;
-const CUE_TURN_OFFSET_RATIO = 0.5;
+const ARROW_TUNNEL_CLEARANCE_METERS = 0.75;
+const MINIMUM_ARROW_LEAD_METERS = 8;
+const MINIMUM_RING_SPACING_METERS = 1;
 const MINIMUM_TRAVEL_SQUARED = 0.000001;
 const MOTION_HISTORY_SECONDS = 0.25;
 const MAXIMUM_CURVATURE_PER_METER = 0.12;
 const CURVATURE_DECAY_METERS = 4;
 const MAXIMUM_OBSERVED_SPEED_METERS_PER_SECOND = 12;
 const COURSE_SAMPLE_COUNT = 32;
+const COURSE_ENTRY_SAMPLE = 24;
 const MAXIMUM_PREDICTION_SECONDS = 6;
 const LESSON_BEND_COMPONENT = 0.12;
 const FORECAST_SPREAD_PER_METER = 0.04;
@@ -143,8 +146,9 @@ export function createStartModule(
   const curvature = new Vector3();
   const sampledCurvature = new Vector3();
   const predictedTangent = new Vector3();
-  const corridorCorrection = new Vector3();
-  const predictedOffset = new Vector3();
+  const tunnelEntry = new Vector3();
+  const approachCurve = new CubicBezierCurve3();
+  const tunnelCurve = new CubicBezierCurve3();
   let hasMotionHistory = false;
   const goalUp = new Vector3();
   const previousPosition = new Vector3();
@@ -152,7 +156,6 @@ export function createStartModule(
   const flightTravel = new Vector3();
   let observedSpeed = 0;
   let directionVariation = 0;
-  let guidanceDistance = 1;
   const lessonBend = new Vector3();
   const transportRotation = new Quaternion();
   const courseSamples = Array.from({ length: COURSE_SAMPLE_COUNT + 1 }, () => ({
@@ -400,16 +403,10 @@ export function createStartModule(
     distance: number,
     position: Vector3,
     tangent: Vector3,
-    constrainCeiling = true,
   ): void {
     const decay = Math.exp(-distance / CURVATURE_DECAY_METERS);
-    const t = Math.min(1, distance / guidanceDistance);
-    const blend = t * t * (3 - 2 * t);
-    const blendDerivative = 6 * t * (1 - t);
     position
       .copy(origin)
-      .addScaledVector(corridorCorrection, guidanceDistance * blend)
-      .addScaledVector(lessonBend, guidanceDistance * blend)
       .addScaledVector(currentTravelDirection, distance)
       .addScaledVector(
         curvature,
@@ -418,10 +415,8 @@ export function createStartModule(
       );
     tangent
       .copy(currentTravelDirection)
-      .addScaledVector(corridorCorrection, blendDerivative)
-      .addScaledVector(lessonBend, blendDerivative)
       .addScaledVector(curvature, CURVATURE_DECAY_METERS * (1 - decay));
-    if (constrainCeiling && options.maximumGoalYAt) {
+    if (options.maximumGoalYAt) {
       const ceiling = options.maximumGoalYAt(position.x, position.z);
       if (position.y > ceiling) {
         position.y = ceiling;
@@ -432,111 +427,113 @@ export function createStartModule(
   }
 
   function placeGoal(): boolean {
-    const course = parameters.course;
     origin.copy(viewpoint.worldPosition);
-    goalUp.copy(viewpoint.worldUp);
-    const radius = sample(course.radiusMeters);
-    const halfAngle = Math.max(0.05, viewpoint.viewHalfAngleRadians * 0.75);
-    const authoredDistance = sample(
-      observation.goalIndex === 0
-        ? course.firstDistanceMeters
-        : course.spacingMeters,
-    );
-    const plausibleDistance =
-      (Math.max(observedSpeed, 0.5) * MAXIMUM_PREDICTION_SECONDS) /
-      (1 + directionVariation * 2);
-    const distance = Math.max(
-      Math.min(authoredDistance, plausibleDistance),
-      (radius * 2) / Math.tan(halfAngle),
-    );
-    guidanceDistance = distance;
-    lessonBend.copy(turnDirection).multiplyScalar(LESSON_BEND_COMPONENT);
-    corridorCorrection.set(0, 0, 0);
-    // Derive the view correction from the uncut forecast. Applying it to an
-    // already ceiling-clipped point would lose the original vertical offset.
-    predictPosition(distance, targetPosition, predictedTangent, false);
-    predictedOffset.copy(targetPosition).sub(origin);
-    const predictionAngle = predictedOffset.angleTo(viewpoint.worldDirection);
-    const visibleAngle = Math.max(
-      0,
-      halfAngle - Math.atan((radius * 1.6) / distance),
-    );
-    if (predictionAngle > visibleAngle) {
-      targetOffset
-        .copy(predictedOffset)
-        .normalize()
-        .lerp(viewpoint.worldDirection, 1 - visibleAngle / predictionAngle)
-        .normalize()
-        .multiplyScalar(predictedOffset.length());
-      corridorCorrection
-        .copy(targetOffset)
-        .sub(predictedOffset)
-        .multiplyScalar(1 / distance);
-    }
-    predictPosition(distance, targetPosition, predictedTangent);
-    targetOffset.copy(targetPosition).sub(origin);
+    const radius = sample(parameters.course.radiusMeters);
+    const distance = origin.distanceTo(tunnelEntry);
+    targetOffset.copy(tunnelEntry).sub(origin);
     const depth = targetOffset.dot(viewpoint.worldDirection);
     const lateral = Math.sqrt(
       Math.max(0, targetOffset.lengthSq() - depth * depth),
     );
-    // Constrain the forecast corridor for the assisted view, keeping its measured
-    // turn trend. Ceiling clipping can still make this gaze unreachable.
     if (
       depth <= 0 ||
-      lateral + radius * 1.6 > depth * Math.tan(viewpoint.viewHalfAngleRadians)
+      lateral > depth * Math.tan(viewpoint.viewHalfAngleRadians)
     )
       return false;
-    if (!buildCourse(distance)) return false;
-    goalPosition.copy(targetPosition);
-    const finalSample = courseSamples[COURSE_SAMPLE_COUNT];
-    if (!finalSample) return false;
-    observation.predictionSeconds = Math.min(
-      MAXIMUM_PREDICTION_SECONDS,
-      distance / Math.max(observedSpeed, 0.5),
+
+    // The first opening is the promise made by the fixed arrow. Only the unseen
+    // approach adapts to current travel, joining that opening without a corner.
+    approachCurve.v0.copy(origin);
+    approachCurve.v1
+      .copy(origin)
+      .addScaledVector(currentTravelDirection, distance / 3);
+    approachCurve.v2
+      .copy(tunnelEntry)
+      .addScaledVector(arrowDirection, -distance / 3);
+    approachCurve.v3.copy(tunnelEntry);
+    const tunnelSpan =
+      previews.length * Math.max(MINIMUM_RING_SPACING_METERS, radius * 0.5);
+    lessonBend
+      .copy(turnDirection)
+      .addScaledVector(arrowDirection, -turnDirection.dot(arrowDirection))
+      .multiplyScalar(LESSON_BEND_COMPONENT);
+    lessonBend.addScaledVector(
+      curvature,
+      Math.min(tunnelSpan, CURVATURE_DECAY_METERS) * 0.25,
     );
-    observation.predictionSpreadMeters =
-      distance * (FORECAST_SPREAD_PER_METER + directionVariation);
+    tunnelCurve.v0.copy(tunnelEntry);
+    tunnelCurve.v1
+      .copy(tunnelEntry)
+      .addScaledVector(arrowDirection, tunnelSpan / 3);
+    tunnelCurve.v2
+      .copy(tunnelEntry)
+      .addScaledVector(arrowDirection, (tunnelSpan * 2) / 3)
+      .addScaledVector(lessonBend, tunnelSpan / 3);
+    tunnelCurve.v3
+      .copy(tunnelEntry)
+      .addScaledVector(arrowDirection, tunnelSpan)
+      .addScaledVector(lessonBend, tunnelSpan);
+    if (!buildCourse()) return false;
+    const finalSample = courseSamples[COURSE_SAMPLE_COUNT];
+    const entrySample = courseSamples[COURSE_ENTRY_SAMPLE];
+    if (!finalSample || !entrySample) return false;
+    targetPosition.copy(finalSample.position);
+    goalPosition.copy(targetPosition);
     goalNormal.copy(finalSample.tangent).negate();
     goalUp.copy(finalSample.up);
+    observation.predictionSeconds = Math.min(
+      MAXIMUM_PREDICTION_SECONDS,
+      finalSample.distance / Math.max(observedSpeed, 0.5),
+    );
+    observation.predictionSpreadMeters =
+      finalSample.distance * (FORECAST_SPREAD_PER_METER + directionVariation);
     particleFrame.ringRadiusMeters = radius;
     particleFrame.previews = previews;
     previewStartedSeconds = particleFrame.elapsedSeconds;
     for (const [index, preview] of previews.entries()) {
       preview.crossingAgeSeconds = undefined;
       sampleCourseAtLength(
-        finalSample.distance * (0.55 + index * 0.15),
+        entrySample.distance +
+          ((finalSample.distance - entrySample.distance) * index) /
+            previews.length,
         preview.goalPosition,
         preview.goalNormal,
         preview.goalUp,
       );
       preview.goalNormal.negate();
-      targetOffset.copy(preview.goalPosition).sub(origin);
-      const previewDepth = targetOffset.dot(viewpoint.worldDirection);
-      const previewLateral = Math.sqrt(
-        Math.max(0, targetOffset.lengthSq() - previewDepth * previewDepth),
-      );
-      preview.ringRadiusMeters = Math.min(
-        radius,
-        Math.max(
-          0,
-          (previewDepth * Math.tan(viewpoint.viewHalfAngleRadians * 0.9) -
-            previewLateral) /
-            1.6,
-        ),
-      );
+      preview.ringRadiusMeters = radius;
     }
     return true;
   }
 
   /** A fixed table serves both reachable-path checks and arc-length placement. */
-  function buildCourse(distance: number): boolean {
+  function buildCourse(): boolean {
     const speed = Math.max(observedSpeed, 0.5);
     for (const [index, sample] of courseSamples.entries()) {
-      predictPosition(
-        (distance * index) / COURSE_SAMPLE_COUNT,
-        sample.position,
-        sample.tangent,
-      );
+      const approaching = index <= COURSE_ENTRY_SAMPLE;
+      const curve = approaching ? approachCurve : tunnelCurve;
+      const t = approaching
+        ? index / COURSE_ENTRY_SAMPLE
+        : (index - COURSE_ENTRY_SAMPLE) /
+          (COURSE_SAMPLE_COUNT - COURSE_ENTRY_SAMPLE);
+      curve.getPoint(t, sample.position);
+      // Analytic derivative avoids Curve.getTangent's temporary vectors.
+      sample.tangent
+        .copy(curve.v1)
+        .sub(curve.v0)
+        .multiplyScalar((1 - t) ** 2)
+        .addScaledVector(
+          targetOffset.copy(curve.v2).sub(curve.v1),
+          2 * (1 - t) * t,
+        )
+        .addScaledVector(targetOffset.copy(curve.v3).sub(curve.v2), t * t)
+        .normalize();
+      if (
+        options.maximumGoalYAt &&
+        sample.position.y >
+          options.maximumGoalYAt(sample.position.x, sample.position.z)
+      )
+        return false;
       const previous = courseSamples[index - 1];
       if (!previous) {
         sample.distance = 0;
@@ -553,7 +550,7 @@ export function createStartModule(
       }
       const segmentLength = sample.position.distanceTo(previous.position);
       sample.distance = previous.distance + segmentLength;
-      const stepSeconds = distance / COURSE_SAMPLE_COUNT / speed;
+      const stepSeconds = segmentLength / speed;
       const verticalSpeed =
         (sample.position.y - previous.position.y) / stepSeconds;
       if (
@@ -639,32 +636,16 @@ export function createStartModule(
     if (direction === "left" || direction === "down") turnDirection.negate();
     // Enough lead distance to lean and turn before reaching the cue's plane.
     const distance = Math.max(
-      12,
+      MINIMUM_ARROW_LEAD_METERS,
+      sample(
+        observation.goalIndex === 0
+          ? parameters.course.firstDistanceMeters
+          : parameters.course.spacingMeters,
+      ),
       (parameters.particles?.arrowLengthMeters ?? 6) /
         Math.tan(Math.max(0.1, viewpoint.viewHalfAngleRadians)),
     );
-    corridorCorrection.set(0, 0, 0);
-    lessonBend.set(0, 0, 0);
-    guidanceDistance = distance;
     predictPosition(distance, arrowPosition, predictedTangent);
-    targetOffset.copy(arrowPosition).sub(origin);
-    const predictionAngle = targetOffset.angleTo(viewpoint.worldDirection);
-    const visibleAngle = Math.max(
-      0,
-      viewpoint.viewHalfAngleRadians * 0.5 -
-        Math.atan(
-          ((parameters.particles?.arrowLengthMeters ?? 6) * 0.5) / distance,
-        ),
-    );
-    // Keep the primary instruction discoverable when the headset looks away
-    // from travel; the tunnel itself still follows measured motion.
-    if (predictionAngle > visibleAngle) {
-      targetOffset
-        .normalize()
-        .lerp(viewpoint.worldDirection, 1 - visibleAngle / predictionAngle)
-        .normalize();
-      arrowPosition.copy(origin).addScaledVector(targetOffset, distance);
-    }
     // The cue points into the upcoming turn in three dimensions. Its forward
     // component keeps a visible side profile without becoming a flat sign.
     arrowDirection
@@ -677,6 +658,39 @@ export function createStartModule(
       .multiplyScalar(ARROW_TURN_COMPONENT)
       .addScaledVector(predictedTangent, ARROW_FORWARD_COMPONENT)
       .normalize();
+    tunnelEntry
+      .copy(arrowPosition)
+      .addScaledVector(
+        arrowDirection,
+        (parameters.particles?.arrowLengthMeters ?? 6) / 2 +
+          ARROW_TUNNEL_CLEARANCE_METERS,
+      );
+    targetOffset.copy(arrowPosition).sub(origin);
+    const predictionAngle = targetOffset.angleTo(viewpoint.worldDirection);
+    const visibleAngle = Math.max(
+      0,
+      viewpoint.viewHalfAngleRadians * 0.5 -
+        Math.atan(
+          ((parameters.particles?.arrowLengthMeters ?? 6) * 0.5) / distance,
+        ),
+    );
+    // Move cue and entrance together, preserving the spoken turn direction.
+    // A small shared offset accommodates gaze without making a level turn
+    // require climbing, or turning a downward instruction into an upward one.
+    if (predictionAngle > visibleAngle) {
+      targetOffset
+        .normalize()
+        .lerp(viewpoint.worldDirection, 1 - visibleAngle / predictionAngle)
+        .normalize()
+        .multiplyScalar(distance)
+        .add(origin)
+        .sub(arrowPosition);
+      const maximumOffset = parameters.course.radiusMeters[0] * 0.5;
+      if (targetOffset.length() > maximumOffset)
+        targetOffset.setLength(maximumOffset);
+      arrowPosition.add(targetOffset);
+      tunnelEntry.add(targetOffset);
+    }
     arrowUp
       .copy(viewpoint.worldUp)
       .addScaledVector(arrowDirection, -viewpoint.worldUp.dot(arrowDirection));
@@ -688,12 +702,8 @@ export function createStartModule(
       arrowUp.set(1, 0, 0).addScaledVector(arrowDirection, -arrowDirection.x);
     arrowUp.normalize();
     arrowNormal.crossVectors(arrowDirection, arrowUp).normalize();
-    // The visual cue is discoverable in the head view, but its steering hint
-    // remains relative to flight. A raised gaze must not turn "down" into climb.
-    targetPosition
-      .copy(origin)
-      .addScaledVector(approachDirection, distance)
-      .addScaledVector(turnDirection, distance * CUE_TURN_OFFSET_RATIO);
+    // Both anchors are now frozen; head motion cannot change their promise.
+    targetPosition.copy(tunnelEntry);
     goalPosition.copy(targetPosition);
     particleFrame.arrowAngleRadians = 0;
     particleFrame.arrowPresence = 1;

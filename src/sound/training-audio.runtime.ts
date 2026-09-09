@@ -74,10 +74,18 @@ export interface TrainingAudio {
     isPlaying: boolean,
     speechActive?: boolean,
   ) => void;
+  /** Retire sources at their last world positions and drain the shared hall. */
+  readonly beginRelease: () => void;
+  /** Called by the existing frame owner; true means the bounded tail has ended. */
+  readonly updateRelease: (isPlaying: boolean) => boolean;
   readonly unload: () => void;
 }
 
-const LEVEL_RAMP_SECONDS = 0.08;
+const LEVEL_RAMP_SECONDS = 0.18;
+const SOURCE_RELEASE_SECONDS = 1.2;
+const PAUSE_RELEASE_SECONDS = 0.08;
+const SOURCE_RESTART_GAP_SECONDS = 0.001;
+const HALL_RELEASE_SECONDS = 4;
 const CROSSING_DETUNE_CENTS = 500;
 const MAXIMUM_SAMPLE_BYTES = 2_000_000;
 const MAXIMUM_SAMPLE_SECONDS = 20;
@@ -216,6 +224,8 @@ export async function createTrainingAudio(
         sampleIndex: samplePool.indexOf(sample),
         offsetSeconds: recipe.offsetSeconds ?? 0,
         playing: false,
+        releaseAt: 0,
+        pendingSelection: false,
         distance: -1,
         strength: -1,
       };
@@ -228,13 +238,15 @@ export async function createTrainingAudio(
       releases.push(() => windGain.disconnect());
       windGain.gain.value = 0;
       connect(windGain, audio.context.destination);
+      // Keep the shared hall gently fed through the earned closing narration.
+      connect(windGain, room);
       const wind = new Player({
         context: audio.context,
         url: effectSamples.wind,
         loop: true,
         volume: parameters.effects.wind.volumeDb,
         fadeIn: 0.12,
-        fadeOut: 0.04,
+        fadeOut: 0.15,
       });
       releases.push(() => wind.dispose());
       wind.connect(windGain);
@@ -251,7 +263,7 @@ export async function createTrainingAudio(
         loop: false,
         volume: parameters.effects.passage.volumeDb,
         fadeIn: 0.005,
-        fadeOut: 0.015,
+        fadeOut: 0.06,
       });
       releases.push(() => passage.dispose());
       passage.connect(direct);
@@ -268,10 +280,13 @@ export async function createTrainingAudio(
         duration: effectSamples.wind.duration,
         windPlaying: false,
         windStartedAt: 0,
+        windStoppedAt: 0,
         windOffset: 0,
         roomRevealed: false,
         previousPassageCount: -1,
         passagePlaying: false,
+        passageAvailableAt: 0,
+        passageDuration: effectSamples.passage.duration,
         previousLevel: -1,
         previousDistance: -1,
       };
@@ -292,13 +307,23 @@ export async function createTrainingAudio(
       const windPlaying = audible && effects.roomRevealed;
       if (windPlaying !== effects.windPlaying) {
         if (windPlaying) {
-          effects.wind.start(scheduled, effects.windOffset);
-          effects.windStartedAt = scheduled;
+          // Tone evaluates scheduled source state. A rapid resume must start
+          // after its pending fade/stop, otherwise that stop kills the new loop.
+          const startsAt = Math.max(
+            scheduled,
+            effects.windStoppedAt + SOURCE_RESTART_GAP_SECONDS,
+          );
+          effects.wind.start(startsAt, effects.windOffset);
+          effects.windStartedAt = startsAt;
         } else {
-          effects.wind.stop(scheduled);
+          effects.windStoppedAt = Math.max(
+            scheduled + PAUSE_RELEASE_SECONDS,
+            effects.windStartedAt + SOURCE_RESTART_GAP_SECONDS,
+          );
+          effects.wind.stop(effects.windStoppedAt);
           effects.windOffset =
             (effects.windOffset +
-              Math.max(0, scheduled - effects.windStartedAt)) %
+              Math.max(0, effects.windStoppedAt - effects.windStartedAt)) %
             effects.duration;
         }
         effects.windPlaying = windPlaying;
@@ -313,20 +338,21 @@ export async function createTrainingAudio(
       if (count !== undefined && Number.isInteger(count) && count >= 0)
         effects.previousPassageCount = count;
       if (!audible && effects.passagePlaying) {
-        effects.passage.stop(scheduled);
+        effects.passage.stop(scheduled + PAUSE_RELEASE_SECONDS);
         effects.passagePlaying = false;
       }
       if (
         audible &&
         newPassage &&
         frame.passagePosition &&
-        frame.phase !== "missed"
+        frame.phase !== "missed" &&
+        scheduled >= effects.passageAvailableAt
       ) {
         const position = frame.passagePosition;
         effects.placement.setPosition(position.x, position.y, position.z);
-        // A single pooled voice replaces its previous short tail at a new passage.
-        if (effects.passagePlaying) effects.passage.stop(scheduled);
+        // Closely spaced hits coalesce rather than moving an audible old source.
         effects.passage.start(scheduled);
+        effects.passageAvailableAt = scheduled + effects.passageDuration;
         effects.passagePlaying = true;
       }
       const level = audible ? (speech ? parameters.room.speechGain : 1) : 0;
@@ -340,9 +366,13 @@ export async function createTrainingAudio(
       holdAudioParameter(effects.direct.gain, now);
       holdAudioParameter(effects.send.gain, now);
       if (!audible) {
-        effects.windGain.gain.setValueAtTime(0, now);
-        effects.direct.gain.setValueAtTime(0, now);
-        effects.send.gain.setValueAtTime(0, now);
+        effects.windGain.gain.setTargetAtTime(
+          0,
+          now,
+          PAUSE_RELEASE_SECONDS / 4,
+        );
+        effects.direct.gain.setTargetAtTime(0, now, PAUSE_RELEASE_SECONDS / 4);
+        effects.send.gain.setTargetAtTime(0, now, PAUSE_RELEASE_SECONDS / 4);
       } else {
         const reference = parameters.referenceDistanceMeters;
         const attenuation =
@@ -365,6 +395,72 @@ export async function createTrainingAudio(
       effects.previousLevel = level;
       effects.previousDistance = distance;
     }
+    let releaseStartedAt: number | undefined;
+    let releasePaused = false;
+    function fadeOut(
+      parameter: AudioParam,
+      now: number,
+      seconds: number,
+    ): void {
+      holdAudioParameter(parameter, now);
+      parameter.linearRampToValueAtTime(0, now + seconds);
+    }
+    function releaseVoice(
+      entry: (typeof voices)[number],
+      now: number,
+      seconds: number,
+    ): void {
+      if (
+        !entry.playing ||
+        (entry.releaseAt > 0 && entry.releaseAt <= now + seconds)
+      )
+        return;
+      entry.releaseAt = now + seconds;
+      fadeOut(entry.direct.gain, now, seconds);
+      fadeOut(entry.send.gain, now, seconds);
+    }
+    function beginRelease(): void {
+      if (isUnloaded || releaseStartedAt !== undefined) return;
+      const now = audio.context.immediate();
+      releaseStartedAt = now;
+      for (const entry of voices)
+        releaseVoice(entry, now, SOURCE_RELEASE_SECONDS);
+      if (effects) {
+        fadeOut(effects.windGain.gain, now, SOURCE_RELEASE_SECONDS);
+        fadeOut(effects.direct.gain, now, SOURCE_RELEASE_SECONDS);
+        fadeOut(effects.send.gain, now, SOURCE_RELEASE_SECONDS);
+        if (effects.windPlaying)
+          effects.wind.stop(audio.context.now() + SOURCE_RELEASE_SECONDS);
+      }
+      // The hall survives the handoff; its last samples reach zero before disposal.
+      fadeOut(wetOutput.gain, now, HALL_RELEASE_SECONDS);
+    }
+    function updateRelease(isPlaying: boolean): boolean {
+      if (isUnloaded) return true;
+      if (releaseStartedAt === undefined) return false;
+      const now = audio.context.immediate();
+      if (!isPlaying && !releasePaused) {
+        releasePaused = true;
+        for (const entry of voices) {
+          fadeOut(entry.direct.gain, now, PAUSE_RELEASE_SECONDS);
+          fadeOut(entry.send.gain, now, PAUSE_RELEASE_SECONDS);
+          if (entry.playing) entry.releaseAt = now + PAUSE_RELEASE_SECONDS;
+        }
+        if (effects) {
+          fadeOut(effects.windGain.gain, now, PAUSE_RELEASE_SECONDS);
+          fadeOut(effects.direct.gain, now, PAUSE_RELEASE_SECONDS);
+          fadeOut(effects.send.gain, now, PAUSE_RELEASE_SECONDS);
+        }
+        fadeOut(wetOutput.gain, now, PAUSE_RELEASE_SECONDS);
+      }
+      for (const entry of voices) {
+        if (entry.playing && now >= entry.releaseAt) {
+          entry.voice.stop(audio.context.now());
+          entry.playing = false;
+        }
+      }
+      return now - releaseStartedAt >= HALL_RELEASE_SECONDS;
+    }
     let previousAudible = false;
     let previousSpeech = false;
     let previousGoalIndex = -1;
@@ -372,11 +468,13 @@ export async function createTrainingAudio(
     return {
       update(frame, isPlaying, speechActive = false): void {
         if (isUnloaded) return;
-        const audible =
-          isPlaying &&
-          audio.context.state === "running" &&
-          frame.objects !== undefined &&
-          frame.phase !== "complete";
+        if (releaseStartedAt !== undefined) {
+          updateRelease(isPlaying);
+          return;
+        }
+        const audible = isPlaying && audio.context.state === "running";
+        const objectsAudible =
+          audible && frame.objects !== undefined && frame.phase !== "complete";
         const speech = speechActive;
         const now = audio.context.immediate();
         const scheduled = audio.context.now();
@@ -388,7 +486,7 @@ export async function createTrainingAudio(
         previousAttempt = frame.attempt;
         if (audible !== previousAudible || speech !== previousSpeech) {
           holdAudioParameter(wetOutput.gain, now);
-          if (!audible) wetOutput.gain.setValueAtTime(0, now);
+          if (!isPlaying) fadeOut(wetOutput.gain, now, PAUSE_RELEASE_SECONDS);
           else
             wetOutput.gain.setTargetAtTime(
               speech ? parameters.room.speechGain : 1,
@@ -402,11 +500,30 @@ export async function createTrainingAudio(
           const entry = voices[index];
           if (!entry) continue;
           const isGoal = index === parameters.layers.length;
-          if (newCourse && entry.object !== "arrow") {
-            if (entry.playing) {
-              entry.voice.stop(scheduled);
-              entry.playing = false;
-            }
+          if (newCourse) {
+            entry.pendingSelection = entry.object !== "arrow";
+            releaseVoice(entry, now, SOURCE_RELEASE_SECONDS);
+          }
+          const visibleStrength =
+            entry.object === "arrow"
+              ? (frame.arrowFormationProgress ?? frame.formationProgress)
+              : frame.formationProgress;
+          if (!objectsAudible || visibleStrength <= 0)
+            releaseVoice(
+              entry,
+              now,
+              isPlaying ? SOURCE_RELEASE_SECONDS : PAUSE_RELEASE_SECONDS,
+            );
+          if (entry.releaseAt > 0) {
+            // A retiring voice keeps its old spatial anchor until its gain is zero.
+            if (now < entry.releaseAt) continue;
+            entry.voice.stop(scheduled);
+            entry.playing = false;
+            entry.releaseAt = 0;
+            entry.strength = -1;
+          }
+          if (entry.pendingSelection) {
+            entry.pendingSelection = false;
             // Skip the previous sample without retry loops or new decoded buffers.
             if (samplePool.length > 1)
               entry.sampleIndex =
@@ -434,7 +551,7 @@ export async function createTrainingAudio(
           if (position)
             entry.placement.setPosition(position.x, position.y, position.z);
           const strength =
-            audible && (!isGoal || frame.phase !== "arrival")
+            objectsAudible && (!isGoal || frame.phase !== "arrival")
               ? Math.max(
                   0,
                   Math.min(
@@ -485,8 +602,8 @@ export async function createTrainingAudio(
             holdAudioParameter(entry.direct.gain, now);
             holdAudioParameter(entry.send.gain, now);
             if (!playing) {
-              entry.direct.gain.setValueAtTime(0, now);
-              entry.send.gain.setValueAtTime(0, now);
+              entry.direct.gain.setTargetAtTime(0, now, LEVEL_RAMP_SECONDS);
+              entry.send.gain.setTargetAtTime(0, now, LEVEL_RAMP_SECONDS);
             } else {
               entry.direct.gain.setTargetAtTime(
                 level * parameters.room.dryGain * (1 - 0.5 * far),
@@ -511,6 +628,8 @@ export async function createTrainingAudio(
                 CROSSING_DETUNE_CENTS;
         }
       },
+      beginRelease,
+      updateRelease,
       unload,
     };
   } catch (error) {

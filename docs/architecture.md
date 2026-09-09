@@ -71,7 +71,7 @@ any module derives a fixed spatial window from the camera.
 
 The full Show also composes the literal Start recipe as exclusive training
 content. It prepares the main world once and keeps those modules inactive until
-the approved tutorial handoff. Run then unloads training, removes its module
+the approved tutorial handoff. Run then unloads training visuals, retains a bounded four-second audio tail, removes its module
 registrations/references, resets the flight rig and activates the prepared main
 modules. Its interim Stop operation can recreate retired training content without
 rebuilding the main world; playback remains held until training graphics and
@@ -282,7 +282,13 @@ decaying motion forecast is distinct from the gentle lesson/visibility guidance.
 A fixed 33-point table checks existing yaw/climb limits, measures arc length and
 transports an orthogonal up vector. Forecast spread is a heuristic uncertainty
 observation, not a reachability allowance. Guidance never writes flight input.
-Only an unshown section is planned; counted and preview rings become world-fixed
+The arrow reserves a fixed entry at birth and points directly at its first ring
+opening. A shared view correction shifts both by at most half the minimum ring
+radius, preserving the lesson axis under the existing pitch assistance. After actual turning, two reusable cubic curves connect measured travel
+to that entry and continue the short visible tunnel. The same 33-sample table
+checks movement limits and places the rings by arc length. A partially clipped
+ring edge is allowed when its center remains visible. The former independent
+eye-relative ring placement is removed. Counted and preview rings become world-fixed
 when that section starts forming. Three arc-spaced previews remain uncounted.
 Misses recycle the existing slots rather than joining an unreachable old section.
 The eye cone constrains discoverability, including the existing pitch assistance.
@@ -317,7 +323,12 @@ a quiet wind loop after cue formation and a spatial passage whoosh. Start publis
 a monotonic passage count and borrowed last ring center; sound copies that center
 when playing. Preview and counted crossings share one passage voice; misses never
 trigger it. Five spatial source slots bound the four grain voices and this effect.
-Both sampled effects duck beneath narration and stop with their owner.
+Both sampled effects duck beneath narration. Sources release over 1.2 seconds
+at their retained positions before stopping. Run retains exactly one retiring
+training-audio owner across handoff for a four-second hall drain; the existing
+frame callback ends it afterward. Restart preparation waits for that spatial pool
+to be free, and Run teardown cancels the wait and disposes it. No timer or second
+render loop owns this tail. Quiet wind remains through the earned closing.
 Arrow longitudinal axes combine forward travel and lesson direction once at birth.
 Only the haze subset uses the eight-pixel cap; fine form points remain at four.
 

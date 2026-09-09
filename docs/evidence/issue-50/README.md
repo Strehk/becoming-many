@@ -1083,3 +1083,56 @@ needed to await the normal frame-delivered language observation before asserting
 no production behavior was changed for that probe timing.
 
 ![Standalone tutorial using the shared transport](shared-overlay-start.png)
+
+## Aligned approach and gentle audio release — 2026-09-09
+
+The arrow reserves its first ring opening when it appears. Its tip points into
+that opening; a bounded shared placement correction preserves both positions
+relative to each other. The ring section becomes visible only after actual
+turning, following the existing spoken cue. Two reused cubic curves replace the
+independent ring planner: the approach requires steering, then three preview
+rings and the counted goal follow the short continuation. The existing 33-point
+table checks reachability. Appeared objects remain fixed in world space.
+
+Real M5-driven browser iterations exposed and repaired three problems: requiring
+the whole ring inside the head view blocked the pitch-assisted approach; a
+10–11 m arrow lead left too little of the approved minute for the fourth task;
+moving only the arrow toward gaze made its direction misleading. The final
+candidate checks the opening center, uses an 8–9 m lead at the unchanged 2 m/s
+tutorial speed, and translates the arrow and reserved entry together by at most
+half the minimum ring radius. Earlier failed candidates remain identified in
+[the measurements](aligned-release-measurements.json).
+
+Wind is reduced by 8 dB, passage effects by 10 dB and grain layers by 12 dB;
+dry/send levels also decrease. Retiring object sources keep their fixed position
+and reach zero over 1.2 s before stopping. Pause uses an 80 ms release. The
+existing hall drains over four seconds across the main-piece handoff, with quiet
+wind feeding it through earned closing narration. Run retains one retiring owner;
+restart waits for its release instead of allocating another spatial voice pool.
+Rapid pause/resume preserves the wind loop. Closely spaced passage samples
+coalesce rather than relocating an audible previous sample.
+
+The focused Start, particle, audio and Run checks pass (46 tests across affected
+runs), as do TypeScript/Vite build and lint. The headed Chromium production
+course completes four tasks without misses, plays the full closing and enters
+the main piece at about 72 s. Native source scheduling confirms delayed stopping;
+owner-release and restart tests verify disposal. A native convolver disconnect
+alone is not an owner-disposal signal: standardized-audio-context can passivate
+silent native connections before wrapper disposal. Expected media-request
+cancellations at cue replacement/teardown are recorded separately from failures.
+
+Comparable 1920×1080, DPR 1 Mac browser samples over show seconds 20–55 have
+CPU p95 0.5/0.4 ms and GPU p95 0.320124/0.314874 ms (previous/current).
+No course-time GPU resource creations occurred; median/p95 attribute uploads
+remain zero, maximum 153,600 bytes at recycling. This is no material regression
+in the local workload, not evidence of a speedup or physical 90 Hz acceptance.
+The unchanged capacities are 40k form and 48k Air points, with 2,528,000 bytes
+of particle attributes per CPU/GPU copy. The four-second audio drain adds no
+second tutorial pool.
+
+These are actual implementation screenshots, not concept art. Visual review,
+spatial loudness/click listening and Windows-PCVR USB-C acceptance remain open.
+
+![World-fixed directional arrow](aligned-arrow.png)
+![Ring formation after turning](aligned-formation.png)
+![Approach through the ring opening](aligned-tunnel.png)

@@ -35,6 +35,7 @@ Each movement lesson follows the same causal sequence:
 
 1. The explicit spoken instruction releases one prominent particle arrow.
 2. The arrow forms over two playing seconds at a fixed, discoverable world pose.
+   Its tip points at a reserved tunnel entrance, whose opening faces that axis.
    Its direction announces a gentle reachable bend ahead. The participant has
    room to lean and turn before reaching it; no steering is applied for them.
 3. Only a sustained actual movement change in the requested direction releases
@@ -211,17 +212,18 @@ it must remain distinct from the positive passage sound and subordinate to voice
 Spoken gates, actual-turn ring release, fixed world anchors, reachable arc-length
 ring placement, preview/count separation, swept passages and independent arrow
 retirement remain implemented. Each arrow now captures a three-dimensional axis
-combining forward travel with the lesson turn at birth. Its axis announces the next
-guidance direction without moving after appearance. The steering hint remains
-flight-relative; head-pitched visual placement cannot introduce a climb into a
-horizontal lesson or reverse a downward instruction. Fine particles retain their
+aimed at the common, reserved entry at birth. Its axis announces the next
+guidance direction without moving after appearance. The reserved entry remains
+flight-relative while arrow placement remains discoverable in the captured view. Fine particles retain their
 4-pixel cap; the soft haze subset can reach 8 pixels in the existing point draw.
 
 The existing synthesized wind accompanies the room reveal. A quiet optional CC0
 wind sample joins at visible cue formation. Successful preview and counted-ring
 passages play one pooled, spatial whoosh at the crossed ring position. Misses do
 not trigger it. Both additional effects duck beneath speech and pause with the
-experience. Asset sources, transformations and licenses are recorded in
+experience using a short fade. Sources fade for 1.2 seconds at their old positions;
+the shared hall drains for four seconds across the main handoff. The quiet wind
+bed survives the earned closing. Asset sources, transformations and licenses are recorded in
 [`public/audio/tutorial/effects/README.md`](../../public/audio/tutorial/effects/README.md).
 
 The scene images express fuller soft cores, fine individual grains and modest

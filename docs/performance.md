@@ -898,3 +898,13 @@ headed-browser control/new GPU p95 is 0.340791/0.345625 ms, CPU p95 0.5/0.5 ms.
 No course-time GPU resource creation occurred. Median variability and the earlier
 control are retained in the [full comparison](evidence/issue-50/README.md#spatial-scene-composition-and-sampled-effects--2026-09-09).
 This local result does not establish physical Windows-PCVR 90 Hz or listening acceptance.
+
+### Aligned approach and bounded audio drain — 2026-09-09
+
+The corrected shared arrow/ring entry retains the 33-sample planning budget and
+existing particle capacities. Comparable headed-browser CPU p95 is 0.5/0.4 ms,
+GPU p95 0.320124/0.314874 ms (previous/current), with no course-time GPU resource
+creation. Four seconds of retiring tutorial audio reuse its existing owner;
+restart waits rather than allocating a second pool. See the
+[measurements and limits](evidence/issue-50/README.md#aligned-approach-and-gentle-audio-release--2026-09-09).
+Physical Windows-PCVR 90 Hz and headset listening remain open.

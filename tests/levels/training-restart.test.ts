@@ -36,7 +36,7 @@ test("Run gates training preparation and releases failed or cancelled restart ch
         };
       };
       const voice = () => {
-        const created = { ends:0, update() {}, unload() { this.ends++; } };
+        const created = { ends:0, releasing:false, released:false, update() {}, beginRelease(){this.releasing=true;}, updateRelease(){return this.released;}, unload() { this.ends++; } };
         voices.push(created); return created;
       };
       const main = makeModule("main");
@@ -108,7 +108,9 @@ test("Run gates training preparation and releases failed or cancelled restart ch
       frame(0.1);
       assert.equal(camera.fov,50,"handoff restores the original main projection");
       assert.equal(rig.position.y,101,"main ground clearance resumes after handoff");
-      assert.equal(voices[0].ends,1);assert.equal(main.ends,0);assert.equal(sharedEnds,0);
+      assert.equal(voices[0].ends,0,"handoff retains the owned audio tail");
+      assert.equal(voices[0].releasing,true);
+      assert.equal(main.ends,0);assert.equal(sharedEnds,0);
       run.resetShowAndFlight();
       assert.equal(show.state,"loading");assert.equal(audioRequests.length,0);
       assert.equal(graphicsRequests.length,1);
@@ -118,10 +120,13 @@ test("Run gates training preparation and releases failed or cancelled restart ch
       assert.ok(resets>resetting);assert.equal(graphicsRequests.length,1);
       assert.equal(show.state,"loading","reset must not release the preparation gate");
       graphicsRequests[0].resolve();await turn();
+      assert.equal(audioRequests.length,0,"restart waits for the previous spatial pool to drain");
+      voices[0].released=true;frame(0.1);await turn();
+      assert.equal(voices[0].ends,1);
       assert.equal(show.state,"loading","graphics readiness still waits for the sample");
       const prepared=voice();audioRequests[0].resolve(prepared);await turn();
       assert.equal(show.state,"ready");
-      show.finish();assert.equal(prepared.ends,1);assert.equal(sharedEnds,0);
+      show.finish();assert.equal(prepared.ends,0);prepared.released=true;frame(0.1);assert.equal(prepared.ends,1);assert.equal(sharedEnds,0);
       failLoad=true;
       run.resetShowAndFlight();
       assert.equal(show.state,"failed");assert.equal(show.tutorial,undefined);

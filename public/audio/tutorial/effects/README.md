@@ -8,8 +8,12 @@ quiet looping player on the shared context after the first visual reveal; pause
 preserves its loop offset and speech ducks its output. One reusable passage player
 follows actual goal or first preview crossings at their fixed world positions,
 coalesces multiple crossings in one frame, and shares the existing spatial owner
-and hall. Paused or missed passages produce no success sound. Omitting the recipe
-allocates neither effect player nor its buffers.
+and hall. Closely spaced hits never relocate a still-audible whoosh. Paused or missed passages produce no success sound. Omitting the recipe
+allocates neither effect player nor its buffers. Source retirement keeps the old
+world position through a 1.2-second fade. Run retains the hall owner for four
+seconds across main handoff; pause ramps down in 80 ms. Quiet wind continues
+through the earned closing. Literal recipe gains were reduced after listening
+feedback; final perceived balance remains a human acceptance item.
 
 | File | Source and author | Format | Length | Size |
 | --- | --- | --- | --- | --- |

@@ -569,7 +569,7 @@ test("the spoken cue reveals only a world-fixed arrow; gaze and wrong-way travel
   const arrow = frame.arrowPosition.clone();
   const origin = worldPosition.clone();
   expect(arrow.clone().sub(origin).angleTo(worldDirection)).toBeCloseTo(0);
-  expect(arrow.distanceTo(origin)).toBeGreaterThanOrEqual(12);
+  expect(arrow.distanceTo(origin)).toBeGreaterThanOrEqual(8);
   expect(frame.ringPresence).toBe(0);
   expect(frame.previews).toHaveLength(0);
   for (let index = 0; index < 2; index += 1)
@@ -655,7 +655,7 @@ test("an out-of-view arrow dissolves and retries without awarding a goal", () =>
   runtime.unload(start.module);
 });
 
-test("an upward lesson keeps its rings hidden until the gaze permits a reachable course below the ceiling", () => {
+test("an unreachable reserved upward entrance stays hidden instead of moving after a gaze change", () => {
   const worldPosition = new Vector3(0, 49, 0);
   const worldDirection = new Vector3(0, 0.9, -0.3).normalize();
   let frame: StartParticleFrame | undefined;
@@ -691,15 +691,9 @@ test("an upward lesson keeps its rings hidden until the gaze permits a reachable
   worldDirection.set(0, 0, -1);
   worldPosition.add(new Vector3(0, 0.05, -0.1));
   runtime.update(0.1);
-  expect(start.readObservation().phase).toBe("forming");
-  if (!frame) throw new Error("Missing reachable formation");
-  expect(frame.ringPresence).toBe(1);
-  expect(frame.goalPosition.y).toBeLessThanOrEqual(50);
-  const offset = frame.goalPosition.clone().sub(worldPosition);
-  expect(
-    offset.angleTo(worldDirection) +
-      Math.asin(frame.ringRadiusMeters / offset.length()),
-  ).toBeLessThan(0.35);
+  expect(start.readObservation().phase).toBe("turning");
+  expect(frame?.ringPresence).toBe(0);
+  expect(start.readObservation().crossingCount).toBe(0);
   runtime.unload(start.module);
 });
 
@@ -826,6 +820,66 @@ test("head translation cannot confirm a turn while rig motion can", () => {
   }
   expect(start.readObservation().phase).toBe("forming");
   runtime.unload(start.module);
+});
+
+test("every tunnel begins beyond its fixed arrow, including an early confirmed turn", () => {
+  for (const direction of ["right", "left", "up", "down"] as const) {
+    let frame: StartParticleFrame | undefined;
+    const practice = createPractice(
+      { ...PARAMETERS, directions: [direction] },
+      () => 0.5,
+      captureParticles((next) => {
+        frame = next;
+      }),
+    );
+    practice.moveTo(
+      practice.worldPosition
+        .clone()
+        .addScaledVector(practice.worldDirection, 0.1),
+      PARAMETERS.arrivalSeconds,
+    );
+    if (!frame?.arrowNormal || !frame.arrowUp) throw new Error("Missing cue");
+    const arrow = frame.arrowPosition.clone();
+    const arrowDirection = new Vector3()
+      .crossVectors(frame.arrowUp, frame.arrowNormal)
+      .normalize();
+    expect(frame.ringPresence).toBe(0);
+    expect(frame.previews).toHaveLength(0);
+    const beforeTurn = practice.worldPosition.clone();
+    practice.beginTurn();
+    const travelDirection = practice.worldPosition
+      .clone()
+      .sub(beforeTurn)
+      .normalize();
+    const cueFront =
+      arrow.clone().sub(practice.worldPosition).dot(travelDirection) +
+      3 * Math.abs(arrowDirection.dot(travelDirection));
+    expect(frame.arrowPosition).toEqual(arrow);
+    expect(frame.arrowPresence).toBe(1);
+    expect(frame.previews).toHaveLength(3);
+    const entry = frame.previews?.[0];
+    if (!entry) throw new Error("Missing entrance");
+    expect(
+      entry.goalPosition.clone().sub(arrow).normalize().dot(arrowDirection),
+    ).toBeCloseTo(1);
+    expect(entry.goalNormal.dot(arrowDirection)).toBeCloseTo(-1);
+    expect(entry.goalPosition.distanceTo(arrow)).toBeGreaterThan(3);
+    expect(frame.goalNormal.angleTo(entry.goalNormal)).toBeGreaterThan(0.01);
+    let previousDepth = cueFront;
+    for (const center of [
+      ...(frame.previews ?? []).map((ring) => ring.goalPosition),
+      frame.goalPosition,
+    ]) {
+      const depth = center
+        .clone()
+        .sub(practice.worldPosition)
+        .dot(travelDirection);
+      expect(depth).toBeGreaterThan(previousDepth);
+
+      previousDepth = depth;
+    }
+    practice.runtime.unload(practice.start.module);
+  }
 });
 
 test("arc-spaced rings transport orthogonal up vectors and the arrow outlives tunnel formation", () => {
@@ -966,5 +1020,71 @@ test("head-pitched arrow placement cannot reverse the flight-relative downward i
     if (pitch > 0) expect(frame.arrowPosition.y).toBeGreaterThan(rig.y);
     runtime.unload(start.module);
   }
-  expect(hints[1]).toEqual(hints[0]);
+  expect(hints[1]?.distanceTo(hints[0] ?? new Vector3())).toBeLessThanOrEqual(
+    PARAMETERS.course.radiusMeters[0] * 0.5 + 1e-12,
+  );
+});
+
+test("the production pitched view can reveal an entrance during a real two-meter-per-second turn", () => {
+  const position = new Vector3(0, 10, 0);
+  const direction = new Vector3(0, 0.5, -Math.sqrt(0.75));
+  const flightDirection = new Vector3(0, 0, -1);
+  let frame: StartParticleFrame | undefined;
+  const start = createStartModule({
+    viewpoint: {
+      worldPosition: position,
+      worldFlightPosition: position,
+      worldFlightDirection: flightDirection,
+      worldDirection: direction,
+      worldUp: new Vector3(0, Math.sqrt(0.75), 0.5),
+      viewHalfAngleRadians: (40 * Math.PI) / 180,
+      viewDistanceMeters: 128,
+    },
+    parameters: {
+      ...PARAMETERS,
+      formationSeconds: 2,
+      course: {
+        firstDistanceMeters: [10, 10],
+        spacingMeters: [10, 10],
+        radiusMeters: [2.5, 2.5],
+      },
+    },
+    random: () => 0.5,
+    particles: captureParticles((next) => {
+      frame = next;
+    }),
+  });
+  const runtime = new ModuleRuntime();
+  runtime.load(start.module);
+  runtime.activate(start.module);
+  runtime.update(0);
+  for (let index = 0; index < 30; index += 1) {
+    const yaw = Math.min(0.2, Math.max(0, index - 20) * 0.04);
+    flightDirection.set(Math.sin(yaw), 0, -Math.cos(yaw));
+    direction.copy(flightDirection).multiplyScalar(Math.sqrt(0.75));
+    direction.y = 0.5;
+    position.addScaledVector(flightDirection, 0.2);
+    runtime.update(0.1);
+  }
+  expect(start.readObservation().phase).toBe("forming");
+  expect(start.readObservation().missCount).toBe(0);
+  if (!frame?.arrowUp || !frame.arrowNormal || !frame.previews?.[0])
+    throw new Error("Missing pitched-view course");
+  const arrowAxis = new Vector3()
+    .crossVectors(frame.arrowUp, frame.arrowNormal)
+    .normalize();
+  expect(arrowAxis.x).toBeCloseTo(0.6);
+  expect(arrowAxis.y).toBeCloseTo(0);
+  expect(arrowAxis.z).toBeCloseTo(-0.8);
+  const entry = frame.previews[0];
+  expect(
+    entry.goalPosition
+      .clone()
+      .sub(frame.arrowPosition)
+      .normalize()
+      .dot(arrowAxis),
+  ).toBeCloseTo(1);
+  expect(entry.goalNormal.dot(arrowAxis)).toBeCloseTo(-1);
+  expect(Math.abs(entry.goalPosition.y - position.y)).toBeLessThanOrEqual(1.25);
+  runtime.unload(start.module);
 });
