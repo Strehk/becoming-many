@@ -82,6 +82,30 @@ test("narration writes changed native intent once and bounds rejected or pending
     await Promise.resolve();
     assert.equal(clip.position, 3.125, "resume keeps the stopped scrub position");
 
+    const natural = (offsetSeconds, isPlaying = true) => player.follow({
+      position: { cueId: "right", offsetSeconds }, isPlaying, timeScale: 1,
+      preserveNaturalEnd: true,
+    });
+    clip.position = 29.7;
+    const seeksBeforeTail = clip.seeks;
+    natural(30.2);
+    assert.equal(clip.paused, false, "authored end cannot stop unfinished speech");
+    assert.equal(clip.position, 29.7, "clock drift cannot skip the last syllable");
+    assert.equal(player.readHasEnded("right"), false);
+    natural(30.2, false);
+    assert.equal(clip.seeks, seeksBeforeTail, "Hold preserves native speech position");
+    natural(30.2);
+    await Promise.resolve();
+    clip.ended = true; clip.paused = true;
+    const playsAtEnd = clip.plays;
+    natural(31);
+    assert.equal(clip.plays, playsAtEnd, "finished speech is not restarted during breathing space");
+    assert.equal(player.readHasEnded("right"), true);
+    clip.ended = false;
+    natural(4);
+    assert.equal(clip.position, 4, "an explicit repeated instruction can still rewind");
+    assert.equal(player.readHasEnded("missing"), true);
+
     clips[1].readyState = 2;
     follow(0, false, 1, "left");
     assert.equal(clip.paused, true);

@@ -156,7 +156,8 @@ Five original DE narration recordings are shipped with provenance and measured
 durations, following the user request to install the voice. The first goal forms
 ahead after the introduction, preventing the visitor from overtaking it during
 speech. Later short direction cues repeat on a retry. The recipe enables
-`startAudio` and `startNarration.de`; EN voice policy remains open. Existing
+`startAudio` and both `startNarration` language selections. EN temporarily uses
+the approved German clips pending replacement English recordings. Existing
 Show/narration and Run/spatial-audio owners are reused.
 Visitor comprehension, listening, XR comfort and Windows-PCVR 90 Hz remain
 physical acceptance. The existing benchmark measures a fixed waiting scene,

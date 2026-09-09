@@ -360,7 +360,10 @@ export async function flyStartCourse(
   );
   const main = await page.evaluate(() => window.show?.sample());
   assert(main?.isPlaying);
-  assert.equal(main.mainStartSeconds, completion.sample.mainStartSeconds);
+  assert(
+    main.mainStartSeconds >= completion.sample.mainStartSeconds + 1.4,
+    "The actual timeline includes breathing space after the full voice",
+  );
   if (originalLanguage && originalLanguage !== "de")
     await page
       .getByRole("button", {
@@ -389,7 +392,7 @@ function clamp(value: number, minimum: number, maximum: number): number {
   return Math.max(minimum, Math.min(maximum, value));
 }
 
-/** A missed course must hand off at one minute without an unearned success outro. */
+/** Stop learning at one minute, finish the current voice, then leave breathing space. */
 export async function checkStartTimeout(
   page: Page,
   simulation: StartSimulation,
@@ -427,9 +430,8 @@ export async function checkStartTimeout(
   assert.equal(await status.isVisible(), false);
   const sample = await page.evaluate(() => window.show?.sample());
   assert(sample?.isPlaying);
-  assert.equal(
-    sample.mainStartSeconds,
-    60,
-    "A timeout adds no success narration",
+  assert(
+    sample.mainStartSeconds >= 61.4 && sample.mainStartSeconds < 70,
+    "Timeout retains breathing space and the current instruction without a success outro",
   );
 }

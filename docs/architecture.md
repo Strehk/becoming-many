@@ -269,8 +269,8 @@ closing voice and automatically hand off. Timeout or the always-available prepar
 UI transition skips that success speech. The same internal clock rebases for main
 playback; public seeks subtract the retained prefix and clamp at the main start. Pause holds training and flight; seeking/rate
 changes are blocked and language changes repeat the current instruction. Directional recordings finish before the next goal is presented, preserving the
-opening instruction. The fourth passage starts the successful closing immediately,
-even if the last directional cue is still playing; the closing retains its full
+opening instruction. The fourth passage waits for any current directional speech before starting
+the successful closing; the closing retains its full
 duration. Audio ending never completes a flight goal. Standalone
 Start keeps the same transport while omitting the main-experience handoff.
 The current literal recipe enables bounded object-bound granular audio from
@@ -283,7 +283,8 @@ A fixed 33-point table checks existing yaw/climb limits, measures arc length and
 transports an orthogonal up vector. Forecast spread is a heuristic uncertainty
 observation, not a reachability allowance. Guidance never writes flight input.
 The arrow reserves a fixed entry at birth and points directly at its first ring
-opening. A shared view correction shifts both by at most half the minimum ring
+opening. Its broad face is rolled toward the captured eye around that axis,
+then remains fixed; head movement never billboards an existing cue. A shared view correction shifts both by at most half the minimum ring
 radius, preserving the lesson axis under the existing pitch assistance. After actual turning, two reusable cubic curves connect measured travel
 to that entry and continue the short visible tunnel. The same 33-sample table
 checks movement limits and places the rings by arc length. A partially clipped
@@ -310,8 +311,9 @@ routes, starting at the recorded room phrase. Native narration offset is an
 observation for spoken-word gates only; Show remains the time authority. Start
 waits for the arrow to form before opening the helping tunnel. Run supplies
 2 m/s tutorial translation through the existing controls and restores ordinary
-main speeds on handoff; directional sensitivity is unchanged. The EN voice policy
-remains open. Run owns the shared Tone spatial context when audio is configured;
+main speeds on handoff; directional sensitivity is unchanged. The EN selection
+temporarily uses the German tutorial clips and timings pending replacement
+English recordings. Run owns the shared Tone spatial context when configured;
 Show retains its existing native timebase and narration owner. It drives the
 existing organ wind layer during practice, at the literal tutorial strength and
 with speech attenuation; the prepared full organ resumes its normal score at
@@ -384,3 +386,10 @@ Static GLTF definitions are loaded before World Runtime starts and passed into
 the modules that own their instanced or cloned resources. Asset provenance is
 recorded in adjacent `provenance.json` files; [docs/assets](assets/README.md)
 defines the shipping directory structure and naming rules.
+
+Tutorial transition requests remain with Show. They stop new learning, retain the
+current narration until native completion, and use Show time for a 1.5-second
+breathing interval. Narration's tutorial-only natural-end mode does not seek
+forward to correct clock drift or stop at an authored duration; ordinary score
+playback retains its existing synchronization. Missing or terminally failed clips
+do not block handoff. Run still owns the bounded four-second spatial audio drain.

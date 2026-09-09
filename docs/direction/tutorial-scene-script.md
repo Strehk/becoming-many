@@ -24,12 +24,13 @@ speed is 2 m/s; steering, climb and head tracking retain their current owners.
 
 Integrated practice lasts up to 60 playing seconds, including the opening.
 Four counted passages before that cutoff earn the entire 13.861479-second
-closing, allowing approximately 74 seconds in total. Otherwise practice ends
-without false success speech. The prepared UI can enter the experience directly.
+closing. Every transition finishes current speech and leaves 1.5 playing seconds
+of breathing space; total duration includes this interval. Timeout adds no false
+success speech. The prepared UI requests the same gentle transition.
 Pause freezes flight, practice time and formation/retirement. Standalone Start
-remains independently exercisable without a prepared main handoff. English
-recordings and fallback policy are still open; no translation or fallback is
-introduced here.
+remains independently exercisable without a prepared main handoff. The EN
+selection temporarily uses the same German recordings and phrase markers
+following the user request; replacement English recordings remain pending.
 
 Each movement lesson follows the same causal sequence:
 
@@ -187,7 +188,8 @@ a second wind generator or audio owner.
 right instruction portion without repeating the complete orientation. Its
 actual native cue marker still gates the new arrow. No success recording plays
 for a miss, direct skip or timeout. At 60 playing seconds without four passages,
-the integrated experience proceeds through the existing transition.
+learning ends and the integrated experience waits for current speech plus the
+breathing interval before proceeding.
 
 **World and action:** Missing an opening, overtaking formation or substantially
 departing from a course retires that section with neutral dispersal. The lesson
@@ -242,3 +244,13 @@ invitation. Measure draw/fragment work, uploads and bounded memory alongside
 visible particle count. Local browser evidence can verify timing, passage,
 recycling and disposal; headset comfort, human comprehension, spatial listening
 and installation frame timing require the physical setup.
+
+### Natural ending and breathing space
+
+On earned completion, timeout or a manual transition request, finish the current
+spoken clip. End new learning at the 60-second cutoff; do not substitute the
+success speech on timeout. Leave 1.5 playing seconds after native voice completion
+before the main prologue. Hold freezes this interval. Preserve the existing
+four-second spatial sound tail into main. The timeline records the entire actual
+span, including the new breathing space beyond the former roughly 74-second
+closing estimate.

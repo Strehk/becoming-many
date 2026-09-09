@@ -3,6 +3,7 @@
   "sourceRepository": "https://github.com/E-Mus/becoming-many-tutorial",
   "sourceRevision": "52fdfdb69a80b63988b71e035614db8abad4bac1",
   "permission": "User requested finding the predecessor recordings and explicitly instructed installing the tutorial voice on 2026-09-09.",
+  "temporaryEnglishSelection": "On 2026-09-09 the user requested narration for both language selections pending replacement English files. The EN tutorial selection temporarily reuses these German recordings and spoken-word timings; no English recording or translation is claimed.",
   "preservation": "Original German stereo WAV bytes copied without trimming, normalization or transcoding; English filenames describe their cue roles.",
   "sourceAttribution": "No speaker attribution or license file was present in the predecessor source. No English recordings were found.",
   "files": [

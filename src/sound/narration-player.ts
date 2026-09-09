@@ -18,6 +18,8 @@ export interface NarrationFollowState {
   readonly isPlaying: boolean;
   /** Mirrored onto playback rate, or the correction would fight the clock. */
   readonly timeScale: number;
+  /** Tutorial speech finishes natively; authored duration must not cut its tail. */
+  readonly preserveNaturalEnd?: boolean;
 }
 
 export interface NarrationPlayer {
@@ -26,6 +28,8 @@ export interface NarrationPlayer {
   readonly readIsPlaying: () => boolean;
   /** Native playback observation for spoken-word gates; never advances Show time. */
   readonly readOffsetSeconds: (cueId: string) => number | undefined;
+  /** Native completion or terminal playback failure, never a clock estimate. */
+  readonly readHasEnded: (cueId: string) => boolean;
   /** Replace the prepared clip set, retaining unchanged recordings without reloading. */
   readonly setRecordings: (recordings: readonly NarrationRecording[]) => void;
   readonly unload: () => void;
@@ -50,6 +54,8 @@ interface PreparedNarration {
   heldSeekSeconds?: number;
   /** At most one pending/rejected play attempt until a new transport/cue intent. */
   playAttempt?: Promise<void>;
+  playbackFailed?: boolean;
+  requestedOffsetSeconds?: number;
 }
 
 /** Own the prepared clips and play only the cue selected by Show. */
@@ -131,6 +137,8 @@ export function createNarrationPlayer(options: {
     if (clip) {
       clip.playAttempt = undefined;
       clip.heldSeekSeconds = undefined;
+      clip.requestedOffsetSeconds = undefined;
+      clip.playbackFailed = false;
       clip.element.pause();
     }
     activeCueId = undefined;
@@ -144,6 +152,15 @@ export function createNarrationPlayer(options: {
   }
 
   return {
+    readHasEnded(cueId): boolean {
+      const clip = clips.get(cueId);
+      return Boolean(
+        !clip ||
+          clip.element.ended ||
+          clip.element.error ||
+          clip.playbackFailed,
+      );
+    },
     readOffsetSeconds(cueId) {
       return !isUnloaded && activeCueId === cueId
         ? clips.get(cueId)?.element.currentTime
@@ -159,7 +176,12 @@ export function createNarrationPlayer(options: {
           element.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA,
       );
     },
-    follow({ position, isPlaying, timeScale }): void {
+    follow({
+      position,
+      isPlaying,
+      timeScale,
+      preserveNaturalEnd = false,
+    }): void {
       // A slot is sized for the longer language, so the shorter recording runs
       // out before its slot does; past that end there is simply silence.
       // Without this the drift correction would seek past the end forever.
@@ -168,7 +190,7 @@ export function createNarrationPlayer(options: {
       if (
         !position ||
         !clip ||
-        position.offsetSeconds >= clip.durationSeconds
+        (!preserveNaturalEnd && position.offsetSeconds >= clip.durationSeconds)
       ) {
         stopActiveCue();
         return;
@@ -182,12 +204,22 @@ export function createNarrationPlayer(options: {
 
       const { offsetSeconds } = position;
       const { element } = clip;
+      const restarting =
+        preserveNaturalEnd &&
+        clip.requestedOffsetSeconds !== undefined &&
+        offsetSeconds + SYNC_TOLERANCE_SECONDS < clip.requestedOffsetSeconds;
+      clip.requestedOffsetSeconds = offsetSeconds;
+      if (preserveNaturalEnd && element.ended && !isNewCue && !restarting)
+        return;
       if (element.playbackRate !== timeScale) element.playbackRate = timeScale;
 
       const needsPosition =
         isNewCue ||
-        !isPlaying ||
-        Math.abs(element.currentTime - offsetSeconds) > SYNC_TOLERANCE_SECONDS;
+        restarting ||
+        (!preserveNaturalEnd &&
+          (!isPlaying ||
+            Math.abs(element.currentTime - offsetSeconds) >
+              SYNC_TOLERANCE_SECONDS));
       if (
         needsPosition &&
         element.readyState >= HTMLMediaElement.HAVE_METADATA &&
@@ -201,6 +233,7 @@ export function createNarrationPlayer(options: {
       if (!isPlaying) {
         if (!element.paused || clip.playAttempt) element.pause();
         clip.playAttempt = undefined;
+        clip.playbackFailed = false;
         return;
       }
       clip.heldSeekSeconds = undefined;
@@ -214,7 +247,10 @@ export function createNarrationPlayer(options: {
         () => {
           // A pause, cue switch or unload can cancel an older pending attempt.
           // A rejected current intent stays latched, rather than retrying per frame.
-          if (clip.playAttempt === attempt) reportBlockedPlayback();
+          if (clip.playAttempt === attempt) {
+            clip.playbackFailed = true;
+            reportBlockedPlayback();
+          }
         },
       );
     },

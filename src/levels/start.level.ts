@@ -8,7 +8,39 @@ export const level: LevelPreset = {
   desktopFieldOfViewDegrees: 80,
   maximumGroundClearanceMeters: 50,
   startNarration: {
-    en: [],
+    // Temporary EN selection uses the approved German recordings until replacement.
+    en: [
+      {
+        cueId: "right",
+        url: "/audio/tutorial/de/introduction-right.wav",
+        durationSeconds: 20.725729,
+        environmentAtSeconds: 13.12,
+        instructionAtSeconds: 19.3,
+      },
+      {
+        cueId: "left",
+        url: "/audio/tutorial/de/left.wav",
+        durationSeconds: 2.735417,
+        instructionAtSeconds: 1.14,
+      },
+      {
+        cueId: "up",
+        url: "/audio/tutorial/de/up.wav",
+        durationSeconds: 4.334896,
+        instructionAtSeconds: 2.66,
+      },
+      {
+        cueId: "down",
+        url: "/audio/tutorial/de/down.wav",
+        durationSeconds: 2.552583,
+        instructionAtSeconds: 1.04,
+      },
+      {
+        cueId: "complete",
+        url: "/audio/tutorial/de/complete.wav",
+        durationSeconds: 13.861479,
+      },
+    ],
     de: [
       {
         cueId: "right",

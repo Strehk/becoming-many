@@ -234,10 +234,13 @@ test("audio owners recover gesture resume and await complete disposal", async ()
     mock.module("./src/sound/narration-player.ts", () => ({
       createNarrationPlayer: options => {
         narrationCount++; narrationOptions.push(options);
-        return { setRecordings: recordings => { narrationOptions.push({ recordings }); },
+        let recordings = options.recordings;
+        let frame;
+        return { setRecordings: next => { recordings = next; frame = undefined; narrationOptions.push({ recordings: next }); },
+          readHasEnded: cueId => (!recordings.some(clip => clip.cueId === cueId) || (frame?.position?.cueId === cueId && frame.position.offsetSeconds - narrationLag >= recordings.find(clip => clip.cueId === cueId).durationSeconds)),
           readIsPlaying: () => true,
           readOffsetSeconds: () => (narrationFrames.at(-1)?.position?.offsetSeconds ?? 0) - narrationLag,
-          follow: frame => { follows++; narrationFrames.push(frame); }, unload: () => {
+          follow: next => { frame = next; follows++; narrationFrames.push(next); }, unload: () => {
           narrationUnloads++;
           if (failNarrationCleanup) throw new Error("media cleanup failed");
         } };
@@ -386,6 +389,8 @@ test("audio owners recover gesture resume and await complete disposal", async ()
     assert.ok(narrationOptions.at(-1).recordings.every(clip => clip.url.includes("/de/")));
     observation = { phase: "flying", direction: "left", goalIndex: 1, crossingCount: 1 };
     trainingNative.currentTime = 4; trainingShow.update();
+    assert.equal(narrationFrames.at(-1).position.cueId, "right", "a crossing cannot interrupt the current instruction");
+    trainingNative.currentTime = 6; trainingShow.update(); trainingShow.update();
     assert.equal(narrationFrames.at(-1).position.cueId, "left");
     assert.equal(narrationFrames.at(-1).position.offsetSeconds, 0);
     tutorialCommands.resetTime(); trainingShow.update();
@@ -393,22 +398,29 @@ test("audio owners recover gesture resume and await complete disposal", async ()
     assert.equal(tutorialCommands.readTutorial().phase, "arrival");
     assert.equal(narrationFrames.at(-1).position.cueId, "right");
     assert.equal(narrationFrames.at(-1).position.offsetSeconds, 0);
-    tutorialCommands.play(); trainingNative.currentTime = 5; trainingShow.update();
+    tutorialCommands.play(); trainingNative.currentTime = 7; trainingShow.update();
     observation = { phase: "crossed", direction: "down", goalIndex: 3, crossingCount: 4 };
-    trainingNative.currentTime = 6; trainingShow.update();
+    trainingNative.currentTime = 8; trainingShow.update();
+    assert.equal(narrationFrames.at(-1).position.cueId, "right", "fourth crossing must not cut the directional recording");
+    trainingNative.currentTime = 9; trainingShow.update(); trainingShow.update();
     assert.equal(narrationFrames.at(-1).position.cueId, "complete");
     assert.equal(tutorialCommands.readTutorial().readyToContinue, true, "UI may skip any prepared tutorial");
-    assert.equal(tutorialCommands.sample().mainStartSeconds, 5, "two elapsed practice seconds plus three seconds of closing voice");
+    assert.equal(tutorialCommands.sample().mainStartSeconds, 6, "three elapsed practice seconds plus three seconds of closing voice");
     observation.phase = "complete";
-    for (const time of [6.1, 6.5, 7, 8.9]) {
+    for (const time of [9.1, 9.5, 10, 11.9]) {
       trainingNative.currentTime = time; trainingShow.update();
       assert.equal(narrationFrames.at(-1).position.cueId, "complete", "closing cue stays selected until its end");
-      assert.ok(Math.abs(narrationFrames.at(-1).position.offsetSeconds - (time - 6)) < 1e-9);
+      assert.ok(Math.abs(narrationFrames.at(-1).position.offsetSeconds - (time - 9)) < 1e-9);
       assert.equal(finishes, 0);
     }
     const preparedNarratorCount = narrationCount;
-    trainingNative.currentTime = 9; trainingShow.update();
-    assert.equal(finishes, 1, "success releases the experience after the full closing voice");
+    trainingNative.currentTime = 12; trainingShow.update();
+    assert.equal(finishes, 0, "full voice is followed by breathing space");
+    assert.equal(tutorialCommands.readTutorial().readyToContinue, false);
+    tutorialCommands.pause(); trainingNative.currentTime = 22; trainingShow.update();
+    assert.equal(finishes, 0, "Hold freezes breathing space");
+    tutorialCommands.play(); trainingNative.currentTime = 23.5; trainingShow.update();
+    assert.equal(finishes, 1, "success releases after full voice and 1.5 playing seconds");
     tutorialCommands.continueToExperience();
     assert.equal(narrationCount, preparedNarratorCount, "handoff reuses the prepared owner");
     assert.equal(narrationOptions.at(-1).recordings.length, PIECE_SCHEDULE.narration.length);
@@ -416,11 +428,11 @@ test("audio owners recover gesture resume and await complete disposal", async ()
       "handoff retires only tutorial recordings");
     assert.equal(finishes, 1); assert.equal(tutorialCommands.readTutorial(), undefined);
     tutorialCommands.seekTo(20); tutorialCommands.seekBy(-5); tutorialCommands.setTimeScale(2);
-    trainingNative.currentTime = 10; trainingShow.update();
-    assert.deepEqual(tutorialCommands.sample(), { timeSeconds: 17, isPlaying: true, timeScale: 2, mainStartSeconds: 5 });
-    assert.equal(narrationFrames.at(-1).position.offsetSeconds, 7, "main cue offset excludes the five-second tutorial and five-second lead-in");
+    trainingNative.currentTime = 24.5; trainingShow.update();
+    assert.deepEqual(tutorialCommands.sample(), { timeSeconds: 17, isPlaying: true, timeScale: 2, mainStartSeconds: 7.5 });
+    assert.equal(narrationFrames.at(-1).position.offsetSeconds, 4.5, "main cue offset excludes actual tutorial span and five-second lead-in");
     tutorialCommands.seekTo(0);
-    assert.equal(tutorialCommands.sample().timeSeconds, 5, "seeking cannot replay retired tutorial content");
+    assert.equal(tutorialCommands.sample().timeSeconds, 7.5, "seeking cannot replay retired tutorial content");
     const trainingShowEnd = trainingShow.unload();
     releaseOrgan(); trainingNative.release(); await trainingShowEnd;
 
@@ -439,8 +451,17 @@ test("audio owners recover gesture resume and await complete disposal", async ()
       assert.equal(command.readTutorial().readyToContinue, ending !== "standalone");
       if (ending === "skip") {
         command.continueToExperience(); command.continueToExperience();
+        assert.equal(finishes, beforeFinishes, "manual skip preserves current voice");
+        assert.equal(command.readTutorial().readyToContinue, false);
+        command.resetTime();
+        assert.equal(command.readTutorial().readyToContinue, true, "reset cancels a pending handoff");
+        command.continueToExperience();
+        native.currentTime = 3; timed.update();
+        native.currentTime = 4.49; timed.update();
+        assert.equal(finishes, beforeFinishes);
+        native.currentTime = 4.5; timed.update();
         assert.equal(finishes, beforeFinishes + 1);
-        assert.equal(command.sample().mainStartSeconds, 0);
+        assert.equal(command.sample().mainStartSeconds, 4.5);
         assert.equal(command.sample().isPlaying, true);
       } else {
         command.play(); native.currentTime = 20; timed.update();
@@ -456,17 +477,27 @@ test("audio owners recover gesture resume and await complete disposal", async ()
           assert.ok(Math.abs(command.sample().mainStartSeconds - (59.9 + closingSeconds)) < 1e-8);
           native.currentTime = 240.1; timed.update();
           assert.equal(finishes, beforeFinishes, "success before cutoff keeps its complete voice");
+          narrationLag = 0.5;
           native.currentTime = 239.9 + closingSeconds; timed.update();
+          assert.equal(finishes, beforeFinishes, "authored end cannot truncate delayed native speech");
+          native.currentTime += 0.5; timed.update();
+          assert.equal(finishes, beforeFinishes, "native voice end starts the breath");
+          native.currentTime += 1.5; timed.update();
           assert.equal(finishes, beforeFinishes + 1);
-          assert.ok(Math.abs(command.sample().timeSeconds - (59.9 + closingSeconds)) < 1e-8);
+          assert.ok(Math.abs(command.sample().timeSeconds - (59.9 + closingSeconds + 2)) < 1e-8);
+          narrationLag = 0;
         } else {
           native.currentTime = 240.1; timed.update();
           if (ending === "standalone") {
             assert.equal(finishes, beforeFinishes);
             assert.ok(command.readTutorial(), "standalone inspection has no prepared main handoff");
           } else {
+            assert.equal(finishes, beforeFinishes, "timeout requests a gentle transition");
+            assert.equal(advanceAllowed, false);
+            assert.equal(formationAllowed, false);
+            native.currentTime += 1.5; timed.update();
             assert.equal(finishes, beforeFinishes + 1);
-            assert.equal(command.sample().timeSeconds, 60);
+            assert.ok(Math.abs(command.sample().timeSeconds - 61.6) < 1e-8);
             assert.equal(command.readTutorial(), undefined);
             assert.notEqual(narrationFrames.at(-1).position.cueId, "complete", "timeout never claims success");
           }
@@ -486,11 +517,32 @@ test("audio owners recover gesture resume and await complete disposal", async ()
     observation = { ...observation, attempt: 1 };
     retryShow.update();
     assert.equal(formationAllowed, false, "retry waits until the previous instruction finishes");
-    retryNative.currentTime = 4; retryShow.update();
+    retryNative.currentTime = 4; retryShow.update(); retryShow.update();
     assert.equal(narrationFrames.at(-1).position.cueId, "right");
     assert.equal(narrationFrames.at(-1).position.offsetSeconds, 1.5, "retry repeats the instruction, not the whole introduction");
     assert.equal(formationAllowed, true);
     const retryEnd = retryShow.unload(); retryNative.release(); await retryEnd;
+
+    const { level: startPreset } = await import("./src/levels/start.level.ts");
+    for (const language of ["de", "en"]) {
+      mayReadTraining = true;
+      const localizedTutorial = await createShowRuntime(
+        { schedule: PIECE_SCHEDULE, language, states: SHOW_LEVEL_STATES },
+        tutorialWorld, { gates: new Map(), senses: {}, worldFades: {} },
+        { groundYAt: () => 0 }, undefined, true,
+        { ...tutorialDefinition, parameters: startPreset.start, recordings: startPreset.startNarration },
+      );
+      const prepared = narrationOptions.at(-1).recordings;
+      assert.equal(prepared.length, 5, "both tutorial selections prepare all spoken cues");
+      assert.equal(prepared[0].url, "/audio/tutorial/de/introduction-right.wav",
+        "the approved German opening also supplies the explicit temporary EN selection");
+      const native = contexts.at(-1); native.state = "running";
+      localizedTutorial.running.play(); localizedTutorial.update();
+      assert.deepEqual(narrationFrames.at(-1).position, { cueId: "right", offsetSeconds: 0 },
+        "each language begins with the complete introduction from its first sample");
+      assert.equal(formationAllowed, false, "the opening voice precedes arrow formation");
+      const end = localizedTutorial.unload(); native.release(); await end;
+    }
 
     for (const standalone of [false, true]) {
       mayReadTraining = true;
