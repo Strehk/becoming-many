@@ -1,13 +1,86 @@
 # Required flight tutorial — 2026-09-08
 
 The spatial tutorial replaces the held-gesture Start MVP on its existing routes
-and opens the full experience. The approved sequence is right → left → up → down,
-without a deadline. Actual ring passages advance learning. The 2026-09-09 user
-revision replaces the earlier persistent-miss behavior documented below: old
-sections fade and recycle ahead, without awarding success. Show holds transport, language and completion
-policy; Run retires training and releases the prepared main experience only after
-the operator selects **Begin experience**. World, M5 and locomotion retain their
-existing ownership. No second renderer, render loop or show clock was added.
+and opens the full experience. The approved sequence is right → left → up → down.
+Actual ring passages advance learning; missed sections recycle ahead. The latest
+integrated policy is 60 seconds of practice, a full closing voice on success and
+an available direct UI transition, as recorded below. Show owns this policy; Run
+retires training and releases the prepared main experience. World, M5 and
+locomotion retain their ownership. No second renderer, loop or clock was added.
+Older dated sections retain the evidence and decisions valid at their revision.
+
+## Timed tutorial and visit timeline — 2026-09-09
+
+The latest user instruction supersedes the older unlimited/operator-only behavior
+in the dated evidence below. Integrated practice has 60 playing seconds, displayed
+as a Tutorial chapter before the main experience. Four actual passages before the
+cutoff keep the complete successful closing recording; the user explicitly approved
+up to about 74 seconds for that path. Otherwise the cutoff starts the experience
+directly. Begin experience is available throughout prepared integrated practice.
+Skip/timeout never increment a passage count or play the successful closing speech.
+
+The five installed original WAVs were rechecked against their provenance hashes
+and measured with ffprobe: 20.725729/2.735417/4.334896/2.552583/13.861479 s,
+44.210104 s total. An existing local ASR transcript identifies right/left/up/down;
+the opening right instruction arrives around 19.16 s. The closing recording
+explicitly approves successful movement, then introduces the narrator. That content
+supports keeping it for success and omitting it for skip/timeout. The transcript
+contains ASR errors and is not a new approved script or physical listening test.
+No audio bytes or script sources changed.
+
+Show retains the sole clock. Pause/audio suspension consumes no practice budget;
+practice language changes repeat the instruction without resetting that budget.
+The fourth passage starts the closing immediately, even if the final directional
+cue is unfinished. The successful closing voice retains its offset across a language change. The
+public sample reports total visit time plus `mainStartSeconds`; internal main
+narration, senses, organ and passages still use the original relative score.
+The UI projects that observation onto existing chapter templates. It updates
+geometry when the tutorial span changes without rebuilding nodes/listeners.
+Seeking into retired practice clamps to the main start; Run reset reconstructs
+only the already-owned exclusive training content and restores a held minute.
+Standalone Start stays independently exercisable without a prepared main handoff.
+
+Only authored tutorial pacing changes: the first target remains 60–64 m ahead
+for formation readability; subsequent spacing is 30–34 m, horizontal displacement
+7–9 m and vertical displacement 7–10 m. Arrival between goals is 0.5 s, formation
+2 s and dissolution 1.5 s. Shared locomotion, 38,000-point capacity and audio
+resources remain unchanged. The first 34–38 m pacing candidate reached only three
+goals before timeout in the actual M5 fixture. The shorter final spacing and
+retirement correct that concrete failure; it is not accepted as a successful run.
+
+The final root browser run reaches all four goals at about 55.14 seconds and
+hands off after the complete 13.861479-second closing, around 69 seconds total.
+A separate real UI run verifies held time, desktop/narrow layout, direct skip
+while held, shifted chapter jumps and a fresh 60-second timeout with actual
+misses. Neither skip nor timeout starts the closing recording. The existing
+browser fixtures now exercise automatic success and timeout instead of clicking
+through the obsolete operator-only gate. A fixture initially sampled completion
+before Show's next frame published the closing span; it now waits for that public
+observation before checking the full remaining recording duration.
+
+43 focused Start, Show/audio, Run restart, timeline and scrubbing tests pass
+(1,278 assertions); mandatory lint passes. The Show tests include success at
+59.9 seconds, a full closing recording, paused wall time, repeated language
+selection, early/idempotent skip, main cue offsets and standalone isolation.
+A focused independent diff review found no blocking owner/lifetime/cost issue;
+its note about the final directional cue interruption is reflected above.
+
+Root functional assertions pass; strict raw browser reports still exit nonzero
+for `net::ERR_ABORTED` on introduction/closing media requests. Successful playback
+requests have readyState 4, all five expected voice selections occur, and no
+functional failure or other console error is recorded. These reports are not
+claimed as clean all-error browser passes or physical audibility evidence.
+[Performance](../../performance.md#timed-tutorial-and-timeline--2026-09-09)
+records the measured candidate identity and cost.
+
+![Actual running tutorial and timeline at 26 seconds](timed-tutorial-timeline.png)
+![Held tutorial with direct transition at narrow width](timed-tutorial-narrow.png)
+
+The actual view retains white space, fine point volume, spatial rings and an
+arrow. It remains more restrained and less photographically cloud-like than the
+inspirations; this timeline revision changes pacing, not the accepted renderer or
+particle capacity. Visitor readability, final visual strength, spatial listening,
+EN voice policy and physical Windows-PCVR acceptance remain open.
 
 ## Forward recycling and original voice — 2026-09-09
 

@@ -53,6 +53,29 @@ export function cueSlots(
   });
 }
 
+/** Display chapters retain the elapsed tutorial before the relative main score. */
+export interface TimelineChapter {
+  readonly cueId: NarrationCueId | "tutorial";
+  readonly startSeconds: number;
+  readonly endSeconds: number;
+}
+
+export function timelineChapters(
+  schedule: NarrationSchedule,
+  mainStartSeconds: number,
+): readonly TimelineChapter[] {
+  return [
+    { cueId: "tutorial", startSeconds: 0, endSeconds: mainStartSeconds },
+    ...schedule.narration.map((cue, index) => ({
+      cueId: cue.cueId,
+      startSeconds: mainStartSeconds + (index === 0 ? 0 : cue.atSeconds),
+      endSeconds:
+        mainStartSeconds +
+        (schedule.narration[index + 1]?.atSeconds ?? schedule.durationSeconds),
+    })),
+  ];
+}
+
 /**
  * The cue the show is heading for, which is what a countdown needs. Undefined
  * once the last cue has started: there is nothing further to count down to.

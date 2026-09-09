@@ -38,7 +38,8 @@ The application must support:
   deterministic benchmark entry.
 - One show with accumulated senses, scheduled animal passages, English/German
   narration, organ, tutorial and closing credits in one prepared world per visit.
-  The main schedule remains 8:41; the preceding interactive tutorial has no deadline.
+  The main score remains 8:41. Integrated tutorial practice lasts at most 60 seconds;
+  a success reached before that cutoff may finish its closing voice (about 74 seconds total).
   Credits timing remains a separate decision.
 - Rehearsal controls or an in-process Conductor, with pause, seek, language
   selection and a complete end followed by a fresh run for the next visitor.
@@ -316,7 +317,7 @@ Preparation, first use and bounded background work follow one strategy at the
 existing World/Run owners. No per-level transition workaround or uncontrolled
 rebuild; measure first/repeated transitions. Confirmed for #50 on 2026-09-08:
 Rehearsal, Conductor and standalone training initially hold for explicit Play.
-Four spatial goals run right/left/up/down without a deadline. The user revision
+Four spatial goals run right/left/up/down within Show’s integrated practice budget. The user revision
 on 2026-09-09 supersedes persistent missed targets: missed or spatially abandoned
 sections dissolve and recycle ahead of the current flight pose, repeating the same
 lesson until an actual passage succeeds. Confirmed in the subsequent placement review: Start
@@ -326,9 +327,14 @@ visitor. Rendering and sound borrow that generated geometry. Pause holds
 training and flight, seek/rate changes
 are blocked, and language changes repeat the current instruction. A current
 recording finishes before the next goal is presented; its duration does not
-complete a spatial goal. All passages and the final configured recording precede
-operator handoff. The same Show
-clock serves this unbounded interactive phase, then rebases to the main schedule.
+complete a spatial goal. The 2026-09-09 timing revision gives integrated practice
+60 playing seconds. Four successful passages before that cutoff play the complete
+closing recording, then automatically enter the experience (at most about 74 seconds).
+Without success, the cutoff enters the experience without a false success recording.
+The existing UI command may enter directly whenever preparation is ready. The same
+Show clock serves practice, the closing voice and main playback. Its public timeline
+retains the actual tutorial span before the unchanged relative main score. Standalone
+Start remains an independently exercisable level without a prepared main handoff.
 Run unloads/removes training registrations and references while retaining the
 prepared main world. This does not decide complete visitor replacement or fresh
 headset calibration. Reset after handoff stays held until configured sample
@@ -848,7 +854,7 @@ Three unresolved flow choices deserve explicit human decisions:
   Never retain two encounter systems. Bat meshes and swarm trails still need
   different render mechanisms.
 - **Tutorial audio / credits (#50/#51):** both features are required. The four-goal
-  tutorial and operator handoff are confirmed and use the existing owners/clock.
+  tutorial, timed/automatic handoff and direct UI transition are confirmed and use the existing owners/clock.
   German tutorial voice use is requested and implemented. EN voice policy and
   physical mix acceptance remain distinct from credits content/timing/movement. Current credits
   start at 516 seconds before the longest Return ending around 519.8 seconds;

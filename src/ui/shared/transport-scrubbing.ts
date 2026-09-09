@@ -2,7 +2,7 @@ import type { RunningShow } from "../../levels/show.runtime";
 
 interface ScrubbingOptions {
   readonly track: SVGSVGElement;
-  readonly durationSeconds: number;
+  readonly readDurationSeconds: () => number;
   readonly show: Pick<RunningShow, "sample" | "play" | "pause" | "seekTo">;
   readonly onScrubChange: (showTimeSeconds: number | undefined) => void;
   readonly signal: AbortSignal;
@@ -19,7 +19,7 @@ const SCRUB_INTERVAL_MILLISECONDS = 1_000 / 20;
  */
 export function attachScrubbing({
   track,
-  durationSeconds,
+  readDurationSeconds,
   show,
   onScrubChange,
   signal,
@@ -35,7 +35,7 @@ export function attachScrubbing({
     const bounds = track.getBoundingClientRect();
     if (bounds.width <= 0) return scrubSeconds;
     const fraction = (event.clientX - bounds.left) / bounds.width;
-    return Math.min(Math.max(fraction, 0), 1) * durationSeconds;
+    return Math.min(Math.max(fraction, 0), 1) * readDurationSeconds();
   }
 
   function finish(resume: boolean): void {

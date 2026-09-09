@@ -1,7 +1,10 @@
 import type { NarrationSchedule } from "../../dramaturgy/narration-schedule";
-import { cueSlots } from "../../dramaturgy/schedule-layout";
+import {
+  type TimelineChapter,
+  timelineChapters,
+} from "../../dramaturgy/schedule-layout";
 import type { RunningShow } from "../../levels/show.runtime";
-import { requireElement } from "../shared/dom";
+import { requireElement, writeText } from "../shared/dom";
 import { cueDisplayName, formatShowTime } from "../shared/show-time-format";
 import { attachScrubbing } from "../shared/transport-scrubbing";
 import { CONDUCTOR_SETTINGS } from "./operator-settings";
@@ -21,19 +24,8 @@ export interface ShowTimelineOptions {
   readonly onScrubChange: (showTimeSeconds: number | undefined) => void;
 }
 
-/**
- * A chapter as the operator sees it: the schedule's cue slot, with the silent
- * pre-roll before the first word folded into the first chapter so the track
- * never shows an unnamed gap and "now" is defined from 0:00.
- */
-interface Chapter {
-  readonly cueId: string;
-  readonly startSeconds: number;
-  readonly endSeconds: number;
-}
-
 interface ChapterView {
-  readonly chapter: Chapter;
+  chapter: TimelineChapter;
   readonly slot: SVGSVGElement;
   readonly progress: SVGRectElement;
   readonly button: HTMLButtonElement;
@@ -46,8 +38,14 @@ export function createShowTimeline({
   show,
   onScrubChange,
 }: ShowTimelineOptions): ConductorPanel {
-  const { durationSeconds } = schedule;
+  let mainStartSeconds = show.sample().mainStartSeconds;
+  let durationSeconds = mainStartSeconds + schedule.durationSeconds;
   const root = requireElement(parent, ".conductor__timeline", HTMLElement);
+  const readout = requireElement(
+    root,
+    "[data-timeline-readout]",
+    HTMLOutputElement,
+  );
   const track = requireElement(root, ".timeline__track", SVGSVGElement);
   const slider = requireElement(
     root,
@@ -66,40 +64,51 @@ export function createShowTimeline({
     "[data-chapter-button]",
     HTMLTemplateElement,
   );
-  const chapters = readChapters(schedule).map((chapter) => {
-    const slotFragment = document.importNode(slotTemplate.content, true);
-    const slot = requireElement(slotFragment, "svg", SVGSVGElement);
-    const progress = requireElement(
-      slot,
-      ".timeline__progress",
-      SVGRectElement,
+  const chapters = timelineChapters(schedule, mainStartSeconds).map(
+    (chapter) => {
+      const slotFragment = document.importNode(slotTemplate.content, true);
+      const slot = requireElement(slotFragment, "svg", SVGSVGElement);
+      const progress = requireElement(
+        slot,
+        ".timeline__progress",
+        SVGRectElement,
+      );
+      slot.setAttribute(
+        "x",
+        `${toPercent(chapter.startSeconds, durationSeconds)}%`,
+      );
+      slot.setAttribute(
+        "width",
+        `${toPercent(chapter.endSeconds - chapter.startSeconds, durationSeconds)}%`,
+      );
+      requireElement(slot, "text", SVGTextElement).textContent = cueDisplayName(
+        chapter.cueId,
+      );
+      const buttonFragment = document.importNode(buttonTemplate.content, true);
+      const button = requireElement(
+        buttonFragment,
+        "button",
+        HTMLButtonElement,
+      );
+      requireElement(button, "[data-name]", HTMLElement).textContent =
+        cueDisplayName(chapter.cueId);
+      requireElement(
+        button,
+        ".conductor__chapter-time",
+        HTMLElement,
+      ).textContent = formatShowTime(chapter.startSeconds);
+      return { chapter, slot, progress, button } satisfies ChapterView;
+    },
+  );
+  for (const view of chapters) {
+    const { slot, button } = view;
+    button.addEventListener(
+      "click",
+      () => show.seekTo(view.chapter.startSeconds),
+      {
+        signal,
+      },
     );
-    slot.setAttribute(
-      "x",
-      `${toPercent(chapter.startSeconds, durationSeconds)}%`,
-    );
-    slot.setAttribute(
-      "width",
-      `${toPercent(chapter.endSeconds - chapter.startSeconds, durationSeconds)}%`,
-    );
-    requireElement(slot, "text", SVGTextElement).textContent = cueDisplayName(
-      chapter.cueId,
-    );
-    const buttonFragment = document.importNode(buttonTemplate.content, true);
-    const button = requireElement(buttonFragment, "button", HTMLButtonElement);
-    requireElement(button, "[data-name]", HTMLElement).textContent =
-      cueDisplayName(chapter.cueId);
-    requireElement(
-      button,
-      ".conductor__chapter-time",
-      HTMLElement,
-    ).textContent = formatShowTime(chapter.startSeconds);
-    return { chapter, slot, progress, button } satisfies ChapterView;
-  });
-  for (const { chapter, slot, button } of chapters) {
-    button.addEventListener("click", () => show.seekTo(chapter.startSeconds), {
-      signal,
-    });
     track.insertBefore(slot, playhead);
     buttons.append(button);
   }
@@ -115,7 +124,7 @@ export function createShowTimeline({
   );
   attachScrubbing({
     track,
-    durationSeconds,
+    readDurationSeconds: () => durationSeconds,
     show,
     onScrubChange,
     signal,
@@ -161,11 +170,41 @@ export function createShowTimeline({
 
   return {
     update(state): void {
-      root.inert = Boolean(state.tutorial);
       slider.setAttribute("aria-disabled", String(Boolean(state.tutorial)));
-      for (const chapter of chapters)
-        chapter.button.disabled = Boolean(state.tutorial);
+      slider.tabIndex = state.tutorial ? -1 : 0;
+      for (const view of chapters)
+        view.button.disabled =
+          Boolean(state.tutorial) || view.chapter.cueId === "tutorial";
+      if (mainStartSeconds !== state.mainStartSeconds) {
+        mainStartSeconds = state.mainStartSeconds;
+        durationSeconds = mainStartSeconds + schedule.durationSeconds;
+        const layout = timelineChapters(schedule, mainStartSeconds);
+        for (const [index, view] of chapters.entries()) {
+          const chapter = layout[index];
+          if (!chapter) continue;
+          view.chapter = chapter;
+          view.slot.setAttribute(
+            "x",
+            `${toPercent(view.chapter.startSeconds, durationSeconds)}%`,
+          );
+          view.slot.setAttribute(
+            "width",
+            `${toPercent(view.chapter.endSeconds - view.chapter.startSeconds, durationSeconds)}%`,
+          );
+          requireElement(
+            view.button,
+            ".conductor__chapter-time",
+            HTMLElement,
+          ).textContent = formatShowTime(view.chapter.startSeconds);
+        }
+        slider.setAttribute("aria-valuemax", String(durationSeconds));
+        slider.removeAttribute("aria-valuenow");
+      }
       const showTimeSeconds = state.showTimeSeconds;
+      writeText(
+        readout,
+        `${formatShowTime(showTimeSeconds)} / ${formatShowTime(durationSeconds)}`,
+      );
       const accessibleSeconds = String(Math.floor(showTimeSeconds));
       if (slider.getAttribute("aria-valuenow") !== accessibleSeconds) {
         slider.setAttribute("aria-valuenow", accessibleSeconds);
@@ -191,7 +230,9 @@ export function createShowTimeline({
         }
 
         const played =
-          (showTimeSeconds - startSeconds) / (endSeconds - startSeconds);
+          endSeconds > startSeconds
+            ? (showTimeSeconds - startSeconds) / (endSeconds - startSeconds)
+            : 1;
         view.progress.setAttribute(
           "width",
           `${Math.min(Math.max(played, 0), 1) * 100}%`,
@@ -199,17 +240,6 @@ export function createShowTimeline({
       }
     },
   };
-}
-
-/** The slot layout with the pre-roll folded into the first chapter. */
-function readChapters(schedule: NarrationSchedule): readonly Chapter[] {
-  // The slots are shared between languages; only recording lengths differ,
-  // and those are not this panel's concern.
-  return cueSlots(schedule, "en").map((slot, index) => ({
-    cueId: slot.cueId,
-    startSeconds: index === 0 ? 0 : slot.atSeconds,
-    endSeconds: slot.atSeconds + slot.slotSeconds,
-  }));
 }
 
 function toPercent(seconds: number, durationSeconds: number): number {

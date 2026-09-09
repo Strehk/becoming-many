@@ -2,6 +2,7 @@
 import assert from "node:assert/strict";
 import type { Page } from "playwright";
 import { FLIGHT_SETTINGS } from "../../src/control/flight-settings";
+import { level as START_LEVEL } from "../../src/levels/start.level";
 import { M5_FIRMWARE_VERSION } from "../../src/m5/protocol";
 import { M5_SETTINGS } from "../../src/m5/runtime/m5-settings";
 import { assertRefactorBranch } from "./browser-evidence";
@@ -243,10 +244,13 @@ async function inspectVisibleParticles(
 export async function flyStartCourse(
   page: Page,
   simulation: StartSimulation,
-  missFirstGoal = false,
 ): Promise<void> {
   const status = page.locator("[data-tutorial-status]");
   await status.waitFor({ state: "visible" });
+  const originalLanguage = await page.evaluate(() =>
+    window.show?.readLanguage(),
+  );
+  await page.getByRole("button", { name: "DE", exact: true }).click();
   const transport = page.locator(
     "[data-transport], .conductor__transport-button",
   );
@@ -258,17 +262,21 @@ export async function flyStartCourse(
   let previousDelivery = simulation.readDelivery();
   let previousMilliseconds = performance.now();
   let lastStatus = "";
-  const deadline = Date.now() + 150_000;
+  const deadline = Date.now() + 65_000;
   while (Date.now() < deadline) {
+    assert(
+      await status.isVisible(),
+      "Success path must finish all goals before timeout",
+    );
     const text = await status.innerText();
-    if (text.includes("Complete")) break;
+    const tutorial = await page.evaluate(() => window.show?.readTutorial());
+    if (tutorial?.crossingCount === 4) break;
     if (text !== lastStatus) {
       console.log(
         `M5 course: ${text}, estimated travel ${JSON.stringify(estimate)}`,
       );
       lastStatus = text;
     }
-    const tutorial = await page.evaluate(() => window.show?.readTutorial());
     const goal = tutorial?.goalTarget;
     assert(goal, `Expected an observed generated course goal: ${text}`);
     const now = performance.now();
@@ -296,9 +304,7 @@ export async function flyStartCourse(
     );
     const passedPlane =
       dx * Math.sin(estimate.heading) - dz * Math.cos(estimate.heading) < 0;
-    const holdStraight =
-      tutorial?.phase === "arrival" ||
-      (missFirstGoal && (tutorial?.missCount ?? 0) === 0);
+    const holdStraight = tutorial?.phase === "arrival";
     const roll =
       passedPlane || holdStraight ? 0 : -clamp(headingError * 2, -0.5, 0.5);
     const climb =
@@ -315,28 +321,53 @@ export async function flyStartCourse(
   simulation.set(0, 0, 0);
   assert.match(
     await status.innerText(),
-    /Complete · 4\/4/,
+    /(?:Passed|Complete) · 4\/4/,
     `M5 course did not complete; estimated travel ${JSON.stringify(estimate)}`,
   );
-  const proceed = page.locator("[data-continue-experience]");
-  await proceed.waitFor({ state: "visible" });
+  const closingSeconds = START_LEVEL.startNarration?.de.find(
+    (clip) => clip.cueId === "complete",
+  )?.durationSeconds;
+  assert(closingSeconds);
+  // Start publishes the crossing before Show schedules its closing instruction.
   await page.waitForFunction(
-    () =>
-      !document.querySelector<HTMLButtonElement>("[data-continue-experience]")
-        ?.disabled,
-    undefined,
-    { timeout: 20_000 },
+    (durationSeconds) => {
+      const sample = window.show?.sample();
+      return (
+        sample !== undefined &&
+        sample.mainStartSeconds - sample.timeSeconds >= durationSeconds - 0.5
+      );
+    },
+    closingSeconds,
+    { timeout: 1_000 },
   );
-  if (missFirstGoal)
-    assert(
-      (await page.evaluate(
-        () => window.show?.readTutorial()?.missCount ?? 0,
-      )) >= 1,
-      "Expected an actual missed goal before successful completion",
-    );
-  assert.equal(await proceed.isEnabled(), true);
-  await proceed.click();
-  await status.waitFor({ state: "hidden" });
+  const completion = await page.evaluate(() => ({
+    sample: window.show?.sample(),
+    tutorial: window.show?.readTutorial(),
+  }));
+  assert(completion.sample && completion.tutorial);
+  assert.equal(completion.tutorial.crossingCount, 4);
+  assert.equal(completion.tutorial.missCount ?? 0, 0);
+  assert(
+    completion.sample.mainStartSeconds - completion.sample.timeSeconds >=
+      closingSeconds - 0.5,
+    "Successful passage reserves the full German closing instruction",
+  );
+  const closingStartedAt = performance.now();
+  await status.waitFor({ state: "hidden", timeout: 20_000 });
+  assert(
+    (performance.now() - closingStartedAt) / 1000 >= closingSeconds - 0.5,
+    "Automatic handoff must wait for the closing instruction without a button click",
+  );
+  const main = await page.evaluate(() => window.show?.sample());
+  assert(main?.isPlaying);
+  assert.equal(main.mainStartSeconds, completion.sample.mainStartSeconds);
+  if (originalLanguage && originalLanguage !== "de")
+    await page
+      .getByRole("button", {
+        name: originalLanguage.toUpperCase(),
+        exact: true,
+      })
+      .click();
 
   function integrate(input: InputDelivery, deltaSeconds: number): void {
     const yaw =
@@ -354,4 +385,49 @@ export async function flyStartCourse(
 
 function clamp(value: number, minimum: number, maximum: number): number {
   return Math.max(minimum, Math.min(maximum, value));
+}
+
+/** A missed course must hand off at one minute without an unearned success outro. */
+export async function checkStartTimeout(
+  page: Page,
+  simulation: StartSimulation,
+): Promise<void> {
+  const status = page.locator("[data-tutorial-status]");
+  await status.waitFor({ state: "visible" });
+  simulation.set(-0.1, 0);
+  const transport = page.locator(
+    "[data-transport], .conductor__transport-button",
+  );
+  if ((await transport.innerText()).trim() === "Play") await transport.click();
+  const deadline = Date.now() + 70_000;
+  let misses = 0;
+  let crossings = 0;
+  let lastTutorialSeconds = 0;
+  while (Date.now() < deadline) {
+    const observation = await page.evaluate(() => ({
+      tutorial: window.show?.readTutorial(),
+      sample: window.show?.sample(),
+    }));
+    if (!observation.tutorial) break;
+    misses = Math.max(misses, observation.tutorial.missCount ?? 0);
+    crossings = Math.max(crossings, observation.tutorial.crossingCount);
+    lastTutorialSeconds = observation.sample?.timeSeconds ?? 0;
+    assert(crossings < 4, "Timeout fixture must not complete the course");
+    assert.notEqual(observation.tutorial.phase, "complete");
+    await page.waitForTimeout(100);
+  }
+  simulation.set(0, 0, 0);
+  assert(misses >= 1, "Timeout fixture must observe an actual missed goal");
+  assert(
+    lastTutorialSeconds >= 59.5,
+    "Timeout must retain the full practice minute",
+  );
+  assert.equal(await status.isVisible(), false);
+  const sample = await page.evaluate(() => window.show?.sample());
+  assert(sample?.isPlaying);
+  assert.equal(
+    sample.mainStartSeconds,
+    60,
+    "A timeout adds no success narration",
+  );
 }

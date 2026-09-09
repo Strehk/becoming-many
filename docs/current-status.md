@@ -6,6 +6,14 @@ physical acceptance still open. The earlier UI/Entry
 and M5 consolidation passed its local checks and browser acceptance; see
 [UI evidence](evidence/ui-consolidation/README.md). The previous
 #36/#84/#11 and audio-wake results remain dated evidence for their tested code.
+The latest user timing revision adds a visible Tutorial chapter to Rehearsal and
+Conductor. Show allows 60 playing seconds of integrated practice; four timely
+passages keep the complete successful closing voice (up to about 74 seconds),
+then transition automatically. Timeout and the prepared Begin experience command
+enter main playback without unearned success speech. The timeline retains actual
+tutorial duration; main score timings remain relative and unchanged. Pause holds
+the budget, and reset restores a fresh minute. Standalone Start stays a separate
+practice surface. This supersedes older unlimited/operator-only behavior below.
 Start now generates its four-goal course from distance, displacement and radius
 ranges instead of authored coordinates. Restart samples a fresh course. Missed or spatially abandoned sections fade and
 recycle ahead of the current flight pose without increasing the success count.
@@ -171,30 +179,25 @@ The #80 animal-connection removal is implemented below. Small additions remain i
 ## Implemented World and Senses
 
 - White World: atmosphere through background, fog, and Air Particles.
-- Start: four world-space ring goals (right, left, up, down), without a deadline.
-  Consecutive shared world poses detect actual passage, including movement
-  between frames. Missed goals remain active with directional guidance. One
-  optional 32,000-point draw forms thick ring bodies, a filled 7.2 m arrow and
-  three decorative curve guides. Fine points and bounded soft haze replace the
-  former contours; the current ring has local silver, expansion and trajectory
-  wake. Independent Air uses 48 points per 16 m cell with a fading 16 m near field;
-  main-level defaults are preserved. Horizontal targets share the arrival height, later targets are 60 m
-  apart. Following the user's world-space correction, cloud, ring and arrow
-  share a fixed goal anchor. The arrow stays beside its ring; player translation
-  and rotation never reposition or reorient these particles. Autonomous drift,
-  formation and wake remain. The former heading-following guide is removed.
-  The held-M5-gesture rules and opaque arrow are removed.
-- Show owns training transport/current instruction and waits for every passage
-  and the final configured recording before exposing operator handoff. Pause
-  holds flight, seek/rate changes are blocked and language changes repeat the
-  current instruction. Presentation waits for a playing instruction to finish
-  before the next goal, preserving the introduction after an early crossing;
-  learning progress still requires spatial passage. One existing clock supports the interactive phase and
-  rebases to the main schedule; public main-show time stays zero during training.
-  Run retires training resources and registrations without rebuilding the main
-  world. Interim Stop restores orientation/time and hold; only retired training
-  content is recreated, without claiming a fresh visitor lifetime. Playback stays
-  held until any configured sample is ready; failure is visible and retryable.
+- Start: four procedural world-space goals (right, left, up, down), counted only
+  by actual swept passage. Missed sections fade and regenerate ahead without
+  awarding progress. One 32,000-point effect forms thick rings, a volumetric
+  arrow and three decorative curve guides. Independent Air supplies the bounded
+  surrounding field; the combined capacity is 38,000 points. Ring/arrow anchors
+  stay fixed during flight, with autonomous drift and local silver passage wake.
+  The literal recipe shortens later goal spacing to 30–34 m for the timed lesson;
+  shared flight and main-level particle defaults remain unchanged.
+- Show owns the 60-playing-second integrated practice budget and public Tutorial
+  timeline chapter. Four passages before the cutoff start the full closing voice
+  immediately, followed by automatic main playback (up to about 74 seconds).
+  Timeout or Begin experience skips the success speech. Directional cues finish
+  before the next goal; the final crossing can interrupt the last directional
+  cue to start the closing. Pause holds time/flight; practice language changes
+  repeat the instruction without resetting the budget. Main cue times remain
+  relative internally; the public timeline retains the actual tutorial prefix.
+  Run retires only training resources, keeping the main world prepared. Reset
+  reconstructs training and holds at zero. Preparation/failure/retry remain with
+  the existing owners. Standalone Start omits the automatic main handoff.
 - Scent: deterministic plant and animal scent sources plus one bounded points
   system. Reassigned plant slots stay hidden until bounded queued work completes;
   queue rejection no longer triggers a synchronous fill.

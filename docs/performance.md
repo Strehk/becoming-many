@@ -763,3 +763,42 @@ warnings. The strict probe still exits nonzero for two recorded media preload
 `ERR_ABORTED` requests. The [actual final screenshot](evidence/issue-50/recycling-endurance.png)
 is taken after Pause and is excluded from memory samples. Runtime remains
 unchanged; this adds evidence only, without a benchmark-reference update.
+
+## Timed tutorial and timeline — 2026-09-09
+
+The latest user-approved change limits practice to 60 playing seconds while
+preserving a fully earned closing voice (up to about 74 seconds). The final
+literal pacing uses 30–34 m later spacing and 1.5 s dissolution, unchanged shared
+flight and 38,000 combined points. UI layout updates only when the observed
+main-start prefix changes; there is no new clock, timer or renderer.
+
+Measurement: headed Chromium 151, Apple M2 Max Metal, 1920 × 1080, DPR 1,
+production root, real shared M5 steering, no competing browser workload or
+in-course screenshots. Candidate checkpoint `4b6d0ae` with the timed revision;
+served-assets SHA-256
+`ca71c86529d03f5ff0350ed648965ced246ffc87b676f5c40a3d2e791c5a8fa3`.
+The successful course contains 4,177 frames and all five original DE voice starts.
+Four goals complete at approximately 55.14 s; main handoff follows at about 69 s.
+
+| Metric | Median | p95 | p99 | Maximum |
+| --- | ---: | ---: | ---: | ---: |
+| CPU frame work (ms) | 0.3 | 0.4 | 0.5 | 7.6 |
+| GPU frame work (ms) | 0.2134 | 0.2794 | 0.3212 | 0.9657 |
+| RAF interval (ms) | 16.7 | 17.3 | 17.6 | 17.7 |
+
+Upload p99 is zero; maximum is 34,560 bytes. No course-time `bufferData` or
+`createProgram` calls occur. The preceding forward-recycling course recorded
+CPU/GPU p95 0.4/0.2784 ms under the same desktop conditions. Its longer course
+included an intentional miss, so this is a bounded-cost regression comparison,
+not an isolated performance improvement claim. Particle/overdraw capacities and
+resource ownership are unchanged; the earlier repeated-recycling memory evidence
+still applies to those unchanged pools.
+
+The first pacing candidate reached only three goals before the correctly firing
+timeout; final spacing/dissolution correct that failure. Root functional checks
+pass, including full closing playback and a separate skip/timeout UI run. Raw
+reports retain introductory/closing media `ERR_ABORTED` request errors and are
+not clean all-error passes. No other console errors or warnings were observed.
+See the [tutorial evidence](evidence/issue-50/README.md) for screenshots and scope.
+Desktop timing does not establish headset comfort, physical listening or 90 Hz
+Windows-PCVR USB-C acceptance; EN voice policy remains unresolved.

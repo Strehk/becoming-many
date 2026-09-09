@@ -16,7 +16,7 @@ Live issues own acceptance. Do not create a second implementation plan.
 | Next implementation | The 2026-09-09 spatial review supersedes isolated ring presentation: reuse the main-world volume chunks for a dense near field, large volumetric particle arrows and continuous curved particle tunnels. The visual revision, forward course recycling and German voice are implemented and locally checked; remaining acceptance is recorded below. The user accepted the higher particle density and its measured local GPU cost on 2026-09-09. Existing Show/Run integration and granular audio remain the starting point; German tutorial narration and forward recycling are implemented in the subsequent correction; EN policy and physical acceptance stay open. |
 | Confirmed direction | Conductor is UI only; Entry connects UI to the existing browser Engine. Show owns transport/language, Run owns lifetime, World owns rendering, M5 owns validity. Backend remains Station delivery/config/health. Affected role filenames and `src/ui/app.css` are implemented. |
 | Existing software | Direct startup, complete child/source cleanup, entry diagnostics, explicit literal levels, legacy Grass retirement, shared zone influences, approved bank clearance and shared Rocks/Vegetation lifecycle are implemented. Their distinct remaining issue acceptance is preserved. |
-| Current visitor behavior | Initial Play, four procedurally placed spatial goals without a deadline, then operator handoff. Interim Stop resets rig/time and holds; after handoff it recreates only retired training content. Complete replacement and fresh calibration remain #9/#46 decisions. |
+| Current visitor behavior | Initial Play; up to 60 seconds for four spatial goals, then automatic main playback. Earned closing speech may extend to about 74 seconds; direct prepared UI transition is available. Interim Stop resets rig/time and holds; after handoff it recreates only retired training content. Complete replacement and fresh calibration remain #9/#46 decisions. |
 | Unresolved evidence | #73 Motion clock-progress failure, #78 exact reference approval and real Windows-PCVR USB-C 90 Hz/transport/headset/M5/venue acceptance remain open. CSS fixes do not resolve them. |
 
 The previous detailed checkpoint, source identities and historical counts remain
@@ -64,10 +64,14 @@ affected owners migrate with their later coherent refactor, not a mass-rename ta
 The current contract is documented in [Levels](../src/levels/README.md#required-flight-tutorial).
 The literal Start recipe replaces the `a136bcc` held-gesture/opaque-arrow MVP
 on its existing routes and also opens the full Show. The approved sequence is
-right/left/up/down, without a deadline. On 2026-09-09 the user replaced persistent
+right/left/up/down. The latest 2026-09-09 user revision adds 60 playing seconds of
+integrated practice, automatic timeout without false success speech, a full earned
+closing recording (up to about 74 seconds), and a direct prepared UI transition.
+The timeline retains the actual tutorial span before the unchanged main score.
+Earlier on 2026-09-09 the user replaced persistent
 missed targets with forward recycling: retire the old section, then retry the
 same direction ahead of the current flight pose. Only actual passages count.
-Show owns explicit Play/Pause, instruction/language and operator completion,
+Show owns explicit Play/Pause, instruction/language and transition policy,
 using its existing clock before rebasing to the main schedule. Run retires
 exclusive training resources/registrations and keeps the main world prepared.
 World, locomotion and background particles retain their existing responsibilities.
@@ -238,7 +242,7 @@ reference, product or physical acceptance follows from the desktop results.
 | #13/#72/#71 | Legacy Grass is retired; conservative Clipmap bounds and shared continuous World Surface influences are implemented. Integrated visual and Windows-PCVR acceptance remain separate. |
 | #81/#41/#28 | Approved 1 m analytic-bank clearance, shared Rocks/Vegetation lifecycle and surviving wind checks are complete. Do not rebuild their removed alternatives. |
 | #27/#26/#32 | Scent source typing and bounded queue path and Thermal corrections have evidence. Preserve remaining measured/physical acceptance and unexplained replay findings. |
-| #50/#51 | Four-goal tutorial and operator handoff are approved and implemented at existing owners. Audio-content and physical acceptance remain; credits timing/movement is separate. No second timeline, tutorial runtime or credits renderer. |
+| #50/#51 | Four-goal tutorial, timed automatic handoff and direct UI transition use the existing owners. Audio-content and physical acceptance remain; credits timing/movement is separate. No second timeline, tutorial runtime or credits renderer. |
 | #29/#47–#49 | Reconcile current animal motion/passages against each real issue before changing timing, gaze or content. No parallel encounter implementation. |
 | #79/#83 | Existing audio scheduling and automated pointer-lock findings retain their exact evidence and limits. UI migration does not resolve them. |
 

@@ -98,7 +98,8 @@ derivatives. UI releases only its own presentation resources. The existing
 
 `start.level.ts` supplies the same training content to `/start`, `/?level=start`
 and the opening of the full Show. Existing route/catalog registration is retained.
-The approved sequence is right, left, up, down, without a deadline. Start generates
+The approved sequence is right, left, up, down. Show caps integrated practice at
+60 playing seconds; standalone practice remains independently exercisable. Start generates
 goals from bounded distance, displacement and radius ranges in the
 current course heading. The recipe contains no authored ring coordinates. Restart samples
 a new course. Ordinary frames and pauses retain placed targets. Missed sections
@@ -120,17 +121,22 @@ trajectory wake. Independent Air uses 48 particles per 16 m chunk and fades its
 16 m local field before recycling. Main-level defaults are unchanged. Composition
 can omit presentation without changing learning or creating visual resources.
 
-Show owns Play/Pause, language, current instruction and the completion command.
-The same clock supports an interactive tutorial of unbounded duration, then
-rebases to the main schedule at handoff; public main-show time remains zero
-during training. Entry initially presents Play. Pause holds training and flight,
-seek/rate commands are blocked, and changing language repeats the current cue.
-Presentation waits for an active instruction to finish before advancing to the
-next goal, preserving the introduction even after a fast first crossing. Audio
-duration never supplies the required spatial passage.
-Only completing all goals and the final configured recording makes the full Show's
-operator handoff available. Standalone Start exposes the same transport without
-chapters or a main-experience handoff.
+Show owns Play/Pause, language, current instruction and transition policy.
+The literal Start recipe supplies `maximumPracticeSeconds: 60`. The same clock
+runs practice, an earned closing voice and the main score; no UI timer exists.
+Four actual passages before the cutoff allow the complete closing recording,
+then an automatic transition (up to about 74 seconds). If practice expires, or the
+operator selects Begin experience, main playback starts directly without claiming
+success. The direct command is available throughout prepared integrated practice.
+
+The public `sample()` reports total timeline time and `mainStartSeconds`. The UI
+starts with a one-minute Tutorial chapter, then retains its actual duration at
+success/skip/handoff; later chapter positions, seeking and readouts use that prefix.
+Main narration, senses, organ and passage schedules keep their original relative
+seconds. Seeking into retired training clamps to the main start; Run reset is the
+route back to fresh practice. Pause and suspended audio consume no tutorial budget.
+Changing practice language repeats the cue without resetting elapsed time; the
+closing cue retains its position. Standalone Start has no automatic main handoff.
 
 Run owns the shared spatial-audio context/listener and releases training sound
 before retiring training. The organ borrows that context; Show's native timebase

@@ -65,13 +65,15 @@ export interface TutorialStatus {
   readonly direction: "right" | "left" | "up" | "down";
   readonly crossingCount: number;
   readonly missCount?: number;
+  /** Prepared integrated practice may be skipped independently of learned goals. */
   readonly readyToContinue: boolean;
 }
 
 export interface RunningShow {
   readonly readTutorial: () => TutorialStatus | undefined;
   readonly continueToExperience: () => void;
-  readonly sample: ShowClock["sample"];
+  /** Continuous visit timeline; main cues remain relative to mainStartSeconds. */
+  readonly sample: () => ShowTimeSample & { readonly mainStartSeconds: number };
   readonly play: ShowClock["play"];
   readonly pause: ShowClock["pause"];
   readonly seekTo: ShowClock["seekTo"];
@@ -180,6 +182,7 @@ export async function createShowRuntime(
   let droneOrgan: ReturnType<typeof createDroneOrgan> | undefined;
   let unloading: Promise<void> | undefined;
   let tutorial: ShowTutorial | undefined;
+  let mainStartSeconds = 0;
   let instruction = "right";
   let instructionStartSeconds = 0;
   let tutorialGoalIndex = 0;
@@ -202,8 +205,8 @@ export async function createShowRuntime(
     return unloading;
   }
   try {
-    // The same clock runs the unbounded interactive segment, then rebases to
-    // the finite main schedule. No parallel tutorial clock or timer exists.
+    // The same clock runs practice and its successful closing voice, then rebases
+    // to the main score. The public timeline retains the actual tutorial span.
     clock = createShowClock(schedule.durationSeconds, timebase.readSeconds);
     function prepareNarration(nextTutorial?: ShowTutorial): void {
       const recordings: NarrationRecording[] = standalone
@@ -352,9 +355,6 @@ export async function createShowRuntime(
         };
       if (!tutorial) return undefined;
       const observed = tutorial.start.readObservation();
-      const recording = tutorial.recordings?.[language].find(
-        (clip) => clip.cueId === instruction,
-      );
       return {
         phase: observed.phase,
         goalTarget: observed.goalTarget,
@@ -362,12 +362,7 @@ export async function createShowRuntime(
         direction: observed.direction,
         crossingCount: observed.crossingCount,
         missCount: observed.missCount,
-        readyToContinue:
-          !standalone &&
-          instruction === "complete" &&
-          observed.phase === "complete" &&
-          clock.sample().timeSeconds - instructionStartSeconds >=
-            (recording?.durationSeconds ?? 0),
+        readyToContinue: !standalone,
       };
     }
 
@@ -397,12 +392,22 @@ export async function createShowRuntime(
     if (!standalone) followWorld(0);
 
     function setTutorial(next: ShowTutorial): void {
+      if (
+        !Number.isFinite(next.parameters.maximumPracticeSeconds) ||
+        next.parameters.maximumPracticeSeconds <= 0
+      )
+        throw new RangeError(
+          "Tutorial practice duration must be positive and finite",
+        );
       clock.pause();
       if (!standalone) followOrgan({ ...clock.sample(), isPlaying: false });
       clock.seekTo(0);
       clock.setTimeScale(1);
       clock.setDuration(undefined);
       tutorial = next;
+      mainStartSeconds = standalone
+        ? 0
+        : next.parameters.maximumPracticeSeconds;
       tutorial.start.reset();
       tutorial.start.setPlaying(false);
       tutorial.start.setGoalAdvanceAllowed(false);
@@ -411,6 +416,22 @@ export async function createShowRuntime(
       tutorialAttempt = 0;
       instructionStartSeconds = 0;
       prepareNarration(next);
+    }
+    function continueToExperience(): void {
+      if (!tutorial || preparationState !== "ready" || standalone || unloading)
+        return;
+      const completed = tutorial;
+      // A manual skip keeps only elapsed tutorial time; timeout keeps its planned end.
+      mainStartSeconds = Math.min(clock.sample().timeSeconds, mainStartSeconds);
+      tutorial = undefined;
+      prepareNarration();
+      completed.finish();
+      clock.seekTo(0);
+      clock.setTimeScale(1);
+      clock.setDuration(schedule.durationSeconds);
+      activeLevel = undefined;
+      followWorld(0);
+      clock.play();
     }
     if (initialTutorial) setTutorial(initialTutorial);
 
@@ -436,17 +457,24 @@ export async function createShowRuntime(
         const showTime = clock.sample();
         if (tutorial) {
           const observed = tutorial.start.readObservation();
+          const succeeded =
+            observed.crossingCount === tutorial.parameters.directions.length;
+          if (
+            !standalone &&
+            showTime.isPlaying &&
+            !succeeded &&
+            showTime.timeSeconds >= tutorial.parameters.maximumPracticeSeconds
+          ) {
+            continueToExperience();
+            return;
+          }
           const currentRecording = tutorial.recordings?.[language].find(
             (clip) => clip.cueId === instruction,
           );
           const instructionFinished =
             showTime.timeSeconds - instructionStartSeconds >=
             (currentRecording?.durationSeconds ?? 0);
-          const nextInstruction =
-            observed.crossingCount === tutorial.parameters.directions.length &&
-            (instruction === "complete" || instructionFinished)
-              ? "complete"
-              : observed.direction;
+          const nextInstruction = succeeded ? "complete" : observed.direction;
           if (
             nextInstruction !== instruction ||
             observed.goalIndex !== tutorialGoalIndex ||
@@ -458,6 +486,22 @@ export async function createShowRuntime(
             tutorialGoalIndex = observed.goalIndex;
             tutorialAttempt = observed.attempt;
             instructionStartSeconds = showTime.timeSeconds;
+            if (!standalone && instruction === "complete") {
+              const completion = tutorial.recordings?.[language].find(
+                (clip) => clip.cueId === "complete",
+              );
+              mainStartSeconds =
+                instructionStartSeconds + (completion?.durationSeconds ?? 0);
+            }
+          }
+          if (
+            !standalone &&
+            showTime.isPlaying &&
+            instruction === "complete" &&
+            showTime.timeSeconds >= mainStartSeconds
+          ) {
+            continueToExperience();
+            return;
           }
           tutorial.start.setGoalAdvanceAllowed(instructionFinished);
           tutorial.start.setPlaying(
@@ -489,25 +533,13 @@ export async function createShowRuntime(
 
       running: {
         readTutorial,
-        continueToExperience(): void {
-          if (!tutorial || !readTutorial()?.readyToContinue || standalone)
-            return;
-          const completed = tutorial;
-          tutorial = undefined;
-          prepareNarration();
-          completed.finish();
-          clock.seekTo(0);
-          clock.setTimeScale(1);
-          clock.setDuration(schedule.durationSeconds);
-          activeLevel = undefined;
-          followWorld(0);
-          clock.play();
-        },
+        continueToExperience,
         sample: () => {
           const sample = clock.sample();
           return {
             ...sample,
-            timeSeconds: tutorial ? 0 : sample.timeSeconds,
+            timeSeconds: sample.timeSeconds + (tutorial ? 0 : mainStartSeconds),
+            mainStartSeconds,
             isPlaying:
               sample.isPlaying &&
               preparationState === "ready" &&
@@ -522,7 +554,8 @@ export async function createShowRuntime(
           tutorial?.start.setPlaying(false);
         },
         seekTo: (seconds) => {
-          if (!tutorial && preparationState === "ready") clock.seekTo(seconds);
+          if (!tutorial && preparationState === "ready")
+            clock.seekTo(seconds - mainStartSeconds);
         },
         seekBy: (seconds) => {
           if (!tutorial && preparationState === "ready") clock.seekBy(seconds);
@@ -542,6 +575,9 @@ export async function createShowRuntime(
           clock.seekTo(0);
           clock.pause();
           if (tutorial) {
+            mainStartSeconds = standalone
+              ? 0
+              : tutorial.parameters.maximumPracticeSeconds;
             tutorial.start.reset();
             tutorial.start.setPlaying(false);
             tutorial.start.setGoalAdvanceAllowed(false);
@@ -561,7 +597,17 @@ export async function createShowRuntime(
           if (preparationState === "failed") return;
           prepareNarration(tutorial);
           if (tutorial) {
-            instructionStartSeconds = clock.sample().timeSeconds;
+            if (instruction !== "complete")
+              instructionStartSeconds = clock.sample().timeSeconds;
+            else if (!standalone) {
+              const completion = tutorial.recordings?.[language].find(
+                (clip) => clip.cueId === "complete",
+              );
+              mainStartSeconds = Math.max(
+                clock.sample().timeSeconds,
+                instructionStartSeconds + (completion?.durationSeconds ?? 0),
+              );
+            }
             tutorial.start.setGoalAdvanceAllowed(false);
           }
         },

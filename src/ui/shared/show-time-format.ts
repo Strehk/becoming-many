@@ -27,7 +27,7 @@ export function cueDisplayName(cueId: string): string {
   return cueId.charAt(0).toUpperCase() + cueId.slice(1);
 }
 
-/** The approved four-direction tutorial is displayed separately from show time. */
+/** Compact learning feedback accompanies the shared timeline readout. */
 export function formatTutorialStatus(
   tutorial: NonNullable<ReturnType<RunningShow["readTutorial"]>>,
 ): string {

@@ -99,15 +99,16 @@ export const level: LevelPreset = {
     },
   },
   start: {
-    arrivalSeconds: 2.5,
+    maximumPracticeSeconds: 60,
+    arrivalSeconds: 0.5,
     formationSeconds: 2,
-    dissolutionSeconds: 3,
+    dissolutionSeconds: 1.5,
     directions: ["right", "left", "up", "down"],
     course: {
       firstDistanceMeters: [60, 64],
-      spacingMeters: [58, 62],
-      horizontalOffsetMeters: [10, 14],
-      verticalOffsetMeters: [14, 18],
+      spacingMeters: [30, 34],
+      horizontalOffsetMeters: [7, 9],
+      verticalOffsetMeters: [7, 10],
       radiusMeters: [3.25, 3.75],
     },
     particles: {

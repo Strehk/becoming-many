@@ -225,7 +225,8 @@ export function mountConductorPage({
             break;
           case "jumpToCue": {
             const cue = schedule.narration[action.cueIndex];
-            if (cue) show.seekTo(cue.atSeconds);
+            if (cue)
+              show.seekTo(show.sample().mainStartSeconds + cue.atSeconds);
             break;
           }
           case "resetShow":
@@ -260,6 +261,7 @@ export function mountConductorPage({
       }
       const state: ConductorViewState = {
         showTimeSeconds: scrubSeconds ?? sample.timeSeconds,
+        mainStartSeconds: sample.mainStartSeconds,
         isPlaying: sample.isPlaying,
         timeScale: sample.timeScale,
         language: show.readLanguage(),

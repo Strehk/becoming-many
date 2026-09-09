@@ -126,19 +126,21 @@ history belongs in Git; unresolved product and deployment questions belong in
   language and time; existing Run owns complete visitor restart; UI owns only
   presentation/input. Remove forwarding adapters, duplicate reset/language/play
   rules and competing UI state. No command bus or generic control framework.
-- Tutorial and credits are required, using existing owners and no second time
-  system. Confirmed for #50 on 2026-09-08: four spatial goals in right/left/up/down
-  order, no deadline, missed goals remain active with guidance, and operator
-  handoff after all passages and the final configured recording. Initial Play
-  is explicit; pause holds flight, seek/rate changes are blocked, changing language
-  repeats the current instruction, and reset restores rig orientation/position.
-  An active recording may finish before presentation advances to the next goal;
-  elapsed audio never substitutes for spatial passage. Reset after handoff holds
-  until a configured sample is ready, with visible failure and retry.
-  Show owns this interactive phase and rebases its existing clock for the main
-  schedule. Run retires training and reuses the prepared main world. Audio rights,
-  language fallback/sample selection and physical acceptance remain separate;
-  credits timing/movement and complete visitor replacement are not decided here.
+- Tutorial and credits are required, using existing owners and one Show clock.
+  The 2026-09-09 user revision replaces the earlier unlimited/operator-only flow:
+  integrated practice has 60 playing seconds, with a direct UI transition whenever
+  preparation is ready. Four passages in right/left/up/down order before the cutoff
+  play the full successful closing voice and automatically enter the experience
+  (up to about 74 seconds total). Timeout/skip does not award passages or play false
+  success speech. Missed sections continue recycling within the remaining budget.
+  Pause and suspended audio hold time and flight; practice language changes repeat
+  the instruction without restarting the budget. Closing-language changes retain
+  its offset. Tutorial seeks/rate changes stay disabled; Run reset begins held
+  orientation and a fresh budget. The public timeline retains actual tutorial
+  duration, then offsets the unchanged main score; seeking into retired training
+  clamps to the start of that score. Standalone Start remains an independent test.
+  Run retires exclusive training while retaining the prepared main world. EN
+  voice policy, physical acceptance, credits and visitor replacement stay separate.
 - The Bun station server serves files, health, and deployment facts. It carries
   no show transport or session state.
 - Browser pages validate deployment and controller data at their boundaries.

@@ -34,7 +34,7 @@ const clock = spyOn(performance, "now");
 afterEach(() => clock.mockReset());
 afterAll(() => clock.mockRestore());
 
-function mount(playing = true) {
+function mount(playing = true, readDurationSeconds = () => 100) {
   clock.mockReturnValue(0);
   const track = new PointerTrack();
   const lifetime = new AbortController();
@@ -43,9 +43,14 @@ function mount(playing = true) {
   const playback: string[] = [];
   attachScrubbing({
     track: track as unknown as SVGSVGElement,
-    durationSeconds: 100,
+    readDurationSeconds,
     show: {
-      sample: () => ({ isPlaying: playing, timeSeconds: 0, timeScale: 1 }),
+      sample: () => ({
+        isPlaying: playing,
+        timeSeconds: 0,
+        timeScale: 1,
+        mainStartSeconds: 0,
+      }),
       pause: () => playback.push("pause"),
       play: () => playback.push("play"),
       seekTo: (seconds) => seeks.push(seconds),
@@ -57,6 +62,17 @@ function mount(playing = true) {
 }
 
 describe("shared transport scrubbing", () => {
+  test("uses the retained tutorial duration after handoff without rebinding gestures", () => {
+    let durationSeconds = 160;
+    const { track, seeks } = mount(false, () => durationSeconds);
+    track.pointer("pointerdown", 50);
+    track.pointer("pointerup", 50);
+    durationSeconds = 124;
+    track.pointer("pointerdown", 50);
+    track.pointer("pointerup", 50);
+    expect(seeks).toEqual([80, 80, 62, 62]);
+  });
+
   test("previews throttled moves and commits the exact release before resuming", () => {
     const { track, seeks, previews, playback } = mount();
     track.pointer("pointerdown", 10);

@@ -13,6 +13,8 @@ export type StartDirection = "right" | "left" | "up" | "down";
 type DistanceRange = readonly [minimum: number, maximum: number];
 
 export interface StartParameters {
+  /** Show limits integrated practice; standalone Start remains an independent test. */
+  readonly maximumPracticeSeconds: number;
   readonly directions: readonly [StartDirection, ...StartDirection[]];
   /** Sampled per course section in the current flight heading; live goals stay world-fixed. */
   readonly course: {

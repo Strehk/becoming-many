@@ -288,8 +288,7 @@ body:has(.conductor__drawer[open]) {
   flex: 1 120px;
   height: 44px;
 }
-.rehearsal__track[aria-disabled="true"],
-.conductor__timeline[inert] {
+.rehearsal__track[aria-disabled="true"] {
   opacity: 0.5;
   pointer-events: none;
 }

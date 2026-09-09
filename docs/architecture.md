@@ -248,8 +248,8 @@ borrows Show transport/narration for practice without main-show presentation.
 
 Start replaces the held-M5-gesture prototype with four world-space ring goals:
 right, left, up, down. The existing shared viewpoint supplies consecutive poses
-for swept passage checks; desktop and M5/XR use identical learning rules. There
-is no deadline. A missed or spatially abandoned section dissolves and is recycled
+for swept passage checks; desktop and M5/XR use identical learning rules. Show limits integrated practice to 60 playing seconds. A missed or spatially
+abandoned section dissolves and is recycled
 ahead of the current flight pose, repeating the same direction without awarding
 progress. Targets borrow Run's existing altitude ceiling so recycled upward
 lessons remain reachable. Learning owns passage/miss observations and fixed goal/preview slots. Three
@@ -262,13 +262,16 @@ Air remains independent: Start authors 48 points per 16 m cell and a fading
 unchanged. No independent loop, global fog or extra postprocessing is added.
 
 Show starts held and owns the interactive tutorial within its existing clock.
-Public main-show time stays zero until completion and operator handoff rebase
-that clock to the main schedule. Pause holds training and flight; seeking/rate
-changes are blocked and language changes repeat the current instruction. A current
-recording finishes before the next instruction/goal is presented, so an early
-crossing cannot truncate the introduction. Audio ending never completes a flight
-goal. All four passages and the final configured
-recording must finish before the completion command is available. Standalone
+Its public timeline advances through practice and retains the actual tutorial
+span via `sample().mainStartSeconds`; main narration/senses still use their original
+relative score. Four passages before the 60-second cutoff finish the successful
+closing voice and automatically hand off. Timeout or the always-available prepared
+UI transition skips that success speech. The same internal clock rebases for main
+playback; public seeks subtract the retained prefix and clamp at the main start. Pause holds training and flight; seeking/rate
+changes are blocked and language changes repeat the current instruction. Directional recordings finish before the next goal is presented, preserving the
+opening instruction. The fourth passage starts the successful closing immediately,
+even if the last directional cue is still playing; the closing retains its full
+duration. Audio ending never completes a flight goal. Standalone
 Start keeps the same transport while omitting the main-experience handoff.
 The current literal recipe enables bounded object-bound granular audio from
 three user-supplied excerpts and the five user-requested German tutorial recordings.

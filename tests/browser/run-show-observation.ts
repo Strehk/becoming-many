@@ -22,7 +22,7 @@ import {
 const VIEWPORT = { width: 1280, height: 720 };
 const TRANSITION_LEAD_SECONDS = 2;
 const TRANSITION_DURATION_SECONDS = 10;
-const TUTORIAL_COMPLETION_TIMEOUT_MILLISECONDS = 10 * 60 * 1000;
+const TUTORIAL_COMPLETION_TIMEOUT_MILLISECONDS = 80_000;
 const REFERENCE_FRAME_MS = 1000 / 90;
 const MAX_AUDIO_RECORDS = 100;
 const { values } = parseArgs({
@@ -181,8 +181,9 @@ async function loadShow(page: Page, url: URL) {
   await page.bringToFront();
   if (await page.evaluate(() => Boolean(window.show?.readTutorial()))) {
     console.log(
-      "Complete the flight tutorial and select Begin experience in the visible browser. Main-show observation starts afterward (10-minute limit per fresh Run).",
+      "Playing the one-minute tutorial before main-show observation; successful completion may extend it through the closing instruction.",
     );
+    await page.getByRole("button", { name: "Play", exact: true }).click();
     await page.waitForFunction(
       () =>
         window.show !== undefined && window.show.readTutorial() === undefined,
@@ -198,7 +199,13 @@ async function loadShow(page: Page, url: URL) {
   if ((await selectedLanguage.getAttribute("aria-pressed")) !== "true") {
     throw new Error("The requested narration language is not active");
   }
-  return { readinessMs, rendering: await readRenderingInfo(page) };
+  return {
+    readinessMs,
+    mainStartSeconds: await page.evaluate(
+      () => window.show?.sample().mainStartSeconds ?? 0,
+    ),
+    rendering: await readRenderingInfo(page),
+  };
 }
 
 function verifyFrameCollection(
@@ -212,7 +219,10 @@ function verifyFrameCollection(
 }
 
 async function observePlayback(page: Page, target: number, duration: number) {
-  await page.evaluate((target) => window.show?.seekTo(target), target);
+  await page.evaluate((target) => {
+    const show = window.show;
+    if (show) show.seekTo(show.sample().mainStartSeconds + target);
+  }, target);
   await page.getByRole("button", { name: "Play", exact: true }).click();
   const observation = await sampleFrames(page, duration);
   if (await page.evaluate(() => window.show?.sample().isPlaying)) {
@@ -263,7 +273,8 @@ async function observeShow(
       verifyFrameCollection(observation);
       verifyClockProgress(
         observation,
-        Math.min(target + duration, PIECE_SCHEDULE.durationSeconds),
+        startup.mainStartSeconds +
+          Math.min(target + duration, PIECE_SCHEDULE.durationSeconds),
       );
     }
     const missingAudio = requiredAudioPaths.filter(

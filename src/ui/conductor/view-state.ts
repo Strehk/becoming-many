@@ -7,6 +7,7 @@ import type { XrSessionState } from "../../world/xr-session";
 /** UI observations; display time follows the pointer during a scrub gesture. */
 export interface ConductorViewState {
   readonly showTimeSeconds: number;
+  readonly mainStartSeconds: number;
   readonly isPlaying: boolean;
   readonly timeScale: number;
   readonly language: NarrationLanguage;

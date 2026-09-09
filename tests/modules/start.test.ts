@@ -11,6 +11,7 @@ import type {
 import { ModuleRuntime } from "../../src/world/module-runtime";
 
 const PARAMETERS: StartParameters = {
+  maximumPracticeSeconds: 60,
   arrivalSeconds: 0.2,
   formationSeconds: 0.3,
   dissolutionSeconds: 0.4,

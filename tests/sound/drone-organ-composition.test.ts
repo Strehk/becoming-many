@@ -263,14 +263,14 @@ test("audio owners recover gesture resume and await complete disposal", async ()
     commands.setLanguage("de");
     assert.equal(narrationUnloads, 0); assert.equal(narrationCount, 1);
     showNative.currentTime = 4;
-    assert.deepEqual(commands.sample(), { timeSeconds: 19, isPlaying: true, timeScale: 2 });
+    assert.deepEqual(commands.sample(), { timeSeconds: 19, isPlaying: true, timeScale: 2, mainStartSeconds: 0 });
     commands.pause(); commands.setLanguage("en");
     showNative.currentTime = 5;
-    assert.deepEqual(commands.sample(), { timeSeconds: 19, isPlaying: false, timeScale: 2 });
+    assert.deepEqual(commands.sample(), { timeSeconds: 19, isPlaying: false, timeScale: 2, mainStartSeconds: 0 });
     assert.equal(commands.readLanguage(), "en");
     assert.equal(narrationUnloads, 0); assert.equal(narrationCount, 1);
     commands.play(); commands.resetTime();
-    assert.deepEqual(commands.sample(), { timeSeconds: 0, isPlaying: false, timeScale: 2 });
+    assert.deepEqual(commands.sample(), { timeSeconds: 0, isPlaying: false, timeScale: 2, mainStartSeconds: 0 });
     failNarrationCleanup = true;
     const showEnd = show.unload();
     const showFailure = assert.rejects(showEnd, error => error.errors.some(cause => /media cleanup/.test(cause.message)));
@@ -315,6 +315,7 @@ test("audio owners recover gesture resume and await complete disposal", async ()
     const tutorialDefinition = {
       start: training,
       parameters: {
+        maximumPracticeSeconds: 60,
         directions: ["right", "left", "up", "down"],
       },
       recordings: { en: recordings("en"), de: recordings("de") },
@@ -354,7 +355,7 @@ test("audio owners recover gesture resume and await complete disposal", async ()
     tutorialCommands.seekTo(100); tutorialCommands.seekBy(20); tutorialCommands.setTimeScale(2);
     trainingShow.update();
     assert.equal(tutorialCommands.sample().timeScale, 1);
-    assert.equal(tutorialCommands.sample().timeSeconds, 0);
+    assert.equal(tutorialCommands.sample().timeSeconds, 2);
     assert.equal(narrationFrames.at(-1).position.offsetSeconds, 2);
     tutorialCommands.setLanguage("de"); trainingShow.update();
     assert.equal(narrationFrames.at(-1).position.offsetSeconds, 0);
@@ -371,35 +372,84 @@ test("audio owners recover gesture resume and await complete disposal", async ()
     tutorialCommands.play(); trainingNative.currentTime = 5; trainingShow.update();
     observation = { phase: "crossed", direction: "down", goalIndex: 3, crossingCount: 4 };
     trainingNative.currentTime = 6; trainingShow.update();
-    tutorialCommands.continueToExperience();
-    assert.equal(finishes, 0);
-    observation.phase = "complete";
-    trainingNative.currentTime = 7; trainingShow.update();
-    assert.equal(tutorialCommands.readTutorial().readyToContinue, false);
-    tutorialCommands.continueToExperience(); assert.equal(finishes, 0);
-    trainingNative.currentTime = 9; trainingShow.update();
     assert.equal(narrationFrames.at(-1).position.cueId, "complete");
-    for (const time of [9.1, 9.5, 10, 11.9]) {
+    assert.equal(tutorialCommands.readTutorial().readyToContinue, true, "UI may skip any prepared tutorial");
+    assert.equal(tutorialCommands.sample().mainStartSeconds, 5, "two elapsed practice seconds plus three seconds of closing voice");
+    observation.phase = "complete";
+    for (const time of [6.1, 6.5, 7, 8.9]) {
       trainingNative.currentTime = time; trainingShow.update();
-      assert.equal(narrationFrames.at(-1).position.cueId, "complete", "the closing cue must stay selected while it plays");
-      assert.ok(Math.abs(narrationFrames.at(-1).position.offsetSeconds - (time - 9)) < 1e-9);
-      assert.equal(tutorialCommands.readTutorial().readyToContinue, false);
+      assert.equal(narrationFrames.at(-1).position.cueId, "complete", "closing cue stays selected until its end");
+      assert.ok(Math.abs(narrationFrames.at(-1).position.offsetSeconds - (time - 6)) < 1e-9);
+      assert.equal(finishes, 0);
     }
-    trainingNative.currentTime = 12; trainingShow.update();
-    assert.equal(tutorialCommands.readTutorial().readyToContinue, true);
-    assert.equal(finishes, 0, "completion waits for the operator after the final spoken clip");
     const preparedNarratorCount = narrationCount;
-    tutorialCommands.continueToExperience(); tutorialCommands.continueToExperience();
+    trainingNative.currentTime = 9; trainingShow.update();
+    assert.equal(finishes, 1, "success releases the experience after the full closing voice");
+    tutorialCommands.continueToExperience();
     assert.equal(narrationCount, preparedNarratorCount, "handoff reuses the prepared owner");
     assert.equal(narrationOptions.at(-1).recordings.length, PIECE_SCHEDULE.narration.length);
     assert.ok(narrationOptions.at(-1).recordings.every(clip => !clip.url.includes("/approved/")),
       "handoff retires only tutorial recordings");
     assert.equal(finishes, 1); assert.equal(tutorialCommands.readTutorial(), undefined);
     tutorialCommands.seekTo(20); tutorialCommands.seekBy(-5); tutorialCommands.setTimeScale(2);
-    trainingNative.currentTime = 13; trainingShow.update();
-    assert.deepEqual(tutorialCommands.sample(), { timeSeconds: 17, isPlaying: true, timeScale: 2 });
+    trainingNative.currentTime = 10; trainingShow.update();
+    assert.deepEqual(tutorialCommands.sample(), { timeSeconds: 17, isPlaying: true, timeScale: 2, mainStartSeconds: 5 });
+    assert.equal(narrationFrames.at(-1).position.offsetSeconds, 7, "main cue offset excludes the five-second tutorial and five-second lead-in");
+    tutorialCommands.seekTo(0);
+    assert.equal(tutorialCommands.sample().timeSeconds, 5, "seeking cannot replay retired tutorial content");
     const trainingShowEnd = trainingShow.unload();
     releaseOrgan(); trainingNative.release(); await trainingShowEnd;
+
+    for (const ending of ["timeout", "skip", "late-success", "standalone"]) {
+      mayReadTraining = true;
+      const beforeFinishes = finishes;
+      const closingSeconds = 13.861479;
+      const timed = await createShowRuntime(
+        { schedule: PIECE_SCHEDULE, language: "de", states: SHOW_LEVEL_STATES },
+        tutorialWorld, { gates: new Map(), senses: {}, worldFades: {} },
+        { groundYAt: () => 0 }, undefined, ending === "standalone",
+        { ...tutorialDefinition, recordings: { en: [], de: recordings("de").map(clip => ({ ...clip, durationSeconds: clip.cueId === "complete" ? closingSeconds : 3 })) } },
+      );
+      const native = contexts.at(-1); native.state = "running";
+      const command = timed.running;
+      assert.equal(command.readTutorial().readyToContinue, ending !== "standalone");
+      if (ending === "skip") {
+        command.continueToExperience(); command.continueToExperience();
+        assert.equal(finishes, beforeFinishes + 1);
+        assert.equal(command.sample().mainStartSeconds, 0);
+        assert.equal(command.sample().isPlaying, true);
+      } else {
+        command.play(); native.currentTime = 20; timed.update();
+        command.pause(); native.currentTime = 200; timed.update();
+        assert.equal(command.sample().timeSeconds, 20, "wall time during Hold consumes no practice budget");
+        command.setLanguage("en"); command.setLanguage("de");
+        assert.equal(command.sample().timeSeconds, 20, "language repeat consumes no new budget");
+        command.play(); native.currentTime = 239.9; timed.update();
+        assert.equal(finishes, beforeFinishes);
+        if (ending === "late-success") {
+          observation = { phase: "crossed", direction: "down", goalIndex: 3, crossingCount: 4 };
+          timed.update();
+          assert.ok(Math.abs(command.sample().mainStartSeconds - (59.9 + closingSeconds)) < 1e-8);
+          native.currentTime = 240.1; timed.update();
+          assert.equal(finishes, beforeFinishes, "success before cutoff keeps its complete voice");
+          native.currentTime = 239.9 + closingSeconds; timed.update();
+          assert.equal(finishes, beforeFinishes + 1);
+          assert.ok(Math.abs(command.sample().timeSeconds - (59.9 + closingSeconds)) < 1e-8);
+        } else {
+          native.currentTime = 240.1; timed.update();
+          if (ending === "standalone") {
+            assert.equal(finishes, beforeFinishes);
+            assert.ok(command.readTutorial(), "standalone inspection has no prepared main handoff");
+          } else {
+            assert.equal(finishes, beforeFinishes + 1);
+            assert.equal(command.sample().timeSeconds, 60);
+            assert.equal(command.readTutorial(), undefined);
+            assert.notEqual(narrationFrames.at(-1).position.cueId, "complete", "timeout never claims success");
+          }
+        }
+      }
+      const end = timed.unload(); native.release(); await end;
+    }
 
     for (const standalone of [false, true]) {
       mayReadTraining = true;

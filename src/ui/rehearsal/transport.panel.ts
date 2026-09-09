@@ -3,7 +3,7 @@ import {
   type NarrationLanguage,
 } from "../../dramaturgy/narration-catalog";
 import type { NarrationSchedule } from "../../dramaturgy/narration-schedule";
-import { cueSlots } from "../../dramaturgy/schedule-layout";
+import { timelineChapters } from "../../dramaturgy/schedule-layout";
 import type { RunningShow } from "../../levels/show.runtime";
 import { requireElement, writeText } from "../shared/dom";
 import {
@@ -46,7 +46,8 @@ export function mountRehearsalTransport({
 }: RehearsalTransportOptions): () => void {
   const lifetime = new AbortController();
   const { signal } = lifetime;
-  const { durationSeconds } = schedule;
+  let mainStartSeconds = show.sample().mainStartSeconds;
+  let durationSeconds = mainStartSeconds + schedule.durationSeconds;
   const bar = requireElement(container, "[data-rehearsal]", HTMLElement);
   const transportButton = requireElement(
     bar,
@@ -86,35 +87,35 @@ export function mountRehearsalTransport({
     ),
   }));
 
-  // Both languages share cue slots; the first chapter includes the silent pre-roll.
-  const chapters = (standalone ? [] : cueSlots(schedule, "en")).map(
-    (slot, index) => {
-      const startSeconds = index === 0 ? 0 : slot.atSeconds;
-      const sectionContent = document.importNode(sectionTemplate.content, true);
-      const button = requireElement(
-        sectionContent,
-        "button",
-        HTMLButtonElement,
-      );
-      button.textContent = cueDisplayName(slot.cueId);
-      const tickContent = document.importNode(tickTemplate.content, true);
-      const tick = requireElement(tickContent, "line", SVGLineElement);
-      const position = `${toPercent(startSeconds, durationSeconds)}%`;
-      tick.setAttribute("x1", position);
-      tick.setAttribute("x2", position);
-      return { startSeconds, button, tick };
-    },
-  );
+  const chapters = (
+    standalone ? [] : timelineChapters(schedule, mainStartSeconds)
+  ).map((chapter) => {
+    const { startSeconds } = chapter;
+    const sectionContent = document.importNode(sectionTemplate.content, true);
+    const button = requireElement(sectionContent, "button", HTMLButtonElement);
+    button.textContent = cueDisplayName(chapter.cueId);
+    const tickContent = document.importNode(tickTemplate.content, true);
+    const tick = requireElement(tickContent, "line", SVGLineElement);
+    const position = `${toPercent(startSeconds, durationSeconds)}%`;
+    tick.setAttribute("x1", position);
+    tick.setAttribute("x2", position);
+    return { chapter, button, tick };
+  });
 
   for (const { language, button } of languageButtons) {
     button.addEventListener("click", () => show.setLanguage(language), {
       signal,
     });
   }
-  for (const { startSeconds, button, tick } of chapters) {
-    button.addEventListener("click", () => show.seekTo(startSeconds), {
-      signal,
-    });
+  for (const view of chapters) {
+    const { button, tick } = view;
+    button.addEventListener(
+      "click",
+      () => show.seekTo(view.chapter.startSeconds),
+      {
+        signal,
+      },
+    );
     sections.append(button);
     track.append(tick);
   }
@@ -125,7 +126,7 @@ export function mountRehearsalTransport({
   let scrubSeconds: number | undefined;
   attachScrubbing({
     track,
-    durationSeconds,
+    readDurationSeconds: () => durationSeconds,
     show,
     signal,
     isEnabled: () => !standalone && !show.readTutorial(),
@@ -141,17 +142,31 @@ export function mountRehearsalTransport({
 
   function draw(): void {
     const sample = show.sample();
+    if (mainStartSeconds !== sample.mainStartSeconds) {
+      mainStartSeconds = sample.mainStartSeconds;
+      durationSeconds = mainStartSeconds + schedule.durationSeconds;
+      const layout = timelineChapters(schedule, mainStartSeconds);
+      for (const [index, view] of chapters.entries()) {
+        const chapter = layout[index];
+        if (!chapter) continue;
+        view.chapter = chapter;
+        const position = `${toPercent(view.chapter.startSeconds, durationSeconds)}%`;
+        view.tick.setAttribute("x1", position);
+        view.tick.setAttribute("x2", position);
+      }
+    }
     const tutorial = show.readTutorial();
     const inTutorial = Boolean(tutorial);
     if (renderedTutorial !== inTutorial) {
       renderedTutorial = inTutorial;
       tutorialStatus.hidden = !tutorial;
-      readout.hidden = inTutorial || standalone;
+      readout.hidden = standalone;
       track.toggleAttribute("hidden", standalone);
       track.setAttribute("aria-disabled", String(inTutorial));
       sections.hidden = standalone;
       sections.inert = inTutorial;
-      for (const chapter of chapters) chapter.button.disabled = inTutorial;
+      for (const view of chapters)
+        view.button.disabled = inTutorial || view.chapter.cueId === "tutorial";
     }
     if (tutorial) writeText(tutorialStatus, formatTutorialStatus(tutorial));
     const ready = !standalone && Boolean(tutorial?.readyToContinue);

@@ -9,7 +9,11 @@ import { describe, expect, test } from "bun:test";
 import { NARRATION_CUES } from "../../src/dramaturgy/narration-catalog";
 import type { NarrationSchedule } from "../../src/dramaturgy/narration-schedule";
 import { PIECE_SCHEDULE } from "../../src/dramaturgy/piece-schedule";
-import { cueSlots, nextCueAt } from "../../src/dramaturgy/schedule-layout";
+import {
+  cueSlots,
+  nextCueAt,
+  timelineChapters,
+} from "../../src/dramaturgy/schedule-layout";
 
 const SCHEDULE: NarrationSchedule = {
   durationSeconds: 200,
@@ -92,5 +96,37 @@ describe("nextCueAt", () => {
     };
 
     expect(nextCueAt(late, 0)?.atSeconds).toBe(10);
+  });
+});
+
+describe("timelineChapters", () => {
+  test("retains the tutorial and offsets main chapters including silent pre-roll", () => {
+    const schedule: NarrationSchedule = {
+      durationSeconds: 200,
+      narration: [
+        { cueId: "prologue", atSeconds: 5, level: "white-world" },
+        { cueId: "echo", atSeconds: 100, level: "echo" },
+      ],
+    };
+    expect(timelineChapters(schedule, 60)).toEqual([
+      { cueId: "tutorial", startSeconds: 0, endSeconds: 60 },
+      { cueId: "prologue", startSeconds: 60, endSeconds: 160 },
+      { cueId: "echo", startSeconds: 160, endSeconds: 260 },
+    ]);
+    expect(schedule.narration[0]?.atSeconds).toBe(5);
+  });
+
+  test("moves the same chapters for early skip, full success narration and restart", () => {
+    for (const duration of [12.5, 73.9, 60, 0]) {
+      const chapters = timelineChapters(SCHEDULE, duration);
+      expect(chapters.map((chapter) => chapter.cueId)).toEqual([
+        "tutorial",
+        "prologue",
+        "echo",
+      ]);
+      expect(chapters[0]?.endSeconds).toBe(duration);
+      expect(chapters[1]?.startSeconds).toBe(duration);
+      expect(chapters.at(-1)?.endSeconds).toBe(duration + 200);
+    }
   });
 });
