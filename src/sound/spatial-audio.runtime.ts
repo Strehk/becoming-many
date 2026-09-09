@@ -40,7 +40,7 @@ export interface SpatialAudio {
   readonly unload: () => Promise<void>;
 }
 
-const MAXIMUM_SPATIAL_SOURCES = 4;
+const MAXIMUM_SPATIAL_SOURCES = 5;
 // Retain the organ's measured listener-write budget; stationary poses write nothing.
 const LISTENER_WRITE_INTERVAL_FRAMES = 3;
 const LISTENER_RAMP_SECONDS = 1 / 30;

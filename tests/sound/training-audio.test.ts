@@ -50,6 +50,18 @@ test("training budgets reject invalid layers, room and grain scheduling before l
     { room: { ...parameters.room, decaySeconds: 100 } },
     { room: { ...parameters.room, farCutoffHz: Number.NaN } },
     { room: { ...parameters.room, speechGain: 2 } },
+    {
+      effects: {
+        wind: { url: "", volumeDb: -20 },
+        passage: { url: "/whoosh.wav", volumeDb: -12 },
+      },
+    },
+    {
+      effects: {
+        wind: { url: "/wind.wav", volumeDb: 1 },
+        passage: { url: "/whoosh.wav", volumeDb: -12 },
+      },
+    },
   ])
     expect(() =>
       validateTrainingAudioParameters({ ...parameters, ...invalid }),
@@ -373,4 +385,88 @@ test("production tutorial ships every German instruction with its original bytes
       source.sha256,
     );
   }
+});
+
+test("optional wind and passage effects reuse two players, duck, pause without replay and dispose", async () => {
+  const probe = Bun.spawn(
+    [
+      process.execPath,
+      "-e",
+      `
+    import {mock} from "bun:test";
+    import assert from "node:assert/strict";
+    const players=[], grains=[], gains=[], filters=[], placements=[], rooms=[];
+    let now=1, decodes=0;
+    const param=()=>({value:0,target:0,events:[],
+      cancelScheduledValues(time){this.events=this.events.filter(event=>event.time<time);},
+      setTargetAtTime(value,time){this.target=value;this.events.push({time});},
+      setValueAtTime(value,time){this.target=value;this.events.push({time});}});
+    const node=()=>({ends:0,gain:param(),connect(){},disconnect(){this.ends++;}});
+    class Player {
+      starts=0; stops=0; ends=0; offsets=[];
+      constructor(options){this.options=options;players.push(this);}
+      connect(){} start(time,offset){this.starts++;this.offsets.push(offset);} stop(){this.stops++;} dispose(){this.ends++;}
+    }
+    class GrainPlayer {
+      buffer={set(){}}; ends=0;
+      constructor(){grains.push(this);} connect(){} start(){} stop(){} dispose(){this.ends++;}
+    }
+    class Reverb {ready=Promise.resolve();ends=0;
+      constructor(){rooms.push(this);}connect(){}dispose(){this.ends++;}}
+    mock.module("tone",()=>({Player,GrainPlayer,Reverb,connect(){}}));
+    globalThis.fetch=async()=>new Response(new Uint8Array([1]));
+    const context={state:"running",destination:{},immediate:()=>now,now:()=>now+0.1,
+      decodeAudioData:async()=>({duration:++decodes%3===0?0.25:12,numberOfChannels:1,sampleRate:48000}),
+      createGain:()=>{const value=node();gains.push(value);return value;},
+      createBiquadFilter:()=>{const value={...node(),frequency:param(),Q:param()};filters.push(value);return value;}};
+    const spatial={context,createSource(){const source={ends:0,distance:3,position:[],
+      setPosition(x,y,z){this.position=[x,y,z];},readDistanceMeters(){return this.distance;},unload(){this.ends++;}};
+      placements.push(source);return source;}};
+    const {createTrainingAudio}=await import("./src/sound/training-audio.runtime.ts");
+    const parameters=${JSON.stringify(parameters)};
+    parameters.effects={wind:{url:"/wind.wav",volumeDb:-18},passage:{url:"/whoosh.wav",volumeDb:-12}};
+    const audio=await createTrainingAudio(parameters,spatial,new AbortController().signal);
+    assert.equal(decodes,3);assert.equal(players.length,2);assert.equal(placements.length,5);assert.equal(rooms.length,1);
+    const [wind,passage]=players;
+    assert.equal(wind.options.loop,true);assert.equal(passage.options.loop,false);
+    assert.equal(wind.options.context,context);assert.equal(passage.options.context,context);
+    const frame={goalIndex:0,attempt:0,phase:"arrival",formationProgress:0,arrowFormationProgress:0,
+      passageCount:0,passagePosition:{x:0,y:0,z:-10},goalPosition:{x:0,y:0,z:-20},
+      objects:{ringLeft:{x:-3,y:0,z:-20},ringRight:{x:3,y:0,z:-20},arrow:{x:5,y:0,z:-20}}};
+    const update=(playing=true,speech=false)=>{now+=0.1;audio.update(frame,playing,speech);};
+    update();assert.equal(wind.starts,0,"wind waits until the scene reveals a visible body");
+    frame.phase="turning";frame.arrowFormationProgress=0.4;
+    update();assert.equal(wind.starts,1);
+    update();assert.equal(wind.starts,1,"loop does not restart on steady frames");
+    frame.passageCount=1;update();
+    assert.equal(passage.starts,1);assert.deepEqual(placements[4].position,[0,0,-10]);
+    frame.passagePosition.z=-90;update();
+    assert.deepEqual(placements[4].position,[0,0,-10],"a playing passage remains at the copied world location");
+    update(true,true);assert.equal(gains[9].gain.target,0.3);assert.equal(gains[10].gain.target,0.3*0.7);
+    update(false);assert.equal(wind.stops,1);assert.equal(passage.stops,1);
+    assert.ok(gains.every(gain=>gain.gain.target===0),"pause immediately silences all outputs including the shared hall");
+    frame.passageCount=2;update(false);update();
+    assert.equal(wind.starts,2);assert.equal(passage.starts,1,"events while paused are consumed without replay");
+    assert.ok(wind.offsets[1]>0,"wind resumes at its retained loop position");
+    frame.phase="missed";frame.passageCount=3;update();assert.equal(passage.starts,1,"misses cannot trigger success effects");
+    frame.phase="flying";frame.formationProgress=1;
+    frame.passageCount=6;update();assert.equal(passage.starts,2,"multiple crossings in one frame coalesce into one effect");
+    frame.passageCount=7;update();assert.equal(passage.starts,3);assert.equal(passage.stops,2,"the one voice replaces its previous tail");
+    placements[4].distance=20;update();const nearSend=gains[11].gain.target;
+    placements[4].distance=200;update();assert.ok(gains[11].gain.target<nearSend);
+    frame.passageCount=0;update();assert.equal(passage.starts,3,"reset establishes a new event baseline");
+    for(let index=1;index<=200;index++){
+      frame.passageCount=index;placements[4].distance=3+index;update();
+      for(const gain of gains)assert.ok(gain.gain.events.length<=2,"automation histories stay bounded");
+    }
+    assert.equal(players.length,2);assert.equal(decodes,3);assert.equal(gains.length,12);assert.equal(placements.length,5);
+    frame.phase="complete";update();assert.equal(wind.stops,2);
+    audio.unload();audio.unload();update();
+    assert.ok([...players,...grains,...gains,...filters,...placements,...rooms].every(resource=>resource.ends===1));
+  `,
+    ],
+    { stdout: "pipe", stderr: "pipe" },
+  );
+  expect(await new Response(probe.stderr).text()).toBe("");
+  expect(await probe.exited).toBe(0);
 });

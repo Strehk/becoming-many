@@ -20,6 +20,7 @@ uniform float startPreviewRadii[3];
 uniform float startPreviewCrossingAges[3];
 uniform float startPreviewCount;
 uniform float startMaximumPointSize;
+uniform float startMaximumHazePointSize;
 uniform float startFormation;
 uniform float startDissolving;
 uniform vec2 startReleaseOrigin;

@@ -22,6 +22,8 @@ export interface StartParticleParameters {
   readonly ringThicknessRatio?: number;
   readonly hazeFraction?: number;
   readonly maximumPointSizePixels?: number;
+  /** Separate soft-puff cap; omitted recipes retain the fine-point cap. */
+  readonly maximumHazePointSizePixels?: number;
   readonly color: number;
   readonly arrowAccentColor?: number;
   readonly crossingAccentColor?: number;
@@ -171,6 +173,12 @@ export function createStartParticleEffect({
     startPreviewCrossingAges: { value: previewCrossingAges },
     startPreviewCount: { value: 0 },
     startMaximumPointSize: { value: parameters.maximumPointSizePixels ?? 24 },
+    startMaximumHazePointSize: {
+      value:
+        parameters.maximumHazePointSizePixels ??
+        parameters.maximumPointSizePixels ??
+        24,
+    },
     startFormation: { value: 0 },
     startDissolving: { value: 0 },
     startReleaseOrigin: { value: new Float32Array([1, 1]) },
@@ -225,7 +233,7 @@ export function createStartParticleEffect({
           )
           .replace(
             "#include <logdepthbuf_vertex>",
-            "gl_PointSize = min(gl_PointSize * startParticleSize, startMaximumPointSize);\nstartDistanceFade = smoothstep(0.5, 2.5, -mvPosition.z);\n#include <logdepthbuf_vertex>",
+            "gl_PointSize = min(gl_PointSize * startParticleSize, mix(startMaximumPointSize, startMaximumHazePointSize, startHaze));\nstartDistanceFade = smoothstep(0.5, 2.5, -mvPosition.z);\n#include <logdepthbuf_vertex>",
           );
         shader.fragmentShader = shader.fragmentShader
           .replace(
@@ -237,7 +245,7 @@ export function createStartParticleEffect({
             "#include <color_fragment>\napplyStartParticleAppearance(diffuseColor);",
           );
       };
-      material.customProgramCacheKey = () => "start-cloud-particles-v4";
+      material.customProgramCacheKey = () => "start-cloud-particles-v5";
       points = new Points(geometry, material);
       points.name = "StartTrainingParticles";
       points.visible = false;
@@ -583,6 +591,7 @@ function validateParameters(parameters: StartParticleParameters): void {
     ["arrowLengthMeters", 7.2, 16],
     ["ringThicknessRatio", 0.24, 0.6],
     ["maximumPointSizePixels", 24, 48],
+    ["maximumHazePointSizePixels", parameters.maximumPointSizePixels ?? 24, 48],
   ] as const) {
     const value = parameters[key] ?? defaultValue;
     if (!Number.isFinite(value) || value <= 0 || value > maximum)

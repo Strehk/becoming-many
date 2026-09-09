@@ -43,6 +43,13 @@ export const level: LevelPreset = {
     ],
   },
   startAudio: {
+    effects: {
+      wind: {
+        url: "/audio/tutorial/effects/wind-soft-loop.wav",
+        volumeDb: -18,
+      },
+      passage: { url: "/audio/tutorial/effects/whoosh-soft.wav", volumeDb: -8 },
+    },
     samples: [
       { id: "source-01", url: "/audio/granular/atmosphere-grain-01.wav" },
       { id: "source-03", url: "/audio/granular/atmosphere-grain-03.wav" },
@@ -126,6 +133,7 @@ export const level: LevelPreset = {
       ringThicknessRatio: 0.24,
       hazeFraction: 0.12,
       maximumPointSizePixels: 4,
+      maximumHazePointSizePixels: 8,
       cloudRadiusMeters: 5,
       cloudDepthMeters: 5,
       driftAmplitudeMeters: 0.18,

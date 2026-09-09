@@ -887,3 +887,14 @@ are retained in the [full evidence](evidence/issue-50/README.md#reachable-guidan
 The 33-point guidance table runs only while planning an unshown section; fixed
 slots and analytical shader motion retain bounded frame work. Physical PCVR,
 comfort and listening acceptance remain open.
+
+
+### Spatial scene and sample effects — 2026-09-09
+
+The richer haze subset retains 40k form/48k Air capacities and fixed attribute
+storage. Its conservative sprite-square bound is 873,520 samples/eye/draw; two
+optional mono sound buffers add 2,352,400 decoded bytes at 48 kHz. Current-condition
+headed-browser control/new GPU p95 is 0.340791/0.345625 ms, CPU p95 0.5/0.5 ms.
+No course-time GPU resource creation occurred. Median variability and the earlier
+control are retained in the [full comparison](evidence/issue-50/README.md#spatial-scene-composition-and-sampled-effects--2026-09-09).
+This local result does not establish physical Windows-PCVR 90 Hz or listening acceptance.

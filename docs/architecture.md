@@ -307,11 +307,19 @@ waits for the arrow to form before opening the helping tunnel. Run supplies
 main speeds on handoff; directional sensitivity is unchanged. The EN voice policy
 remains open. Run owns the shared Tone spatial context when audio is configured;
 Show retains its existing native timebase and narration owner. It drives the
-existing organ wind alone during practice, at the literal tutorial strength and
+existing organ wind layer during practice, at the literal tutorial strength and
 with speech attenuation; the prepared full organ resumes its normal score at
 handoff. Standalone training selects only the wind layer from the same organ
 implementation. Training audio owns course/attempt-based random sample and offset
 selection across its fixed decoded pool, never loading samples during a frame.
+The optional effects recipe adds two bounded mono buffers and two reused players:
+a quiet wind loop after cue formation and a spatial passage whoosh. Start publishes
+a monotonic passage count and borrowed last ring center; sound copies that center
+when playing. Preview and counted crossings share one passage voice; misses never
+trigger it. Five spatial source slots bound the four grain voices and this effect.
+Both sampled effects duck beneath narration and stop with their owner.
+Arrow longitudinal axes combine forward travel and lesson direction once at birth.
+Only the haze subset uses the eight-pixel cap; fine form points remain at four.
 
 `show.runtime.ts` also drives the drone organ in `src/sound/drone-organ/`
 through one per-frame contract: the show time sample, the strength of each

@@ -14,7 +14,16 @@ interface GrainRecipe {
   readonly offsetSeconds?: number;
 }
 
+interface EffectRecipe {
+  readonly url: string;
+  readonly volumeDb: number;
+}
+
 export interface TrainingAudioParameters {
+  readonly effects?: {
+    readonly wind: EffectRecipe;
+    readonly passage: EffectRecipe;
+  };
   readonly samples: readonly Readonly<{ id: string; url: string }>[];
   readonly layers: readonly [
     GrainRecipe & { readonly object: TrainingObject },
@@ -54,6 +63,9 @@ export interface TrainingAudioFrame {
   readonly formationProgress: number;
   readonly arrowFormationProgress?: number;
   readonly wake?: { readonly strength: number };
+  /** Monotonic actual crossings, including first passages through guide rings. */
+  readonly passageCount?: number;
+  readonly passagePosition?: Position;
 }
 
 export interface TrainingAudio {
@@ -75,6 +87,7 @@ const MAXIMUM_STARTS_PER_SECOND = 40;
 
 /**
  * Four fixed object voices share at most three short mono buffers and one hall.
+ * Optional wind and passage effects add two mono buffers and two pooled players.
  * Dry sound uses the shared spatial owner; diffuse sends apply the same inverse
  * distance attenuation before the hall. No new nodes or buffers are made per frame.
  */
@@ -86,17 +99,15 @@ export async function createTrainingAudio(
 ): Promise<TrainingAudio> {
   validateTrainingAudioParameters(parameters);
   const samples = new Map<string, AudioBuffer>();
-  for (const source of parameters.samples) {
+  async function loadSample(url: string): Promise<AudioBuffer> {
     signal.throwIfAborted();
-    const response = await fetch(source.url, { signal });
+    const response = await fetch(url, { signal });
     if (!response.ok)
       throw new Error(`Training sample failed: HTTP ${response.status}`);
     if (Number(response.headers.get("content-length")) > MAXIMUM_SAMPLE_BYTES)
       throw new Error("Training sample exceeds byte capacity");
     const bytes = await readSampleBytes(response);
     signal.throwIfAborted();
-    if (bytes.byteLength > MAXIMUM_SAMPLE_BYTES)
-      throw new Error("Training sample exceeds byte capacity");
     const sample = await audio.context.decodeAudioData(bytes);
     signal.throwIfAborted();
     if (
@@ -105,9 +116,19 @@ export async function createTrainingAudio(
       !inRange(sample.sampleRate, 8_000, MAXIMUM_SAMPLE_RATE)
     )
       throw new Error("Training sample must be bounded mono audio");
-    samples.set(source.id, sample);
+    return sample;
   }
-  const { GrainPlayer, Reverb, connect } = await import("tone");
+  for (const source of parameters.samples)
+    samples.set(source.id, await loadSample(source.url));
+  let effectSamples = parameters.effects
+    ? {
+        wind: await loadSample(parameters.effects.wind.url),
+        passage: await loadSample(parameters.effects.passage.url),
+      }
+    : undefined;
+  if (effectSamples && effectSamples.passage.duration > 2)
+    throw new Error("Training passage sample must not exceed two seconds");
+  const { GrainPlayer, Player, Reverb, connect } = await import("tone");
   signal.throwIfAborted();
   const releases: (() => void)[] = [];
   let isUnloaded = false;
@@ -124,6 +145,7 @@ export async function createTrainingAudio(
     }
     releases.length = 0;
     samples.clear();
+    effectSamples = undefined;
     if (errors.length)
       throw new AggregateError(errors, "Training audio cleanup failed");
   }
@@ -198,6 +220,151 @@ export async function createTrainingAudio(
         strength: -1,
       };
     });
+    // Optional effects reuse this owner's context, hall and cleanup stack.
+    const effects = createEffects();
+    function createEffects() {
+      if (!parameters.effects || !effectSamples) return undefined;
+      const windGain = audio.context.createGain();
+      releases.push(() => windGain.disconnect());
+      windGain.gain.value = 0;
+      connect(windGain, audio.context.destination);
+      const wind = new Player({
+        context: audio.context,
+        url: effectSamples.wind,
+        loop: true,
+        volume: parameters.effects.wind.volumeDb,
+        fadeIn: 0.12,
+        fadeOut: 0.04,
+      });
+      releases.push(() => wind.dispose());
+      wind.connect(windGain);
+      const direct = audio.context.createGain();
+      releases.push(() => direct.disconnect());
+      direct.gain.value = 0;
+      const send = audio.context.createGain();
+      releases.push(() => send.disconnect());
+      send.gain.value = 0;
+      connect(send, room);
+      const passage = new Player({
+        context: audio.context,
+        url: effectSamples.passage,
+        loop: false,
+        volume: parameters.effects.passage.volumeDb,
+        fadeIn: 0.005,
+        fadeOut: 0.015,
+      });
+      releases.push(() => passage.dispose());
+      passage.connect(direct);
+      passage.connect(send);
+      const placement = audio.createSource(direct as GainNode, parameters);
+      releases.push(() => placement.unload());
+      return {
+        wind,
+        windGain,
+        direct,
+        send,
+        passage,
+        placement,
+        duration: effectSamples.wind.duration,
+        windPlaying: false,
+        windStartedAt: 0,
+        windOffset: 0,
+        roomRevealed: false,
+        previousPassageCount: -1,
+        passagePlaying: false,
+        previousLevel: -1,
+        previousDistance: -1,
+      };
+    }
+    function updateEffects(
+      frame: TrainingAudioFrame,
+      audible: boolean,
+      speech: boolean,
+      now: number,
+      scheduled: number,
+    ): void {
+      if (!effects) return;
+      if (
+        audible &&
+        (frame.formationProgress > 0 || (frame.arrowFormationProgress ?? 0) > 0)
+      )
+        effects.roomRevealed = true;
+      const windPlaying = audible && effects.roomRevealed;
+      if (windPlaying !== effects.windPlaying) {
+        if (windPlaying) {
+          effects.wind.start(scheduled, effects.windOffset);
+          effects.windStartedAt = scheduled;
+        } else {
+          effects.wind.stop(scheduled);
+          effects.windOffset =
+            (effects.windOffset +
+              Math.max(0, scheduled - effects.windStartedAt)) %
+            effects.duration;
+        }
+        effects.windPlaying = windPlaying;
+      }
+      const count = frame.passageCount;
+      const newPassage =
+        count !== undefined &&
+        Number.isInteger(count) &&
+        count >= 0 &&
+        effects.previousPassageCount >= 0 &&
+        count > effects.previousPassageCount;
+      if (count !== undefined && Number.isInteger(count) && count >= 0)
+        effects.previousPassageCount = count;
+      if (!audible && effects.passagePlaying) {
+        effects.passage.stop(scheduled);
+        effects.passagePlaying = false;
+      }
+      if (
+        audible &&
+        newPassage &&
+        frame.passagePosition &&
+        frame.phase !== "missed"
+      ) {
+        const position = frame.passagePosition;
+        effects.placement.setPosition(position.x, position.y, position.z);
+        // A single pooled voice replaces its previous short tail at a new passage.
+        if (effects.passagePlaying) effects.passage.stop(scheduled);
+        effects.passage.start(scheduled);
+        effects.passagePlaying = true;
+      }
+      const level = audible ? (speech ? parameters.room.speechGain : 1) : 0;
+      const distance = effects.placement.readDistanceMeters();
+      if (
+        level === effects.previousLevel &&
+        Math.abs(distance - effects.previousDistance) <= 0.05
+      )
+        return;
+      holdAudioParameter(effects.windGain.gain, now);
+      holdAudioParameter(effects.direct.gain, now);
+      holdAudioParameter(effects.send.gain, now);
+      if (!audible) {
+        effects.windGain.gain.setValueAtTime(0, now);
+        effects.direct.gain.setValueAtTime(0, now);
+        effects.send.gain.setValueAtTime(0, now);
+      } else {
+        const reference = parameters.referenceDistanceMeters;
+        const attenuation =
+          reference /
+          (reference +
+            parameters.rolloffFactor *
+              (Math.max(reference, distance) - reference));
+        effects.windGain.gain.setTargetAtTime(level, now, LEVEL_RAMP_SECONDS);
+        effects.direct.gain.setTargetAtTime(
+          level * parameters.room.dryGain,
+          now,
+          LEVEL_RAMP_SECONDS,
+        );
+        effects.send.gain.setTargetAtTime(
+          parameters.room.sendGain * attenuation,
+          now,
+          LEVEL_RAMP_SECONDS,
+        );
+      }
+      effects.previousLevel = level;
+      effects.previousDistance = distance;
+    }
     let previousAudible = false;
     let previousSpeech = false;
     let previousGoalIndex = -1;
@@ -213,6 +380,7 @@ export async function createTrainingAudio(
         const speech = speechActive;
         const now = audio.context.immediate();
         const scheduled = audio.context.now();
+        updateEffects(frame, audible, speech, now, scheduled);
         const newCourse =
           frame.goalIndex !== previousGoalIndex ||
           frame.attempt !== previousAttempt;
@@ -388,7 +556,16 @@ function inRange(value: number, minimum: number, maximum: number): boolean {
 export function validateTrainingAudioParameters(
   parameters: TrainingAudioParameters,
 ): void {
-  const { samples, layers, goal, room } = parameters;
+  const { samples, layers, goal, room, effects } = parameters;
+  const validEffects =
+    !effects ||
+    [effects.wind, effects.passage].every(
+      (effect) =>
+        effect &&
+        typeof effect.url === "string" &&
+        effect.url.length > 0 &&
+        inRange(effect.volumeDb, -80, 0),
+    );
   const sampleIds = new Set(samples.map((sample) => sample.id));
   const recipes = [...layers, goal];
   const validRecipes = recipes.every(
@@ -412,6 +589,7 @@ export function validateTrainingAudioParameters(
       (layer) => !["ringLeft", "ringRight", "arrow"].includes(layer.object),
     ) ||
     !validRecipes ||
+    !validEffects ||
     recipes.reduce(
       (total, recipe) => total + recipe.playbackRate / recipe.grainSizeSeconds,
       0,

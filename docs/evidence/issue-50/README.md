@@ -975,3 +975,90 @@ Course assertions passed; the generic probe exits nonzero for reported native
 narration ERR_ABORTED cancellations during replacement/disposal. Those reports
 are preserved, not suppressed. This is requested feature growth, not a
 code-reduction claim.
+
+
+## Spatial scene composition and sampled effects — 2026-09-09
+
+The [seven-scene script](../../direction/tutorial-scene-script.md) pairs seven
+independent concept images with existing German clip-local markers and participant
+behavior. These images are aspirational compositions, not screenshots or budgets.
+The implementation preserves spoken gates, 60 seconds plus the full earned closing,
+manual handoff, separate arrow/ring lifetimes and existing motion ownership.
+Arrows capture a forward/lesson axis once at birth. A first browser candidate
+incorrectly used the head-projected arrow tip as the steering hint and missed Down;
+restoring the motion-relative hint fixed it without changing the test or locomotion.
+A regression checks that upward gaze cannot reverse the downward lesson.
+
+Actual production captures:
+
+![Spatial arrow before ring formation](scene-flow-arrow.png)
+![Independent ring formation while the arrow persists](scene-flow-formation.png)
+![Open particle tunnel during approach](scene-flow-tunnel.png)
+
+The captures show volumetric grains, separate birth regions and open apertures.
+They remain more point-like and less cloudy than the concept images; photographic
+cloud banks and cinematic light scattering are not claimed as implemented. Human
+visual/comprehension approval remains open. Orange/turquoise accents stay restrained.
+
+### Implementation and verification
+
+- Existing 40k form/48k Air capacities and two draws remain. The 4,865 haze points
+  may reach 8 pixels while 35,135 fine form points remain capped at 4. The maximum
+  form sprite-square proxy rises from 640,000 to 873,520 samples per eye/draw
+  (+36.49%); this deliberately conservative bound includes inactive slots and is
+  not a measured fragment count. Actual size attenuation and visibility reduce it.
+- Fixed attributes remain 2,528,000 bytes per CPU/GPU copy. No new render target,
+  instancing system, light, postprocess or frame-time attribute rewrite was added.
+- Two CC0 mono samples add 2,352,400 decoded float32 bytes at 48 kHz, two pooled
+  Tone players and one spatial source (five total). Asset preparation, source
+  links and licenses are in the [effects README](../../../public/audio/tutorial/effects/README.md).
+  Crossing events borrow the latest ring center; sound copies it only on passage.
+- Combined focused run: 52 tests passed. After the browser-discovered correction,
+  all 23 Start tests passed, including the added gaze regression. Final lint,
+  TypeScript/Vite production build and diff checks pass. Build retains the existing
+  large-chunk advisory. Audio tests exercise 200 events, pause, ducking and cleanup.
+- Corrected screenshot, measurement and native-audio browser runs all completed
+  four actual M5-controlled goals before timeout and retained the earned closing
+  before automatic main handoff. No runtime exception or shader error occurred.
+  Native-media cancellation requests on cue replacement/teardown remain recorded
+  as `ERR_ABORTED`; these make the diagnostic wrapper exit 1 despite passing
+  interaction assertions and are not silently removed from evidence.
+- Native-audio observation recorded 15 whoosh starts sharing one decoded buffer
+  across preview and counted crossings. The complete route need not hit every
+  preview. The quiet opening/room RMS observations and bounded sample decode counts
+  are preserved; listening quality and headset localization are not established.
+
+### Comparable local measurement
+
+Headed Chromium, 1920×1080, DPR 1, Apple M2 Max/ANGLE Metal, shared M5 course,
+show seconds 20–55. The previous commit was rebuilt read-only in `/tmp`; its
+asset digest exactly matches the earlier reference. No repository branch changed.
+[Compact measurements](scene-flow-measurements.json) retain candidate failure,
+source digests, cancellations and every comparison below.
+
+| Run | CPU median / p95 ms | GPU median / p95 ms | RAF p95 ms |
+| --- | --- | --- | --- |
+| Earlier `315d89e` measurement | 0.3 / 0.5 | 0.120583 / 0.306875 | 18.2 |
+| Current-condition `315d89e` control | 0.3 / 0.5 | 0.237750 / 0.340791 | 18.1 |
+| New composition/effects | 0.3 / 0.5 | 0.151791 / 0.345625 | 18.1 |
+| Separate new screenshot run | 0.3 / 0.5 | 0.132124 / 0.320124 | 18.1 |
+
+The contemporary control shows substantial median variability; these measurements
+support neither a GPU speedup nor a material frame-time regression. Current GPU
+p95 differs by 0.004834 ms from that control. Upload maximum remains 153,600 bytes
+for Air recycling; current upload p99 is 6,144 bytes versus zero in control because
+streaming crossings differ. No course-time buffer/texture/program creation or
+buffer allocation occurred. Physical Windows-PCVR USB-C 90 Hz, spatial listening
+and first-visitor comfort remain unverified; standalone PICO is a separate project.
+
+### Version-specific implementation research
+
+Context7 and installed Three.js 0.185.1/r185 sources informed the decision to keep
+one Points draw. [PointsMaterial](https://threejs.org/docs/pages/PointsMaterial.html)
+and [r185 point shaders](https://github.com/mrdoob/three.js/blob/r185/src/renderers/shaders/ShaderLib/points.glsl.js)
+retain hardware-dependent point-size limits; the separate haze cap changes no
+attribute layout. [InstancedMesh](https://threejs.org/docs/pages/InstancedMesh.html)
+would not reduce the existing single draw and would add quad vertices without
+removing transparent overdraw. [WebXRManager](https://threejs.org/docs/pages/WebXRManager.html)
+still owns per-eye rendering. Existing bounds and explicit resource disposal stay
+with the current effect owner; no renderer migration or standalone path was added.

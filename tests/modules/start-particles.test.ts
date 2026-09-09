@@ -575,3 +575,43 @@ test("preview orientation uses its transported up vector", () => {
   ).toBeLessThan(1e-12);
   effect.unload();
 });
+
+test("soft haze has a separate bounded size cap without extra geometry", () => {
+  for (const maximumHazePointSizePixels of [undefined, 8]) {
+    const scene = new Scene();
+    const effect = createStartParticleEffect({
+      scene,
+      parameters: {
+        ...PARAMETERS,
+        maximumPointSizePixels: 4,
+        maximumHazePointSizePixels,
+      },
+    });
+    effect.load();
+    const points = readPoints(scene);
+    const shader = compileMaterial(points.material);
+    expect(shader.uniforms.startMaximumPointSize?.value).toBe(4);
+    expect(shader.uniforms.startMaximumHazePointSize?.value).toBe(
+      maximumHazePointSizePixels ?? 4,
+    );
+    expect(shader.vertexShader).toContain(
+      "mix(startMaximumPointSize, startMaximumHazePointSize, startHaze)",
+    );
+    expect(points.geometry.getAttribute("position").count).toBe(
+      PARAMETERS.count,
+    );
+    expect(scene.children).toHaveLength(1);
+    effect.unload();
+  }
+  for (const maximumHazePointSizePixels of [0, -1, 49, Number.NaN]) {
+    expect(() =>
+      createStartParticleEffect({
+        scene: new Scene(),
+        parameters: {
+          ...PARAMETERS,
+          maximumHazePointSizePixels,
+        },
+      }),
+    ).toThrow("maximumHazePointSizePixels");
+  }
+});

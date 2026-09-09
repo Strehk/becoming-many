@@ -343,8 +343,16 @@ test("curved previews stay world-fixed and never count as learning targets", () 
   expect(start.readObservation().crossingCount).toBe(0);
   expect(start.readObservation().phase).toBe("flying");
   expect(frame?.previews?.[0]?.crossingAgeSeconds).toBe(0);
+  const previewPassages = start.readObservation().passageCount;
+  expect(previewPassages).toBeGreaterThan(0);
+  const borrowedPassagePosition = start.readObservation().passagePosition;
+  expect(borrowedPassagePosition).toEqual(preview.position);
   runtime.update(0.1);
   expect(frame?.previews?.[0]?.crossingAgeSeconds).toBeCloseTo(0.1);
+  moveTo(preview.position.clone().addScaledVector(preview.normal, 0.2));
+  moveTo(preview.position.clone().addScaledVector(preview.normal, -0.2));
+  expect(start.readObservation().passageCount).toBe(previewPassages);
+  expect(start.readObservation().passagePosition).toBe(borrowedPassagePosition);
   worldDirection.set(-1, 0, 0);
   runtime.update(0.1);
   expect(snapshotPreviews()).toEqual(previews);
@@ -353,13 +361,21 @@ test("curved previews stay world-fixed and never count as learning targets", () 
   moveTo(center.clone().add(new Vector3(0, 0, 2)));
   moveTo(center.clone().add(new Vector3(0, 0, -2)));
   expect(start.readObservation().crossingCount).toBe(1);
+  expect(start.readObservation().passagePosition).toBe(borrowedPassagePosition);
+  expect(start.readObservation().passagePosition).toEqual(center);
+  const completedPassages = start.readObservation().passageCount;
+  expect(completedPassages).toBeGreaterThan(previewPassages);
   runtime.update(PARAMETERS.dissolutionSeconds);
+  expect(start.readObservation().passageCount).toBe(completedPassages);
   const nextOrigin = worldPosition.clone();
   const nextCenter = formGoal();
   expect(
     nextCenter.clone().sub(nextOrigin).dot(worldDirection),
   ).toBeGreaterThan(0);
   expect(snapshotPreviews()).not.toEqual(previews);
+  start.reset();
+  expect(start.readObservation().passageCount).toBe(0);
+  expect(start.readObservation().passagePosition).toBe(borrowedPassagePosition);
   runtime.unload(start.module);
 });
 
@@ -401,11 +417,13 @@ test("a distant receding target recycles spatially while waiting alone never exp
   expect(start.readObservation().phase).toBe("flying");
   expect(start.readObservation().goalTarget).toEqual(center);
   expect(start.readObservation().missCount).toBe(0);
+  const passagesBeforeMiss = start.readObservation().passageCount;
   // This remains in front of the goal plane, but leaves its relevance volume.
   moveTo(center.clone().add(new Vector3(120, 0, 10)));
   expect(start.readObservation().phase).toBe("missed");
   expect(start.readObservation().missCount).toBe(1);
   expect(start.readObservation().crossingCount).toBe(0);
+  expect(start.readObservation().passageCount).toBe(passagesBeforeMiss);
   runtime.unload(start.module);
 });
 
@@ -853,4 +871,100 @@ test("arc-spaced rings transport orthogonal up vectors and the arrow outlives tu
   runtime.update(1.5);
   expect(frame.arrowPresence).toBe(0);
   runtime.unload(start.module);
+});
+
+test("each cue points forward into its lesson direction and preserves both arrow poses", () => {
+  for (const direction of ["right", "left", "up", "down"] as const) {
+    let frame: StartParticleFrame | undefined;
+    const practice = createPractice(
+      { ...PARAMETERS, directions: [direction, direction] },
+      () => 0.5,
+      captureParticles((next) => {
+        frame = next;
+      }),
+    );
+    practice.runtime.update(PARAMETERS.arrivalSeconds);
+    if (!frame?.arrowNormal || !frame.arrowUp)
+      throw new Error("Missing spatial cue");
+    const position = frame.arrowPosition.clone();
+    const normal = frame.arrowNormal.clone();
+    const up = frame.arrowUp.clone();
+    const heading = new Vector3().crossVectors(up, normal).normalize();
+    const lesson =
+      direction === "right"
+        ? new Vector3(1, 0, 0)
+        : direction === "left"
+          ? new Vector3(-1, 0, 0)
+          : direction === "up"
+            ? new Vector3(0, 1, 0)
+            : new Vector3(0, -1, 0);
+    expect(heading.dot(new Vector3(0, 0, -1))).toBeCloseTo(0.8);
+    expect(heading.dot(lesson)).toBeCloseTo(0.6);
+    expect(frame.arrowAngleRadians).toBe(0);
+    const hint = practice.start
+      .readObservation()
+      .goalTarget.clone()
+      .sub(practice.worldPosition);
+    expect(hint.dot(lesson)).toBeGreaterThan(0);
+    expect(hint.dot(new Vector3(0, 0, -1))).toBeGreaterThan(0);
+    practice.worldDirection.set(0.3, 0, -1).normalize();
+    practice.runtime.update(0.1);
+    expect(frame.arrowPosition).toEqual(position);
+    expect(frame.arrowNormal).toEqual(normal);
+    expect(frame.arrowUp).toEqual(up);
+    practice.worldDirection.set(0, 0, -1);
+    practice.beginTurn();
+    practice.runtime.update(PARAMETERS.formationSeconds);
+    expect(frame.arrowNormal).toEqual(normal);
+    const center = frame.goalPosition.clone();
+    const passageNormal = frame.goalNormal.clone();
+    practice.moveTo(center.clone().addScaledVector(passageNormal, 2));
+    practice.moveTo(center.clone().addScaledVector(passageNormal, -2));
+    expect(practice.start.readObservation().phase).toBe("crossed");
+    practice.runtime.update(PARAMETERS.dissolutionSeconds);
+    practice.runtime.update(PARAMETERS.arrivalSeconds);
+    expect(frame.retiringArrow?.presence).toBeGreaterThan(0);
+    expect(frame.retiringArrow?.position).toEqual(position);
+    expect(frame.retiringArrow?.normal).toEqual(normal);
+    expect(frame.retiringArrow?.up).toEqual(up);
+    expect(frame.retiringArrow?.angleRadians).toBe(0);
+    practice.runtime.unload(practice.start.module);
+  }
+});
+
+test("head-pitched arrow placement cannot reverse the flight-relative downward instruction", () => {
+  const hints: Vector3[] = [];
+  for (const pitch of [0, 0.6]) {
+    const rig = new Vector3(0, 20, 0);
+    const gaze = new Vector3(0, Math.sin(pitch), -Math.cos(pitch));
+    let frame: StartParticleFrame | undefined;
+    const start = createStartModule({
+      viewpoint: {
+        worldPosition: rig,
+        worldFlightPosition: rig,
+        worldFlightDirection: new Vector3(0, 0, -1),
+        worldDirection: gaze,
+        worldUp: new Vector3(0, 1, 0),
+        viewHalfAngleRadians: 0.7,
+        viewDistanceMeters: 100,
+      },
+      parameters: { ...PARAMETERS, directions: ["down"] },
+      particles: captureParticles((next) => {
+        frame = next;
+      }),
+    });
+    const runtime = new ModuleRuntime();
+    runtime.load(start.module);
+    runtime.activate(start.module);
+    runtime.update(0);
+    runtime.update(PARAMETERS.arrivalSeconds);
+    if (!frame) throw new Error("Missing downward cue");
+    const hint = start.readObservation().goalTarget.clone();
+    hints.push(hint);
+    expect(hint.y).toBeLessThan(rig.y);
+    expect(hint.z).toBeLessThan(rig.z);
+    if (pitch > 0) expect(frame.arrowPosition.y).toBeGreaterThan(rig.y);
+    runtime.unload(start.module);
+  }
+  expect(hints[1]).toEqual(hints[0]);
 });

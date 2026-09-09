@@ -1,0 +1,257 @@
+[
+  {
+    "label": "guidance-measured",
+    "buildDigest": "7e5c7d8f9ffa9c7e10ba92fcd06f8d1b85fb645ebac5b5ce9c26487f400c9d23",
+    "browser": "151.0.7922.34",
+    "failure": null,
+    "reportedRequestCancellations": [
+      "request: http://localhost:4180/audio/tutorial/de/introduction-right.wav: net::ERR_ABORTED",
+      "request: http://localhost:4180/audio/tutorial/de/complete.wav: net::ERR_ABORTED"
+    ],
+    "windowSeconds": [20, 55],
+    "metrics": {
+      "cpuMs": {
+        "median": 0.30000001192092896,
+        "p95": 0.5,
+        "p99": 0.6000000238418579,
+        "maximum": 1
+      },
+      "gpuMs": {
+        "median": 0.120583,
+        "p95": 0.306875,
+        "p99": 0.369583,
+        "maximum": 0.503166
+      },
+      "intervalMs": {
+        "median": 16.69999999999709,
+        "p95": 18.19999999999709,
+        "p99": 18.5,
+        "maximum": 18.700000000004366
+      },
+      "uploadBytes": {
+        "median": 0,
+        "p95": 0,
+        "p99": 0,
+        "maximum": 153600
+      }
+    },
+    "courseResourceCreations": 0,
+    "firstMainShowTime": 70.64014566666668
+  },
+  {
+    "label": "scene-flow-visual",
+    "buildDigest": "39b53879881fedf1eb588213e102e59f627125fc97a00c6b283f814f0d5ae9ae",
+    "browser": "151.0.7922.34",
+    "failure": "AssertionError [ERR_ASSERTION]: Success path must finish all goals before timeout",
+    "reportedRequestCancellations": [
+      "request: http://localhost:4180/audio/tutorial/de/introduction-right.wav: net::ERR_ABORTED",
+      "request: http://localhost:4180/audio/tutorial/de/complete.wav: net::ERR_ABORTED"
+    ],
+    "windowSeconds": [20, 55],
+    "metrics": {
+      "cpuMs": {
+        "median": 0.30000001192092896,
+        "p95": 0.5,
+        "p99": 0.699999988079071,
+        "maximum": 1.4000000059604645
+      },
+      "gpuMs": {
+        "median": 0.126291,
+        "p95": 0.306874,
+        "p99": 0.357208,
+        "maximum": 0.484416
+      },
+      "intervalMs": {
+        "median": 16.69999999999709,
+        "p95": 18.099999999998545,
+        "p99": 18.5,
+        "maximum": 33.400000000001455
+      },
+      "uploadBytes": {
+        "median": 0,
+        "p95": 0,
+        "p99": 0,
+        "maximum": 153600
+      }
+    },
+    "courseResourceCreations": 0,
+    "firstMainShowTime": null
+  },
+  {
+    "label": "scene-flow-final",
+    "buildDigest": "3f9cafc8dbcfd685026ad5b95b712d5e767603476720a63f2467745cc8fbb0c5",
+    "browser": "151.0.7922.34",
+    "failure": null,
+    "reportedRequestCancellations": [
+      "request: http://localhost:4180/audio/tutorial/de/introduction-right.wav: net::ERR_ABORTED",
+      "request: http://localhost:4180/audio/tutorial/de/complete.wav: net::ERR_ABORTED",
+      "request: http://localhost:4180/audio/narration/de/prologue.mp3: net::ERR_ABORTED"
+    ],
+    "windowSeconds": [20, 55],
+    "metrics": {
+      "cpuMs": {
+        "median": 0.30000001192092896,
+        "p95": 0.5,
+        "p99": 0.7000000178813934,
+        "maximum": 1.100000023841858
+      },
+      "gpuMs": {
+        "median": 0.132124,
+        "p95": 0.320124,
+        "p99": 0.406333,
+        "maximum": 0.52075
+      },
+      "intervalMs": {
+        "median": 16.69999999999709,
+        "p95": 18.099999999998545,
+        "p99": 18.5,
+        "maximum": 32.79999999999927
+      },
+      "uploadBytes": {
+        "median": 0,
+        "p95": 0,
+        "p99": 0,
+        "maximum": 153600
+      }
+    },
+    "courseResourceCreations": 0,
+    "firstMainShowTime": 70.45881233333334
+  },
+  {
+    "label": "scene-flow-measured",
+    "buildDigest": "3f9cafc8dbcfd685026ad5b95b712d5e767603476720a63f2467745cc8fbb0c5",
+    "browser": "151.0.7922.34",
+    "failure": null,
+    "reportedRequestCancellations": [
+      "request: http://localhost:4180/audio/tutorial/de/introduction-right.wav: net::ERR_ABORTED",
+      "request: http://localhost:4180/audio/tutorial/de/complete.wav: net::ERR_ABORTED"
+    ],
+    "windowSeconds": [20, 55],
+    "metrics": {
+      "cpuMs": {
+        "median": 0.30000001192092896,
+        "p95": 0.5,
+        "p99": 0.7999999821186066,
+        "maximum": 1.4000000059604645
+      },
+      "gpuMs": {
+        "median": 0.151791,
+        "p95": 0.345625,
+        "p99": 0.505916,
+        "maximum": 0.714333
+      },
+      "intervalMs": {
+        "median": 16.69999999999709,
+        "p95": 18.10000000000582,
+        "p99": 18.599999999998545,
+        "maximum": 18.700000000004366
+      },
+      "uploadBytes": {
+        "median": 0,
+        "p95": 0,
+        "p99": 6144,
+        "maximum": 153600
+      }
+    },
+    "courseResourceCreations": 0,
+    "firstMainShowTime": 70.85881233333335
+  },
+  {
+    "label": "scene-flow-control",
+    "buildDigest": "7e5c7d8f9ffa9c7e10ba92fcd06f8d1b85fb645ebac5b5ce9c26487f400c9d23",
+    "browser": "151.0.7922.34",
+    "failure": null,
+    "reportedRequestCancellations": [
+      "request: http://localhost:4181/audio/tutorial/de/introduction-right.wav: net::ERR_ABORTED",
+      "request: http://localhost:4181/audio/tutorial/de/complete.wav: net::ERR_ABORTED"
+    ],
+    "windowSeconds": [20, 55],
+    "metrics": {
+      "cpuMs": {
+        "median": 0.30000001192092896,
+        "p95": 0.5,
+        "p99": 0.5999999940395355,
+        "maximum": 1.199999988079071
+      },
+      "gpuMs": {
+        "median": 0.23775,
+        "p95": 0.340791,
+        "p99": 0.486041,
+        "maximum": 0.815708
+      },
+      "intervalMs": {
+        "median": 16.69999999999709,
+        "p95": 18.099999999998545,
+        "p99": 18.599999999998545,
+        "maximum": 18.700000000004366
+      },
+      "uploadBytes": {
+        "median": 0,
+        "p95": 0,
+        "p99": 0,
+        "maximum": 153600
+      }
+    },
+    "courseResourceCreations": 0,
+    "firstMainShowTime": 70.52814566666666
+  },
+  {
+    "label": "scene-flow-audio",
+    "buildDigest": "3f9cafc8dbcfd685026ad5b95b712d5e767603476720a63f2467745cc8fbb0c5",
+    "browser": "151.0.7922.34",
+    "failure": null,
+    "reportedRequestCancellations": [
+      "request: http://localhost:4180/audio/tutorial/de/introduction-right.wav: net::ERR_ABORTED",
+      "request: http://localhost:4180/audio/tutorial/de/complete.wav: net::ERR_ABORTED",
+      "request: http://localhost:4180/audio/narration/de/prologue.mp3: net::ERR_ABORTED"
+    ],
+    "windowSeconds": [20, 55],
+    "metrics": {
+      "cpuMs": {
+        "median": 0.30000001192092896,
+        "p95": 0.5,
+        "p99": 0.7000000178813934,
+        "maximum": 1.100000023841858
+      },
+      "gpuMs": {
+        "median": 0.119749,
+        "p95": 0.323,
+        "p99": 0.376291,
+        "maximum": 0.491
+      },
+      "intervalMs": {
+        "median": 16.69999999999709,
+        "p95": 18.19999999999709,
+        "p99": 18.599999999998545,
+        "maximum": 18.700000000004366
+      },
+      "uploadBytes": {
+        "median": 0,
+        "p95": 0,
+        "p99": 0,
+        "maximum": 153600
+      }
+    },
+    "courseResourceCreations": 0,
+    "firstMainShowTime": 70.01081233333333,
+    "audio": {
+      "decodeCallsIncludingInternal": 6,
+      "openingLevels": [
+        {
+          "time": 5,
+          "rms": 1.5594096725590665e-10
+        },
+        {
+          "time": 16,
+          "rms": 5.533329523711116e-5
+        },
+        {
+          "time": 18,
+          "rms": 0.00010363939979649303
+        }
+      ],
+      "passageStarts": 15,
+      "uniquePassageBuffers": 1
+    }
+  }
+]

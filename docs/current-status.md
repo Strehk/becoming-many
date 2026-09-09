@@ -249,6 +249,13 @@ The #80 animal-connection removal is implemented below. Small additions remain i
 
 ## Controls, Audio, and Station
 
+- Tutorial scene composition now uses fixed three-dimensional arrow axes and an
+  independent eight-pixel haze cap. The [seven-scene script](direction/tutorial-scene-script.md)
+  correlates installed speech, input and visual gates; its images are concepts.
+- Optional CC0 wind and spatial passage samples reuse training audio, its context
+  and hall. Two pooled players and five spatial slots bound the addition; misses
+  do not produce passage sounds. Human listening and PCVR acceptance remain open.
+
 - Desktop pointer-lock flight and WebXR flight use the same viewer rig.
 - M5 host lifetimes are isolated. Steering requires a configured matching ID,
   compatible firmware, calibration and fresh advancing samples. Rejection

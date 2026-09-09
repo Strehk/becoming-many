@@ -16,6 +16,9 @@ const TURN_COMPONENT = 0.12;
 const TURN_CONFIRM_SECONDS = 0.2;
 const ARROW_OUT_OF_VIEW_SECONDS = 2;
 const ARROW_FADE_SECONDS = 3;
+const ARROW_FORWARD_COMPONENT = 0.8;
+const ARROW_TURN_COMPONENT = 0.6;
+const CUE_TURN_OFFSET_RATIO = 0.5;
 const MINIMUM_TRAVEL_SQUARED = 0.000001;
 const MOTION_HISTORY_SECONDS = 0.25;
 const MAXIMUM_CURVATURE_PER_METER = 0.12;
@@ -67,6 +70,10 @@ export interface StartObservation {
   readonly formationProgress: number;
   readonly arrowFormationProgress: number;
   readonly crossingCount: number;
+  /** All first ring passages, including uncounted guidance previews. */
+  readonly passageCount: number;
+  /** Borrowed fixed world center of the most recent passed ring. */
+  readonly passagePosition: Readonly<Vector3>;
   readonly attempt: number;
   readonly missCount: number;
   /** Bounded observation-based horizon and heuristic spread, not collision guarantees. */
@@ -174,6 +181,7 @@ export function createStartModule(
   };
   const arrowPosition = new Vector3();
   const arrowNormal = new Vector3();
+  const arrowDirection = new Vector3();
   const arrowUp = new Vector3();
   const approachDirection = new Vector3();
   const turnDirection = new Vector3();
@@ -188,6 +196,7 @@ export function createStartModule(
   const targetPosition = new Vector3();
   const goalPosition = new Vector3();
   const goalNormal = new Vector3();
+  const passagePosition = new Vector3();
   const wakePosition = new Vector3();
   const wakeDirection = new Vector3();
   const wake = {
@@ -205,6 +214,8 @@ export function createStartModule(
     formationProgress: 0,
     arrowFormationProgress: 0,
     crossingCount: 0,
+    passageCount: 0,
+    passagePosition,
     attempt: 0,
     missCount: 0,
     predictionSeconds: 0,
@@ -298,6 +309,8 @@ export function createStartModule(
     observation.formationProgress = 0;
     observation.arrowFormationProgress = 0;
     observation.crossingCount = 0;
+    observation.passageCount = 0;
+    passagePosition.set(0, 0, 0);
     observation.attempt = 0;
     observation.missCount = 0;
     observation.predictionSeconds = 0;
@@ -609,8 +622,7 @@ export function createStartModule(
           : particleFrame.arrowFormation;
     }
     origin.copy(viewpoint.worldPosition);
-    arrowUp.copy(viewpoint.worldUp);
-    arrowNormal.copy(viewpoint.worldDirection).negate();
+
     approachDirection.copy(currentTravelDirection);
     const direction = observation.direction;
     const horizontal = direction === "right" || direction === "left";
@@ -653,20 +665,37 @@ export function createStartModule(
         .normalize();
       arrowPosition.copy(origin).addScaledVector(targetOffset, distance);
     }
-    // During the cue this is a steering hint, not an active passage target.
+    // The cue points into the upcoming turn in three dimensions. Its forward
+    // component keeps a visible side profile without becoming a flat sign.
+    arrowDirection
+      .copy(turnDirection)
+      .addScaledVector(predictedTangent, -turnDirection.dot(predictedTangent));
+    if (arrowDirection.lengthSq() < MINIMUM_TRAVEL_SQUARED)
+      arrowDirection.copy(turnDirection);
+    arrowDirection
+      .normalize()
+      .multiplyScalar(ARROW_TURN_COMPONENT)
+      .addScaledVector(predictedTangent, ARROW_FORWARD_COMPONENT)
+      .normalize();
+    arrowUp
+      .copy(viewpoint.worldUp)
+      .addScaledVector(arrowDirection, -viewpoint.worldUp.dot(arrowDirection));
+    if (arrowUp.lengthSq() < MINIMUM_TRAVEL_SQUARED)
+      arrowUp
+        .copy(WORLD_UP)
+        .addScaledVector(arrowDirection, -WORLD_UP.dot(arrowDirection));
+    if (arrowUp.lengthSq() < MINIMUM_TRAVEL_SQUARED)
+      arrowUp.set(1, 0, 0).addScaledVector(arrowDirection, -arrowDirection.x);
+    arrowUp.normalize();
+    arrowNormal.crossVectors(arrowDirection, arrowUp).normalize();
+    // The visual cue is discoverable in the head view, but its steering hint
+    // remains relative to flight. A raised gaze must not turn "down" into climb.
     targetPosition
       .copy(origin)
       .addScaledVector(approachDirection, distance)
-      .addScaledVector(turnDirection, distance * 0.5);
+      .addScaledVector(turnDirection, distance * CUE_TURN_OFFSET_RATIO);
     goalPosition.copy(targetPosition);
-    particleFrame.arrowAngleRadians =
-      direction === "right"
-        ? 0
-        : direction === "left"
-          ? Math.PI
-          : direction === "up"
-            ? Math.PI / 2
-            : -Math.PI / 2;
+    particleFrame.arrowAngleRadians = 0;
     particleFrame.arrowPresence = 1;
     particleFrame.arrowFormation = 0;
     particleFrame.ringPresence = 0;
@@ -765,8 +794,11 @@ export function createStartModule(
           preview.goalNormal,
           preview.ringRadiusMeters,
         )
-      )
+      ) {
         preview.crossingAgeSeconds = 0;
+        observation.passageCount += 1;
+        passagePosition.copy(preview.goalPosition);
+      }
     }
 
     if (observation.phase === "arrival") {
@@ -817,6 +849,8 @@ export function createStartModule(
       )
     ) {
       observation.crossingCount += 1;
+      observation.passageCount += 1;
+      passagePosition.copy(targetPosition);
       const before =
         (previousPosition.x - targetPosition.x) * goalNormal.x +
         (previousPosition.y - targetPosition.y) * goalNormal.y +
