@@ -16,7 +16,7 @@
 export interface DeploymentConfig {
   /** M5 controller address (hostname, host:port, or full origin). */
   readonly m5Host?: string;
-  /** DeviceId every M5 payload must carry; a stranger's frames warn, never steer. */
+  /** Optional deployment metadata; M5 host alone selects the controller. */
   readonly m5DeviceId?: string;
   /** Label telling a technician which station this is. */
   readonly stationName?: string;
