@@ -172,6 +172,7 @@ failure at one station must not stop the other.
 - Recovery procedure and acceptance results for repeated sessions.
 
 These are evidence tasks, not reasons to add a generic coordination service.
+
 ## Startup and streaming diagnostics (#116)
 
 Double-click `C:\becoming-many\scripts\find-problems.bat`. No Bash installation
@@ -196,10 +197,18 @@ branch deployment again; do not bypass the guard or force-reset local work.
 Diagnostic files can be copied and run separately before that update, using
 `-StationRoot C:\becoming-many` when launched outside the checkout.
 
-Official PICO 2.1 documentation lists PC 2.1.2 with HMD 2.1.1. Verify the selected
-SteamVR streaming mode and the headset's fixed PC association separately for
-each Ikaros. The native SDK can query real connection state but is not integrated
-by these scripts. The unresolved port collision and physical cold-boot/reconnect
+Official PICO 2.1 documentation lists PC 2.1.2 with HMD 2.1.1. Verify the active
+Windows OpenXR runtime, PICO streaming mode and fixed PC association separately
+for each Ikaros. The WebXR application does not select the native runtime;
+neither kiosk launcher forces one. `watchdog/steamvr.yaml` launches the installed
+`C:\Program Files (x86)\SteamVR\bin\win64\vrmonitor.exe` directly, but does not
+install or register SteamVR. This path was deliberately corrected in commit
+`d513b9c`; it differs from the usual Steam library path. The exact working runtime
+registration and PICO mode are still installation inventory work in #54.
+Do not infer a required PICO mode from the presence of a SteamVR Watchdog.
+
+The native SDK can query real connection state but is not integrated by these
+scripts. The unresolved port collision and physical cold-boot/reconnect
 acceptance are tracked in [#116](https://github.com/Strehk/becoming-many/issues/116).
 See [PICO documentation](https://business.picoxr.com/de/doc/43j3qcoq) and
 [PICO SDK](https://business.picoxr.com/jp/doc/BusinessStreamingv2SDK).

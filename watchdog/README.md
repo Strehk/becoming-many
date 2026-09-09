@@ -25,7 +25,7 @@ config file from this folder.
 | `docker.yaml` | `Docker Desktop.exe` | 2348 | Docker Desktop gone or crashed; runs the compose bring-up after each launch |
 | `station.yaml` | a `/health` poller | 2349 | a station that stopped answering, whatever the reason |
 | `steamvr.yaml` | `vrmonitor.exe` | 2346 | SteamVR gone or crashed |
-| `pico.yaml` | `PICOBusinessStreaming.exe` | 2347 | the streaming client gone or crashed |
+| `pico.yaml` | `Business Streaming.exe` | 2347 | the streaming client gone or crashed |
 | `kiosk.yaml` | `chrome.exe` | 2350 | a closed, crashed or killed kiosk window |
 
 After each kiosk launch, `kiosk.yaml` runs

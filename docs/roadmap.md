@@ -35,8 +35,12 @@ output remain to be checked. Windows deployment changes are preserved.
 
 [#116](https://github.com/Strehk/becoming-many/issues/116) tracks PICO port 49667
 conflicts, repeatable startup and physical two-station acceptance. A guarded
-startup and double-click diagnostic report are implemented; PID 3672 is still
-unidentified on the affected PC. No browser shell bridge is planned.
+startup and double-click diagnostic report are implemented. The office report
+identifies PID 3672 as the EventLog-hosting process listening on TCP 49667;
+the cause and remedy remain open. Switching PICO to SteamVR did not clear the
+bind error and added a SteamVR registry-detection warning. The working native
+runtime/PICO configuration still needs inventory under #54. No browser shell
+bridge is planned.
 
 ## Immediate tutorial corrections after independent review
 
