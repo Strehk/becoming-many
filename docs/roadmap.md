@@ -31,6 +31,13 @@ and extreme-pose gates; the configured host supplies input directly. Local
 compatibility and reconnect checks pass; the actual office M5 reply and physical Windows headset
 output remain to be checked. Windows deployment changes are preserved.
 
+## Windows startup follow-up
+
+[#116](https://github.com/Strehk/becoming-many/issues/116) tracks PICO port 49667
+conflicts, repeatable startup and physical two-station acceptance. A guarded
+startup and double-click diagnostic report are implemented; PID 3672 is still
+unidentified on the affected PC. No browser shell bridge is planned.
+
 ## Immediate tutorial corrections after independent review
 
 The 2026-09-09 independent browser review leaves #50 visually unaccepted. Prioritize

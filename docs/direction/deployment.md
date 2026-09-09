@@ -5,7 +5,7 @@
 The repository builds one station container containing the static browser
 pages and a Bun server. The server exposes `/health` and `/config`; the
 Conductor page hosts and controls the show in-process. Per-station values are
-provided through environment variables for M5 host, expected device id, station
+provided through environment variables for M5 host, optional device metadata, station
 name, and port. A Windows kiosk launcher is present.
 
 The current package can run as one independent station. It has not completed a
@@ -172,3 +172,34 @@ failure at one station must not stop the other.
 - Recovery procedure and acceptance results for repeated sessions.
 
 These are evidence tasks, not reasons to add a generic coordination service.
+## Startup and streaming diagnostics (#116)
+
+Double-click `C:\becoming-many\scripts\find-problems.bat`. No Bash installation
+or typed PowerShell command is needed. Photograph the summary or send
+`watchdog/logs/find-problems.txt`. It records TCP 49667 owners and their services,
+Watchdog UDP endpoints, port exclusions, process paths, startup entries/tasks,
+Git revision, Docker state and recent supervisor logs. PID numbers can change
+between runs. A dual-stack listener is counted once per owner. No automatic
+repair or process termination is performed.
+
+Repeated/concurrent startup is guarded by the existing launcher, with explicit
+messages for outside owners and port conflicts. The fixed installation path also
+supports the existing Startup symlink. A failed startup collects diagnostics.
+An existing externally started application is retained but not claimed as
+supervised. Check PICO's own connection status; process/port readiness is not
+headset readiness.
+
+The first update from the old startup wrapper changes a protected Watchdog file.
+The older `deploy-branch.bat` intentionally rejects such infrastructure changes.
+Perform an explicit clean fast-forward of `david_refactor` before running the
+branch deployment again; do not bypass the guard or force-reset local work.
+Diagnostic files can be copied and run separately before that update, using
+`-StationRoot C:\becoming-many` when launched outside the checkout.
+
+Official PICO 2.1 documentation lists PC 2.1.2 with HMD 2.1.1. Verify the selected
+SteamVR streaming mode and the headset's fixed PC association separately for
+each Ikaros. The native SDK can query real connection state but is not integrated
+by these scripts. The unresolved port collision and physical cold-boot/reconnect
+acceptance are tracked in [#116](https://github.com/Strehk/becoming-many/issues/116).
+See [PICO documentation](https://business.picoxr.com/de/doc/43j3qcoq) and
+[PICO SDK](https://business.picoxr.com/jp/doc/BusinessStreamingv2SDK).

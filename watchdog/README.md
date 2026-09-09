@@ -124,16 +124,27 @@ Then:
 4. Check that `shell:startup` contains the `start-station.bat` symbolic link, so
    signing in after a power-on brings the station up.
 
-`start-station.bat` starts Docker Desktop and PICO Business Streaming first,
-waits 30 seconds, starts SteamVR, waits another 15 seconds, then starts the
-kiosk. The station-health poller starts in the initial group because it is
-independent of the VR chain. These pauses only space out process startup; the
-individual application configs add no cold-start delay of their own.
-`docker-up.bat` delegates to `scripts/start-station-container.ps1`, which waits
-for the Docker engine and reads the local deployment selection. The kiosk waits for
-`/health` rather than assuming either is ready. The five windows stay in the
-taskbar and the logs land in
-`C:\becoming-many\watchdog\logs`.
+`start-station.bat` delegates to `scripts/start-station.ps1` using the fixed
+installation path, including when invoked through the documented Startup symlink.
+A file lock prevents concurrent launchers. Existing Watchdogs are identified by
+config path; unknown control-port owners stop startup with a diagnostic. Already
+running external applications are retained with an explicit unsupervised warning.
+No process is killed or port reserved. Docker and PICO start before SteamVR
+(30 seconds), then the kiosk (15 seconds). New Watchdogs have a bounded control-port
+readiness check. These checks do not establish headset connectivity.
+
+Remove an obsolete `C:\Watchdog` startup shortcut if the installation has migrated
+to the tracked checkout; retain exactly one station startup entry. The diagnostic
+script inventories both startup folders, relevant scheduled tasks and process
+command lines to identify competing owners before changing anything.
+
+On failure the BAT wrapper runs `scripts/find-problems.ps1 -NoOpen` and keeps the
+window open. The latest startup transcript is `watchdog/logs/startup.log`.
+Double-click `scripts/find-problems.bat` for a fresh photographable summary and
+Notepad report at `watchdog/logs/find-problems.txt`. This one-shot collector does
+not stop applications or modify network settings. Reports overwrite the prior
+report, remain ignored by Git and include partial failures rather than aborting
+at the first missing privilege or unavailable tool.
 
 ## Operating it
 
