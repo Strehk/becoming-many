@@ -269,8 +269,8 @@ closing voice and automatically hand off. Timeout or the always-available prepar
 UI transition skips that success speech. The same internal clock rebases for main
 playback; public seeks subtract the retained prefix and clamp at the main start. Pause holds training and flight; seeking/rate
 changes are blocked and language changes repeat the current instruction. Directional recordings finish before the next goal is presented, preserving the
-opening instruction. The fourth passage starts the successful closing immediately,
-even if the last directional cue is still playing; the closing retains its full
+opening instruction. The fourth passage waits for any current directional speech before starting
+the successful closing; the closing retains its full
 duration. Audio ending never completes a flight goal. Standalone
 Start keeps the same transport while omitting the main-experience handoff.
 The current literal recipe enables bounded object-bound granular audio from
@@ -386,3 +386,10 @@ Static GLTF definitions are loaded before World Runtime starts and passed into
 the modules that own their instanced or cloned resources. Asset provenance is
 recorded in adjacent `provenance.json` files; [docs/assets](assets/README.md)
 defines the shipping directory structure and naming rules.
+
+Tutorial transition requests remain with Show. They stop new learning, retain the
+current narration until native completion, and use Show time for a 1.5-second
+breathing interval. Narration's tutorial-only natural-end mode does not seek
+forward to correct clock drift or stop at an authored duration; ordinary score
+playback retains its existing synchronization. Missing or terminally failed clips
+do not block handoff. Run still owns the bounded four-second spatial audio drain.

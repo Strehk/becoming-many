@@ -1,0 +1,54 @@
+{
+  "buildDigest": "e0da2163d07f819d122d736d43e0803873e04375759520f3169290d60e659837",
+  "browser": "151.0.7922.34",
+  "failure": null,
+  "expectedMediaCancellations": [
+    "request: http://localhost:4180/audio/tutorial/de/introduction-right.wav: net::ERR_ABORTED",
+    "request: http://localhost:4180/audio/tutorial/de/complete.wav: net::ERR_ABORTED",
+    "request: http://localhost:4180/audio/narration/de/prologue.mp3: net::ERR_ABORTED"
+  ],
+  "nativeVoiceEnds": [
+    {
+      "src": "http://localhost:4180/audio/tutorial/de/introduction-right.wav",
+      "current": 20.725729,
+      "showTime": 20.832
+    },
+    {
+      "src": "http://localhost:4180/audio/tutorial/de/left.wav",
+      "current": 2.735417,
+      "showTime": 31.093333333333334
+    },
+    {
+      "src": "http://localhost:4180/audio/tutorial/de/up.wav",
+      "current": 4.334896,
+      "showTime": 42.91733333333333
+    },
+    {
+      "src": "http://localhost:4180/audio/tutorial/de/down.wav",
+      "current": 2.552583,
+      "showTime": 52.282666666666664
+    },
+    {
+      "src": "http://localhost:4180/audio/tutorial/de/complete.wav",
+      "current": 13.861479,
+      "showTime": 71.50933333333333
+    }
+  ],
+  "allObservedVoicePausesFollowNativeEnd": true,
+  "firstObservedMainSeconds": 73.49866666666667,
+  "sourceStopsAfterMain": [
+    {
+      "duration": 12,
+      "loop": true,
+      "now": 74.85333333333334,
+      "scheduled": 74.95333333333333,
+      "showTime": 74.50133333333333,
+      "inTutorial": false
+    }
+  ],
+  "hallDisconnect": {
+    "now": 77.38933333333334,
+    "showTime": 77.03466666666667,
+    "inTutorial": false
+  }
+}

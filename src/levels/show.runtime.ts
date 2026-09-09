@@ -125,6 +125,7 @@ export interface ShowWorldReach {
 
 /** Answer for a placement group nothing in this world produces. */
 const NO_ACTOR_CENTERS = new Float32Array(0);
+const TUTORIAL_BREATH_SECONDS = 1.5;
 
 /** The listener pose scratch a show writes each frame; the organ only reads. */
 type MutableListenerPose = {
@@ -189,6 +190,8 @@ export async function createShowRuntime(
   let instructionStartSeconds = 0;
   let tutorialGoalIndex = 0;
   let tutorialAttempt = 0;
+  let transitionRequested = false;
+  let breathStartSeconds: number | undefined;
   let preparationState: "loading" | "ready" | "failed" = "ready";
   function unload(): Promise<void> {
     clock?.pause();
@@ -365,7 +368,7 @@ export async function createShowRuntime(
         direction: observed.direction,
         crossingCount: observed.crossingCount,
         missCount: observed.missCount,
-        readyToContinue: !standalone,
+        readyToContinue: !standalone && !transitionRequested,
       };
     }
 
@@ -413,6 +416,8 @@ export async function createShowRuntime(
       clock.setTimeScale(1);
       clock.setDuration(undefined);
       tutorial = next;
+      transitionRequested = false;
+      breathStartSeconds = undefined;
       roomPresence = 0;
       tutorial.setRoomPresence?.(0);
       followOrgan({ ...clock.sample(), isPlaying: false });
@@ -432,9 +437,17 @@ export async function createShowRuntime(
     function continueToExperience(): void {
       if (!tutorial || preparationState !== "ready" || standalone || unloading)
         return;
+      if (transitionRequested) return;
+      transitionRequested = true;
+      tutorial.start.setGoalAdvanceAllowed(false);
+      tutorial.start.setFormationAllowed(false);
+      tutorial.start.setPlaying(false);
+      clock.play();
+    }
+    function finishTutorial(): void {
+      if (!tutorial) return;
       const completed = tutorial;
-      // A manual skip keeps only elapsed tutorial time; timeout keeps its planned end.
-      mainStartSeconds = Math.min(clock.sample().timeSeconds, mainStartSeconds);
+      mainStartSeconds = clock.sample().timeSeconds;
       tutorial = undefined;
       prepareNarration();
       completed.finish();
@@ -478,19 +491,19 @@ export async function createShowRuntime(
             showTime.timeSeconds >= tutorial.parameters.maximumPracticeSeconds
           ) {
             continueToExperience();
-            return;
           }
           const currentRecording = tutorial.recordings?.[language].find(
             (clip) => clip.cueId === instruction,
           );
           const instructionFinished =
-            showTime.timeSeconds - instructionStartSeconds >=
-            (currentRecording?.durationSeconds ?? 0);
+            narration?.readHasEnded(instruction) ?? true;
           const nextInstruction = succeeded ? "complete" : observed.direction;
           if (
-            nextInstruction !== instruction ||
-            observed.goalIndex !== tutorialGoalIndex ||
-            (observed.attempt !== tutorialAttempt && instructionFinished)
+            !transitionRequested &&
+            instructionFinished &&
+            (nextInstruction !== instruction ||
+              observed.goalIndex !== tutorialGoalIndex ||
+              observed.attempt !== tutorialAttempt)
           ) {
             const retry =
               nextInstruction === instruction &&
@@ -516,7 +529,6 @@ export async function createShowRuntime(
             showTime.timeSeconds >= mainStartSeconds
           ) {
             continueToExperience();
-            return;
           }
           const selectedRecording = tutorial.recordings?.[language].find(
             (clip) => clip.cueId === instruction,
@@ -528,7 +540,27 @@ export async function createShowRuntime(
             },
             isPlaying: showTime.isPlaying,
             timeScale: 1,
+            preserveNaturalEnd: true,
           });
+          if (transitionRequested) {
+            // Show owns the breathing interval; native completion only reports
+            // when the voice is safe to retire. Hold freezes both followers.
+            if (
+              showTime.isPlaying &&
+              (narration?.readHasEnded(instruction) ?? true)
+            ) {
+              breathStartSeconds ??= showTime.timeSeconds;
+              if (
+                showTime.timeSeconds - breathStartSeconds >=
+                TUTORIAL_BREATH_SECONDS
+              ) {
+                finishTutorial();
+                return;
+              }
+            }
+            followOrgan(showTime);
+            return;
+          }
           const requestedOffset =
             showTime.timeSeconds - instructionStartSeconds;
           const spokenOffset = selectedRecording
@@ -625,6 +657,8 @@ export async function createShowRuntime(
           clock.seekTo(0);
           clock.pause();
           if (tutorial) {
+            transitionRequested = false;
+            breathStartSeconds = undefined;
             mainStartSeconds = standalone
               ? 0
               : tutorial.parameters.maximumPracticeSeconds;
@@ -644,7 +678,7 @@ export async function createShowRuntime(
         readActiveLevel: () => activeLevel ?? openingLevel,
         readAudioState: timebase.readState,
         setLanguage: (next): void => {
-          if (unloading || next === language) return;
+          if (unloading || next === language || transitionRequested) return;
 
           language = next;
           if (preparationState === "failed") return;

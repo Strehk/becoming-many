@@ -1162,3 +1162,39 @@ not playback failures. Headset readability and spatial listening remain physical
 acceptance; temporary DE speech on the EN selection is not an English translation.
 
 ![Broad upward arrow face during the actual approach](readable-up-arrow.png)
+
+
+## Natural voice ending and breathing space — 2026-09-09
+
+The previous handoff replaced narration at its authored duration, which could
+precede the native media ending. Tutorial narration now runs to native completion
+without forward drift correction; ordinary main-score synchronization is unchanged.
+Timeout/manual transition closes learning, finishes the current instruction, then
+leaves 1.5 playing seconds before main. Earned closing receives the same breathing
+space. Pause freezes that interval; reset cancels a pending transition. Missing or
+terminally failed playback does not trap the transition. This supersedes the old
+exact 60-second timeout handoff and approximate 74-second total, while retaining
+the 60-second learning budget. The actual timeline records the complete span.
+
+Seven focused narration/audio tests and five Show-composition tests pass, including
+delayed native ending, pause, repeated cues, manual transition, timeout and reset.
+Lint and TypeScript/Vite build pass. The existing browser assertions were updated
+to require the newly requested breathing interval instead of the superseded exact
+handoff timestamp. In the real M5-driven full course all five native speech clips
+reach their ends; closing reaches 13.861479 seconds and its native end occurs at
+show time 71.5093. Main is first observed at 73.4987. Every observed cleanup pause
+of a played tutorial clip follows its native ending. Wind stops after handoff and
+the existing hall disconnects at about 77.0347. See the compact
+[native event evidence](natural-handoff.json). Expected media request cancellations
+at teardown are retained separately. No particle/resource capacities change.
+Physical listening for end transients and Windows-PCVR acceptance remain open.
+
+A separate real-browser manual request at approximately two seconds retains the
+20.725729-second introduction. Its native end is observed at show time 21.0293;
+main starts at 22.5547, leaving 1.5253 seconds. The transition never removes the
+playing clip.
+
+The final guard also prevents an unusually early fourth crossing from replacing
+unfinished directional speech with the closing. The focused Show test exercises
+that case; the recorded native browser course already ended every directional
+clip before its next cue. The handoff path and audio release are unchanged.

@@ -26,8 +26,8 @@ organ voice. Ring voices choose new predecoded samples and offsets per course
 or retry, retaining the selection through Pause.
 The latest user timing revision adds a visible Tutorial chapter to Rehearsal and
 Conductor. Show allows 60 playing seconds of integrated practice; four timely
-passages keep the complete successful closing voice (up to about 74 seconds),
-then transition automatically. Timeout and the prepared Begin experience command
+passages keep the complete successful closing voice, then 1.5 playing seconds
+of breathing space before automatic transition. Timeout and the prepared Begin experience command
 enter main playback without unearned success speech. The timeline retains actual
 tutorial duration; main score timings remain relative and unchanged. Pause holds
 the budget, and reset restores a fresh minute. Standalone Start stays a separate
@@ -213,10 +213,11 @@ The #80 animal-connection removal is implemented below. Small additions remain i
   shared steering and main-level particle defaults remain unchanged.
 - Show owns the 60-playing-second integrated practice budget and public Tutorial
   timeline chapter. Four passages before the cutoff start the full closing voice
-  immediately, followed by automatic main playback (up to about 74 seconds).
+  after any current instruction, followed by 1.5 playing seconds of breathing
+  space and automatic main playback.
   Timeout or Begin experience skips the success speech. Directional cues finish
-  before the next goal; the final crossing can interrupt the last directional
-  cue to start the closing. Pause holds time/flight; practice language changes
+  before the next goal; the final crossing waits for the last directional
+  cue before starting the closing. Pause holds time/flight; practice language changes
   repeat the instruction without resetting the budget. Main cue times remain
   relative internally; the public timeline retains the actual tutorial prefix.
   Run retires only training resources, keeping the main world prepared. Reset
@@ -331,3 +332,11 @@ for measurement interpretation and [issue evidence](evidence/README.md) for date
 verification. The [roadmap](roadmap.md) alone records current readiness, review
 accounting, decisions and the next issue. README-only extension boundaries remain
 reserved and do not claim implemented functionality.
+
+The tutorial handoff now waits for the current native narration to end, then
+leaves 1.5 playing seconds before the main piece. The 60-second limit ends
+learning, not speech; a current instruction may finish after timeout or a manual
+transition request. The actual timeline includes that tail and breathing space.
+Earned closing remains complete, so total practice can exceed the earlier
+approximate 74-second estimate by the breathing interval or native playback delay.
+The existing four-second sound drain continues into main playback.
