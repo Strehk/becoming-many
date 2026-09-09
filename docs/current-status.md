@@ -29,6 +29,17 @@ projection; XR keeps the headset projection. The optional audio follower also
 stops silent grains while a dissolved goal waits for speech.
 
 
+The final review of forward recycling and installed German voice identified
+#93's unchanged native narration writes. The existing player now performs zero
+repeated time/rate writes in ten-second Hold checks and retains one pending or
+rejected play attempt until new intent. Eleven focused tests, build, lint and a
+complete narrated root course plus exact main scrub/language/resume checks pass.
+Raw media-preload cancellations remain recorded, with no causal attribution or
+claim of every native clip reaching `ended`. The
+[final review evidence](evidence/issue-50/README.md#final-independent-review-and-narration-hold-correction--2026-09-09)
+records the independent result and source identity; physical acceptance and EN
+voice policy stay open.
+
 The subsequent independent performance review found missing GPU preparation
 when Stop recreated training. World/Run now await repeatable offscreen preparation,
 including silent training and cancellation; main narration also preloads during

@@ -651,3 +651,65 @@ Root report: `benchmark-results/issue-50/recycling-final-root-timing/probe.json`
 Conductor report: `benchmark-results/issue-50/recycling-final-conductor/probe.json`.
 Raw diagnostics retain media preload cancellations; the [functional evidence](evidence/issue-50/README.md#forward-recycling-and-original-voice--2026-09-09)
 separates those from successful real media playback. No benchmark reference changed.
+
+
+## Narration Hold and independent review — 2026-09-09
+
+The final independent tutorial review confirmed the bounded rendering/audio pools
+above and found #93's unchanged native narration work directly affects the newly
+spoken tutorial. The correction stays at the media owner: changed rate and exact
+held seek only, one pending/rejected play attempt, no second clock or scheduler.
+The unused forwarding matcher/type and seek/drift helper paths are removed. A
+focused review of the final diff found no additional regression.
+
+Matched headed Chromium 151 / M2 Max / 1280×720 DPR1 runs serve both production
+builds through Vite preview, with identical native-operation and RAF instrumentation.
+Each phase has 600 distinct RAF timestamps over ten seconds. Two application
+callbacks share each timestamp; CPU below is their summed duration, not GPU time.
+
+| Hold phase | Time writes, before → after | Rate writes, before → after | CPU median/p95/p99/max, before → after (ms) |
+| --- | --- | --- | --- |
+| Before first Play | 600 → 0 | 600 → 0 | 0.3/0.5/0.6/0.8 → 0.3/0.5/0.7/1.0 |
+| Settled Pause | 600 → 0 | 600 → 0 | 0.2/0.4/0.5/0.7 → 0.2/0.4/0.4/0.6 |
+
+Settled Pause also removes 600 native `seeking` and 600 `seeked` events. Distinct
+RAF median remains 16.7 ms and maxima are 18.6–18.7 ms. CPU p95 is unchanged;
+there is no measured FPS improvement or new PCVR claim. Source is `4480d55`
+versus its narration-player-only correction. Served asset digests are
+`c8c4a8609d7912aeffc24b616154078516a6eef8caac582668993e0389f52e15`
+and `e4d58d7020ddc2b9124797f9591c6777fde9fcc8baceab03fc69a50e4852d9d3`.
+Local reports: `benchmark-results/issue-50/narration-hold-comparable-before/probe.json`
+and `narration-hold-comparable-after/probe.json`. Earlier operation-only probes
+support the same counts but are not the source of this callback comparison.
+
+A first rejected `play()` was explicitly injected at the browser media boundary:
+one attempt over two seconds, then actual Pause/Play controls successfully start
+the native recording. The first browser-policy fixture unexpectedly permitted
+playback; it is not evidence of rejection. Pending/rejected attempts, delayed
+metadata and stale unload/pause cancellation are also covered by a focused unit
+test. MDN documents the [asynchronous play result](https://developer.mozilla.org/en-US/docs/Web/API/HTMLMediaElement/play)
+and [rounded currentTime getters](https://developer.mozilla.org/en-US/docs/Web/API/HTMLMediaElement/currentTime)
+that motivate this limited operation state.
+
+Media preload `ERR_ABORTED` requests persist with zero unchanged Hold writes.
+Station answers a tested byte Range with 206 and the correct 64-byte interval;
+no missing-asset or server Range defect was found. The precise cancellation cause
+remains unresolved. The raw request errors are retained, not globally filtered.
+The review distinguishes observed `playing` and near-authored-duration progress
+from native `ended` proof. Attribute capacity is still 1,504,000 bytes per CPU/GPU
+copy; that excludes JS, decoder and driver memory. No total-memory plateau or
+physical speech/installation acceptance is claimed.
+
+
+The final 1920×1080 root integration run completes a miss/recycle, four actual
+passages, speech and handoff, followed by precise held scrub/cue/EN-DE/resume
+checks through public Show controls. Over 6,407 course frames, CPU median/p95/p99/max
+is 0.3/0.4/0.5/4.9 ms and GPU is 0.116/0.278/0.320/0.783 ms; RAF median/p95/max
+is 16.7/18.2/18.7 ms. No course-time buffers/programs are created; attribute upload
+p99 is zero and max 37,280 bytes. Route, viewport and instrumentation match the
+preceding root course, but random geometry/timing still preclude an isolated GPU
+optimization claim. The matched Hold comparison above measures the actual changed
+native workload. Final report:
+`benchmark-results/issue-50/narration-final-integration/probe.json`.
+Its three raw media cancellation errors remain visible; functional assertions,
+console, HTTP and shader checks have no failure.

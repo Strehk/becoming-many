@@ -217,8 +217,12 @@ The [browser audit](performance-audit-2026-09-08.md) records the measured source
 results and limitations. Its findings are filed in the existing issue workflow
 under the [performance label](https://github.com/Strehk/becoming-many/issues?q=is%3Aissue%20is%3Aopen%20label%3Aperformance),
 with the handoff in [#76](https://github.com/Strehk/becoming-many/issues/76).
-Start with #93 narration state writes, #94 Hi-Hat graph work, #95 Grass step cost
-and #96 duplicate population publication; #16 owns preparation readiness.
+#93 is implemented and locally verified as a direct dependency of the spoken
+#50 tutorial: zero repeated native Hold writes, bounded play attempts and exact
+scrub/language/resume behavior. The [final tutorial review](evidence/issue-50/README.md#final-independent-review-and-narration-hold-correction--2026-09-09)
+records its evidence and limits. Remaining work starts with #94 Hi-Hat graph work,
+#95 Grass step cost and #96 duplicate population publication; #16 owns preparation
+readiness.
 Live issues own acceptance. Preserve KISS/YAGNI, existing owners and removal of
 replaced paths; hypotheses require measurement before implementation. No new
 reference, product or physical acceptance follows from the desktop results.

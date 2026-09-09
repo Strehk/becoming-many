@@ -38,7 +38,7 @@ handoff. A regression test covers the intermediate frames that the former test
 skipped. German voice works through the existing narration player; EN policy is
 still pending. Main narration and language behavior are unchanged.
 
-Final served-assets digest:
+Served-assets digest for the forward-recycling verification:
 `c8c4a8609d7912aeffc24b616154078516a6eef8caac582668993e0389f52e15`.
 [Performance](../../performance.md#forward-recycling-and-spoken-tutorial--2026-09-09)
 records the comparable desktop measurements and their limits.
@@ -63,11 +63,15 @@ Headed Chromium 151 / Apple M2 Max checks exercise real shared M5 input:
   corrected check waits for the media's actual paused state before measuring.
 
 The strict diagnostic reports retain Chromium `net::ERR_ABORTED` media-range
-requests (intro/completion preloads during source replacement/retirement).
-They therefore have nonzero raw request-error counts; no global error filter or
-repository assertion was weakened. These clips subsequently play at readyState 4
-and advance through their measured duration. This is distinct from missing files,
-blocked playback or a claim of physical audibility. Local reports:
+requests, including startup preloads. They therefore have nonzero raw request-error
+counts; no global error filter or repository assertion was weakened. All five
+clips emit `playing` and advance close to their authored duration; the logs do
+not prove native `ended` for every clip. Completion can start at readyState 3 and
+subsequently reach 4. For example, one intro stops at 20.667 s of 20.726 s and
+completion at 13.807 s of 13.861 s as the Show-selected interval ends. This proves
+playback, not exact native-end delivery or physical audibility. Cancellations
+persist before and after the Hold correction below; their precise cause is
+unresolved and cannot be attributed to repeated seeks or source retirement. Local reports:
 `benchmark-results/issue-50/recycling-final-conductor/probe.json` and
 `recycling-final-standalone-settled/result.json`. The earlier failed completion
 run is retained locally as `recycling-voice-de/probe.json`.
@@ -79,6 +83,57 @@ The generated bodies retain fine points, soft dense edges and a white compositio
 the reference images remain inspiration, not a photographic rendering target.
 Human speech intelligibility, localization, first-visitor comprehension and
 Windows-PCVR USB-C 90 Hz remain physical acceptance.
+
+## Final independent review and narration Hold correction — 2026-09-09
+
+A separate read-only review of `4480d55` checked ownership, particle/audio pools,
+frame work and the raw performance evidence. It confirmed the fixed capacities and
+found no additional particle or granular-audio resource defect. It identified the
+existing #93 narration bug as a direct tutorial dependency: every unchanged Hold
+frame wrote native time and rate, and rejected play requests could repeat every
+frame. The review also corrected the overly strong media-duration and cancellation
+claims above. A focused second review of the final correction found no further
+regression.
+
+The existing narration player now applies changed native rate/held-seek intent
+only and retains at most one pending/rejected play attempt per clip. Pause, cue
+replacement and unload invalidate that attempt; Pause → Play retries a rejected
+start. This is native operation state, not another playback clock. The sole-use
+matching interface and forwarding/seek/drift helpers are removed. Show still owns
+all transport and cue decisions. Native metadata gates seeking; a held target is
+recorded only after it can actually be applied, preserving precise scrub values
+when native getters round. There is no new listener, timer or input owner.
+
+The matched 10 s Hold comparison records 600 → 0 unchanged time writes and
+600 → 0 unchanged rate writes, both before first playback and after Pause.
+Summed callback CPU p95 remains 0.5 ms initially and 0.4 ms after Pause; this is
+an operation-count improvement, not an FPS claim. See the
+[measurement and source identities](../../performance.md#narration-hold-and-independent-review--2026-09-09).
+An explicitly injected first `NotAllowedError` produces one attempted play over
+two seconds, followed by successful native playback after actual Pause/Play
+controls. An earlier attempt to force browser autoplay policy instead allowed
+playback; that diagnostic could not establish the blocked case. The final check
+therefore identifies its injected failure rather than claiming a real policy block.
+
+The final Station-served root course (`e4d58d70…`) completes one deliberate
+miss, four passages, all five tutorial play requests and operator handoff.
+Subsequent public Show controls seek a held German prologue to exactly
+3.1234567890000005 s (native getter 3.123456 s), resume at rate 0.75, change to
+Scent, switch to English while held, apply 2.234567889999994 s and resume there.
+The requested values equal Show time minus the selected cue start; getter
+rounding does not cause repeated writes. There are no functional assertion,
+console, HTTP or shader failures and no warnings. The strict probe exits nonzero
+because it retains three media `ERR_ABORTED` requests; it is not an all-green
+request-error run. Local report:
+`benchmark-results/issue-50/narration-final-integration/probe.json`.
+
+Eleven focused narration/training-audio/organ tests, build/typecheck, mandatory
+lint (336 files) and `git diff --check` pass.
+These include delayed metadata, rounded native getters, exact stopped targets,
+rejected/pending play, stale cancellation, cue replacement and unload. Existing
+visual/course evidence above applies to unchanged geometry and flow. Physical
+listening and Windows-PCVR USB-C 90 Hz, full decoder/driver memory plateau, and
+the English tutorial voice decision remain open.
 
 ## Cloud revision — 2026-09-09
 

@@ -65,6 +65,12 @@ cue/URL elements and releases tutorial-exclusive clips at handoff. Standalone
 Start prepares only its own recordings. Show supplies the selected cue and offset, including pause
 and language-repeat behavior. Reaching a recording's end leaves silence while
 a spatial goal remains; audio completion never completes a learning task.
+Unchanged Hold frames write neither native time nor rate. The player remembers
+only the last applied held seek and one pending/rejected native play attempt;
+Show remains the sole clock. A rejected start waits for Pause → Play or a new
+cue intent, rather than allocating another promise per frame. Pause, cue changes
+and unload invalidate stale requests; metadata arrival still applies the exact
+current scrub target.
 
 `drone-organ/` remains the distinct generative musical system. It borrows the
 shared Tone context, follows Show's score and places its two existing equal-power
