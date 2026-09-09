@@ -5,6 +5,7 @@ human decisions live only in the [roadmap](../roadmap.md).
 
 | Packet | Scope |
 | --- | --- |
+| [2026-09-09 session handoff](2026-09-09-session-handoff.md) | Phone-feedback closeout: commit map, corrected assumptions, reported front-USB recovery and next desktop review |
 | [#50 required flight tutorial](issue-50/README.md) | Spatial course, independent performance review, reset preparation and screenshots; open content/physical acceptance |
 | [2026-09-08 performance audit](../performance-audit-2026-09-08.md) | Frozen-build full show, ten-level CPU/GPU diagnostics, source attribution and [measurement summary](performance-audit-2026-09-08/summary.json) |
 | [UI consolidation](ui-consolidation/README.md) | Declarative surfaces, shared gestures, Entry/World ownership; production/dev browser acceptance and screenshots |

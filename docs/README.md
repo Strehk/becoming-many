@@ -45,6 +45,8 @@ planned, or open. Open decisions remain in
 
 ## Evidence and References
 
+- [Session handoff — 2026-09-09](evidence/2026-09-09-session-handoff.md) — grouped changes, corrected phone-feedback assumptions and review entry points; the roadmap owns next work.
+
 - [Refactor Evidence](evidence/README.md) — dated results and shared run metadata,
   with individual measurements retained under their originating issue.
 

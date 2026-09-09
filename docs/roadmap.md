@@ -11,9 +11,9 @@ Live issues own acceptance. Do not create a second implementation plan.
 | Field | Current state |
 | --- | --- |
 | Branch | `david_refactor` only. Commit/push completed, tested blocks to `origin/david_refactor` and verify success; no main, force-push or additional branches. |
-| Current request | Complete #50 and its actual #109–#113 prerequisites: spatial tutorial, existing Show/Run integration, bounded particle/sound presentation, combined verification and targeted commit/push. Preserve explicit audio-content and physical acceptance. |
-| Source checkpoint | `1adc872` preserves the clean source before the spatial tutorial. Earlier UI/M5 and audio-wake evidence retains its own source identities. |
-| Next implementation | The 2026-09-09 spatial review supersedes isolated ring presentation: reuse the main-world volume chunks for a dense near field, large volumetric particle arrows and continuous curved particle tunnels. The visual revision, forward course recycling, German voice and timed timeline integration are implemented and locally checked. The latest approved practice budget is 60 playing seconds, with a full earned closing up to about 74 seconds and automatic handoff; The subsequent gaze/voice feedback replaces preplanned targets with per-cue eye-aligned generation and 2 m/s tutorial translation. The subsequent arrow-first revision gates tunnel generation on actual turning, with local per-ring spring/drag feedback. Spoken-line staging now delays the room and arrows to their actual audio phrases and requires a readable arrow before the ring assistance; remaining acceptance is recorded below. The user accepted the higher particle density and its measured local GPU cost on 2026-09-09. Quiet shared tutorial wind and per-course granular sample/offset variation are implemented. Rig-motion prediction, reachable lesson guidance, arc-spaced rings and independently persistent arrows now replace the earlier coupled presentation. The ambient field is denser and motion calmer; existing Show/Run integration and granular audio remain the starting point; German tutorial narration and forward recycling are implemented in the subsequent correction; The seven-scene audio/visual script and optional CC0 passage/wind effects are implemented. The latest correction aligns the first opening with the fixed arrow axis and retains a quiet bounded audio tail into main. EN temporarily uses the approved German recordings; replacement English content and physical acceptance remain open. |
+| Current request | Documentation and handoff only. User reports installation running via front USB; do not use rear USB-C next to Ethernet. Tutorial remains physically unusable for following arrows; no new runtime changes in this closeout. |
+| Source checkpoint | `226038d` is the latest implementation checkpoint. Read the [session handoff](evidence/2026-09-09-session-handoff.md) for grouped commits, corrected assumptions and verification limits; `1adc872` remains the historical pre-tutorial source. |
+| Next implementation | First review the session changes at their existing owners (#76), then address [#117](https://github.com/Strehk/becoming-many/issues/117) under #50: reachable arrow lead, full silhouette and flight-direction perception. A curve indicator is a design candidate, not an approved overlay. Preserve spoken timing, fixed anchors, shared transport, 60-second learning budget and complete speech/tails. |
 | Confirmed direction | Conductor is UI only; Entry connects UI to the existing browser Engine. Show owns transport/language, Run owns lifetime, World owns rendering, M5 owns validity. Backend remains Station delivery/config/health. Affected role filenames and `src/ui/app.css` are implemented. |
 | Existing software | Direct startup, complete child/source cleanup, entry diagnostics, explicit literal levels, legacy Grass retirement, shared zone influences, approved bank clearance and shared Rocks/Vegetation lifecycle are implemented. Their distinct remaining issue acceptance is preserved. |
 | Current visitor behavior | Initial Play; up to 60 seconds for four spatial goals. A transition request finishes the current native speech, then leaves 1.5 playing seconds before main playback; earned closing remains complete. The separate Begin experience button is removed; operators use the existing Play/Pause and Stop. Interim Stop resets rig/time and holds; after handoff it recreates only retired training content. Complete replacement and fresh calibration remain #9/#46 decisions. |
@@ -28,32 +28,43 @@ The older checkpoint's issue order is superseded by the order below.
 The kiosk correction adds Controller state inside the technician drawer and a
 World-owned XR eye copy for the desktop preview. The subsequent user decision removes firmware, identity, calibration, sequence
 and extreme-pose gates; the configured host supplies input directly. Local
-compatibility and reconnect checks pass; the actual office M5 reply and physical Windows headset
-output remain to be checked. Windows deployment changes are preserved.
+compatibility and reconnect checks pass. The later user report confirms the
+installation running, but separately measured M5 polarity, desktop XR mirror
+behavior and both station assignments remain unrecorded. Windows deployment
+changes are preserved.
 
 ## Windows startup follow-up
 
-[#116](https://github.com/Strehk/becoming-many/issues/116) tracks PICO port 49667
-conflicts, repeatable startup and physical two-station acceptance. A guarded
-startup and double-click diagnostic report are implemented. The office report
-identifies PID 3672 as the EventLog-hosting process listening on TCP 49667;
-the cause and remedy remain open. Switching PICO to SteamVR did not clear the
-bind error and added a SteamVR registry-detection warning. The working native
-runtime/PICO configuration still needs inventory under #54. No browser shell
-bridge is planned. The later cold-start photo confirms a separate regression in
-`d135d32`: a PICO conflict aborted the independent station/kiosk starts. Startup
-now attempts every component before reporting errors. A manual, backed-up and
-reversible TCP allocation repair is available for the EventLog collision;
-administrator approval, reboot and actual two-station recovery remain required.
+[#116](https://github.com/Strehk/becoming-many/issues/116) retains the EventLog
+TCP 49667 collision, the separate `d135d32` startup-abort regression and its
+`226038d` correction. The post-repair photo confirms new TCP ranges and no listener
+on 49667; the user subsequently reports the installation running through front
+USB. **Do not use rear USB-C next to Ethernet: connecting there reportedly powers
+the PC off.** The canonical [cabling and recovery instructions](direction/deployment.md)
+own this operational fact; the hardware cause remains unknown.
 
-## Immediate tutorial corrections after independent review
+Next under #54/#116: label/inventory the ports and station/headset/M5 assignments,
+record the actual running image and native OpenXR/PICO configuration, then verify
+cold start, supervision and front-USB reconnect on both stations. Do not rerun
+network repair on a working installation without the documented collision. No
+browser shell bridge or automatic OS settings repair is planned.
 
-The 2026-09-09 independent browser review leaves #50 visually unaccepted. Prioritize
-full arrow silhouette framing at birth and after formation under forward travel,
-including side gaze; preserve fixed anchors and reachable ring entry. Current
-screenshots show clipped Up/Right/Left cues. Language-after-handoff, retained wind
-reset and cold initial narration seek were corrected during the audit. These
-local visual defects are additional to physical PCVR/listening acceptance.
+## Immediate tutorial corrections after office review
+
+[#117](https://github.com/Strehk/becoming-many/issues/117) captures the latest
+physical feedback: arrows are too close to follow with a deliberate curve and
+the white world gives insufficient perception of travel direction. This reinforces
+the previous browser silhouette/clipping findings; #50 remains visually and
+physically unaccepted. Review the captured-view/flight-prognosis/guide separation,
+then tune actual lead time and angular readability with the existing flight model.
+Evaluate a minimal motion or curve reference without assuming a HUD or auto-steering.
+
+Resume in this order: inspect the [session handoff](evidence/2026-09-09-session-handoff.md)
+and current owner boundaries; implement #117 as a coherent #50 correction; run
+focused checks and real browser interactions/screenshots; obtain physical
+comprehension, listening and PCVR performance evidence. Preserve already-corrected
+language-after-handoff, retained wind reset and cold initial narration seek.
+This ordering does not authorize unrelated #115 main-branch ports.
 
 ## Immediate UI and Engine Migration
 
@@ -96,7 +107,10 @@ The literal Start recipe replaces the `a136bcc` held-gesture/opaque-arrow MVP
 on its existing routes and also opens the full Show. The approved sequence is
 right/left/up/down. The latest 2026-09-09 user revision adds 60 playing seconds of
 integrated practice, automatic timeout without false success speech, a full earned
-closing recording (up to about 74 seconds), and a direct prepared UI transition.
+closing recording and a prepared transition through existing owner commands.
+Current speech and a 1.5-second breathing interval may extend the earlier roughly
+74-second estimate. The separate Begin experience button was subsequently removed;
+keep the shared transport.
 The timeline retains the actual tutorial span before the unchanged main score.
 Earlier on 2026-09-09 the user replaced persistent
 missed targets with forward recycling: retire the old section, then retry the
@@ -151,40 +165,25 @@ The yellow dotted line is interpreted as a route annotation in the drawing;
 a visible path line, automatic steering and an exact loop are not inferred.
 The original PNG is archived unchanged from `Bildschirmfoto 2026-09-08 um 23.17.55.png`.
 
-The cloud revision replaces that isolated presentation inside the existing owners:
+Current source uses the existing Air chunk window, a fixed 40,000-point training
+pool, independently persistent arrows, rig-motion prediction, swept ring crossings
+and future-only course recycling. The Start recipe authors 384 ambient particles
+per chunk, a 6 m arrow, and 2 m/s tutorial translation; authored 8–9 m course values
+are inputs, not a measurement of actual visible lead distance. #117 must assess
+the complete placement calculation and real turning opportunity.
 
-1. Air reuses `VolumeChunkWindow`, deterministic absolute coordinates, fixed GPU
-   slot ranges, stale-job rejection and World's `StreamQueue`. Start alone uses
-   16 m cells, 48 points per cell and a 16 m radial field, fading over 12–16 m and
-   near the eye. Main-level defaults remain unchanged. Only residence follows
-   the flyer; existing particles never inherit player translation or rotation.
-2. Start samples a bounded course and recycles missed/abandoned sections ahead
-   of the current flight pose without advancing the lesson. It generates three
-   intermediate cross-sections along a smooth world-space curve. The first
-   tunnel remains until its destination is passed; later sections recycle in
-   place. These dimmer previews never count as learning goals. The latest user
-   instruction explicitly distinguishes previews from counted goals, so the
-   approved single-plane passage rule remains in force; no entry/exit rule or
-   time limit is introduced.
-3. One fixed Points draw contains a thick particle ring, a filled 7.2 m arrow
-   and the three preview bodies. Fine grains and a bounded minority of soft
-   haze create local volume. The current ring alone receives a 0.9 s silver
-   pulse, up to 6.5% expansion and a 2.4 s damped trajectory wake. Preview
-   gathering continues through the current ring's dissolution. All motion uses
-   the existing Show-derived time, fixed attributes and reusable uniforms.
-4. Audio retains four existing voices and borrows the actual generated body
-   anchors, including arrow motion, ring expansion and wake. No emitter per
-   decorative ring, extra renderer, render loop or postprocessing pipeline is
-   introduced. Run owns complete training retirement and readiness on restart.
+Earlier counts, distances and effects in the dated [tutorial evidence](evidence/issue-50/README.md)
+record successive implementations, not extra requirements or current defaults.
+The [scene script](direction/tutorial-scene-script.md) is a narration/composition
+reference. Preserve the arrow-first, actual-turn-then-ring sequence; previews
+help navigation and only the learning target awards progress. Start owns bounded
+local presentation, Run retirement, World rendering and Show speech/time. Existing
+sound voices borrow fixed object anchors and drain through the bounded handoff.
 
-Visual direction comes from the updated ten-image handoff: dense core, soft
-edges, visible fine grains, spatial depth and restrained silver feedback in a
-white composition. All images are inspiration, not production assets or exact
-geometry. The rejected sparse studies are not the design target. Concrete
-capacities, comparisons, actual screenshots and limitations are recorded in
-[the tutorial evidence](evidence/issue-50/README.md) and [Performance](performance.md).
-First-visitor comprehension, visual/headset comfort, replacement English
-recordings, spatial listening and Windows-PCVR USB-C acceptance remain open.
+The white composition, cloud density, gentle motion and restrained accents are
+approved direction, not accepted visitor usability. Replacement English
+recordings, spatial listening, visual comfort and actual Windows-PCVR performance
+remain open. Standalone PICO is a separate later project.
 
 ## Granular Atmosphere — #112
 

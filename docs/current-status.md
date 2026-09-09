@@ -126,8 +126,9 @@ see the [current evidence and limits](evidence/issue-50/README.md#forward-recycl
 ## Product State
 
 The core experience is largely implemented. The default browser page prepares
-the required flight tutorial and waits for Play. After four spatial goals and
-the operator handoff, the existing 8:41 show layers the seven narrative world states, plays synchronized
+the required flight tutorial and waits for Play. After the timed tutorial, current
+speech and breathing interval, the existing 8:41 show layers the seven narrative
+world states and plays synchronized
 English or German narration, returns to White World, and closes on the end
 credits. The project is now in
 a stabilization and refinement phase rather than an MVP construction phase.
@@ -358,3 +359,16 @@ sideways gaze at birth can leave a cue outside the visible corridor. The reviewe
 source also exposed and repaired retained handoff state blocking main language
 changes, wind reveal surviving reset, and a cold native initial seek being lost.
 See the current independent review in `docs/evidence/issue-50/README.md`.
+
+## Office observation — 2026-09-09
+
+The user reports the installation running using front USB after the streaming
+investigation. The rear USB-C port next to Ethernet is prohibited for this setup:
+connecting there reportedly shuts down the PC. See [deployment](direction/deployment.md)
+for the canonical restriction and remaining two-station acceptance. The user also
+reports that tutorial arrows cannot be followed because the turning lead is too
+short and flight direction is unclear in white space. This is an unmet physical
+usability criterion, tracked in #117 under #50; local course completion is not
+visitor acceptance. The [session handoff](evidence/2026-09-09-session-handoff.md)
+indexes the relevant changes and corrections without granting architecture or
+physical acceptance.

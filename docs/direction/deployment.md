@@ -11,6 +11,28 @@ name, and port. A Windows kiosk launcher is present.
 The current package can run as one independent station. It has not completed a
 Futurium venue acceptance test.
 
+## Verified cabling restriction — office report, 2026-09-09
+
+**Do not use the rear USB-C port next to the network/Ethernet connector on the
+installation PCs. Use the front USB port for the headset connection.**
+
+The user reports that plugging a cable into that rear port can switch the entire
+PC off and supplies no headset signal. The front USB connection works, and the
+user now reports the installation running. Keep the rear port out of the
+installation wiring and label it physically before further operation; do not
+reproduce the shutdown as a routine troubleshooting step. The exact PC/port
+model and the electrical, firmware or compatibility cause are not established.
+This is an observed installation restriction, not a diagnosis or a statement
+about all rear USB-C ports on other machines.
+
+[#54](https://github.com/Strehk/becoming-many/issues/54) owns the per-station
+port/cable inventory and labelling. [#116](https://github.com/Strehk/becoming-many/issues/116)
+retains the separate TCP conflict and startup-regression evidence. The user
+identifies a combination of causes; the USB finding does not erase the observed
+EventLog listener or prove that the port repair alone restored streaming.
+Repeated cold boots, reconnects and complete two-station/90 Hz acceptance are
+still unrecorded.
+
 ## Windows branch and release deployment
 
 Run as the signed-in station account in Windows PowerShell 5.1 or newer:
@@ -211,8 +233,8 @@ registration and PICO mode are still installation inventory work in #54.
 Do not infer a required PICO mode from the presence of a SteamVR Watchdog.
 
 The native SDK can query real connection state but is not integrated by these
-scripts. The unresolved port collision and physical cold-boot/reconnect
-acceptance are tracked in [#116](https://github.com/Strehk/becoming-many/issues/116).
+scripts. The observed port collision, subsequent recovery report and remaining physical
+cold-boot/reconnect acceptance are tracked in [#116](https://github.com/Strehk/becoming-many/issues/116).
 See [PICO documentation](https://business.picoxr.com/de/doc/43j3qcoq) and
 [PICO SDK](https://business.picoxr.com/jp/doc/BusinessStreamingv2SDK).
 
@@ -224,7 +246,9 @@ introduced in `d135d32` was a separate regression: it left only Docker's Watchdo
 running. That abort is corrected without changing vendor executable paths,
 streaming mode or deployment selection.
 
-After pulling `david_refactor`, double-click
+Use this only when diagnostics identify the documented EventLog collision;
+the working front-USB installation does not need a routine rerun. After pulling
+`david_refactor`, double-click
 `C:\becoming-many\scripts\repair-pico-port.bat` and accept Windows' administrator
 prompt. Read the result, close the window with Enter, and **restart Windows after
 a successful repair**. The installed sign-in launcher will start the station.
@@ -259,7 +283,12 @@ restart Windows:
 C:\becoming-many\scripts\repair-pico-port.bat -Restore
 ```
 
-Physical acceptance remains in #116: confirm EventLog is running, the new port
+The post-repair photo from checkout `226038d` shows both dynamic TCP ranges at
+`50000–65535`, no listener on 49667 and HTTP 200. It shows no Watchdog UDP endpoints;
+this snapshot does not establish automatic supervision. The later user report
+confirms the installation running with front USB, without a new diagnostic report
+or exact active container revision. Physical acceptance remains in #116: confirm
+EventLog is running, the new port
 owner is PICO, its bind error is absent, the headset connects, Docker/M5/network
 remain functional, and repeat a cold start and USB reconnect on both stations.
 The registry and network settings are local Windows state: a Git pull alone

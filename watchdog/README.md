@@ -58,6 +58,11 @@ cold container start to every restart.
 
 ## Install
 
+**Headset cable: use the front USB port. Do not use the rear USB-C port next to
+Ethernet; the user reports whole-PC shutdown when connecting there.** See the
+[recorded cabling restriction](../docs/direction/deployment.md#verified-cabling-restriction--office-report-2026-09-09).
+This hardware symptom cannot be repaired by a Watchdog restart.
+
 Keep the repository at `C:\becoming-many` and run the tracked configs and
 scripts directly from its `watchdog` folder. A symbolic link supplies the
 installed Artcom Watchdog v0.3.0 binary under the name the startup script

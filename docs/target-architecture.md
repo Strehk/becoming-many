@@ -39,7 +39,8 @@ The application must support:
 - One show with accumulated senses, scheduled animal passages, English/German
   narration, organ, tutorial and closing credits in one prepared world per visit.
   The main score remains 8:41. Integrated tutorial practice lasts at most 60 seconds;
-  a success reached before that cutoff may finish its closing voice (about 74 seconds total).
+  current speech, including an earned closing, finishes naturally before a 1.5-second
+  breathing interval. The earlier roughly 74-second estimate is not a hard cutoff.
   Credits timing remains a separate decision.
 - Rehearsal controls or an in-process Conductor, with pause, seek, language
   selection and a complete end followed by a fresh run for the next visitor.
@@ -329,8 +330,11 @@ are blocked, and language changes repeat the current instruction. A current
 recording finishes before the next goal is presented; its duration does not
 complete a spatial goal. The 2026-09-09 timing revision gives integrated practice
 60 playing seconds. Four successful passages before that cutoff play the complete
-closing recording, then automatically enter the experience (at most about 74 seconds).
-Without success, the cutoff enters the experience without a false success recording.
+closing recording, then automatically enter the experience. The later approved natural-speech
+handoff adds 1.5 playing seconds of breathing space after native speech ends;
+about 74 seconds is an estimate, not a cutoff that may truncate speech.
+Without success, the cutoff ends learning without a false success recording;
+current speech and the breathing interval still finish before main playback.
 The existing UI command may enter directly whenever preparation is ready. The same
 Show clock serves practice, the closing voice and main playback. Its public timeline
 retains the actual tutorial span before the unchanged relative main score. Standalone
@@ -355,7 +359,8 @@ command. Arrows wait for actual spoken movement calls and fully form before the
 helping rings; native playback is observed only to prevent visual anticipation.
 Run
 selects 2 m/s tutorial translation through existing controls, restoring main
-defaults on handoff. EN voice policy remains open. Native timebase suspension still prevents Show time from advancing. The subsequent
+defaults on handoff. EN temporarily uses the approved German tutorial recordings;
+replacement English recordings and listening acceptance remain open. Native timebase suspension still prevents Show time from advancing. The subsequent
 2026-09-09 user review requires continuous near-field particles through the
 existing world chunk mechanism, large volumetric particle arrows and curved
 particle tunnels with overlapping local formation/dissolution. World positions
@@ -824,7 +829,7 @@ their actual dependent work:
 | --- | --- | --- |
 | Visitor restart, including page reload | Complete restart implementation in existing Run | Early Windows-PCVR/USB-C test of XR end/re-entry, audio wake and next-visitor operation; no automatic-XR assumption |
 | Exact benchmark reference | #78 update | Bounded fixed-scene investigation, repeatable counters and explained differences; current numeric candidate remains unapproved |
-| Tutorial audio / credits | Audio-content integration and credits changes | Tutorial flow is approved; resolve EN voice policy and physical mix acceptance, plus separate credits timing/movement using existing owners |
+| Tutorial audio / credits | Audio-content integration and credits changes | Tutorial flow is approved; replace temporary German clips in EN and verify physical mix acceptance, plus separate credits timing/movement using existing owners |
 | Clipmap culling correction | #72 selects conservative construction-time bounds | Two fixed views match disabled culling with six fewer draws each; geometric and physical acceptance remain separate |
 
 Routine implementation choices are autonomous. Additional owners/abstractions,
@@ -869,7 +874,8 @@ Three unresolved flow choices deserve explicit human decisions:
   different render mechanisms.
 - **Tutorial audio / credits (#50/#51):** both features are required. The four-goal
   tutorial, timed/automatic handoff and direct UI transition are confirmed and use the existing owners/clock.
-  German tutorial voice use is requested and implemented. EN voice policy and
+  German tutorial voice use is requested and implemented; EN temporarily uses those
+  recordings by user approval. Replacement English recordings and
   physical mix acceptance remain distinct from credits content/timing/movement. Current credits
   start at 516 seconds before the longest Return ending around 519.8 seconds;
   resolve that overlap explicitly. Platform is Windows-PCVR over USB-C;
