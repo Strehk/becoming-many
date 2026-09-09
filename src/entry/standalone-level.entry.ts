@@ -12,7 +12,6 @@ import { createBenchmarkRun } from "../benchmark/benchmark-run";
 import { isBenchmarkProfileName } from "../benchmark/benchmark-settings";
 import { FrameMetricsSampler } from "../diagnostics/frame-metrics";
 import { resolveNarrationLanguage } from "../dramaturgy/narration-catalog";
-import { PIECE_SCHEDULE } from "../dramaturgy/piece-schedule";
 import { type Run, startLevel } from "../levels/level.runtime";
 import { LEVEL_CATALOG, resolveLevelName } from "../levels/level-catalog";
 import { createDiagnosticsOverlay } from "../ui/diagnostics/diagnostics-overlay.panel";
@@ -85,9 +84,7 @@ try {
   if (level.training && !benchmark) {
     const unmountTransport = mountRehearsalTransport({
       container: document.body,
-      schedule: PIECE_SCHEDULE,
       show: level.training,
-      standalone: true,
     });
     lifetime.signal.addEventListener("abort", unmountTransport, { once: true });
   }

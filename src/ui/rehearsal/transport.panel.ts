@@ -15,7 +15,7 @@ import { attachScrubbing } from "../shared/transport-scrubbing";
 
 export interface RehearsalTransportOptions {
   readonly container: HTMLElement;
-  readonly schedule: NarrationSchedule;
+  readonly schedule?: NarrationSchedule;
   readonly show: Pick<
     RunningShow,
     | "sample"
@@ -28,7 +28,6 @@ export interface RehearsalTransportOptions {
     | "readTutorial"
     | "continueToExperience"
   >;
-  readonly standalone?: boolean;
 }
 
 // A tenth of a percent is finer than the track displays; cache writes at that precision.
@@ -42,12 +41,11 @@ export function mountRehearsalTransport({
   container,
   schedule,
   show,
-  standalone = false,
 }: RehearsalTransportOptions): () => void {
   const lifetime = new AbortController();
   const { signal } = lifetime;
   let mainStartSeconds = show.sample().mainStartSeconds;
-  let durationSeconds = mainStartSeconds + schedule.durationSeconds;
+  let durationSeconds = mainStartSeconds + (schedule?.durationSeconds ?? 0);
   const bar = requireElement(container, "[data-rehearsal]", HTMLElement);
   const transportButton = requireElement(
     bar,
@@ -88,7 +86,7 @@ export function mountRehearsalTransport({
   }));
 
   const chapters = (
-    standalone ? [] : timelineChapters(schedule, mainStartSeconds)
+    schedule ? timelineChapters(schedule, mainStartSeconds) : []
   ).map((chapter) => {
     const { startSeconds } = chapter;
     const sectionContent = document.importNode(sectionTemplate.content, true);
@@ -129,7 +127,7 @@ export function mountRehearsalTransport({
     readDurationSeconds: () => durationSeconds,
     show,
     signal,
-    isEnabled: () => !standalone && !show.readTutorial(),
+    isEnabled: () => Boolean(schedule) && !show.readTutorial(),
     onScrubChange: (seconds) => {
       scrubSeconds = seconds;
     },
@@ -144,8 +142,10 @@ export function mountRehearsalTransport({
     const sample = show.sample();
     if (mainStartSeconds !== sample.mainStartSeconds) {
       mainStartSeconds = sample.mainStartSeconds;
-      durationSeconds = mainStartSeconds + schedule.durationSeconds;
-      const layout = timelineChapters(schedule, mainStartSeconds);
+      durationSeconds = mainStartSeconds + (schedule?.durationSeconds ?? 0);
+      const layout = schedule
+        ? timelineChapters(schedule, mainStartSeconds)
+        : [];
       for (const [index, view] of chapters.entries()) {
         const chapter = layout[index];
         if (!chapter) continue;
@@ -160,16 +160,15 @@ export function mountRehearsalTransport({
     if (renderedTutorial !== inTutorial) {
       renderedTutorial = inTutorial;
       tutorialStatus.hidden = !tutorial;
-      readout.hidden = standalone;
-      track.toggleAttribute("hidden", standalone);
+      track.toggleAttribute("hidden", !schedule);
       track.setAttribute("aria-disabled", String(inTutorial));
-      sections.hidden = standalone;
+      sections.hidden = !schedule;
       sections.inert = inTutorial;
       for (const view of chapters)
         view.button.disabled = inTutorial || view.chapter.cueId === "tutorial";
     }
     if (tutorial) writeText(tutorialStatus, formatTutorialStatus(tutorial));
-    const ready = !standalone && Boolean(tutorial?.readyToContinue);
+    const ready = Boolean(tutorial?.readyToContinue);
     if (renderedReady !== ready) {
       renderedReady = ready;
       continueButton.hidden = !ready;
@@ -181,7 +180,9 @@ export function mountRehearsalTransport({
     }
     writeText(
       readout,
-      `${formatShowTime(showTimeSeconds)} / ${formatShowTime(durationSeconds)}`,
+      schedule
+        ? `${formatShowTime(showTimeSeconds)} / ${formatShowTime(durationSeconds)}`
+        : formatShowTime(showTimeSeconds),
     );
     const position = `${toPercent(showTimeSeconds, durationSeconds).toFixed(PLAYHEAD_DECIMALS)}%`;
     if (renderedPlayheadLeft !== position) {
@@ -218,5 +219,5 @@ export function mountRehearsalTransport({
 }
 
 function toPercent(seconds: number, durationSeconds: number): number {
-  return (seconds / durationSeconds) * 100;
+  return durationSeconds > 0 ? (seconds / durationSeconds) * 100 : 0;
 }

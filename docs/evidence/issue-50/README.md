@@ -1062,3 +1062,24 @@ would not reduce the existing single draw and would add quad vertices without
 removing transparent overdraw. [WebXRManager](https://threejs.org/docs/pages/WebXRManager.html)
 still owns per-eye rendering. Existing bounds and explicit resource disposal stay
 with the current effect owner; no renderer migration or standalone path was added.
+
+
+## Shared overlay without a standalone UI mode — 2026-09-09
+
+The tutorial already used the root experience's declared rehearsal controls;
+there was no custom element or separate tutorial document. Removed the remaining
+`standalone` presentation flag and the standalone entry's unused full-piece
+schedule dependency. One transport now consumes an optional real schedule and
+Show's existing handoff availability. Standalone practice displays elapsed time;
+only a prepared show supplies chapters/total time and the handoff command.
+No duplicate markup, CSS, controller, runtime or transport owner was introduced.
+
+Lint, TypeScript/Vite build and diff checks pass. A production-browser check
+exercised `/start?language=de`, `/?language=de` and `/white-world`; Play/Hold,
+frozen readout, EN/DE state, integrated direct handoff, one shared bar and the
+absence of a fabricated standalone timeline pass. At 1440 and 390 pixels the
+controls stay within the viewport. No page errors occurred. The initial probe
+needed to await the normal frame-delivered language observation before asserting;
+no production behavior was changed for that probe timing.
+
+![Standalone tutorial using the shared transport](shared-overlay-start.png)
