@@ -156,6 +156,10 @@ send `start` when done. Closing the watchdog's own console window works too.
 Update deliberately with `scripts\deploy-branch.ps1 -Branch david_refactor` or
 `scripts\deploy-release.ps1` from `C:\becoming-many`. These commands pause the
 kiosk and health poller through their existing UDP controls, then restore both.
+Watchdogs that are not listening remain off; deployment starts Docker Desktop
+if needed and leaves the kiosk closed until the next Windows sign-in. For a
+single-action deployment of `david_refactor`, double-click
+`scripts\deploy-branch.bat` or launch its full path through Win+R.
 Docker Desktop, SteamVR and PICO supervision remain active. The Compose hook
 shares a file lock with deployment, so concurrent hooks skip their bring-up.
 The local `.git\station-deployment.json` selects the image across restarts;

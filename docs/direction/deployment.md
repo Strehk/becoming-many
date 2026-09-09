@@ -15,6 +15,12 @@ Futurium venue acceptance test.
 
 Run as the signed-in station account in Windows PowerShell 5.1 or newer:
 
+For the default `david_refactor` branch, double-click
+`C:\becoming-many\scripts\deploy-branch.bat`. If the kiosk covers the desktop,
+press **Win+R**, enter that same path and press Enter. The launcher opens
+PowerShell, handles execution policy for this process and keeps errors visible.
+There is no manual UDP command or requirement to start Watchdogs first.
+
 ```powershell
 cd C:\becoming-many
 .\scripts\deploy-branch.ps1 -Branch david_refactor
@@ -26,7 +32,7 @@ cd C:\becoming-many
 
 Prerequisites: a regular Git clone at this exact path, an existing untracked
 `.env`, Git for Windows, Docker Desktop with Linux containers and Compose v2
-supporting `up --wait`, and the installed/running Watchdogs described in
+supporting `up --wait`, and the installed Watchdogs/autostart described in
 [watchdog/README.md](../../watchdog/README.md). This is an updater for an installed
 station, not an OS, Docker, SteamVR, PICO or Watchdog installer. Keep `HOST_PORT=80`
 or omit it: the installed health and kiosk configuration uses `http://localhost`.
@@ -49,11 +55,21 @@ application changes and branch names with slashes are supported; deployment
 infrastructure upgrades require a separate coordinated maintenance step.
 
 The existing UDP controls stop kiosk and health polling before switching; their
-process exit is checked. Docker Desktop supervision remains active and the
-engine gets up to five minutes to become ready. A shared file lock excludes
+process exit is checked. Missing Watchdog listeners are detected through Windows
+UDP sockets and remain stopped. An existing listener that does not respond is
+an error, not an excuse to bypass supervision. If the engine is unavailable,
+the script asks the existing Docker Watchdog to start Docker, or launches the
+installed Docker Desktop when no Docker Watchdog is listening. It does not
+launch a second Desktop process. The engine gets five minutes to become ready.
+A shared file lock excludes
 concurrent deploy commands and Watchdog Compose hooks. Both paused Watchdogs
 receive `start` in `finally`, including on failure; an unreachable Watchdog is
 reported as a failure. SteamVR and PICO are not restarted.
+
+When deploying with Watchdogs off, the kiosk stays closed and the summary says
+so. Restart Windows and sign in afterward; the existing Startup-folder launcher
+starts the full station. The script does not reboot without your action. When
+Watchdogs were already active, their kiosk returns automatically after deployment.
 
 | Mode | Image | Reboot behavior |
 | --- | --- | --- |
@@ -77,7 +93,9 @@ The Docker build context excludes `.env`, `.git` and Watchdog runtime files.
 No additional package or authored application configuration is introduced.
 
 Success requires a running container using the expected image ID, its Docker
-healthcheck, HTTP 200 from `/health`, and the kiosk and poller processes. The
+healthcheck, HTTP 200 from `/health`, and the kiosk and poller processes when
+their Watchdogs were active at entry. With Watchdogs off, only the station is
+verified; kiosk acceptance follows after reboot/sign-in. The
 summary prints branch, commit (or explicitly unknown for an unlabelled release),
 image, container and health status. A running kiosk process is not proof of a
 rendered page, working XR or a 90 Hz installation; verify those on the headset.
@@ -89,7 +107,7 @@ rendered page, working XR or a 90 Hz installation; verify those on the headset.
   for diagnosis and reboot recovery; it does not silently deploy another image.
 - Normally fix the reported cause and rerun the command, or run
   `.\scripts\deploy-release.ps1` to pull and select the stable published release.
-  Release deployment also requires a clean checkout and reachable Watchdogs.
+  Release deployment also requires a clean checkout. Any running Watchdogs must respond.
 - For offline recovery, stop kiosk and station polling using the UDP helper
   below. With no deployment running, copy the `.previous` state over the active
   state, then call `watchdog\bin\docker-up.bat`. The referenced old image must
@@ -124,7 +142,8 @@ not replace this Windows/Docker/Watchdog acceptance.
 
 Local verification: `pwsh -NoProfile -File tests/deployment.test.ps1` covers real
 temporary Git repositories, tracked `.env` rejection, persistent selection,
-exclusive locking and injected deployment/restoration failures without Docker.
+exclusive locking, running/absent/partially running Watchdogs and injected
+deployment/restoration failures without Docker.
 These checks and `bun run lint` pass on macOS with PowerShell 7.6.4. Windows
 PowerShell 5.1, actual Compose execution, UDP responses, reboot and visible
 kiosk/headset behavior remain station acceptance checks.

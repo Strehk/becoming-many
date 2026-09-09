@@ -59,6 +59,29 @@ try {
     function Failing-Native { $global:LASTEXITCODE = 17 }
     Assert-Throws { Invoke-Checked Failing-Native @() } 'exit 17'
 
+    foreach ($dockerCase in @('ready', 'watchdog', 'starting', 'stopped')) {
+        & {
+            $events = New-Object 'Collections.Generic.List[string]'
+            function docker { $global:LASTEXITCODE = if ($dockerCase -eq 'ready') { 0 } else { 1 } }
+            function Test-WatchdogListening { param($Port) return $dockerCase -eq 'watchdog' }
+            function Send-WatchdogCommand { param($Port, $Command) $events.Add("${Port}:$Command") }
+            function Get-Process { param($Name, $ErrorAction) if ($dockerCase -eq 'starting') { 'existing' } }
+            function Test-Path { param($LiteralPath) return $true }
+            function Start-Process { param($FilePath) $events.Add('launch') }
+            $previousProgramFiles = $env:ProgramFiles
+            try {
+                $env:ProgramFiles = $temporary
+                Start-DeploymentDocker
+            } finally { $env:ProgramFiles = $previousProgramFiles }
+            if ($dockerCase -eq 'watchdog') {
+                Assert-True ($events -contains '2348:start') 'Docker owner was bypassed.'
+            } elseif ($dockerCase -eq 'stopped') {
+                Assert-True ($events -contains 'launch') 'Stopped Docker was not launched.'
+            } else { Assert-True ($events.Count -eq 0) 'Duplicate Docker launch.' }
+        }
+    }
+    Write-Host 'PASS Docker: ready, supervised, starting and stopped'
+
     # Real Git fixtures prove the safeguards without touching the project branch.
     & {
         $remote = Join-Path $temporary 'remote'
@@ -101,11 +124,21 @@ try {
     }
 
     # Use the real transaction body; replace only external station boundaries.
-    foreach ($failure in @('', 'dirty', 'build', 'up', 'health', 'stop', 'restore')) {
+    foreach ($failure in @('', 'offline', 'partial', 'dirty', 'build', 'up', 'health', 'stop', 'restore', 'docker')) {
         & {
             $Branch = 'feature/test'
             $events = New-Object 'Collections.Generic.List[string]'
             function Initialize-Station { Set-Location -LiteralPath $temporary }
+            function Test-WatchdogListening {
+                param([int]$Port)
+                if ($failure -eq 'offline') { return $false }
+                if ($failure -eq 'partial') { return $Port -eq 2350 }
+                return $true
+            }
+            function Start-DeploymentDocker {
+                $events.Add('docker')
+                if ($failure -eq 'docker') { throw 'injected docker' }
+            }
             function Assert-CleanCheckout { if ($failure -eq 'dirty') { throw 'injected dirty' } }
             function Send-WatchdogCommand {
                 param([int]$Port, [string]$Command)
@@ -130,20 +163,25 @@ try {
             }
             function Wait-StationHealth { if ($failure -eq 'health') { throw 'injected health' } }
             function Show-DeploymentResult { param($Branch, $Commit, $Image) $events.Add('success') }
-            if (!$failure) { & $transaction } else {
+            $success = $failure -in @('', 'offline', 'partial')
+            if ($success) { & $transaction } else {
                 $pattern = if ($failure -eq 'restore') { 'restoration incomplete' } else { "injected $failure" }
                 Assert-Throws { & $transaction } $pattern
             }
             if ($failure -eq 'dirty') {
                 Assert-True ($events.Count -eq 0) 'Dirty checkout caused station side effects.'
+            } elseif ($failure -eq 'offline') {
+                Assert-True (!($events -match '^23\d\d:')) 'Offline deployment sent Watchdog commands.'
+                Assert-True ($events -contains 'docker') 'Offline deployment skipped Docker startup.'
             } else {
                 Assert-True ($events -contains '2350:start') 'Kiosk restoration was skipped.'
-                if ($failure -ne 'stop') { Assert-True ($events -contains '2349:start') 'Poller restoration was skipped.' }
+                if ($failure -notin @('stop', 'partial')) { Assert-True ($events -contains '2349:start') 'Poller restoration was skipped.' }
+                if ($failure -eq 'partial') { Assert-True (!($events -contains '2349:start')) 'Started absent Watchdog.' }
             }
-            if ($failure -in @('dirty', 'build', 'stop')) {
+            if ($failure -in @('dirty', 'build', 'stop', 'docker')) {
                 Assert-True (!($events -contains 'state')) 'Failed preparation changed selected image.'
             }
-            if (!$failure) {
+            if ($success) {
                 Assert-True ($events.IndexOf('state') -lt $events.IndexOf('up')) 'Image selection must precede recreation.'
                 Assert-True ($events -contains 'success') 'Successful deployment omitted its result.'
             } else { Assert-True (!($events -contains 'success')) 'Failure reported success.' }

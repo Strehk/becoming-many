@@ -79,9 +79,13 @@ try {
     $lock = Open-DeploymentLock
     Assert-CleanCheckout
     $envHash = (Get-FileHash -LiteralPath '.env' -Algorithm SHA256).Hash
-    foreach ($port in @(2348, 2349, 2350)) { Send-WatchdogCommand $port 'status' }
     # Stop before switching tracked Watchdog files; Docker's hook shares our lock.
     foreach ($port in @(2350, 2349)) {
+        if (!(Test-WatchdogListening $port)) {
+            Write-Host "[watchdog:$port] Not running; leaving it stopped until Windows sign-in."
+            continue
+        }
+        Send-WatchdogCommand $port 'status'
         $paused += $port
         Send-WatchdogCommand $port 'stop'
     }
@@ -89,6 +93,7 @@ try {
     Wait-StationProcess 'poller' $false
     if ($Branch) { Update-BranchCheckout $Branch }
     if ((Get-FileHash -LiteralPath '.env' -Algorithm SHA256).Hash -ne $envHash) { throw '.env changed externally.' }
+    Start-DeploymentDocker
     Wait-Engine
     Prepare-Image
     # Persist before recreation: a crash/reboot must recover the intended image.
@@ -110,7 +115,7 @@ try {
     Set-Location -LiteralPath $location.Path
 }
 if ($restoreFailed) { throw 'Watchdog restoration incomplete. See recovery instructions.' }
-Wait-StationProcess 'poller' $true
-Wait-StationProcess 'kiosk' $true
+if ($paused -contains 2349) { Wait-StationProcess 'poller' $true }
+if ($paused -contains 2350) { Wait-StationProcess 'kiosk' $true }
 Wait-StationHealth
 Show-DeploymentResult $displayBranch $script:Commit $script:Image

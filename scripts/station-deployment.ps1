@@ -44,6 +44,26 @@ function Wait-Engine {
     throw 'Docker engine unavailable after 300 seconds. Check Docker Watchdog/Desktop.'
 }
 
+function Test-WatchdogListening {
+    param([int]$Port)
+    # Query Windows sockets: a missing listener differs from an unresponsive one.
+    return [bool]@(Get-NetUDPEndpoint -ErrorAction Stop | Where-Object { $_.LocalPort -eq $Port }).Count
+}
+
+function Start-DeploymentDocker {
+    & docker info *> $null
+    if ($LASTEXITCODE -eq 0) { return }
+    if (Test-WatchdogListening 2348) {
+        Send-WatchdogCommand 2348 'start'
+        return
+    }
+    if (Get-Process -Name 'Docker Desktop' -ErrorAction SilentlyContinue) { return }
+    $desktop = Join-Path $env:ProgramFiles 'Docker\Docker\Docker Desktop.exe'
+    if (!(Test-Path -LiteralPath $desktop)) { throw "Docker Desktop is not installed at $desktop." }
+    Write-Host '[deployment] Starting Docker Desktop; kiosk stays closed.'
+    Start-Process -FilePath $desktop | Out-Null
+}
+
 function Send-WatchdogCommand {
     param([int]$Port, [string]$Command)
     $client = New-Object Net.Sockets.UdpClient
@@ -130,5 +150,7 @@ function Show-DeploymentResult {
     if ($container.Image -ne $expected -or !$container.State.Running) { throw 'Wrong or stopped station image.' }
     if ($container.State.Health.Status -ne 'healthy') { throw 'Container healthcheck is not healthy.' }
     Write-Host "Branch: $Branch`nCommit: $Commit`nImage: $Image"
-    Write-Host "Container: $id (running, healthy)`nHealth: HTTP 200`nKiosk: process running"
+    Write-Host "Container: $id (running, healthy)`nHealth: HTTP 200"
+    if (Get-StationProcesses 'kiosk') { Write-Host 'Kiosk: process running' }
+    else { Write-Host 'Kiosk: stopped. Restart Windows and sign in to start the installed Watchdogs.' }
 }
