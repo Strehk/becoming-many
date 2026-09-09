@@ -873,3 +873,17 @@ Headed 1920×1080 DPR1 final GPU median/p95 is 0.099500/0.286291 ms against prec
 The draw-only probe's empty-opening gap must not be interpreted as a render-loop
 stall. [Full comparison, failure/correction and timing evidence](evidence/issue-50/README.md#spoken-line-staging--2026-09-09).
 Physical Windows-PCVR remains unverified.
+
+
+### Reachable guidance and persistent arrows — 2026-09-09
+
+The subsequent user-requested density/lifetime revision uses 40k form particles
+and 48k Air particles in the existing two draws. Fixed attribute storage is
+2,528,000 bytes per CPU/GPU copy; Air face-upload peak is 153,600 bytes, upload
+p99 zero, with no course-time GPU resource creation. Comparable headed-browser
+CPU median/p95 remains 0.3/0.5 ms; GPU median/p95 is 0.120583/0.306875 ms versus
+0.113875/0.309583 ms before. The separate screenshot run and its higher median
+are retained in the [full evidence](evidence/issue-50/README.md#reachable-guidance-and-independent-particle-lifetimes--2026-09-09).
+The 33-point guidance table runs only while planning an unshown section; fixed
+slots and analytical shader motion retain bounded frame work. Physical PCVR,
+comfort and listening acceptance remain open.

@@ -16,9 +16,11 @@ The spoken-line review keeps the opening empty until the room phrase at 13.12 s.
 Show gates arrows at DE 19.30/1.14/2.66/1.04 s against actual native speech progress;
 rings wait for a readable arrow and the matching turn. Run
 uses 2 m/s tutorial translation through existing controls. The preplanned
-rig-heading course is removed. Course generation now extrapolates measured turn
-curvature, with shared positions/tangents for the tunnel and one-time visibility
-correction; generated arrows/rings remain world-fixed. Tutorial sound now borrows the existing wind
+rig-heading course is removed. Course generation now separates rig-motion prediction from reachable lesson
+guidance, with arc-spaced rings and transported orientations. World-fixed arrows
+stay during ring formation, then release after two seconds outside view. A
+second arrow slot, 40k form particles and 48k ambient particles support calmer
+wind-driven motion and subtle Scent-palette feedback. Tutorial sound now borrows the existing wind
 voice at a quiet, speech-ducked level; standalone practice builds only that
 organ voice. Ring voices choose new predecoded samples and offsets per course
 or retry, retaining the selection through Pause.
@@ -202,11 +204,11 @@ The #80 animal-connection removal is implemented below. Small additions remain i
 - White World: atmosphere through background, fog, and Air Particles.
 - Start: four procedural world-space goals (right, left, up, down), counted only
   by actual swept passage. Missed sections fade and regenerate ahead without
-  awarding progress. One 32,000-point effect forms thick rings, a volumetric
-  arrow and three decorative curve guides. Independent Air supplies the bounded
-  surrounding field; the combined capacity is 38,000 points. Ring/arrow anchors
+  awarding progress. One 40,000-point effect forms thick rings, two independent
+  arrow slots and three decorative curve guides. Independent Air supplies the bounded
+  surrounding field; the combined capacity is 88,000 points. Ring/arrow anchors
   stay fixed during flight, with autonomous drift and local silver passage wake.
-  The literal recipe shortens later goal spacing to 12–14 m for the timed lesson;
+  The literal recipe shortens later authored goal lead to 9–10 m for the timed lesson;
   shared steering and main-level particle defaults remain unchanged.
 - Show owns the 60-playing-second integrated practice budget and public Tutorial
   timeline chapter. Four passages before the cutoff start the full closing voice

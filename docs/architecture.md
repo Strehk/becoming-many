@@ -254,10 +254,10 @@ ahead of the current flight pose, repeating the same direction without awarding
 progress. Targets borrow Run's existing altitude ceiling so recycled upward
 lessons remain reachable. Learning owns passage/miss observations and fixed goal/preview slots. Three
 intermediate curve cross-sections are decorative and never complete goals. The
-optional effect borrows these fixed world poses and owns one 32,000-point draw:
-a thick ring, filled arrow and three guide rings, with immutable attributes and
-GPU drift/gathering. Only the counted ring receives silver/expansion/wake feedback.
-Air remains independent: Start authors 48 points per 16 m cell and a fading
+optional effect borrows these fixed world poses and owns one 40,000-point draw:
+a thick ring, two independent arrow slots and three guide rings, with immutable attributes and
+GPU drift/gathering. Each crossed ring receives local silver/expansion/wake feedback.
+Air remains independent: Start authors 384 points per 16 m cell and a fading
 16 m near field through the existing shared chunk/queue path. Main defaults stay
 unchanged. No independent loop, global fog or extra postprocessing is added.
 
@@ -275,29 +275,37 @@ duration. Audio ending never completes a flight goal. Standalone
 Start keeps the same transport while omitting the main-experience handoff.
 The current literal recipe enables bounded object-bound granular audio from
 three user-supplied excerpts and the five user-requested German tutorial recordings.
-At each authored instruction onset, Start samples the current world-space eye
-direction and conservative projection cone published by World. Start estimates
-turn curvature from consecutive world-space movement segments, smooths it over
-0.25 seconds and decays its forecast over four metres. The large arrow uses
-that forecast constrained near the captured eye ray. Only a sustained change
-in actual travel toward the requested direction creates the ring/three previews.
-Their centers and tangent normals share the forecast, with a single corridor
-correction when the assisted view requires it, followed by the flight ceiling.
-All anchors remain fixed after generation. Pause/reset and discontinuous motion
-discard old curvature. This replaces one-frame travel with arbitrary lateral
-offsets and the separately shaped preview curve. Head rotation alone does not
-open the tunnel. Off-screen arrows dissolve and retry; each crossed
-preview emits its own local visual pulse without counting a lesson. The effect
-uses analytical mass-spring gathering and drag-decaying crossing impulses in the
-existing vertex shader, with fixed buffers and no additional simulation loop.
-This replaces simultaneous arrow/tunnel formation. Show
-opens formation separately from allowing post-crossing progression. Its room
+At each authored instruction onset, Start reads World's separate eye and rig
+facts. Only rig displacement supplies speed/turn prediction and lesson turn
+confirmation; eye segments still determine actual ring passage. A smoothed,
+decaying motion forecast is distinct from the gentle lesson/visibility guidance.
+A fixed 33-point table checks existing yaw/climb limits, measures arc length and
+transports an orthogonal up vector. Forecast spread is a heuristic uncertainty
+observation, not a reachability allowance. Guidance never writes flight input.
+Only an unshown section is planned; counted and preview rings become world-fixed
+when that section starts forming. Three arc-spaced previews remain uncounted.
+Misses recycle the existing slots rather than joining an unreachable old section.
+The eye cone constrains discoverability, including the existing pitch assistance.
+
+Arrows and rings have separate fixed particle roles and lifetimes. The current
+arrow stays while the tunnel forms; only after its body is outside view for two
+playing seconds does a three-second release begin. A second fixed arrow slot
+retains the previous cue without delaying learning. Pause freezes release.
+Analytic critically damped gathering and drag-decaying crossing impulses remain
+in the existing shader, now with slow coherent wind and small seeded eddies.
+Restrained orange arrow/turquoise-silver crossing accents borrow the Scent palette
+as literal recipe values. The neutral high-key environment remains dominant.
+The recipe owns 40k form particles and 48k world-anchored Air particles across
+125 recycled chunks, with no new render loop or per-frame attribute uploads.
+
+Show opens formation separately from allowing post-crossing progression. Its room
 presence command fades the same training Air owner on standalone and integrated
 routes, starting at the recorded room phrase. Native narration offset is an
 observation for spoken-word gates only; Show remains the time authority. Start
 waits for the arrow to form before opening the helping tunnel. Run supplies
 2 m/s tutorial translation through the existing controls and restores ordinary
-main speeds on handoff; directional sensitivity is unchanged. The EN voice policy remains open. Run owns the shared Tone spatial context when audio is configured;
+main speeds on handoff; directional sensitivity is unchanged. The EN voice policy
+remains open. Run owns the shared Tone spatial context when audio is configured;
 Show retains its existing native timebase and narration owner. It drives the
 existing organ wind alone during practice, at the literal tutorial strength and
 with speech attenuation; the prepared full organ resumes its normal score at

@@ -1,4 +1,5 @@
-import { Vector3 } from "three";
+import { Quaternion, Vector3 } from "three";
+import { FLIGHT_SETTINGS } from "../../control/flight-settings";
 import type { WorldModule } from "../../world/module-runtime";
 import type { Viewpoint } from "../../world/viewer-rig";
 import { crossesFlightRing } from "./flight-goals";
@@ -10,15 +11,20 @@ import type {
 
 export type StartDirection = "right" | "left" | "up" | "down";
 
+const WORLD_UP = new Vector3(0, 1, 0);
 const TURN_COMPONENT = 0.12;
 const TURN_CONFIRM_SECONDS = 0.2;
-const ARROW_OUT_OF_VIEW_SECONDS = 0.8;
-const ARROW_FADE_SECONDS = 1;
+const ARROW_OUT_OF_VIEW_SECONDS = 2;
+const ARROW_FADE_SECONDS = 3;
 const MINIMUM_TRAVEL_SQUARED = 0.000001;
 const MOTION_HISTORY_SECONDS = 0.25;
 const MAXIMUM_CURVATURE_PER_METER = 0.12;
 const CURVATURE_DECAY_METERS = 4;
 const MAXIMUM_OBSERVED_SPEED_METERS_PER_SECOND = 12;
+const COURSE_SAMPLE_COUNT = 32;
+const MAXIMUM_PREDICTION_SECONDS = 6;
+const LESSON_BEND_COMPONENT = 0.12;
+const FORECAST_SPREAD_PER_METER = 0.04;
 
 type DistanceRange = readonly [minimum: number, maximum: number];
 
@@ -63,6 +69,9 @@ export interface StartObservation {
   readonly crossingCount: number;
   readonly attempt: number;
   readonly missCount: number;
+  /** Bounded observation-based horizon and heuristic spread, not collision guarantees. */
+  readonly predictionSeconds?: number;
+  readonly predictionSpreadMeters?: number;
   readonly objects?: StartParticleObjects;
   readonly wake:
     | {
@@ -132,6 +141,37 @@ export function createStartModule(
   let hasMotionHistory = false;
   const goalUp = new Vector3();
   const previousPosition = new Vector3();
+  const previousFlightPosition = new Vector3();
+  const flightTravel = new Vector3();
+  let observedSpeed = 0;
+  let directionVariation = 0;
+  let guidanceDistance = 1;
+  const lessonBend = new Vector3();
+  const transportRotation = new Quaternion();
+  const courseSamples = Array.from({ length: COURSE_SAMPLE_COUNT + 1 }, () => ({
+    position: new Vector3(),
+    tangent: new Vector3(),
+    up: new Vector3(),
+    distance: 0,
+  }));
+  const retiringArrow = {
+    position: new Vector3(),
+    normal: new Vector3(),
+    up: new Vector3(),
+    angleRadians: 0,
+    formation: 0,
+    presence: 0,
+  };
+  const arrowLifetime = {
+    outsideSeconds: 0,
+    fadeSeconds: -1,
+    releaseFormation: 0,
+  };
+  const retiringLifetime = {
+    outsideSeconds: 0,
+    fadeSeconds: -1,
+    releaseFormation: 0,
+  };
   const arrowPosition = new Vector3();
   const arrowNormal = new Vector3();
   const arrowUp = new Vector3();
@@ -141,6 +181,7 @@ export function createStartModule(
   const previews = Array.from({ length: 3 }, () => ({
     goalPosition: new Vector3(),
     goalNormal: new Vector3(),
+    goalUp: new Vector3(),
     ringRadiusMeters: 0,
     crossingAgeSeconds: undefined as number | undefined,
   }));
@@ -166,6 +207,8 @@ export function createStartModule(
     crossingCount: 0,
     attempt: 0,
     missCount: 0,
+    predictionSeconds: 0,
+    predictionSpreadMeters: 0,
     objects: undefined as StartParticleObjects | undefined,
     wake: undefined as StartObservation["wake"],
   };
@@ -177,6 +220,7 @@ export function createStartModule(
     arrowUp,
     arrowPresence: 0,
     arrowFormation: 0,
+    retiringArrow,
     ringPresence: 0,
     goalNormal,
     goalUp,
@@ -198,8 +242,6 @@ export function createStartModule(
   let goalAdvanceAllowed = true;
   let formationAllowed = true;
   let turnSeconds = 0;
-  let arrowOutsideSeconds = 0;
-  let arrowDissolutionFormation = 0;
   const travel = new Vector3();
   const targetOffset = new Vector3();
 
@@ -258,51 +300,75 @@ export function createStartModule(
     observation.crossingCount = 0;
     observation.attempt = 0;
     observation.missCount = 0;
+    observation.predictionSeconds = 0;
+    observation.predictionSpreadMeters = 0;
     particleFrame.sectionPresence = 0;
     particleFrame.arrowPresence = 0;
     particleFrame.arrowFormation = 0;
     particleFrame.ringPresence = 0;
     particleFrame.previews = [];
     turnSeconds = 0;
-    arrowOutsideSeconds = 0;
+    arrowLifetime.outsideSeconds = 0;
+    arrowLifetime.fadeSeconds = -1;
     observation.wake = undefined;
     observation.objects = undefined;
+    retiringArrow.presence = 0;
+    retiringLifetime.outsideSeconds = 0;
+    retiringLifetime.fadeSeconds = -1;
   }
 
   function resetMotionHistory(): void {
     previousPosition.copy(viewpoint.worldPosition);
+    previousFlightPosition.copy(
+      viewpoint.worldFlightPosition ?? viewpoint.worldPosition,
+    );
+    observedSpeed = 0;
+    directionVariation = 0;
     hasMotionHistory = false;
     curvature.set(0, 0, 0);
-    currentTravelDirection.copy(viewpoint.worldDirection);
+    currentTravelDirection.copy(
+      viewpoint.worldFlightDirection ?? viewpoint.worldDirection,
+    );
   }
 
   function observeMotion(elapsed: number): void {
     if (elapsed <= 0) return;
     if (
-      travel.lengthSq() <= MINIMUM_TRAVEL_SQUARED ||
-      travel.length() / elapsed > MAXIMUM_OBSERVED_SPEED_METERS_PER_SECOND
+      flightTravel.lengthSq() <= MINIMUM_TRAVEL_SQUARED ||
+      flightTravel.length() / elapsed > MAXIMUM_OBSERVED_SPEED_METERS_PER_SECOND
     ) {
       hasMotionHistory = false;
       curvature.set(0, 0, 0);
-      currentTravelDirection.copy(viewpoint.worldDirection);
+      currentTravelDirection.copy(
+        viewpoint.worldFlightDirection ?? viewpoint.worldDirection,
+      );
       return;
     }
-    currentTravelDirection.copy(travel).normalize();
+    currentTravelDirection.copy(flightTravel).normalize();
+    const smoothing = 1 - Math.exp(-elapsed / MOTION_HISTORY_SECONDS);
+    const speed = flightTravel.length() / elapsed;
+    observedSpeed = hasMotionHistory
+      ? observedSpeed + (speed - observedSpeed) * smoothing
+      : speed;
     if (hasMotionHistory && elapsed <= MOTION_HISTORY_SECONDS) {
       sampledCurvature
         .copy(currentTravelDirection)
         .sub(previousTravelDirection)
-        .multiplyScalar(1 / travel.length());
+        .multiplyScalar(1 / flightTravel.length());
       // Only sideways change bends the prediction; speed remains Run-owned.
       sampledCurvature.addScaledVector(
         currentTravelDirection,
         -sampledCurvature.dot(currentTravelDirection),
       );
+      const variation = currentTravelDirection.angleTo(previousTravelDirection);
+      directionVariation += (variation - directionVariation) * smoothing;
+      const curvatureLimit = Math.min(
+        MAXIMUM_CURVATURE_PER_METER,
+        FLIGHT_SETTINGS.yawRateRadiansPerSecond / Math.max(observedSpeed, 0.1),
+      );
       const magnitude = sampledCurvature.length();
-      if (magnitude > MAXIMUM_CURVATURE_PER_METER)
-        sampledCurvature.multiplyScalar(
-          MAXIMUM_CURVATURE_PER_METER / magnitude,
-        );
+      if (magnitude > curvatureLimit)
+        sampledCurvature.multiplyScalar(curvatureLimit / magnitude);
       curvature.lerp(
         sampledCurvature,
         1 - Math.exp(-elapsed / MOTION_HISTORY_SECONDS),
@@ -324,9 +390,13 @@ export function createStartModule(
     constrainCeiling = true,
   ): void {
     const decay = Math.exp(-distance / CURVATURE_DECAY_METERS);
+    const t = Math.min(1, distance / guidanceDistance);
+    const blend = t * t * (3 - 2 * t);
+    const blendDerivative = 6 * t * (1 - t);
     position
       .copy(origin)
-      .addScaledVector(corridorCorrection, distance)
+      .addScaledVector(corridorCorrection, guidanceDistance * blend)
+      .addScaledVector(lessonBend, guidanceDistance * blend)
       .addScaledVector(currentTravelDirection, distance)
       .addScaledVector(
         curvature,
@@ -335,7 +405,8 @@ export function createStartModule(
       );
     tangent
       .copy(currentTravelDirection)
-      .add(corridorCorrection)
+      .addScaledVector(corridorCorrection, blendDerivative)
+      .addScaledVector(lessonBend, blendDerivative)
       .addScaledVector(curvature, CURVATURE_DECAY_METERS * (1 - decay));
     if (constrainCeiling && options.maximumGoalYAt) {
       const ceiling = options.maximumGoalYAt(position.x, position.z);
@@ -353,14 +424,20 @@ export function createStartModule(
     goalUp.copy(viewpoint.worldUp);
     const radius = sample(course.radiusMeters);
     const halfAngle = Math.max(0.05, viewpoint.viewHalfAngleRadians * 0.75);
+    const authoredDistance = sample(
+      observation.goalIndex === 0
+        ? course.firstDistanceMeters
+        : course.spacingMeters,
+    );
+    const plausibleDistance =
+      (Math.max(observedSpeed, 0.5) * MAXIMUM_PREDICTION_SECONDS) /
+      (1 + directionVariation * 2);
     const distance = Math.max(
-      sample(
-        observation.goalIndex === 0
-          ? course.firstDistanceMeters
-          : course.spacingMeters,
-      ),
+      Math.min(authoredDistance, plausibleDistance),
       (radius * 2) / Math.tan(halfAngle),
     );
+    guidanceDistance = distance;
+    lessonBend.copy(turnDirection).multiplyScalar(LESSON_BEND_COMPONENT);
     corridorCorrection.set(0, 0, 0);
     // Derive the view correction from the uncut forecast. Applying it to an
     // already ceiling-clipped point would lose the original vertical offset.
@@ -396,17 +473,28 @@ export function createStartModule(
       lateral + radius * 1.6 > depth * Math.tan(viewpoint.viewHalfAngleRadians)
     )
       return false;
+    if (!buildCourse(distance)) return false;
     goalPosition.copy(targetPosition);
-    goalNormal.copy(predictedTangent).negate();
+    const finalSample = courseSamples[COURSE_SAMPLE_COUNT];
+    if (!finalSample) return false;
+    observation.predictionSeconds = Math.min(
+      MAXIMUM_PREDICTION_SECONDS,
+      distance / Math.max(observedSpeed, 0.5),
+    );
+    observation.predictionSpreadMeters =
+      distance * (FORECAST_SPREAD_PER_METER + directionVariation);
+    goalNormal.copy(finalSample.tangent).negate();
+    goalUp.copy(finalSample.up);
     particleFrame.ringRadiusMeters = radius;
     particleFrame.previews = previews;
     previewStartedSeconds = particleFrame.elapsedSeconds;
     for (const [index, preview] of previews.entries()) {
       preview.crossingAgeSeconds = undefined;
-      predictPosition(
-        distance * (0.55 + index * 0.14),
+      sampleCourseAtLength(
+        finalSample.distance * (0.55 + index * 0.15),
         preview.goalPosition,
         preview.goalNormal,
+        preview.goalUp,
       );
       preview.goalNormal.negate();
       targetOffset.copy(preview.goalPosition).sub(origin);
@@ -427,7 +515,99 @@ export function createStartModule(
     return true;
   }
 
+  /** A fixed table serves both reachable-path checks and arc-length placement. */
+  function buildCourse(distance: number): boolean {
+    const speed = Math.max(observedSpeed, 0.5);
+    for (const [index, sample] of courseSamples.entries()) {
+      predictPosition(
+        (distance * index) / COURSE_SAMPLE_COUNT,
+        sample.position,
+        sample.tangent,
+      );
+      const previous = courseSamples[index - 1];
+      if (!previous) {
+        sample.distance = 0;
+        sample.up
+          .copy(viewpoint.worldUp)
+          .addScaledVector(
+            sample.tangent,
+            -viewpoint.worldUp.dot(sample.tangent),
+          );
+        if (sample.up.lengthSq() < MINIMUM_TRAVEL_SQUARED)
+          sample.up.set(1, 0, 0);
+        sample.up.normalize();
+        continue;
+      }
+      const segmentLength = sample.position.distanceTo(previous.position);
+      sample.distance = previous.distance + segmentLength;
+      const stepSeconds = distance / COURSE_SAMPLE_COUNT / speed;
+      const verticalSpeed =
+        (sample.position.y - previous.position.y) / stepSeconds;
+      if (
+        verticalSpeed >
+          FLIGHT_SETTINGS.climbRateMetersPerSecond -
+            FLIGHT_SETTINGS.neutralDescentMetersPerSecond ||
+        verticalSpeed <
+          -FLIGHT_SETTINGS.climbRateMetersPerSecond -
+            FLIGHT_SETTINGS.neutralDescentMetersPerSecond
+      )
+        return false;
+      const horizontalTurn = Math.atan2(
+        previous.tangent.x * sample.tangent.z -
+          previous.tangent.z * sample.tangent.x,
+        previous.tangent.x * sample.tangent.x +
+          previous.tangent.z * sample.tangent.z,
+      );
+      if (
+        Math.abs(horizontalTurn) >
+        FLIGHT_SETTINGS.yawRateRadiansPerSecond * stepSeconds
+      )
+        return false;
+      transportRotation.setFromUnitVectors(previous.tangent, sample.tangent);
+      sample.up
+        .copy(previous.up)
+        .applyQuaternion(transportRotation)
+        .normalize();
+    }
+    return true;
+  }
+
+  function sampleCourseAtLength(
+    distance: number,
+    position: Vector3,
+    tangent: Vector3,
+    up: Vector3,
+  ): void {
+    for (const [index, sample] of courseSamples.entries()) {
+      const previous = courseSamples[index - 1];
+      if (!previous || sample.distance < distance) continue;
+      const span = sample.distance - previous.distance;
+      const fraction = span > 0 ? (distance - previous.distance) / span : 0;
+      position.lerpVectors(previous.position, sample.position, fraction);
+      tangent
+        .lerpVectors(previous.tangent, sample.tangent, fraction)
+        .normalize();
+      up.lerpVectors(previous.up, sample.up, fraction);
+      up.addScaledVector(tangent, -up.dot(tangent)).normalize();
+      return;
+    }
+  }
+
   function placeArrow(): void {
+    if (particleFrame.arrowPresence > 0) {
+      retiringArrow.position.copy(arrowPosition);
+      retiringArrow.normal.copy(arrowNormal);
+      retiringArrow.up.copy(arrowUp);
+      retiringArrow.angleRadians = particleFrame.arrowAngleRadians;
+      retiringArrow.formation = particleFrame.arrowFormation;
+      retiringArrow.presence = particleFrame.arrowPresence;
+      retiringLifetime.outsideSeconds = arrowLifetime.outsideSeconds;
+      retiringLifetime.fadeSeconds = arrowLifetime.fadeSeconds;
+      retiringLifetime.releaseFormation =
+        arrowLifetime.fadeSeconds >= 0
+          ? arrowLifetime.releaseFormation
+          : particleFrame.arrowFormation;
+    }
     origin.copy(viewpoint.worldPosition);
     arrowUp.copy(viewpoint.worldUp);
     arrowNormal.copy(viewpoint.worldDirection).negate();
@@ -437,9 +617,12 @@ export function createStartModule(
     turnDirection.copy(
       horizontal
         ? turnDirection
-            .crossVectors(viewpoint.worldDirection, arrowUp)
+            .crossVectors(
+              viewpoint.worldFlightDirection ?? viewpoint.worldDirection,
+              WORLD_UP,
+            )
             .normalize()
-        : arrowUp,
+        : WORLD_UP,
     );
     if (direction === "left" || direction === "down") turnDirection.negate();
     // Enough lead distance to lean and turn before reaching the cue's plane.
@@ -449,6 +632,8 @@ export function createStartModule(
         Math.tan(Math.max(0.1, viewpoint.viewHalfAngleRadians)),
     );
     corridorCorrection.set(0, 0, 0);
+    lessonBend.set(0, 0, 0);
+    guidanceDistance = distance;
     predictPosition(distance, arrowPosition, predictedTangent);
     targetOffset.copy(arrowPosition).sub(origin);
     const predictionAngle = targetOffset.angleTo(viewpoint.worldDirection);
@@ -488,16 +673,60 @@ export function createStartModule(
     particleFrame.previews = [];
     particleFrame.sectionPresence = 1;
     turnSeconds = 0;
-    arrowOutsideSeconds = 0;
+    arrowLifetime.outsideSeconds = 0;
+    arrowLifetime.fadeSeconds = -1;
   }
 
   function miss(): void {
     observation.phase = "missed";
     dissolutionFormation = observation.formationProgress;
-    arrowDissolutionFormation = particleFrame.arrowFormation;
     observation.missCount += 1;
     observation.wake = undefined;
     phaseSeconds = 0;
+  }
+
+  function updateArrowLifetime(
+    position: Vector3,
+    lifetime: typeof arrowLifetime,
+    elapsed: number,
+    retiring: boolean,
+  ): void {
+    const presence = retiring
+      ? retiringArrow.presence
+      : particleFrame.arrowPresence;
+    if (
+      elapsed <= 0 ||
+      presence <= 0 ||
+      (!retiring && observation.phase === "turning" && phaseSeconds === 0)
+    )
+      return;
+    targetOffset.copy(position).sub(viewpoint.worldPosition);
+    if (lifetime.fadeSeconds < 0) {
+      const inView =
+        targetOffset.angleTo(viewpoint.worldDirection) <
+        viewpoint.viewHalfAngleRadians +
+          Math.atan2(
+            (parameters.particles?.arrowLengthMeters ?? 6) / 2,
+            targetOffset.length(),
+          );
+      lifetime.outsideSeconds = inView ? 0 : lifetime.outsideSeconds + elapsed;
+      if (lifetime.outsideSeconds < ARROW_OUT_OF_VIEW_SECONDS) return;
+      lifetime.fadeSeconds = 0;
+      lifetime.releaseFormation = retiring
+        ? retiringArrow.formation
+        : particleFrame.arrowFormation;
+    } else lifetime.fadeSeconds += elapsed;
+    const remaining = Math.max(
+      0,
+      1 - lifetime.fadeSeconds / ARROW_FADE_SECONDS,
+    );
+    if (retiring) {
+      retiringArrow.presence = remaining;
+      retiringArrow.formation = lifetime.releaseFormation * remaining;
+    } else {
+      particleFrame.arrowPresence = remaining;
+      particleFrame.arrowFormation = lifetime.releaseFormation * remaining;
+    }
   }
 
   function sample([minimum, maximum]: DistanceRange): number {
@@ -508,6 +737,9 @@ export function createStartModule(
     if (!loaded || !active) return;
     if (!initialized) {
       previousPosition.copy(viewpoint.worldPosition);
+      previousFlightPosition.copy(
+        viewpoint.worldFlightPosition ?? viewpoint.worldPosition,
+      );
       initialized = true;
     }
     const elapsed =
@@ -516,6 +748,9 @@ export function createStartModule(
     phaseSeconds += elapsed;
     if (observation.wake) wake.ageSeconds += elapsed;
     travel.copy(viewpoint.worldPosition).sub(previousPosition);
+    flightTravel
+      .copy(viewpoint.worldFlightPosition ?? viewpoint.worldPosition)
+      .sub(previousFlightPosition);
     observeMotion(elapsed);
     for (const preview of previews) {
       if (preview.crossingAgeSeconds !== undefined)
@@ -549,32 +784,18 @@ export function createStartModule(
       if (
         playing &&
         particleFrame.arrowFormation === 1 &&
-        travel.lengthSq() > MINIMUM_TRAVEL_SQUARED
+        flightTravel.lengthSq() > MINIMUM_TRAVEL_SQUARED
       ) {
-        currentTravelDirection.copy(travel).normalize();
         const turn =
           currentTravelDirection.dot(turnDirection) -
           approachDirection.dot(turnDirection);
         turnSeconds = turn >= TURN_COMPONENT ? turnSeconds + elapsed : 0;
         if (turnSeconds >= TURN_CONFIRM_SECONDS && placeGoal()) {
-          arrowDissolutionFormation = particleFrame.arrowFormation;
           particleFrame.ringPresence = 1;
           observation.phase = "forming";
           phaseSeconds = 0;
         }
       }
-      targetOffset.copy(arrowPosition).sub(viewpoint.worldPosition);
-      const inView =
-        targetOffset.angleTo(viewpoint.worldDirection) <
-        viewpoint.viewHalfAngleRadians;
-      arrowOutsideSeconds = inView ? 0 : arrowOutsideSeconds + elapsed;
-      if (
-        observation.phase === "turning" &&
-        (arrowOutsideSeconds >= ARROW_OUT_OF_VIEW_SECONDS ||
-          targetOffset.dot(arrowNormal) > 0 ||
-          targetOffset.length() > viewpoint.viewDistanceMeters)
-      )
-        miss();
     } else if (observation.phase === "forming") {
       observation.formationProgress = Math.min(
         1,
@@ -653,35 +874,23 @@ export function createStartModule(
           observation.phase === "complete"
         ) {
           particleFrame.ringPresence = 0;
-          particleFrame.arrowPresence = 0;
         }
         phaseSeconds = 0;
       }
     }
-    if (
-      observation.phase === "forming" ||
-      observation.phase === "flying" ||
-      observation.phase === "crossed"
-    ) {
-      particleFrame.arrowPresence = Math.max(
-        0,
-        1 -
-          (particleFrame.elapsedSeconds - previewStartedSeconds) /
-            ARROW_FADE_SECONDS,
-      );
-      particleFrame.arrowFormation =
-        arrowDissolutionFormation * particleFrame.arrowPresence;
-    } else if (observation.phase === "missed") {
-      particleFrame.arrowPresence = Math.min(
-        particleFrame.arrowPresence,
-        Math.max(0, 1 - phaseSeconds / parameters.dissolutionSeconds),
-      );
-      particleFrame.arrowFormation =
-        arrowDissolutionFormation * particleFrame.arrowPresence;
+    updateArrowLifetime(arrowPosition, arrowLifetime, elapsed, false);
+    updateArrowLifetime(
+      retiringArrow.position,
+      retiringLifetime,
+      elapsed,
+      true,
+    );
+    if (observation.phase === "turning" && arrowLifetime.fadeSeconds >= 0)
+      miss();
+    if (observation.phase === "missed")
       particleFrame.ringPresence = particleFrame.previews.length
         ? particleFrame.sectionPresence
         : 0;
-    }
     // Retire only through spatial movement, never because a lesson timed out.
     // The same fixed goal/preview slots are recycled after their short fade.
     travel.copy(viewpoint.worldPosition).sub(previousPosition);
@@ -697,6 +906,9 @@ export function createStartModule(
       miss();
     }
     previousPosition.copy(viewpoint.worldPosition);
+    previousFlightPosition.copy(
+      viewpoint.worldFlightPosition ?? viewpoint.worldPosition,
+    );
     observation.arrowFormationProgress =
       particleFrame.arrowFormation * particleFrame.arrowPresence;
     if (!particles) return;

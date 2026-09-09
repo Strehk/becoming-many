@@ -410,9 +410,17 @@ test("a distant receding target recycles spatially while waiting alone never exp
 });
 
 test("pause holds miss feedback and cannot advance recycling", () => {
-  const { start, runtime, formGoal, moveTo } = createPractice();
+  let frame: StartParticleFrame | undefined;
+  const { start, runtime, formGoal, moveTo } = createPractice(
+    PARAMETERS,
+    () => 0.5,
+    captureParticles((next) => {
+      frame = next;
+    }),
+  );
   const center = formGoal();
-  moveTo(center.clone().add(new Vector3(3, 0, -2)));
+  if (!frame) throw new Error("Missing goal plane");
+  flyOutsideRing(frame, center, moveTo);
   runtime.update(PARAMETERS.dissolutionSeconds / 2);
   expect(start.readObservation().phase).toBe("missed");
   const presence = start.readObservation().formationProgress;
@@ -452,7 +460,8 @@ test("repeated misses recycle three preview slots without reloading presentation
     const center = formGoal();
     slots ??= frame?.previews?.slice();
     expect(slots).toHaveLength(3);
-    moveTo(center.clone().add(new Vector3(3, 0, -2)));
+    if (!frame) throw new Error("Missing goal plane");
+    flyOutsideRing(frame, center, moveTo);
     expect(start.readObservation().phase).toBe("missed");
     runtime.update(PARAMETERS.dissolutionSeconds);
     expect(start.readObservation().attempt).toBe(attempt);
@@ -490,6 +499,22 @@ test("overtaking an unfinished formation retires it without awarding a passage",
   expect(start.readObservation().goalTarget.z).toBeLessThan(center.z);
   runtime.unload(start.module);
 });
+
+/** Cross the actual plane at a fixed lateral clearance, even for a tilted ring. */
+function flyOutsideRing(
+  frame: StartParticleFrame,
+  center: Vector3,
+  moveTo: (position: Vector3) => void,
+): void {
+  const normal = frame.goalNormal.clone();
+  const outside = new Vector3()
+    .crossVectors(normal, new Vector3(0, 1, 0))
+    .normalize()
+    .multiplyScalar(frame.ringRadiusMeters + 2)
+    .add(center);
+  moveTo(outside.clone().addScaledVector(normal, 2));
+  moveTo(outside.clone().addScaledVector(normal, -2));
+}
 
 function captureParticles(
   onFrame: (frame: StartParticleFrame) => void,
@@ -595,12 +620,11 @@ test("an out-of-view arrow dissolves and retries without awarding a goal", () =>
   worldDirection.set(0, 0, 1);
   runtime.update(0.4);
   expect(start.readObservation().phase).toBe("turning");
-  runtime.update(0.4);
+  runtime.update(1.6);
   expect(start.readObservation().phase).toBe("missed");
-  runtime.update(PARAMETERS.dissolutionSeconds / 2);
+  runtime.update(1.5);
   expect(frame?.arrowPresence).toBeCloseTo(0.5);
   expect(frame?.ringPresence).toBe(0);
-  runtime.update(PARAMETERS.dissolutionSeconds / 2);
   expect(start.readObservation().attempt).toBe(1);
   runtime.update(PARAMETERS.arrivalSeconds);
   expect(start.readObservation().phase).toBe("turning");
@@ -746,5 +770,87 @@ test("new arrows use travel prediction while pause and reset discard stale curva
   runtime.update(PARAMETERS.arrivalSeconds);
   expect(frame.arrowPosition.x).toBeCloseTo(100);
   expect(frame.arrowPosition.z).toBeLessThan(100);
+  runtime.unload(start.module);
+});
+
+test("head translation cannot confirm a turn while rig motion can", () => {
+  const eye = new Vector3(0, 4, 0);
+  const rig = new Vector3(0, 3, 0);
+  const start = createStartModule({
+    viewpoint: {
+      worldPosition: eye,
+      worldFlightPosition: rig,
+      worldDirection: new Vector3(0, 0, -1),
+      worldFlightDirection: new Vector3(0, 0, -1),
+      worldUp: new Vector3(0, 1, 0),
+      viewHalfAngleRadians: Math.PI / 2,
+      viewDistanceMeters: 100,
+    },
+    parameters: PARAMETERS,
+  });
+  const runtime = new ModuleRuntime();
+  runtime.load(start.module);
+  runtime.activate(start.module);
+  runtime.update(0);
+  runtime.update(PARAMETERS.arrivalSeconds);
+  runtime.update(PARAMETERS.formationSeconds);
+  for (let index = 0; index < 4; index += 1) {
+    eye.add(new Vector3(0.1, 0, -0.2));
+    runtime.update(0.1);
+  }
+  expect(start.readObservation().phase).toBe("turning");
+  expect(start.readObservation().crossingCount).toBe(0);
+  for (let index = 0; index < 2; index += 1) {
+    const movement = new Vector3(0.1, 0, -0.2);
+    eye.add(movement);
+    rig.add(movement);
+    runtime.update(0.1);
+  }
+  expect(start.readObservation().phase).toBe("forming");
+  runtime.unload(start.module);
+});
+
+test("arc-spaced rings transport orthogonal up vectors and the arrow outlives tunnel formation", () => {
+  let frame: StartParticleFrame | undefined;
+  const { start, runtime, formGoal, worldDirection } = createPractice(
+    PARAMETERS,
+    () => 0.5,
+    captureParticles((next) => {
+      frame = next;
+    }),
+  );
+  const center = formGoal();
+  if (!frame?.previews) throw new Error("Missing course");
+  const positions = [
+    ...frame.previews.map((preview) => preview.goalPosition.clone()),
+    center,
+  ];
+  const gaps = positions
+    .slice(1)
+    .map((position, index) =>
+      position.distanceTo(positions[index] ?? position),
+    );
+  expect(Math.max(...gaps) / Math.min(...gaps)).toBeLessThan(1.03);
+  for (const preview of frame.previews) {
+    expect(preview.goalUp?.length()).toBeCloseTo(1);
+    expect(preview.goalUp?.dot(preview.goalNormal)).toBeCloseTo(0);
+  }
+  expect(start.readObservation().predictionSeconds).toBeGreaterThan(0);
+  expect(start.readObservation().predictionSpreadMeters).toBeGreaterThan(0);
+  runtime.update(1.5);
+  expect(frame.arrowPresence).toBe(1);
+  worldDirection.set(0, 0, 1);
+  runtime.update(1.9);
+  expect(frame.arrowPresence).toBe(1);
+  worldDirection.set(0, 0, -1);
+  runtime.update(0.1);
+  worldDirection.set(0, 0, 1);
+  runtime.update(2);
+  expect(frame.arrowPresence).toBe(1);
+  runtime.update(1.5);
+  expect(frame.arrowPresence).toBeCloseTo(0.5);
+  expect(start.readObservation().phase).toBe("flying");
+  runtime.update(1.5);
+  expect(frame.arrowPresence).toBe(0);
   runtime.unload(start.module);
 });

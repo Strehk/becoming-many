@@ -2,6 +2,7 @@ import {
   Box3,
   BufferAttribute,
   BufferGeometry,
+  Color,
   Matrix4,
   Points,
   PointsMaterial,
@@ -14,7 +15,7 @@ import appearanceShader from "./start-particles.frag.glsl?raw";
 import motionShader from "./start-particles.vert.glsl?raw";
 
 export interface StartParticleParameters {
-  /** Fixed GPU capacity shared by the current ring, arrow and three previews. */
+  /** Fixed GPU capacity shared by the current ring, two arrow slots and three previews. */
   readonly count: number;
   readonly sizeMeters: number;
   readonly arrowLengthMeters?: number;
@@ -22,6 +23,8 @@ export interface StartParticleParameters {
   readonly hazeFraction?: number;
   readonly maximumPointSizePixels?: number;
   readonly color: number;
+  readonly arrowAccentColor?: number;
+  readonly crossingAccentColor?: number;
   readonly cloudRadiusMeters: number;
   readonly cloudDepthMeters: number;
   readonly driftAmplitudeMeters: number;
@@ -62,12 +65,22 @@ export interface StartParticleFrame {
   readonly ringPresence?: number;
   readonly arrowNormal?: Readonly<Vector3>;
   readonly arrowUp?: Readonly<Vector3>;
+  /** One previous cue may finish dissolving while the next cue forms. */
+  readonly retiringArrow?: {
+    readonly position: Readonly<Vector3>;
+    readonly normal: Readonly<Vector3>;
+    readonly up: Readonly<Vector3>;
+    readonly angleRadians: number;
+    readonly formation: number;
+    readonly presence: number;
+  };
   readonly wake?: StartParticleWake;
   /** Presentation-only guide rings; at most three are rendered. */
   readonly previews?: readonly StartParticlePreview[];
 }
 
 export interface StartParticlePreview {
+  readonly goalUp?: Readonly<Vector3>;
   /** First swept passage, supplied by Start; undefined means not crossed. */
   readonly crossingAgeSeconds?: number;
   readonly goalPosition: Readonly<Vector3>;
@@ -100,7 +113,7 @@ const UNIT_SCALE = new Vector3(1, 1, 1);
 const ARROW_SOURCE_WIDTH = 1.1;
 const CROSSING_EXPANSION = 0.065;
 const MAXIMUM_DISPERSAL_MARGIN_METERS = 2.5;
-const CROSSING_PULSE_DECAY = 4;
+const CROSSING_PULSE_DECAY = 2.5;
 
 /** Own one fixed Points draw; Start supplies its pose, transition and crossing facts. */
 export function createStartParticleEffect({
@@ -124,6 +137,7 @@ export function createStartParticleEffect({
   const previewCrossingAges = new Float32Array(MAXIMUM_PREVIEWS).fill(-1);
   let previousFormation = 0;
   let previousArrowFormation = 0;
+  let previousRetiringFormation = 0;
   const previewRotation = new Quaternion();
   const objects = {
     ringLeft: new Vector3(),
@@ -138,6 +152,18 @@ export function createStartParticleEffect({
     startRadius: { value: 1 },
     startArrowAngle: { value: 0 },
     startArrowPose: { value: new Matrix4() },
+    startRetiringArrowPose: { value: new Matrix4() },
+    startRetiringArrowAngle: { value: 0 },
+    startRetiringArrowFormation: { value: 0 },
+    startRetiringArrowPresence: { value: 0 },
+    startRetiringArrowDissolving: { value: 0 },
+    startRetiringArrowReleaseOrigin: { value: new Float32Array([1, 1]) },
+    startArrowAccent: {
+      value: new Color(parameters.arrowAccentColor ?? parameters.color),
+    },
+    startCrossingAccent: {
+      value: new Color(parameters.crossingAccentColor ?? 0xdddddd),
+    },
     startArrowScale: { value: arrowLength / ARROW_SOURCE_WIDTH },
     startThickness: { value: thickness },
     startPreviewPoses: { value: previewPoses },
@@ -211,7 +237,7 @@ export function createStartParticleEffect({
             "#include <color_fragment>\napplyStartParticleAppearance(diffuseColor);",
           );
       };
-      material.customProgramCacheKey = () => "start-cloud-particles-v3";
+      material.customProgramCacheKey = () => "start-cloud-particles-v4";
       points = new Points(geometry, material);
       points.name = "StartTrainingParticles";
       points.visible = false;
@@ -254,6 +280,47 @@ export function createStartParticleEffect({
       goalRotation,
       UNIT_SCALE,
     );
+    const retiring = frame.retiringArrow;
+    if (retiring) {
+      const previousPose = uniforms.startRetiringArrowPose.value.elements;
+      const replaced =
+        uniforms.startRetiringArrowPresence.value === 0 ||
+        previousPose[12] !== retiring.position.x ||
+        previousPose[13] !== retiring.position.y ||
+        previousPose[14] !== retiring.position.z;
+      goalRotation.setFromRotationMatrix(
+        orientation.lookAt(retiring.normal, ORIGIN, retiring.up),
+      );
+      uniforms.startRetiringArrowPose.value.compose(
+        retiring.position,
+        goalRotation,
+        UNIT_SCALE,
+      );
+      uniforms.startRetiringArrowAngle.value = retiring.angleRadians;
+      if (replaced) {
+        uniforms.startRetiringArrowDissolving.value =
+          uniforms.startArrowDissolving.value;
+        uniforms.startRetiringArrowReleaseOrigin.value.set(
+          uniforms.startArrowReleaseOrigin.value,
+        );
+        previousRetiringFormation = previousArrowFormation;
+      }
+      if (
+        retiring.formation < previousRetiringFormation &&
+        !uniforms.startRetiringArrowDissolving.value
+      ) {
+        uniforms.startRetiringArrowReleaseOrigin.value[0] =
+          previousRetiringFormation;
+        uniforms.startRetiringArrowReleaseOrigin.value[1] = springGather(
+          previousRetiringFormation,
+          false,
+        );
+        uniforms.startRetiringArrowDissolving.value = 1;
+      }
+      previousRetiringFormation = retiring.formation;
+      uniforms.startRetiringArrowFormation.value = retiring.formation;
+    }
+    uniforms.startRetiringArrowPresence.value = retiring?.presence ?? 0;
     const arrowFormation = frame.arrowFormation ?? frame.formationProgress;
     if (
       frame.formationProgress < previousFormation &&
@@ -307,7 +374,7 @@ export function createStartParticleEffect({
       .set(
         0,
         0,
-        Math.sin(frame.elapsedSeconds * 0.65) *
+        Math.sin(frame.elapsedSeconds * 0.35) *
           0.12 *
           smoothstep(arrowFormation),
       )
@@ -323,13 +390,19 @@ export function createStartParticleEffect({
       .makeEmpty()
       .expandByPoint(frame.goalPosition)
       .expandByPoint(frame.arrowPosition);
+    if (retiring && retiring.presence > 0)
+      bounds.expandByPoint(retiring.position);
     let largestRadius = frame.ringRadiusMeters;
     for (let index = 0; index < previewCount; index += 1) {
       const preview = frame.previews?.[index];
       const pose = previewPoses[index];
       if (!preview || !pose) continue;
       previewRotation.setFromRotationMatrix(
-        orientation.lookAt(preview.goalNormal, ORIGIN, frame.goalUp),
+        orientation.lookAt(
+          preview.goalNormal,
+          ORIGIN,
+          preview.goalUp ?? frame.goalUp,
+        ),
       );
       pose.compose(preview.goalPosition, previewRotation, UNIT_SCALE);
       previewRadii[index] = preview.ringRadiusMeters;
@@ -344,7 +417,7 @@ export function createStartParticleEffect({
         largestRadius * (1 + thickness * 2) * (1 + CROSSING_EXPANSION),
         arrowLength,
       ) +
-        parameters.driftAmplitudeMeters +
+        parameters.driftAmplitudeMeters * 3 +
         MAXIMUM_DISPERSAL_MARGIN_METERS +
         1,
     );
@@ -383,6 +456,8 @@ export function createStartParticleEffect({
     anchorsReady = false;
     previousFormation = 0;
     previousArrowFormation = 0;
+    previousRetiringFormation = 0;
+    uniforms.startRetiringArrowPresence.value = 0;
     scene.remove(releasedPoints);
     releasedPoints.geometry.dispose();
     releasedPoints.material.dispose();
@@ -424,33 +499,39 @@ function writeParticleAttributes(
   const sizes = new Float32Array(parameters.count);
   const haze = new Float32Array(parameters.count);
   const depths = new Float32Array(parameters.count);
-  const ringCount = Math.floor(parameters.count * 0.35);
-  const arrowEnd = Math.floor(parameters.count * 0.6);
+  const ringCount = Math.floor(parameters.count * 0.3);
+  const arrowCount = Math.floor(parameters.count * 0.2);
+  const arrowEnd = ringCount + arrowCount * 2;
   const previewCapacity = parameters.count - arrowEnd;
   for (let index = 0; index < parameters.count; index += 1) {
     const offset = index * 3;
+    // Matching samples make transfer into the retiring slot visually continuous.
+    const seed =
+      index >= ringCount + arrowCount && index < arrowEnd
+        ? index - arrowCount
+        : index;
     positions[offset] =
-      (random(index, 0) * 2 - 1) * parameters.cloudRadiusMeters;
+      (random(seed, 0) * 2 - 1) * parameters.cloudRadiusMeters;
     positions[offset + 1] =
-      (random(index, 1) * 2 - 1) * parameters.cloudRadiusMeters;
+      (random(seed, 1) * 2 - 1) * parameters.cloudRadiusMeters;
     positions[offset + 2] =
-      (random(index, 2) * 2 - 1) * parameters.cloudDepthMeters;
-    phases[index] = random(index, 3) * Math.PI * 2;
-    const isHaze = random(index, 8) < (parameters.hazeFraction ?? 0.12);
+      (random(seed, 2) * 2 - 1) * parameters.cloudDepthMeters;
+    phases[index] = random(seed, 3) * Math.PI * 2;
+    const isHaze = random(seed, 8) < (parameters.hazeFraction ?? 0.12);
     haze[index] = isHaze ? 1 : 0;
     sizes[index] = isHaze
-      ? 5 + random(index, 9) * 4
-      : 0.45 + random(index, 9) * 1.15;
+      ? 5 + random(seed, 9) * 4
+      : 0.45 + random(seed, 9) * 1.15;
     if (index >= ringCount && index < arrowEnd) {
-      roles[index] = 1;
+      roles[index] = index < ringCount + arrowCount ? 1 : 5;
       // Sample a filled shaft or triangular head, including an elliptical depth.
-      const head = random(index, 4) > 0.55;
+      const head = random(seed, 4) > 0.55;
       const x = head
-        ? 0.05 + (1 - Math.sqrt(random(index, 5))) * 0.5
-        : -0.55 + random(index, 5) * 0.65;
+        ? 0.05 + (1 - Math.sqrt(random(seed, 5))) * 0.5
+        : -0.55 + random(seed, 5) * 0.65;
       const width = head ? (0.55 - x) * 0.72 : 0.11;
-      const angle = random(index, 6) * Math.PI * 2;
-      const radial = Math.sqrt(random(index, 7));
+      const angle = random(seed, 6) * Math.PI * 2;
+      const radial = Math.sqrt(random(seed, 7));
       targets[offset] = x;
       targets[offset + 1] = Math.cos(angle) * radial * width;
       targets[offset + 2] = Math.sin(angle) * radial * 0.13;
@@ -460,10 +541,10 @@ function writeParticleAttributes(
           ? 0
           : 2 +
             Math.min(2, Math.floor(((index - arrowEnd) / previewCapacity) * 3));
-      const angle = random(index, 4) * Math.PI * 2;
-      const crossAngle = random(index, 5) * Math.PI * 2;
+      const angle = random(seed, 4) * Math.PI * 2;
+      const crossAngle = random(seed, 5) * Math.PI * 2;
       // A dense core with a sparse shell; low frequency lobes soften the torus.
-      const radial = random(index, 6) ** (isHaze ? 0.45 : 0.85);
+      const radial = random(seed, 6) ** (isHaze ? 0.45 : 0.85);
       const lobe = 0.82 + 0.18 * Math.sin(angle * 5 + Math.sin(angle * 3));
       const crossRadius = radial * lobe;
       targets[offset] = Math.cos(angle);

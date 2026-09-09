@@ -171,3 +171,20 @@ describe("viewer rig", () => {
     expect(viewer.group.rotation.x).toBe(0);
   });
 });
+
+test("flight facts exclude head translation, look and pitch assistance", () => {
+  const viewer = createViewerRig(30);
+  viewer.group.position.set(3, 5, -8);
+  viewer.group.rotation.y = Math.PI / 4;
+  viewer.publish();
+  const position = viewer.viewpoint.worldFlightPosition?.clone();
+  const direction = viewer.viewpoint.worldFlightDirection?.clone();
+  viewer.camera.position.set(0.4, 1.6, 0.2);
+  viewer.camera.rotation.set(0.3, 0.8, 0.2);
+  viewer.publish();
+  expect(viewer.viewpoint.worldFlightPosition).toEqual(position);
+  expect(viewer.viewpoint.worldFlightDirection).toEqual(direction);
+  expect(viewer.viewpoint.worldFlightPosition?.toArray()).toEqual([3, 5, -8]);
+  expect(viewer.viewpoint.worldFlightDirection?.y).toBeCloseTo(0);
+  expect(viewer.viewpoint.worldPosition).not.toEqual(position);
+});

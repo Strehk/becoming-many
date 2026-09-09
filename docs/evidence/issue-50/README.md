@@ -895,3 +895,83 @@ ERR_ABORTED cancellations during replacement/disposal and consequently exits
 nonzero; these remain visible in the raw evidence. There were no course assertion
 failures. Physical headset prediction/comfort and Windows-PCVR acceptance remain
 open. The change adds bounded prediction logic, not a code-reduction claim.
+
+
+## Reachable guidance and independent particle lifetimes — 2026-09-09
+
+The user's schematics are conceptual references, not runtime screenshots or
+geometry/count requirements. The Scent shaders/palette informed calmer wind and
+restrained feedback; no sibling module import or new physics pipeline was added.
+
+| Requested principle | Current implementation |
+| --- | --- |
+| Separate view, forecast and guidance | World publishes eye and rig facts; rig movement supplies smoothed speed/curvature, while eye segments retain swept passage semantics. A gentle lesson bias and visibility correction form guidance without writing controls. |
+| Short forecast, uncertainty versus reachability | A speed-dependent horizon and heuristic spread describe uncertain continuation; a separate fixed 33-sample table checks existing yaw/climb limits. Visibility may require longer lead than the preferred six-second forecast; this is guidance, not a claim of precise long-range prediction. |
+| Rings along the curve | Cumulative sampled arc length selects three equally spaced previews before the counted goal; transported up vectors keep orientations continuous. |
+| Plan only future sections | Visible sections retain their anchors. New unshown sections use current motion; misses fade/recycle instead of forcing an unreachable connection. No automatic steering or per-frame movement of targets. |
+| Bounded ownership | One form-particle draw, three preview slots, two arrow slots and 125 existing world-anchored Air chunks. No new renderer, loop or time owner. |
+| Reliable passage and feedback | Existing swept crossings, once-only goals and per-preview pulses remain. Misses award nothing; sound keeps the existing fixed object bindings and cleanup. |
+| Calm independent arrows | Arrow/ring samples were already separate. Removed the one-second arrow release tied to tunnel birth. Arrows now wait two playing seconds entirely outside view, then release for three seconds; an old cue uses the second fixed slot without blocking speech or progress. |
+
+The shader retains exact critically damped gathering and linear-drag impulses.
+Slow world-correlated breeze plus small seeded eddies replace the more restless
+local movement; formed bodies drift less than loose particles. The neutral/silver
+base carries only slight orange arrow and turquoise hit accents from authored
+Scent palette literals. An initial 18k ambient trial still looked sparse in the
+actual screenshots, so the final recipe uses 48k ambient particles (384/cell),
+up from 6k. The form pool is 40k rather than 32k to retain existing per-body density
+while allowing an old arrow to coexist. Two arrow roles use identical immutable
+samples so retirement does not morph one cloud into another.
+
+Repository lint, production build/typecheck and 49 focused tests passed; the
+small subsequent whole-arrow visibility/paused-release refinement passed all
+21 Start tests again. Coverage includes head translation versus rig movement,
+arc spacing, transported orientation, fixed anchors, 100 miss/retry cycles,
+50 retiring-arrow cycles/1,500 updates without particle attribute uploads,
+spatial audio and restart cleanup. Two old miss fixtures assumed a world-aligned
+ring plane; they now actually fly outside the tilted plane while preserving
+zero-award/recycling assertions. Floating-point orientation uses a tight distance
+tolerance rather than exact binary equality.
+
+Headed production-browser success runs completed right/left/up/down without
+misses and retained the full closing (handoff around 70.7 s). A separate real
+forward-flight run missed/recycled twice with zero goals, then exercised Begin
+experience successfully. The attempted head-only pointer-lock run timed out;
+Chromium did not grant lock. This remains explicit in `guidance-look/probe.json`;
+`guidance-deviation/probe.json` records the available interaction instead. The
+head-only invariants pass isolated tests, not physical/XR/browser-pointer proof.
+All paths are under `benchmark-results/issue-50/`.
+
+Actual final browser screenshots, not renders from the inspiration images:
+
+![Spoken arrow before ring generation](guidance-arrow.png)
+![The fixed arrow remains while separate ring particles form](guidance-tunnel.png)
+
+The screen sequence shows distinct bodies, fine grains and a restrained warm
+arrow; the arrow leaves the image as the pilot turns while the tunnel forms.
+Photographic clouds are not claimed. Animation comfort, full headset field of
+view, spatial listening, EN policy and Windows-PCVR USB-C 90 Hz remain open.
+
+
+Comparable final measurement uses the same probe as the preceding motion revision,
+without the extra screenshot/uniform inspection. In the 20–55 s window, prior
+CPU median/p95/p99 was 0.3/0.5/0.6 ms and GPU 0.113875/0.309583/0.373291 ms;
+final CPU was 0.3/0.5/0.6 ms and GPU 0.120583/0.306875/0.369583 ms. RAF
+median/p95/p99 was 16.7/18.2/18.5 ms. The screenshot run had an elevated GPU
+median (0.265749 ms, p95 0.333125); it is retained rather than used as the
+comparable timing claim. No speedup or Windows performance certification follows.
+Course-time buffer/program/texture creation remains zero, upload p99 zero;
+peak Air face uploads rise from 19,200 to 153,600 bytes with eightfold density.
+Form attributes use 1,760,000 bytes and Air attributes 768,000 bytes per CPU/GPU
+copy, versus 1,504,000 combined before. These are attribute budgets, not total
+application memory. The 40k form-point four-pixel cap bounds sprite-square
+coverage at 640,000 pixels per eye before culling; Air retains its existing
+point path. No additional draw or per-particle CPU update was introduced.
+
+Raw final sources: `guidance-final/probe.json` (screenshots) and
+`guidance-measured/probe.json` (comparable timing), under the evidence parent above.
+Served asset digest: `7e5c7d8f9ffa9c7e10ba92fcd06f8d1b85fb645ebac5b5ce9c26487f400c9d23`.
+Course assertions passed; the generic probe exits nonzero for reported native
+narration ERR_ABORTED cancellations during replacement/disposal. Those reports
+are preserved, not suppressed. This is requested feature growth, not a
+code-reduction claim.

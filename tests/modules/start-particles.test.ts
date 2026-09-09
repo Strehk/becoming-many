@@ -79,8 +79,10 @@ test("one fixed cloud forms both targets without reallocating or uploading frame
   const arrowCount = Array.from(arrowParticles).filter(
     (role) => role === 1,
   ).length;
-  expect(arrowCount).toBeGreaterThan(PARAMETERS.count * 0.2);
-  expect(arrowCount).toBeLessThan(PARAMETERS.count * 0.35);
+  expect(arrowCount).toBe(PARAMETERS.count * 0.2);
+  expect(Array.from(arrowParticles).filter((role) => role === 5)).toHaveLength(
+    arrowCount,
+  );
   const shader = compileMaterial(points.material);
   expect(shader.vertexShader).toContain(
     "vec3 transformed = animateStartParticle(position);",
@@ -336,9 +338,9 @@ test("filled clouds retain depth, a dense core and bounded haze within fixed cap
     }
     hazeCount += haze.getX(index);
   }
-  expect(arrowInterior).toBeGreaterThan(2000);
+  expect(arrowInterior).toBeGreaterThan(1600);
   expect(thickRing).toBeGreaterThan(2000);
-  expect(ringCore).toBeGreaterThan(6000);
+  expect(ringCore).toBeGreaterThan(5000);
   expect(hazeCount).toBeGreaterThan(3000);
   expect(hazeCount).toBeLessThan(4500);
   expect(bytes).toBe(32_000 * 44);
@@ -410,10 +412,10 @@ test("immediate local expansion and drag transport keep sound anchored to the ri
   };
   effect.update({ ...frame, wake });
   expect(effect.readObjectAnchors()?.ringLeft.x).toBeCloseTo(
-    2 - 1.5 * 1.24 * (1 + 0.065 * Math.exp(-0.45 * 4)),
+    2 - 1.5 * 1.24 * (1 + 0.065 * Math.exp(-0.45 * 2.5)),
   );
   expect(effect.readObjectAnchors()?.arrow.z).toBeCloseTo(
-    -4 + Math.sin(0.65) * 0.12,
+    -4 + Math.sin(0.35) * 0.12,
   );
   effect.update({ ...frame, wake: { ...wake, ageSeconds: 10 } });
   expect(effect.readObjectAnchors()?.ringLeft.x).toBeCloseTo(0.14);
@@ -474,5 +476,102 @@ test("arrow pose and presence stay independent as tunnel rings form and cross", 
   });
   expect(ages[0]).toBe(-1);
   expect(shader.uniforms.startPreviewCrossingAges?.value).toBe(ages);
+  effect.unload();
+});
+
+test("retiring arrows keep matching samples and independent fixed poses through recycling", () => {
+  const scene = new Scene();
+  const effect = createStartParticleEffect({ scene, parameters: PARAMETERS });
+  effect.load();
+  effect.setVisible(true);
+  const points = readPoints(scene);
+  const shader = compileMaterial(points.material);
+  const attributes = Object.values(
+    points.geometry.attributes,
+  ) as BufferAttribute[];
+  const roles = points.geometry.getAttribute("startRole");
+  const currentIndex = Array.from(roles.array).indexOf(1);
+  const retiringIndex = Array.from(roles.array).indexOf(5);
+  for (const attribute of attributes) {
+    if (attribute === roles) continue;
+    const first = currentIndex * attribute.itemSize;
+    const second = retiringIndex * attribute.itemSize;
+    expect(
+      Array.from(attribute.array.slice(first, first + attribute.itemSize)),
+    ).toEqual(
+      Array.from(attribute.array.slice(second, second + attribute.itemSize)),
+    );
+  }
+  const retiredPosition = new Vector3(-20, 4, 3);
+  const retired = {
+    position: retiredPosition,
+    normal: new Vector3(0, 0, 1),
+    up: new Vector3(0, 1, 0),
+    angleRadians: Math.PI / 2,
+    formation: 1,
+    presence: 1,
+  };
+  for (let cycle = 0; cycle < 50; cycle += 1) {
+    effect.update({ ...createFrame(), arrowFormation: 1 });
+    effect.update({
+      ...createFrame(),
+      retiringArrow: retired,
+      arrowFormation: 0,
+    });
+    for (let step = 1; step <= 30; step += 1) {
+      effect.update({
+        ...createFrame(),
+        arrowPosition: new Vector3(step, 3, -4),
+        arrowFormation: step / 30,
+        retiringArrow: {
+          ...retired,
+          formation: 1 - step / 30,
+          presence: 1 - step / 30,
+        },
+      });
+      expect(shader.uniforms.startRetiringArrowPose?.value).toEqual(
+        new Matrix4().makeTranslation(-20, 4, 3),
+      );
+      if (step < 30)
+        expect(
+          points.geometry.boundingSphere?.containsPoint(retiredPosition),
+        ).toBe(true);
+    }
+  }
+  retiredPosition.set(999, 999, 999);
+  expect(shader.uniforms.startRetiringArrowPose?.value).toEqual(
+    new Matrix4().makeTranslation(-20, 4, 3),
+  );
+  effect.update(createFrame());
+  expect(shader.uniforms.startRetiringArrowPresence?.value).toBe(0);
+  expect(shader.uniforms.startArrowFormation?.value).toBe(0);
+  for (const attribute of attributes) expect(attribute.version).toBe(0);
+  expect(scene.children).toHaveLength(1);
+  effect.unload();
+});
+
+test("preview orientation uses its transported up vector", () => {
+  const scene = new Scene();
+  const effect = createStartParticleEffect({ scene, parameters: PARAMETERS });
+  effect.load();
+  effect.setVisible(true);
+  const shader = compileMaterial(readPoints(scene).material);
+  effect.update({
+    ...createFrame(),
+    previews: [
+      {
+        goalPosition: new Vector3(),
+        goalNormal: new Vector3(0, 0, 1),
+        goalUp: new Vector3(1, 0, 0),
+        ringRadiusMeters: 2,
+      },
+    ],
+  });
+  const poses = shader.uniforms.startPreviewPoses?.value as Matrix4[];
+  expect(
+    new Vector3(0, 1, 0)
+      .transformDirection(poses[0] as Matrix4)
+      .distanceTo(new Vector3(1, 0, 0)),
+  ).toBeLessThan(1e-12);
   effect.unload();
 });

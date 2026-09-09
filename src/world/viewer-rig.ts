@@ -21,6 +21,10 @@ export interface Viewpoint {
    */
   readonly worldPosition: Readonly<Vector3>;
 
+  /** Locomotion origin/heading, excluding head pose and view assistance. */
+  readonly worldFlightPosition?: Readonly<Vector3>;
+  readonly worldFlightDirection?: Readonly<Vector3>;
+
   /** Camera look direction, including head pose, rig yaw and view assistance. */
   readonly worldDirection: Readonly<Vector3>;
 
@@ -71,6 +75,8 @@ export function createViewerRig(viewPitchAssistDegrees = 0): ViewerRig {
   group.add(viewAssist);
 
   const worldPosition = new Vector3();
+  const worldFlightPosition = new Vector3();
+  const worldFlightDirection = new Vector3(0, 0, -1);
   const worldDirection = new Vector3(0, 0, -1);
   const worldUp = new Vector3(0, 1, 0);
   let viewHalfAngleRadians = MathUtils.degToRad(camera.getEffectiveFOV()) / 2;
@@ -81,6 +87,8 @@ export function createViewerRig(viewPitchAssistDegrees = 0): ViewerRig {
 
     viewpoint: {
       worldPosition,
+      worldFlightPosition,
+      worldFlightDirection,
       worldDirection,
       worldUp,
       get viewHalfAngleRadians(): number {
@@ -99,6 +107,11 @@ export function createViewerRig(viewPitchAssistDegrees = 0): ViewerRig {
       // matrices until the render call. Force the update so the camera child
       // is recomposed too — `getWorldPosition` reads `matrixWorld`.
       group.updateMatrixWorld(true);
+      group.getWorldPosition(worldFlightPosition);
+      worldFlightDirection
+        .setFromMatrixColumn(group.matrixWorld, 2)
+        .negate()
+        .normalize();
       camera.getWorldPosition(worldPosition);
       camera.getWorldDirection(worldDirection);
       worldUp.setFromMatrixColumn(camera.matrixWorld, 1).normalize();
