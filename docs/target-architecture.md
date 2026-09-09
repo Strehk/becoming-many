@@ -343,8 +343,10 @@ recipe enables user-provided granular excerpts through the existing training
 audio owner. Start supplies physical particle-body anchors; spatial audio owns
 listener/distance, Show supplies playback/speech facts, and Run awaits sample/room
 preparation and cleanup. The five original German tutorial recordings are
-installed at the existing narration owner following the user request. The first
-course forms ahead after the introduction; EN voice policy remains open. Native timebase suspension still prevents Show time from advancing. The subsequent
+installed at the existing narration owner following the user request. The 2026-09-09 gaze revision forms each section at the authored spoken
+instruction onset in the current published view, then keeps it world-fixed. Run
+selects 2 m/s tutorial translation through existing controls, restoring main
+defaults on handoff. EN voice policy remains open. Native timebase suspension still prevents Show time from advancing. The subsequent
 2026-09-09 user review requires continuous near-field particles through the
 existing world chunk mechanism, large volumetric particle arrows and curved
 particle tunnels with overlapping local formation/dissolution. World positions

@@ -13,12 +13,20 @@ const MINIMUM_PLANAR_DIRECTION_LENGTH = 1e-6;
 /** Own reusable flight math for one rig; no timers or external resources. */
 export function createM5Flight(
   flight: FlightTransform,
-): (frame: ControlFrame, deltaSeconds: number) => void {
+): (
+  frame: ControlFrame,
+  deltaSeconds: number,
+  glideSpeedMetersPerSecond?: number,
+) => void {
   const worldUp = new Vector3(0, 1, 0);
   const yawStep = new Quaternion();
   const glideDirection = new Vector3();
 
-  return (frame, deltaSeconds): void => {
+  return (
+    frame,
+    deltaSeconds,
+    glideSpeedMetersPerSecond = FLIGHT_SETTINGS.glideSpeedMetersPerSecond,
+  ): void => {
     const turnRight = -frame.roll;
     const climb = -frame.pitch;
     // World-up yaw preserves a level horizon and independent local head pose.
@@ -35,7 +43,7 @@ export function createM5Flight(
       glideDirection.divideScalar(planarLength);
       flight.position.addScaledVector(
         glideDirection,
-        FLIGHT_SETTINGS.glideSpeedMetersPerSecond * deltaSeconds,
+        glideSpeedMetersPerSecond * deltaSeconds,
       );
     }
 

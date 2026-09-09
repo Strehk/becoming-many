@@ -275,8 +275,13 @@ duration. Audio ending never completes a flight goal. Standalone
 Start keeps the same transport while omitting the main-experience handoff.
 The current literal recipe enables bounded object-bound granular audio from
 three user-supplied excerpts and the five user-requested German tutorial recordings.
-The opening course is placed ahead after the spoken orientation finishes; later
-short directional cues repeat on a retry. The EN voice policy remains open. Run owns the shared Tone spatial context when audio is configured;
+At each authored instruction onset, Start samples the current world-space eye
+direction and conservative projection cone published by World. It places the
+arrow on that ray and the current ring/three previews within the view, then
+retains their world anchors. This replaces preplanned rig-heading targets. Show
+opens formation separately from allowing post-crossing progression. Run supplies
+2 m/s tutorial translation through the existing controls and restores ordinary
+main speeds on handoff; directional sensitivity is unchanged. The EN voice policy remains open. Run owns the shared Tone spatial context when audio is configured;
 Show retains its existing native timebase and narration owner.
 
 `show.runtime.ts` also drives the drone organ in `src/sound/drone-organ/`

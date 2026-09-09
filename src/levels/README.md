@@ -101,7 +101,7 @@ and the opening of the full Show. Existing route/catalog registration is retaine
 The approved sequence is right, left, up, down. Show caps integrated practice at
 60 playing seconds; standalone practice remains independently exercisable. Start generates
 goals from bounded distance, displacement and radius ranges in the
-current course heading. The recipe contains no authored ring coordinates. Restart samples
+current eye direction at the spoken instruction. The recipe contains no authored ring coordinates. Restart samples
 a new course. Ordinary frames and pauses retain placed targets. Missed sections
 fade and recycle the same fixed slots ahead of the current flight pose.
 Sound attachments borrow the generated geometry, so their distance and position
@@ -113,15 +113,19 @@ goal tone. Operator status distinguishes both outcomes. Device-specific neutral/
 
 Start's learning module owns goal progression and one crossing observation.
 Its optional particle effect owns 32,000 fixed particles in one draw: a thick
-ring, filled 7.2 m arrow and three intermediate guides along a generated curve.
+ring, filled 3.5 m arrow and three intermediate guides along a generated curve.
 The guides only describe space; passing them never advances learning. A section
-stays until its destination is passed. Small grains and soft haze gather locally;
+stays world-fixed until its destination is passed or spatially missed. Small grains and soft haze gather locally;
 only the counted ring expands, flashes silver briefly and disperses with a bounded
 trajectory wake. Independent Air uses 48 particles per 16 m chunk and fades its
 16 m local field before recycling. Main-level defaults are unchanged. Composition
 can omit presentation without changing learning or creating visual resources.
 
 Show owns Play/Pause, language, current instruction and transition policy.
+Authored instruction onsets release formation while a clip is playing. Start
+captures the published eye direction/view cone per section and independently
+anchors its forward arrow and curved ring path. Run selects the Start recipe’s
+2 m/s translation through existing controls until training retires.
 The literal Start recipe supplies `maximumPracticeSeconds: 60`. The same clock
 runs practice, an earned closing voice and the main score; no UI timer exists.
 Four actual passages before the cutoff allow the complete closing recording,

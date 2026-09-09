@@ -2,7 +2,10 @@ import { type Camera, type Object3D, Quaternion, Vector3 } from "three";
 import { PointerLockControls } from "three/addons/controls/PointerLockControls.js";
 
 export interface DesktopControls {
-  readonly update: (deltaSeconds: number) => void;
+  readonly update: (
+    deltaSeconds: number,
+    movementSpeedMetersPerSecond?: number,
+  ) => void;
   /** Ends input capture and awaits any pending pointer-lock grant and release. */
   readonly unload: () => Promise<void>;
 }
@@ -85,7 +88,10 @@ export function createDesktopControls(
 
   return { update, unload };
 
-  function update(deltaSeconds: number): void {
+  function update(
+    deltaSeconds: number,
+    movementSpeedMetersPerSecond = MOVEMENT_SPEED_METERS_PER_SECOND,
+  ): void {
     if (signal.aborted || !controls.isLocked) return;
 
     const forward = getDirection(pressedKeys, FORWARD_KEYS, BACKWARD_KEYS);
@@ -94,7 +100,7 @@ export function createDesktopControls(
     if (directionLength === 0) return;
 
     const distance =
-      (MOVEMENT_SPEED_METERS_PER_SECOND * deltaSeconds) / directionLength;
+      (movementSpeedMetersPerSecond * deltaSeconds) / directionLength;
     // Move the rig along the camera's world axes; WebXR owns camera translation.
     camera.getWorldQuaternion(viewQuaternion);
     forwardDirection

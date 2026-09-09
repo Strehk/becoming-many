@@ -239,3 +239,17 @@ history belongs in Git; unresolved product and deployment questions belong in
   decision. Remaining gates are concrete proposals with consequences, as mapped
   in the [target architecture](target-architecture.md#10-decisions-issuepr-evidence-and-critical-review)
   and [roadmap](roadmap.md); confirmed direction is not proof of implementation.
+
+### Gaze-aligned spoken tutorial — 2026-09-09
+
+The user requests slower tutorial flight and an arrow directly in the current
+view when the narrator gives the movement instruction. Start therefore captures
+the published eye direction at each cue's formation onset, generates that section
+inside the conservative camera view cone, and retains world-fixed ring/arrow
+anchors afterwards. This replaces a preplanned rig-heading course. Show supplies
+the authored spoken onset independently from the cue-completion gate; it remains
+the sole clock/narration owner. Run passes 2 m/s translation to the existing
+controls while training exists and restores their ordinary speeds on handoff.
+Input sensitivity, head pose, main timing and lifecycle ownership are unchanged.
+If the flight ceiling makes the current gaze infeasible, formation waits for a
+reachable visible target. Retrying repeats the instruction portion of its clip.

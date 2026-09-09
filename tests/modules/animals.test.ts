@@ -68,6 +68,9 @@ test("Animals fade in when they take a visible slot", () => {
   const scene = new Scene();
   const viewpoint: Viewpoint = {
     worldPosition: new Vector3(),
+    worldDirection: new Vector3(0, 0, -1),
+    worldUp: new Vector3(0, 1, 0),
+    viewHalfAngleRadians: Math.PI / 4,
     viewDistanceMeters: DEFAULT_VIEW_DISTANCE_METERS,
   };
   const module = createAnimalsModule({
@@ -119,6 +122,9 @@ test("Animals animate only the nearest bounded population", () => {
   const viewerPosition = new Vector3();
   const viewpoint: Viewpoint = {
     worldPosition: viewerPosition,
+    worldDirection: new Vector3(0, 0, -1),
+    worldUp: new Vector3(0, 1, 0),
+    viewHalfAngleRadians: Math.PI / 4,
     viewDistanceMeters: DEFAULT_VIEW_DISTANCE_METERS,
   };
   const module = createAnimalsModule({
@@ -152,6 +158,9 @@ test.each([false, true])(
     const viewerPosition = new Vector3();
     const viewpoint: Viewpoint = {
       worldPosition: viewerPosition,
+      worldDirection: new Vector3(0, 0, -1),
+      worldUp: new Vector3(0, 1, 0),
+      viewHalfAngleRadians: Math.PI / 4,
       viewDistanceMeters: DEFAULT_VIEW_DISTANCE_METERS,
     };
     const decoratedMaterials: SensedMaterial[] = [];
@@ -212,6 +221,9 @@ test("Animals reject an impossible visibility budget", () => {
       scene: new Scene(),
       viewpoint: {
         worldPosition: new Vector3(),
+        worldDirection: new Vector3(0, 0, -1),
+        worldUp: new Vector3(0, 1, 0),
+        viewHalfAngleRadians: Math.PI / 4,
         viewDistanceMeters: DEFAULT_VIEW_DISTANCE_METERS,
       },
       definition: { ...DEFINITION, maxVisible: 5 },
@@ -227,6 +239,9 @@ test("Animals occupy separate territories around the player", () => {
   const viewerPosition = new Vector3();
   const viewpoint: Viewpoint = {
     worldPosition: viewerPosition,
+    worldDirection: new Vector3(0, 0, -1),
+    worldUp: new Vector3(0, 1, 0),
+    viewHalfAngleRadians: Math.PI / 4,
     viewDistanceMeters: DEFAULT_VIEW_DISTANCE_METERS,
   };
   const module = createAnimalsModule({
@@ -288,6 +303,9 @@ test("Animals lean onto an arc at a zone edge instead of pivoting", () => {
   const scene = new Scene();
   const viewpoint: Viewpoint = {
     worldPosition: new Vector3(),
+    worldDirection: new Vector3(0, 0, -1),
+    worldUp: new Vector3(0, 1, 0),
+    viewHalfAngleRadians: Math.PI / 4,
     viewDistanceMeters: DEFAULT_VIEW_DISTANCE_METERS,
   };
   const species = {
@@ -459,6 +477,9 @@ function walkOnIsland(framesPerSecond: number): IslandWalk {
     scene: new Scene(),
     viewpoint: {
       worldPosition: new Vector3(),
+      worldDirection: new Vector3(0, 0, -1),
+      worldUp: new Vector3(0, 1, 0),
+      viewHalfAngleRadians: Math.PI / 4,
       viewDistanceMeters: DEFAULT_VIEW_DISTANCE_METERS,
     },
     definition: {

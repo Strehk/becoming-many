@@ -2,6 +2,7 @@
 import type { LevelPreset } from "./level-preset";
 
 export const level: LevelPreset = {
+  flightSpeedMetersPerSecond: 2,
   backgroundColor: 0xffffff,
   viewDistance: 128,
   desktopFieldOfViewDegrees: 80,
@@ -13,21 +14,25 @@ export const level: LevelPreset = {
         cueId: "right",
         url: "/audio/tutorial/de/introduction-right.wav",
         durationSeconds: 20.725729,
+        instructionAtSeconds: 19.16,
       },
       {
         cueId: "left",
         url: "/audio/tutorial/de/left.wav",
         durationSeconds: 2.735417,
+        instructionAtSeconds: 0.9,
       },
       {
         cueId: "up",
         url: "/audio/tutorial/de/up.wav",
         durationSeconds: 4.334896,
+        instructionAtSeconds: 1,
       },
       {
         cueId: "down",
         url: "/audio/tutorial/de/down.wav",
         durationSeconds: 2.552583,
+        instructionAtSeconds: 0.65,
       },
       {
         cueId: "complete",
@@ -105,20 +110,20 @@ export const level: LevelPreset = {
     dissolutionSeconds: 1.5,
     directions: ["right", "left", "up", "down"],
     course: {
-      firstDistanceMeters: [60, 64],
-      spacingMeters: [30, 34],
-      horizontalOffsetMeters: [7, 9],
-      verticalOffsetMeters: [7, 10],
-      radiusMeters: [3.25, 3.75],
+      firstDistanceMeters: [16, 18],
+      spacingMeters: [12, 14],
+      horizontalOffsetMeters: [4, 5],
+      verticalOffsetMeters: [4, 5],
+      radiusMeters: [2.5, 2.8],
     },
     particles: {
       count: 32000,
       sizeMeters: 0.075,
       color: 0x92979b,
-      arrowLengthMeters: 7.2,
+      arrowLengthMeters: 3.5,
       ringThicknessRatio: 0.24,
       hazeFraction: 0.12,
-      maximumPointSizePixels: 16,
+      maximumPointSizePixels: 6,
       cloudRadiusMeters: 5,
       cloudDepthMeters: 5,
       driftAmplitudeMeters: 0.18,

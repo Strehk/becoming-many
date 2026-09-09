@@ -321,6 +321,9 @@ function createLoadedTerrain(
   const viewerPosition = new Vector3();
   const viewpoint: Viewpoint = {
     worldPosition: viewerPosition,
+    worldDirection: new Vector3(0, 0, -1),
+    worldUp: new Vector3(0, 1, 0),
+    viewHalfAngleRadians: Math.PI / 4,
     viewDistanceMeters: 24,
   };
   const streamQueue = new StreamQueue(

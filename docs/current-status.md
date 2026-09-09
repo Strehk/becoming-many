@@ -6,6 +6,11 @@ physical acceptance still open. The earlier UI/Entry
 and M5 consolidation passed its local checks and browser acceptance; see
 [UI evidence](evidence/ui-consolidation/README.md). The previous
 #36/#84/#11 and audio-wake results remain dated evidence for their tested code.
+The latest gaze/voice revision captures each instruction’s current eye direction
+and view cone, places its arrow ahead, and keeps formed objects world-fixed.
+Show releases formation at authored spoken onsets (DE 19.16/0.9/1/0.65 s); Run
+uses 2 m/s tutorial translation through existing controls. The preplanned
+rig-heading course is removed.
 The latest user timing revision adds a visible Tutorial chapter to Rehearsal and
 Conductor. Show allows 60 playing seconds of integrated practice; four timely
 passages keep the complete successful closing voice (up to about 74 seconds),
@@ -190,8 +195,8 @@ The #80 animal-connection removal is implemented below. Small additions remain i
   arrow and three decorative curve guides. Independent Air supplies the bounded
   surrounding field; the combined capacity is 38,000 points. Ring/arrow anchors
   stay fixed during flight, with autonomous drift and local silver passage wake.
-  The literal recipe shortens later goal spacing to 30–34 m for the timed lesson;
-  shared flight and main-level particle defaults remain unchanged.
+  The literal recipe shortens later goal spacing to 12–14 m for the timed lesson;
+  shared steering and main-level particle defaults remain unchanged.
 - Show owns the 60-playing-second integrated practice budget and public Tutorial
   timeline chapter. Four passages before the cutoff start the full closing voice
   immediately, followed by automatic main playback (up to about 74 seconds).

@@ -389,8 +389,16 @@ export async function startLevel(
       } else {
         const controlFrame = m5?.consumeFrame();
         if (!show?.running.readTutorial() || show.running.sample().isPlaying) {
-          if (controlFrame) applyM5Flight(controlFrame, deltaSeconds);
-          else desktop?.update(deltaSeconds);
+          const flightSpeedMetersPerSecond = start
+            ? tutorialPreset?.flightSpeedMetersPerSecond
+            : undefined;
+          if (controlFrame)
+            applyM5Flight(
+              controlFrame,
+              deltaSeconds,
+              flightSpeedMetersPerSecond,
+            );
+          else desktop?.update(deltaSeconds, flightSpeedMetersPerSecond);
         }
       }
 

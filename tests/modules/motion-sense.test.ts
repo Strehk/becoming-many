@@ -576,6 +576,9 @@ describe("Motion Sense module", () => {
     const viewerPosition = new Vector3();
     const viewpoint: Viewpoint = {
       worldPosition: viewerPosition,
+      worldDirection: new Vector3(0, 0, -1),
+      worldUp: new Vector3(0, 1, 0),
+      viewHalfAngleRadians: Math.PI / 4,
       viewDistanceMeters: 128,
     };
     const options: MotionSenseModuleOptions = {
@@ -623,6 +626,9 @@ describe("Motion Sense module", () => {
     const viewerPosition = new Vector3();
     const viewpoint: Viewpoint = {
       worldPosition: viewerPosition,
+      worldDirection: new Vector3(0, 0, -1),
+      worldUp: new Vector3(0, 1, 0),
+      viewHalfAngleRadians: Math.PI / 4,
       viewDistanceMeters: 128,
     };
     const { module } = createMotionSenseModule({
@@ -660,6 +666,9 @@ describe("Motion Sense module", () => {
     const scene = new Scene();
     const viewpoint: Viewpoint = {
       worldPosition: new Vector3(),
+      worldDirection: new Vector3(0, 0, -1),
+      worldUp: new Vector3(0, 1, 0),
+      viewHalfAngleRadians: Math.PI / 4,
       viewDistanceMeters: 128,
     };
     const birds = { ...createBirdParameters(), trailLifetimeFrames: 9 };

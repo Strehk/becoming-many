@@ -802,3 +802,45 @@ not clean all-error passes. No other console errors or warnings were observed.
 See the [tutorial evidence](evidence/issue-50/README.md) for screenshots and scope.
 Desktop timing does not establish headset comfort, physical listening or 90 Hz
 Windows-PCVR USB-C acceptance; EN voice policy remains unresolved.
+
+## Gaze-coupled tutorial — 2026-09-09
+
+The user-requested 2 m/s tutorial now creates nearby gaze-aligned sections at
+spoken instruction onsets. The first depth is 16–18 m; subsequent sections use
+12–14 m, expanded when the projection requires it. This is a changed visible
+workload, not a like-for-like replay of the previous distant 5 m/s route.
+The fixed 32,000 training points plus 6,000 Air capacity remain unchanged.
+
+Headed Chromium 151, M2 Max Metal, root, 1920 × 1080, DPR 1, ordinary shared M5
+input and no competing browser measurement. The first near-field candidate
+(`6ce372b7…`, 16 px point cap) recorded GPU median/p95 0.2300/0.3551 ms.
+Bounding sprite size to 8 px reduced those values to 0.1070/0.2955 ms; the final
+6 px bound measured 0.1043/0.2961 ms. The 8→6 change does not improve p95 and is
+not claimed as a further frame-rate gain; it tightens the worst-case per-sprite
+fragment area. The previous distant course had GPU median/p95 0.2134/0.2794 ms.
+Thus the new median is lower and p95 is 0.0167 ms higher on this different route;
+no isolated renderer speedup or identical-workload regression claim follows.
+No numerical benchmark references were changed.
+
+Final served-assets SHA-256:
+`d44cfee276ec3b26ef0d93cc75efa6385a7d0648e302ea78566034944271126d`.
+Checkpoint `86e9671` plus this gaze/voice revision. Across 3,953 course frames:
+
+| Metric | Median | p95 | p99 | Maximum |
+| --- | ---: | ---: | ---: | ---: |
+| CPU frame work (ms) | 0.3 | 0.4 | 0.5 | 8.8 |
+| GPU frame work (ms) | 0.1043 | 0.2961 | 0.3734 | 1.0923 |
+| RAF interval (ms) | 16.7 | 18.2 | 18.6 | 18.7 |
+
+Upload p99 is zero, maximum 34,560 bytes. No course-time buffer allocation or
+program creation occurs. All four passages complete in about 51.4 seconds, and
+the full closing finishes before automatic main handoff at about 65.3 seconds.
+Functional assertions pass; two media-range `ERR_ABORTED` requests remain in
+the strict raw report. No console/shader warnings or other functional failures.
+The standalone GPU-matrix/native-audio observation also verifies centered arrow,
+complete ring framing, world-fixed poses after a turn and a spoken retry.
+
+The existing fixed pools and resource lifecycle are preserved; earlier memory
+observations remain evidence for those unchanged owners, not a new whole-process
+memory measurement. Physical Windows-PCVR, first-visitor comfort and spatial
+listening remain open. [Screenshots and review](evidence/issue-50/README.md#gaze-coupled-instruction-and-slower-flight--2026-09-09).

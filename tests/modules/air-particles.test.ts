@@ -127,7 +127,13 @@ describe("Air Particles streaming", () => {
     );
     const module = createAirParticlesModule({
       scene,
-      viewpoint: { worldPosition: viewerPosition, viewDistanceMeters: 128 },
+      viewpoint: {
+        worldPosition: viewerPosition,
+        worldDirection: new Vector3(0, 0, -1),
+        worldUp: new Vector3(0, 1, 0),
+        viewHalfAngleRadians: Math.PI / 4,
+        viewDistanceMeters: 128,
+      },
       streamQueue,
       parameters: {
         ...createAirParticlesParameters(48, "circle"),
@@ -193,7 +199,13 @@ describe("Air Particles streaming", () => {
     const scene = new Scene();
     const module = createAirParticlesModule({
       scene,
-      viewpoint: { worldPosition: new Vector3(), viewDistanceMeters: 128 },
+      viewpoint: {
+        worldPosition: new Vector3(),
+        worldDirection: new Vector3(0, 0, -1),
+        worldUp: new Vector3(0, 1, 0),
+        viewHalfAngleRadians: Math.PI / 4,
+        viewDistanceMeters: 128,
+      },
       streamQueue: new StreamQueue({ budgetMilliseconds: 1, capacity: 256 }),
       parameters: {
         ...createAirParticlesParameters(48),
@@ -245,6 +257,9 @@ describe("Air Particles streaming", () => {
     const viewerPosition = new Vector3();
     const viewpoint: Viewpoint = {
       worldPosition: viewerPosition,
+      worldDirection: new Vector3(0, 0, -1),
+      worldUp: new Vector3(0, 1, 0),
+      viewHalfAngleRadians: Math.PI / 4,
       viewDistanceMeters: 24,
     };
     const streamQueue = new StreamQueue(

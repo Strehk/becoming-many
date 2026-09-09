@@ -40,6 +40,31 @@ describe("m5 flight", () => {
     );
   });
 
+  test("slows tutorial glide without changing steering and restores the default", () => {
+    const tutorialRig = new Group();
+    const mainRig = new Group();
+    const applyTutorialFlight = createM5Flight(tutorialRig);
+    const frame = liveFrame({ roll: 0.3, pitch: -0.2 });
+
+    applyTutorialFlight(frame, 1, 2);
+    createM5Flight(mainRig)(frame, 1);
+
+    expect(
+      Math.hypot(tutorialRig.position.x, tutorialRig.position.z),
+    ).toBeCloseTo(2);
+    expect(tutorialRig.position.y).toBeCloseTo(mainRig.position.y);
+    expect(tutorialRig.quaternion.angleTo(mainRig.quaternion)).toBeCloseTo(0);
+
+    const beforeHandoff = tutorialRig.position.clone();
+    applyTutorialFlight(liveFrame(), 1);
+    expect(
+      Math.hypot(
+        tutorialRig.position.x - beforeHandoff.x,
+        tutorialRig.position.z - beforeHandoff.z,
+      ),
+    ).toBeCloseTo(5);
+  });
+
   test.each([-0.5, 0.5])(
     "roll %s yaws exactly and holds a level heading",
     (roll) => {

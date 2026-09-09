@@ -720,7 +720,6 @@ export function composeTraining(
   if (!preset.start) return undefined;
   const start = createStartModule({
     viewpoint: world.viewpoint,
-    viewerRig: world.viewerRig,
     parameters: preset.start,
     maximumGoalYAt: (x, z) =>
       groundYAt(x, z) + preset.maximumGroundClearanceMeters,

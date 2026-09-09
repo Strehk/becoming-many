@@ -21,6 +21,15 @@ export interface Viewpoint {
    */
   readonly worldPosition: Readonly<Vector3>;
 
+  /** Camera look direction, including head pose, rig yaw and view assistance. */
+  readonly worldDirection: Readonly<Vector3>;
+
+  /** Camera local up in world space; preserves the view's roll and twist. */
+  readonly worldUp: Readonly<Vector3>;
+
+  /** Half-angle of the centered cone contained by the camera's view. */
+  readonly viewHalfAngleRadians: number;
+
   /** Metres the level streams and draws to; follows the camera's far plane. */
   readonly viewDistanceMeters: number;
 }
@@ -62,6 +71,9 @@ export function createViewerRig(viewPitchAssistDegrees = 0): ViewerRig {
   group.add(viewAssist);
 
   const worldPosition = new Vector3();
+  const worldDirection = new Vector3(0, 0, -1);
+  const worldUp = new Vector3(0, 1, 0);
+  let viewHalfAngleRadians = MathUtils.degToRad(camera.getEffectiveFOV()) / 2;
 
   return {
     group,
@@ -69,6 +81,11 @@ export function createViewerRig(viewPitchAssistDegrees = 0): ViewerRig {
 
     viewpoint: {
       worldPosition,
+      worldDirection,
+      worldUp,
+      get viewHalfAngleRadians(): number {
+        return viewHalfAngleRadians;
+      },
 
       // A show retunes the view distance mid-run, so this reads the far plane
       // every time rather than a value captured once during setup.
@@ -83,6 +100,20 @@ export function createViewerRig(viewPitchAssistDegrees = 0): ViewerRig {
       // is recomposed too — `getWorldPosition` reads `matrixWorld`.
       group.updateMatrixWorld(true);
       camera.getWorldPosition(worldPosition);
+      camera.getWorldDirection(worldDirection);
+      worldUp.setFromMatrixColumn(camera.matrixWorld, 1).normalize();
+      // XR replaces the projection without updating the desktop aspect ratio.
+      // Read its nearest horizontal/vertical edge, including asymmetric views.
+      const projection = camera.projectionMatrix.elements;
+      viewHalfAngleRadians = Math.atan(
+        Math.max(
+          0,
+          Math.min(
+            (1 - Math.abs(projection[8])) / projection[0],
+            (1 - Math.abs(projection[9])) / projection[5],
+          ),
+        ),
+      );
     },
   };
 }

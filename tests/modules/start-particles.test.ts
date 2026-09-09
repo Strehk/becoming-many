@@ -33,7 +33,9 @@ function createFrame(): StartParticleFrame {
   return {
     elapsedSeconds: 0,
     goalPosition: new Vector3(2, 3, -8),
+    arrowPosition: new Vector3(2, 3, -4),
     goalNormal: new Vector3(0, 0, 1),
+    goalUp: new Vector3(0, 1, 0),
     ringRadiusMeters: 1.5,
     arrowAngleRadians: 0,
     formationProgress: 0,
@@ -232,7 +234,7 @@ test("object anchors share the formed geometry pose and disappear with their own
   const objects = effect.readObjectAnchors();
   expect(objects?.ringLeft.x).toBeCloseTo(0.14);
   expect(objects?.ringRight).toEqual(new Vector3(3.86, 3, -8));
-  expect(objects?.arrow.x).toBeCloseTo(-5.12);
+  expect(objects?.arrow.x).toBeCloseTo(2);
   expect(objects?.arrow.y).toBe(3);
 
   // A differently oriented goal transforms all bodies with the same world pose.
@@ -246,8 +248,8 @@ test("object anchors share the formed geometry pose and disappear with their own
   expect(objects?.ringLeft.z).toBeCloseTo(-6.14);
   expect(objects?.ringRight.z).toBeCloseTo(-9.86);
   expect(objects?.arrow.x).toBeCloseTo(2);
-  expect(objects?.arrow.y).toBeCloseTo(-4.12);
-  expect(objects?.arrow.z).toBeCloseTo(-8);
+  expect(objects?.arrow.y).toBeCloseTo(3);
+  expect(objects?.arrow.z).toBeCloseTo(-4);
   effect.setVisible(false);
   expect(effect.readObjectAnchors()).toBeUndefined();
   effect.unload();
@@ -266,7 +268,7 @@ test("body anchors gather with formation and follow finite crossing wake", () =>
   effect.setVisible(true);
   const frame = createFrame();
   effect.update(frame);
-  expect(effect.readObjectAnchors()?.arrow).toEqual(frame.goalPosition);
+  expect(effect.readObjectAnchors()?.arrow).toEqual(frame.arrowPosition);
   expect(effect.readObjectAnchors()?.ringLeft).toEqual(frame.goalPosition);
   effect.update({ ...frame, formationProgress: 0.5 });
   expect(effect.readObjectAnchors()?.ringLeft.x).toBeCloseTo(1.07);
@@ -348,6 +350,7 @@ test("three preview poses are copied, culled conservatively and never upload par
   const previews = positions.map((goalPosition) => ({
     goalPosition,
     goalNormal: new Vector3(0, 0, 1),
+    goalUp: new Vector3(0, 1, 0),
     ringRadiusMeters: 4,
   }));
   const attributes = Object.values(points.geometry.attributes).map(
@@ -401,7 +404,7 @@ test("local expansion and arrow motion update sound anchors then settle complete
     2 - 1.5 * 1.24 * 1.065,
   );
   expect(effect.readObjectAnchors()?.arrow.z).toBeCloseTo(
-    -8 + Math.sin(0.65) * 0.12,
+    -4 + Math.sin(0.65) * 0.12,
   );
   effect.update({ ...frame, wake: { ...wake, ageSeconds: 10 } });
   expect(shader.uniforms.startCrossingPulse?.value as number).toBeLessThan(

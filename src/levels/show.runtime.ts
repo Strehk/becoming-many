@@ -411,6 +411,7 @@ export async function createShowRuntime(
       tutorial.start.reset();
       tutorial.start.setPlaying(false);
       tutorial.start.setGoalAdvanceAllowed(false);
+      tutorial.start.setFormationAllowed(false);
       instruction = next.parameters.directions[0];
       tutorialGoalIndex = 0;
       tutorialAttempt = 0;
@@ -478,14 +479,17 @@ export async function createShowRuntime(
           if (
             nextInstruction !== instruction ||
             observed.goalIndex !== tutorialGoalIndex ||
-            (observed.goalIndex > 0 &&
-              observed.attempt !== tutorialAttempt &&
-              instructionFinished)
+            (observed.attempt !== tutorialAttempt && instructionFinished)
           ) {
+            const retry =
+              nextInstruction === instruction &&
+              observed.goalIndex === tutorialGoalIndex;
             instruction = nextInstruction;
             tutorialGoalIndex = observed.goalIndex;
             tutorialAttempt = observed.attempt;
-            instructionStartSeconds = showTime.timeSeconds;
+            instructionStartSeconds =
+              showTime.timeSeconds -
+              (retry ? (currentRecording?.instructionAtSeconds ?? 0) : 0);
             if (!standalone && instruction === "complete") {
               const completion = tutorial.recordings?.[language].find(
                 (clip) => clip.cueId === "complete",
@@ -503,6 +507,14 @@ export async function createShowRuntime(
             continueToExperience();
             return;
           }
+          const selectedRecording = tutorial.recordings?.[language].find(
+            (clip) => clip.cueId === instruction,
+          );
+          tutorial.start.setFormationAllowed(
+            observed.attempt === tutorialAttempt &&
+              showTime.timeSeconds - instructionStartSeconds >=
+                (selectedRecording?.instructionAtSeconds ?? 0),
+          );
           tutorial.start.setGoalAdvanceAllowed(instructionFinished);
           tutorial.start.setPlaying(
             preparationState === "ready" &&
@@ -581,6 +593,7 @@ export async function createShowRuntime(
             tutorial.start.reset();
             tutorial.start.setPlaying(false);
             tutorial.start.setGoalAdvanceAllowed(false);
+            tutorial.start.setFormationAllowed(false);
             instruction = tutorial.parameters.directions[0];
             instructionStartSeconds = 0;
             tutorialGoalIndex = 0;
@@ -609,6 +622,7 @@ export async function createShowRuntime(
               );
             }
             tutorial.start.setGoalAdvanceAllowed(false);
+            tutorial.start.setFormationAllowed(false);
           }
         },
       },

@@ -372,7 +372,9 @@ export async function flyStartCourse(
   function integrate(input: InputDelivery, deltaSeconds: number): void {
     const yaw =
       -input.roll * FLIGHT_SETTINGS.yawRateRadiansPerSecond * deltaSeconds;
-    const distance = FLIGHT_SETTINGS.glideSpeedMetersPerSecond * deltaSeconds;
+    const distance =
+      (START_LEVEL.flightSpeedMetersPerSecond ??
+        FLIGHT_SETTINGS.glideSpeedMetersPerSecond) * deltaSeconds;
     estimate.x += Math.sin(estimate.heading + yaw / 2) * distance;
     estimate.z -= Math.cos(estimate.heading + yaw / 2) * distance;
     estimate.y +=

@@ -48,8 +48,12 @@ export interface StartParticleFrame {
   /** Age of the current decorative section on the existing Show timebase. */
   readonly previewElapsedSeconds?: number;
   readonly goalPosition: Readonly<Vector3>;
+  /** Captured eye-forward cue center, independent of the ring center. */
+  readonly arrowPosition: Readonly<Vector3>;
   /** Unit-length goal-plane normal. */
   readonly goalNormal: Readonly<Vector3>;
+  /** Captured eye up vector keeps direction arrows readable under head roll. */
+  readonly goalUp: Readonly<Vector3>;
   readonly ringRadiusMeters: number;
   /** Counterclockwise in the arrow plane; zero points right. */
   readonly arrowAngleRadians: number;
@@ -87,10 +91,9 @@ const MINIMUM_PARTICLE_COUNT = 32;
 const MAXIMUM_PARTICLE_COUNT = 65_536;
 const MAXIMUM_PREVIEWS = 3;
 const RANDOM_RANGE = 0x1_0000_0000;
-const LOCAL_NORMAL = new Vector3(0, 0, 1);
+const ORIGIN = new Vector3();
 const UNIT_SCALE = new Vector3(1, 1, 1);
 const ARROW_SOURCE_WIDTH = 1.1;
-const ARROW_GAP_METERS = 1.3;
 const CROSSING_EXPANSION = 0.065;
 const CROSSING_PULSE_SECONDS = 0.9;
 
@@ -104,6 +107,7 @@ export function createStartParticleEffect({
 }): StartParticleEffect {
   validateParameters(parameters);
   const goalRotation = new Quaternion();
+  const orientation = new Matrix4();
   const bounds = new Box3();
   const arrowLength = parameters.arrowLengthMeters ?? 7.2;
   const thickness = parameters.ringThicknessRatio ?? 0.24;
@@ -125,7 +129,7 @@ export function createStartParticleEffect({
     startGoalPose: { value: new Matrix4() },
     startRadius: { value: 1 },
     startArrowAngle: { value: 0 },
-    startArrowOffset: { value: new Vector3() },
+    startArrowPose: { value: new Matrix4() },
     startArrowScale: { value: arrowLength / ARROW_SOURCE_WIDTH },
     startThickness: { value: thickness },
     startPreviewPoses: { value: previewPoses },
@@ -215,7 +219,9 @@ export function createStartParticleEffect({
 
   function update(frame: StartParticleFrame): void {
     if (!points?.visible) return;
-    goalRotation.setFromUnitVectors(LOCAL_NORMAL, frame.goalNormal);
+    goalRotation.setFromRotationMatrix(
+      orientation.lookAt(frame.goalNormal, ORIGIN, frame.goalUp),
+    );
     uniforms.startGoalPose.value.compose(
       frame.goalPosition,
       goalRotation,
@@ -226,14 +232,10 @@ export function createStartParticleEffect({
       frame.previewElapsedSeconds ?? frame.elapsedSeconds;
     uniforms.startRadius.value = frame.ringRadiusMeters;
     uniforms.startArrowAngle.value = frame.arrowAngleRadians;
-    const arrowDistance =
-      frame.ringRadiusMeters * (1 + thickness * 2) +
-      ARROW_GAP_METERS +
-      arrowLength / 2;
-    uniforms.startArrowOffset.value.set(
-      -Math.cos(frame.arrowAngleRadians) * arrowDistance,
-      -Math.sin(frame.arrowAngleRadians) * arrowDistance,
-      Math.sin(frame.elapsedSeconds * 0.65) * 0.12,
+    uniforms.startArrowPose.value.compose(
+      frame.arrowPosition,
+      goalRotation,
+      UNIT_SCALE,
     );
     uniforms.startFormation.value = frame.formationProgress;
     uniforms.startSectionPresence.value = frame.sectionPresence ?? 1;
@@ -251,22 +253,34 @@ export function createStartParticleEffect({
       (1 + CROSSING_EXPANSION * pulse);
     objects.ringLeft.set(-expandedRadius, 0, 0);
     objects.ringRight.set(expandedRadius, 0, 0);
-    objects.arrow.copy(uniforms.startArrowOffset.value);
+    objects.arrow
+      .set(
+        0,
+        0,
+        Math.sin(frame.elapsedSeconds * 0.65) *
+          0.12 *
+          smoothstep(frame.formationProgress),
+      )
+      .applyMatrix4(uniforms.startArrowPose.value);
     updateObjectAnchor(objects.ringLeft, frame);
     updateObjectAnchor(objects.ringRight, frame);
-    updateObjectAnchor(objects.arrow, frame, false);
     const previewCount = Math.min(
       MAXIMUM_PREVIEWS,
       frame.previews?.length ?? 0,
     );
     uniforms.startPreviewCount.value = previewCount;
-    bounds.makeEmpty().expandByPoint(frame.goalPosition);
+    bounds
+      .makeEmpty()
+      .expandByPoint(frame.goalPosition)
+      .expandByPoint(frame.arrowPosition);
     let largestRadius = frame.ringRadiusMeters;
     for (let index = 0; index < previewCount; index += 1) {
       const preview = frame.previews?.[index];
       const pose = previewPoses[index];
       if (!preview || !pose) continue;
-      previewRotation.setFromUnitVectors(LOCAL_NORMAL, preview.goalNormal);
+      previewRotation.setFromRotationMatrix(
+        orientation.lookAt(preview.goalNormal, ORIGIN, frame.goalUp),
+      );
       pose.compose(preview.goalPosition, previewRotation, UNIT_SCALE);
       previewRadii[index] = preview.ringRadiusMeters;
       largestRadius = Math.max(largestRadius, preview.ringRadiusMeters);
@@ -276,9 +290,8 @@ export function createStartParticleEffect({
       Math.max(
         parameters.cloudRadiusMeters,
         parameters.cloudDepthMeters,
-        largestRadius * (1 + thickness * 2) * (1 + CROSSING_EXPANSION) +
-          ARROW_GAP_METERS +
-          arrowLength,
+        largestRadius * (1 + thickness * 2) * (1 + CROSSING_EXPANSION),
+        arrowLength,
       ) +
         parameters.driftAmplitudeMeters +
         parameters.wakeDistanceMeters +
@@ -286,7 +299,7 @@ export function createStartParticleEffect({
     );
     if (points.geometry.boundingSphere)
       bounds.getBoundingSphere(points.geometry.boundingSphere);
-    anchorsReady = true;
+    anchorsReady = (frame.sectionPresence ?? 1) > 0;
     if (!wake) return;
     uniforms.startWakePosition.value.copy(wake.position);
     uniforms.startWakeDirection.value.copy(wake.direction);
@@ -296,12 +309,11 @@ export function createStartParticleEffect({
   function updateObjectAnchor(
     anchor: Vector3,
     frame: StartParticleFrame,
-    receivesWake = true,
   ): void {
     const formation = smoothstep(frame.formationProgress);
     anchor.multiplyScalar(formation).applyMatrix4(uniforms.startGoalPose.value);
     const wake = frame.wake;
-    if (!wake || !receivesWake) return;
+    if (!wake) return;
     const age = Math.min(
       1,
       Math.max(0, wake.ageSeconds / parameters.wakeDurationSeconds),

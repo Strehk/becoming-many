@@ -296,21 +296,22 @@ test("audio owners recover gesture resume and await complete disposal", async ()
       viewpoint: { worldPosition: { x: 0, y: 0, z: 0 } },
     };
     let playing = false, resetCount = 0, finishes = 0, mayReadTraining = true;
-    let observation, advanceAllowed;
+    let observation, advanceAllowed, formationAllowed;
     const training = {
       reset() {
         resetCount++;
-        observation = { phase: "arrival", direction: "right", goalIndex: 0, crossingCount: 0 };
+        observation = { phase: "arrival", direction: "right", goalIndex: 0, crossingCount: 0, attempt: 0 };
       },
       setPlaying(next) { playing = next; },
       setGoalAdvanceAllowed(next) { advanceAllowed = next; },
+      setFormationAllowed(next) { formationAllowed = next; },
       readObservation() {
         assert.ok(mayReadTraining, "released training must not be read after handoff");
         return observation;
       },
     };
     const recordings = language => ["right", "left", "up", "down", "complete"].map(cueId => ({
-      cueId, url: "/approved/" + language + "/" + cueId + ".wav", durationSeconds: 3,
+      cueId, url: "/approved/" + language + "/" + cueId + ".wav", durationSeconds: 3, instructionAtSeconds: 1.5,
     }));
     const tutorialDefinition = {
       start: training,
@@ -346,6 +347,7 @@ test("audio owners recover gesture resume and await complete disposal", async ()
     tutorialCommands.play(); trainingNative.currentTime = 1; trainingShow.update();
     assert.equal(playing, true);
     assert.equal(advanceAllowed, false, "a fast crossing cannot interrupt speech");
+    assert.equal(formationAllowed, false, "presentation waits for the spoken instruction onset");
     assert.equal(narrationFrames.at(-1).position.cueId, "right");
     assert.equal(narrationFrames.at(-1).position.offsetSeconds, 1);
     tutorialCommands.pause(); trainingNative.currentTime = 2; trainingShow.update();
@@ -357,7 +359,9 @@ test("audio owners recover gesture resume and await complete disposal", async ()
     assert.equal(tutorialCommands.sample().timeScale, 1);
     assert.equal(tutorialCommands.sample().timeSeconds, 2);
     assert.equal(narrationFrames.at(-1).position.offsetSeconds, 2);
+    assert.equal(formationAllowed, true, "presentation begins within the recording rather than after it");
     tutorialCommands.setLanguage("de"); trainingShow.update();
+    assert.equal(formationAllowed, false, "repeated instruction retains its onset gate");
     assert.equal(narrationFrames.at(-1).position.offsetSeconds, 0);
     assert.ok(narrationOptions.at(-1).recordings.every(clip => clip.url.includes("/de/")));
     observation = { phase: "flying", direction: "left", goalIndex: 1, crossingCount: 1 };
@@ -450,6 +454,23 @@ test("audio owners recover gesture resume and await complete disposal", async ()
       }
       const end = timed.unload(); native.release(); await end;
     }
+
+    mayReadTraining = true;
+    const retryShow = await createShowRuntime(
+      { schedule: PIECE_SCHEDULE, language: "de", states: SHOW_LEVEL_STATES },
+      tutorialWorld, { gates: new Map(), senses: {}, worldFades: {} },
+      { groundYAt: () => 0 }, undefined, true, tutorialDefinition,
+    );
+    const retryNative = contexts.at(-1); retryNative.state = "running";
+    retryShow.running.play(); retryNative.currentTime = 2; retryShow.update();
+    observation = { ...observation, attempt: 1 };
+    retryShow.update();
+    assert.equal(formationAllowed, false, "retry waits until the previous instruction finishes");
+    retryNative.currentTime = 4; retryShow.update();
+    assert.equal(narrationFrames.at(-1).position.cueId, "right");
+    assert.equal(narrationFrames.at(-1).position.offsetSeconds, 1.5, "retry repeats the instruction, not the whole introduction");
+    assert.equal(formationAllowed, true);
+    const retryEnd = retryShow.unload(); retryNative.release(); await retryEnd;
 
     for (const standalone of [false, true]) {
       mayReadTraining = true;

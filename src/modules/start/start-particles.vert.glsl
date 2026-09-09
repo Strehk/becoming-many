@@ -6,7 +6,7 @@ uniform float startSparkle;
 uniform mat4 startGoalPose;
 uniform float startRadius;
 uniform float startArrowAngle;
-uniform vec3 startArrowOffset;
+uniform mat4 startArrowPose;
 uniform float startArrowScale;
 uniform float startThickness;
 uniform mat4 startPreviewPoses[3];
@@ -64,7 +64,8 @@ vec3 animateStartParticle(vec3 cloudPosition) {
     float cosine = cos(startArrowAngle);
     float sine = sin(startArrowAngle);
     target.xy = mat2(cosine, sine, -sine, cosine) * target.xy;
-    target += startArrowOffset;
+    pose = startArrowPose;
+    target.z += sin(startTime * 0.65) * 0.12;
   } else {
     float expansion = preview ? 1.0 : 1.0 + startCrossingPulse * 0.065;
     target = vec3(startTarget.xy * radius * (1.0 + startThickness + startTarget.z * startThickness) * expansion,

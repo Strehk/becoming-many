@@ -326,6 +326,9 @@ test("one show fade dims both layers of the sense at once", () => {
   const viewerPosition = new Vector3();
   const viewpoint: Viewpoint = {
     worldPosition: viewerPosition,
+    worldDirection: new Vector3(0, 0, -1),
+    worldUp: new Vector3(0, 1, 0),
+    viewHalfAngleRadians: Math.PI / 4,
     viewDistanceMeters: 24,
   };
   const streamQueue = new StreamQueue(
@@ -397,7 +400,13 @@ describe("Scent Particles streaming", () => {
       });
       const { module } = createScentParticlesModule({
         scene,
-        viewpoint: { worldPosition, viewDistanceMeters: 0 },
+        viewpoint: {
+          worldPosition,
+          worldDirection: new Vector3(0, 0, -1),
+          worldUp: new Vector3(0, 1, 0),
+          viewHalfAngleRadians: Math.PI / 4,
+          viewDistanceMeters: 0,
+        },
         parameters,
         plantSource,
         streamQueue,
@@ -477,6 +486,9 @@ describe("Scent Particles streaming", () => {
     const viewerPosition = new Vector3();
     const viewpoint: Viewpoint = {
       worldPosition: viewerPosition,
+      worldDirection: new Vector3(0, 0, -1),
+      worldUp: new Vector3(0, 1, 0),
+      viewHalfAngleRadians: Math.PI / 4,
       viewDistanceMeters: 24,
     };
     const streamQueue = new StreamQueue(
@@ -545,6 +557,9 @@ describe("Scent Particles streaming", () => {
     const viewerPosition = new Vector3();
     const viewpoint: Viewpoint = {
       worldPosition: viewerPosition,
+      worldDirection: new Vector3(0, 0, -1),
+      worldUp: new Vector3(0, 1, 0),
+      viewHalfAngleRadians: Math.PI / 4,
       viewDistanceMeters: 24,
     };
     const streamQueue = new StreamQueue(
@@ -589,6 +604,9 @@ describe("Scent Particles wind", () => {
     const viewerPosition = new Vector3();
     const viewpoint: Viewpoint = {
       worldPosition: viewerPosition,
+      worldDirection: new Vector3(0, 0, -1),
+      worldUp: new Vector3(0, 1, 0),
+      viewHalfAngleRadians: Math.PI / 4,
       viewDistanceMeters: 24,
     };
     const streamQueue = new StreamQueue(

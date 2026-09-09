@@ -34,6 +34,8 @@ export interface NarrationRecording {
   readonly cueId: string;
   readonly url: string;
   readonly durationSeconds: number;
+  /** Authored spoken instruction onset; Show owns its visual presentation. */
+  readonly instructionAtSeconds?: number;
 }
 
 interface PreparedNarration {

@@ -53,6 +53,9 @@ function createModuleOptions(scene: Scene, viewerPosition: Vector3) {
     scene,
     viewpoint: {
       worldPosition: viewerPosition,
+      worldDirection: new Vector3(0, 0, -1),
+      worldUp: new Vector3(0, 1, 0),
+      viewHalfAngleRadians: Math.PI / 4,
       // The clipmap sizes itself from its preset, never from a view distance.
       viewDistanceMeters: 0,
     },

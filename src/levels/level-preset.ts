@@ -57,6 +57,8 @@ export type WorldComposition = {
 
 /** A complete world recipe used by standalone routes, benchmarks and the Show. */
 export type LevelPreset = WorldComposition & {
+  /** Tutorial translation speed; Run restores the main controls' defaults on handoff. */
+  readonly flightSpeedMetersPerSecond?: number;
   readonly startAudio?: TrainingAudioParameters;
   readonly startNarration?: Readonly<
     Record<NarrationLanguage, readonly NarrationRecording[]>

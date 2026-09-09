@@ -9,6 +9,79 @@ retires training and releases the prepared main experience. World, M5 and
 locomotion retain their ownership. No second renderer, loop or clock was added.
 Older dated sections retain the evidence and decisions valid at their revision.
 
+## Gaze-coupled instruction and slower flight — 2026-09-09
+
+The latest feedback is implemented rather than merely restating the earlier
+world-fixed correction: each new section now captures the current eye position,
+look direction, up vector and conservative view cone at the spoken instruction.
+The arrow is centered ahead; the current ring bends toward the requested direction.
+Three bounded preview rings describe the approach, with their radii constrained by
+the available view. All anchors stay fixed after placement, including under head
+movement. The existing chunk-based surrounding particles are retained.
+
+Show releases formation at authored DE clip positions 19.16/0.9/1/0.65 seconds,
+independently from post-crossing instruction completion. Retries repeat the spoken
+instruction portion, including the right cue, without replaying the whole opening.
+The original audio bytes remain unchanged. At the flight ceiling, an upward view
+may have no reachable visible target; Start waits in arrival for a feasible view
+instead of lowering a newly visible ring outside the frame. The shared ceiling
+is preserved. This does not move already placed particles with the viewer.
+
+Run supplies 2 m/s tutorial translation through the existing M5/desktop controls;
+steering and vertical M5 sensitivity stay unchanged. Main control defaults return
+when training retires, and restart restores the tutorial setting. World publishes
+orientation/projection facts once in its existing frame, including view assist
+and head pose. No new clock, renderer, input path, shader pipeline or audio owner
+is introduced. The preplanned course array/rig reference is removed. Rendering
+and spatial audio share the independent arrow pose. A screenshot exposed a tilted
+right arrow when orientation was derived from the normal alone; capturing eye-up
+fixes that ambiguity, including head roll.
+
+The 51 focused cases across Start geometry, particle ownership, ViewerRig, flight,
+Show/audio and Run pass across the combined and targeted correction checks. The
+Show probe additionally checks in-clip formation onset, language repetition and
+retrying the instruction without replaying the introduction. Lint and production
+build/typecheck pass. A focused read-only review identified the ceiling/view
+intersection; the wait-for-feasible-view correction has a regression test.
+Three 0.185.1 behavior was checked through Context7 and the installed source:
+[Camera direction](https://threejs.org/docs/#Camera.getWorldDirection),
+[PerspectiveCamera projection](https://threejs.org/docs/#PerspectiveCamera),
+[XR camera update](https://github.com/mrdoob/three.js/blob/r185/src/renderers/webxr/WebXRManager.js).
+XR retains the existing previous-render-pose publication boundary; physical
+headset acceptance is not inferred from the desktop checks.
+
+The final standalone `/start?language=de` browser check observes the actual
+shader model-view/projection and object matrices. Before the instruction the
+section is hidden. At its first visible frame the original native recording is
+at 19.060 s (within the existing 0.25 s narration synchronization tolerance),
+the arrow center projects to effectively (0, 0), its left/right axis is horizontal,
+and all 16 sampled outer-ring points lie inside the viewport. Actual M5 yaw
+before appearance changes the placement; yaw/flight afterwards leaves both
+world matrices unchanged. A missed section repeats the right instruction near
+19.632 s and creates a new world anchor. These are real rendered/audio-state
+observations, not injected learning progress or a physical listening claim.
+
+The initial standalone probe incorrectly assumed that route exposed `window.show`
+and that PointsMaterial uploaded `viewMatrix`. The corrected observer uses native
+voice time and the actual program's `modelViewMatrix`; no production workaround
+or suppressed error was introduced for those fixture failures. Raw media range
+`ERR_ABORTED` findings remain in the final report; functional assertions pass.
+
+![Actual gaze-aligned arrow and ring after the spoken instruction](gaze-aligned-instruction.png)
+![New spoken attempt after a missed section](gaze-aligned-retry.png)
+
+The integrated final browser course passes all four goals around 51.4 s and
+retains the full closing before automatic handoff around 65.3 s. Its CPU/GPU p95
+is 0.4/0.2961 ms; the measurement identity and changed-workload limits are in
+Performance.
+
+The nearer arrow/ring are substantially clearer than the preceding distant
+presentation. Fine points and soft edges remain; the maximum sprite size is
+bounded to 6 pixels to control near-field overdraw without lowering particle
+capacity. The [performance record](../../performance.md#gaze-coupled-tutorial--2026-09-09)
+separates the initial cost increase from the optimized measurements. Physical
+PCVR comfort/listening and EN voice policy remain open.
+
 ## Timed tutorial and visit timeline — 2026-09-09
 
 The latest user instruction supersedes the older unlimited/operator-only behavior

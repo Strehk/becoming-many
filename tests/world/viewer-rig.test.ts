@@ -109,6 +109,53 @@ describe("viewer rig", () => {
     expect(viewer.viewpoint.viewDistanceMeters).toBe(240);
   });
 
+  test("publishes the head's look direction through assistance and rig yaw", () => {
+    const viewer = createViewerRig(30);
+    viewer.group.rotation.y = Math.PI / 2;
+    viewer.camera.rotation.x = MathUtils.degToRad(-10);
+    viewer.publish();
+
+    const direction = viewer.viewpoint.worldDirection;
+    expect(direction.x).toBeCloseTo(-Math.cos(MathUtils.degToRad(20)));
+    expect(direction.y).toBeCloseTo(Math.sin(MathUtils.degToRad(20)));
+    expect(direction.z).toBeCloseTo(0);
+    expect(direction.length()).toBeCloseTo(1);
+    const up = viewer.viewpoint.worldUp;
+    expect(up.x).toBeCloseTo(Math.sin(MathUtils.degToRad(20)));
+    expect(up.y).toBeCloseTo(Math.cos(MathUtils.degToRad(20)));
+    expect(up.z).toBeCloseTo(0);
+    expect(up.dot(direction)).toBeCloseTo(0);
+
+    viewer.camera.rotation.y = Math.PI / 2;
+    viewer.publish();
+    expect(viewer.viewpoint.worldDirection).toBe(direction);
+    expect(direction.z).toBeGreaterThan(0.9);
+    expect(viewer.viewpoint.worldUp).toBe(up);
+
+    viewer.camera.rotation.set(0, 0, Math.PI / 2);
+    viewer.publish();
+    expect(up.z).toBeCloseTo(1);
+    expect(up.length()).toBeCloseTo(1);
+  });
+
+  test("the view cone follows narrow, zoomed and XR projection changes", () => {
+    const viewer = createViewerRig();
+    viewer.camera.fov = 80;
+    viewer.camera.aspect = 0.5;
+    viewer.camera.zoom = 2;
+    viewer.camera.updateProjectionMatrix();
+    viewer.publish();
+    const verticalSlope = Math.tan(MathUtils.degToRad(40)) / 2;
+    expect(viewer.viewpoint.viewHalfAngleRadians).toBeCloseTo(
+      Math.atan(verticalSlope * 0.5),
+    );
+
+    // XR can replace the projection while leaving desktop aspect unchanged.
+    viewer.camera.projectionMatrix.makePerspective(-1, 2, 1, -1, 1, 100);
+    viewer.publish();
+    expect(viewer.viewpoint.viewHalfAngleRadians).toBeCloseTo(Math.PI / 4);
+  });
+
   test("raises the view through a parent transform WebXR cannot overwrite", () => {
     expect(VIEW_PITCH_ASSIST_DEGREES).toBe(30);
     const viewer = createViewerRig(VIEW_PITCH_ASSIST_DEGREES);
