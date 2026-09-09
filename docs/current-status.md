@@ -16,7 +16,9 @@ The spoken-line review keeps the opening empty until the room phrase at 13.12 s.
 Show gates arrows at DE 19.30/1.14/2.66/1.04 s against actual native speech progress;
 rings wait for a readable arrow and the matching turn. Run
 uses 2 m/s tutorial translation through existing controls. The preplanned
-rig-heading course is removed. Tutorial sound now borrows the existing wind
+rig-heading course is removed. Course generation now extrapolates measured turn
+curvature, with shared positions/tangents for the tunnel and one-time visibility
+correction; generated arrows/rings remain world-fixed. Tutorial sound now borrows the existing wind
 voice at a quiet, speech-ducked level; standalone practice builds only that
 organ voice. Ring voices choose new predecoded samples and offsets per course
 or retry, retaining the selection through Pause.

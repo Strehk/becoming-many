@@ -850,3 +850,48 @@ Tone 14.8.49's existing
 retains the native buffer reference; the existing
 [GrainPlayer](https://github.com/Tonejs/Tone.js/blob/14.8.49/Tone/source/buffer/GrainPlayer.ts)
 accepts the chosen start offset. No dependency or alternate audio runtime was added.
+
+
+## Motion-history course prediction — 2026-09-09
+
+Start now estimates curvature from successive world-space movement segments,
+smoothed over 0.25 s, capped at 0.12/m and decaying over four metres. Arrows use
+that forecast near the captured viewing ray; counted and preview rings share
+predicted centers and tangent normals. A one-time linear corridor correction
+preserves discoverability under the existing view assistance, followed by the
+flight ceiling. No generated anchor follows later movement. Pause, reset,
+activation, long frame gaps and implausible displacement discard old curvature.
+The existing World loop owns updates; flight, narration, rendering and audio
+ownership are unchanged. This replaces the one-frame direction/random lateral
+placement and independent Hermite preview shape. Both lateral offset settings
+and the old matrix/quaternion construction are removed. Fixed three-preview
+and 32k/6k particle capacities remain unchanged; no new dependency or frame job.
+
+Repository lint, build/typecheck and 31 focused Start/particle/restart tests pass.
+Regression coverage includes changing travel versus changing head yaw, tangent
+normals, world-fixed anchors and reset. The first targeted run caught a ceiling
+case: view correction must use the uncut forecast before ceiling clipping. The
+production fix preserves the original reachability assertion. Headed Chromium
+at 1920x1080 DPR1 completed all four actual M5-driven passages with no misses,
+then played the full closing and automatically entered main playback at about
+69.3 s (before: 70.0 s). This is a software exercise, not human comfort acceptance.
+
+
+In the common 20–55 s window, before CPU median/p95 was 0.3/0.4 ms and GPU
+0.111333/0.313625 ms. The first candidate run measured CPU 0.3/0.4 ms and GPU
+0.255541/0.319749 ms. Because that median shift was unexplained, the unchanged
+candidate was exercised again: CPU 0.3/0.5 ms, GPU 0.113875/0.309583 ms. The large
+GPU median shift did not reproduce; no speedup is claimed. RAF median/p95 was
+16.7/18.1 ms before and 16.7/18.2 ms in the confirmation. Course-time GPU resource
+creation remained zero; buffer upload p99 zero and maximum 19,200 bytes in the
+before/first-after window. No shader, particle count or draw topology changed.
+
+Raw probes: `benchmark-results/issue-50/motion-before/probe.json`,
+`motion-after/probe.json` and `motion-confirm/probe.json` under the same parent.
+Before served asset digest: `5e436ac878abc09f5400cb128a7cae23b982f0b3c81130894c69c50da858ea2c`;
+after: `82ea22ba187d8464abc066ff2f5146ca33f29b92015bbba9dfd06099393711ca`.
+All course assertions passed. The generic harness reports native narration
+ERR_ABORTED cancellations during replacement/disposal and consequently exits
+nonzero; these remain visible in the raw evidence. There were no course assertion
+failures. Physical headset prediction/comfort and Windows-PCVR acceptance remain
+open. The change adds bounded prediction logic, not a code-reduction claim.

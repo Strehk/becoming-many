@@ -1,4 +1,4 @@
-import { Matrix4, Quaternion, Vector3 } from "three";
+import { Vector3 } from "three";
 import type { WorldModule } from "../../world/module-runtime";
 import type { Viewpoint } from "../../world/viewer-rig";
 import { crossesFlightRing } from "./flight-goals";
@@ -10,12 +10,15 @@ import type {
 
 export type StartDirection = "right" | "left" | "up" | "down";
 
-const ORIGIN = new Vector3();
 const TURN_COMPONENT = 0.12;
 const TURN_CONFIRM_SECONDS = 0.2;
 const ARROW_OUT_OF_VIEW_SECONDS = 0.8;
 const ARROW_FADE_SECONDS = 1;
 const MINIMUM_TRAVEL_SQUARED = 0.000001;
+const MOTION_HISTORY_SECONDS = 0.25;
+const MAXIMUM_CURVATURE_PER_METER = 0.12;
+const CURVATURE_DECAY_METERS = 4;
+const MAXIMUM_OBSERVED_SPEED_METERS_PER_SECOND = 12;
 
 type DistanceRange = readonly [minimum: number, maximum: number];
 
@@ -29,8 +32,6 @@ export interface StartParameters {
   readonly course: {
     readonly firstDistanceMeters: DistanceRange;
     readonly spacingMeters: DistanceRange;
-    readonly horizontalOffsetMeters: DistanceRange;
-    readonly verticalOffsetMeters: DistanceRange;
     readonly radiusMeters: DistanceRange;
   };
   readonly arrivalSeconds: number;
@@ -122,9 +123,13 @@ export function createStartModule(
     throw new Error("Start needs positive timings and ordered distance ranges");
 
   const origin = new Vector3();
-  const courseOffset = new Vector3();
-  const initialHeading = new Quaternion();
-  const headingMatrix = new Matrix4();
+  const previousTravelDirection = new Vector3();
+  const curvature = new Vector3();
+  const sampledCurvature = new Vector3();
+  const predictedTangent = new Vector3();
+  const corridorCorrection = new Vector3();
+  const predictedOffset = new Vector3();
+  let hasMotionHistory = false;
   const goalUp = new Vector3();
   const previousPosition = new Vector3();
   const arrowPosition = new Vector3();
@@ -139,8 +144,6 @@ export function createStartModule(
     ringRadiusMeters: 0,
     crossingAgeSeconds: undefined as number | undefined,
   }));
-  const curveOffset = new Vector3();
-  const forward = new Vector3();
   const targetPosition = new Vector3();
   const goalPosition = new Vector3();
   const goalNormal = new Vector3();
@@ -203,7 +206,7 @@ export function createStartModule(
   return {
     readObservation: () => observation,
     setPlaying: (next) => {
-      if (playing !== next) previousPosition.copy(viewpoint.worldPosition);
+      if (playing !== next) resetMotionHistory();
       playing = next;
     },
     setFormationAllowed: (allowed) => {
@@ -221,7 +224,7 @@ export function createStartModule(
       },
       activate: () => {
         active = true;
-        previousPosition.copy(viewpoint.worldPosition);
+        resetMotionHistory();
         particles?.setVisible(true);
       },
       update,
@@ -241,7 +244,7 @@ export function createStartModule(
 
   function reset(): void {
     initialized = false;
-    courseOffset.set(0, 0, 0);
+    resetMotionHistory();
     goalAdvanceAllowed = true;
     formationAllowed = true;
     phaseSeconds = 0;
@@ -266,17 +269,88 @@ export function createStartModule(
     observation.objects = undefined;
   }
 
+  function resetMotionHistory(): void {
+    previousPosition.copy(viewpoint.worldPosition);
+    hasMotionHistory = false;
+    curvature.set(0, 0, 0);
+    currentTravelDirection.copy(viewpoint.worldDirection);
+  }
+
+  function observeMotion(elapsed: number): void {
+    if (elapsed <= 0) return;
+    if (
+      travel.lengthSq() <= MINIMUM_TRAVEL_SQUARED ||
+      travel.length() / elapsed > MAXIMUM_OBSERVED_SPEED_METERS_PER_SECOND
+    ) {
+      hasMotionHistory = false;
+      curvature.set(0, 0, 0);
+      currentTravelDirection.copy(viewpoint.worldDirection);
+      return;
+    }
+    currentTravelDirection.copy(travel).normalize();
+    if (hasMotionHistory && elapsed <= MOTION_HISTORY_SECONDS) {
+      sampledCurvature
+        .copy(currentTravelDirection)
+        .sub(previousTravelDirection)
+        .multiplyScalar(1 / travel.length());
+      // Only sideways change bends the prediction; speed remains Run-owned.
+      sampledCurvature.addScaledVector(
+        currentTravelDirection,
+        -sampledCurvature.dot(currentTravelDirection),
+      );
+      const magnitude = sampledCurvature.length();
+      if (magnitude > MAXIMUM_CURVATURE_PER_METER)
+        sampledCurvature.multiplyScalar(
+          MAXIMUM_CURVATURE_PER_METER / magnitude,
+        );
+      curvature.lerp(
+        sampledCurvature,
+        1 - Math.exp(-elapsed / MOTION_HISTORY_SECONDS),
+      );
+      curvature.addScaledVector(
+        currentTravelDirection,
+        -curvature.dot(currentTravelDirection),
+      );
+    } else curvature.set(0, 0, 0);
+    previousTravelDirection.copy(currentTravelDirection);
+    hasMotionHistory = true;
+  }
+
+  /** Integrate a decaying turn trend; remote predictions gradually straighten. */
+  function predictPosition(
+    distance: number,
+    position: Vector3,
+    tangent: Vector3,
+    constrainCeiling = true,
+  ): void {
+    const decay = Math.exp(-distance / CURVATURE_DECAY_METERS);
+    position
+      .copy(origin)
+      .addScaledVector(corridorCorrection, distance)
+      .addScaledVector(currentTravelDirection, distance)
+      .addScaledVector(
+        curvature,
+        CURVATURE_DECAY_METERS * distance -
+          CURVATURE_DECAY_METERS ** 2 * (1 - decay),
+      );
+    tangent
+      .copy(currentTravelDirection)
+      .add(corridorCorrection)
+      .addScaledVector(curvature, CURVATURE_DECAY_METERS * (1 - decay));
+    if (constrainCeiling && options.maximumGoalYAt) {
+      const ceiling = options.maximumGoalYAt(position.x, position.z);
+      if (position.y > ceiling) {
+        position.y = ceiling;
+        tangent.y = 0;
+      }
+    }
+    tangent.normalize();
+  }
+
   function placeGoal(): boolean {
     const course = parameters.course;
-    const direction = parameters.directions[observation.goalIndex];
-    if (!direction)
-      throw new Error("Start goal index is outside its lesson sequence");
     origin.copy(viewpoint.worldPosition);
     goalUp.copy(viewpoint.worldUp);
-    initialHeading.setFromRotationMatrix(
-      headingMatrix.lookAt(ORIGIN, viewpoint.worldDirection, goalUp),
-    );
-    goalNormal.copy(viewpoint.worldDirection).negate();
     const radius = sample(course.radiusMeters);
     const halfAngle = Math.max(0.05, viewpoint.viewHalfAngleRadians * 0.75);
     const distance = Math.max(
@@ -287,79 +361,54 @@ export function createStartModule(
       ),
       (radius * 2) / Math.tan(halfAngle),
     );
-    const horizontal = direction === "right" || direction === "left";
-    const displacement = Math.min(
-      sample(
-        horizontal
-          ? course.horizontalOffsetMeters
-          : course.verticalOffsetMeters,
-      ),
-      Math.max(0, distance * Math.tan(halfAngle) - radius * 1.6),
-    );
-    courseOffset.set(
-      horizontal ? displacement * 0.35 * (direction === "right" ? 1 : -1) : 0,
-      horizontal ? 0 : displacement * 0.35 * (direction === "up" ? 1 : -1),
-      -distance,
-    );
-    // Predict from actual travel, constrained to the visible corridor so the
-    // visitor can find the tunnel without losing the already anchored arrow.
-    const predictionAngle = currentTravelDirection.angleTo(
-      viewpoint.worldDirection,
-    );
+    corridorCorrection.set(0, 0, 0);
+    // Derive the view correction from the uncut forecast. Applying it to an
+    // already ceiling-clipped point would lose the original vertical offset.
+    predictPosition(distance, targetPosition, predictedTangent, false);
+    predictedOffset.copy(targetPosition).sub(origin);
+    const predictionAngle = predictedOffset.angleTo(viewpoint.worldDirection);
     const visibleAngle = Math.max(
       0,
       halfAngle - Math.atan((radius * 1.6) / distance),
     );
-    forward
-      .lerpVectors(
-        viewpoint.worldDirection,
-        currentTravelDirection,
-        predictionAngle > 0 ? Math.min(1, visibleAngle / predictionAngle) : 1,
-      )
-      .normalize();
-    courseOffset.z = 0;
-    targetPosition
-      .copy(courseOffset)
-      .applyQuaternion(initialHeading)
-      .addScaledVector(forward, distance)
-      .add(origin);
-    if (options.maximumGoalYAt)
-      targetPosition.y = Math.min(
-        targetPosition.y,
-        options.maximumGoalYAt(targetPosition.x, targetPosition.z),
-      );
+    if (predictionAngle > visibleAngle) {
+      targetOffset
+        .copy(predictedOffset)
+        .normalize()
+        .lerp(viewpoint.worldDirection, 1 - visibleAngle / predictionAngle)
+        .normalize()
+        .multiplyScalar(predictedOffset.length());
+      corridorCorrection
+        .copy(targetOffset)
+        .sub(predictedOffset)
+        .multiplyScalar(1 / distance);
+    }
+    predictPosition(distance, targetPosition, predictedTangent);
     targetOffset.copy(targetPosition).sub(origin);
     const depth = targetOffset.dot(viewpoint.worldDirection);
     const lateral = Math.sqrt(
       Math.max(0, targetOffset.lengthSq() - depth * depth),
     );
-    // At the flight ceiling there may be no reachable ring in an upward view.
-    // Wait for a feasible gaze instead of revealing a target outside the view.
+    // Constrain the forecast corridor for the assisted view, keeping its measured
+    // turn trend. Ceiling clipping can still make this gaze unreachable.
     if (
       depth <= 0 ||
       lateral + radius * 1.6 > depth * Math.tan(viewpoint.viewHalfAngleRadians)
     )
       return false;
     goalPosition.copy(targetPosition);
+    goalNormal.copy(predictedTangent).negate();
     particleFrame.ringRadiusMeters = radius;
     particleFrame.previews = previews;
     previewStartedSeconds = particleFrame.elapsedSeconds;
-    curveOffset.copy(targetPosition).sub(origin);
-    forward.copy(currentTravelDirection).multiplyScalar(distance);
     for (const [index, preview] of previews.entries()) {
       preview.crossingAgeSeconds = undefined;
-      const t = 0.55 + index * 0.14;
-      const smooth = t * t * (3 - 2 * t);
-      preview.goalPosition
-        .copy(origin)
-        .addScaledVector(curveOffset, smooth)
-        .addScaledVector(forward, t * (1 - t) * (1 - 2 * t));
-      preview.goalNormal
-        .copy(curveOffset)
-        .multiplyScalar(6 * t * (1 - t))
-        .addScaledVector(forward, 1 - 6 * t + 6 * t * t)
-        .normalize()
-        .negate();
+      predictPosition(
+        distance * (0.55 + index * 0.14),
+        preview.goalPosition,
+        preview.goalNormal,
+      );
+      preview.goalNormal.negate();
       targetOffset.copy(preview.goalPosition).sub(origin);
       const previewDepth = targetOffset.dot(viewpoint.worldDirection);
       const previewLateral = Math.sqrt(
@@ -382,18 +431,12 @@ export function createStartModule(
     origin.copy(viewpoint.worldPosition);
     arrowUp.copy(viewpoint.worldUp);
     arrowNormal.copy(viewpoint.worldDirection).negate();
-    approachDirection
-      .copy(
-        travel.lengthSq() > MINIMUM_TRAVEL_SQUARED
-          ? travel
-          : viewpoint.worldDirection,
-      )
-      .normalize();
+    approachDirection.copy(currentTravelDirection);
     const direction = observation.direction;
     const horizontal = direction === "right" || direction === "left";
     turnDirection.copy(
       horizontal
-        ? courseOffset
+        ? turnDirection
             .crossVectors(viewpoint.worldDirection, arrowUp)
             .normalize()
         : arrowUp,
@@ -405,9 +448,26 @@ export function createStartModule(
       (parameters.particles?.arrowLengthMeters ?? 6) /
         Math.tan(Math.max(0.1, viewpoint.viewHalfAngleRadians)),
     );
-    arrowPosition
-      .copy(origin)
-      .addScaledVector(viewpoint.worldDirection, distance);
+    corridorCorrection.set(0, 0, 0);
+    predictPosition(distance, arrowPosition, predictedTangent);
+    targetOffset.copy(arrowPosition).sub(origin);
+    const predictionAngle = targetOffset.angleTo(viewpoint.worldDirection);
+    const visibleAngle = Math.max(
+      0,
+      viewpoint.viewHalfAngleRadians * 0.5 -
+        Math.atan(
+          ((parameters.particles?.arrowLengthMeters ?? 6) * 0.5) / distance,
+        ),
+    );
+    // Keep the primary instruction discoverable when the headset looks away
+    // from travel; the tunnel itself still follows measured motion.
+    if (predictionAngle > visibleAngle) {
+      targetOffset
+        .normalize()
+        .lerp(viewpoint.worldDirection, 1 - visibleAngle / predictionAngle)
+        .normalize();
+      arrowPosition.copy(origin).addScaledVector(targetOffset, distance);
+    }
     // During the cue this is a steering hint, not an active passage target.
     targetPosition
       .copy(origin)
@@ -456,6 +516,7 @@ export function createStartModule(
     phaseSeconds += elapsed;
     if (observation.wake) wake.ageSeconds += elapsed;
     travel.copy(viewpoint.worldPosition).sub(previousPosition);
+    observeMotion(elapsed);
     for (const preview of previews) {
       if (preview.crossingAgeSeconds !== undefined)
         preview.crossingAgeSeconds += elapsed;

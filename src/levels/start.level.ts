@@ -114,8 +114,6 @@ export const level: LevelPreset = {
     course: {
       firstDistanceMeters: [10, 11],
       spacingMeters: [9, 10],
-      horizontalOffsetMeters: [4, 5],
-      verticalOffsetMeters: [4, 5],
       radiusMeters: [2.5, 2.8],
     },
     particles: {

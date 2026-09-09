@@ -19,8 +19,6 @@ const PARAMETERS: StartParameters = {
   course: {
     firstDistanceMeters: [5, 5],
     spacingMeters: [5, 5],
-    horizontalOffsetMeters: [2, 2],
-    verticalOffsetMeters: [3, 3],
     radiusMeters: [1, 1],
   },
 };
@@ -128,15 +126,30 @@ test("all four spatial goals require passage and remain open without a time limi
 });
 
 test("a wake begins at the actual intersection and follows the travelled direction", () => {
-  const { start, runtime, formGoal, moveTo } = createPractice();
+  let frame: StartParticleFrame | undefined;
+  const { start, runtime, formGoal, moveTo } = createPractice(
+    PARAMETERS,
+    () => 0.5,
+    captureParticles((next) => {
+      frame = next;
+    }),
+  );
   const center = formGoal();
-  moveTo(center.clone().add(new Vector3(-1.6, 0.3, 5)));
+  if (!frame) throw new Error("Missing ring frame");
+  const beforeOffset = new Vector3(-1.6, 0.3, 5);
+  const afterOffset = new Vector3(2.4, 0.3, -5);
+  const before = beforeOffset.dot(frame.goalNormal);
+  const after = afterOffset.dot(frame.goalNormal);
+  const intersection = center
+    .clone()
+    .add(beforeOffset.clone().lerp(afterOffset, before / (before - after)));
+  moveTo(center.clone().add(beforeOffset));
   moveTo(center.clone().add(new Vector3(2.4, 0.3, -5)));
   const wake = start.readObservation().wake;
   expect(wake).toBeDefined();
-  expect(wake?.position.x).toBeCloseTo(center.x + 0.4);
-  expect(wake?.position.y).toBeCloseTo(center.y + 0.3);
-  expect(wake?.position.z).toBeCloseTo(center.z);
+  expect(wake?.position.x).toBeCloseTo(intersection.x);
+  expect(wake?.position.y).toBeCloseTo(intersection.y);
+  expect(wake?.position.z).toBeCloseTo(intersection.z);
   const direction = new Vector3(4, 0, -10).normalize();
   expect(wake?.direction.x).toBeCloseTo(direction.x);
   expect(wake?.direction.y).toBeCloseTo(direction.y);
@@ -645,5 +658,93 @@ test("an upward lesson keeps its rings hidden until the gaze permits a reachable
     offset.angleTo(worldDirection) +
       Math.asin(frame.ringRadiusMeters / offset.length()),
   ).toBeLessThan(0.35);
+  runtime.unload(start.module);
+});
+
+test("tunnel centers and normals continue the measured turn independently of head yaw", () => {
+  function predict(gazeX: number) {
+    let frame: StartParticleFrame | undefined;
+    const practice = createPractice(
+      PARAMETERS,
+      () => 0.5,
+      captureParticles((next) => {
+        frame = next;
+      }),
+    );
+    practice.runtime.update(PARAMETERS.arrivalSeconds);
+    practice.runtime.update(PARAMETERS.formationSeconds);
+    practice.worldDirection.set(gazeX, 0, -1).normalize();
+    for (const angle of [0.06, 0.12, 0.18, 0.24]) {
+      practice.moveTo(
+        practice.worldPosition
+          .clone()
+          .add(
+            new Vector3(Math.sin(angle), 0, -Math.cos(angle)).multiplyScalar(
+              0.2,
+            ),
+          ),
+      );
+    }
+    expect(practice.start.readObservation().phase).toBe("forming");
+    if (!frame) throw new Error("Missing predicted tunnel");
+    const origin = practice.worldPosition.clone();
+    const center = frame.goalPosition.clone();
+    const normal = frame.goalNormal.clone();
+    const previews = frame.previews?.map((preview) => ({
+      position: preview.goalPosition.clone(),
+      normal: preview.goalNormal.clone(),
+    }));
+    expect(
+      center.clone().sub(origin).x / -center.clone().sub(origin).z,
+    ).toBeGreaterThan(Math.tan(0.24));
+    expect(normal.x).toBeLessThan(-Math.sin(0.24));
+    practice.worldDirection.set(-1, 0, 0);
+    practice.moveTo(
+      practice.worldPosition.clone().add(new Vector3(0.1, 0, -0.1)),
+    );
+    expect(frame.goalPosition).toEqual(center);
+    expect(frame.goalNormal).toEqual(normal);
+    practice.runtime.unload(practice.start.module);
+    return { center, normal, previews };
+  }
+  expect(predict(0.3)).toEqual(predict(-0.3));
+});
+
+test("new arrows use travel prediction while pause and reset discard stale curvature", () => {
+  let frame: StartParticleFrame | undefined;
+  const { start, runtime, worldPosition, worldDirection, moveTo } =
+    createPractice(
+      PARAMETERS,
+      () => 0.5,
+      captureParticles((next) => {
+        frame = next;
+      }),
+    );
+  start.setFormationAllowed(false);
+  for (const angle of [0, 0.05, 0.1, 0.15])
+    moveTo(
+      worldPosition
+        .clone()
+        .add(
+          new Vector3(Math.sin(angle), 0, -Math.cos(angle)).multiplyScalar(0.2),
+        ),
+    );
+  start.setFormationAllowed(true);
+  runtime.update(0);
+  if (!frame) throw new Error("Missing arrow");
+  expect(frame.arrowPosition.x).toBeGreaterThan(worldPosition.x);
+  const arrow = frame.arrowPosition.clone();
+  worldDirection.set(-0.2, 0, -1).normalize();
+  runtime.update(0);
+  expect(frame.arrowPosition).toEqual(arrow);
+  start.setPlaying(false);
+  worldPosition.set(100, 4, 100);
+  runtime.update(10);
+  start.setPlaying(true);
+  start.reset();
+  worldDirection.set(0, 0, -1);
+  runtime.update(PARAMETERS.arrivalSeconds);
+  expect(frame.arrowPosition.x).toBeCloseTo(100);
+  expect(frame.arrowPosition.z).toBeLessThan(100);
   runtime.unload(start.module);
 });

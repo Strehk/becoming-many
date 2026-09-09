@@ -276,11 +276,17 @@ Start keeps the same transport while omitting the main-experience handoff.
 The current literal recipe enables bounded object-bound granular audio from
 three user-supplied excerpts and the five user-requested German tutorial recordings.
 At each authored instruction onset, Start samples the current world-space eye
-direction and conservative projection cone published by World. It places the
-large arrow on that ray and retains its world anchor. Only a sustained change
+direction and conservative projection cone published by World. Start estimates
+turn curvature from consecutive world-space movement segments, smooths it over
+0.25 seconds and decays its forecast over four metres. The large arrow uses
+that forecast constrained near the captured eye ray. Only a sustained change
 in actual travel toward the requested direction creates the ring/three previews.
-The curve predicts current travel constrained to the visible corridor. Head rotation
-alone does not open the tunnel. Off-screen arrows dissolve and retry; each crossed
+Their centers and tangent normals share the forecast, with a single corridor
+correction when the assisted view requires it, followed by the flight ceiling.
+All anchors remain fixed after generation. Pause/reset and discontinuous motion
+discard old curvature. This replaces one-frame travel with arbitrary lateral
+offsets and the separately shaped preview curve. Head rotation alone does not
+open the tunnel. Off-screen arrows dissolve and retry; each crossed
 preview emits its own local visual pulse without counting a lesson. The effect
 uses analytical mass-spring gathering and drag-decaying crossing impulses in the
 existing vertex shader, with fixed buffers and no additional simulation loop.
