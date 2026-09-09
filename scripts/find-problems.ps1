@@ -59,6 +59,9 @@ try {
             if ($services.Count) {
                 $summary.Add('[INFO] Port owner services: ' + (($services.Name) -join ', '))
                 Add-Detail 'Port owner services' ($services | Select-Object Name, DisplayName, State, ProcessId, PathName | Format-List)
+                if ($name -eq 'svchost.exe' -and @($services | Where-Object { $_.Name -eq 'EventLog' }).Count) {
+                    $summary.Add('[NEXT] EventLog conflict: run scripts\repair-pico-port.bat, then restart Windows if the repair succeeds.')
+                }
             }
         } catch { Add-Detail 'Port owner services' $_.Exception.Message }
         if ($owner) { Add-Detail 'Streaming port owner' ($owner | Select-Object ProcessId, ParentProcessId, Name, ExecutablePath, CommandLine | Format-List) }
@@ -82,6 +85,30 @@ foreach ($protocol in @('tcp','udp')) {
     if ($ranges.Count) { $summary.Add("[CHECK] Windows excludes $protocol port $streamPort in a reserved range.") }
     else { $summary.Add("[INFO] No listed $protocol exclusion contains port $streamPort.") }
 }
+
+foreach ($family in @('ipv4', 'ipv6')) {
+    $range = Read-NativeDiagnostic 'netsh.exe' "interface $family show dynamicport tcp"
+    Add-Detail "$family dynamic TCP ports" $range
+    $numbers = @([regex]::Matches($range, '(?m):\s*(\d+)\s*$'))
+    if (!$range.StartsWith('Unavailable') -and $numbers.Count -eq 2) {
+        $first = [int]$numbers[0].Groups[1].Value
+        $last = $first + [int]$numbers[1].Groups[1].Value - 1
+        $summary.Add("[INFO] $family dynamic TCP: $first-$last.")
+    } else { $summary.Add("[CHECK] $family dynamic TCP range could not be read.") }
+}
+foreach ($query in @(
+    'query "HKLM\SOFTWARE\Microsoft\Rpc\Internet" /reg:64',
+    'query "HKLM\SOFTWARE\Khronos\OpenXR\1" /v ActiveRuntime /reg:64',
+    'query "HKLM\SOFTWARE\Khronos\OpenXR\1" /v ActiveRuntime /reg:32',
+    'query "HKCU\Software\Valve\Steam" /v SteamPath'
+)) {
+    Add-Detail $query (Read-NativeDiagnostic 'reg.exe' $query)
+}
+try {
+    Add-Detail 'Windows version and last boot' (Get-CimInstance Win32_OperatingSystem -OperationTimeoutSec 10 |
+        Select-Object Caption, Version, BuildNumber, LastBootUpTime | Format-List)
+    Add-Detail 'EventLog service health' (Get-Service -Name EventLog -ErrorAction Stop | Format-Table Name, Status)
+} catch { Add-Detail 'Windows service inspection' $_.Exception.Message }
 
 $related = @($processes | Where-Object { $_.Name -match '(?i)pico|business.?stream|vrserver|vrmonitor|vrcompositor|watchdog|docker' })
 Add-Detail 'Streaming and supervision processes (children are not necessarily duplicates)' ($related | Select-Object -First 60 ProcessId, ParentProcessId, Name, ExecutablePath, CommandLine | Format-List)
@@ -124,7 +151,7 @@ try {
     $health = Invoke-WebRequest 'http://localhost/health' -UseBasicParsing -TimeoutSec 5
     $summary.Add("[INFO] Station HTTP: $($health.StatusCode) (does not confirm VR streaming).")
 } catch { $summary.Add('[CHECK] Station http://localhost/health is unavailable.') }
-foreach ($logName in @('pico.log','steamvr.log','kiosk.log','startup.log')) {
+foreach ($logName in @('docker.log','station.log','pico.log','steamvr.log','kiosk.log','startup.log','pico-port-repair.log')) {
     $logPath = Join-Path $StationRoot "watchdog/logs/$logName"
     if (Test-Path -LiteralPath $logPath) {
         try { Add-Detail $logName (Get-Content -LiteralPath $logPath -Tail 60) }

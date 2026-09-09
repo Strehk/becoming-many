@@ -127,24 +127,34 @@ Then:
 `start-station.bat` delegates to `scripts/start-station.ps1` using the fixed
 installation path, including when invoked through the documented Startup symlink.
 A file lock prevents concurrent launchers. Existing Watchdogs are identified by
-config path; unknown control-port owners stop startup with a diagnostic. Already
+config path; unknown control-port owners stop only that component with a diagnostic. Already
 running external applications are retained with an explicit unsupervised warning.
 No process is killed or port reserved. Docker and PICO start before SteamVR
-(30 seconds), then the kiosk (15 seconds). New Watchdogs have a bounded control-port
-readiness check. These checks do not establish headset connectivity.
+(30 seconds), then the kiosk (15 seconds). Every component is attempted even if
+another fails. The PICO port conflict must not prevent the station server or
+kiosk from starting. New Watchdogs have a bounded control-port observation; a
+still-running process with a delayed port is reported as pending, since startup
+hooks may wait for Docker or HTTP. These checks do not establish headset connectivity.
 
 Remove an obsolete `C:\Watchdog` startup shortcut if the installation has migrated
 to the tracked checkout; retain exactly one station startup entry. The diagnostic
 script inventories both startup folders, relevant scheduled tasks and process
 command lines to identify competing owners before changing anything.
 
-On failure the BAT wrapper runs `scripts/find-problems.ps1 -NoOpen` and keeps the
+After all start attempts, a failure makes the BAT wrapper run
+`scripts/find-problems.ps1 -NoOpen` and keep the
 window open. The latest startup transcript is `watchdog/logs/startup.log`.
 Double-click `scripts/find-problems.bat` for a fresh photographable summary and
 Notepad report at `watchdog/logs/find-problems.txt`. This one-shot collector does
 not stop applications or modify network settings. Reports overwrite the prior
 report, remain ignored by Git and include partial failures rather than aborting
 at the first missing privilege or unavailable tool.
+
+For the confirmed EventLog collision on TCP 49667, the manual
+`scripts/repair-pico-port.bat` performs a reversible administrator repair. It is
+not run silently by startup. See the [repair procedure](../docs/direction/deployment.md#eventlog-port-conflict-repair)
+before running it; Windows must restart before the existing EventLog listener
+can move to another dynamic port.
 
 ## Operating it
 

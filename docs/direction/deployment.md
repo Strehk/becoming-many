@@ -178,13 +178,16 @@ These are evidence tasks, not reasons to add a generic coordination service.
 Double-click `C:\becoming-many\scripts\find-problems.bat`. No Bash installation
 or typed PowerShell command is needed. Photograph the summary or send
 `watchdog/logs/find-problems.txt`. It records TCP 49667 owners and their services,
-Watchdog UDP endpoints, port exclusions, process paths, startup entries/tasks,
-Git revision, Docker state and recent supervisor logs. PID numbers can change
+Watchdog UDP endpoints, port exclusions, dynamic TCP ranges, RPC policy and
+OpenXR registration, process paths, startup entries/tasks, Git revision, Docker
+state and recent supervisor logs (including Docker and station bring-up). PID numbers can change
 between runs. A dual-stack listener is counted once per owner. No automatic
 repair or process termination is performed.
 
 Repeated/concurrent startup is guarded by the existing launcher, with explicit
-messages for outside owners and port conflicts. The fixed installation path also
+messages for outside owners and port conflicts. Each component is attempted;
+errors are collected and reported afterward. A PICO failure no longer skips
+station, SteamVR or kiosk startup. The fixed installation path also
 supports the existing Startup symlink. A failed startup collects diagnostics.
 An existing externally started application is retained but not claimed as
 supervised. Check PICO's own connection status; process/port readiness is not
@@ -212,3 +215,52 @@ scripts. The unresolved port collision and physical cold-boot/reconnect
 acceptance are tracked in [#116](https://github.com/Strehk/becoming-many/issues/116).
 See [PICO documentation](https://business.picoxr.com/de/doc/43j3qcoq) and
 [PICO SDK](https://business.picoxr.com/jp/doc/BusinessStreamingv2SDK).
+
+### EventLog port conflict repair
+
+The office report identifies the Windows EventLog service as the TCP 49667
+owner, including after a restart with a different PID. The global startup abort
+introduced in `d135d32` was a separate regression: it left only Docker's Watchdog
+running. That abort is corrected without changing vendor executable paths,
+streaming mode or deployment selection.
+
+After pulling `david_refactor`, double-click
+`C:\becoming-many\scripts\repair-pico-port.bat` and accept Windows' administrator
+prompt. Read the result, close the window with Enter, and **restart Windows after
+a successful repair**. The installed sign-in launcher will start the station.
+Rerun `scripts\find-problems.bat` after startup to record the new port owner and
+check the picture in the headset. A successful settings change is not evidence
+of successful streaming.
+
+The one-time repair moves IPv4 and IPv6 dynamic TCP allocation from the Windows
+default `49152–65535` to `50000–65535`, leaving 15,536 ports (848 fewer). It affects
+all automatic TCP port allocation, including outbound connections. It leaves
+UDP, port exclusions, firewall, RPC registry policy, EventLog and other running
+processes untouched. PICO can still explicitly bind TCP 49667. The reboot lets
+EventLog release its current listener and receive a new dynamic assignment.
+
+This mechanism follows Microsoft's [RPC allocation description](https://learn.microsoft.com/en-us/troubleshoot/windows-client/networking/rpc-errors-troubleshooting),
+[TCP range configuration](https://learn.microsoft.com/en-us/troubleshoot/windows-client/networking/tcp-ip-port-exhaustion-troubleshooting)
+and [EventLog dynamic RPC endpoint specification](https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-even6/3479d837-b759-4b13-9d5e-4c93eede7cb6).
+It is a controlled repair for the observed collision, not a vendor-certified PICO
+fix or a guarantee against another application explicitly choosing the same port.
+
+The script refuses unrecognized port owners, custom TCP ranges, existing RPC
+port policy or unreadable prerequisites. It retains one machine-bound baseline
+at `watchdog/run/pico-port-backup.clixml`, reads back both changes and attempts
+rollback on partial failure. Repeated runs preserve the original backup. Keep
+that file for recovery; a backup from another PC is not accepted. The latest
+repair transcript is `watchdog/logs/pico-port-repair.log`.
+
+To restore the saved TCP ranges, run the same launcher with `-Restore`, then
+restart Windows:
+
+```bat
+C:\becoming-many\scripts\repair-pico-port.bat -Restore
+```
+
+Physical acceptance remains in #116: confirm EventLog is running, the new port
+owner is PICO, its bind error is absent, the headset connects, Docker/M5/network
+remain functional, and repeat a cold start and USB reconnect on both stations.
+The registry and network settings are local Windows state: a Git pull alone
+cannot apply this administrator repair.

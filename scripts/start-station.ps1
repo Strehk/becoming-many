@@ -20,9 +20,13 @@ function Test-ApplicationRunning {
     }
     if (@($Processes | Where-Object { $_.Name -in $applicationNames }).Count) { return $true }
     if ($Name -eq 'kiosk') {
-        $profile = '--user-data-dir=' + (Join-Path $WatchdogDirectory 'run\kiosk-station')
+        $profiles = @((Join-Path $WatchdogDirectory 'run\kiosk-station'))
+        if ($env:LOCALAPPDATA) { $profiles += Join-Path $env:LOCALAPPDATA 'becoming-many\kiosk-station' }
+        $profilePattern = '(?i)(?:^|[\s"])--user-data-dir="?(?:' +
+            (($profiles | ForEach-Object { [regex]::Escape($_.Replace('/', '\')) }) -join '|') + ')(?:$|[\s"])'
         return [bool]@($Processes | Where-Object {
-            $_.Name -eq 'chrome.exe' -and $_.CommandLine -and $_.CommandLine.Contains($profile)
+            $_.Name -in @('chrome.exe', 'chromium.exe', 'msedge.exe') -and $_.CommandLine -and
+                $_.CommandLine.Replace('/', '\') -match $profilePattern
         }).Count
     }
     if ($Name -eq 'station') {
@@ -52,6 +56,17 @@ function Start-StationWatchdog {
         Write-Host "SKIPPED ${Name}: Watchdog already running (PID $($owners.ProcessId -join ', '))."
         return
     }
+    # CIM does not expose another process's working directory. A relative config
+    # cannot establish ownership, but starting again could create a duplicate.
+    $relativePattern = '(?i)(?:^|[\s"])(?:\.\\)?' + [regex]::Escape("$Name.yaml") + '(?:$|[\s"])'
+    $relativeOwners = @($processes | Where-Object {
+        $_.Name -eq 'Watchdog.exe' -and $_.CommandLine -and
+            $_.CommandLine.Replace('/', '\') -match $relativePattern
+    })
+    if ($relativeOwners.Count) {
+        Write-Warning "SKIPPED ${Name}: Watchdog uses a relative config (PID $($relativeOwners.ProcessId -join ', ')). Ownership is unverified; no additional instance was launched. Run scripts\find-problems.bat."
+        return
+    }
     $listeners = @(Get-NetUDPEndpoint -ErrorAction Stop | Where-Object { $_.LocalPort -eq $Port })
     if ($listeners.Count) {
         throw "Cannot start ${Name}: control port $Port belongs to unrecognized PID $($listeners.OwningProcess -join ', '). Run scripts\find-problems.bat."
@@ -64,7 +79,8 @@ function Start-StationWatchdog {
         $picoListeners = @(Get-NetTCPConnection -State Listen -ErrorAction Stop |
             Where-Object { $_.LocalPort -eq 49667 })
         if ($picoListeners.Count) {
-            throw "Cannot start pico: port 49667 already belongs to PID $($picoListeners.OwningProcess -join ', '). Run scripts\find-problems.bat."
+            $portOwners = @($picoListeners.OwningProcess | Sort-Object -Unique)
+            throw "Cannot start pico: port 49667 already belongs to PID $($portOwners -join ', '). Run scripts\find-problems.bat."
         }
     }
     Write-Host "Starting $Name Watchdog ..."
@@ -76,7 +92,10 @@ function Start-StationWatchdog {
         if ($control.Count) { throw "${Name}: another process took control port $Port during startup." }
         Start-Sleep -Seconds 1
     }
-    throw "${Name}: Watchdog did not open control port $Port within 10 seconds. See watchdog/logs/$Name.log."
+    if ($launched.HasExited) {
+        throw "${Name}: Watchdog exited before control port $Port became available. See watchdog/logs/$Name.log."
+    }
+    Write-Warning "${Name}: Watchdog process started, but control port $Port is not ready after 10 seconds. Startup hooks may still be waiting; check watchdog/logs/$Name.log."
 }
 
 function Start-Station {
@@ -97,15 +116,28 @@ function Start-Station {
         }
         Start-Transcript -Path (Join-Path $WatchdogDirectory 'logs/startup.log') -Force | Out-Null
         $transcribing = $true
-        Start-StationWatchdog 'docker' 2348 $WatchdogDirectory
-        Start-StationWatchdog 'pico' 2347 $WatchdogDirectory
-        Start-StationWatchdog 'station' 2349 $WatchdogDirectory
-        Write-Host 'Waiting 30s before SteamVR ...'
-        Start-Sleep -Seconds 30
-        Start-StationWatchdog 'steamvr' 2346 $WatchdogDirectory
-        Write-Host 'Waiting 15s before the kiosk ...'
-        Start-Sleep -Seconds 15
-        Start-StationWatchdog 'kiosk' 2350 $WatchdogDirectory
+        $failures = New-Object 'Collections.Generic.List[string]'
+        $components = @(
+            @{ Name = 'docker'; Port = 2348; Delay = 0 }
+            @{ Name = 'pico'; Port = 2347; Delay = 0 }
+            @{ Name = 'station'; Port = 2349; Delay = 0 }
+            @{ Name = 'steamvr'; Port = 2346; Delay = 30 }
+            @{ Name = 'kiosk'; Port = 2350; Delay = 15 }
+        )
+        foreach ($component in $components) {
+            if ($component.Delay) {
+                Write-Host "Waiting $($component.Delay)s before $($component.Name) ..."
+                Start-Sleep -Seconds $component.Delay
+            }
+            try { Start-StationWatchdog $component.Name $component.Port $WatchdogDirectory }
+            catch {
+                $failures.Add("$($component.Name): $($_.Exception.Message)")
+                Write-Warning $failures[$failures.Count - 1]
+            }
+        }
+        if ($failures.Count) {
+            throw ("Station startup completed with problems. All components were attempted.`n" + ($failures -join "`n"))
+        }
         Write-Host "Startup checks complete. Review any SKIPPED messages. Headset connection is not verified. Logs: $WatchdogDirectory\logs"
     } finally {
         try { if ($transcribing) { Stop-Transcript | Out-Null } }

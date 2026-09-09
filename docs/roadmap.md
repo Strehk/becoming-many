@@ -40,7 +40,11 @@ identifies PID 3672 as the EventLog-hosting process listening on TCP 49667;
 the cause and remedy remain open. Switching PICO to SteamVR did not clear the
 bind error and added a SteamVR registry-detection warning. The working native
 runtime/PICO configuration still needs inventory under #54. No browser shell
-bridge is planned.
+bridge is planned. The later cold-start photo confirms a separate regression in
+`d135d32`: a PICO conflict aborted the independent station/kiosk starts. Startup
+now attempts every component before reporting errors. A manual, backed-up and
+reversible TCP allocation repair is available for the EventLog collision;
+administrator approval, reboot and actual two-station recovery remain required.
 
 ## Immediate tutorial corrections after independent review
 

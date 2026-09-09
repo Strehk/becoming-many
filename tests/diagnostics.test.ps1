@@ -18,6 +18,10 @@ $StationRoot = Join-Path ([IO.Path]::GetTempPath()) ('station-diagnostic-' + [gu
 $NoOpen = $true
 [void][IO.Directory]::CreateDirectory($StationRoot)
 try {
+    $logDirectory = Join-Path $StationRoot 'watchdog/logs'
+    [void][IO.Directory]::CreateDirectory($logDirectory)
+    [IO.File]::WriteAllText((Join-Path $logDirectory 'docker.log'), 'Docker engine startup failed')
+    [IO.File]::WriteAllText((Join-Path $logDirectory 'station.log'), 'Station compose bring-up failed')
     function Get-CimInstance {
         param($ClassName,$Filter,$OperationTimeoutSec)
         if ($ClassName -eq 'Win32_Process') {
@@ -37,7 +41,11 @@ try {
     function Read-NativeDiagnostic {
         param($File,$Arguments)
         switch ($File) {
-            'netsh.exe' { return "Start Port End Port`n 49600 49699 *" }
+            'netsh.exe' {
+                if ($Arguments -like '*show dynamicport*') { return "Startport : 49152`nAnzahl der Ports : 16384" }
+                return "Start Port End Port`n 49600 49699 *"
+            }
+            'reg.exe' { return 'Unavailable: registry key not found' }
             'git.exe' { if ($Arguments -eq 'branch --show-current') { return 'david_refactor' }; return 'abc123' }
             'docker.exe' { return 'Unavailable: Docker offline' }
         }
@@ -51,12 +59,19 @@ try {
     Assert-Contains $report 'Windows excludes tcp port 49667'
     Assert-Contains $report 'Unavailable: Docker offline'
     Assert-Contains $report 'does not confirm VR streaming'
+    Assert-Contains $report '[INFO] ipv4 dynamic TCP: 49152-65535'
+    Assert-Contains $report '[INFO] ipv6 dynamic TCP: 49152-65535'
+    Assert-Contains $report 'ActiveRuntime'
+    Assert-Contains $report 'Unavailable: registry key not found'
+    Assert-Contains $report 'Docker engine startup failed'
+    Assert-Contains $report 'Station compose bring-up failed'
     function Get-NetTCPConnection { param($State,$ErrorAction) throw 'Access denied' }
     function Read-NativeDiagnostic { param($File,$Arguments) return 'Unavailable: not installed' }
     & $body
     $report = Get-Content -LiteralPath $path -Raw
     Assert-Contains $report 'TCP inspection unavailable: Access denied'
     Assert-Contains $report 'tcp port exclusions unavailable'
+    Assert-Contains $report 'ipv4 dynamic TCP range could not be read'
     if ($report.Contains('PID 3672 (svchost.exe)')) { throw 'Report was appended instead of replaced' }
     Write-Host 'PASS diagnostic owner/service, dual-stack deduplication, exclusions, partial failure and report replacement'
 } finally { [IO.Directory]::Delete($StationRoot,$true) }
