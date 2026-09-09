@@ -26,7 +26,6 @@ import { createLanguagePanel } from "./language.panel";
 import { createM5Panel } from "./m5.panel";
 import { CONDUCTOR_SETTINGS } from "./operator-settings";
 import { createShowTimeline } from "./show-timeline.panel";
-import { createStagePanel } from "./stage.panel";
 import { createStatusStrip } from "./status-strip.panel";
 import { createTechDrawer } from "./technician-drawer.panel";
 import { createTransportPanel } from "./transport.panel";
@@ -35,7 +34,6 @@ import { createWakeOverlay } from "./wake-overlay.panel";
 
 export interface ConductorPageOptions {
   readonly container: HTMLElement;
-  readonly stageMount: HTMLElement;
   readonly schedule: NarrationSchedule;
   readonly stationName: string | undefined;
   readonly show: Pick<
@@ -68,7 +66,6 @@ export interface ConductorPageOptions {
 /** The returned cleanup releases UI listeners, subscriptions, timers and gestures. */
 export function mountConductorPage({
   container: page,
-  stageMount,
   schedule,
   stationName,
   show,
@@ -169,7 +166,6 @@ export function mountConductorPage({
         show,
         signal,
       }),
-      createStagePanel({ parent: page, stageMount }),
       createM5Panel({
         parent: drawer.m5Parent,
         initialHost: initialM5Host,

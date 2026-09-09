@@ -143,9 +143,6 @@
             </svg>
             <span>Stop</span>
           </button>
-          <button type="button" data-continue-experience hidden>
-            Begin experience
-          </button>
         </div>
         <output data-tutorial-status hidden></output>
         <section class="conductor__language" aria-label="Language">
@@ -157,9 +154,6 @@
         <div id="world-stage" class="conductor__stage-mount">
           <canvas class="experience-canvas"></canvas>
         </div>
-        <p class="conductor__stage-overlay" hidden>
-          Headset active · Desktop preview paused
-        </p>
       </section>
       <section class="conductor__timeline" aria-label="Show timeline">
         <output
@@ -263,6 +257,13 @@
         </div>
         <div class="conductor__drawer-group">
           <span class="conductor__drawer-heading">M5 controller</span>
+          <details class="conductor__controller-state">
+            <summary>Controller state</summary>
+            <p>
+              Required firmware: <output data-m5-required-firmware></output>
+            </p>
+            <pre data-m5-state>No controller response yet.</pre>
+          </details>
           <div data-m5-parent>
             <section class="conductor__m5" aria-label="M5 controller">
               <label class="conductor__m5-label"

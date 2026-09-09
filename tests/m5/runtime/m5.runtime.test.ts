@@ -24,6 +24,27 @@ function state(overrides: Partial<M5State> = {}): M5State {
 }
 
 describe("M5 runtime", () => {
+  it("retains a rejected reply for kiosk diagnostics without admitting its controls", async () => {
+    const reply = state({ firmwareVersion: "0.3.2-bm-http", pitch: 0.8 });
+    const fetchMock = spyOn(globalThis, "fetch").mockResolvedValue(
+      Response.json(reply),
+    );
+    const runtime = createM5Runtime(BASE_STATE.deviceId);
+    try {
+      runtime.setHost("controller.local");
+      await Bun.sleep(0);
+      expect(runtime.readObservation().status).toBe("incompatible-firmware");
+      expect(runtime.readObservation().receivedState).toEqual(reply);
+      expect(runtime.readObservation().sample).toBeUndefined();
+      expect(runtime.consumeFrame()?.quality).toBe(0);
+      runtime.setHost("");
+      expect(runtime.readObservation().receivedState).toBeUndefined();
+    } finally {
+      runtime.unload();
+      fetchMock.mockRestore();
+    }
+  });
+
   it("resets host history and ignores a late response without blocking the next host", async () => {
     const lateResponse = Promise.withResolvers<Response>();
     const fetchMock = spyOn(globalThis, "fetch")

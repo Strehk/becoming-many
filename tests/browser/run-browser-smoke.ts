@@ -777,10 +777,7 @@ async function checkConductorStop(page: Page): Promise<void> {
     await page.locator("[data-tutorial-status]").innerText(),
     /Right · 1\/4/,
   );
-  assert.equal(
-    await page.locator("[data-continue-experience]").isVisible(),
-    true,
-  );
+  assert.equal(await page.locator("[data-continue-experience]").count(), 0);
   const restartedAt = await observeConductorTime(page);
   await page.waitForTimeout(PAUSE_OBSERVATION_MILLISECONDS);
   assert(

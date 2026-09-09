@@ -18,6 +18,8 @@ export interface M5Observation {
   readonly host: string;
   readonly status: M5DeviceStatus;
   readonly sample: M5State | undefined;
+  /** Last parsed reply for diagnostics only, including rejected firmware. */
+  readonly receivedState?: M5State;
   readonly control:
     | Readonly<Pick<ControlFrame, "pitch" | "roll" | "quality">>
     | undefined;
@@ -45,6 +47,7 @@ export function createM5Runtime(expectedDeviceId?: string): M5Runtime {
   let closed = false;
   let source: ControlSource | undefined;
   let currentHost = "";
+  let receivedState: M5State | undefined;
   let stopPolling: (() => void) | undefined;
 
   function setHost(host: string): void {
@@ -52,6 +55,7 @@ export function createM5Runtime(expectedDeviceId?: string): M5Runtime {
     stopPolling?.();
     stopPolling = undefined;
     source = undefined;
+    receivedState = undefined;
     currentHost = host.trim();
     if (!currentHost) return;
 
@@ -75,8 +79,10 @@ export function createM5Runtime(expectedDeviceId?: string): M5Runtime {
         const response = await fetch(stateUrl, { signal });
         if (!response.ok) return;
         const state = parseM5State(await response.text());
-        if (state && !signal.aborted)
+        if (state && !signal.aborted) {
+          receivedState = state;
           currentSource.pushState(state, Date.now());
+        }
       } catch {
         // Failed or timed-out polls become stale at the control source.
       } finally {
@@ -100,6 +106,7 @@ export function createM5Runtime(expectedDeviceId?: string): M5Runtime {
     consumeFrame: () => source?.consumeFrame(Date.now()),
     readObservation: () => ({
       host: currentHost,
+      ...(receivedState ? { receivedState } : {}),
       ...(source?.readObservation(Date.now()) ?? {
         status: "off",
         sample: undefined,

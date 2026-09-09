@@ -908,3 +908,15 @@ creation. Four seconds of retiring tutorial audio reuse its existing owner;
 restart waits rather than allocating a second pool. See the
 [measurements and limits](evidence/issue-50/README.md#aligned-approach-and-gentle-audio-release--2026-09-09).
 Physical Windows-PCVR 90 Hz and headset listening remain open.
+
+
+### Desktop XR mirror — 2026-09-09
+
+World copies the already rendered left eye inside the active XR callback. The
+existing canvas is capped at 1280 × 720 (921,600 pixels, approximately 3.52 MiB
+RGBA color storage). There is one clear and one color blit per XR frame, no
+second scene render, additional texture, framebuffer or animation loop. A real
+headed WebGL2 probe passed 120 copies with correct pixels and restored bindings,
+zero GL errors and no added scene draw calls. This bounds copy work but does not
+measure native XR transport cost. Windows-PCVR 90 Hz and the opaque headset
+framebuffer path require the physical installation.

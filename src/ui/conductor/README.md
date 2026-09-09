@@ -55,9 +55,12 @@ headset control, speed, resets and diagnostic readouts.
 The wake overlay displays suspended audio; Audio owns its user-activation
 listeners. Normal operator clicks and the playback shortcut request available XR
 by default, within the browser-required user activation. Explicit headset start/stop
-remains in technician tools. During XR the desktop preview is marked as paused;
-no second render pass is added.
+remains in technician tools. During XR World copies the rendered left eye to the desktop canvas within the
+same frame, capped at 1280 × 720; no second scene render is added.
 M5 preview observes accepted samples without consuming flight button edges.
+The expandable Controller state section shows the last parsed `/state` reply
+and required firmware inside the drawer, including rejected replies. It reuses
+the existing poll; diagnostic replies never bypass the steering validity gate.
 "Picture OK" is a browser-metric heuristic, not Windows-PCVR acceptance.
 
 ## Resources and styling

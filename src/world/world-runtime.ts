@@ -18,6 +18,7 @@ import { ModuleRuntime } from "./module-runtime";
 import { StreamQueue } from "./stream-queue";
 import { createViewerRig, type Viewpoint } from "./viewer-rig";
 import { WORLD_RUNTIME_SETTINGS } from "./world-settings";
+import { mirrorXrFrame } from "./xr-mirror";
 import { createXrSessionControl, type XrSessionControl } from "./xr-session";
 
 /** On-demand facts from this world's actual rendering context. */
@@ -120,6 +121,8 @@ export function createWorld(
   );
 
   const xr = createXrSessionControl(renderer);
+  renderer.xr.addEventListener("sessionstart", resizeRenderer);
+  renderer.xr.addEventListener("sessionend", resizeRenderer);
   let resizeObserver: ResizeObserver | undefined;
   let preparation: Promise<void> | undefined;
   let stopping: Promise<void> | undefined;
@@ -183,6 +186,8 @@ export function createWorld(
       for (const release of [
         () => renderer.setAnimationLoop(null),
         () => resizeObserver?.disconnect(),
+        () => renderer.xr.removeEventListener("sessionstart", resizeRenderer),
+        () => renderer.xr.removeEventListener("sessionend", resizeRenderer),
         () => timer.dispose(),
       ]) {
         try {
@@ -237,6 +242,7 @@ export function createWorld(
       modules.update(deltaSeconds);
       streamQueue.update();
       renderer.render(scene, camera);
+      mirrorXrFrame(renderer);
 
       if (!frameControl) return;
 
@@ -295,14 +301,29 @@ export function createWorld(
   }
 
   // The canvas fills its container, so the show page's full-window root and
-  // the conductor page's small stage view share one sizing rule. While an XR
-  // session presents, Three.js manages the drawing buffer itself.
+  // the conductor page's small stage view share one sizing rule. During XR only
+  // the canvas buffer changes; headset targets and camera projection stay owned
+  // by Three.js. No second render or full headset-sized desktop copy is needed.
   function resizeRenderer(): void {
-    if (lifetime.signal.aborted || renderer.xr.isPresenting) return;
+    if (lifetime.signal.aborted) return;
 
     const width = viewport.clientWidth;
     const height = viewport.clientHeight;
     if (width === 0 || height === 0) return;
+
+    if (renderer.xr.isPresenting) {
+      const mirror = WORLD_RUNTIME_SETTINGS.xrMirror;
+      const scale = Math.min(
+        1,
+        mirror.maximumWidth / width,
+        mirror.maximumHeight / height,
+      );
+      const mirrorWidth = Math.max(1, Math.round(width * scale));
+      const mirrorHeight = Math.max(1, Math.round(height * scale));
+      if (canvas.width !== mirrorWidth) canvas.width = mirrorWidth;
+      if (canvas.height !== mirrorHeight) canvas.height = mirrorHeight;
+      return;
+    }
 
     renderer.setSize(width, height, false);
     camera.aspect = width / height;

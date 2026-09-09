@@ -104,6 +104,7 @@ timer
 → active module updates
 → bounded stream-queue work
 → one render
+→ during XR, bounded left-eye color copy to the desktop canvas
 ```
 
 Modules never create a private animation loop. The code that creates a Three.js
@@ -360,7 +361,9 @@ a reset does not establish a new lifetime.
 The M5 runtime owns one cancellable HTTP host lifetime. ControlSource owns the
 identity/firmware/calibration/sequence/freshness gate. UI reads one non-consuming
 `readObservation()` snapshot: `status` is a string tag, `sample` is the accepted
-device reading and `control` holds effective steering/quality. Only Run calls
+device reading and `control` holds effective steering/quality. Optional
+`receivedState` retains only the last parsed reply for technician diagnostics,
+including firmware-rejected replies; changing the host clears it. Only Run calls
 `consumeFrame()` for button edges. Rejected input is neutral and cannot publish
 old edges; UI neither validates devices nor unloads the runtime.
 

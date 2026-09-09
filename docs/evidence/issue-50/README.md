@@ -1270,3 +1270,31 @@ remain unverified. This traced/functional audit makes no new performance claim.
 ![Actual downward cue](audit-arrow-down.png)
 ![Conductor after reset](audit-reset.png)
 ![Main after unsuccessful timeout](audit-timeout.png)
+
+
+## Kiosk diagnostics and headset preview — 2026-09-09
+
+Change follows checkpoint `f17e6b4`, preserving merged Windows deployment work
+from `a1ab93f`. The technician drawer now exposes the last parsed M5 `/state`
+reply and required firmware without leaving kiosk mode. Incompatible samples
+remain rejected for steering. The separate Begin experience controls and the
+XR paused-preview panel are removed. World copies its already rendered left
+eye to the existing desktop canvas in the same XR frame.
+
+Validation: 24 focused M5 tests, two World mirror/lifecycle tests, build/typecheck
+and lint passed. Headed production-browser checks passed simulated incompatible
+firmware diagnostics, recovery to accepted firmware, Play/Stop reset, shared
+standalone transport and the 390 px drawer without horizontal page overflow;
+no page errors occurred. The initial browser assertion read the transport label
+before its next UI observation; waiting for the observed stopped state passed.
+A separate real WebGL2 probe passed 120 repeated color copies, checked source
+pixels/letterboxing and framebuffer restoration, with zero GL errors and no
+added scene draw calls or resources. It used a simulated XR target, not a headset.
+
+The office host was unreachable from this machine. Its actual firmware remains
+unknown; expected firmware is `0.3.3-bm-http`. Green controller indicators do not
+prove application compatibility. Physical M5 steering, native XR mirror output
+and Windows-PCVR frame budget remain open. Earlier arrow visibility findings
+above are not resolved by this kiosk correction.
+
+![Actual kiosk drawer with simulated incompatible firmware](kiosk-controller-state.png)

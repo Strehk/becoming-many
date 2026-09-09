@@ -1,5 +1,6 @@
 import type { Run } from "../../levels/level.runtime";
 import type { RunningShow } from "../../levels/show.runtime";
+import { M5_FIRMWARE_VERSION } from "../../m5/protocol";
 import type { M5Observation } from "../../m5/runtime/m5.runtime";
 import type { XrSessionControl } from "../../world/xr-session";
 import { requireElement, writeText } from "../shared/dom";
@@ -110,6 +111,17 @@ export function createTechDrawer({
     reloadPage,
     signal,
   );
+  const controllerState = requireElement(
+    root,
+    "[data-m5-state]",
+    HTMLPreElement,
+  );
+  requireElement(
+    root,
+    "[data-m5-required-firmware]",
+    HTMLOutputElement,
+  ).textContent = M5_FIRMWARE_VERSION;
+  let receivedState: M5Observation["receivedState"];
   const frames = readOutput(root, "frames");
   const m5 = readOutput(root, "m5");
   const level = readOutput(root, "level");
@@ -140,6 +152,15 @@ export function createTechDrawer({
           frameText(state.framesPerSecond, state.p95Milliseconds),
         );
         writeText(m5, m5Text(state.m5));
+        if (receivedState !== state.m5?.receivedState) {
+          receivedState = state.m5?.receivedState;
+          writeText(
+            controllerState,
+            receivedState
+              ? JSON.stringify(receivedState, null, 2)
+              : "No controller response yet.",
+          );
+        }
         writeText(level, state.activeLevel);
         writeText(audio, state.audioState);
         writeText(language, state.language.toUpperCase());
@@ -169,6 +190,8 @@ function frameText(
 function m5Text(status: M5Observation | undefined): string {
   if (status === undefined || status.status === "off") return "—";
 
+  if (status.status === "incompatible-firmware")
+    return `firmware ${status.receivedState?.firmwareVersion ?? "unknown"} · needs ${M5_FIRMWARE_VERSION}`;
   if (status.status !== "live") return status.status.replaceAll("-", " ");
 
   return `live · input q${(status.control?.quality ?? 0).toFixed(2)}`;

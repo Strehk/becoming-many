@@ -6,6 +6,8 @@
  */
 
 export const WORLD_RUNTIME_SETTINGS = {
+  /** Bounded operator mirror; headset render resolution remains unchanged. */
+  xrMirror: { maximumWidth: 1280, maximumHeight: 720 },
   /**
    * Attributes for the one WebGL2 context. The World Runtime hands the same
    * record to `getContext` and to the renderer, so the context the driver

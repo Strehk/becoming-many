@@ -255,7 +255,6 @@ body:has(.conductor__drawer[open]) {
   padding: 0;
   overflow: hidden;
 }
-.conductor__stage-overlay,
 .conductor__wake {
   position: absolute;
   inset: 0;
@@ -412,4 +411,13 @@ body:has(.rehearsal:not([hidden])) .diagnostics-overlay {
 }
 [hidden] {
   display: none;
+}
+
+.conductor__controller-state pre {
+  max-height: 18rem;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font: inherit;
+  user-select: text;
 }

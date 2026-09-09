@@ -59,7 +59,6 @@ try {
   if (initialM5Host) m5?.setHost(initialM5Host);
   unmountUi = mountConductorPage({
     container,
-    stageMount,
     schedule: PIECE_SCHEDULE,
     stationName: deployment.stationName,
     show,

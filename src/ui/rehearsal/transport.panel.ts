@@ -26,7 +26,6 @@ export interface RehearsalTransportOptions {
     | "readLanguage"
     | "setLanguage"
     | "readTutorial"
-    | "continueToExperience"
   >;
 }
 
@@ -57,11 +56,6 @@ export function mountRehearsalTransport({
     bar,
     "[data-tutorial-status]",
     HTMLOutputElement,
-  );
-  const continueButton = requireElement(
-    bar,
-    "[data-continue-experience]",
-    HTMLButtonElement,
   );
   const track = requireElement(bar, "[data-track]", SVGSVGElement);
   const playhead = requireElement(track, "[data-playhead]", SVGLineElement);
@@ -118,9 +112,6 @@ export function mountRehearsalTransport({
     track.append(tick);
   }
   transportButton.addEventListener("click", show.togglePlayback, { signal });
-  continueButton.addEventListener("click", show.continueToExperience, {
-    signal,
-  });
   let scrubSeconds: number | undefined;
   attachScrubbing({
     track,
@@ -136,7 +127,6 @@ export function mountRehearsalTransport({
   let renderedPlayheadLeft: string | undefined;
   let renderedLanguage: NarrationLanguage | undefined;
   let renderedTutorial: boolean | undefined;
-  let renderedReady: boolean | undefined;
 
   function draw(): void {
     const sample = show.sample();
@@ -168,11 +158,6 @@ export function mountRehearsalTransport({
         view.button.disabled = inTutorial || view.chapter.cueId === "tutorial";
     }
     if (tutorial) writeText(tutorialStatus, formatTutorialStatus(tutorial));
-    const ready = Boolean(tutorial?.readyToContinue);
-    if (renderedReady !== ready) {
-      renderedReady = ready;
-      continueButton.hidden = !ready;
-    }
     const showTimeSeconds = scrubSeconds ?? sample.timeSeconds;
     if (renderedPlaying !== sample.isPlaying) {
       renderedPlaying = sample.isPlaying;
