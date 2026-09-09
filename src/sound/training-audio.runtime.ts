@@ -39,7 +39,13 @@ export interface TrainingAudioParameters {
 
 /** Borrowed visual/speech facts; sound never decides learning or transport. */
 export interface TrainingAudioFrame {
-  readonly phase: "arrival" | "forming" | "flying" | "crossed" | "complete";
+  readonly phase:
+    | "arrival"
+    | "forming"
+    | "flying"
+    | "crossed"
+    | "missed"
+    | "complete";
   readonly goalPosition: Position;
   readonly objects?: Readonly<Record<TrainingObject, Position>>;
   readonly formationProgress: number;
@@ -281,7 +287,8 @@ export async function createTrainingAudio(
           if (isGoal)
             entry.voice.detune =
               entry.recipe.detuneCents +
-              (frame.wake?.strength ?? 0) * CROSSING_DETUNE_CENTS;
+              (frame.phase === "missed" ? -1 : (frame.wake?.strength ?? 0)) *
+                CROSSING_DETUNE_CENTS;
         }
       },
       unload,

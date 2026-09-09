@@ -55,6 +55,7 @@ export interface StartParticleFrame {
   readonly arrowAngleRadians: number;
   /** Zero is drifting cloud, one is the fully gathered shape. */
   readonly formationProgress: number;
+  readonly sectionPresence?: number;
   readonly wake?: StartParticleWake;
   /** Presentation-only guide rings; at most three are rendered. */
   readonly previews?: readonly StartParticlePreview[];
@@ -133,6 +134,7 @@ export function createStartParticleEffect({
     startCrossingPulse: { value: 0 },
     startMaximumPointSize: { value: parameters.maximumPointSizePixels ?? 24 },
     startFormation: { value: 0 },
+    startSectionPresence: { value: 1 },
     startDriftAmplitude: { value: parameters.driftAmplitudeMeters },
     startDriftSpeed: { value: parameters.driftSpeed },
     startSparkle: { value: parameters.sparkle },
@@ -234,6 +236,7 @@ export function createStartParticleEffect({
       Math.sin(frame.elapsedSeconds * 0.65) * 0.12,
     );
     uniforms.startFormation.value = frame.formationProgress;
+    uniforms.startSectionPresence.value = frame.sectionPresence ?? 1;
     const wake = frame.wake;
     uniforms.startWakeStrength.value = wake?.strength ?? 0;
     const pulseAge = Math.min(

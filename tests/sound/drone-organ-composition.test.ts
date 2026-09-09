@@ -379,6 +379,12 @@ test("audio owners recover gesture resume and await complete disposal", async ()
     tutorialCommands.continueToExperience(); assert.equal(finishes, 0);
     trainingNative.currentTime = 9; trainingShow.update();
     assert.equal(narrationFrames.at(-1).position.cueId, "complete");
+    for (const time of [9.1, 9.5, 10, 11.9]) {
+      trainingNative.currentTime = time; trainingShow.update();
+      assert.equal(narrationFrames.at(-1).position.cueId, "complete", "the closing cue must stay selected while it plays");
+      assert.ok(Math.abs(narrationFrames.at(-1).position.offsetSeconds - (time - 9)) < 1e-9);
+      assert.equal(tutorialCommands.readTutorial().readyToContinue, false);
+    }
     trainingNative.currentTime = 12; trainingShow.update();
     assert.equal(tutorialCommands.readTutorial().readyToContinue, true);
     assert.equal(finishes, 0, "completion waits for the operator after the final spoken clip");

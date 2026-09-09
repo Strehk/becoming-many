@@ -249,8 +249,10 @@ borrows Show transport/narration for practice without main-show presentation.
 Start replaces the held-M5-gesture prototype with four world-space ring goals:
 right, left, up, down. The existing shared viewpoint supplies consecutive poses
 for swept passage checks; desktop and M5/XR use identical learning rules. There
-is no deadline, and a missed goal remains active with heading-based guidance.
-Learning samples the course once per visit and owns one crossing result. Three
+is no deadline. A missed or spatially abandoned section dissolves and is recycled
+ahead of the current flight pose, repeating the same direction without awarding
+progress. Targets borrow Run's existing altitude ceiling so recycled upward
+lessons remain reachable. Learning owns passage/miss observations and fixed goal/preview slots. Three
 intermediate curve cross-sections are decorative and never complete goals. The
 optional effect borrows these fixed world poses and owns one 32,000-point draw:
 a thick ring, filled arrow and three guide rings, with immutable attributes and
@@ -269,8 +271,9 @@ goal. All four passages and the final configured
 recording must finish before the completion command is available. Standalone
 Start keeps the same transport while omitting the main-experience handoff.
 The current literal recipe enables bounded object-bound granular audio from
-three user-supplied excerpts and omits `startNarration` pending DE-use permission
-and EN policy. Run owns the shared Tone spatial context when audio is configured;
+three user-supplied excerpts and the five user-requested German tutorial recordings.
+The opening course is placed ahead after the spoken orientation finishes; later
+short directional cues repeat on a retry. The EN voice policy remains open. Run owns the shared Tone spatial context when audio is configured;
 Show retains its existing native timebase and narration owner.
 
 `show.runtime.ts` also drives the drone organ in `src/sound/drone-organ/`

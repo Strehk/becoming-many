@@ -15,6 +15,7 @@ uniform float startPreviewCount;
 uniform float startCrossingPulse;
 uniform float startMaximumPointSize;
 uniform float startFormation;
+uniform float startSectionPresence;
 uniform float startDriftAmplitude;
 uniform float startDriftSpeed;
 uniform vec3 startWakePosition;
@@ -49,13 +50,13 @@ vec3 animateStartParticle(vec3 cloudPosition) {
   float formation = smoothstep(0.0, 1.0, startFormation);
   float radius = startRadius;
   mat4 pose = startGoalPose;
-  startVisibility = 1.0;
+  startVisibility = startSectionPresence;
   if (preview) {
     int index = int(startRole) - 2;
     radius = startPreviewRadii[index];
     pose = startPreviewPoses[index];
     formation = smoothstep(1.0 + float(index) * 0.65, 4.5 + float(index) * 0.65, startPreviewTime);
-    startVisibility = float(index) < startPreviewCount ? 0.8 : 0.0;
+    startVisibility = float(index) < startPreviewCount ? 0.8 * startSectionPresence : 0.0;
   }
   vec3 target;
   if (arrow) {

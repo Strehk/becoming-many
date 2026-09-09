@@ -34,6 +34,10 @@ export function formatTutorialStatus(
   if (tutorial.phase === "loading") return "Flight tutorial · Preparing audio";
   if (tutorial.phase === "failed")
     return "Flight tutorial · Preparation failed · Reset to retry";
+  if (tutorial.phase === "missed")
+    return `Flight tutorial · Missed · New target ahead · ${tutorial.crossingCount}/4 passed`;
+  if (tutorial.phase === "crossed")
+    return `Flight tutorial · Passed · ${tutorial.crossingCount}/4`;
   const completed = tutorial.phase === "complete";
   const direction = completed ? "Complete" : cueDisplayName(tutorial.direction);
   return `Flight tutorial · ${direction} · ${completed ? 4 : tutorial.goalIndex + 1}/4`;

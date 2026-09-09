@@ -598,3 +598,56 @@ maximum is 34,560 bytes/frame (baseline 116,480). Uniform updates are separate.
 The [coverage/screenshot evidence](evidence/issue-50/README.md#cloud-revision--2026-09-09)
 distinguishes projected point squares from actual GPU fragment executions and
 checks disposal at handoff.
+
+
+## Forward recycling and spoken tutorial — 2026-09-09
+
+The follow-up retains 32,000 Start and 6,000 Air points, their point-size caps,
+seven immutable Start attributes and existing draw path. Recycling uses the same
+four goal slots and three decorative curve slots; 100 misses in the focused test
+retain those slots and create no new particle owner. No buffers/programs are
+created during either final Conductor course, including their intentional misses.
+Each held Stop/recreation prepares nine attribute buffers and four program
+variants off the normal course; the next course creates none. Main resources
+remain retained. Attribute storage is unchanged at 1,504,000 bytes per CPU/GPU
+copy. Miss retirement adds one section-presence uniform and no additional draw
+or texture; point-square coverage bounds are those of the preceding cloud
+revision. This is not a new exhaustive GPU fragment-count measurement.
+
+Five original stereo WAVs add 17,024,558 encoded bytes and five tutorial media
+elements at the existing narration owner. They do not enter Tone's granular
+sample decoding or add spatial voices/reverbs. Browser decoder/driver memory is
+not included in the attribute byte count; no device-specific peak decoder-memory
+claim is made. The original three mono grain samples and four spatial voices are
+unchanged. Narration cleanup and retention across handoff remain covered at their
+existing owner.
+
+The final Conductor workload (Chromium 151, M2 Max/Metal, 934×525 canvas in a
+1920×1080 viewport) completes two narrated courses with one deliberate miss each.
+CPU p95 is 0.5/0.4 ms versus the preceding cloud run's 0.4/0.4; GPU p95 is
+0.356/0.330 ms versus 0.338/0.338. These longer workloads include orientation,
+spoken completion and recycling. Their diagnostic captures include screenshots;
+one external RAF interval reaches 53.8 ms while the associated application
+callback/GPU take 0.2/0.215 ms. No cause or sustained application regression is
+inferred from that isolated scheduling interval. A separate final root timing run
+without in-course screenshots is recorded below to avoid conflating capture cost
+with ordinary frame work. Neither desktop run establishes installation 90 Hz.
+
+The separate final root run uses the same Chromium/GPU and 1920×1080 DPR1 as the
+preceding root cloud measurement, with no in-course screenshots or competing
+browser render. Across 6,348 tutorial frames, CPU median/p95/p99/max is
+0.3/0.5/0.6/4.3 ms; GPU is 0.220/0.290/0.351/1.387 ms; external RAF p95/max is
+17.5/17.8 ms. The preceding cloud run recorded CPU 0.3/0.4/0.5/5.2 ms and GPU
+0.205/0.308/0.394/0.884 ms across 3,192 frames. The CPU p95 difference is one
+0.1 ms timer step; the narrated/missed-course workload is roughly twice as long.
+This is not an isolated optimization/regression estimate. Median CPU and ordinary
+desktop cadence remain stable; the isolated 53.8 ms Conductor interval did not
+recur. Attribute upload p99 is zero and max 41,600 bytes, with no course-time
+buffer/program creation. Grain counts and point capacities are unchanged.
+
+Final served-assets SHA-256:
+`c8c4a8609d7912aeffc24b616154078516a6eef8caac582668993e0389f52e15`.
+Root report: `benchmark-results/issue-50/recycling-final-root-timing/probe.json`.
+Conductor report: `benchmark-results/issue-50/recycling-final-conductor/probe.json`.
+Raw diagnostics retain media preload cancellations; the [functional evidence](evidence/issue-50/README.md#forward-recycling-and-original-voice--2026-09-09)
+separates those from successful real media playback. No benchmark reference changed.

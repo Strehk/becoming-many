@@ -14,7 +14,7 @@ type DistanceRange = readonly [minimum: number, maximum: number];
 
 export interface StartParameters {
   readonly directions: readonly [StartDirection, ...StartDirection[]];
-  /** Sampled once per visit, relative to preceding goals in the arrival heading. */
+  /** Sampled per course section in the current flight heading; live goals stay world-fixed. */
   readonly course: {
     readonly firstDistanceMeters: DistanceRange;
     readonly spacingMeters: DistanceRange;
@@ -34,6 +34,7 @@ export type StartPhase =
   | "forming"
   | "flying"
   | "crossed"
+  | "missed"
   | "complete";
 
 /** Borrowed until the next World frame; consumers must not retain or mutate it. */
@@ -46,6 +47,8 @@ export interface StartObservation {
   readonly goalTarget: Readonly<Vector3>;
   readonly formationProgress: number;
   readonly crossingCount: number;
+  readonly attempt: number;
+  readonly missCount: number;
   readonly objects?: StartParticleObjects;
   readonly wake:
     | {
@@ -74,6 +77,8 @@ interface StartModuleOptions {
   readonly viewpoint: Viewpoint;
   readonly viewerRig: Group;
   readonly parameters: StartParameters;
+  /** Borrow the same ceiling used by Run; generation never changes flight limits. */
+  readonly maximumGoalYAt?: (x: number, z: number) => number;
   /** Composition selects presentation; this module owns its complete lifetime. */
   readonly particles?: StartParticleEffect;
 }
@@ -136,6 +141,8 @@ export function createStartModule(
     goalTarget: targetPosition,
     formationProgress: 0,
     crossingCount: 0,
+    attempt: 0,
+    missCount: 0,
     objects: undefined as StartParticleObjects | undefined,
     wake: undefined as StartObservation["wake"],
   };
@@ -148,6 +155,7 @@ export function createStartModule(
     formationProgress: 0,
     previews: [] as typeof previews,
     previewElapsedSeconds: 0,
+    sectionPresence: 1,
     wake: undefined as StartObservation["wake"],
   };
   let loaded = false;
@@ -155,8 +163,13 @@ export function createStartModule(
   let playing = true;
   let initialized = false;
   let phaseSeconds = 0;
+  let dissolutionFormation = 1;
   let previewStartedSeconds = 0;
   let goalAdvanceAllowed = true;
+  let courseStartIndex = 0;
+  const travel = new Vector3();
+  const targetOffset = new Vector3();
+  const flightForward = new Vector3();
 
   return {
     readObservation: () => observation,
@@ -206,17 +219,27 @@ export function createStartModule(
     observation.direction = parameters.directions[0];
     observation.formationProgress = 0;
     observation.crossingCount = 0;
+    observation.attempt = 0;
+    observation.missCount = 0;
+    particleFrame.sectionPresence = 1;
     observation.wake = undefined;
     observation.objects = undefined;
   }
 
   function generateCourse(): void {
     const course = parameters.course;
+    courseStartIndex = observation.goalIndex;
+    origin.copy(viewpoint.worldPosition);
+    initialHeading.copy(viewerRig.quaternion);
+    goalNormal.set(0, 0, 1).applyQuaternion(initialHeading);
+    courseOffset.set(0, 0, 0);
     for (const [index, direction] of parameters.directions.entries()) {
       const goal = goals[index];
-      if (!goal) continue;
+      if (!goal || index < courseStartIndex) continue;
       courseOffset.z -= sample(
-        index === 0 ? course.firstDistanceMeters : course.spacingMeters,
+        index === courseStartIndex
+          ? course.firstDistanceMeters
+          : course.spacingMeters,
       );
       if (direction === "right" || direction === "left")
         courseOffset.x +=
@@ -229,6 +252,11 @@ export function createStartModule(
         .copy(courseOffset)
         .applyQuaternion(initialHeading)
         .add(origin);
+      if (options.maximumGoalYAt)
+        goal.position.y = Math.min(
+          goal.position.y,
+          options.maximumGoalYAt(goal.position.x, goal.position.z),
+        );
       goal.radiusMeters = sample(course.radiusMeters);
     }
   }
@@ -252,13 +280,13 @@ export function createStartModule(
     particleFrame.ringRadiusMeters = goal.radiusMeters;
 
     // These cross-sections only explain the curve; only the current disk counts.
-    const sectionIndex = Math.max(0, observation.goalIndex - 1);
+    const sectionIndex = Math.max(courseStartIndex, observation.goalIndex - 1);
     const sectionStart = goals[sectionIndex];
     const next = goals[sectionIndex + 1];
     particleFrame.previews = next ? previews : [];
     if (!sectionStart || !next) return;
     // Retain the first tunnel until its destination is crossed, then recycle it.
-    if (observation.goalIndex !== 1)
+    if (observation.goalIndex !== courseStartIndex + 1)
       previewStartedSeconds = particleFrame.elapsedSeconds;
     curveOffset.copy(next.position).sub(sectionStart.position);
     forward.copy(goalNormal).multiplyScalar(-curveOffset.length());
@@ -289,10 +317,7 @@ export function createStartModule(
   function update(deltaSeconds: number): void {
     if (!loaded || !active) return;
     if (!initialized) {
-      origin.copy(viewpoint.worldPosition);
-      initialHeading.copy(viewerRig.quaternion);
       previousPosition.copy(viewpoint.worldPosition);
-      goalNormal.set(0, 0, 1).applyQuaternion(initialHeading);
       generateCourse();
       placeGoal();
       initialized = true;
@@ -305,7 +330,19 @@ export function createStartModule(
 
     if (observation.phase === "arrival") {
       const progress = Math.min(1, phaseSeconds / parameters.arrivalSeconds);
-      if (playing && progress === 1) {
+      if (
+        playing &&
+        progress === 1 &&
+        (observation.attempt > 0 ||
+          observation.goalIndex > 0 ||
+          goalAdvanceAllowed)
+      ) {
+        // The opening voice may outlast the initial approach. Begin ahead of the
+        // actual flight pose after orientation, never behind the moving visitor.
+        if (observation.attempt === 0 && observation.goalIndex === 0) {
+          generateCourse();
+          placeGoal();
+        }
         observation.phase = "forming";
         phaseSeconds = 0;
       }
@@ -350,22 +387,67 @@ export function createStartModule(
       wake.ageSeconds = 0;
       observation.wake = wake;
       observation.phase = "crossed";
+      dissolutionFormation = 1;
       phaseSeconds = 0;
-    } else if (observation.phase === "crossed") {
+    } else if (
+      observation.phase === "crossed" ||
+      observation.phase === "missed"
+    ) {
       observation.formationProgress =
-        1 - Math.min(1, phaseSeconds / parameters.dissolutionSeconds);
-      if (observation.formationProgress === 0 && goalAdvanceAllowed) {
-        if (observation.goalIndex + 1 === parameters.directions.length) {
+        dissolutionFormation *
+        (1 - Math.min(1, phaseSeconds / parameters.dissolutionSeconds));
+      if (observation.phase === "missed")
+        particleFrame.sectionPresence =
+          1 - Math.min(1, phaseSeconds / parameters.dissolutionSeconds);
+      if (
+        phaseSeconds >= parameters.dissolutionSeconds &&
+        (observation.phase === "missed" || goalAdvanceAllowed)
+      ) {
+        if (observation.phase === "missed") {
+          observation.attempt += 1;
+          generateCourse();
+          placeGoal();
+          observation.phase = "arrival";
+          particleFrame.sectionPresence = 1;
+        } else if (observation.goalIndex + 1 === parameters.directions.length) {
           observation.phase = "complete";
           particleFrame.previews = [];
         } else {
           observation.goalIndex += 1;
+          const next = goals[observation.goalIndex];
+          flightForward.set(0, 0, -1).applyQuaternion(viewerRig.quaternion);
+          if (
+            next &&
+            targetOffset
+              .copy(next.position)
+              .sub(viewpoint.worldPosition)
+              .dot(flightForward) <= 0
+          )
+            generateCourse();
           placeGoal();
           observation.phase = "arrival";
           observation.wake = undefined;
         }
         phaseSeconds = 0;
       }
+    }
+    // Retire only through spatial movement, never because a lesson timed out.
+    // The same fixed goal/preview slots are recycled after their short fade.
+    travel.copy(viewpoint.worldPosition).sub(previousPosition);
+    targetOffset.copy(viewpoint.worldPosition).sub(targetPosition);
+    if (
+      playing &&
+      (observation.phase === "flying" || observation.phase === "forming") &&
+      travel.lengthSq() > 0 &&
+      (targetOffset.dot(goalNormal) < -particleFrame.ringRadiusMeters ||
+        (targetOffset.lengthSq() > viewpoint.viewDistanceMeters ** 2 &&
+          targetOffset.dot(travel) > 0))
+    ) {
+      observation.phase = "missed";
+      dissolutionFormation = observation.formationProgress;
+      observation.missCount += 1;
+      observation.wake = undefined;
+      phaseSeconds = 0;
     }
     previousPosition.copy(viewpoint.worldPosition);
     if (!particles) return;

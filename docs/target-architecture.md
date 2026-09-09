@@ -316,8 +316,10 @@ Preparation, first use and bounded background work follow one strategy at the
 existing World/Run owners. No per-level transition workaround or uncontrolled
 rebuild; measure first/repeated transitions. Confirmed for #50 on 2026-09-08:
 Rehearsal, Conductor and standalone training initially hold for explicit Play.
-Four spatial goals run right/left/up/down without a deadline; misses keep the
-goal active with guidance. Confirmed in the subsequent placement review: Start
+Four spatial goals run right/left/up/down without a deadline. The user revision
+on 2026-09-09 supersedes persistent missed targets: missed or spatially abandoned
+sections dissolve and recycle ahead of the current flight pose, repeating the same
+lesson until an actual passage succeeds. Confirmed in the subsequent placement review: Start
 generates each goal from bounded ranges in the literal recipe, samples a fresh
 course on reset, and retains each placed world target independently of the
 visitor. Rendering and sound borrow that generated geometry. Pause holds
@@ -334,8 +336,9 @@ preparation succeeds; failure remains visible and retryable. The current Start
 recipe enables user-provided granular excerpts through the existing training
 audio owner. Start supplies physical particle-body anchors; spatial audio owns
 listener/distance, Show supplies playback/speech facts, and Run awaits sample/room
-preparation and cleanup. Tutorial narration remains absent pending content
-acceptance. Native timebase suspension still prevents Show time from advancing. The subsequent
+preparation and cleanup. The five original German tutorial recordings are
+installed at the existing narration owner following the user request. The first
+course forms ahead after the introduction; EN voice policy remains open. Native timebase suspension still prevents Show time from advancing. The subsequent
 2026-09-09 user review requires continuous near-field particles through the
 existing world chunk mechanism, large volumetric particle arrows and curved
 particle tunnels with overlapping local formation/dissolution. World positions
@@ -801,7 +804,7 @@ their actual dependent work:
 | --- | --- | --- |
 | Visitor restart, including page reload | Complete restart implementation in existing Run | Early Windows-PCVR/USB-C test of XR end/re-entry, audio wake and next-visitor operation; no automatic-XR assumption |
 | Exact benchmark reference | #78 update | Bounded fixed-scene investigation, repeatable counters and explained differences; current numeric candidate remains unapproved |
-| Tutorial audio / credits | Audio-content integration and credits changes | Tutorial flow is approved; resolve narration rights, language fallback/final samples, and separate credits timing/movement using existing owners |
+| Tutorial audio / credits | Audio-content integration and credits changes | Tutorial flow is approved; resolve EN voice policy and physical mix acceptance, plus separate credits timing/movement using existing owners |
 | Clipmap culling correction | #72 selects conservative construction-time bounds | Two fixed views match disabled culling with six fewer draws each; geometric and physical acceptance remain separate |
 
 Routine implementation choices are autonomous. Additional owners/abstractions,
@@ -846,8 +849,8 @@ Three unresolved flow choices deserve explicit human decisions:
   different render mechanisms.
 - **Tutorial audio / credits (#50/#51):** both features are required. The four-goal
   tutorial and operator handoff are confirmed and use the existing owners/clock.
-  Tutorial audio-use rights, language fallback and final samples remain distinct
-  from credits content/timing/movement. Current credits
+  German tutorial voice use is requested and implemented. EN voice policy and
+  physical mix acceptance remain distinct from credits content/timing/movement. Current credits
   start at 516 seconds before the longest Return ending around 519.8 seconds;
   resolve that overlap explicitly. Platform is Windows-PCVR over USB-C;
   passthrough and the concrete experience semantics remain separate decisions.

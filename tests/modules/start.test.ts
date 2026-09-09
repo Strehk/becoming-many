@@ -4,7 +4,10 @@ import {
   createStartModule,
   type StartParameters,
 } from "../../src/modules/start/start.module";
-import type { StartParticleFrame } from "../../src/modules/start/start-particles.effect";
+import type {
+  StartParticleEffect,
+  StartParticleFrame,
+} from "../../src/modules/start/start-particles.effect";
 import { ModuleRuntime } from "../../src/world/module-runtime";
 
 const PARAMETERS: StartParameters = {
@@ -24,13 +27,16 @@ const PARAMETERS: StartParameters = {
 function createPractice(
   parameters: StartParameters = PARAMETERS,
   random: () => number = () => 0.5,
+  particles?: StartParticleEffect,
 ) {
   const worldPosition = new Vector3(0, 4, 0);
+  const viewerRig = new Group();
   const start = createStartModule({
     viewpoint: { worldPosition, viewDistanceMeters: 100 },
-    viewerRig: new Group(),
+    viewerRig,
     parameters,
     random,
+    particles,
   });
   const runtime = new ModuleRuntime();
   runtime.load(start.module);
@@ -51,7 +57,7 @@ function createPractice(
     runtime.update(deltaSeconds);
   }
 
-  return { start, runtime, worldPosition, formGoal, moveTo };
+  return { start, runtime, worldPosition, viewerRig, formGoal, moveTo };
 }
 
 test("all four spatial goals require passage and remain open without a time limit", () => {
@@ -65,14 +71,8 @@ test("all four spatial goals require passage and remain open without a time limi
     expect(start.readObservation().phase).toBe("flying");
     expect(start.readObservation().crossingCount).toBe(index);
 
-    // Pass the plane outside the aperture, then return without entering the disk.
-    moveTo(center.clone().add(new Vector3(3, 0, 2)));
-    moveTo(center.clone().add(new Vector3(3, 0, -2)));
-    expect(start.readObservation().phase).toBe("flying");
-    expect(start.readObservation().goalPosition).toEqual(center);
-    moveTo(center.clone().add(new Vector3(3, 0, 2)));
     moveTo(center.clone().add(new Vector3(0, 0, 2)));
-    moveTo(center.clone().add(new Vector3(0, 0, -20)), 0.5);
+    moveTo(center.clone().add(new Vector3(0, 0, -2)), 0.5);
     expect(start.readObservation().phase).toBe("crossed");
     expect(start.readObservation().crossingCount).toBe(index + 1);
 
@@ -262,27 +262,21 @@ test("cloud and formed targets keep their world anchor through player translatio
   start.module.load();
   start.module.activate();
   start.module.update?.(0);
+  start.module.update?.(PARAMETERS.arrivalSeconds);
+  start.module.update?.(PARAMETERS.formationSeconds);
   const anchor = rendered?.goalPosition.clone();
   const normal = rendered?.goalNormal.clone();
   const angle = rendered?.arrowAngleRadians;
-  for (const seconds of [
-    0,
-    PARAMETERS.arrivalSeconds,
-    PARAMETERS.formationSeconds,
-  ]) {
-    start.module.update?.(seconds);
-    const phase = start.readObservation().phase;
-    for (const heading of [0, Math.PI / 2, Math.PI, -Math.PI / 2]) {
-      start.setPlaying(false);
-      worldPosition.set(100 + heading, 20, -100);
-      viewerRig.rotation.set(0.2, heading, -0.3);
-      start.module.update?.(0);
-      expect(rendered?.goalPosition).toEqual(anchor);
-      expect(rendered?.goalNormal).toEqual(normal);
-      expect(rendered?.arrowAngleRadians).toBe(angle);
-      expect(start.readObservation().phase).toBe(phase);
-      start.setPlaying(true);
-    }
+  for (const heading of [0, Math.PI / 2, Math.PI, -Math.PI / 2]) {
+    start.setPlaying(false);
+    worldPosition.set(100 + heading, 20, -100);
+    viewerRig.rotation.set(0.2, heading, -0.3);
+    start.module.update?.(100);
+    expect(rendered?.goalPosition).toEqual(anchor);
+    expect(rendered?.goalNormal).toEqual(normal);
+    expect(rendered?.arrowAngleRadians).toBe(angle);
+    expect(start.readObservation().phase).toBe("flying");
+    start.setPlaying(true);
   }
   expect(start.readObservation().phase).toBe("flying");
   expect(start.readObservation().crossingCount).toBe(0);
@@ -404,40 +398,212 @@ test("curved previews stay world-fixed and never count as learning targets", () 
   runtime.load(start.module);
   runtime.activate(start.module);
   runtime.update(0);
-  const previews = frame?.previews?.map((preview) => ({
-    position: preview.goalPosition.clone(),
-    normal: preview.goalNormal.clone(),
-    radius: preview.ringRadiusMeters,
-  }));
+  runtime.update(PARAMETERS.arrivalSeconds);
+  runtime.update(PARAMETERS.formationSeconds);
+  const snapshotPreviews = () =>
+    frame?.previews?.map((preview) => ({
+      position: preview.goalPosition.clone(),
+      normal: preview.goalNormal.clone(),
+      radius: preview.ringRadiusMeters,
+    }));
+  const previews = snapshotPreviews();
   expect(previews).toHaveLength(3);
   expect(previews?.[2]?.position.z).toBeGreaterThan(-9);
   expect(previews?.[2]?.position.z).toBeLessThan(-8);
   expect(previews?.[0]?.normal.x).toBeGreaterThan(0);
-  // Move through a decorative plane while missing the actual aperture.
-  worldPosition.set(-2, 4, -6);
-  runtime.update(PARAMETERS.arrivalSeconds);
-  runtime.update(PARAMETERS.formationSeconds);
+  // Cross a decorative plane outside the counted aperture: only a miss results.
   worldPosition.set(-2, 4, -11);
   viewerRig.rotation.y = 1;
   runtime.update(0.1);
+  expect(start.readObservation().phase).toBe("missed");
   expect(start.readObservation().crossingCount).toBe(0);
-  expect(frame?.previews?.map((preview) => preview.goalPosition)).toEqual(
-    previews?.map((preview) => preview.position),
-  );
-  // Advancing the goal retains the tunnel that the visitor is about to enter.
-  worldPosition.set(2, 4, -4);
+  expect(snapshotPreviews()).toEqual(previews);
+
+  // A successful entry keeps the same world-fixed tunnel until its destination.
+  worldPosition.set(0, 4, 0);
+  viewerRig.rotation.set(0, 0, 0);
+  start.reset();
   runtime.update(0);
+  runtime.update(PARAMETERS.arrivalSeconds);
+  runtime.update(PARAMETERS.formationSeconds);
+  const entryPreviews = snapshotPreviews();
   worldPosition.set(2, 4, -6);
   runtime.update(0.1);
+  expect(start.readObservation().phase).toBe("crossed");
   runtime.update(PARAMETERS.dissolutionSeconds);
   const nextPosition = new Vector3(0, 4, -10);
-  expect(frame?.previews?.map((preview) => preview.goalPosition)).toEqual(
-    previews?.map((preview) => preview.position),
-  );
+  expect(snapshotPreviews()).toEqual(entryPreviews);
   expect(start.readObservation().goalTarget).toEqual(nextPosition);
   expect(start.readObservation().goalPosition).toEqual(nextPosition);
-  expect(frame?.previews?.map((preview) => preview.ringRadiusMeters)).toEqual(
-    previews?.map((preview) => preview.radius),
-  );
   runtime.unload(start.module);
+});
+
+test("an outside passage fades out and retries the same lesson ahead of the current heading", () => {
+  const { start, runtime, worldPosition, viewerRig, formGoal, moveTo } =
+    createPractice();
+  const center = formGoal();
+  moveTo(center.clone().add(new Vector3(3, 0, 2)));
+  moveTo(center.clone().add(new Vector3(3, 0, -2)));
+  expect(start.readObservation().phase).toBe("missed");
+  expect(start.readObservation().crossingCount).toBe(0);
+  expect(start.readObservation().missCount).toBe(1);
+  expect(start.readObservation().wake).toBeUndefined();
+  expect(start.readObservation().goalTarget).toEqual(center);
+
+  viewerRig.rotation.y = Math.PI / 2;
+  runtime.update(PARAMETERS.dissolutionSeconds);
+  const nextTarget = new Vector3(2, 0, -5)
+    .applyQuaternion(viewerRig.quaternion)
+    .add(worldPosition);
+  expect(start.readObservation().phase).toBe("arrival");
+  expect(start.readObservation().attempt).toBe(1);
+  expect(start.readObservation().direction).toBe("right");
+  expect(start.readObservation().goalIndex).toBe(0);
+  expect(start.readObservation().goalTarget).toEqual(nextTarget);
+  formGoal();
+  const normal = new Vector3(0, 0, 1).applyQuaternion(viewerRig.quaternion);
+  moveTo(nextTarget.clone().addScaledVector(normal, 2));
+  moveTo(nextTarget.clone().addScaledVector(normal, -2));
+  expect(start.readObservation().phase).toBe("crossed");
+  expect(start.readObservation().crossingCount).toBe(1);
+  runtime.unload(start.module);
+});
+
+test("a distant receding target recycles spatially while waiting alone never expires it", () => {
+  const { start, runtime, formGoal, moveTo } = createPractice();
+  const center = formGoal();
+  runtime.update(10_000);
+  expect(start.readObservation().phase).toBe("flying");
+  expect(start.readObservation().goalTarget).toEqual(center);
+  expect(start.readObservation().missCount).toBe(0);
+  // This remains in front of the goal plane, but leaves its relevance volume.
+  moveTo(center.clone().add(new Vector3(120, 0, 10)));
+  expect(start.readObservation().phase).toBe("missed");
+  expect(start.readObservation().missCount).toBe(1);
+  expect(start.readObservation().crossingCount).toBe(0);
+  runtime.unload(start.module);
+});
+
+test("pause holds miss feedback and cannot advance recycling", () => {
+  const { start, runtime, formGoal, moveTo } = createPractice();
+  const center = formGoal();
+  moveTo(center.clone().add(new Vector3(3, 0, -2)));
+  runtime.update(PARAMETERS.dissolutionSeconds / 2);
+  expect(start.readObservation().phase).toBe("missed");
+  const presence = start.readObservation().formationProgress;
+  expect(presence).toBeCloseTo(0.5);
+  start.setPlaying(false);
+  runtime.update(10_000);
+  expect(start.readObservation().phase).toBe("missed");
+  expect(start.readObservation().formationProgress).toBe(presence);
+  expect(start.readObservation().goalTarget).toEqual(center);
+  expect(start.readObservation().attempt).toBe(0);
+  start.setPlaying(true);
+  runtime.update(PARAMETERS.dissolutionSeconds / 2);
+  expect(start.readObservation().phase).toBe("arrival");
+  expect(start.readObservation().attempt).toBe(1);
+  runtime.unload(start.module);
+});
+
+test("repeated misses recycle three preview slots without reloading presentation resources", () => {
+  let frame: StartParticleFrame | undefined;
+  const load = mock(() => {});
+  const unload = mock(() => {});
+  const { start, runtime, formGoal, moveTo } = createPractice(
+    PARAMETERS,
+    () => 0.5,
+    {
+      load,
+      unload,
+      setVisible() {},
+      readObjectAnchors: () => undefined,
+      update(next) {
+        frame = next;
+      },
+    },
+  );
+  const slots = frame?.previews?.slice();
+  expect(slots).toHaveLength(3);
+  for (let attempt = 1; attempt <= 100; attempt += 1) {
+    const center = formGoal();
+    moveTo(center.clone().add(new Vector3(3, 0, -2)));
+    expect(start.readObservation().phase).toBe("missed");
+    runtime.update(PARAMETERS.dissolutionSeconds);
+    expect(start.readObservation().attempt).toBe(attempt);
+    expect(start.readObservation().missCount).toBe(attempt);
+    expect(start.readObservation().crossingCount).toBe(0);
+    expect(frame?.previews).toHaveLength(3);
+    for (const [index, slot] of (frame?.previews ?? []).entries()) {
+      expect(slots?.[index]).toBe(slot);
+    }
+  }
+  expect(load).toHaveBeenCalledTimes(1);
+  expect(unload).not.toHaveBeenCalled();
+  runtime.unload(start.module);
+  expect(unload).toHaveBeenCalledTimes(1);
+});
+
+test("opening speech delays the first course until it can form ahead of the live flight pose", () => {
+  const { start, runtime, worldPosition, viewerRig } = createPractice();
+  start.setGoalAdvanceAllowed(false);
+  worldPosition.set(100, 20, -200);
+  viewerRig.rotation.y = Math.PI / 3;
+  runtime.update(30);
+  expect(start.readObservation().phase).toBe("arrival");
+  expect(start.readObservation().crossingCount).toBe(0);
+  start.setGoalAdvanceAllowed(true);
+  runtime.update(0);
+  expect(start.readObservation().phase).toBe("forming");
+  expect(start.readObservation().goalTarget).toEqual(
+    new Vector3(2, 0, -5)
+      .applyQuaternion(viewerRig.quaternion)
+      .add(worldPosition),
+  );
+  runtime.update(PARAMETERS.formationSeconds);
+  expect(start.readObservation().phase).toBe("flying");
+  expect(start.readObservation().missCount).toBe(0);
+  runtime.unload(start.module);
+});
+
+test("overtaking an unfinished formation retires it without awarding a passage", () => {
+  const { start, runtime, moveTo } = createPractice();
+  runtime.update(PARAMETERS.arrivalSeconds);
+  expect(start.readObservation().phase).toBe("forming");
+  const center = start.readObservation().goalTarget.clone();
+  moveTo(
+    center.clone().add(new Vector3(0, 0, -2)),
+    PARAMETERS.formationSeconds / 2,
+  );
+  expect(start.readObservation().phase).toBe("missed");
+  expect(start.readObservation().crossingCount).toBe(0);
+  expect(start.readObservation().missCount).toBe(1);
+  runtime.update(PARAMETERS.dissolutionSeconds);
+  expect(start.readObservation().phase).toBe("arrival");
+  expect(start.readObservation().direction).toBe("right");
+  expect(start.readObservation().goalTarget.z).toBeLessThan(center.z);
+  runtime.unload(start.module);
+});
+
+test("recycled vertical targets remain inside the existing flight ceiling", () => {
+  const worldPosition = new Vector3(0, 49, 0);
+  const start = createStartModule({
+    viewpoint: { worldPosition, viewDistanceMeters: 100 },
+    viewerRig: new Group(),
+    parameters: { ...PARAMETERS, directions: ["up"] },
+    maximumGoalYAt: () => 50,
+    random: () => 0.5,
+  });
+  start.module.load();
+  start.module.activate();
+  start.module.update?.(0);
+  start.module.update?.(PARAMETERS.arrivalSeconds);
+  start.module.update?.(PARAMETERS.formationSeconds);
+  expect(start.readObservation().goalTarget.y).toBe(50);
+  worldPosition.set(8, 50, -8);
+  start.module.update?.(0.1);
+  expect(start.readObservation().phase).toBe("missed");
+  start.module.update?.(PARAMETERS.dissolutionSeconds);
+  expect(start.readObservation().goalTarget.y).toBe(50);
+  expect(start.readObservation().crossingCount).toBe(0);
+  start.module.unload();
 });

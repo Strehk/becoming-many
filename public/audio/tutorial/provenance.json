@@ -1,0 +1,65 @@
+{
+  "recordedAt": "2026-09-09",
+  "sourceRepository": "https://github.com/E-Mus/becoming-many-tutorial",
+  "sourceRevision": "52fdfdb69a80b63988b71e035614db8abad4bac1",
+  "permission": "User requested finding the predecessor recordings and explicitly instructed installing the tutorial voice on 2026-09-09.",
+  "preservation": "Original German stereo WAV bytes copied without trimming, normalization or transcoding; English filenames describe their cue roles.",
+  "sourceAttribution": "No speaker attribution or license file was present in the predecessor source. No English recordings were found.",
+  "files": [
+    {
+      "file": "de/introduction-right.wav",
+      "originalFileName": "anfangundrechts.wav",
+      "sourceUrl": "https://raw.githubusercontent.com/E-Mus/becoming-many-tutorial/52fdfdb69a80b63988b71e035614db8abad4bac1/public/audio/anfangundrechts.wav",
+      "sha256": "545adc1da2ee42ede8270483ac02281c879778fc750debf9ffece1711b0f244b",
+      "bytes": 7968246,
+      "durationSeconds": 20.725729,
+      "sampleRateHz": 48000,
+      "channels": 2,
+      "codec": "pcm_f32le"
+    },
+    {
+      "file": "de/left.wav",
+      "originalFileName": "links.wav",
+      "sourceUrl": "https://raw.githubusercontent.com/E-Mus/becoming-many-tutorial/52fdfdb69a80b63988b71e035614db8abad4bac1/public/audio/links.wav",
+      "sha256": "3964679d4963dc861787ab5024933b1a98dd44d512baad36578609e184ce46a0",
+      "bytes": 1059978,
+      "durationSeconds": 2.735417,
+      "sampleRateHz": 48000,
+      "channels": 2,
+      "codec": "pcm_f32le"
+    },
+    {
+      "file": "de/up.wav",
+      "originalFileName": "oben.wav",
+      "sourceUrl": "https://raw.githubusercontent.com/E-Mus/becoming-many-tutorial/52fdfdb69a80b63988b71e035614db8abad4bac1/public/audio/oben.wav",
+      "sha256": "79a1ba5a1000fead1ce0abdea88c8da37f61536baff9cba60a3cc3becfb55d6d",
+      "bytes": 1674178,
+      "durationSeconds": 4.334896,
+      "sampleRateHz": 48000,
+      "channels": 2,
+      "codec": "pcm_f32le"
+    },
+    {
+      "file": "de/down.wav",
+      "originalFileName": "unten.wav",
+      "sourceUrl": "https://raw.githubusercontent.com/E-Mus/becoming-many-tutorial/52fdfdb69a80b63988b71e035614db8abad4bac1/public/audio/unten.wav",
+      "sha256": "fe05c34a5668602e31a21960de10408e1f6d4df3f37c77b0341b3ec267f49cc9",
+      "bytes": 989770,
+      "durationSeconds": 2.552583,
+      "sampleRateHz": 48000,
+      "channels": 2,
+      "codec": "pcm_f32le"
+    },
+    {
+      "file": "de/complete.wav",
+      "originalFileName": "ende.wav",
+      "sourceUrl": "https://raw.githubusercontent.com/E-Mus/becoming-many-tutorial/52fdfdb69a80b63988b71e035614db8abad4bac1/public/audio/ende.wav",
+      "sha256": "874e2854758de0907851de78c9fd3af09ead32e749da2b143795398ad3fbd5c7",
+      "bytes": 5332386,
+      "durationSeconds": 13.861479,
+      "sampleRateHz": 48000,
+      "channels": 2,
+      "codec": "pcm_f32le"
+    }
+  ]
+}

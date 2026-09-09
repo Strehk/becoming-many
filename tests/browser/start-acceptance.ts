@@ -6,7 +6,7 @@ import { M5_FIRMWARE_VERSION } from "../../src/m5/protocol";
 import { M5_SETTINGS } from "../../src/m5/runtime/m5-settings";
 import { assertRefactorBranch } from "./browser-evidence";
 
-const FORMATION_MILLISECONDS = 5_000;
+const FORMATION_MILLISECONDS = 26_000;
 const FLIGHT_MILLISECONDS = 1_500;
 const DEFLECTION = 0.4;
 
@@ -243,6 +243,7 @@ async function inspectVisibleParticles(
 export async function flyStartCourse(
   page: Page,
   simulation: StartSimulation,
+  missFirstGoal = false,
 ): Promise<void> {
   const status = page.locator("[data-tutorial-status]");
   await status.waitFor({ state: "visible" });
@@ -257,7 +258,7 @@ export async function flyStartCourse(
   let previousDelivery = simulation.readDelivery();
   let previousMilliseconds = performance.now();
   let lastStatus = "";
-  const deadline = Date.now() + 75_000;
+  const deadline = Date.now() + 150_000;
   while (Date.now() < deadline) {
     const text = await status.innerText();
     if (text.includes("Complete")) break;
@@ -267,9 +268,8 @@ export async function flyStartCourse(
       );
       lastStatus = text;
     }
-    const goal = await page.evaluate(
-      () => window.show?.readTutorial()?.goalTarget,
-    );
+    const tutorial = await page.evaluate(() => window.show?.readTutorial());
+    const goal = tutorial?.goalTarget;
     assert(goal, `Expected an observed generated course goal: ${text}`);
     const now = performance.now();
     const delivery = simulation.readDelivery();
@@ -294,11 +294,17 @@ export async function flyStartCourse(
       Math.sin(desiredHeading - estimate.heading),
       Math.cos(desiredHeading - estimate.heading),
     );
-    const passedPlane = estimate.z < goal.z;
-    const roll = passedPlane ? 0 : -clamp(headingError * 2, -0.5, 0.5);
-    const climb = passedPlane
-      ? 0
-      : clamp(((goal.y - estimate.y) * 5) / Math.max(distance, 2), -2.5, 2.5);
+    const passedPlane =
+      dx * Math.sin(estimate.heading) - dz * Math.cos(estimate.heading) < 0;
+    const holdStraight =
+      tutorial?.phase === "arrival" ||
+      (missFirstGoal && (tutorial?.missCount ?? 0) === 0);
+    const roll =
+      passedPlane || holdStraight ? 0 : -clamp(headingError * 2, -0.5, 0.5);
+    const climb =
+      passedPlane || holdStraight
+        ? 0
+        : clamp(((goal.y - estimate.y) * 5) / Math.max(distance, 2), -2.5, 2.5);
     simulation.set(
       -(climb + FLIGHT_SETTINGS.neutralDescentMetersPerSecond) /
         FLIGHT_SETTINGS.climbRateMetersPerSecond,
@@ -314,6 +320,20 @@ export async function flyStartCourse(
   );
   const proceed = page.locator("[data-continue-experience]");
   await proceed.waitFor({ state: "visible" });
+  await page.waitForFunction(
+    () =>
+      !document.querySelector<HTMLButtonElement>("[data-continue-experience]")
+        ?.disabled,
+    undefined,
+    { timeout: 20_000 },
+  );
+  if (missFirstGoal)
+    assert(
+      (await page.evaluate(
+        () => window.show?.readTutorial()?.missCount ?? 0,
+      )) >= 1,
+      "Expected an actual missed goal before successful completion",
+    );
   assert.equal(await proceed.isEnabled(), true);
   await proceed.click();
   await status.waitFor({ state: "hidden" });

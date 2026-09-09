@@ -2,11 +2,83 @@
 
 The spatial tutorial replaces the held-gesture Start MVP on its existing routes
 and opens the full experience. The approved sequence is right → left → up → down,
-without a deadline. Actual ring passages advance learning; missed goals remain
-active with direction guidance. Show holds transport, language and completion
+without a deadline. Actual ring passages advance learning. The 2026-09-09 user
+revision replaces the earlier persistent-miss behavior documented below: old
+sections fade and recycle ahead, without awarding success. Show holds transport, language and completion
 policy; Run retires training and releases the prepared main experience only after
 the operator selects **Begin experience**. World, M5 and locomotion retain their
 existing ownership. No second renderer, render loop or show clock was added.
+
+## Forward recycling and original voice — 2026-09-09
+
+The user approved higher particle density and requested continuously renewed
+courses ahead of flight, explicit passage feedback and the original voice.
+A missed plane (outside the aperture), overtaken formation or distant receding
+target now retires its entire section over three seconds. The existing fixed
+slots then generate ahead of the current rig heading, repeating the same direction.
+No time limit or miss-based success is introduced. Four actual passages still
+precede the operator handoff; preview rings never count. Targets use the existing
+flight ceiling without changing locomotion. Pause holds both retirement and flight.
+
+Success retains its local silver expansion/wake and raises the existing spatial
+goal voice; misses fade without that success accent and lower the same voice.
+The shared operator readout distinguishes Passed/Missed. No extra audio node,
+particle buffer, renderer, loop or clock is created during recycling.
+
+All five original German WAVs are installed unchanged with source revision,
+SHA-256 and measured duration in `public/audio/tutorial/provenance.json`.
+`/start?language=de` now honors the same language query as the full show.
+The first counted goal forms ahead after the 20.726 s introduction; later short
+instruction clips repeat on a retry without interrupting an active clip. Original
+opening narration is not repeated after every first-goal miss. The first real
+spoken completion run exposed an old Show bug: selection alternated between Down
+and Complete while the final clip was playing, preventing handoff. The completion
+cue now remains selected across intervening frames; its full duration still gates
+handoff. A regression test covers the intermediate frames that the former test
+skipped. German voice works through the existing narration player; EN policy is
+still pending. Main narration and language behavior are unchanged.
+
+Final served-assets digest:
+`c8c4a8609d7912aeffc24b616154078516a6eef8caac582668993e0389f52e15`.
+[Performance](../../performance.md#forward-recycling-and-spoken-tutorial--2026-09-09)
+records the comparable desktop measurements and their limits.
+
+Validation: 45 focused logic, geometry, audio, Show, Run and UI tests pass;
+build/typecheck and mandatory lint pass. This includes 100 repeated misses with
+identical preview slots, paused retirement, overtaken formation, ceiling bounds,
+actual passage-only success, distinct audio feedback and the final spoken cue latch.
+
+Headed Chromium 151 / Apple M2 Max checks exercise real shared M5 input:
+
+- Root: one intentional miss, a fresh forward section, four passages, all five
+  audible-enabled media clips and operator handoff to the German main prologue.
+- Conductor: the same complete flow twice, with Stop/recreation and held Ready
+  after each handoff, using the final build. No console/HTTP/shader failures or
+  warnings. Media `playing` events confirm all five unmuted volume-1 clips and
+  main prologue in each course.
+- Standalone `/start?language=de`: query selects DE; the intro plays, Pause holds
+  its settled media position, language switching repeats the instruction, and
+  real formation/input/turn/climb/reload/image-boundary checks pass. A first
+  diagnostic sampled the pause before the next owner frame and failed; the
+  corrected check waits for the media's actual paused state before measuring.
+
+The strict diagnostic reports retain Chromium `net::ERR_ABORTED` media-range
+requests (intro/completion preloads during source replacement/retirement).
+They therefore have nonzero raw request-error counts; no global error filter or
+repository assertion was weakened. These clips subsequently play at readyState 4
+and advance through their measured duration. This is distinct from missing files,
+blocked playback or a claim of physical audibility. Local reports:
+`benchmark-results/issue-50/recycling-final-conductor/probe.json` and
+`recycling-final-standalone-settled/result.json`. The earlier failed completion
+run is retained locally as `recycling-voice-de/probe.json`.
+
+![A fresh section after a missed goal in Conductor](recycled-course.png)
+![Standalone German tutorial after the spoken orientation](spoken-start.png)
+
+The generated bodies retain fine points, soft dense edges and a white composition;
+the reference images remain inspiration, not a photographic rendering target.
+Human speech intelligibility, localization, first-visitor comprehension and
+Windows-PCVR USB-C 90 Hz remain physical acceptance.
 
 ## Cloud revision — 2026-09-09
 

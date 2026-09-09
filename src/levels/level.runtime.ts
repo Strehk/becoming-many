@@ -262,6 +262,7 @@ export async function startLevel(
           tutorialPreset,
           runningWorld,
           request.kind === "show",
+          worldSurface.groundYAt,
         );
         if (!training) throw new Error("Training composition is unavailable");
         start = training.start;

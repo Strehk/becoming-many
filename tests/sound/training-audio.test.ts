@@ -1,4 +1,5 @@
 import { expect, test } from "bun:test";
+import { level } from "../../src/levels/start.level";
 import {
   type TrainingAudioParameters,
   validateTrainingAudioParameters,
@@ -211,6 +212,12 @@ test("four object voices share samples and hall, follow distance and speech, and
     audio.update({...frame,objects:undefined},true);
     assert.ok(voices.every(voice=>voice.starts===0),"absent graphics must not schedule invisible emitters");
     audio.update(frame,true);audio.update(frame,true);
+    audio.update({...frame,phase:"crossed",wake:{strength:1}},true);
+    assert.equal(voices[3].detune,500,"passage raises only the existing goal voice");
+    audio.update({...frame,phase:"missed"},true);
+    assert.equal(voices[3].detune,-500,"miss feedback differs from a successful passage");
+    audio.update(frame,true);
+    assert.equal(voices[3].detune,0,"a recycled goal returns to its steady pitch");
     assert.ok(voices.every(voice=>voice.starts===1));
     assert.deepEqual(placements.map(source=>source.position),[[-3,0,-8],[3,0,-8],[5,0,-8],[0,0,-8]]);
     const nearDirect=gains[1].gain.target,nearSend=gains[2].gain.target;
@@ -305,4 +312,39 @@ test("sample limits, pending room cancellation and partial startup release owned
   );
   expect(await new Response(probe.stderr).text()).toBe("");
   expect(await probe.exited).toBe(0);
+});
+
+test("production tutorial ships every German instruction with its original bytes and measured duration", async () => {
+  const recordings = level.startNarration?.de ?? [];
+  expect(recordings.map((recording) => recording.cueId)).toEqual([
+    "right",
+    "left",
+    "up",
+    "down",
+    "complete",
+  ]);
+  const provenance: {
+    files: {
+      file: string;
+      durationSeconds: number;
+      bytes: number;
+      sha256: string;
+    }[];
+  } = await Bun.file(
+    new URL("../../public/audio/tutorial/provenance.json", import.meta.url),
+  ).json();
+  for (const recording of recordings) {
+    const source = provenance.files.find(
+      (clip) => `/audio/tutorial/${clip.file}` === recording.url,
+    );
+    if (!source) throw new Error(`Missing provenance for ${recording.url}`);
+    expect(recording.durationSeconds).toBe(source.durationSeconds);
+    const bytes = await Bun.file(
+      new URL(`../../public${recording.url}`, import.meta.url),
+    ).arrayBuffer();
+    expect(bytes.byteLength).toBe(source.bytes);
+    expect(new Bun.CryptoHasher("sha256").update(bytes).digest("hex")).toBe(
+      source.sha256,
+    );
+  }
 });

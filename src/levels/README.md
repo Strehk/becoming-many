@@ -99,13 +99,16 @@ derivatives. UI releases only its own presentation resources. The existing
 `start.level.ts` supplies the same training content to `/start`, `/?level=start`
 and the opening of the full Show. Existing route/catalog registration is retained.
 The approved sequence is right, left, up, down, without a deadline. Start generates
-each goal once from bounded distance, displacement and radius ranges in the
-arrival heading. The recipe contains no authored ring coordinates. Restart samples
-a new course; ordinary frames, misses and pauses never resample a placed target.
+goals from bounded distance, displacement and radius ranges in the
+current course heading. The recipe contains no authored ring coordinates. Restart samples
+a new course. Ordinary frames and pauses retain placed targets. Missed sections
+fade and recycle the same fixed slots ahead of the current flight pose.
 Sound attachments borrow the generated geometry, so their distance and position
 follow the actual ring and arrow. Consecutive
 world poses detect passage through each ring with the existing desktop or M5/XR
-locomotion. A missed ring and its world-anchored arrow remain active. Device-specific neutral/held gestures and the opaque guide are removed.
+locomotion. A miss never counts as success. Passed/abandoned sections retire with a short
+fade and a lower goal tone; successful passages use the silver wake and higher
+goal tone. Operator status distinguishes both outcomes. Device-specific neutral/held gestures and the opaque guide are removed.
 
 Start's learning module owns goal progression and one crossing observation.
 Its optional particle effect owns 32,000 fixed particles in one draw: a thick
@@ -139,12 +142,12 @@ with its existing owner across handoff.
 This is the existing interim reset, not complete visitor replacement or fresh
 headset calibration (#9/#46).
 
-Five DE narration recordings were located in the predecessor tutorial repository.
-Audio rights, the language fallback and final sample selection still require their
-specific content acceptance; locating the files does not approve shipping them.
-The recipe therefore omits `startAudio` and `startNarration`: production training
-is silent, and standalone Start creates only Show's native timebase. Tone spatial
-audio is acquired for standalone training only when `startAudio` is configured.
+Five original DE narration recordings are shipped with provenance and measured
+durations, following the user request to install the voice. The first goal forms
+ahead after the introduction, preventing the visitor from overtaking it during
+speech. Later short direction cues repeat on a retry. The recipe enables
+`startAudio` and `startNarration.de`; EN voice policy remains open. Existing
+Show/narration and Run/spatial-audio owners are reused.
 Visitor comprehension, listening, XR comfort and Windows-PCVR 90 Hz remain
 physical acceptance. The existing benchmark measures a fixed waiting scene,
 not visitor completion, and its numerical reference is unchanged.

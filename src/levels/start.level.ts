@@ -6,6 +6,36 @@ export const level: LevelPreset = {
   viewDistance: 128,
   desktopFieldOfViewDegrees: 80,
   maximumGroundClearanceMeters: 50,
+  startNarration: {
+    en: [],
+    de: [
+      {
+        cueId: "right",
+        url: "/audio/tutorial/de/introduction-right.wav",
+        durationSeconds: 20.725729,
+      },
+      {
+        cueId: "left",
+        url: "/audio/tutorial/de/left.wav",
+        durationSeconds: 2.735417,
+      },
+      {
+        cueId: "up",
+        url: "/audio/tutorial/de/up.wav",
+        durationSeconds: 4.334896,
+      },
+      {
+        cueId: "down",
+        url: "/audio/tutorial/de/down.wav",
+        durationSeconds: 2.552583,
+      },
+      {
+        cueId: "complete",
+        url: "/audio/tutorial/de/complete.wav",
+        durationSeconds: 13.861479,
+      },
+    ],
+  },
   startAudio: {
     samples: [
       { id: "source-01", url: "/audio/granular/atmosphere-grain-01.wav" },

@@ -127,15 +127,20 @@ Selection and mix values are initial technical choices; listening/tuning remains
 open. Originals are never fetched by the running recipe.
 
 
-## Located tutorial narration candidates
+## Tutorial narration
 
 The earlier issue's repository link resolves to
 [E-Mus/becoming-many-tutorial, revision 52fdfdb69a80b63988b71e035614db8abad4bac1](https://github.com/E-Mus/becoming-many-tutorial/tree/52fdfdb69a80b63988b71e035614db8abad4bac1/public/audio).
 Only the original audio bytes were inspected; no legacy runtime is reused.
 The five German files are stereo, 48 kHz, float32 PCM. The source contains no
-English recordings, effect samples, license or speaker attribution. These are
-located candidates, not approved production assets; the literal Start recipe
-therefore still has no tutorial narration references.
+English recordings, effect samples, license or speaker attribution. On 2026-09-09
+the user explicitly requested installing the located voice.
+The five original recordings are now shipped under `public/audio/tutorial/de/`
+with English cue filenames; [provenance](../../public/audio/tutorial/provenance.json)
+records their source revision, original names, hashes and measured formats.
+The literal Start recipe selects them through the existing narration owner.
+English tutorial recordings remain absent pending the requested language policy;
+the main experience retains its existing EN/DE recordings.
 
 | Original file | Duration (s) | SHA-256 |
 | --- | ---: | --- |
@@ -148,5 +153,5 @@ therefore still has no tutorial narration references.
 The first recording reaches its right-lean instruction near 19 seconds. Final
 content integration must align that orientation period with the unchanged
 continuous M5 glide; preventing speech truncation alone does not establish
-first-visitor pacing. DE-use permission and an explicit EN policy remain required content decisions.
+first-visitor pacing. The English tutorial policy remains a content decision.
 Instrumental source material is now user-supplied above; excerpt/mix suitability and speech intelligibility still need actual listening. Script sources are unchanged.

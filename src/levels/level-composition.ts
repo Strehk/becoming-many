@@ -242,7 +242,12 @@ export async function composeLevel({
     add(undefined, passages?.module);
     add(undefined, passageSwarm);
     add(undefined, endCredits?.module);
-    const training = composeTraining(tutorial ?? level, world, !!tutorial);
+    const training = composeTraining(
+      tutorial ?? level,
+      world,
+      !!tutorial,
+      worldSurface.groundYAt,
+    );
     const start = training?.start;
     const trainingModules = training?.modules ?? [];
     for (const module of trainingModules) add(undefined, module);
@@ -710,12 +715,15 @@ export function composeTraining(
   preset: LevelPreset,
   world: LevelCompositionOptions["world"],
   includeBackground: boolean,
+  groundYAt: WorldSurface["groundYAt"],
 ): { start: StartModuleHandle; modules: WorldModule[] } | undefined {
   if (!preset.start) return undefined;
   const start = createStartModule({
     viewpoint: world.viewpoint,
     viewerRig: world.viewerRig,
     parameters: preset.start,
+    maximumGoalYAt: (x, z) =>
+      groundYAt(x, z) + preset.maximumGroundClearanceMeters,
     particles: preset.start.particles
       ? createStartParticleEffect({
           scene: world.scene,

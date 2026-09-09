@@ -11,6 +11,7 @@ import { levelNameFromPath } from "../../shared/level-routes";
 import { createBenchmarkRun } from "../benchmark/benchmark-run";
 import { isBenchmarkProfileName } from "../benchmark/benchmark-settings";
 import { FrameMetricsSampler } from "../diagnostics/frame-metrics";
+import { resolveNarrationLanguage } from "../dramaturgy/narration-catalog";
 import { PIECE_SCHEDULE } from "../dramaturgy/piece-schedule";
 import { type Run, startLevel } from "../levels/level.runtime";
 import { LEVEL_CATALOG, resolveLevelName } from "../levels/level-catalog";
@@ -62,6 +63,7 @@ try {
     {
       signal: lifetime.signal,
       kind: "static",
+      language: resolveNarrationLanguage(request.get("language")),
       preset,
       benchmark,
       onFrame: frameMetrics

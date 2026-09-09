@@ -7,8 +7,9 @@ and M5 consolidation passed its local checks and browser acceptance; see
 [UI evidence](evidence/ui-consolidation/README.md). The previous
 #36/#84/#11 and audio-wake results remain dated evidence for their tested code.
 Start now generates its four-goal course from distance, displacement and radius
-ranges instead of authored coordinates. Restart samples a fresh course, while
-placed targets and their sound anchors remain in world space.
+ranges instead of authored coordinates. Restart samples a fresh course. Missed or spatially abandoned sections fade and
+recycle ahead of the current flight pose without increasing the success count.
+Placed targets and sound anchors remain fixed during each attempt.
 Dated measurement packets retain the earlier exact identities they tested;
 the current checkout is the authority for runtime details.
 The combined tutorial change passes `bun test` (572 tests), `bun run build` and
@@ -60,10 +61,15 @@ suppressions or baseline changes. This feature adds behavior and code; it is not
 code-reduction result. Local rendering/audio measurements and their limits are
 recorded in [Performance](performance.md#flight-tutorial--2026-09-08).
 
-The latest cloud presentation is implemented and locally tested, but its measured
+The latest cloud presentation is implemented and locally tested. Its measured
 GPU p95 increase from 0.251 to 0.308 ms was explicitly accepted by the user
 on 2026-09-09 together with the higher particle density. Physical PCVR acceptance remains open.
-See the [current screenshots and limits](evidence/issue-50/README.md#cloud-revision--2026-09-09).
+The following correction implements forward recycling after misses, distinct
+passage feedback and the five original German instructions. Forty-five focused
+tests, build/typecheck and lint pass. Root and two Conductor courses complete with
+voice/handoff; standalone DE query, pause, language repeat and reload are checked.
+Media preload cancellations are retained in raw diagnostics rather than hidden;
+see the [current evidence and limits](evidence/issue-50/README.md#forward-recycling-and-original-voice--2026-09-09).
 
 ## Product State
 
@@ -96,7 +102,8 @@ The #80 animal-connection removal is implemented below. Small additions remain i
 
 - `/` prepares tutorial and full show, initially held, and mounts the rehearsal
   transport. Main-show seeking becomes available after the tutorial handoff.
-- `?language=de|en` selects narration for the full show.
+- `?language=de|en` selects narration for the full show and standalone Start.
+  German Start voice is shipped; English tutorial voice remains a pending choice.
 - `/?level=<name>` or `/<name>` opens one preset without the show.
   Known names are `start`, `white-world`, `scent`, `echo`, `motion`, `thermal`,
   `magnetic`, `connections`, `diagnostic`, and `visual-integration`.
@@ -235,10 +242,10 @@ The #80 animal-connection removal is implemented below. Small additions remain i
   growing-history cost in Tone 14's bundled wrappers: the full audio-enabled
   tutorial CPU p95 falls from 2.4 to 0.5 ms on the recorded Mac browser workload.
   See [the comparison and limits](performance.md#bounded-live-audioparam-histories).
-- Five DE narration recordings were located in the predecessor tutorial
-  repository. The literal recipe still omits `startNarration`. DE-use permission,
-  EN fallback remain pending; source discovery does not establish narration
-  acceptance. Eleven user-supplied generated instrumentals are now preserved in
+- Five original DE tutorial recordings are now shipped unchanged with source
+  hashes and authored durations in `startNarration.de`, following the user
+  instruction to install the voice. The EN policy and physical listening remain
+  open. Eleven user-supplied generated instrumentals are now preserved in
   `public/audio/granular/` with provenance and full-decode/level checks. The
   [granular atmosphere step](roadmap.md#granular-atmosphere--112) implements three
   spatial layers, a distinct goal cue and one shared hall, replacing the ordinary

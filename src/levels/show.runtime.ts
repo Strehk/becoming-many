@@ -64,6 +64,7 @@ export interface TutorialStatus {
   readonly goalIndex: number;
   readonly direction: "right" | "left" | "up" | "down";
   readonly crossingCount: number;
+  readonly missCount?: number;
   readonly readyToContinue: boolean;
 }
 
@@ -182,6 +183,7 @@ export async function createShowRuntime(
   let instruction = "right";
   let instructionStartSeconds = 0;
   let tutorialGoalIndex = 0;
+  let tutorialAttempt = 0;
   let preparationState: "loading" | "ready" | "failed" = "ready";
   function unload(): Promise<void> {
     clock?.pause();
@@ -359,6 +361,7 @@ export async function createShowRuntime(
         goalIndex: observed.goalIndex,
         direction: observed.direction,
         crossingCount: observed.crossingCount,
+        missCount: observed.missCount,
         readyToContinue:
           !standalone &&
           instruction === "complete" &&
@@ -405,6 +408,7 @@ export async function createShowRuntime(
       tutorial.start.setGoalAdvanceAllowed(false);
       instruction = next.parameters.directions[0];
       tutorialGoalIndex = 0;
+      tutorialAttempt = 0;
       instructionStartSeconds = 0;
       prepareNarration(next);
     }
@@ -440,15 +444,19 @@ export async function createShowRuntime(
             (currentRecording?.durationSeconds ?? 0);
           const nextInstruction =
             observed.crossingCount === tutorial.parameters.directions.length &&
-            instructionFinished
+            (instruction === "complete" || instructionFinished)
               ? "complete"
               : observed.direction;
           if (
             nextInstruction !== instruction ||
-            observed.goalIndex !== tutorialGoalIndex
+            observed.goalIndex !== tutorialGoalIndex ||
+            (observed.goalIndex > 0 &&
+              observed.attempt !== tutorialAttempt &&
+              instructionFinished)
           ) {
             instruction = nextInstruction;
             tutorialGoalIndex = observed.goalIndex;
+            tutorialAttempt = observed.attempt;
             instructionStartSeconds = showTime.timeSeconds;
           }
           tutorial.start.setGoalAdvanceAllowed(instructionFinished);
@@ -540,6 +548,7 @@ export async function createShowRuntime(
             instruction = tutorial.parameters.directions[0];
             instructionStartSeconds = 0;
             tutorialGoalIndex = 0;
+            tutorialAttempt = 0;
           }
         },
         readLanguage: () => language,
