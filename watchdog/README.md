@@ -129,7 +129,8 @@ waits 30 seconds, starts SteamVR, waits another 15 seconds, then starts the
 kiosk. The station-health poller starts in the initial group because it is
 independent of the VR chain. These pauses only space out process startup; the
 individual application configs add no cold-start delay of their own.
-`docker-up.bat` still waits for the Docker engine and the kiosk still waits for
+`docker-up.bat` delegates to `scripts/start-station-container.ps1`, which waits
+for the Docker engine and reads the local deployment selection. The kiosk waits for
 `/health` rather than assuming either is ready. The five windows stay in the
 taskbar and the logs land in
 `C:\becoming-many\watchdog\logs`.
@@ -152,15 +153,19 @@ $c.Send([Text.Encoding]::ASCII.GetBytes("status"), 6) | Out-Null
 it, the window is back within seconds. Send `stop` to port 2350, do the work,
 send `start` when done. Closing the watchdog's own console window works too.
 
-Updating the show is unchanged and still deliberate: `docker compose pull` in
-`C:\becoming-many`, then let the station watchdog restart, or send it `restart`.
-Nothing in this folder pulls on its own — a power-cycle must never change the
-version an exhibition is running.
+Update deliberately with `scripts\deploy-branch.ps1 -Branch david_refactor` or
+`scripts\deploy-release.ps1` from `C:\becoming-many`. These commands pause the
+kiosk and health poller through their existing UDP controls, then restore both.
+Docker Desktop, SteamVR and PICO supervision remain active. The Compose hook
+shares a file lock with deployment, so concurrent hooks skip their bring-up.
+The local `.git\station-deployment.json` selects the image across restarts;
+without it, the base Compose file continues to select the release. Branch mode
+never builds or pulls during boot and never falls back to GHCR when its image
+is missing. See [deployment and recovery](../docs/direction/deployment.md).
 
 ## Reading the logs
 
-One rotating log per watchdog in `C:\becoming-many\watchdog\logs`. The scripts
-prefix their own lines, so the story of a cold start reads as `[docker-up]
-engine answered after 45s`, then `[docker-up] station stack is up`, then
+One rotating log per watchdog in `C:\becoming-many\watchdog\logs`. Docker Compose
+reports container startup; the kiosk readiness helper reports
 `[wait-health] station answered after 12s`. A restart loop shows as repeated
 `[poll-health] no answer from http://localhost/health` before each bring-up.

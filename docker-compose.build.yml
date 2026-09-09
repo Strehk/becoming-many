@@ -1,7 +1,7 @@
 # Purpose: Build the station image from this checkout instead of pulling it.
 # Context: docker-compose.yml runs the released GHCR image; development and
 #   pipeline testing want the local sources under the same service names.
-# Responsibility: Add only the build instruction, layered over the base file.
+# Responsibility: Build under a local tag, never overwrite the release tag.
 # Boundary: Everything else — ports, env, restart, healthchecks — stays in
 #   docker-compose.yml; this file must never diverge from it.
 #
@@ -9,7 +9,11 @@
 
 services:
   station:
+    image: becoming-many-local:checkout
+    pull_policy: never
     build: .
 
   m5-sim:
+    image: becoming-many-local:checkout
+    pull_policy: never
     build: .

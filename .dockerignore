@@ -1,6 +1,9 @@
 # Keep the build context to sources: the image builds dist/ itself, and
 # nothing environment-specific may leak into it.
 .git
+watchdog/run
+watchdog/logs
+watchdog/Watchdog.exe
 .fallow
 node_modules
 dist
