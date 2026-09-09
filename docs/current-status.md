@@ -145,7 +145,8 @@ The #80 animal-connection removal is implemented below. Small additions remain i
 - `/` prepares tutorial and full show, initially held, and mounts the rehearsal
   transport. Main-show seeking becomes available after the tutorial handoff.
 - `?language=de|en` selects narration for the full show and standalone Start.
-  German Start voice is shipped; English tutorial voice remains a pending choice.
+  German Start voice is shipped; EN temporarily selects the same German
+  recordings pending replacement English voice files.
 - `/?level=<name>` or `/<name>` opens one preset without the show.
   Known names are `start`, `white-world`, `scent`, `echo`, `motion`, `thermal`,
   `magnetic`, `connections`, `diagnostic`, and `visual-integration`.
@@ -291,8 +292,8 @@ The #80 animal-connection removal is implemented below. Small additions remain i
   See [the comparison and limits](performance.md#bounded-live-audioparam-histories).
 - Five original DE tutorial recordings are now shipped unchanged with source
   hashes and authored durations in `startNarration.de`, following the user
-  instruction to install the voice. The EN policy and physical listening remain
-  open. Eleven user-supplied generated instrumentals are now preserved in
+  instruction to install the voice. Replacement English recordings and physical
+  listening remain open. Eleven user-supplied generated instrumentals are now preserved in
   `public/audio/granular/` with provenance and full-decode/level checks. The
   [granular atmosphere step](roadmap.md#granular-atmosphere--112) implements three
   spatial layers, a distinct goal cue and one shared hall, replacing the ordinary

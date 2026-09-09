@@ -13,7 +13,7 @@ Live issues own acceptance. Do not create a second implementation plan.
 | Branch | `david_refactor` only. Commit/push completed, tested blocks to `origin/david_refactor` and verify success; no main, force-push or additional branches. |
 | Current request | Complete #50 and its actual #109–#113 prerequisites: spatial tutorial, existing Show/Run integration, bounded particle/sound presentation, combined verification and targeted commit/push. Preserve explicit audio-content and physical acceptance. |
 | Source checkpoint | `1adc872` preserves the clean source before the spatial tutorial. Earlier UI/M5 and audio-wake evidence retains its own source identities. |
-| Next implementation | The 2026-09-09 spatial review supersedes isolated ring presentation: reuse the main-world volume chunks for a dense near field, large volumetric particle arrows and continuous curved particle tunnels. The visual revision, forward course recycling, German voice and timed timeline integration are implemented and locally checked. The latest approved practice budget is 60 playing seconds, with a full earned closing up to about 74 seconds and direct UI skip; The subsequent gaze/voice feedback replaces preplanned targets with per-cue eye-aligned generation and 2 m/s tutorial translation. The subsequent arrow-first revision gates tunnel generation on actual turning, with local per-ring spring/drag feedback. Spoken-line staging now delays the room and arrows to their actual audio phrases and requires a readable arrow before the ring assistance; remaining acceptance is recorded below. The user accepted the higher particle density and its measured local GPU cost on 2026-09-09. Quiet shared tutorial wind and per-course granular sample/offset variation are implemented. Rig-motion prediction, reachable lesson guidance, arc-spaced rings and independently persistent arrows now replace the earlier coupled presentation. The ambient field is denser and motion calmer; existing Show/Run integration and granular audio remain the starting point; German tutorial narration and forward recycling are implemented in the subsequent correction; The seven-scene audio/visual script and optional CC0 passage/wind effects are implemented. The latest correction aligns the first opening with the fixed arrow axis and retains a quiet bounded audio tail into main. EN policy and physical acceptance stay open. |
+| Next implementation | The 2026-09-09 spatial review supersedes isolated ring presentation: reuse the main-world volume chunks for a dense near field, large volumetric particle arrows and continuous curved particle tunnels. The visual revision, forward course recycling, German voice and timed timeline integration are implemented and locally checked. The latest approved practice budget is 60 playing seconds, with a full earned closing up to about 74 seconds and direct UI skip; The subsequent gaze/voice feedback replaces preplanned targets with per-cue eye-aligned generation and 2 m/s tutorial translation. The subsequent arrow-first revision gates tunnel generation on actual turning, with local per-ring spring/drag feedback. Spoken-line staging now delays the room and arrows to their actual audio phrases and requires a readable arrow before the ring assistance; remaining acceptance is recorded below. The user accepted the higher particle density and its measured local GPU cost on 2026-09-09. Quiet shared tutorial wind and per-course granular sample/offset variation are implemented. Rig-motion prediction, reachable lesson guidance, arc-spaced rings and independently persistent arrows now replace the earlier coupled presentation. The ambient field is denser and motion calmer; existing Show/Run integration and granular audio remain the starting point; German tutorial narration and forward recycling are implemented in the subsequent correction; The seven-scene audio/visual script and optional CC0 passage/wind effects are implemented. The latest correction aligns the first opening with the fixed arrow axis and retains a quiet bounded audio tail into main. EN temporarily uses the approved German recordings; replacement English content and physical acceptance remain open. |
 | Confirmed direction | Conductor is UI only; Entry connects UI to the existing browser Engine. Show owns transport/language, Run owns lifetime, World owns rendering, M5 owns validity. Backend remains Station delivery/config/health. Affected role filenames and `src/ui/app.css` are implemented. |
 | Existing software | Direct startup, complete child/source cleanup, entry diagnostics, explicit literal levels, legacy Grass retirement, shared zone influences, approved bank clearance and shared Rocks/Vegetation lifecycle are implemented. Their distinct remaining issue acceptance is preserved. |
 | Current visitor behavior | Initial Play; up to 60 seconds for four spatial goals, then automatic main playback. Earned closing speech may extend to about 74 seconds; direct prepared UI transition is available. Interim Stop resets rig/time and holds; after handoff it recreates only retired training content. Complete replacement and fresh calibration remain #9/#46 decisions. |
@@ -79,8 +79,9 @@ World, locomotion and background particles retain their existing responsibilitie
 #109/#110/#113 implement the fixed particle cloud, swept ring passage and bounded
 wake/appearance. Sound and narration reuse existing owners for #111/#112. Five
 DE recordings from the predecessor tutorial source are now installed following
-the user request for the voice. The EN policy remains a separate decision. Eleven user-provided generated
-instrumentals are now archived as granular material; the integration step below
+the user request for the voice. The EN selection temporarily uses the same
+German clips pending replacement English recordings. Eleven user-provided
+generated instrumentals are now archived as granular material; the integration step below
 owns their excerpt selection and sound implementation.
 The production recipe enables granular atmosphere and all five German tutorial
 recordings, using the existing narration player. Standalone Start uses the same Show timebase and Run-owned spatial audio. Configured instruction playback can finish
@@ -152,8 +153,8 @@ white composition. All images are inspiration, not production assets or exact
 geometry. The rejected sparse studies are not the design target. Concrete
 capacities, comparisons, actual screenshots and limitations are recorded in
 [the tutorial evidence](evidence/issue-50/README.md) and [Performance](performance.md).
-First-visitor comprehension, visual/headset comfort, EN voice
-policy, spatial listening and Windows-PCVR USB-C acceptance remain open.
+First-visitor comprehension, visual/headset comfort, replacement English
+recordings, spatial listening and Windows-PCVR USB-C acceptance remain open.
 
 ## Granular Atmosphere — #112
 
@@ -182,7 +183,8 @@ restart. Confirm that substantial hall preserves localization and clear near/far
 perception. Initial gain/filter/room values are engineering choices, not measured
 acoustic acceptance. Keep Windows-PCVR USB-C frame/audio acceptance explicit.
 The [tutorial evidence](evidence/issue-50/README.md) records software checks and
-measurement limits; German voice use is now explicitly requested; EN voice policy remains separate.
+measurement limits; German voice use is explicitly requested; replacement
+English voice files remain pending.
 
 ## Independent Operating and Verification Work
 
@@ -274,7 +276,7 @@ implementation checkpoint.
 | --- | --- |
 | Visitor replacement mechanism | Compare the smallest complete sequence, including page reload if suitable, on actual Windows-PCVR: XR exit/re-entry, audio wake, retained settings and staff actions. #9/#46 own implementation after the decision. |
 | Exact benchmark reference | Defined workload/pose/assets, repeatable counters and explained differences; #78 candidate remains unapproved. |
-| Tutorial audio / credits | #50 EN voice policy and #112 excerpt/mix acceptance (eleven instrumental sources supplied); #51 content/timing/rights and credits movement. The four-goal tutorial flow is approved. |
+| Tutorial audio / credits | #50 replacement English recordings and #112 excerpt/mix acceptance (eleven instrumental sources supplied); #51 content/timing/rights and credits movement. The four-goal tutorial flow is approved. |
 | Physical flow and encounters | Calibration, hold/play, flight, safety/see-through and existing motion/gaze/timing choices; their respective issues only. |
 
 Windows-PCVR over USB-C is settled; standalone PICO is a later separate project.

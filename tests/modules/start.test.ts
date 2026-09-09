@@ -954,6 +954,11 @@ test("each cue points forward into its lesson direction and preserves both arrow
             : new Vector3(0, -1, 0);
     expect(heading.dot(new Vector3(0, 0, -1))).toBeCloseTo(0.8);
     expect(heading.dot(lesson)).toBeCloseTo(0.6);
+    const eyeRay = practice.worldPosition.clone().sub(position).normalize();
+    // The broad face maximizes visibility without changing the promised axis.
+    const facing = eyeRay.clone().projectOnPlane(heading).normalize();
+    expect(normal.dot(facing)).toBeCloseTo(1);
+    expect(normal.dot(eyeRay)).toBeGreaterThan(0.5);
     expect(frame.arrowAngleRadians).toBe(0);
     const hint = practice.start
       .readObservation()

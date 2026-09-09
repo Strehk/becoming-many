@@ -1136,3 +1136,29 @@ spatial loudness/click listening and Windows-PCVR USB-C acceptance remain open.
 ![World-fixed directional arrow](aligned-arrow.png)
 ![Ring formation after turning](aligned-formation.png)
 ![Approach through the ring opening](aligned-tunnel.png)
+
+
+## Readable cue faces and temporary EN voice — 2026-09-09
+
+World-up orientation made vertical arrows edge-on. Start now projects the captured
+eye-to-arrow vector onto the plane perpendicular to the promised entry axis,
+then derives its orthogonal broad-face basis. This maximizes the visible face
+without changing the tip direction, course or world anchor. It uses the installed
+Three.js r185 Vector3 operations, checked through Context7 and local source. No
+new resources, attributes, per-frame work or camera-following transforms are added.
+The fixed anchor can still leave the frame as the visitor flies past it.
+
+EN previously selected no recordings. The user approved temporary reuse of the
+five DE clips and their phrase markers; replacement English recordings remain
+pending. German playback and the narration runtime remain unchanged.
+
+25 Start tests including broad-face/axis/fixed-pose assertions and five existing
+audio-composition tests pass. Build and lint pass. A real M5-driven production
+browser course captures all four arrows and passes four goals/full closing/handoff.
+Build digest: `6674806ff640b4c1b4b25e5e095be1615b42ea28315cdbaaa6d80f43bf65db74`.
+Native DE and EN playback starts at offset zero, resolves successfully and advances
+unmuted at volume one. Expected canceled media requests at clip replacement are
+not playback failures. Headset readability and spatial listening remain physical
+acceptance; temporary DE speech on the EN selection is not an English translation.
+
+![Broad upward arrow face during the actual approach](readable-up-arrow.png)

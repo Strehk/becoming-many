@@ -283,7 +283,8 @@ A fixed 33-point table checks existing yaw/climb limits, measures arc length and
 transports an orthogonal up vector. Forecast spread is a heuristic uncertainty
 observation, not a reachability allowance. Guidance never writes flight input.
 The arrow reserves a fixed entry at birth and points directly at its first ring
-opening. A shared view correction shifts both by at most half the minimum ring
+opening. Its broad face is rolled toward the captured eye around that axis,
+then remains fixed; head movement never billboards an existing cue. A shared view correction shifts both by at most half the minimum ring
 radius, preserving the lesson axis under the existing pitch assistance. After actual turning, two reusable cubic curves connect measured travel
 to that entry and continue the short visible tunnel. The same 33-sample table
 checks movement limits and places the rings by arc length. A partially clipped
@@ -310,8 +311,9 @@ routes, starting at the recorded room phrase. Native narration offset is an
 observation for spoken-word gates only; Show remains the time authority. Start
 waits for the arrow to form before opening the helping tunnel. Run supplies
 2 m/s tutorial translation through the existing controls and restores ordinary
-main speeds on handoff; directional sensitivity is unchanged. The EN voice policy
-remains open. Run owns the shared Tone spatial context when audio is configured;
+main speeds on handoff; directional sensitivity is unchanged. The EN selection
+temporarily uses the German tutorial clips and timings pending replacement
+English recordings. Run owns the shared Tone spatial context when configured;
 Show retains its existing native timebase and narration owner. It drives the
 existing organ wind layer during practice, at the literal tutorial strength and
 with speech attenuation; the prepared full organ resumes its normal score at

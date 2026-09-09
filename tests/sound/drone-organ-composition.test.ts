@@ -492,6 +492,27 @@ test("audio owners recover gesture resume and await complete disposal", async ()
     assert.equal(formationAllowed, true);
     const retryEnd = retryShow.unload(); retryNative.release(); await retryEnd;
 
+    const { level: startPreset } = await import("./src/levels/start.level.ts");
+    for (const language of ["de", "en"]) {
+      mayReadTraining = true;
+      const localizedTutorial = await createShowRuntime(
+        { schedule: PIECE_SCHEDULE, language, states: SHOW_LEVEL_STATES },
+        tutorialWorld, { gates: new Map(), senses: {}, worldFades: {} },
+        { groundYAt: () => 0 }, undefined, true,
+        { ...tutorialDefinition, parameters: startPreset.start, recordings: startPreset.startNarration },
+      );
+      const prepared = narrationOptions.at(-1).recordings;
+      assert.equal(prepared.length, 5, "both tutorial selections prepare all spoken cues");
+      assert.equal(prepared[0].url, "/audio/tutorial/de/introduction-right.wav",
+        "the approved German opening also supplies the explicit temporary EN selection");
+      const native = contexts.at(-1); native.state = "running";
+      localizedTutorial.running.play(); localizedTutorial.update();
+      assert.deepEqual(narrationFrames.at(-1).position, { cueId: "right", offsetSeconds: 0 },
+        "each language begins with the complete introduction from its first sample");
+      assert.equal(formationAllowed, false, "the opening voice precedes arrow formation");
+      const end = localizedTutorial.unload(); native.release(); await end;
+    }
+
     for (const standalone of [false, true]) {
       mayReadTraining = true;
       const silentTutorial = await createShowRuntime(

@@ -646,8 +646,8 @@ export function createStartModule(
         Math.tan(Math.max(0.1, viewpoint.viewHalfAngleRadians)),
     );
     predictPosition(distance, arrowPosition, predictedTangent);
-    // The cue points into the upcoming turn in three dimensions. Its forward
-    // component keeps a visible side profile without becoming a flat sign.
+    // Retain the flight-relative axis into the upcoming turn. The broad face
+    // is oriented toward the captured eye after placing this fixed anchor.
     arrowDirection
       .copy(turnDirection)
       .addScaledVector(predictedTangent, -turnDirection.dot(predictedTangent));
@@ -691,17 +691,15 @@ export function createStartModule(
       arrowPosition.add(targetOffset);
       tunnelEntry.add(targetOffset);
     }
-    arrowUp
-      .copy(viewpoint.worldUp)
-      .addScaledVector(arrowDirection, -viewpoint.worldUp.dot(arrowDirection));
-    if (arrowUp.lengthSq() < MINIMUM_TRAVEL_SQUARED)
-      arrowUp
-        .copy(WORLD_UP)
-        .addScaledVector(arrowDirection, -WORLD_UP.dot(arrowDirection));
-    if (arrowUp.lengthSq() < MINIMUM_TRAVEL_SQUARED)
-      arrowUp.set(1, 0, 0).addScaledVector(arrowDirection, -arrowDirection.x);
-    arrowUp.normalize();
-    arrowNormal.crossVectors(arrowDirection, arrowUp).normalize();
+    // Roll the broad arrow face toward the captured eye, retaining its axis
+    // into the reserved opening. World-up makes vertical cues edge-on.
+    arrowNormal.copy(origin).sub(arrowPosition).projectOnPlane(arrowDirection);
+    if (arrowNormal.lengthSq() < MINIMUM_TRAVEL_SQUARED)
+      arrowNormal.copy(viewpoint.worldUp).projectOnPlane(arrowDirection);
+    if (arrowNormal.lengthSq() < MINIMUM_TRAVEL_SQUARED)
+      arrowNormal.set(1, 0, 0).projectOnPlane(arrowDirection);
+    arrowNormal.normalize();
+    arrowUp.crossVectors(arrowNormal, arrowDirection).normalize();
     // Both anchors are now frozen; head motion cannot change their promise.
     targetPosition.copy(tunnelEntry);
     goalPosition.copy(targetPosition);

@@ -145,8 +145,12 @@ The five original recordings are now shipped under `public/audio/tutorial/de/`
 with English cue filenames; [provenance](../../public/audio/tutorial/provenance.json)
 records their source revision, original names, hashes and measured formats.
 The literal Start recipe selects them through the existing narration owner.
-English tutorial recordings remain absent pending the requested language policy;
-the main experience retains its existing EN/DE recordings.
+Following the 2026-09-09 request, the EN tutorial selection temporarily uses the
+same German recordings and phrase timings. These are placeholders, not English
+translations; replace the literal EN entries when the English files arrive.
+The main experience retains its existing EN/DE recordings.
+The narration runtime remains unchanged. Both selections begin at offset zero;
+physical listening on the installation is still required.
 
 | Original file | Duration (s) | SHA-256 |
 | --- | ---: | --- |
@@ -159,7 +163,7 @@ the main experience retains its existing EN/DE recordings.
 The first recording reaches its right-lean instruction near 19 seconds. Final
 content integration must align that orientation period with the unchanged
 continuous M5 glide; preventing speech truncation alone does not establish
-first-visitor pacing. The English tutorial policy remains a content decision.
+first-visitor pacing. Replacement English recordings remain a content delivery.
 Instrumental source material is now user-supplied above; excerpt/mix suitability and speech intelligibility still need actual listening. Script sources are unchanged.
 
 

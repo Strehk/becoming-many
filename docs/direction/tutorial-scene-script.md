@@ -27,9 +27,9 @@ Four counted passages before that cutoff earn the entire 13.861479-second
 closing, allowing approximately 74 seconds in total. Otherwise practice ends
 without false success speech. The prepared UI can enter the experience directly.
 Pause freezes flight, practice time and formation/retirement. Standalone Start
-remains independently exercisable without a prepared main handoff. English
-recordings and fallback policy are still open; no translation or fallback is
-introduced here.
+remains independently exercisable without a prepared main handoff. The EN
+selection temporarily uses the same German recordings and phrase markers
+following the user request; replacement English recordings remain pending.
 
 Each movement lesson follows the same causal sequence:
 
