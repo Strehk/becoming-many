@@ -349,7 +349,11 @@ The subsequent turn-triggered review supersedes simultaneous formation: first a
 large anchored arrow; actual directional travel then reveals a predicted visible
 tunnel. Start owns movement detection, retirement and per-ring crossing facts;
 the particle effect owns bounded spring/drag animation and local feedback.
-Preview crossings never award learning progress. Run
+Preview crossings never award learning progress. The spoken-line review keeps the
+opening empty until the room phrase, then reveals Air through Show's presentation
+command. Arrows wait for actual spoken movement calls and fully form before the
+helping rings; native playback is observed only to prevent visual anticipation.
+Run
 selects 2 m/s tutorial translation through existing controls, restoring main
 defaults on handoff. EN voice policy remains open. Native timebase suspension still prevents Show time from advancing. The subsequent
 2026-09-09 user review requires continuous near-field particles through the

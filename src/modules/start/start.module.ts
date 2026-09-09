@@ -346,7 +346,7 @@ export function createStartModule(
     forward.copy(currentTravelDirection).multiplyScalar(distance);
     for (const [index, preview] of previews.entries()) {
       preview.crossingAgeSeconds = undefined;
-      const t = 0.45 + index * 0.16;
+      const t = 0.55 + index * 0.14;
       const smooth = t * t * (3 - 2 * t);
       preview.goalPosition
         .copy(origin)
@@ -483,7 +483,11 @@ export function createStartModule(
         1,
         phaseSeconds / parameters.formationSeconds,
       );
-      if (playing && travel.lengthSq() > MINIMUM_TRAVEL_SQUARED) {
+      if (
+        playing &&
+        particleFrame.arrowFormation === 1 &&
+        travel.lengthSq() > MINIMUM_TRAVEL_SQUARED
+      ) {
         currentTravelDirection.copy(travel).normalize();
         const turn =
           currentTravelDirection.dot(turnDirection) -

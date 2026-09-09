@@ -136,6 +136,7 @@ type MutableListenerPose = {
 };
 
 interface ShowTutorial {
+  readonly setRoomPresence?: (presence: number) => void;
   readonly start: StartModuleHandle;
   readonly parameters: StartParameters;
   readonly recordings?: Readonly<
@@ -182,6 +183,7 @@ export async function createShowRuntime(
   let droneOrgan: ReturnType<typeof createDroneOrgan> | undefined;
   let unloading: Promise<void> | undefined;
   let tutorial: ShowTutorial | undefined;
+  let roomPresence = 0;
   let mainStartSeconds = 0;
   let instruction = "right";
   let instructionStartSeconds = 0;
@@ -405,6 +407,8 @@ export async function createShowRuntime(
       clock.setTimeScale(1);
       clock.setDuration(undefined);
       tutorial = next;
+      roomPresence = 0;
+      tutorial.setRoomPresence?.(0);
       mainStartSeconds = standalone
         ? 0
         : next.parameters.maximumPracticeSeconds;
@@ -510,17 +514,6 @@ export async function createShowRuntime(
           const selectedRecording = tutorial.recordings?.[language].find(
             (clip) => clip.cueId === instruction,
           );
-          tutorial.start.setFormationAllowed(
-            observed.attempt === tutorialAttempt &&
-              showTime.timeSeconds - instructionStartSeconds >=
-                (selectedRecording?.instructionAtSeconds ?? 0),
-          );
-          tutorial.start.setGoalAdvanceAllowed(instructionFinished);
-          tutorial.start.setPlaying(
-            preparationState === "ready" &&
-              showTime.isPlaying &&
-              timebase.readState() === "running",
-          );
           narration?.follow({
             position: {
               cueId: instruction,
@@ -529,6 +522,44 @@ export async function createShowRuntime(
             isPlaying: showTime.isPlaying,
             timeScale: 1,
           });
+          const requestedOffset =
+            showTime.timeSeconds - instructionStartSeconds;
+          const spokenOffset = selectedRecording
+            ? Math.min(
+                requestedOffset,
+                narration?.readOffsetSeconds(instruction) ?? 0,
+              )
+            : requestedOffset;
+          const openingCue = tutorial.parameters.directions[0];
+          const openingRecording = tutorial.recordings?.[language].find(
+            (clip) => clip.cueId === openingCue,
+          );
+          roomPresence = Math.max(
+            roomPresence,
+            observed.goalIndex > 0 || observed.attempt > 0 || succeeded
+              ? 1
+              : Math.min(
+                  1,
+                  Math.max(
+                    0,
+                    (spokenOffset -
+                      (openingRecording?.environmentAtSeconds ?? 0)) /
+                      tutorial.parameters.formationSeconds,
+                  ),
+                ),
+          );
+          tutorial.setRoomPresence?.(roomPresence);
+          tutorial.start.setFormationAllowed(
+            observed.attempt === tutorialAttempt &&
+              spokenOffset >= (selectedRecording?.instructionAtSeconds ?? 0),
+          );
+          tutorial.start.setGoalAdvanceAllowed(instructionFinished);
+          tutorial.start.setPlaying(
+            preparationState === "ready" &&
+              showTime.isPlaying &&
+              timebase.readState() === "running",
+          );
+
           return;
         }
         if (standalone) return;
@@ -590,6 +621,8 @@ export async function createShowRuntime(
             mainStartSeconds = standalone
               ? 0
               : tutorial.parameters.maximumPracticeSeconds;
+            roomPresence = 0;
+            tutorial.setRoomPresence?.(0);
             tutorial.start.reset();
             tutorial.start.setPlaying(false);
             tutorial.start.setGoalAdvanceAllowed(false);

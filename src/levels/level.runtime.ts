@@ -151,6 +151,7 @@ export async function startLevel(
     });
     const { worldSurface, reach, hasGround } = composition;
     let start = composition.start;
+    if (benchmark) composition.setTrainingRoomPresence?.(1);
     let trainingModules = [...composition.trainingModules];
     const mainModules = composition.modules.filter(
       (module) => !trainingModules.includes(module),
@@ -202,6 +203,7 @@ export async function startLevel(
         start && tutorialPreset?.start
           ? {
               start,
+              setRoomPresence: composition.setTrainingRoomPresence,
               parameters: tutorialPreset.start,
               recordings: tutorialPreset.startNarration,
               finish: finishTraining,
@@ -261,7 +263,6 @@ export async function startLevel(
         const training = composeTraining(
           tutorialPreset,
           runningWorld,
-          request.kind === "show",
           worldSurface.groundYAt,
         );
         if (!training) throw new Error("Training composition is unavailable");
@@ -270,6 +271,7 @@ export async function startLevel(
         modules.push(...trainingModules);
         show.setTutorial({
           start,
+          setRoomPresence: training.setRoomPresence,
           parameters: tutorialPreset.start,
           recordings: tutorialPreset.startNarration,
           finish: finishTraining,

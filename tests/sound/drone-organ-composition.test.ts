@@ -219,6 +219,7 @@ test("audio owners recover gesture resume and await complete disposal", async ()
     let releaseOrgan, organEnded = false, narrationCount = 0, follows = 0;
     let narrationUnloads = 0, failNarrationCleanup = false;
     const narrationOptions = [], narrationFrames = [];
+    let narrationLag = 0;
     mock.module("./src/sound/drone-organ/drone-organ.ts", () => ({
       createDroneOrgan: () => ({
         update: () => { follows++; },
@@ -229,6 +230,7 @@ test("audio owners recover gesture resume and await complete disposal", async ()
       createNarrationPlayer: options => {
         narrationCount++; narrationOptions.push(options);
         return { setRecordings: recordings => { narrationOptions.push({ recordings }); },
+          readOffsetSeconds: () => (narrationFrames.at(-1)?.position?.offsetSeconds ?? 0) - narrationLag,
           follow: frame => { follows++; narrationFrames.push(frame); }, unload: () => {
           narrationUnloads++;
           if (failNarrationCleanup) throw new Error("media cleanup failed");
@@ -296,7 +298,7 @@ test("audio owners recover gesture resume and await complete disposal", async ()
       viewpoint: { worldPosition: { x: 0, y: 0, z: 0 } },
     };
     let playing = false, resetCount = 0, finishes = 0, mayReadTraining = true;
-    let observation, advanceAllowed, formationAllowed;
+    let observation, advanceAllowed, formationAllowed, roomPresence;
     const training = {
       reset() {
         resetCount++;
@@ -311,11 +313,13 @@ test("audio owners recover gesture resume and await complete disposal", async ()
       },
     };
     const recordings = language => ["right", "left", "up", "down", "complete"].map(cueId => ({
-      cueId, url: "/approved/" + language + "/" + cueId + ".wav", durationSeconds: 3, instructionAtSeconds: 1.5,
+      cueId, url: "/approved/" + language + "/" + cueId + ".wav", durationSeconds: 3, instructionAtSeconds: 1.5, environmentAtSeconds: 0.5,
     }));
     const tutorialDefinition = {
       start: training,
+      setRoomPresence: presence => { roomPresence = presence; },
       parameters: {
+        formationSeconds: 1,
         maximumPracticeSeconds: 60,
         directions: ["right", "left", "up", "down"],
       },
@@ -334,6 +338,7 @@ test("audio owners recover gesture resume and await complete disposal", async ()
       "main speech must already be prepared before the first tutorial frame");
     const tutorialCommands = trainingShow.running;
     assert.equal(resetCount, 1); assert.equal(playing, false);
+    assert.equal(roomPresence, 0, "room is hidden before the opening line");
     trainingShow.setPreparationState("loading");
     tutorialCommands.play(); tutorialCommands.togglePlayback();
     assert.equal(tutorialCommands.sample().isPlaying, false);
@@ -346,6 +351,7 @@ test("audio owners recover gesture resume and await complete disposal", async ()
     trainingShow.setPreparationState("ready");
     tutorialCommands.play(); trainingNative.currentTime = 1; trainingShow.update();
     assert.equal(playing, true);
+    assert.equal(roomPresence, 0.5, "room forms during its spoken line before the arrow");
     assert.equal(advanceAllowed, false, "a fast crossing cannot interrupt speech");
     assert.equal(formationAllowed, false, "presentation waits for the spoken instruction onset");
     assert.equal(narrationFrames.at(-1).position.cueId, "right");
@@ -360,6 +366,10 @@ test("audio owners recover gesture resume and await complete disposal", async ()
     assert.equal(tutorialCommands.sample().timeSeconds, 2);
     assert.equal(narrationFrames.at(-1).position.offsetSeconds, 2);
     assert.equal(formationAllowed, true, "presentation begins within the recording rather than after it");
+    narrationLag = 0.6; trainingShow.update();
+    assert.equal(formationAllowed, false, "visual instruction cannot precede delayed native speech");
+    assert.equal(tutorialCommands.sample().timeSeconds, 2, "native observation never changes Show time");
+    narrationLag = 0; trainingShow.update();
     tutorialCommands.setLanguage("de"); trainingShow.update();
     assert.equal(formationAllowed, false, "repeated instruction retains its onset gate");
     assert.equal(narrationFrames.at(-1).position.offsetSeconds, 0);

@@ -68,6 +68,7 @@ function createPractice(
   }
 
   function beginTurn(): void {
+    runtime.update(parameters.formationSeconds);
     const direction = start.readObservation().direction;
     const side =
       direction === "up" || direction === "down"
@@ -515,6 +516,10 @@ test("the spoken cue reveals only a world-fixed arrow; gaze and wrong-way travel
   expect(arrow.distanceTo(origin)).toBeGreaterThanOrEqual(12);
   expect(frame.ringPresence).toBe(0);
   expect(frame.previews).toHaveLength(0);
+  for (let index = 0; index < 2; index += 1)
+    moveTo(worldPosition.clone().add(new Vector3(0.1, 0, -0.2)), 0.1);
+  expect(frame.ringPresence).toBe(0);
+  expect(start.readObservation().phase).toBe("turning");
 
   worldDirection.set(0.5, 0, -1).normalize();
   runtime.update(0.3);
@@ -620,6 +625,7 @@ test("an upward lesson keeps its rings hidden until the gaze permits a reachable
   runtime.update(0);
   worldPosition.z -= 0.1;
   runtime.update(PARAMETERS.arrivalSeconds);
+  runtime.update(PARAMETERS.formationSeconds);
   for (let index = 0; index < 2; index += 1) {
     worldPosition.add(new Vector3(0, 0.05, -0.1));
     runtime.update(0.1);

@@ -12,7 +12,9 @@ The subsequent turn-triggered revision reveals the tunnel only after actual
 movement in the requested direction. Each passed preview reacts immediately;
 only the final target counts. Arrow misses recycle with spoken retries. Gathering
 and release use bounded analytical spring/drag particle physics.
-Show releases formation at authored spoken onsets (DE 19.16/0.9/1/0.65 s); Run
+The spoken-line review keeps the opening empty until the room phrase at 13.12 s.
+Show gates arrows at DE 19.30/1.14/2.66/1.04 s against actual native speech progress;
+rings wait for a readable arrow and the matching turn. Run
 uses 2 m/s tutorial translation through existing controls. The preplanned
 rig-heading course is removed.
 The latest user timing revision adds a visible Tutorial chapter to Rehearsal and

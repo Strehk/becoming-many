@@ -717,3 +717,67 @@ cancellations as nonzero exit despite all interaction assertions passing.
 This is feature growth, not a code-reduction claim: production +259 lines,
 tests −28 lines, with documentation/evidence updated separately. The simultaneous
 formation path was replaced rather than retained as a second mode.
+
+
+## Spoken-line staging — 2026-09-09
+
+The next user review requires the room to appear only when it is mentioned,
+and makes arrows primary with rings as subsequent assistance. All five shipped
+German clips were aligned locally word by word with the already available
+faster-whisper-small model, without upload or changing recording bytes.
+`script/de.md` and `script/en.md` contain the main piece, not these tutorial lines;
+they remain unchanged. The table gives English glosses of the complete tutorial
+recordings, not replacement narration. ASR word boundaries are estimates, not
+sample-accurate human listening approval.
+
+| Clip | Local seconds | Spoken line (gloss) | Presentation |
+| --- | --- | --- | --- |
+| right | 0.00–3.86 | Hello; before starting, check everything is here | Empty white space |
+| right | 4.48–5.32 | What do we need? | Remain empty |
+| right | 5.80–7.50 | We already have a beginning | No new objects |
+| right | 8.02–9.20 | We have you too | No new objects |
+| right | 9.70–11.98 | We need a narrator | No invented narrator figure |
+| right | 12.32–15.44 | And of course a room where everything can happen | At 13.12, “a room” begins the two-second particle-space reveal |
+| right | 16.30–18.46 | Let us see whether it works | Space present; no arrow/rings |
+| right | 19.30–20.10 | Lean to the right | Right arrow begins at 19.30 |
+| left | 0.00–0.52 | Yes, exactly | No new arrow during praise |
+| left | 1.14–2.18 | Now the other side | Left arrow begins at 1.14 |
+| up | 0.00–0.44 | Very good | No new arrow during praise |
+| up | 0.92–2.06 | What about up above? | Preparatory question; space remains |
+| up | 2.66–3.94 | Lean back a little | Up arrow begins at the explicit call, 2.66 |
+| down | 0.00–0.78 | Perfect | No new arrow during praise |
+| down | 1.04–1.82 | And now forward | Down arrow begins at 1.04 |
+| complete | 0.00–0.84 | Wonderful | Completion feedback; no new course |
+| complete | 1.32–3.24 | Left, right, up, down | Retrospective list; no direction triggers |
+| complete | 3.78–4.92 | The room works | Calm particle space remains |
+| complete | 5.48–6.96 | We can begin | Do not interrupt the recording |
+| complete | 8.14–10.08 | Wait, something is missing | Continue closing voice |
+| complete | 10.68–11.94 | The narrator! | No new character/content |
+| complete | 12.36–13.74 | Wait, I will fetch him | Existing handoff after clip end at 13.861479 |
+
+The old 19.16/0.9/1/0.65 arrow markers are replaced by
+19.30/1.14/2.66/1.04. Show follows narration first and gates visuals against the
+lesser of requested cue offset and observed native media offset, so tolerable
+native audio lag cannot make geometry anticipate the word. This observation
+never changes Show time, the practice budget or locomotion. Revealed room
+presence is retained across later cues/retries/language changes; reset hides it.
+
+Start now requires the arrow to complete its formation before actual directional
+travel may reveal the helping rings. The same original four final passages still
+count; preview rings never do. Composition gives standalone training the same
+owned Air module as integrated training, removing its former always-visible
+separate background path. Show supplies presence; Air owns its existing material
+opacity and visibility. Ordinary levels retain their default presence and no
+shader, particle budget, render loop or runtime owner was added. Benchmarks without
+narration explicitly retain the visible room.
+
+Standalone production browser: room opacity zero at native 10.018 s, first
+positive opacity at 13.125 s, first arrow at 19.312 s with rings still hidden.
+The arrow remains world-fixed and fully forms before a turn reveals the tunnel;
+Pause freezes presentation. The initial room screenshot is genuinely empty.
+Native cancellation on clip disposal is retained in raw reports as ERR_ABORTED;
+no interaction assertion failed. Local raw evidence:
+`benchmark-results/issue-50/spoken-staging-visual/probe.json`.
+
+![Before the room is mentioned](spoken-before-room.png)
+![Room established without an arrow](spoken-room.png)

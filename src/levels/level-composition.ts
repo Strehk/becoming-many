@@ -113,6 +113,7 @@ interface LevelCompositionOptions {
 
 export interface ComposedLevel {
   readonly start: StartModuleHandle | undefined;
+  readonly setTrainingRoomPresence?: (presence: number) => void;
   readonly trainingModules: readonly WorldModule[];
   readonly worldSurface: WorldSurface;
   readonly modules: readonly WorldModule[];
@@ -245,7 +246,6 @@ export async function composeLevel({
     const training = composeTraining(
       tutorial ?? level,
       world,
-      !!tutorial,
       worldSurface.groundYAt,
     );
     const start = training?.start;
@@ -255,6 +255,7 @@ export async function composeLevel({
     return {
       start,
       trainingModules,
+      setTrainingRoomPresence: training?.setRoomPresence,
       worldSurface,
       modules,
       hasGround: level.invisibleGround === true || hasVisibleSurface(level),
@@ -439,7 +440,7 @@ export async function composeLevel({
 
   function createAirParticles(): WorldModule | undefined {
     const parameters = level.airParticles;
-    if (!parameters) return undefined;
+    if (!parameters || level.start) return undefined;
 
     const surfaceYAt = hasVisibleSurface(level)
       ? worldSurface.surfaceYAt
@@ -714,9 +715,14 @@ export async function loadLevelAssets(
 export function composeTraining(
   preset: LevelPreset,
   world: LevelCompositionOptions["world"],
-  includeBackground: boolean,
   groundYAt: WorldSurface["groundYAt"],
-): { start: StartModuleHandle; modules: WorldModule[] } | undefined {
+):
+  | {
+      start: StartModuleHandle;
+      modules: WorldModule[];
+      setRoomPresence?: (presence: number) => void;
+    }
+  | undefined {
   if (!preset.start) return undefined;
   const start = createStartModule({
     viewpoint: world.viewpoint,
@@ -731,15 +737,16 @@ export function composeTraining(
       : undefined,
   });
   const modules: WorldModule[] = [];
-  if (includeBackground && preset.airParticles)
-    modules.push(
-      createAirParticlesModule({
+  const room = preset.airParticles
+    ? createAirParticlesModule({
         scene: world.scene,
         viewpoint: world.viewpoint,
         streamQueue: world.streamQueue,
         parameters: preset.airParticles,
-      }),
-    );
+      })
+    : undefined;
+  room?.setPresence(0);
+  if (room) modules.push(room);
   modules.push(start.module);
-  return { start, modules };
+  return { start, modules, setRoomPresence: room?.setPresence };
 }

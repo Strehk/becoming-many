@@ -24,6 +24,8 @@ export interface NarrationPlayer {
   readonly follow: (state: NarrationFollowState) => void;
   /** Actual media playback, including blocked, ended and unloaded clips. */
   readonly readIsPlaying: () => boolean;
+  /** Native playback observation for spoken-word gates; never advances Show time. */
+  readonly readOffsetSeconds: (cueId: string) => number | undefined;
   /** Replace the prepared clip set, retaining unchanged recordings without reloading. */
   readonly setRecordings: (recordings: readonly NarrationRecording[]) => void;
   readonly unload: () => void;
@@ -36,6 +38,8 @@ export interface NarrationRecording {
   readonly durationSeconds: number;
   /** Authored spoken instruction onset; Show owns its visual presentation. */
   readonly instructionAtSeconds?: number;
+  /** Opening room reveal; Show retains the revealed space across later cues. */
+  readonly environmentAtSeconds?: number;
 }
 
 interface PreparedNarration {
@@ -140,6 +144,11 @@ export function createNarrationPlayer(options: {
   }
 
   return {
+    readOffsetSeconds(cueId) {
+      return !isUnloaded && activeCueId === cueId
+        ? clips.get(cueId)?.element.currentTime
+        : undefined;
+    },
     readIsPlaying(): boolean {
       const element = activeCueId ? clips.get(activeCueId)?.element : undefined;
       return Boolean(

@@ -286,6 +286,12 @@ describe("Air Particles streaming", () => {
 
     const positionArray = positionAttribute.array;
     expect(points.visible).toBe(true);
+    module.setPresence(0);
+    expect(points.visible).toBe(false);
+    module.setPresence(0.5);
+    expect(points.visible).toBe(true);
+    expect(points.material.opacity).toBe(0.5);
+    module.setPresence(1);
     expect(positionAttribute.count).toBe(250);
     expect(positionArray.some((value: number) => value !== 0)).toBe(true);
     expect(positionAttribute.updateRanges).toHaveLength(0);

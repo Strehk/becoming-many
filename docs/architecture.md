@@ -285,7 +285,11 @@ preview emits its own local visual pulse without counting a lesson. The effect
 uses analytical mass-spring gathering and drag-decaying crossing impulses in the
 existing vertex shader, with fixed buffers and no additional simulation loop.
 This replaces simultaneous arrow/tunnel formation. Show
-opens formation separately from allowing post-crossing progression. Run supplies
+opens formation separately from allowing post-crossing progression. Its room
+presence command fades the same training Air owner on standalone and integrated
+routes, starting at the recorded room phrase. Native narration offset is an
+observation for spoken-word gates only; Show remains the time authority. Start
+waits for the arrow to form before opening the helping tunnel. Run supplies
 2 m/s tutorial translation through the existing controls and restores ordinary
 main speeds on handoff; directional sensitivity is unchanged. The EN voice policy remains open. Run owns the shared Tone spatial context when audio is configured;
 Show retains its existing native timebase and narration owner.
