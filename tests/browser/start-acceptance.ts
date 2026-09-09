@@ -140,15 +140,15 @@ export async function checkStartLevel(
       return canvas instanceof HTMLCanvasElement && canvas.width > 0;
     });
     const deadline = Date.now() + FORMATION_MILLISECONDS;
-    let darkPixels = 0;
+    let visiblePixels = 0;
     do {
       const screenshot = await canvas.screenshot();
       const pixels = await inspectVisibleParticles(
         page,
         screenshot.toString("base64"),
       );
-      darkPixels = pixels.darkPixels;
-      if (darkPixels > 100) {
+      visiblePixels = pixels.visiblePixels;
+      if (visiblePixels > 100) {
         if (name.startsWith("formed-goal")) {
           assert(
             pixels.trainingPixels > 100,
@@ -170,7 +170,7 @@ export async function checkStartLevel(
       await page.waitForTimeout(100);
     } while (Date.now() < deadline);
     assert.fail(
-      `Start ${name}: expected visible particles, found ${darkPixels}`,
+      `Start ${name}: expected visible particles, found ${visiblePixels}`,
     );
   }
 }
@@ -180,7 +180,7 @@ async function inspectVisibleParticles(
   page: Page,
   png: string,
 ): Promise<{
-  darkPixels: number;
+  visiblePixels: number;
   trainingPixels: number;
   trainingTouchesEdge: boolean;
 }> {
@@ -195,24 +195,43 @@ async function inspectVisibleParticles(
     if (!context) throw new Error("Screenshot inspection needs a 2D context");
     context.drawImage(image, 0, 0);
     const pixels = context.getImageData(0, 0, image.width, image.height).data;
-    let darkPixels = 0;
+    let visiblePixels = 0;
     let trainingPixels = 0;
     let trainingTouchesEdge = false;
+    // Dense neutral cloud bodies occupy neighboring pixels; sparse Air grains do not.
+    const tileSize = 16;
+    const columns = Math.ceil(image.width / tileSize);
+    const rows = Math.ceil(image.height / tileSize);
+    const density = new Uint16Array(columns * rows);
     for (let index = 0; index < pixels.length; index += 4) {
       const red = pixels[index] ?? 255;
       const green = pixels[index + 1] ?? 255;
       const blue = pixels[index + 2] ?? 255;
-      if (Math.max(red, green, blue) < 200) darkPixels += 1;
-      // The authored blue training particles differ from neutral background Air.
-      if (blue - red > 12 && blue < 200) {
-        trainingPixels++;
-        const x = (index / 4) % image.width;
-        const y = Math.floor(index / 4 / image.width);
-        if (x < 2 || y < 2 || x >= image.width - 2 || y >= image.height - 2)
-          trainingTouchesEdge = true;
-      }
+      const maximum = Math.max(red, green, blue);
+      const minimum = Math.min(red, green, blue);
+      if (maximum >= 245 || minimum < 120 || maximum - minimum > 20) continue;
+      visiblePixels += 1;
+      const x = (index / 4) % image.width;
+      const y = Math.floor(index / 4 / image.width);
+      const tile =
+        Math.floor(y / tileSize) * columns + Math.floor(x / tileSize);
+      density[tile] = (density[tile] ?? 0) + 1;
     }
-    return { darkPixels, trainingPixels, trainingTouchesEdge };
+    for (let tile = 0; tile < density.length; tile += 1) {
+      const count = density[tile] ?? 0;
+      if (count < 48) continue;
+      trainingPixels += count;
+      const column = tile % columns;
+      const row = Math.floor(tile / columns);
+      if (
+        column === 0 ||
+        row === 0 ||
+        column === columns - 1 ||
+        row === rows - 1
+      )
+        trainingTouchesEdge = true;
+    }
+    return { visiblePixels, trainingPixels, trainingTouchesEdge };
   }, png);
 }
 

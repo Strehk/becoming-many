@@ -14,7 +14,7 @@ type DistanceRange = readonly [minimum: number, maximum: number];
 
 export interface StartParameters {
   readonly directions: readonly [StartDirection, ...StartDirection[]];
-  /** Sampled once per goal, relative to the previous goal in the arrival heading. */
+  /** Sampled once per visit, relative to preceding goals in the arrival heading. */
   readonly course: {
     readonly firstDistanceMeters: DistanceRange;
     readonly spacingMeters: DistanceRange;
@@ -106,7 +106,17 @@ export function createStartModule(
   const courseOffset = new Vector3();
   const initialHeading = new Quaternion();
   const previousPosition = new Vector3();
-  const previousGoalPosition = new Vector3();
+  const goals = parameters.directions.map(() => ({
+    position: new Vector3(),
+    radiusMeters: 0,
+  }));
+  const previews = Array.from({ length: 3 }, () => ({
+    goalPosition: new Vector3(),
+    goalNormal: new Vector3(),
+    ringRadiusMeters: 0,
+  }));
+  const curveOffset = new Vector3();
+  const forward = new Vector3();
   const targetPosition = new Vector3();
   const goalPosition = new Vector3();
   const goalNormal = new Vector3();
@@ -136,7 +146,8 @@ export function createStartModule(
     ringRadiusMeters: parameters.course.radiusMeters[0],
     arrowAngleRadians: 0,
     formationProgress: 0,
-    completionProgress: 0,
+    previews: [] as typeof previews,
+    previewElapsedSeconds: 0,
     wake: undefined as StartObservation["wake"],
   };
   let loaded = false;
@@ -144,6 +155,7 @@ export function createStartModule(
   let playing = true;
   let initialized = false;
   let phaseSeconds = 0;
+  let previewStartedSeconds = 0;
   let goalAdvanceAllowed = true;
 
   return {
@@ -188,6 +200,7 @@ export function createStartModule(
     goalAdvanceAllowed = true;
     phaseSeconds = 0;
     particleFrame.elapsedSeconds = 0;
+    previewStartedSeconds = 0;
     observation.phase = "arrival";
     observation.goalIndex = 0;
     observation.direction = parameters.directions[0];
@@ -197,27 +210,36 @@ export function createStartModule(
     observation.objects = undefined;
   }
 
+  function generateCourse(): void {
+    const course = parameters.course;
+    for (const [index, direction] of parameters.directions.entries()) {
+      const goal = goals[index];
+      if (!goal) continue;
+      courseOffset.z -= sample(
+        index === 0 ? course.firstDistanceMeters : course.spacingMeters,
+      );
+      if (direction === "right" || direction === "left")
+        courseOffset.x +=
+          sample(course.horizontalOffsetMeters) *
+          (direction === "right" ? 1 : -1);
+      else
+        courseOffset.y +=
+          sample(course.verticalOffsetMeters) * (direction === "up" ? 1 : -1);
+      goal.position
+        .copy(courseOffset)
+        .applyQuaternion(initialHeading)
+        .add(origin);
+      goal.radiusMeters = sample(course.radiusMeters);
+    }
+  }
+
   function placeGoal(): void {
     const direction = parameters.directions[observation.goalIndex];
-    if (!direction)
+    const goal = goals[observation.goalIndex];
+    if (!direction || !goal)
       throw new Error("Start goal index is outside its lesson sequence");
-    const course = parameters.course;
-    courseOffset.z -= sample(
-      observation.goalIndex === 0
-        ? course.firstDistanceMeters
-        : course.spacingMeters,
-    );
-    if (direction === "right" || direction === "left")
-      courseOffset.x +=
-        sample(course.horizontalOffsetMeters) *
-        (direction === "right" ? 1 : -1);
-    else
-      courseOffset.y +=
-        sample(course.verticalOffsetMeters) * (direction === "up" ? 1 : -1);
-    targetPosition
-      .copy(courseOffset)
-      .applyQuaternion(initialHeading)
-      .add(origin);
+    targetPosition.copy(goal.position);
+    goalPosition.copy(targetPosition);
     observation.direction = direction;
     particleFrame.arrowAngleRadians =
       direction === "right"
@@ -227,7 +249,37 @@ export function createStartModule(
           : direction === "up"
             ? Math.PI / 2
             : -Math.PI / 2;
-    particleFrame.ringRadiusMeters = sample(course.radiusMeters);
+    particleFrame.ringRadiusMeters = goal.radiusMeters;
+
+    // These cross-sections only explain the curve; only the current disk counts.
+    const sectionIndex = Math.max(0, observation.goalIndex - 1);
+    const sectionStart = goals[sectionIndex];
+    const next = goals[sectionIndex + 1];
+    particleFrame.previews = next ? previews : [];
+    if (!sectionStart || !next) return;
+    // Retain the first tunnel until its destination is crossed, then recycle it.
+    if (observation.goalIndex !== 1)
+      previewStartedSeconds = particleFrame.elapsedSeconds;
+    curveOffset.copy(next.position).sub(sectionStart.position);
+    forward.copy(goalNormal).multiplyScalar(-curveOffset.length());
+    for (const [index, preview] of previews.entries()) {
+      const t = (index + 1) / (previews.length + 1);
+      const smooth = t * t * (3 - 2 * t);
+      // Cubic Hermite section: heading-continuous at both counted goal planes.
+      preview.goalPosition
+        .copy(sectionStart.position)
+        .addScaledVector(curveOffset, smooth)
+        .addScaledVector(forward, t * (1 - t) * (1 - 2 * t));
+      preview.goalNormal
+        .copy(curveOffset)
+        .multiplyScalar(6 * t * (1 - t))
+        .addScaledVector(forward, 1 - 6 * t + 6 * t * t)
+        .normalize()
+        .negate();
+      preview.ringRadiusMeters =
+        sectionStart.radiusMeters +
+        (next.radiusMeters - sectionStart.radiusMeters) * smooth;
+    }
   }
 
   function sample([minimum, maximum]: DistanceRange): number {
@@ -241,8 +293,8 @@ export function createStartModule(
       initialHeading.copy(viewerRig.quaternion);
       previousPosition.copy(viewpoint.worldPosition);
       goalNormal.set(0, 0, 1).applyQuaternion(initialHeading);
+      generateCourse();
       placeGoal();
-      previousGoalPosition.copy(targetPosition);
       initialized = true;
     }
     const elapsed =
@@ -253,11 +305,6 @@ export function createStartModule(
 
     if (observation.phase === "arrival") {
       const progress = Math.min(1, phaseSeconds / parameters.arrivalSeconds);
-      goalPosition.lerpVectors(
-        previousGoalPosition,
-        targetPosition,
-        progress * progress * (3 - 2 * progress),
-      );
       if (playing && progress === 1) {
         observation.phase = "forming";
         phaseSeconds = 0;
@@ -308,10 +355,10 @@ export function createStartModule(
       observation.formationProgress =
         1 - Math.min(1, phaseSeconds / parameters.dissolutionSeconds);
       if (observation.formationProgress === 0 && goalAdvanceAllowed) {
-        if (observation.goalIndex + 1 === parameters.directions.length)
+        if (observation.goalIndex + 1 === parameters.directions.length) {
           observation.phase = "complete";
-        else {
-          previousGoalPosition.copy(targetPosition);
+          particleFrame.previews = [];
+        } else {
           observation.goalIndex += 1;
           placeGoal();
           observation.phase = "arrival";
@@ -322,8 +369,9 @@ export function createStartModule(
     }
     previousPosition.copy(viewpoint.worldPosition);
     if (!particles) return;
+    particleFrame.previewElapsedSeconds =
+      particleFrame.elapsedSeconds - previewStartedSeconds;
     particleFrame.formationProgress = observation.formationProgress;
-    particleFrame.completionProgress = observation.phase === "crossed" ? 1 : 0;
     particleFrame.wake = observation.wake;
     particles?.update(particleFrame);
     observation.objects = particles.readObjectAnchors();

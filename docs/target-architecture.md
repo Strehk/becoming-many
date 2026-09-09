@@ -341,7 +341,7 @@ existing world chunk mechanism, large volumetric particle arrows and curved
 particle tunnels with overlapping local formation/dissolution. World positions
 stay anchored; only residency is viewer-centered. This changes spatial content,
 not locomotion or lifecycle ownership. The researched implementation sequence
-and the unresolved tunnel-entry/exit success rule are in the
+and the distinction between decorative previews and the four counted disks are in the
 [roadmap](roadmap.md#procedural-flight-world--2026-09-09).
 
 Preserve the current dependency order:

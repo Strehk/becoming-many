@@ -1,6 +1,6 @@
 # Current Development Status
 
-As-built snapshot: 2026-09-08, required flight tutorial implementation on
+As-built snapshot: 2026-09-09, required flight tutorial implementation on
 `david_refactor`; local software verification is complete, with content and
 physical acceptance still open. The earlier UI/Entry
 and M5 consolidation passed its local checks and browser acceptance; see
@@ -59,6 +59,11 @@ lifecycle/phase branches and scoped existing styling are retained without
 suppressions or baseline changes. This feature adds behavior and code; it is not a
 code-reduction result. Local rendering/audio measurements and their limits are
 recorded in [Performance](performance.md#flight-tutorial--2026-09-08).
+
+The latest cloud presentation is implemented and locally tested, but its measured
+GPU p95 increase from 0.251 to 0.308 ms was explicitly accepted by the user
+on 2026-09-09 together with the higher particle density. Physical PCVR acceptance remains open.
+See the [current screenshots and limits](evidence/issue-50/README.md#cloud-revision--2026-09-09).
 
 ## Product State
 
@@ -151,9 +156,11 @@ The #80 animal-connection removal is implemented below. Small additions remain i
 - Start: four world-space ring goals (right, left, up, down), without a deadline.
   Consecutive shared world poses detect actual passage, including movement
   between frames. Missed goals remain active with directional guidance. One
-  optional 1,400-point draw drifts, gathers into ring/arrow contours and disperses
-  with a local trajectory wake; independent Air Particles uses 80 particles per
-  chunk. Horizontal targets share the arrival height, later targets are 60 m
+  optional 32,000-point draw forms thick ring bodies, a filled 7.2 m arrow and
+  three decorative curve guides. Fine points and bounded soft haze replace the
+  former contours; the current ring has local silver, expansion and trajectory
+  wake. Independent Air uses 48 points per 16 m cell with a fading 16 m near field;
+  main-level defaults are preserved. Horizontal targets share the arrival height, later targets are 60 m
   apart. Following the user's world-space correction, cloud, ring and arrow
   share a fixed goal anchor. The arrow stays beside its ring; player translation
   and rotation never reposition or reorient these particles. Autonomous drift,

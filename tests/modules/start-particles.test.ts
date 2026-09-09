@@ -1,5 +1,6 @@
 import { expect, spyOn, test } from "bun:test";
 import {
+  BufferAttribute,
   Matrix4,
   Points,
   PointsMaterial,
@@ -36,7 +37,6 @@ function createFrame(): StartParticleFrame {
     ringRadiusMeters: 1.5,
     arrowAngleRadians: 0,
     formationProgress: 0,
-    completionProgress: 0,
   };
 }
 
@@ -76,9 +76,12 @@ test("one fixed cloud forms both targets without reallocating or uploading frame
       (position, index) => position !== targets[index],
     ),
   ).toBe(true);
-  const arrowParticles =
-    points.geometry.getAttribute("startArrowParticle").array;
-  expect(Array.from(arrowParticles).filter(Boolean)).toHaveLength(350);
+  const arrowParticles = points.geometry.getAttribute("startRole").array;
+  const arrowCount = Array.from(arrowParticles).filter(
+    (role) => role === 1,
+  ).length;
+  expect(arrowCount).toBeGreaterThan(PARAMETERS.count * 0.2);
+  expect(arrowCount).toBeLessThan(PARAMETERS.count * 0.35);
   const shader = compileMaterial(points.material);
   expect(shader.vertexShader).toContain(
     "vec3 transformed = animateStartParticle(position);",
@@ -201,7 +204,7 @@ test("failed scene attachment removes partial resources and permits a fresh load
 });
 
 test("invalid particle capacities and physical extents fail before resource creation", () => {
-  for (const count of [0, 31, 1.5, 16_385, Infinity, Number.NaN]) {
+  for (const count of [0, 31, 1.5, 65_537, Infinity, Number.NaN]) {
     expect(() =>
       createStartParticleEffect({
         scene: new Scene(),
@@ -227,9 +230,9 @@ test("object anchors share the formed geometry pose and disappear with their own
   const frame = { ...createFrame(), formationProgress: 1 };
   effect.update(frame);
   const objects = effect.readObjectAnchors();
-  expect(objects?.ringLeft).toEqual(new Vector3(0.5, 3, -8));
-  expect(objects?.ringRight).toEqual(new Vector3(3.5, 3, -8));
-  expect(objects?.arrow.x).toBeCloseTo(-0.45);
+  expect(objects?.ringLeft.x).toBeCloseTo(0.14);
+  expect(objects?.ringRight).toEqual(new Vector3(3.86, 3, -8));
+  expect(objects?.arrow.x).toBeCloseTo(-5.12);
   expect(objects?.arrow.y).toBe(3);
 
   // A differently oriented goal transforms all bodies with the same world pose.
@@ -240,10 +243,10 @@ test("object anchors share the formed geometry pose and disappear with their own
   });
   expect(effect.readObjectAnchors()).toBe(objects);
   expect(objects?.ringLeft.x).toBeCloseTo(2);
-  expect(objects?.ringLeft.z).toBeCloseTo(-6.5);
-  expect(objects?.ringRight.z).toBeCloseTo(-9.5);
+  expect(objects?.ringLeft.z).toBeCloseTo(-6.14);
+  expect(objects?.ringRight.z).toBeCloseTo(-9.86);
   expect(objects?.arrow.x).toBeCloseTo(2);
-  expect(objects?.arrow.y).toBeCloseTo(0.55);
+  expect(objects?.arrow.y).toBeCloseTo(-4.12);
   expect(objects?.arrow.z).toBeCloseTo(-8);
   effect.setVisible(false);
   expect(effect.readObjectAnchors()).toBeUndefined();
@@ -266,7 +269,7 @@ test("body anchors gather with formation and follow finite crossing wake", () =>
   expect(effect.readObjectAnchors()?.arrow).toEqual(frame.goalPosition);
   expect(effect.readObjectAnchors()?.ringLeft).toEqual(frame.goalPosition);
   effect.update({ ...frame, formationProgress: 0.5 });
-  expect(effect.readObjectAnchors()?.ringLeft.x).toBeCloseTo(1.25);
+  expect(effect.readObjectAnchors()?.ringLeft.x).toBeCloseTo(1.07);
   const wake = {
     position: frame.goalPosition,
     direction: new Vector3(0, 0, -1),
@@ -279,6 +282,132 @@ test("body anchors gather with formation and follow finite crossing wake", () =>
     ...frame,
     wake: { ...wake, ageSeconds: PARAMETERS.wakeDurationSeconds },
   });
+  expect(effect.readObjectAnchors()?.ringLeft.z).toBe(-8);
+  effect.unload();
+});
+
+test("filled clouds retain depth, a dense core and bounded haze within fixed capacity", () => {
+  const scene = new Scene();
+  const effect = createStartParticleEffect({
+    scene,
+    parameters: { ...PARAMETERS, count: 32_000 },
+  });
+  effect.load();
+  const geometry = readPoints(scene).geometry;
+  const targets = geometry.getAttribute("startTarget");
+  const roles = geometry.getAttribute("startRole");
+  const depth = geometry.getAttribute("startDepth");
+  const haze = geometry.getAttribute("startHaze");
+  let arrowInterior = 0;
+  let thickRing = 0;
+  let ringCore = 0;
+  let hazeCount = 0;
+  let bytes = 0;
+  for (const attribute of Object.values(geometry.attributes)) {
+    if (!(attribute instanceof BufferAttribute))
+      throw new Error("Expected a fixed particle attribute");
+    bytes += attribute.array.byteLength;
+  }
+  for (let index = 0; index < targets.count; index += 1) {
+    if (
+      roles.getX(index) === 1 &&
+      Math.abs(targets.getZ(index)) > 0.03 &&
+      Math.abs(targets.getY(index)) < 0.08
+    )
+      arrowInterior += 1;
+    if (roles.getX(index) === 0) {
+      const crossRadius = Math.hypot(targets.getZ(index), depth.getX(index));
+      if (Math.abs(depth.getX(index)) > 0.25) thickRing += 1;
+      if (crossRadius < 0.5) ringCore += 1;
+      expect(crossRadius).toBeLessThanOrEqual(1.000001);
+    }
+    hazeCount += haze.getX(index);
+  }
+  expect(arrowInterior).toBeGreaterThan(2000);
+  expect(thickRing).toBeGreaterThan(2000);
+  expect(ringCore).toBeGreaterThan(6000);
+  expect(hazeCount).toBeGreaterThan(3000);
+  expect(hazeCount).toBeLessThan(4500);
+  expect(bytes).toBe(32_000 * 44);
+  effect.unload();
+});
+
+test("three preview poses are copied, culled conservatively and never upload particle arrays", () => {
+  const scene = new Scene();
+  const effect = createStartParticleEffect({ scene, parameters: PARAMETERS });
+  effect.load();
+  effect.setVisible(true);
+  const points = readPoints(scene);
+  const shader = compileMaterial(points.material);
+  const positions = [
+    new Vector3(0, 0, -30),
+    new Vector3(15, 8, -50),
+    new Vector3(30, 12, -65),
+    new Vector3(999, 999, 999),
+  ];
+  const previews = positions.map((goalPosition) => ({
+    goalPosition,
+    goalNormal: new Vector3(0, 0, 1),
+    ringRadiusMeters: 4,
+  }));
+  const attributes = Object.values(points.geometry.attributes).map(
+    (attribute) => {
+      if (!(attribute instanceof BufferAttribute))
+        throw new Error("Expected a fixed particle attribute");
+      return attribute;
+    },
+  );
+  const arrays = attributes.map((attribute) => attribute.array);
+  for (let index = 0; index < 200; index += 1)
+    effect.update({ ...createFrame(), previews, elapsedSeconds: index / 90 });
+  expect(shader.uniforms.startPreviewCount?.value).toBe(3);
+  const poses = shader.uniforms.startPreviewPoses?.value as Matrix4[];
+  expect(poses).toHaveLength(3);
+  expect(poses[1]).toEqual(new Matrix4().makeTranslation(15, 8, -50));
+  expect(points.frustumCulled).toBe(true);
+  for (const position of positions.slice(0, 3))
+    expect(points.geometry.boundingSphere?.containsPoint(position)).toBe(true);
+  expect(
+    points.geometry.boundingSphere?.containsPoint(positions[3] as Vector3),
+  ).toBe(false);
+  positions[1]?.set(500, 500, 500);
+  expect(poses[1]).toEqual(new Matrix4().makeTranslation(15, 8, -50));
+  for (let index = 0; index < attributes.length; index += 1) {
+    expect(attributes[index]?.array).toBe(arrays[index]);
+    expect(attributes[index]?.version).toBe(0);
+  }
+  effect.update(createFrame());
+  expect(shader.uniforms.startPreviewCount?.value).toBe(0);
+  expect(shader.uniforms.startPreviewPoses?.value).toBe(poses);
+  effect.unload();
+});
+
+test("local expansion and arrow motion update sound anchors then settle completely", () => {
+  const scene = new Scene();
+  const effect = createStartParticleEffect({ scene, parameters: PARAMETERS });
+  effect.load();
+  effect.setVisible(true);
+  const shader = compileMaterial(readPoints(scene).material);
+  const frame = { ...createFrame(), formationProgress: 1, elapsedSeconds: 1 };
+  const wake = {
+    position: frame.goalPosition,
+    direction: new Vector3(0, 0, -1),
+    ageSeconds: 0.45,
+    strength: 1,
+  };
+  effect.update({ ...frame, wake });
+  expect(shader.uniforms.startCrossingPulse?.value).toBeCloseTo(1);
+  expect(effect.readObjectAnchors()?.ringLeft.x).toBeCloseTo(
+    2 - 1.5 * 1.24 * 1.065,
+  );
+  expect(effect.readObjectAnchors()?.arrow.z).toBeCloseTo(
+    -8 + Math.sin(0.65) * 0.12,
+  );
+  effect.update({ ...frame, wake: { ...wake, ageSeconds: 10 } });
+  expect(shader.uniforms.startCrossingPulse?.value as number).toBeLessThan(
+    0.000001,
+  );
+  expect(effect.readObjectAnchors()?.ringLeft.x).toBeCloseTo(0.14);
   expect(effect.readObjectAnchors()?.ringLeft.z).toBe(-8);
   effect.unload();
 });

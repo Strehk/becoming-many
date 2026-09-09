@@ -82,6 +82,7 @@ export function createAirParticleCloud({
   const material = createAirParticleMaterial({
     appearance: parameters.appearance,
     motion: parameters.motion,
+    streaming: parameters.streaming,
   });
   const points = new Points(geometry, material.pointsMaterial);
 

@@ -108,11 +108,14 @@ world poses detect passage through each ring with the existing desktop or M5/XR
 locomotion. A missed ring and its world-anchored arrow remain active. Device-specific neutral/held gestures and the opaque guide are removed.
 
 Start's learning module owns goal progression and one crossing observation.
-Its optional particle effect owns 1,400 fixed particles in one draw: a drifting
-cloud gathers into a ring and compact arrow sharing one world-fixed goal pose, then
-disperses with a bounded trajectory wake. Background Air Particles stays independent
-at 80 particles per chunk. Composition can omit the effect without changing
-learning or creating presentation resources.
+Its optional particle effect owns 32,000 fixed particles in one draw: a thick
+ring, filled 7.2 m arrow and three intermediate guides along a generated curve.
+The guides only describe space; passing them never advances learning. A section
+stays until its destination is passed. Small grains and soft haze gather locally;
+only the counted ring expands, flashes silver briefly and disperses with a bounded
+trajectory wake. Independent Air uses 48 particles per 16 m chunk and fades its
+16 m local field before recycling. Main-level defaults are unchanged. Composition
+can omit presentation without changing learning or creating visual resources.
 
 Show owns Play/Pause, language, current instruction and the completion command.
 The same clock supports an interactive tutorial of unbounded duration, then

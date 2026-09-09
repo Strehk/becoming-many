@@ -7,6 +7,7 @@
 
 import { PointsMaterial } from "three";
 import circleShader from "./air-particle-circle.frag.glsl?raw";
+import distanceShader from "./air-particle-distance.frag.glsl?raw";
 import motionShader from "./air-particle-motion.vert.glsl?raw";
 import {
   AIR_PARTICLES_SETTINGS,
@@ -17,12 +18,14 @@ import {
 const THREE_COMMON_SHADER = "#include <common>";
 const THREE_POSITION_SHADER = "#include <begin_vertex>";
 const THREE_PROJECT_SHADER = "#include <project_vertex>";
+const THREE_LOG_DEPTH_VERTEX_SHADER = "#include <logdepthbuf_vertex>";
 const THREE_CLIPPING_FRAGMENT_SHADER = "#include <clipping_planes_fragment>";
-const MATERIAL_CACHE_KEY = "air-particle-material-v1";
+const MATERIAL_CACHE_KEY = "air-particle-material-v2";
 
 interface AirParticleMaterialOptions {
   readonly appearance: AirParticlesParameters["appearance"];
   readonly motion: AirParticlesParameters["motion"];
+  readonly streaming?: AirParticlesParameters["streaming"];
 }
 
 export interface AirParticleMaterial {
@@ -30,10 +33,11 @@ export interface AirParticleMaterial {
   readonly update: (deltaSeconds: number) => void;
 }
 
-/** Create one opaque material whose shader variant matches the requested shape. */
+/** Keep the default opaque; a local field fades before its resident slots recycle. */
 export function createAirParticleMaterial({
   appearance,
   motion,
+  streaming,
 }: AirParticleMaterialOptions): AirParticleMaterial {
   const shape = appearance.shape ?? AIR_PARTICLES_SETTINGS.defaultShape;
   const timeUniform = { value: 0 };
@@ -45,19 +49,47 @@ export function createAirParticleMaterial({
     color: appearance.color,
     size: appearance.sizeMeters,
     sizeAttenuation: true,
+    transparent: streaming !== undefined,
+    depthWrite: streaming === undefined,
   });
+  if (streaming) pointsMaterial.defines = { AIR_PARTICLE_DISTANCE_FADE: 1 };
 
   pointsMaterial.onBeforeCompile = (shader) => {
     shader.uniforms.airParticleTime = timeUniform;
     shader.uniforms.airParticleHorizontalAmplitude = horizontalAmplitudeUniform;
     shader.uniforms.airParticleVerticalAmplitude = verticalAmplitudeUniform;
+    if (streaming) {
+      shader.uniforms.airParticleFadeStart = {
+        value: streaming.fadeStartMeters,
+      };
+      shader.uniforms.airParticleFadeEnd = {
+        value: streaming.viewDistanceMeters,
+      };
+    }
     shader.vertexShader = patchMotionShader(shader.vertexShader);
     shader.fragmentShader = patchShapeShader(shader.fragmentShader, shape);
+    if (streaming) {
+      // Apply the limit after Three.js has converted world size to pixel size.
+      shader.vertexShader = shader.vertexShader.replace(
+        THREE_LOG_DEPTH_VERTEX_SHADER,
+        `gl_PointSize = min(gl_PointSize, AIR_PARTICLE_MAXIMUM_SIZE_PIXELS);\n${THREE_LOG_DEPTH_VERTEX_SHADER}`,
+      );
+      shader.fragmentShader = shader.fragmentShader
+        .replace(
+          THREE_COMMON_SHADER,
+          `${THREE_COMMON_SHADER}\n${distanceShader}`,
+        )
+        .replace(
+          THREE_CLIPPING_FRAGMENT_SHADER,
+          `${THREE_CLIPPING_FRAGMENT_SHADER}\ndiffuseColor.a *= airParticleDistanceOpacity;`,
+        );
+    }
   };
 
   // Shape participates in the key so Three.js never reuses the square program
   // for a circle or compiles circle fragment work for the default square path.
-  pointsMaterial.customProgramCacheKey = () => `${MATERIAL_CACHE_KEY}:${shape}`;
+  pointsMaterial.customProgramCacheKey = () =>
+    `${MATERIAL_CACHE_KEY}:${shape}:${streaming !== undefined}`;
 
   return {
     pointsMaterial,
@@ -78,7 +110,7 @@ function patchMotionShader(vertexShader: string): string {
     )
     .replace(
       THREE_PROJECT_SHADER,
-      `${THREE_PROJECT_SHADER}\ngl_Position = getAirParticleClipPosition(gl_Position);`,
+      `${THREE_PROJECT_SHADER}\ngl_Position = getAirParticleClipPosition(gl_Position, mvPosition.xyz);`,
     );
 }
 

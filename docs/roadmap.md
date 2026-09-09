@@ -6,14 +6,14 @@ own names, contracts and styling. The [workflow](refactor-workflow.md) and
 [test plan](refactor-test-plan.md) own implementation and verification cadence.
 Live issues own acceptance. Do not create a second implementation plan.
 
-## Resume Checkpoint — 2026-09-08
+## Resume Checkpoint — 2026-09-09
 
 | Field | Current state |
 | --- | --- |
 | Branch | `david_refactor` only. Commit/push completed, tested blocks to `origin/david_refactor` and verify success; no main, force-push or additional branches. |
 | Current request | Complete #50 and its actual #109–#113 prerequisites: spatial tutorial, existing Show/Run integration, bounded particle/sound presentation, combined verification and targeted commit/push. Preserve explicit audio-content and physical acceptance. |
 | Source checkpoint | `1adc872` preserves the clean source before the spatial tutorial. Earlier UI/M5 and audio-wake evidence retains its own source identities. |
-| Next implementation | The 2026-09-09 spatial review supersedes isolated ring presentation: reuse the main-world volume chunks for a dense near field, large volumetric particle arrows and continuous curved particle tunnels. The researched design and remaining passage-policy decision are recorded below. Existing Show/Run integration and granular audio remain the starting point; narration-use/EN and physical acceptance stay open. |
+| Next implementation | The 2026-09-09 spatial review supersedes isolated ring presentation: reuse the main-world volume chunks for a dense near field, large volumetric particle arrows and continuous curved particle tunnels. The implemented visual revision and remaining acceptance are recorded below. The user accepted the higher particle density and its measured local GPU cost on 2026-09-09. Existing Show/Run integration and granular audio remain the starting point; narration-use/EN and physical acceptance stay open. |
 | Confirmed direction | Conductor is UI only; Entry connects UI to the existing browser Engine. Show owns transport/language, Run owns lifetime, World owns rendering, M5 owns validity. Backend remains Station delivery/config/health. Affected role filenames and `src/ui/app.css` are implemented. |
 | Existing software | Direct startup, complete child/source cleanup, entry diagnostics, explicit literal levels, legacy Grass retirement, shared zone influences, approved bank clearance and shared Rocks/Vegetation lifecycle are implemented. Their distinct remaining issue acceptance is preserved. |
 | Current visitor behavior | Initial Play, four procedurally placed spatial goals without a deadline, then operator handoff. Interim Stop resets rig/time and holds; after handoff it recreates only retired training content. Complete replacement and fresh calibration remain #9/#46 decisions. |
@@ -114,54 +114,39 @@ The yellow dotted line is interpreted as a route annotation in the drawing;
 a visible path line, automatic steering and an exact loop are not inferred.
 The original PNG is archived unchanged from `Bildschirmfoto 2026-09-08 um 23.17.55.png`.
 
-Research at `c18967a` identified two concrete causes of the static presentation:
-Air contains 80 points per 64 m cube (about 1.3 within a 10 m sphere), while Start
-reduces formed drift from 18 cm to 4.5 mm and draws a 90 cm, nearly planar arrow.
-Its entire cloud travels between isolated goal poses rather than forming a route.
+The cloud revision replaces that isolated presentation inside the existing owners:
 
-The implementation should replace that presentation at its existing owners:
+1. Air reuses `VolumeChunkWindow`, deterministic absolute coordinates, fixed GPU
+   slot ranges, stale-job rejection and World's `StreamQueue`. Start alone uses
+   16 m cells, 48 points per cell and a 16 m radial field, fading over 12–16 m and
+   near the eye. Main-level defaults remain unchanged. Only residence follows
+   the flyer; existing particles never inherit player translation or rotation.
+2. Start samples the four counted goals once per visit and generates three
+   intermediate cross-sections along a smooth world-space curve. The first
+   tunnel remains until its destination is passed; later sections recycle in
+   place. These dimmer previews never count as learning goals. The latest user
+   instruction explicitly distinguishes previews from counted goals, so the
+   approved single-plane passage rule remains in force; no entry/exit rule or
+   time limit is introduced.
+3. One fixed Points draw contains a thick particle ring, a filled 7.2 m arrow
+   and the three preview bodies. Fine grains and a bounded minority of soft
+   haze create local volume. The current ring alone receives a 0.9 s silver
+   pulse, up to 6.5% expansion and a 2.4 s damped trajectory wake. Preview
+   gathering continues through the current ring's dissolution. All motion uses
+   the existing Show-derived time, fixed attributes and reusable uniforms.
+4. Audio retains four existing voices and borrows the actual generated body
+   anchors, including arrow motion, ring expansion and wake. No emitter per
+   decorative ring, extra renderer, render loop or postprocessing pipeline is
+   introduced. Run owns complete training retirement and readiness on restart.
 
-1. Extend Air's authored streaming bounds for a dense near field, reusing
-   `VolumeChunkWindow`, deterministic absolute coordinates, fixed GPU slot ranges,
-   stale-job rejection and World's `StreamQueue`. Only residence follows the
-   flyer; rotation and translation never carry existing particles along. Fade
-   the outer field before recycling becomes visible. Preserve main-level defaults.
-2. Start generates bounded curve sections once in world space, joining each
-   section to the preceding endpoint and tangent. Place large volumetric particle
-   arrows before the bends and orient successive tunnel cross-sections along
-   the curve. Vary spacing between individual gates and denser tunnel groups;
-   distribute particles within tunnel groups to give them depth.
-3. Replace the current single moving cloud with a fixed pool for the retiring,
-   current and next section. Each section's local drifting particles gather into
-   its arrow/tunnel and disperse in place; the next section begins forming before
-   the old one disappears. Build recycled slots incrementally through World,
-   without allocations or full-buffer uploads in ordinary animation frames.
-4. Keep visible motion within the formed bodies and a local flight wake. Start
-   owns spatial passage facts; the effect owns particles and actual object
-   anchors. Existing bounded audio voices follow those same bodies, with no
-   emitter per ring. Show retains instruction/transport policy; Run retains end.
-
-Initial prototype budgets, not measured production acceptance: 16 m Air cells,
-32 m range, 48 points per cell and a radial fade over 24–32 m. This gives 343
-resident slots / 16,464 points, about 49 within 10 m, versus today's 27,440
-resident points / about 1.3 nearby. An axial boundary recycles 49 slots / 2,352
-points, roughly every 3.2 seconds at 5 m/s. Three training slots of 4,096 points
-would bring the combined capacity to 28,752 (currently 28,840). Closer particles
-can increase overdraw despite similar counts: compare actual CPU/GPU and uploads,
-especially at simultaneous XYZ boundaries and on a sustained curved flight.
-Try arrows around 6–10 m long and approximately 1 m thick; dimensions, curve
-radius and tunnel aperture need visual/comfort tuning within unchanged flight.
-
-One product decision remains: keep one goal-plane passage per exercise, or
-require tunnel entry followed by exit. The latter is recommended for the new
-learning shape but changes when the next direction instruction can start.
-Until answered, do not silently replace the existing success rule. The approved
-right/left/up/down order, no deadline, held pause, persistent missed targets and
-operator handoff remain. Tests must cover whichever passage policy is selected,
-curved/high-speed traversal, stable world anchors, chunk boundaries, full cleanup,
-and first/repeated preparation. Narration and physical listening/PCVR acceptance
-remain separate. This section is researched direction; runtime still uses the
-`c18967a` isolated-goal presentation.
+Visual direction comes from the updated ten-image handoff: dense core, soft
+edges, visible fine grains, spatial depth and restrained silver feedback in a
+white composition. All images are inspiration, not production assets or exact
+geometry. The rejected sparse studies are not the design target. Concrete
+capacities, comparisons, actual screenshots and limitations are recorded in
+[the tutorial evidence](evidence/issue-50/README.md) and [Performance](performance.md).
+First-visitor comprehension, visual/headset comfort, narration permission/EN
+policy, spatial listening and Windows-PCVR USB-C acceptance remain open.
 
 ## Granular Atmosphere — #112
 

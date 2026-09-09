@@ -7,7 +7,7 @@ The implementation has four deliberately small responsibilities:
 
 - `air-particles-settings.ts` defines the level-authored contract and keeps the
   few internal streaming constants discoverable.
-- `air-particles.ts` connects the effect to module lifecycle, the camera-facing
+- `air-particles.ts` connects the effect to module lifecycle, the viewer-centered
   volume window, and the shared stream queue.
 - `air-particle-cloud.ts` owns deterministic particle positions, surface
   visibility, fixed Three.js buffers, partial GPU uploads, and disposal.
@@ -25,6 +25,9 @@ One `AirParticlesParameters` contract groups the authored controls:
   volume slot.
 - `appearance` sets color, size in metres, and optional shape. Omitting shape
   keeps the default square `PointsMaterial` fragment path.
+- Optional `streaming` authors chunk level, radial viewing distance and outer
+  fade start. It selects distance transparency, a 0.5–2 m near fade and a 12-pixel
+  sprite cap. Omission preserves the original opaque main-level path.
 - `motion` sets horizontal and vertical drift amplitudes in metres plus one
   shared speed multiplier.
 
@@ -38,9 +41,9 @@ The module derives particle positions from absolute X/Y/Z chunk coordinates.
 The result is deterministic: revisiting a volume returns the same particles,
 while neighboring volumes do not reveal a copied pattern.
 
-`VolumeChunkWindow` keeps one finite cube around the camera. Its 64-metre
+`VolumeChunkWindow` keeps one finite cube around the camera. Its default 64-metre
 chunks use the same aligned base grid as Terrain. The window radius follows the
-level's camera range and adds one preload ring. Flying across a horizontal or
+authored local range or the level's camera range and adds one preload ring. Flying across a horizontal or
 vertical boundary recycles only one square face of that cube.
 
 The field continues forever, but memory does not grow while the player travels.

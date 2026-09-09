@@ -1,4 +1,5 @@
 import {
+  Box3,
   BufferAttribute,
   BufferGeometry,
   Matrix4,
@@ -6,15 +7,20 @@ import {
   PointsMaterial,
   Quaternion,
   type Scene,
+  Sphere,
   Vector3,
 } from "three";
 import appearanceShader from "./start-particles.frag.glsl?raw";
 import motionShader from "./start-particles.vert.glsl?raw";
 
 export interface StartParticleParameters {
-  /** Fixed GPU capacity, shared by the ring and assistance arrow. */
+  /** Fixed GPU capacity shared by the current ring, arrow and three previews. */
   readonly count: number;
   readonly sizeMeters: number;
+  readonly arrowLengthMeters?: number;
+  readonly ringThicknessRatio?: number;
+  readonly hazeFraction?: number;
+  readonly maximumPointSizePixels?: number;
   readonly color: number;
   readonly cloudRadiusMeters: number;
   readonly cloudDepthMeters: number;
@@ -39,6 +45,8 @@ export interface StartParticleWake {
 /** Borrowed only during update; the effect copies inputs and never changes learning. */
 export interface StartParticleFrame {
   readonly elapsedSeconds: number;
+  /** Age of the current decorative section on the existing Show timebase. */
+  readonly previewElapsedSeconds?: number;
   readonly goalPosition: Readonly<Vector3>;
   /** Unit-length goal-plane normal. */
   readonly goalNormal: Readonly<Vector3>;
@@ -47,8 +55,15 @@ export interface StartParticleFrame {
   readonly arrowAngleRadians: number;
   /** Zero is drifting cloud, one is the fully gathered shape. */
   readonly formationProgress: number;
-  readonly completionProgress: number;
   readonly wake?: StartParticleWake;
+  /** Presentation-only guide rings; at most three are rendered. */
+  readonly previews?: readonly StartParticlePreview[];
+}
+
+export interface StartParticlePreview {
+  readonly goalPosition: Readonly<Vector3>;
+  readonly goalNormal: Readonly<Vector3>;
+  readonly ringRadiusMeters: number;
 }
 
 /** Borrowed world-space centers of the visible particle bodies, not listener offsets. */
@@ -67,24 +82,16 @@ export interface StartParticleEffect {
   readonly unload: () => void;
 }
 
-const RING_PARTICLE_FRACTION = 0.75;
 const MINIMUM_PARTICLE_COUNT = 32;
-const MAXIMUM_PARTICLE_COUNT = 16_384;
+const MAXIMUM_PARTICLE_COUNT = 65_536;
+const MAXIMUM_PREVIEWS = 3;
 const RANDOM_RANGE = 0x1_0000_0000;
 const LOCAL_NORMAL = new Vector3(0, 0, 1);
 const UNIT_SCALE = new Vector3(1, 1, 1);
-const ARROW_WIDTH_METERS = 0.9;
 const ARROW_SOURCE_WIDTH = 1.1;
-const ARROW_GAP_METERS = 0.5;
-const ARROW_OUTLINE = [
-  [-0.55, -0.1],
-  [0.12, -0.1],
-  [0.12, -0.3],
-  [0.55, 0],
-  [0.12, 0.3],
-  [0.12, 0.1],
-  [-0.55, 0.1],
-] as const;
+const ARROW_GAP_METERS = 1.3;
+const CROSSING_EXPANSION = 0.065;
+const CROSSING_PULSE_SECONDS = 0.9;
 
 /** Own one fixed Points draw; Start supplies its pose, transition and crossing facts. */
 export function createStartParticleEffect({
@@ -96,6 +103,15 @@ export function createStartParticleEffect({
 }): StartParticleEffect {
   validateParameters(parameters);
   const goalRotation = new Quaternion();
+  const bounds = new Box3();
+  const arrowLength = parameters.arrowLengthMeters ?? 7.2;
+  const thickness = parameters.ringThicknessRatio ?? 0.24;
+  const previewPoses = Array.from(
+    { length: MAXIMUM_PREVIEWS },
+    () => new Matrix4(),
+  );
+  const previewRadii = new Float32Array(MAXIMUM_PREVIEWS);
+  const previewRotation = new Quaternion();
   const objects = {
     ringLeft: new Vector3(),
     ringRight: new Vector3(),
@@ -104,13 +120,19 @@ export function createStartParticleEffect({
   let anchorsReady = false;
   const uniforms = {
     startTime: { value: 0 },
+    startPreviewTime: { value: 0 },
     startGoalPose: { value: new Matrix4() },
     startRadius: { value: 1 },
     startArrowAngle: { value: 0 },
     startArrowOffset: { value: new Vector3() },
-    startArrowScale: { value: ARROW_WIDTH_METERS / ARROW_SOURCE_WIDTH },
+    startArrowScale: { value: arrowLength / ARROW_SOURCE_WIDTH },
+    startThickness: { value: thickness },
+    startPreviewPoses: { value: previewPoses },
+    startPreviewRadii: { value: previewRadii },
+    startPreviewCount: { value: 0 },
+    startCrossingPulse: { value: 0 },
+    startMaximumPointSize: { value: parameters.maximumPointSizePixels ?? 24 },
     startFormation: { value: 0 },
-    startCompletion: { value: 0 },
     startDriftAmplitude: { value: parameters.driftAmplitudeMeters },
     startDriftSpeed: { value: parameters.driftSpeed },
     startSparkle: { value: parameters.sparkle },
@@ -142,6 +164,7 @@ export function createStartParticleEffect({
     let material: PointsMaterial | undefined;
     try {
       writeParticleAttributes(geometry, parameters);
+      geometry.boundingSphere = new Sphere();
       material = new PointsMaterial({
         color: parameters.color,
         size: parameters.sizeMeters,
@@ -157,6 +180,10 @@ export function createStartParticleEffect({
           .replace(
             "#include <begin_vertex>",
             "vec3 transformed = animateStartParticle(position);",
+          )
+          .replace(
+            "#include <logdepthbuf_vertex>",
+            "gl_PointSize = min(gl_PointSize * startParticleSize, startMaximumPointSize);\nstartDistanceFade = smoothstep(0.5, 2.5, -mvPosition.z);\n#include <logdepthbuf_vertex>",
           );
         shader.fragmentShader = shader.fragmentShader
           .replace(
@@ -168,13 +195,12 @@ export function createStartParticleEffect({
             "#include <color_fragment>\napplyStartParticleAppearance(diffuseColor);",
           );
       };
-      material.customProgramCacheKey = () => "start-particles-v1";
+      material.customProgramCacheKey = () => "start-cloud-particles-v2";
       points = new Points(geometry, material);
       points.name = "StartTrainingParticles";
       points.visible = false;
-      // Shader-authored world positions share one goal anchor. Keep this fixed
-      // draw visible without rebuilding CPU bounds for formation and wake.
-      points.frustumCulled = false;
+      // Bounds include shader displacement, every preview and the full arrow body.
+      points.frustumCulled = true;
       scene.add(points);
     } catch (error) {
       if (points) scene.remove(points);
@@ -194,25 +220,69 @@ export function createStartParticleEffect({
       UNIT_SCALE,
     );
     uniforms.startTime.value = frame.elapsedSeconds;
+    uniforms.startPreviewTime.value =
+      frame.previewElapsedSeconds ?? frame.elapsedSeconds;
     uniforms.startRadius.value = frame.ringRadiusMeters;
     uniforms.startArrowAngle.value = frame.arrowAngleRadians;
     const arrowDistance =
-      frame.ringRadiusMeters + ARROW_GAP_METERS + ARROW_WIDTH_METERS / 2;
+      frame.ringRadiusMeters * (1 + thickness * 2) +
+      ARROW_GAP_METERS +
+      arrowLength / 2;
     uniforms.startArrowOffset.value.set(
       -Math.cos(frame.arrowAngleRadians) * arrowDistance,
       -Math.sin(frame.arrowAngleRadians) * arrowDistance,
-      0,
+      Math.sin(frame.elapsedSeconds * 0.65) * 0.12,
     );
     uniforms.startFormation.value = frame.formationProgress;
-    uniforms.startCompletion.value = frame.completionProgress;
     const wake = frame.wake;
     uniforms.startWakeStrength.value = wake?.strength ?? 0;
-    objects.ringLeft.set(-frame.ringRadiusMeters, 0, 0);
-    objects.ringRight.set(frame.ringRadiusMeters, 0, 0);
+    const pulseAge = Math.min(
+      1,
+      Math.max(0, (wake?.ageSeconds ?? 0) / CROSSING_PULSE_SECONDS),
+    );
+    const pulse = Math.sin(pulseAge * Math.PI) * (wake?.strength ?? 0);
+    uniforms.startCrossingPulse.value = pulse;
+    const expandedRadius =
+      frame.ringRadiusMeters *
+      (1 + thickness) *
+      (1 + CROSSING_EXPANSION * pulse);
+    objects.ringLeft.set(-expandedRadius, 0, 0);
+    objects.ringRight.set(expandedRadius, 0, 0);
     objects.arrow.copy(uniforms.startArrowOffset.value);
     updateObjectAnchor(objects.ringLeft, frame);
     updateObjectAnchor(objects.ringRight, frame);
-    updateObjectAnchor(objects.arrow, frame);
+    updateObjectAnchor(objects.arrow, frame, false);
+    const previewCount = Math.min(
+      MAXIMUM_PREVIEWS,
+      frame.previews?.length ?? 0,
+    );
+    uniforms.startPreviewCount.value = previewCount;
+    bounds.makeEmpty().expandByPoint(frame.goalPosition);
+    let largestRadius = frame.ringRadiusMeters;
+    for (let index = 0; index < previewCount; index += 1) {
+      const preview = frame.previews?.[index];
+      const pose = previewPoses[index];
+      if (!preview || !pose) continue;
+      previewRotation.setFromUnitVectors(LOCAL_NORMAL, preview.goalNormal);
+      pose.compose(preview.goalPosition, previewRotation, UNIT_SCALE);
+      previewRadii[index] = preview.ringRadiusMeters;
+      largestRadius = Math.max(largestRadius, preview.ringRadiusMeters);
+      bounds.expandByPoint(preview.goalPosition);
+    }
+    bounds.expandByScalar(
+      Math.max(
+        parameters.cloudRadiusMeters,
+        parameters.cloudDepthMeters,
+        largestRadius * (1 + thickness * 2) * (1 + CROSSING_EXPANSION) +
+          ARROW_GAP_METERS +
+          arrowLength,
+      ) +
+        parameters.driftAmplitudeMeters +
+        parameters.wakeDistanceMeters +
+        1,
+    );
+    if (points.geometry.boundingSphere)
+      bounds.getBoundingSphere(points.geometry.boundingSphere);
     anchorsReady = true;
     if (!wake) return;
     uniforms.startWakePosition.value.copy(wake.position);
@@ -223,11 +293,12 @@ export function createStartParticleEffect({
   function updateObjectAnchor(
     anchor: Vector3,
     frame: StartParticleFrame,
+    receivesWake = true,
   ): void {
     const formation = smoothstep(frame.formationProgress);
     anchor.multiplyScalar(formation).applyMatrix4(uniforms.startGoalPose.value);
     const wake = frame.wake;
-    if (!wake) return;
+    if (!wake || !receivesWake) return;
     const age = Math.min(
       1,
       Math.max(0, wake.ageSeconds / parameters.wakeDurationSeconds),
@@ -266,9 +337,14 @@ function writeParticleAttributes(
 ): void {
   const positions = new Float32Array(parameters.count * 3);
   const targets = new Float32Array(parameters.count * 3);
-  const arrowParticles = new Float32Array(parameters.count);
+  const roles = new Float32Array(parameters.count);
   const phases = new Float32Array(parameters.count);
-  const ringCount = Math.floor(parameters.count * RING_PARTICLE_FRACTION);
+  const sizes = new Float32Array(parameters.count);
+  const haze = new Float32Array(parameters.count);
+  const depths = new Float32Array(parameters.count);
+  const ringCount = Math.floor(parameters.count * 0.35);
+  const arrowEnd = Math.floor(parameters.count * 0.6);
+  const previewCapacity = parameters.count - arrowEnd;
   for (let index = 0; index < parameters.count; index += 1) {
     const offset = index * 3;
     positions[offset] =
@@ -278,33 +354,49 @@ function writeParticleAttributes(
     positions[offset + 2] =
       (random(index, 2) * 2 - 1) * parameters.cloudDepthMeters;
     phases[index] = random(index, 3) * Math.PI * 2;
-    if (index < ringCount) {
-      const angle = (index / ringCount) * Math.PI * 2;
-      const radius = 1 + (random(index, 4) - 0.5) * 0.07;
-      targets[offset] = Math.cos(angle) * radius;
-      targets[offset + 1] = Math.sin(angle) * radius;
+    const isHaze = random(index, 8) < (parameters.hazeFraction ?? 0.12);
+    haze[index] = isHaze ? 1 : 0;
+    sizes[index] = isHaze
+      ? 5 + random(index, 9) * 4
+      : 0.45 + random(index, 9) * 1.15;
+    if (index >= ringCount && index < arrowEnd) {
+      roles[index] = 1;
+      // Sample a filled shaft or triangular head, including an elliptical depth.
+      const head = random(index, 4) > 0.55;
+      const x = head
+        ? 0.05 + (1 - Math.sqrt(random(index, 5))) * 0.5
+        : -0.55 + random(index, 5) * 0.65;
+      const width = head ? (0.55 - x) * 0.72 : 0.11;
+      const angle = random(index, 6) * Math.PI * 2;
+      const radial = Math.sqrt(random(index, 7));
+      targets[offset] = x;
+      targets[offset + 1] = Math.cos(angle) * radial * width;
+      targets[offset + 2] = Math.sin(angle) * radial * 0.13;
     } else {
-      arrowParticles[index] = 1;
-      const segment =
-        ((index - ringCount) / (parameters.count - ringCount)) *
-        ARROW_OUTLINE.length;
-      const segmentIndex = Math.floor(segment);
-      const from = ARROW_OUTLINE[segmentIndex];
-      const to = ARROW_OUTLINE[(segmentIndex + 1) % ARROW_OUTLINE.length];
-      if (!from || !to) throw new Error("Start arrow segment is missing");
-      const progress = segment - segmentIndex;
-      targets[offset] = from[0] + (to[0] - from[0]) * progress;
-      targets[offset + 1] = from[1] + (to[1] - from[1]) * progress;
+      roles[index] =
+        index < ringCount
+          ? 0
+          : 2 +
+            Math.min(2, Math.floor(((index - arrowEnd) / previewCapacity) * 3));
+      const angle = random(index, 4) * Math.PI * 2;
+      const crossAngle = random(index, 5) * Math.PI * 2;
+      // A dense core with a sparse shell; low frequency lobes soften the torus.
+      const radial = random(index, 6) ** (isHaze ? 0.45 : 0.85);
+      const lobe = 0.82 + 0.18 * Math.sin(angle * 5 + Math.sin(angle * 3));
+      const crossRadius = radial * lobe;
+      targets[offset] = Math.cos(angle);
+      targets[offset + 1] = Math.sin(angle);
+      targets[offset + 2] = Math.cos(crossAngle) * crossRadius;
+      depths[index] = Math.sin(crossAngle) * crossRadius;
     }
-    targets[offset + 2] = (random(index, 5) - 0.5) * 0.035;
   }
   geometry.setAttribute("position", new BufferAttribute(positions, 3));
   geometry.setAttribute("startTarget", new BufferAttribute(targets, 3));
-  geometry.setAttribute(
-    "startArrowParticle",
-    new BufferAttribute(arrowParticles, 1),
-  );
+  geometry.setAttribute("startRole", new BufferAttribute(roles, 1));
   geometry.setAttribute("startPhase", new BufferAttribute(phases, 1));
+  geometry.setAttribute("startParticleSize", new BufferAttribute(sizes, 1));
+  geometry.setAttribute("startHaze", new BufferAttribute(haze, 1));
+  geometry.setAttribute("startDepth", new BufferAttribute(depths, 1));
 }
 
 function random(index: number, channel: number): number {
@@ -324,6 +416,20 @@ function validateParameters(parameters: StartParticleParameters): void {
     throw new Error(
       `Start particle count must be an integer in [${MINIMUM_PARTICLE_COUNT}, ${MAXIMUM_PARTICLE_COUNT}]`,
     );
+  for (const [key, defaultValue, maximum] of [
+    ["arrowLengthMeters", 7.2, 16],
+    ["ringThicknessRatio", 0.24, 0.6],
+    ["maximumPointSizePixels", 24, 48],
+  ] as const) {
+    const value = parameters[key] ?? defaultValue;
+    if (!Number.isFinite(value) || value <= 0 || value > maximum)
+      throw new Error(
+        `Start particle ${key} must be positive and at most ${maximum}`,
+      );
+  }
+  const hazeFraction = parameters.hazeFraction ?? 0.12;
+  if (!Number.isFinite(hazeFraction) || hazeFraction < 0 || hazeFraction > 0.25)
+    throw new Error("Start particle hazeFraction must be in [0, 0.25]");
   for (const key of [
     "sizeMeters",
     "cloudRadiusMeters",

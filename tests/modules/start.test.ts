@@ -374,3 +374,70 @@ test("invalid course ranges fail before presentation resources are acquired", ()
     ).toThrow("ordered distance ranges");
   }
 });
+
+test("curved previews stay world-fixed and never count as learning targets", () => {
+  const worldPosition = new Vector3(0, 4, 0);
+  const viewerRig = new Group();
+  let frame: StartParticleFrame | undefined;
+  const start = createStartModule({
+    viewpoint: { worldPosition, viewDistanceMeters: 100 },
+    viewerRig,
+    parameters: {
+      ...PARAMETERS,
+      course: { ...PARAMETERS.course, radiusMeters: [1, 2] },
+    },
+    random: (() => {
+      let samples = 0;
+      return () => (samples++ % 10) / 10;
+    })(),
+    particles: {
+      load() {},
+      setVisible() {},
+      unload() {},
+      readObjectAnchors: () => undefined,
+      update: (next) => {
+        frame = next;
+      },
+    },
+  });
+  const runtime = new ModuleRuntime();
+  runtime.load(start.module);
+  runtime.activate(start.module);
+  runtime.update(0);
+  const previews = frame?.previews?.map((preview) => ({
+    position: preview.goalPosition.clone(),
+    normal: preview.goalNormal.clone(),
+    radius: preview.ringRadiusMeters,
+  }));
+  expect(previews).toHaveLength(3);
+  expect(previews?.[2]?.position.z).toBeGreaterThan(-9);
+  expect(previews?.[2]?.position.z).toBeLessThan(-8);
+  expect(previews?.[0]?.normal.x).toBeGreaterThan(0);
+  // Move through a decorative plane while missing the actual aperture.
+  worldPosition.set(-2, 4, -6);
+  runtime.update(PARAMETERS.arrivalSeconds);
+  runtime.update(PARAMETERS.formationSeconds);
+  worldPosition.set(-2, 4, -11);
+  viewerRig.rotation.y = 1;
+  runtime.update(0.1);
+  expect(start.readObservation().crossingCount).toBe(0);
+  expect(frame?.previews?.map((preview) => preview.goalPosition)).toEqual(
+    previews?.map((preview) => preview.position),
+  );
+  // Advancing the goal retains the tunnel that the visitor is about to enter.
+  worldPosition.set(2, 4, -4);
+  runtime.update(0);
+  worldPosition.set(2, 4, -6);
+  runtime.update(0.1);
+  runtime.update(PARAMETERS.dissolutionSeconds);
+  const nextPosition = new Vector3(0, 4, -10);
+  expect(frame?.previews?.map((preview) => preview.goalPosition)).toEqual(
+    previews?.map((preview) => preview.position),
+  );
+  expect(start.readObservation().goalTarget).toEqual(nextPosition);
+  expect(start.readObservation().goalPosition).toEqual(nextPosition);
+  expect(frame?.previews?.map((preview) => preview.ringRadiusMeters)).toEqual(
+    previews?.map((preview) => preview.radius),
+  );
+  runtime.unload(start.module);
+});

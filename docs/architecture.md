@@ -250,10 +250,14 @@ Start replaces the held-M5-gesture prototype with four world-space ring goals:
 right, left, up, down. The existing shared viewpoint supplies consecutive poses
 for swept passage checks; desktop and M5/XR use identical learning rules. There
 is no deadline, and a missed goal remains active with heading-based guidance.
-Learning owns one crossing result; the optional effect copies goal/arrow poses,
-formation and the crossing wake into uniforms for 1,400 fixed points in one draw.
-GPU drift, gathering, sparkle and wake create no frame buffers or independent
-loop. Background Air Particles remains separate at 80 particles per chunk.
+Learning samples the course once per visit and owns one crossing result. Three
+intermediate curve cross-sections are decorative and never complete goals. The
+optional effect borrows these fixed world poses and owns one 32,000-point draw:
+a thick ring, filled arrow and three guide rings, with immutable attributes and
+GPU drift/gathering. Only the counted ring receives silver/expansion/wake feedback.
+Air remains independent: Start authors 48 points per 16 m cell and a fading
+16 m near field through the existing shared chunk/queue path. Main defaults stay
+unchanged. No independent loop, global fog or extra postprocessing is added.
 
 Show starts held and owns the interactive tutorial within its existing clock.
 Public main-show time stays zero until completion and operator handoff rebase
@@ -264,10 +268,10 @@ crossing cannot truncate the introduction. Audio ending never completes a flight
 goal. All four passages and the final configured
 recording must finish before the completion command is available. Standalone
 Start keeps the same transport while omitting the main-experience handoff.
-The current literal recipe omits `startAudio` and `startNarration`: production
-training is silent pending DE-use permission, EN fallback and sample selection.
-Standalone Start therefore creates only Show's native timebase; it acquires the
-Tone spatial context only when `startAudio` is explicitly configured.
+The current literal recipe enables bounded object-bound granular audio from
+three user-supplied excerpts and omits `startNarration` pending DE-use permission
+and EN policy. Run owns the shared Tone spatial context when audio is configured;
+Show retains its existing native timebase and narration owner.
 
 `show.runtime.ts` also drives the drone organ in `src/sound/drone-organ/`
 through one per-frame contract: the show time sample, the strength of each

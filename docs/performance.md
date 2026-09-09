@@ -537,3 +537,64 @@ Served-assets SHA-256:
 Local evidence: `benchmark-results/issue-50/procedural-visible-course/probe.json`.
 No browser errors or warnings occurred. Hardware, listening and narration
 acceptance remain open.
+
+
+## Cloud tutorial revision — 2026-09-09
+
+The requested visual revision increases local particle density and replaces thin
+contours with filled bodies and three curved guide cross-sections. The final
+recipe keeps 32,000 Start points and 6,000 Air points in two desktop draws. Air
+uses 16 m cells, 48 points/cell and a 16 m field with 12–16 m outer fading; its
+local density is unchanged from the 32 m field trial. Main recipes retain their
+original settings. No renderer, postprocessing, texture, light or clock was added.
+
+The same headed Chromium 151 / Apple M2 Max / Metal, 1920×1080 DPR1, normal-VSync
+root route was measured sequentially without competing browser rendering. A fresh
+`d061829` source archive from `david_refactor` reproduced the original served-assets
+digest; the working repository was never checked out or reverted. All runs below
+traverse the generated four-goal course and use the existing operator handoff.
+
+| Candidate | Tutorial frames | CPU median / p95 / p99 / max ms | GPU median / p95 / p99 / max ms | RAF p95 / max ms |
+| --- | ---: | --- | --- | --- |
+| Refreshed original 1,400 Start / 27,440 Air | 3037 | 0.3 / 0.4 / 0.5 / 4.2 | 0.087 / 0.251 / 0.289 / 1.058 | 18.2 / 18.8 |
+| Cloud trial: 32,000 Start / 16,464 Air, 24 px cap | 3062 | 0.3 / 0.4 / 0.5 / 6.3 | 0.132 / 0.299 / 0.346 / 0.806 | 18.1 / 18.7 |
+| Density trial: 24,000 Start / 6,000 Air, 16 px cap | 3042 | 0.3 / 0.4 / 0.5 / 4.9 | 0.244 / 0.293 / 0.362 / 0.869 | 18.2 / 18.7 |
+| Final: 32,000 Start / 6,000 Air, 16 px cap | 3192 | 0.3 / 0.4 / 0.5 / 5.2 | 0.205 / 0.308 / 0.394 / 0.884 | 18.2 / 18.7 |
+
+32,000 retains the denser visual body; reducing to 24,000 did not establish a
+useful GPU improvement. Narrowing the ambient field and capping point size bound
+resources/coverage; they are not claimed as measured GPU speedups. The final
+shader evaluates per-particle sparkle in the vertex stage and only evaluates the
+haze profile for haze fragments. The first target is now 60–64 m away so its
+thicker body fits during formation with the existing assisted desktop view.
+The final course therefore lasts longer than the old course. Random target
+positions and GPU timing variation prevent an isolated shader-cost claim.
+
+CPU p95 and desktop cadence remain unchanged. GPU p95 is **0.058 ms higher
+(about 23%)** than the refreshed baseline, despite a lower observed maximum.
+The user explicitly accepted this measured increase and the higher particle
+density on 2026-09-09. This acceptance does not establish physical PCVR performance.
+The following main segment has CPU/GPU p95 2.3/1.157 ms versus baseline
+2.2/1.154 ms; no main-show optimization or regression is inferred from that short
+segment. All four passages and handoffs complete without browser errors. These
+60 Hz desktop observations do not establish Windows-PCVR USB-C 90 Hz acceptance.
+
+Final served-assets SHA-256:
+`fca5507de4268d2d5853b297dc02347fbe04c3b1be9b586d93ba6e5a39278277`.
+Baseline SHA-256:
+`fb038c05dda0b6bef7517953c5a019a2a9670a75e79f85b72c6767bf5e5cb3ab`.
+Local reports: `benchmark-results/issue-50/cloud-bounded-final/probe.json` and
+`cloud-baseline-refresh/probe.json`; density trials retain their separate identities.
+No numerical benchmark reference was changed.
+
+Start owns seven static attributes: 44 bytes/point, **1,408,000 bytes per CPU/GPU
+copy**. Air owns 96,000 attribute bytes per copy, for 1,504,000 combined bytes
+per copy, excluding driver overhead, JS metadata and unchanged audio/main-world
+resources. The former combined attributes were 483,840 bytes per copy. This is
+explicit bounded feature growth, not a memory-reduction claim. Start never
+uploads particle attributes during ordinary frames; Air only uploads recycled
+slot ranges through the shared queue. Final whole-course upload p99 is zero and
+maximum is 34,560 bytes/frame (baseline 116,480). Uniform updates are separate.
+The [coverage/screenshot evidence](evidence/issue-50/README.md#cloud-revision--2026-09-09)
+distinguishes projected point squares from actual GPU fragment executions and
+checks disposal at handoff.

@@ -2,11 +2,11 @@
  * Purpose: Verify the Air Particles module against the shared streaming contracts.
  * Context: The first volumetric consumer combines a fixed slot window into one GPU draw.
  * Responsibility: Cover fixed capacity, queued edge updates, visibility, and cleanup.
- * Boundary: Visual density and physical PICO performance require separate acceptance.
+ * Boundary: Visual density and physical Windows-PCVR performance require separate acceptance.
  */
 
 import { describe, expect, test } from "bun:test";
-import { Points, type PointsMaterial, Scene, Vector3 } from "three";
+import { Points, type PointsMaterial, Scene, ShaderLib, Vector3 } from "three";
 import {
   createAirParticleCloud,
   disposeAirParticleCloud,
@@ -29,7 +29,10 @@ describe("Air Particles material", () => {
     const squareShader = compileMaterialForTest(squareMaterial.pointsMaterial);
 
     expect(squareShader.fragmentShader).toBe(TEST_FRAGMENT_SHADER);
+    expect(squareMaterial.pointsMaterial.transparent).toBe(false);
+    expect(squareMaterial.pointsMaterial.depthWrite).toBe(true);
     expect(squareShader.vertexShader).toContain("animateAirParticle");
+    expect(squareShader.vertexShader).not.toContain("gl_PointSize = min(");
     expect(squareShader.uniforms.airParticleHorizontalAmplitude?.value).toBe(
       0.04,
     );
@@ -75,9 +78,136 @@ describe("Air Particles material", () => {
     expect(shader.uniforms.airParticleTime?.value).toBe(0.5);
     material.pointsMaterial.dispose();
   });
+
+  test("fades only an authored local field using radial view-space distance", () => {
+    const parameters = createAirParticlesParameters(48, "circle");
+    const material = createAirParticleMaterial({
+      ...parameters,
+      streaming: { chunkLevel: 0, viewDistanceMeters: 32, fadeStartMeters: 24 },
+    });
+    const shader = compileMaterialForTest(material.pointsMaterial);
+
+    expect(material.pointsMaterial.transparent).toBe(true);
+    expect(material.pointsMaterial.depthWrite).toBe(false);
+    expect(shader.uniforms.airParticleFadeStart?.value).toBe(24);
+    expect(shader.uniforms.airParticleFadeEnd?.value).toBe(32);
+    expect(shader.vertexShader).toContain("length(viewPosition)");
+    expect(shader.vertexShader).toContain(
+      "AIR_PARTICLE_NEAR_FADE_START_METERS = 0.5;",
+    );
+    expect(shader.vertexShader).toContain(
+      "AIR_PARTICLE_NEAR_FADE_END_METERS = 2.0;",
+    );
+    const sizeLimitIndex = shader.vertexShader.indexOf("gl_PointSize = min(");
+    expect(sizeLimitIndex).toBeGreaterThan(
+      shader.vertexShader.indexOf(
+        "gl_PointSize *= ( scale / - mvPosition.z );",
+      ),
+    );
+    expect(shader.vertexShader).toContain(
+      "AIR_PARTICLE_MAXIMUM_SIZE_PIXELS = 12.0;",
+    );
+    expect(shader.fragmentShader).toContain(
+      "diffuseColor.a *= airParticleDistanceOpacity;",
+    );
+    expect(shader.fragmentShader).toContain(
+      "discardOutsideAirParticleCircle();",
+    );
+    material.pointsMaterial.dispose();
+  });
 });
 
 describe("Air Particles streaming", () => {
+  test("keeps a dense nearfield world-anchored and recycles only its outer face", () => {
+    const scene = new Scene();
+    const viewerPosition = new Vector3(1, 1, 1);
+    const streamQueue = new StreamQueue(
+      { budgetMilliseconds: 1, capacity: 256 },
+      () => 0,
+    );
+    const module = createAirParticlesModule({
+      scene,
+      viewpoint: { worldPosition: viewerPosition, viewDistanceMeters: 128 },
+      streamQueue,
+      parameters: {
+        ...createAirParticlesParameters(48, "circle"),
+        streaming: {
+          chunkLevel: 0,
+          viewDistanceMeters: 32,
+          fadeStartMeters: 24,
+        },
+      },
+    });
+    module.load();
+    const points = scene.children[0];
+    if (!(points instanceof Points)) throw new Error("Expected Points");
+    const position = points.geometry.getAttribute("position");
+    const initialPositions = Array.from(position.array);
+    const buffer = position.array;
+    expect(position.count).toBe(16_464);
+
+    viewerPosition.set(15, 2, 3);
+    module.update?.(1 / 90);
+    expect(streamQueue.size).toBe(0);
+    expect(Array.from(position.array)).toEqual(initialPositions);
+    expect(points.position.toArray()).toEqual([0, 0, 0]);
+    expect(points.quaternion.toArray()).toEqual([0, 0, 0, 1]);
+
+    viewerPosition.x = 16;
+    module.update?.(1 / 90);
+    expect(streamQueue.size).toBe(49);
+    streamQueue.update();
+    expect(position.array).toBe(buffer);
+    expect(position.count).toBe(16_464);
+    let changedParticles = 0;
+    for (let offset = 0; offset < buffer.length; offset += 3) {
+      if (buffer[offset] === initialPositions[offset]) continue;
+      changedParticles += 1;
+      expect(buffer[offset]).toBeGreaterThanOrEqual(64);
+      expect(buffer[offset]).toBeLessThan(80);
+    }
+    expect(changedParticles).toBe(49 * 48);
+
+    // Unloading invalidates work already queued for another face.
+    viewerPosition.y = 16;
+    module.update?.(1 / 90);
+    expect(streamQueue.size).toBe(49);
+    let geometryDisposals = 0;
+    let materialDisposals = 0;
+    if (Array.isArray(points.material))
+      throw new Error("Expected one material");
+    points.geometry.addEventListener("dispose", () => {
+      geometryDisposals += 1;
+    });
+    points.material.addEventListener("dispose", () => {
+      materialDisposals += 1;
+    });
+    module.unload();
+    streamQueue.update();
+    expect(geometryDisposals).toBe(1);
+    expect(materialDisposals).toBe(1);
+    expect(scene.children).toHaveLength(0);
+  });
+
+  test("rejects invalid local fade ranges before allocating a field", () => {
+    const scene = new Scene();
+    const module = createAirParticlesModule({
+      scene,
+      viewpoint: { worldPosition: new Vector3(), viewDistanceMeters: 128 },
+      streamQueue: new StreamQueue({ budgetMilliseconds: 1, capacity: 256 }),
+      parameters: {
+        ...createAirParticlesParameters(48),
+        streaming: {
+          chunkLevel: 0,
+          viewDistanceMeters: 24,
+          fadeStartMeters: 32,
+        },
+      },
+    });
+    expect(() => module.load()).toThrow("ordered finite fade range");
+    expect(scene.children).toHaveLength(0);
+  });
+
   test("creates deterministic but different particle layouts per volume", () => {
     const firstPositions = createTwoChunkParticlePositions();
     const repeatedPositions = createTwoChunkParticlePositions();
@@ -208,11 +338,7 @@ function createAirParticlesParameters(
 function compileMaterialForTest(material: PointsMaterial): TestShader {
   const shader: TestShader = {
     uniforms: {},
-    vertexShader: [
-      "#include <common>",
-      "#include <begin_vertex>",
-      "#include <project_vertex>",
-    ].join("\n"),
+    vertexShader: ShaderLib.points.vertexShader,
     fragmentShader: TEST_FRAGMENT_SHADER,
   };
 

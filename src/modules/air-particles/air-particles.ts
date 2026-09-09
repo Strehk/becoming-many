@@ -168,14 +168,28 @@ function createAirParticleStream({
   parameters,
   surfaceYAt,
 }: AirParticlesModuleOptions): AirParticleStream {
-  const chunkSize = getChunkSize(AIR_PARTICLES_SETTINGS.volumeChunkLevel);
+  const streaming = parameters.streaming;
+  if (
+    streaming &&
+    (!Number.isFinite(streaming.viewDistanceMeters) ||
+      !Number.isFinite(streaming.fadeStartMeters) ||
+      streaming.fadeStartMeters < 0 ||
+      streaming.viewDistanceMeters <= streaming.fadeStartMeters)
+  ) {
+    throw new Error(
+      "Air particle streaming requires an ordered finite fade range",
+    );
+  }
+  const chunkLevel =
+    streaming?.chunkLevel ?? AIR_PARTICLES_SETTINGS.volumeChunkLevel;
+  const chunkSize = getChunkSize(chunkLevel);
   const visibleVolumeRadius = Math.ceil(
-    viewpoint.viewDistanceMeters / chunkSize,
+    (streaming?.viewDistanceMeters ?? viewpoint.viewDistanceMeters) / chunkSize,
   );
   const residentVolumeRadius =
     visibleVolumeRadius + AIR_PARTICLES_SETTINGS.preloadLayerCount;
   const volumeWindow = new VolumeChunkWindow({
-    level: AIR_PARTICLES_SETTINGS.volumeChunkLevel,
+    level: chunkLevel,
     radius: residentVolumeRadius,
   });
   const particleCloud = createAirParticleCloud({

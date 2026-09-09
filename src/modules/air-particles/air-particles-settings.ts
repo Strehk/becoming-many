@@ -5,6 +5,8 @@
  * Boundary: Geometry, materials, shaders, lifecycle, and stream scheduling stay elsewhere.
  */
 
+import type { ChunkLevel } from "../../world/chunk-system";
+
 export const AIR_PARTICLES_SETTINGS = {
   defaultShape: "square", // Keeps the unmodified PointsMaterial fragment path unless a circle is requested.
   volumeChunkLevel: 2, // Selects 64-metre chunks on the shared world grid.
@@ -17,6 +19,12 @@ export type AirParticleShape = "square" | "circle";
 
 /** Level-authored density, appearance, and motion values. */
 export interface AirParticlesParameters {
+  /** Optional nearfield window; omitted recipes retain the full view-distance field. */
+  readonly streaming?: {
+    readonly chunkLevel: ChunkLevel;
+    readonly viewDistanceMeters: number;
+    readonly fadeStartMeters: number;
+  };
   readonly density: {
     readonly particlesPerChunk: number;
   };
