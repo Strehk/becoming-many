@@ -20,9 +20,9 @@ export const START_SETTINGS = {
   pathPoolSize: 4,
   elementPoolSize: 4,
   generationMetersPerStep: 4,
-  revealSeconds: 0.4,
+  revealSeconds: 0.8,
   elementAnimation: {
-    revealSeconds: 0.65,
+    revealSeconds: 1.3,
     dissolveSeconds: 1.2,
     scatterMeters: 0.8,
   },
@@ -84,7 +84,7 @@ export const START_SETTINGS = {
 // Speech order is right, left, climb, descent. Praise requires prior success.
 // Radius tuning: new spacing / (old spacing / old radius + radians(5)).
 // All lengths are meters. Ring spacing is 70% of the previous course;
-// entry/exit lengths and emergence duration are halved. Opening speech stays intact.
+// Entry/exit lengths are halved. Speech, emergence timing and flight speed stay intact.
 export const START_EXERCISES = [
   {
     id: "right",

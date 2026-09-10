@@ -139,7 +139,7 @@ The opening stays white until 13.12 s ("einen Raum"). World presence rises over
 3.2 s, driven by native speech time. At reveal, a 12 m ring-free approach is
 anchored to the actual player, followed by the right chunk's 3 m straight entry.
 The curved centerline appears at 14.4 s; rings and the entry signpost wait until
-19.30 s and emerge over 0.65 s. At 2 m/s straight flight the bend starts about
+19.30 s and emerge over 1.3 s. At 2 m/s straight flight the bend starts about
 3 m ahead at the instruction. The first gate is 20 m into the chunk, already
 well inside the right bend; three gates at 5.6 m intervals mark its final portion.
 A single open-stroke arrow stands at route meter 12, 5 m to the left of the route
@@ -336,8 +336,8 @@ twice that length for the two-arc vertical profile. Invalid
 combinations fail before rendering instead of silently truncating the ring count.
 Six-ring sections span 35 m. All authored counts fit the configured arc lengths.
 Ring spacing is reduced by 30%; paired radius endpoints add five degrees of
-curvature per interval. Regular entry/exit distances and ring emergence duration
-are halved. Native spoken-word markers and opening world reveal remain intact.
+curvature per interval. Regular entry/exit distances are halved; the original 1.3 s ring emergence
+and flight speed are preserved. Native spoken-word markers and opening world reveal remain intact.
 Flight speed currently comes from `src/levels/start.level.ts` through the existing
 Level Runtime (`flightSpeedMetersPerSecond: 2`); it is not a particle parameter.
 
