@@ -29,7 +29,7 @@ import {
   accumulateEnvelopePull,
   createSwarmShapes,
 } from "../../src/modules/motion-sense/swarm-shape";
-import type { Viewpoint } from "../../src/world/viewer-rig";
+import type { Viewpoint } from "../../src/world/viewpoint";
 
 describe("Motion Trail material", () => {
   test("patches GPU aging, size fade, and the circle shape", () => {

@@ -1,8 +1,8 @@
-import type { Run } from "../../levels/level.runtime";
-import type { RunningShow } from "../../levels/show.runtime";
+import type { Run } from "../../levels/run-contract";
+import type { RunningShow } from "../../levels/show-contract";
+import type { M5Observation } from "../../m5/m5-contract";
 import { M5_FIRMWARE_VERSION } from "../../m5/protocol";
-import type { M5Observation } from "../../m5/runtime/m5.runtime";
-import type { XrSessionControl } from "../../world/xr-session";
+import type { XrSessionControl } from "../../world/xr-contract";
 import { requireElement, writeText } from "../shared/dom";
 import { bindConfirmation } from "./confirmation";
 import { resolveStreamButton } from "./headset-button-state";

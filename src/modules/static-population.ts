@@ -30,7 +30,7 @@ import {
 } from "../world/chunk-system";
 import type { WorldModule } from "../world/module-runtime";
 import type { StreamQueue } from "../world/stream-queue";
-import type { Viewpoint } from "../world/viewer-rig";
+import type { Viewpoint } from "../world/viewpoint";
 import type { WorldSurface } from "../world-surface/world-surface";
 import type { ZoneId } from "../world-surface/zone-settings";
 

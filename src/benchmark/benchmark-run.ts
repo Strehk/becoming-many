@@ -6,7 +6,7 @@
  */
 
 import { MathUtils, type Object3D } from "three";
-import type { WorldFrame } from "../world/world-runtime";
+import type { WorldFrame } from "../world/world-contract";
 import { WORLD_RUNTIME_SETTINGS } from "../world/world-settings";
 import type { BenchmarkFrameSample, BenchmarkReport } from "./benchmark-report";
 import { summarizeBenchmark } from "./benchmark-report";

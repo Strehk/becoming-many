@@ -6,7 +6,7 @@
  * Boundary: Where a number comes from is decided by the caller.
  */
 
-import type { RunningShow } from "../../levels/show.runtime";
+import type { RunningShow } from "../../levels/show-contract";
 
 const SECONDS_PER_MINUTE = 60;
 

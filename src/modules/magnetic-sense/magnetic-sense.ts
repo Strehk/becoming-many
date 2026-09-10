@@ -8,7 +8,7 @@
 import type { Scene } from "three";
 import { Color, MathUtils, Vector3 } from "three";
 import type { WorldModule } from "../../world/module-runtime";
-import type { Viewpoint } from "../../world/viewer-rig";
+import type { Viewpoint } from "../../world/viewpoint";
 import type { MagneticSenseParameters } from "./magnetic-sense-settings";
 import { MAGNETIC_SENSE_SETTINGS } from "./magnetic-sense-settings";
 import {

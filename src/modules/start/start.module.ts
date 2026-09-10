@@ -1,15 +1,20 @@
 import { Vector3 } from "three";
 import type { WorldModule } from "../../world/module-runtime";
-import type { Viewpoint } from "../../world/viewer-rig";
+import type { Viewpoint } from "../../world/viewpoint";
 import { crossesFlightRing, type FlightRing } from "./flight-ring-crossing";
 import { StartArrows } from "./start-arrows";
+import type {
+  StartModuleHandle,
+  StartObservation,
+  StartPhase,
+} from "./start-contract";
 import { StartCourse } from "./start-course";
 import { StartMotion } from "./start-motion";
 import type {
+  StartParticleEffect,
   StartParticleObjects,
   StartParticleWake,
 } from "./start-particle-frame";
-import type { StartParticleEffect } from "./start-particles.effect";
 import {
   START_SETTINGS,
   type StartDirection,
@@ -17,29 +22,6 @@ import {
   type StartParameters,
   validateStartParameters,
 } from "./start-settings";
-
-export type StartPhase =
-  | "arrival"
-  | "turning"
-  | "forming"
-  | "flying"
-  | "crossed"
-  | "missed"
-  | "complete";
-/** Observations borrow buffers until the next World frame; consumers must not mutate them. */
-export type StartObservation = Readonly<StartModule["observation"]>;
-
-export type StartModuleHandle = Readonly<
-  Pick<
-    StartModule,
-    | "readObservation"
-    | "setPlaying"
-    | "setFormationAllowed"
-    | "setGoalAdvanceAllowed"
-    | "resetPractice"
-    | "module"
-  >
->;
 
 export interface StartModuleOptions {
   readonly viewpoint: Viewpoint;

@@ -247,6 +247,13 @@ test("audio owners recover gesture resume and await complete disposal", async ()
       },
     }));
     const { createShowRuntime } = await import("./src/levels/show.runtime.ts");
+    const { createDroneOrgan: createShowOrgan } = await import("./src/sound/drone-organ/drone-organ.ts");
+    const { createNarrationPlayer } = await import("./src/sound/narration-player.ts");
+    const sound = withOrgan => ({
+      timebase: createAudioTimebase(),
+      createNarration: () => createNarrationPlayer({ recordings: [] }),
+      droneOrgan: withOrgan ? createShowOrgan() : undefined,
+    });
     const { PIECE_SCHEDULE } = await import("./src/dramaturgy/piece-schedule.ts");
     const { SHOW_LEVEL_STATES } = await import("./src/dramaturgy/show-levels.ts");
     const show = await createShowRuntime(
@@ -254,7 +261,7 @@ test("audio owners recover gesture resume and await complete disposal", async ()
       { world: { camera: { updateProjectionMatrix() {} }, renderer: { setClearColor() {} } },
         reach: { gates: new Map(), senses: {}, worldFades: {} },
         worldSurface: {},
-        audio: audio },
+        ...sound(true) },
     );
     const showNative = contexts.at(-1);
     showNative.state = "running";
@@ -347,7 +354,7 @@ test("audio owners recover gesture resume and await complete disposal", async ()
       { world: tutorialWorld,
         reach: { gates: new Map(), senses: {}, worldFades: {} },
         worldSurface: { groundYAt: () => 0 },
-        audio: audio,
+        ...sound(true),
         standalone: false,
         tutorial: tutorialDefinition },
     );
@@ -453,7 +460,7 @@ test("audio owners recover gesture resume and await complete disposal", async ()
       { world: tutorialWorld,
         reach: { gates: new Map(), senses: {}, worldFades: {} },
         worldSurface: { groundYAt: () => 0 },
-        audio: undefined,
+        ...sound(false),
         standalone: ending === "standalone",
         tutorial: { ...tutorialDefinition, recordings: { en: [], de: recordings("de").map(clip => ({ ...clip, durationSeconds: clip.cueId === "complete" ? closingSeconds : 3 })) } } },
     );
@@ -523,7 +530,7 @@ test("audio owners recover gesture resume and await complete disposal", async ()
       { world: tutorialWorld,
         reach: { gates: new Map(), senses: {}, worldFades: {} },
         worldSurface: { groundYAt: () => 0 },
-        audio: undefined,
+        ...sound(false),
         standalone: true,
         tutorial: tutorialDefinition },
     );
@@ -546,7 +553,7 @@ test("audio owners recover gesture resume and await complete disposal", async ()
       { world: tutorialWorld,
         reach: { gates: new Map(), senses: {}, worldFades: {} },
         worldSurface: { groundYAt: () => 0 },
-        audio: undefined,
+        ...sound(false),
         standalone: true,
         tutorial: { ...tutorialDefinition, parameters: startPreset.start, recordings: startPreset.startNarration } },
     );
@@ -569,7 +576,7 @@ test("audio owners recover gesture resume and await complete disposal", async ()
       { world: tutorialWorld,
         reach: { gates: new Map(), senses: {}, worldFades: {} },
         worldSurface: { groundYAt: () => 0 },
-        audio: undefined,
+        ...sound(false),
         standalone: standalone,
         tutorial: { ...tutorialDefinition, recordings: undefined } },
     );

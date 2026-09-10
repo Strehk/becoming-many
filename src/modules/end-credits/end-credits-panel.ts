@@ -14,7 +14,7 @@ import {
 } from "three";
 import type { EndCreditsDefinition } from "../../dramaturgy/end-credits";
 import type { WorldModule } from "../../world/module-runtime";
-import type { Viewpoint } from "../../world/viewer-rig";
+import type { Viewpoint } from "../../world/viewpoint";
 import { createHeadingPanelPose } from "../heading-panel-pose";
 import { END_CREDITS_PANEL_SETTINGS } from "./end-credits-settings";
 import { drawEndCreditsTexture } from "./end-credits-texture";

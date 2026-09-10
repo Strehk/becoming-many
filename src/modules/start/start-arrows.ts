@@ -1,15 +1,6 @@
 import { Vector3 } from "three";
-import type { Viewpoint } from "../../world/viewer-rig";
+import type { Viewpoint } from "../../world/viewpoint";
 import { START_SETTINGS } from "./start-settings";
-
-/** Borrowed world-space cue pose and lifetime; only Arrows and its orchestrator may mutate it. */
-export interface StartArrowFrame {
-  readonly position: Readonly<Vector3>;
-  readonly normal: Readonly<Vector3>;
-  readonly up: Readonly<Vector3>;
-  readonly presence: number;
-  readonly formation: number;
-}
 
 /** Own two reusable cue poses/lifetimes; Start supplies Course's newly calculated pose. */
 export class StartArrows {

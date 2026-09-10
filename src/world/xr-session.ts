@@ -1,3 +1,8 @@
+import type {
+  XrAvailability,
+  XrSessionControl,
+  XrSessionState,
+} from "./xr-contract";
 /**
  * Purpose: Own WebXR availability and the immersive-vr session lifecycle.
  * Context: Pages start and stop the headset session from their own UI.
@@ -6,24 +11,6 @@
  */
 
 import type { WebGLRenderer } from "three";
-
-export type XrAvailability = "unknown" | "unsupported" | "available";
-
-export interface XrSessionState {
-  readonly availability: XrAvailability;
-  readonly isSessionActive: boolean;
-}
-
-export interface XrSessionControl {
-  /** Request an immersive-vr session and hand it to the renderer. */
-  readonly start: () => Promise<void>;
-  /** End the active session; resolves once it has ended. No session is fine. */
-  readonly stop: () => Promise<void>;
-  /** End this owner, including pending session requests and every listener. */
-  readonly unload: () => Promise<void>;
-  /** Calls the observer immediately and on every change; returns unsubscribe. */
-  readonly subscribe: (observer: (state: XrSessionState) => void) => () => void;
-}
 
 // The floor reference keeps the visitor's height right when the runtime knows
 // it; a runtime without it falls back to the default reference space.

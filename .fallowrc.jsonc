@@ -1,10 +1,6 @@
-// Purpose: Enforce confirmed ownership boundaries and intentional export conventions.
-// Context: The refactor keeps one runtime and isolates concrete content modules.
-// Responsibility: Detect forbidden imports without suppressing inherited violations.
-// Boundary: Import rules do not prove lifecycle, behavior, or performance correctness.
+// Purpose: Enforce the integration star and reject concrete peer imports, including types.
 {
   "$schema": "https://raw.githubusercontent.com/fallow-rs/fallow/main/schema.json",
-  // HTML lives below the Vite root; declare the three actual browser bootstraps.
   "entry": ["src/entry/*.entry.ts", "src/ui/app.css"],
   "ignoreExports": [
     {
@@ -14,7 +10,103 @@
   ],
   "boundaries": {
     "zones": [
-      // Specific data files precede the broader startup/composition owner.
+      {
+        "name": "world-mechanics",
+        "patterns": [
+          "src/world/chunk-candidates.ts",
+          "src/world/chunk-system.ts",
+          "src/world/stream-queue.ts",
+          "src/world/volume-chunk-window.ts",
+          "src/world/wind.ts"
+        ]
+      },
+      {
+        "name": "preset-catalog",
+        "patterns": ["src/levels/level-catalog.ts"]
+      },
+      {
+        "name": "run",
+        "patterns": ["src/levels/level.runtime.ts"]
+      },
+      {
+        "name": "composition",
+        "patterns": ["src/levels/level-composition.ts"]
+      },
+      {
+        "name": "show",
+        "patterns": ["src/levels/show.runtime.ts"]
+      },
+      {
+        "name": "run-contract",
+        "patterns": ["src/levels/run-contract.ts"]
+      },
+      {
+        "name": "show-contract",
+        "patterns": ["src/levels/show-contract.ts"]
+      },
+      {
+        "name": "start-hub",
+        "patterns": ["src/modules/start/start.module.ts"]
+      },
+      {
+        "name": "start-motion",
+        "patterns": ["src/modules/start/start-motion.ts"]
+      },
+      {
+        "name": "start-course",
+        "patterns": ["src/modules/start/start-course.ts"]
+      },
+      {
+        "name": "start-arrows",
+        "patterns": ["src/modules/start/start-arrows.ts"]
+      },
+      {
+        "name": "start-crossing",
+        "patterns": ["src/modules/start/flight-ring-crossing.ts"]
+      },
+      {
+        "name": "start-contracts",
+        "patterns": [
+          "src/modules/start/start-contract.ts",
+          "src/modules/start/start-particle-frame.ts"
+        ]
+      },
+      {
+        "name": "start-settings",
+        "patterns": ["src/modules/start/start-settings.ts"]
+      },
+      {
+        "name": "start-particles",
+        "patterns": ["src/modules/start/start-particle*"]
+      },
+      {
+        "name": "world-contracts",
+        "patterns": [
+          "src/world/world-contract.ts",
+          "src/world/viewpoint.ts",
+          "src/world/xr-contract.ts",
+          "src/world/module-runtime.ts"
+        ]
+      },
+      {
+        "name": "control-contracts",
+        "patterns": ["src/control/control-contract.ts"]
+      },
+      {
+        "name": "m5-contract",
+        "patterns": ["src/m5/m5-contract.ts"]
+      },
+      {
+        "name": "sound-contracts",
+        "patterns": [
+          "src/sound/playback.ts",
+          "src/sound/spatial-audio.ts",
+          "src/sound/training-audio.ts",
+          "src/sound/drone-organ/organ-frame.ts",
+          "src/sound/drone-organ/organ-signals.ts",
+          "src/sound/drone-organ/drone-organ-settings.ts"
+        ]
+      },
       {
         "name": "presets",
         "patterns": ["src/levels/*.level.ts"]
@@ -23,20 +115,54 @@
         "name": "level-contracts",
         "patterns": ["src/levels/level-preset.ts"]
       },
-      { "name": "levels", "patterns": ["src/levels/**"] },
-      // Shared contracts/mechanics are not concrete child modules.
-      { "name": "modules", "autoDiscover": ["src/modules"] },
-      { "name": "module-contracts", "patterns": ["src/modules/*.ts"] },
-      { "name": "world", "patterns": ["src/world/**"] },
-      { "name": "world-surface", "patterns": ["src/world-surface/**"] },
-      { "name": "control", "patterns": ["src/control/**"] },
-      { "name": "m5-protocol", "patterns": ["src/m5/protocol.ts"] },
-      { "name": "control-input", "patterns": ["src/m5/control-frame.ts"] },
-      { "name": "m5-runtime", "patterns": ["src/m5/runtime/m5.runtime.ts"] },
-      { "name": "m5-internal", "patterns": ["src/m5/runtime/**"] },
-      { "name": "m5-setup", "patterns": ["src/m5/setup/**"] },
-      { "name": "m5-tools", "patterns": ["firmware/m5/tools/**"] },
-      { "name": "utils", "patterns": ["src/utils/**"] },
+      {
+        "name": "modules",
+        "autoDiscover": ["src/modules"]
+      },
+      {
+        "name": "module-contracts",
+        "patterns": ["src/modules/*.ts"]
+      },
+      {
+        "name": "world",
+        "patterns": ["src/world/**"]
+      },
+      {
+        "name": "world-surface",
+        "patterns": ["src/world-surface/**"]
+      },
+      {
+        "name": "control",
+        "patterns": ["src/control/**"]
+      },
+      {
+        "name": "m5-protocol",
+        "patterns": ["src/m5/protocol.ts"]
+      },
+      {
+        "name": "control-input",
+        "patterns": ["src/m5/control-frame.ts"]
+      },
+      {
+        "name": "m5-runtime",
+        "patterns": ["src/m5/runtime/m5.runtime.ts"]
+      },
+      {
+        "name": "m5-internal",
+        "patterns": ["src/m5/runtime/**"]
+      },
+      {
+        "name": "m5-setup",
+        "patterns": ["src/m5/setup/**"]
+      },
+      {
+        "name": "m5-tools",
+        "patterns": ["firmware/m5/tools/**"]
+      },
+      {
+        "name": "utils",
+        "patterns": ["src/utils/**"]
+      },
       {
         "name": "show-queries",
         "patterns": [
@@ -45,17 +171,38 @@
           "src/dramaturgy/schedule-layout.ts"
         ]
       },
-      { "name": "dramaturgy", "patterns": ["src/dramaturgy/**"] },
-      { "name": "sound", "patterns": ["src/sound/**"] },
-      { "name": "shared", "patterns": ["shared/**"] },
-      { "name": "station-backend", "patterns": ["station/**"] },
-      { "name": "benchmark", "patterns": ["src/benchmark/**"] },
-      { "name": "diagnostics", "patterns": ["src/diagnostics/**"] },
+      {
+        "name": "dramaturgy",
+        "patterns": ["src/dramaturgy/**"]
+      },
+      {
+        "name": "sound",
+        "patterns": ["src/sound/**"]
+      },
+      {
+        "name": "shared",
+        "patterns": ["shared/**"]
+      },
+      {
+        "name": "station-backend",
+        "patterns": ["station/**"]
+      },
+      {
+        "name": "benchmark",
+        "patterns": ["src/benchmark/**"]
+      },
+      {
+        "name": "diagnostics",
+        "patterns": ["src/diagnostics/**"]
+      },
       {
         "name": "entries",
         "patterns": ["src/entry/*.entry.ts", "src/entry/deployment-config.ts"]
       },
-      { "name": "flash", "patterns": ["src/ui/flash/**"] },
+      {
+        "name": "flash",
+        "patterns": ["src/ui/flash/**"]
+      },
       {
         "name": "ui",
         "patterns": [
@@ -67,75 +214,137 @@
       }
     ],
     "rules": [
-      { "from": "presets", "allow": [], "allowTypeOnly": ["level-contracts"] },
+      {
+        "from": "presets",
+        "allow": [],
+        "allowTypeOnly": ["level-contracts"]
+      },
       {
         "from": "level-contracts",
         "allow": [],
         "allowTypeOnly": [
           "modules",
           "module-contracts",
-          "sound",
-          "show-queries"
+          "show-queries",
+          "sound-contracts",
+          "start-contracts",
+          "start-settings"
         ]
       },
       {
         "from": "modules",
         "allow": [
           "module-contracts",
-          "world",
           "world-surface",
           "utils",
           "dramaturgy",
-          "show-queries"
+          "show-queries",
+          "world-contracts",
+          "world-mechanics"
         ]
       },
       {
         "from": "module-contracts",
-        "allow": ["world", "world-surface", "utils"]
+        "allow": [
+          "world-surface",
+          "utils",
+          "world-contracts",
+          "world-mechanics"
+        ]
       },
-      { "from": "world", "allow": ["utils"] },
-      { "from": "world-surface", "allow": [] },
+      {
+        "from": "world",
+        "allow": ["utils", "world-contracts", "world-mechanics"]
+      },
+      {
+        "from": "world-surface",
+        "allow": []
+      },
       {
         "from": "control",
-        "allow": ["world", "world-surface", "utils"],
+        "allow": [
+          "world-surface",
+          "utils",
+          "world-contracts",
+          "control-contracts",
+          "world-mechanics"
+        ],
         "allowTypeOnly": ["control-input"]
       },
       {
         "from": "m5-runtime",
         "allow": ["m5-internal", "m5-protocol"],
-        "allowTypeOnly": ["control-input"]
+        "allowTypeOnly": ["control-input", "m5-contract"]
       },
-      { "from": "m5-internal", "allow": ["m5-protocol", "control-input"] },
-      { "from": "m5-setup", "allow": ["m5-protocol"] },
-      { "from": "m5-tools", "allow": ["m5-protocol"] },
-      { "from": "control-input", "allow": [] },
-      { "from": "m5-protocol", "allow": [] },
-      { "from": "utils", "allow": [] },
-      { "from": "show-queries", "allow": [] },
-      { "from": "dramaturgy", "allow": ["show-queries", "utils"] },
-      { "from": "sound", "allow": ["dramaturgy", "show-queries", "utils"] },
-      { "from": "shared", "allow": [] },
-      { "from": "diagnostics", "allow": [] },
+      {
+        "from": "m5-internal",
+        "allow": ["m5-protocol", "control-input"],
+        "allowTypeOnly": ["m5-contract"]
+      },
+      {
+        "from": "m5-setup",
+        "allow": ["m5-protocol"]
+      },
+      {
+        "from": "m5-tools",
+        "allow": ["m5-protocol"]
+      },
+      {
+        "from": "control-input",
+        "allow": []
+      },
+      {
+        "from": "m5-protocol",
+        "allow": []
+      },
+      {
+        "from": "utils",
+        "allow": []
+      },
+      {
+        "from": "show-queries",
+        "allow": []
+      },
+      {
+        "from": "dramaturgy",
+        "allow": ["show-queries", "utils"]
+      },
+      {
+        "from": "sound",
+        "allow": ["dramaturgy", "show-queries", "utils", "sound-contracts"]
+      },
+      {
+        "from": "shared",
+        "allow": []
+      },
+      {
+        "from": "diagnostics",
+        "allow": []
+      },
       {
         "from": "station-backend",
         "allow": ["shared"]
       },
-      { "from": "flash", "allow": ["ui"], "allowTypeOnly": ["m5-protocol"] },
+      {
+        "from": "flash",
+        "allow": ["ui"],
+        "allowTypeOnly": ["m5-protocol"]
+      },
       {
         "from": "ui",
-        "allow": ["show-queries"],
+        "allow": ["show-queries", "m5-protocol"],
         "allowTypeOnly": [
-          "levels",
-          "world",
-          "m5-runtime",
-          "m5-protocol",
+          "run-contract",
+          "show-contract",
+          "world-contracts",
+          "m5-contract",
           "shared",
           "diagnostics"
         ]
       },
       {
         "from": "benchmark",
-        "allow": ["world"]
+        "allow": ["world", "world-contracts", "world-mechanics"]
       },
       {
         "from": "entries",
@@ -149,30 +358,161 @@
           "m5-protocol",
           "presets",
           "level-contracts",
-          "levels",
           "dramaturgy",
+          "show-queries",
+          "run",
+          "run-contract",
+          "show-contract",
+          "preset-catalog"
+        ]
+      },
+      {
+        "from": "run",
+        "allow": ["composition", "dramaturgy", "utils"],
+        "allowTypeOnly": [
+          "run-contract",
+          "show-contract",
+          "level-contracts",
+          "world-contracts",
+          "control-contracts",
+          "m5-contract",
+          "sound-contracts",
+          "benchmark",
           "show-queries"
         ]
       },
       {
-        "from": "levels",
+        "from": "composition",
         "allow": [
           "presets",
           "level-contracts",
           "shared",
           "modules",
           "module-contracts",
+          "start-hub",
+          "start-particles",
+          "start-settings",
+          "start-contracts",
           "world",
+          "world-contracts",
           "world-surface",
           "control",
+          "control-contracts",
           "m5-runtime",
+          "m5-contract",
           "utils",
           "dramaturgy",
           "show-queries",
-          "sound"
+          "sound",
+          "sound-contracts",
+          "show",
+          "show-contract",
+          "run-contract",
+          "world-mechanics"
         ],
-        // Existing in-page route contract; no benchmark execution imports.
         "allowTypeOnly": ["benchmark"]
+      },
+      {
+        "from": "show",
+        "allow": ["dramaturgy", "show-queries"],
+        "allowTypeOnly": ["show-contract", "sound-contracts"]
+      },
+      {
+        "from": "run-contract",
+        "allow": [],
+        "allowTypeOnly": [
+          "benchmark",
+          "show-queries",
+          "m5-contract",
+          "world-contracts",
+          "level-contracts",
+          "show-contract"
+        ]
+      },
+      {
+        "from": "show-contract",
+        "allow": [],
+        "allowTypeOnly": [
+          "show-queries",
+          "dramaturgy",
+          "start-contracts",
+          "sound-contracts",
+          "world-contracts"
+        ]
+      },
+      {
+        "from": "start-hub",
+        "allow": [
+          "start-motion",
+          "start-course",
+          "start-arrows",
+          "start-crossing",
+          "start-settings"
+        ],
+        "allowTypeOnly": ["start-contracts", "world-contracts"]
+      },
+      {
+        "from": "start-motion",
+        "allow": ["start-settings"],
+        "allowTypeOnly": ["world-contracts"]
+      },
+      {
+        "from": "start-course",
+        "allow": ["start-settings"],
+        "allowTypeOnly": ["world-contracts"]
+      },
+      {
+        "from": "start-arrows",
+        "allow": ["start-settings"],
+        "allowTypeOnly": ["world-contracts"]
+      },
+      {
+        "from": "start-crossing",
+        "allow": []
+      },
+      {
+        "from": "start-contracts",
+        "allow": [],
+        "allowTypeOnly": ["world-contracts", "start-settings"]
+      },
+      {
+        "from": "start-settings",
+        "allow": [],
+        "allowTypeOnly": ["start-particles"]
+      },
+      {
+        "from": "start-particles",
+        "allow": ["start-settings"],
+        "allowTypeOnly": ["start-contracts"]
+      },
+      {
+        "from": "world-contracts",
+        "allow": [],
+        "allowTypeOnly": ["world-surface", "world-mechanics"]
+      },
+      {
+        "from": "control-contracts",
+        "allow": [],
+        "allowTypeOnly": ["control-input"]
+      },
+      {
+        "from": "m5-contract",
+        "allow": [],
+        "allowTypeOnly": ["m5-protocol", "control-input"]
+      },
+      {
+        "from": "sound-contracts",
+        "allow": [],
+        "allowTypeOnly": ["dramaturgy", "show-queries", "sound"]
+      },
+      {
+        "from": "preset-catalog",
+        "allow": ["presets", "shared"],
+        "allowTypeOnly": ["level-contracts"]
+      },
+      {
+        "from": "world-mechanics",
+        "allow": ["utils"]
       }
     ]
   }

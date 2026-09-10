@@ -10,7 +10,7 @@ import type { GltfAssets } from "../../utils/asset-loader/gltf-assets";
 import type { UnlitMaterialEffect } from "../../utils/asset-loader/material-effect";
 import type { WorldModule } from "../../world/module-runtime";
 import type { StreamQueue } from "../../world/stream-queue";
-import type { Viewpoint } from "../../world/viewer-rig";
+import type { Viewpoint } from "../../world/viewpoint";
 import type { WorldSurface } from "../../world-surface/world-surface";
 import {
   createStaticPopulationModule,

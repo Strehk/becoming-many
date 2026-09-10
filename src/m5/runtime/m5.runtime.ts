@@ -1,42 +1,7 @@
-import type { ControlFrame } from "../control-frame";
+import type { M5Runtime } from "../m5-contract";
 import { type M5State, parseM5State } from "../protocol";
-import {
-  type ControlSource,
-  createControlSource,
-  type M5ConnectionStatus,
-} from "./control-source";
+import { type ControlSource, createControlSource } from "./control-source";
 import { M5_SETTINGS } from "./m5-settings";
-
-export type M5DeviceStatus = M5ConnectionStatus | "off";
-
-/**
- * Read-only observation at one timestamp. Sample storage may be shared across
- * observations; never mutate it. Retained observations do not refresh freshness.
- * control contains normalized axes/quality only, never consumable button edges.
- */
-export interface M5Observation {
-  readonly host: string;
-  readonly status: M5DeviceStatus;
-  readonly sample: M5State | undefined;
-  /** Last parsed reply for diagnostics only, regardless of firmware version. */
-  readonly receivedState?: M5State;
-  readonly control:
-    | Readonly<Pick<ControlFrame, "pitch" | "roll" | "quality">>
-    | undefined;
-}
-
-export interface M5Runtime {
-  /** Replace the complete host lifetime; an empty host stops polling. */
-  readonly setHost: (host: string) => void;
-  /**
-   * Exactly one render-frame reader consumes button edges. Undefined without
-   * a host; stale configured input yields neutral steering.
-   */
-  readonly consumeFrame: () => ControlFrame | undefined;
-  readonly readObservation: () => M5Observation;
-  /** Abort polling and permanently end this runtime; repeated calls are safe. */
-  readonly unload: () => void;
-}
 
 /**
  * Run-owned HTTP input. Construction performs no I/O; setHost starts polling.

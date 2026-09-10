@@ -6,97 +6,33 @@
  */
 
 import type { BenchmarkRun } from "../benchmark/benchmark-run";
-import { createDesktopControls } from "../control/desktop-controls.runtime";
-import { keepFlightWithinHeightLimits } from "../control/flight-ground-clearance";
-import { resetFlightPose } from "../control/flight-reset";
-import { FLIGHT_SETTINGS } from "../control/flight-settings";
-import { createM5Flight } from "../control/m5-flight.runtime";
-import type { NarrationLanguage } from "../dramaturgy/narration-catalog";
 import { PIECE_SCHEDULE } from "../dramaturgy/piece-schedule";
 import { SHOW_LEVEL_STATES, showLevelStateAt } from "../dramaturgy/show-levels";
-import { createM5Runtime, type M5Runtime } from "../m5/runtime/m5.runtime";
-import {
-  createSpatialAudio,
-  type SpatialAudio,
-} from "../sound/spatial-audio.runtime";
-import {
-  createTrainingAudio,
-  type TrainingAudio,
-} from "../sound/training-audio.runtime";
+import type { M5Runtime } from "../m5/m5-contract";
+import type { SpatialAudio } from "../sound/spatial-audio";
+import type { TrainingAudio } from "../sound/training-audio";
 import { disposeGltfAssets } from "../utils/asset-loader/gltf-assets";
 import type { WorldModule } from "../world/module-runtime";
-import { VIEW_PITCH_ASSIST_DEGREES } from "../world/viewer-rig";
-import {
-  createWorld,
-  type GraphicsInfo,
-  type RenderCounters,
-  type WorldViewport,
-} from "../world/world-runtime";
-import type { XrSessionControl } from "../world/xr-session";
+import type {
+  GraphicsInfo,
+  RenderCounters,
+  World,
+  WorldViewport,
+} from "../world/world-contract";
 import {
   type ComposedLevel,
+  composeControls,
   composeLevel,
+  composePlayback,
   composeTraining,
+  composeTrainingAudio,
+  composeWorld,
   type LoadedLevelAssets,
   loadLevelAssets,
 } from "./level-composition";
 import type { LevelPreset } from "./level-preset";
-import {
-  createShowRuntime,
-  type RunningShow,
-  type ShowRequest,
-  type ShowRuntime,
-  type ShowTutorial,
-} from "./show.runtime";
-
-/** One experience lifetime, with commands and observations for its entry/UI. */
-export interface Run {
-  readonly renderCounters: RenderCounters;
-  /** Diagnostic reads only; never called by the frame loop. */
-  readonly readGraphicsInfo: () => GraphicsInfo;
-  readonly unload: () => Promise<void>;
-  readonly show: RunningShow | undefined;
-  readonly training: RunningShow | undefined;
-
-  /**
-   * Reset the rig and retained training practice/audio, without rewinding Show.
-   * The visitor's local head pose remains owned by pointer look or the headset.
-   */
-  readonly resetFlight: () => void;
-  /** Rewind, reset the flight rig and hold; this does not replace the Run. */
-  readonly resetShowAndFlight: () => void;
-
-  /**
-   * The M5 tilt controller, idle until a host is set (by the conductor page,
-   * a deployment config, or a `?m5=` request). Undefined under a benchmark.
-   */
-  readonly m5: Pick<M5Runtime, "setHost" | "readObservation"> | undefined;
-
-  /** The renderer's WebXR session, for the page that owns the entry button. */
-  readonly xr: Pick<XrSessionControl, "start" | "stop" | "subscribe">;
-}
-
-interface CommonLevelRequest {
-  readonly signal?: AbortSignal;
-  readonly preset: LevelPreset;
-  readonly language?: NarrationLanguage;
-  /** Entry-owned diagnostic work; absent from normal Experience runs. */
-  readonly onFrame?: (deltaSeconds: number) => void;
-}
-
-export interface StaticLevelRequest extends CommonLevelRequest {
-  readonly kind: "static";
-  readonly benchmark?: BenchmarkRun;
-}
-
-export interface ShowLevelRequest extends CommonLevelRequest {
-  readonly kind: "show";
-  readonly show: ShowRequest;
-  readonly tutorial?: LevelPreset;
-}
-
-/** Both run modes construct one preset; Show adds its timeline and live states. */
-export type LevelStartRequest = StaticLevelRequest | ShowLevelRequest;
+import type { LevelStartRequest, Run } from "./run-contract";
+import type { RunningShow, ShowRuntime, ShowTutorial } from "./show-contract";
 
 export async function startLevel(
   surface: WorldViewport,
@@ -127,7 +63,7 @@ class LevelRun {
   private readonly tutorialPreset: LevelPreset | undefined;
   private readonly benchmark: BenchmarkRun | undefined;
   private assets: LoadedLevelAssets | undefined;
-  private world!: ReturnType<typeof createWorld>;
+  private world!: World;
   private worldSurface!: ComposedLevel["worldSurface"];
   private reach!: ComposedLevel["reach"];
   private hasGround = false;
@@ -141,8 +77,7 @@ class LevelRun {
   private resolveAudioRelease: (() => void) | undefined;
   private trainingPreparation: AbortController | undefined;
   private trainingLoading: Promise<void> | undefined;
-  private desktop: ReturnType<typeof createDesktopControls> | undefined;
-  private applyM5Flight!: ReturnType<typeof createM5Flight>;
+  private controls: ReturnType<typeof composeControls> | undefined;
   private playback: ShowRuntime | undefined;
   private unloading: Promise<void> | undefined;
   private mainFieldOfViewDegrees = 0;
@@ -150,7 +85,9 @@ class LevelRun {
     minimumGroundClearanceMeters: undefined as number | undefined,
     maximumGroundClearanceMeters: undefined as number | undefined,
   };
-  m5: M5Runtime | undefined;
+  get m5(): M5Runtime | undefined {
+    return this.controls?.m5;
+  }
 
   constructor(private readonly request: LevelStartRequest) {
     this.level = request.preset;
@@ -189,10 +126,7 @@ class LevelRun {
       this.signal,
     );
     this.signal.throwIfAborted();
-    this.world = createWorld(surface, {
-      frameControl: this.benchmark,
-      viewPitchAssistDegrees: VIEW_PITCH_ASSIST_DEGREES,
-    });
+    this.world = composeWorld(surface, this.benchmark);
     this.mainFieldOfViewDegrees =
       this.level.desktopFieldOfViewDegrees ?? this.world.camera.fov;
     this.present(
@@ -202,7 +136,11 @@ class LevelRun {
     );
     const setRoomPresence = await this.loadComposition();
     this.signal.throwIfAborted();
-    this.connectControls();
+    this.controls = composeControls(
+      this.world,
+      this.benchmark,
+      this.worldSurface,
+    );
     if (!this.benchmark && (this.request.kind === "show" || this.startContent))
       await this.startPlayback(setRoomPresence);
     this.signal.throwIfAborted();
@@ -213,7 +151,7 @@ class LevelRun {
   /** Reset the existing visit; replacement/calibration remains a separate operation. */
   readonly resetShowAndFlight = (): void => {
     if (this.signal.aborted) return;
-    this.resetRig();
+    this.controls?.resetRig();
     this.trainingAudio?.reset();
     if (this.startContent || !this.tutorialPreset?.start || !this.playback) {
       this.playback?.running.resetTime();
@@ -234,7 +172,7 @@ class LevelRun {
   readonly resetFlight = (): void => {
     this.trainingAudio?.reset();
     this.resetPractice();
-    this.resetRig();
+    this.controls?.resetRig();
   };
 
   readonly unload = (): Promise<void> => {
@@ -275,38 +213,9 @@ class LevelRun {
     return composition.setTrainingRoomPresence;
   }
 
-  private connectControls(): void {
-    this.applyM5Flight = createM5Flight(this.world.viewerRig);
-    if (this.benchmark) return;
-    this.desktop = createDesktopControls(
-      this.world.camera,
-      this.world.viewerRig,
-      this.world.renderer.domElement,
-    );
-    this.m5 = createM5Runtime();
-  }
-
-  private async preparePlaybackAudio(): Promise<void> {
-    const preset = this.tutorialPreset;
-    if (
-      this.request.kind === "show" ||
-      preset?.startAudio ||
-      preset?.start?.windStrength
-    )
-      this.audio = await createSpatialAudio(this.world.camera, this.signal);
-    this.signal.throwIfAborted();
-    if (preset?.startAudio && this.audio)
-      this.trainingAudio = await createTrainingAudio(
-        preset.startAudio,
-        this.audio,
-        this.signal,
-      );
-  }
-
   private async startPlayback(
     setRoomPresence?: (presence: number) => void,
   ): Promise<void> {
-    await this.preparePlaybackAudio();
     const preset = this.tutorialPreset;
     const request =
       this.request.kind === "show"
@@ -316,14 +225,18 @@ class LevelRun {
             states: SHOW_LEVEL_STATES,
             language: this.request.language ?? "en",
           };
-    this.playback = await createShowRuntime(request, {
+    const sound = await composePlayback(request, {
+      signal: this.signal,
+      preset,
       world: this.world,
       reach: this.reach,
       worldSurface: this.worldSurface,
-      audio: this.audio,
       standalone: this.request.kind === "static",
       tutorial: this.tutorialDefinition(setRoomPresence),
     });
+    this.audio = sound.audio;
+    this.trainingAudio = sound.trainingAudio;
+    this.playback = sound.playback;
     if (!this.startContent || !preset?.start) return;
     if (this.request.kind === "show") this.setMainActive(false);
     this.present(preset, this.world.camera.fov);
@@ -373,15 +286,11 @@ class LevelRun {
       if (!this.isCurrentPreparation(preparation)) return;
       await this.audioRelease;
       if (!this.isCurrentPreparation(preparation)) return;
-      const parameters = this.tutorialPreset?.startAudio;
-      const created =
-        parameters && this.audio
-          ? await createTrainingAudio(
-              parameters,
-              this.audio,
-              AbortSignal.any([this.signal, preparation.signal]),
-            )
-          : undefined;
+      const created = await composeTrainingAudio(
+        this.tutorialPreset,
+        this.audio,
+        AbortSignal.any([this.signal, preparation.signal]),
+      );
       if (!this.isCurrentPreparation(preparation)) {
         created?.unload();
         return;
@@ -435,7 +344,7 @@ class LevelRun {
     this.world.camera.fov = this.mainFieldOfViewDegrees;
     this.world.camera.updateProjectionMatrix();
     this.setMainActive(true);
-    this.resetRig();
+    this.controls?.resetRig();
   };
 
   private unloadTraining(): void {
@@ -467,13 +376,6 @@ class LevelRun {
   private readonly resetPractice = (): void => {
     this.startContent?.resetPractice();
   };
-  private resetRig(): void {
-    resetFlightPose(
-      this.world.viewerRig.position,
-      this.world.viewerRig.quaternion,
-    );
-  }
-
   private present(
     presentation: LevelPresentation,
     fieldOfViewDegrees: number,
@@ -522,14 +424,15 @@ class LevelRun {
     const speed = this.startContent
       ? this.tutorialPreset?.flightSpeedMetersPerSecond
       : undefined;
-    if (controlFrame) this.applyM5Flight(controlFrame, deltaSeconds, speed);
-    else this.desktop?.update(deltaSeconds, speed);
+    if (controlFrame)
+      this.controls?.applyM5Flight(controlFrame, deltaSeconds, speed);
+    else this.controls?.desktop?.update(deltaSeconds, speed);
   }
 
   private updateHeightLimits(): void {
     this.heightLimits.minimumGroundClearanceMeters =
       !this.startContent && this.hasGround
-        ? FLIGHT_SETTINGS.minimumGroundClearanceMeters
+        ? this.controls?.minimumGroundClearanceMeters
         : undefined;
     this.heightLimits.maximumGroundClearanceMeters = this.startContent
       ? this.tutorialPreset?.maximumGroundClearanceMeters
@@ -542,11 +445,7 @@ class LevelRun {
       this.heightLimits.minimumGroundClearanceMeters !== undefined ||
       this.heightLimits.maximumGroundClearanceMeters !== undefined
     )
-      keepFlightWithinHeightLimits(
-        this.world.viewerRig.position,
-        this.worldSurface.groundYAt,
-        this.heightLimits,
-      );
+      this.controls?.constrainHeight(this.heightLimits);
   }
 
   private finishAudioRelease(): void {
@@ -568,7 +467,7 @@ class LevelRun {
   };
 
   private async endChildren(): Promise<void> {
-    const owners = [this.desktop, this.m5, this.playback];
+    const owners = [this.controls?.desktop, this.m5, this.playback];
     const results = await Promise.allSettled([
       (async () => this.world?.stop())(),
       ...owners.map(async (owner) => {

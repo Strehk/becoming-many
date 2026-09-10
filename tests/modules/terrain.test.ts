@@ -22,7 +22,7 @@ import type { TerrainPresentation } from "../../src/modules/terrain/terrain-geom
 import { createZoneVisualizer } from "../../src/modules/zone-visualizer/zone-visualizer";
 import type { TerrainMaterialEffect } from "../../src/utils/asset-loader/material-effect";
 import { StreamQueue } from "../../src/world/stream-queue";
-import type { Viewpoint } from "../../src/world/viewer-rig";
+import type { Viewpoint } from "../../src/world/viewpoint";
 import { WORLD_SURFACE_SETTINGS } from "../../src/world-surface/surface-settings";
 import {
   createWorldSurface,

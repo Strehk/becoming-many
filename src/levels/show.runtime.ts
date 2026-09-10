@@ -13,7 +13,6 @@ import {
   narrationUrl,
 } from "../dramaturgy/narration-catalog";
 import {
-  type NarrationSchedule,
   narrationCueAt,
   type ShowLevelName,
 } from "../dramaturgy/narration-schedule";
@@ -36,144 +35,34 @@ import {
   senseIntensityAt,
   showLevelAt,
 } from "../dramaturgy/show-levels";
-import type { MotionActorGroup } from "../modules/motion-sense/motion-sense";
-import type { StartModuleHandle } from "../modules/start/start.module";
-import type { StartParameters } from "../modules/start/start-settings";
-import type { WorldFadeEffect } from "../modules/world-fade/world-fade";
-import { createAudioTimebase } from "../sound/audio-timebase";
-import { createDroneOrgan } from "../sound/drone-organ/drone-organ";
-import type { OrganPlacementGroup } from "../sound/drone-organ/drone-organ-settings";
-import type { ListenerPose } from "../sound/drone-organ/organ-signals";
-import type { NarrationRecording } from "../sound/narration-player";
-import { createNarrationPlayer } from "../sound/narration-player";
-import type { SpatialAudio } from "../sound/spatial-audio.runtime";
-import type { WorldModule } from "../world/module-runtime";
-import type { WorldContext } from "../world/world-runtime";
-import type { WorldSurface } from "../world-surface/world-surface";
-
-export interface ShowRequest {
-  readonly schedule: NarrationSchedule;
-  readonly language: NarrationLanguage;
-  readonly states: Record<ShowLevelName, ShowLevelState>;
-}
-
-export interface TutorialStatus {
-  /** Borrowed world-space passage target; absent during preparation. */
-  readonly goalTarget?: Readonly<{ x: number; y: number; z: number }>;
-  readonly phase: string;
-  readonly goalIndex: number;
-  readonly direction: "right" | "left" | "up" | "down";
-  readonly crossingCount: number;
-}
-
-export interface RunningShow {
-  readonly readTutorial: () => TutorialStatus | undefined;
-  /** Continuous visit timeline; main cues remain relative to mainStartSeconds. */
-  readonly sample: () => ShowTimeSample & { readonly mainStartSeconds: number };
-  readonly play: ShowClock["play"];
-  readonly pause: ShowClock["pause"];
-  readonly seekTo: ShowClock["seekTo"];
-  readonly seekBy: ShowClock["seekBy"];
-  readonly setTimeScale: ShowClock["setTimeScale"];
-  /** Toggle from the current Show state, independently of UI refresh timing. */
-  readonly togglePlayback: () => void;
-  /** Rewind and hold; the current world and flight remain unchanged. */
-  readonly resetTime: () => void;
-  readonly readLanguage: () => NarrationLanguage;
-  readonly readActiveLevel: () => ShowLevelName;
-  /** Replace narration at the current position without changing playback state. */
-  readonly setLanguage: (language: NarrationLanguage) => void;
-  readonly readAudioState: () => AudioContextState;
-}
-
-type ShowWorld = Pick<
-  WorldContext,
-  "camera" | "renderer" | "modules" | "viewpoint"
->;
-
-type SenseDrivers = Readonly<
-  Partial<Record<ShowSense, (intensity: number) => void>>
->;
-
-/** Narrow reach from show policy into the world composed by Level Runtime. */
-export interface ShowWorldReach {
-  readonly gates: ReadonlyMap<ShowSense, readonly WorldModule[]>;
-  readonly senses: SenseDrivers;
-  readonly worldFades: {
-    readonly structure?: WorldFadeEffect;
-    readonly animals?: WorldFadeEffect;
-  };
-  readonly setSkyBackground?: (background: Color) => void;
-  /**
-   * Fades the closing credits in at the end of the show. Not a gate: the
-   * credits are not a sense, and the panel costs no draw while hidden.
-   */
-  readonly setEndCreditsPresence?: (presence: number) => void;
-  /** Places the authored animal crossings; composed only for a show. */
-  readonly followPassages?: (showTimeSeconds: number) => void;
-
-  /**
-   * Where the moving actor clouds are, so the drone organ can put its two
-   * placed voices on the birds and the insects the motion sense shows.
-   */
-  readonly readMotionActorCenters?: (group: MotionActorGroup) => Float32Array;
-}
+import type { NarrationPlayer, NarrationRecording } from "../sound/playback";
+import type {
+  RunningShow,
+  ShowRequest,
+  ShowRuntime,
+  ShowRuntimeOptions,
+  ShowTutorial,
+  ShowWorld,
+  TutorialStatus,
+} from "./show-contract";
 
 /** Answer for a placement group nothing in this world produces. */
 const NO_ACTOR_CENTERS = new Float32Array(0);
 const TUTORIAL_BREATH_SECONDS = 1.5;
 
-/** The listener pose scratch a show writes each frame; the organ only reads. */
-type MutableListenerPose = {
-  -readonly [Key in keyof ListenerPose]: ListenerPose[Key];
-};
-
-export interface ShowTutorial {
-  readonly setRoomPresence?: (presence: number) => void;
-  readonly start: Pick<
-    StartModuleHandle,
-    | "readObservation"
-    | "setPlaying"
-    | "setFormationAllowed"
-    | "setGoalAdvanceAllowed"
-  >;
-  /** Run resets practice once; Show resets playback policy. */
-  readonly reset: () => void;
-  readonly parameters: StartParameters;
-  readonly recordings?: Readonly<
-    Record<NarrationLanguage, readonly NarrationRecording[]>
-  >;
-  /** Run removes training resources and releases the prepared main world. */
-  readonly finish: () => void;
-}
-
-export interface ShowRuntime {
-  readonly setTutorial: (tutorial: ShowTutorial) => void;
-  readonly readSpeechActive: () => boolean;
-  /** Run holds playback until an exclusive training sample is prepared. */
-  readonly setPreparationState: (state: "loading" | "ready" | "failed") => void;
-  readonly update: () => void;
-  readonly readActiveLevelState: () => ShowLevelState;
-  readonly running: RunningShow;
-  readonly unload: () => Promise<void>;
-}
-
-interface ShowRuntimeOptions {
-  readonly world: ShowWorld;
-  readonly reach: ShowWorldReach;
-  readonly worldSurface: WorldSurface;
-  readonly audio?: SpatialAudio;
-  readonly standalone?: boolean;
-  readonly tutorial?: ShowTutorial;
+/** Validate before Composition acquires sound resources; return the first score level. */
+export function validateShowRequest(request: ShowRequest): ShowLevelName {
+  validateDuration(request.schedule.durationSeconds, "Show");
+  const openingLevel = showLevelAt(request.schedule, 0);
+  if (!openingLevel) throw new Error("A show schedule needs at least one cue");
+  return openingLevel;
 }
 
 export async function createShowRuntime(
   request: ShowRequest,
   options: ShowRuntimeOptions,
 ): Promise<ShowRuntime> {
-  validateDuration(request.schedule.durationSeconds, "Show");
-  const openingLevel = showLevelAt(request.schedule, 0);
-  if (!openingLevel) throw new Error("A show schedule needs at least one cue");
+  const openingLevel = validateShowRequest(request);
   const { tutorial, ...configuration } = options;
   const show = new Show(request, configuration, openingLevel);
   try {
@@ -191,11 +80,10 @@ export async function createShowRuntime(
 
 /** One Show owns both practice and score policy on the same audio clock. */
 class Show implements ShowRuntime, RunningShow {
-  private readonly timebase = createAudioTimebase();
   private clock!: ShowClock;
   private readonly targetBackground = new Color();
   private readonly liveBackground = new Color(0xffffff);
-  private readonly listenerPose: MutableListenerPose = {
+  private readonly listenerPose = {
     x: 0,
     y: 0,
     z: 0,
@@ -214,8 +102,8 @@ class Show implements ShowRuntime, RunningShow {
     hiHat: 0,
   };
   private language: NarrationLanguage;
-  private narration: ReturnType<typeof createNarrationPlayer> | undefined;
-  private droneOrgan: ReturnType<typeof createDroneOrgan> | undefined;
+  private narration: NarrationPlayer | undefined;
+
   private unloading: Promise<void> | undefined;
   private tutorial: ShowTutorial | undefined;
   private activeLevel: ShowLevelName | undefined;
@@ -239,18 +127,10 @@ class Show implements ShowRuntime, RunningShow {
   prepare(tutorial?: ShowTutorial): void {
     this.clock = createShowClock(
       this.request.schedule.durationSeconds,
-      this.timebase.readSeconds,
+      this.options.timebase.readSeconds,
     );
-    const { audio, standalone } = this.options;
+    const { standalone } = this.options;
     if (!tutorial) this.prepareNarration();
-    if (audio && (!standalone || tutorial?.parameters.windStrength))
-      this.droneOrgan = createDroneOrgan(
-        {
-          pulseSeconds: ORGAN_SCORE.pulseSeconds,
-          voices: standalone ? ["wind"] : undefined,
-        },
-        audio,
-      );
     if (!standalone) this.followWorld(0);
     if (tutorial) this.setTutorial(tutorial);
   }
@@ -264,8 +144,8 @@ class Show implements ShowRuntime, RunningShow {
   private async releaseAudio(): Promise<void> {
     const results = await Promise.allSettled([
       Promise.resolve().then(() => this.narration?.unload()),
-      this.droneOrgan?.unload(),
-      this.timebase.unload(),
+      this.options.droneOrgan?.unload(),
+      this.options.timebase.unload(),
     ]);
     const errors = results.flatMap((result) =>
       result.status === "rejected" ? [result.reason] : [],
@@ -282,8 +162,8 @@ class Show implements ShowRuntime, RunningShow {
           durationSeconds: narrationDurationSeconds(cueId, this.language),
         }));
     recordings.push(...(this.tutorial?.recordings?.[this.language] ?? []));
-    if (this.narration) this.narration.setRecordings(recordings);
-    else this.narration = createNarrationPlayer({ recordings });
+    this.narration ??= this.options.createNarration();
+    this.narration.setRecordings(recordings);
   }
 
   private followBackground(seconds: number): void {
@@ -380,7 +260,7 @@ class Show implements ShowRuntime, RunningShow {
     for (const voice of ORGAN_VOICES)
       this.voiceStrengths[voice] = this.voiceStrength(voice, showTime);
     readListenerPose(this.options.world, this.listenerPose);
-    this.droneOrgan?.update({
+    this.options.droneOrgan?.update({
       showTimeSeconds: showTime.timeSeconds,
       isPlaying: showTime.isPlaying,
       timeScale: showTime.timeScale,
@@ -390,7 +270,10 @@ class Show implements ShowRuntime, RunningShow {
         this.listenerPose.x,
         this.listenerPose.z,
       ),
-      readGroupCenters: (group) => readActorCenters(this.options.reach, group),
+      readGroupCenters: (group) =>
+        this.options.reach.readMotionActorCenters?.(
+          group === "insects" ? "flies" : "birds",
+        ) ?? NO_ACTOR_CENTERS,
     });
   }
 
@@ -608,7 +491,7 @@ class Show implements ShowRuntime, RunningShow {
     );
     this.tutorial.start.setGoalAdvanceAllowed(instructionFinished);
     this.tutorial.start.setPlaying(
-      showTime.isPlaying && this.timebase.readState() === "running",
+      showTime.isPlaying && this.options.timebase.readState() === "running",
     );
   }
 
@@ -685,7 +568,8 @@ class Show implements ShowRuntime, RunningShow {
   readonly readLanguage = (): NarrationLanguage => this.language;
   readonly readActiveLevel = (): ShowLevelName =>
     this.activeLevel ?? this.openingLevel;
-  readonly readAudioState = this.timebase.readState;
+  readonly readAudioState = (): AudioContextState =>
+    this.options.timebase.readState();
 
   private canScrub(): boolean {
     return !this.tutorial && this.preparationState === "ready";
@@ -703,7 +587,7 @@ class Show implements ShowRuntime, RunningShow {
       isPlaying:
         sample.isPlaying &&
         this.preparationState === "ready" &&
-        (!this.tutorial || this.timebase.readState() === "running"),
+        (!this.tutorial || this.options.timebase.readState() === "running"),
     };
   };
   readonly running: RunningShow = {
@@ -735,7 +619,16 @@ function validateDuration(seconds: number, subject: string): void {
  * The eye carries the head pose the rig published at the end of the previous
  * frame — the same frame of reference every module windows its content around.
  */
-function readListenerPose(world: ShowWorld, pose: MutableListenerPose): void {
+function readListenerPose(
+  world: ShowWorld,
+  pose: {
+    x: number;
+    y: number;
+    z: number;
+    yawRadians: number;
+    pitchRadians: number;
+  },
+): void {
   const eye = world.viewpoint.worldPosition;
   pose.x = eye.x;
   pose.y = eye.y;
@@ -748,15 +641,4 @@ function readListenerPose(world: ShowWorld, pose: MutableListenerPose): void {
   const forwardZ = -(elements[10] ?? 1);
   pose.yawRadians = Math.atan2(forwardX, forwardZ);
   pose.pitchRadians = Math.asin(Math.min(1, Math.max(-1, forwardY)));
-}
-
-/** The organ's placement groups, answered from the moving world it can reach. */
-function readActorCenters(
-  reach: ShowWorldReach,
-  group: OrganPlacementGroup,
-): Float32Array {
-  return (
-    reach.readMotionActorCenters?.(group === "insects" ? "flies" : "birds") ??
-    NO_ACTOR_CENTERS
-  );
 }

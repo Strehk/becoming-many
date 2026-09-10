@@ -3,7 +3,8 @@ import { resolveNarrationLanguage } from "../dramaturgy/narration-catalog";
 import { PIECE_SCHEDULE } from "../dramaturgy/piece-schedule";
 import { SHOW_LEVEL_STATES } from "../dramaturgy/show-levels";
 import { level as connectionsLevel } from "../levels/connections.level";
-import { type Run, startLevel } from "../levels/level.runtime";
+import { startLevel } from "../levels/level.runtime";
+import type { Run } from "../levels/run-contract";
 import { level as tutorialLevel } from "../levels/start.level";
 /** Resolve browser inputs, start one Run and connect the operator UI. */
 import { mountConductorPage } from "../ui/conductor/conductor.page";

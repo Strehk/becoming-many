@@ -1,8 +1,8 @@
 import type { NarrationLanguage } from "../../dramaturgy/narration-catalog";
 import type { ShowLevelName } from "../../dramaturgy/narration-schedule";
-import type { RunningShow } from "../../levels/show.runtime";
-import type { M5Observation } from "../../m5/runtime/m5.runtime";
-import type { XrSessionState } from "../../world/xr-session";
+import type { RunningShow } from "../../levels/show-contract";
+import type { M5Observation } from "../../m5/m5-contract";
+import type { XrSessionState } from "../../world/xr-contract";
 
 /** UI observations; display time follows the pointer during a scrub gesture. */
 export interface ConductorViewState {

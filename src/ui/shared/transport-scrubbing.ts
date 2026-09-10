@@ -1,4 +1,4 @@
-import type { RunningShow } from "../../levels/show.runtime";
+import type { RunningShow } from "../../levels/show-contract";
 
 interface ScrubbingOptions {
   readonly track: SVGSVGElement;

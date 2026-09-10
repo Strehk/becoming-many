@@ -37,7 +37,7 @@ import type {
   TopologyPort,
 } from "../../src/modules/mycelium/topology-messages";
 import { StreamQueue } from "../../src/world/stream-queue";
-import type { Viewpoint } from "../../src/world/viewer-rig";
+import type { Viewpoint } from "../../src/world/viewpoint";
 import { WORLD_SURFACE_SETTINGS } from "../../src/world-surface/surface-settings";
 import { createWorldSurface } from "../../src/world-surface/world-surface";
 import { ZONE_SETTINGS } from "../../src/world-surface/zone-settings";

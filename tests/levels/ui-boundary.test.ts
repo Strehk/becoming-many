@@ -1,6 +1,6 @@
 import { expectTypeOf, test } from "bun:test";
-import type { Run } from "../../src/levels/level.runtime";
-import type { RunningShow } from "../../src/levels/show.runtime";
+import type { Run } from "../../src/levels/run-contract";
+import type { RunningShow } from "../../src/levels/show-contract";
 import type { ConductorPageOptions } from "../../src/ui/conductor/conductor.page";
 
 // These assertions run during type checking; Bun does not inspect TS contracts.

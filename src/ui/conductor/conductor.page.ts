@@ -17,9 +17,9 @@ import type {
 } from "../../diagnostics/frame-metrics";
 import { NARRATION_LANGUAGES } from "../../dramaturgy/narration-catalog";
 import type { NarrationSchedule } from "../../dramaturgy/narration-schedule";
-import type { Run } from "../../levels/level.runtime";
-import type { RunningShow } from "../../levels/show.runtime";
-import type { XrSessionState } from "../../world/xr-session";
+import type { Run } from "../../levels/run-contract";
+import type { RunningShow } from "../../levels/show-contract";
+import type { XrSessionState } from "../../world/xr-contract";
 import { requireElement } from "../shared/dom";
 import { resolveConductorKey } from "./keyboard-shortcuts";
 import { createLanguagePanel } from "./language.panel";

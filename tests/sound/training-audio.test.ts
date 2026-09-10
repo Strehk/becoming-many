@@ -1,9 +1,7 @@
 import { expect, test } from "bun:test";
 import { level } from "../../src/levels/start.level";
-import {
-  type TrainingAudioParameters,
-  validateTrainingAudioParameters,
-} from "../../src/sound/training-audio.runtime";
+import type { TrainingAudioParameters } from "../../src/sound/training-audio";
+import { validateTrainingAudioParameters } from "../../src/sound/training-audio.runtime";
 
 const grain = {
   sampleId: "a",

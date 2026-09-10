@@ -20,8 +20,8 @@ import type { StaticPopulationPreset } from "../modules/static-population";
 import type { TerrainColors } from "../modules/terrain/terrain-colors";
 import type { ThermalPerceptionParameters } from "../modules/thermal-perception/thermal-perception";
 import type { VegetationPreset } from "../modules/vegetation/vegetation";
-import type { NarrationRecording } from "../sound/narration-player";
-import type { TrainingAudioParameters } from "../sound/training-audio.runtime";
+import type { NarrationRecording } from "../sound/playback";
+import type { TrainingAudioParameters } from "../sound/training-audio";
 
 export interface TerrainPreset {
   readonly opacity: number;

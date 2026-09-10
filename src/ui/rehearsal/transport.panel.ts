@@ -4,7 +4,7 @@ import {
 } from "../../dramaturgy/narration-catalog";
 import type { NarrationSchedule } from "../../dramaturgy/narration-schedule";
 import { timelineChapters } from "../../dramaturgy/schedule-layout";
-import type { RunningShow } from "../../levels/show.runtime";
+import type { RunningShow } from "../../levels/show-contract";
 import { requireElement, writeText } from "../shared/dom";
 import {
   cueDisplayName,

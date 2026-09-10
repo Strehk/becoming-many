@@ -1,5 +1,5 @@
 import { Vector3 } from "three";
-import type { Viewpoint } from "../../world/viewer-rig";
+import type { Viewpoint } from "../../world/viewpoint";
 import { START_SETTINGS, type StartMotionLimits } from "./start-settings";
 
 interface MotionOptions {

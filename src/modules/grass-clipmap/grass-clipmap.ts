@@ -9,7 +9,7 @@ import type { PerspectiveCamera, Scene } from "three";
 import type { UnlitMaterialEffect } from "../../utils/asset-loader/material-effect";
 import type { WorldModule } from "../../world/module-runtime";
 import type { StreamJob, StreamQueue } from "../../world/stream-queue";
-import type { Viewpoint } from "../../world/viewer-rig";
+import type { Viewpoint } from "../../world/viewpoint";
 import type { WorldSurfaceSettings } from "../../world-surface/surface-settings";
 import type { WorldSurface } from "../../world-surface/world-surface";
 import {

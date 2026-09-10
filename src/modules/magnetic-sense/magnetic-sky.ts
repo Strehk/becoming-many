@@ -8,7 +8,7 @@
 import type { Color, Scene, Vector3 } from "three";
 import { BackSide, Mesh, ShaderMaterial, SphereGeometry } from "three";
 import type { WorldModule } from "../../world/module-runtime";
-import type { Viewpoint } from "../../world/viewer-rig";
+import type { Viewpoint } from "../../world/viewpoint";
 import { MAGNETIC_SENSE_SETTINGS } from "./magnetic-sense-settings";
 import fragmentShader from "./magnetic-sky.frag.glsl?raw";
 import vertexShader from "./magnetic-sky.vert.glsl?raw";

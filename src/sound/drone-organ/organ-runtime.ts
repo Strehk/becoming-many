@@ -9,14 +9,14 @@
  *   stands is decided by the show; how a voice sounds is decided by the voice.
  */
 
-import type { SpatialAudio } from "../spatial-audio.runtime";
-import type { DroneOrganFrame, DroneOrganOptions } from "./drone-organ";
+import type { SpatialAudio } from "../spatial-audio";
 import {
   DRONE_ORGAN_COMPOSITION,
   type OrganLayerSettings,
 } from "./drone-organ-settings";
 import { type AnchorPoint, readNearestAnchor } from "./nearest-anchor";
 import { createOrganEngine, type OrganEngine } from "./organ-engine";
+import type { DroneOrganFrame, DroneOrganOptions } from "./organ-frame";
 import { createOrganLayer, type OrganLayer } from "./organ-layer";
 import { readOrganSignal } from "./organ-signals";
 import { createOrganTimeline } from "./organ-timeline";

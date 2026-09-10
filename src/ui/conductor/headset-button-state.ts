@@ -1,4 +1,4 @@
-import type { XrSessionState } from "../../world/xr-session";
+import type { XrSessionState } from "../../world/xr-contract";
 
 export type StreamButtonLabel =
   | "Start headset picture"

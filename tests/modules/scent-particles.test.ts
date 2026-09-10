@@ -38,7 +38,7 @@ import type {
   ScentActorBody,
 } from "../../src/modules/scent-sources";
 import { StreamQueue } from "../../src/world/stream-queue";
-import type { Viewpoint } from "../../src/world/viewer-rig";
+import type { Viewpoint } from "../../src/world/viewpoint";
 
 const TEST_CHUNK_SIZE = 64;
 const PLANTS_PER_TEST_CHUNK = 3;

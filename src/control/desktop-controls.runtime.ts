@@ -1,14 +1,6 @@
 import { type Camera, type Object3D, Quaternion, Vector3 } from "three";
 import { PointerLockControls } from "three/addons/controls/PointerLockControls.js";
-
-export interface DesktopControls {
-  readonly update: (
-    deltaSeconds: number,
-    movementSpeedMetersPerSecond?: number,
-  ) => void;
-  /** Ends input capture and awaits any pending pointer-lock grant and release. */
-  readonly unload: () => Promise<void>;
-}
+import type { DesktopControls } from "./control-contract";
 
 const MOVEMENT_SPEED_METERS_PER_SECOND = 20;
 const FORWARD_KEYS = ["KeyW", "ArrowUp"] as const;

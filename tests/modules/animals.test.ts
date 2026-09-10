@@ -23,7 +23,7 @@ import type { AnimalsDefinition } from "../../src/modules/animals/animals-defini
 import type { AnimalSpeciesId } from "../../src/modules/scent-sources";
 import type { GltfAssets } from "../../src/utils/asset-loader/gltf-assets";
 import type { SensedMaterial } from "../../src/utils/asset-loader/material-effect";
-import type { Viewpoint } from "../../src/world/viewer-rig";
+import type { Viewpoint } from "../../src/world/viewpoint";
 import type { WorldSurface } from "../../src/world-surface/world-surface";
 import type { ZoneId } from "../../src/world-surface/zone-settings";
 

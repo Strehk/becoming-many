@@ -13,7 +13,7 @@ import {
 } from "../../world/chunk-system";
 import type { WorldModule } from "../../world/module-runtime";
 import type { StreamJob, StreamQueue } from "../../world/stream-queue";
-import type { Viewpoint } from "../../world/viewer-rig";
+import type { Viewpoint } from "../../world/viewpoint";
 import {
   getWorldWind,
   type WorldWindSample,

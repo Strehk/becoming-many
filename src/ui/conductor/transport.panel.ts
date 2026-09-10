@@ -1,5 +1,5 @@
-import type { Run } from "../../levels/level.runtime";
-import type { RunningShow } from "../../levels/show.runtime";
+import type { Run } from "../../levels/run-contract";
+import type { RunningShow } from "../../levels/show-contract";
 import { requireElement, writeText } from "../shared/dom";
 import { formatTutorialStatus } from "../shared/show-time-format";
 import type { ConductorPanel } from "./view-state";

@@ -3,7 +3,7 @@ import {
   type TimelineChapter,
   timelineChapters,
 } from "../../dramaturgy/schedule-layout";
-import type { RunningShow } from "../../levels/show.runtime";
+import type { RunningShow } from "../../levels/show-contract";
 import { requireElement, writeText } from "../shared/dom";
 import { cueDisplayName, formatShowTime } from "../shared/show-time-format";
 import { attachScrubbing } from "../shared/transport-scrubbing";

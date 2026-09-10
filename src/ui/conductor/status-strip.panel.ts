@@ -1,5 +1,5 @@
-import type { M5Observation } from "../../m5/runtime/m5.runtime";
-import type { XrSessionState } from "../../world/xr-session";
+import type { M5Observation } from "../../m5/m5-contract";
+import type { XrSessionState } from "../../world/xr-contract";
 import { requireElement, writeText } from "../shared/dom";
 import type { ConductorPanel, ConductorViewState } from "./view-state";
 

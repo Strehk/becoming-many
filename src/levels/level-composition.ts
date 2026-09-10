@@ -6,10 +6,18 @@
  */
 
 import { type Matrix4, Vector3 } from "three";
+import type { BenchmarkRun } from "../benchmark/benchmark-run";
+import { createDesktopControls } from "../control/desktop-controls.runtime";
+import type { FlightHeightLimits } from "../control/flight-ground-clearance";
+import { keepFlightWithinHeightLimits } from "../control/flight-ground-clearance";
+import { resetFlightPose } from "../control/flight-reset";
 import { FLIGHT_SETTINGS } from "../control/flight-settings";
+import { createM5Flight } from "../control/m5-flight.runtime";
 import { END_CREDITS } from "../dramaturgy/end-credits";
+import { ORGAN_SCORE } from "../dramaturgy/organ-score";
 import { PIECE_PASSAGES } from "../dramaturgy/piece-schedule";
 import type { ShowSense } from "../dramaturgy/show-levels";
+import { createM5Runtime } from "../m5/runtime/m5.runtime";
 import { createAirParticlesModule } from "../modules/air-particles/air-particles";
 import {
   type AnimalPassagesModuleHandle,
@@ -47,10 +55,8 @@ import {
   type ScentParticlesModuleHandle,
   type ScentParticlesParameters,
 } from "../modules/scent-particles/scent-particles";
-import {
-  createStartModule,
-  type StartModuleHandle,
-} from "../modules/start/start.module";
+import { createStartModule } from "../modules/start/start.module";
+import type { StartModuleHandle } from "../modules/start/start-contract";
 import { createStartParticleEffect } from "../modules/start/start-particles.effect";
 import { START_SETTINGS } from "../modules/start/start-settings";
 import { createGroundOccluder } from "../modules/terrain/ground-occluder";
@@ -69,6 +75,13 @@ import {
   createWorldFade,
   type WorldFadeEffect,
 } from "../modules/world-fade/world-fade";
+import { createAudioTimebase } from "../sound/audio-timebase";
+import { createDroneOrgan } from "../sound/drone-organ/drone-organ";
+import { createNarrationPlayer } from "../sound/narration-player";
+import type { SpatialAudio } from "../sound/spatial-audio";
+import { createSpatialAudio } from "../sound/spatial-audio.runtime";
+import type { TrainingAudio } from "../sound/training-audio";
+import { createTrainingAudio } from "../sound/training-audio.runtime";
 import {
   disposeGltfAssets,
   type GltfAssets,
@@ -80,7 +93,12 @@ import type {
 } from "../utils/asset-loader/material-effect";
 import type { WorldModule } from "../world/module-runtime";
 import { VIEW_PITCH_ASSIST_DEGREES } from "../world/viewer-rig";
-import type { WorldContext } from "../world/world-runtime";
+import type {
+  World,
+  WorldContext,
+  WorldViewport,
+} from "../world/world-contract";
+import { createWorld } from "../world/world-runtime";
 import { WORLD_SURFACE_SETTINGS } from "../world-surface/surface-settings";
 import {
   createWorldSurface,
@@ -92,7 +110,13 @@ import type {
   TerrainPreset,
   WorldComposition,
 } from "./level-preset";
-import type { ShowWorldReach } from "./show.runtime";
+import { createShowRuntime, validateShowRequest } from "./show.runtime";
+import type {
+  ShowRequest,
+  ShowRuntime,
+  ShowRuntimeOptions,
+  ShowWorldReach,
+} from "./show-contract";
 
 export interface LoadedLevelAssets {
   readonly vegetation: GltfAssets;
@@ -757,4 +781,157 @@ export function composeTraining(
   if (room) modules.push(room);
   modules.push(start.module);
   return { start, modules, setRoomPresence: room?.setPresence };
+}
+
+/** Construct the renderer with the experience's fixed parent pitch assistance. */
+export function composeWorld(
+  surface: WorldViewport,
+  benchmark?: BenchmarkRun,
+): World {
+  return createWorld(surface, {
+    frameControl: benchmark,
+    viewPitchAssistDegrees: VIEW_PITCH_ASSIST_DEGREES,
+  });
+}
+
+/** Bind input owners to the rig; release an unpublished M5 if desktop construction fails. */
+export function composeControls(
+  world: World,
+  benchmark: BenchmarkRun | undefined,
+  surface: Pick<WorldSurface, "groundYAt">,
+) {
+  const m5 = benchmark ? undefined : createM5Runtime();
+  try {
+    return {
+      ...composeRigCommands(world, surface.groundYAt),
+      m5,
+      desktop: benchmark
+        ? undefined
+        : createDesktopControls(
+            world.camera,
+            world.viewerRig,
+            world.renderer.domElement,
+          ),
+    };
+  } catch (error) {
+    m5?.unload();
+    throw error;
+  }
+}
+
+/** Bind pure locomotion operations once; Run supplies the active numerical limits. */
+function composeRigCommands(
+  world: World,
+  groundYAt: (x: number, z: number) => number,
+) {
+  return {
+    applyM5Flight: createM5Flight(world.viewerRig),
+    resetRig: () =>
+      resetFlightPose(world.viewerRig.position, world.viewerRig.quaternion),
+    constrainHeight: (limits: FlightHeightLimits) =>
+      keepFlightWithinHeightLimits(world.viewerRig.position, groundYAt, limits),
+    minimumGroundClearanceMeters: FLIGHT_SETTINGS.minimumGroundClearanceMeters,
+  };
+}
+
+/** Construct the current recipe's removable audio only after Run prepares its world. */
+export async function composeTrainingAudio(
+  preset: LevelPreset | undefined,
+  audio: SpatialAudio | undefined,
+  signal: AbortSignal,
+) {
+  return preset?.startAudio && audio
+    ? createTrainingAudio(preset.startAudio, audio, signal)
+    : undefined;
+}
+
+type PlaybackBindings = Omit<
+  ShowRuntimeOptions,
+  "timebase" | "createNarration" | "droneOrgan"
+>;
+interface PlaybackComposition extends PlaybackBindings {
+  readonly world: World;
+  readonly signal: AbortSignal;
+  readonly preset?: LevelPreset;
+}
+
+/** Construct shared sound, releasing unpublished resources if preparation fails. */
+export async function composePlayback(
+  request: ShowRequest,
+  options: PlaybackComposition,
+) {
+  validateShowRequest(request);
+  const preset = options.preset;
+  const audio =
+    !options.standalone || preset?.startAudio || preset?.start?.windStrength
+      ? await createSpatialAudio(options.world.camera, options.signal)
+      : undefined;
+  let trainingAudio: TrainingAudio | undefined;
+  try {
+    options.signal.throwIfAborted();
+    trainingAudio = await composeTrainingAudio(preset, audio, options.signal);
+    const playback = await composeShow(request, options, audio);
+    return { audio, trainingAudio, playback };
+  } catch (error) {
+    return releaseUnpublishedSound([trainingAudio, audio], error);
+  }
+}
+
+async function composeShow(
+  request: ShowRequest,
+  options: PlaybackBindings,
+  audio: SpatialAudio | undefined,
+): Promise<ShowRuntime> {
+  const timebase = createAudioTimebase();
+  let droneOrgan: ReturnType<typeof composeOrgan>;
+  try {
+    droneOrgan = composeOrgan(options, audio);
+  } catch (error) {
+    return releaseUnpublishedSound([timebase], error);
+  }
+  return createShowRuntime(request, {
+    ...options,
+    timebase,
+    createNarration: () => createNarrationPlayer({ recordings: [] }),
+    droneOrgan,
+  });
+}
+
+function composeOrgan(
+  options: PlaybackBindings,
+  audio: SpatialAudio | undefined,
+) {
+  if (
+    !audio ||
+    (options.standalone && !options.tutorial?.parameters.windStrength)
+  )
+    return undefined;
+  return createDroneOrgan(
+    {
+      pulseSeconds: ORGAN_SCORE.pulseSeconds,
+      voices: options.standalone ? ["wind"] : undefined,
+    },
+    audio,
+  );
+}
+
+/** End unpublished followers before their context and preserve the construction failure. */
+async function releaseUnpublishedSound(
+  owners: readonly (
+    | { readonly unload: () => void | Promise<void> }
+    | undefined
+  )[],
+  failure: unknown,
+): Promise<never> {
+  const errors = [failure];
+  for (const owner of owners) {
+    try {
+      await owner?.unload();
+    } catch (error) {
+      errors.push(error);
+    }
+  }
+  if (errors.length > 1)
+    throw new AggregateError(errors, "Sound construction and cleanup failed");
+  throw failure;
 }

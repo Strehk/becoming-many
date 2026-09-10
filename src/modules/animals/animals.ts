@@ -9,7 +9,7 @@ import type { Matrix4, Scene } from "three";
 import type { GltfAssets } from "../../utils/asset-loader/gltf-assets";
 import type { UnlitMaterialEffect } from "../../utils/asset-loader/material-effect";
 import type { WorldModule } from "../../world/module-runtime";
-import type { Viewpoint } from "../../world/viewer-rig";
+import type { Viewpoint } from "../../world/viewpoint";
 import type { WorldSurface } from "../../world-surface/world-surface";
 import type { AnimalSpeciesId } from "../scent-sources";
 import {

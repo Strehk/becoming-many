@@ -2,8 +2,10 @@ import { expect, mock, test } from "bun:test";
 import { Vector3 } from "three";
 import { FLIGHT_SETTINGS } from "../../src/control/flight-settings";
 import { createStartModule } from "../../src/modules/start/start.module";
-import type { StartParticleFrame } from "../../src/modules/start/start-particle-frame";
-import type { StartParticleEffect } from "../../src/modules/start/start-particles.effect";
+import type {
+  StartParticleEffect,
+  StartParticleFrame,
+} from "../../src/modules/start/start-particle-frame";
 import type { StartParameters } from "../../src/modules/start/start-settings";
 import { ModuleRuntime } from "../../src/world/module-runtime";
 

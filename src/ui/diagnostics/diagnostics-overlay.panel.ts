@@ -6,7 +6,7 @@
  */
 
 import type { FrameMetrics } from "../../diagnostics/frame-metrics";
-import type { GraphicsInfo, RenderCounters } from "../../world/world-runtime";
+import type { GraphicsInfo, RenderCounters } from "../../world/world-contract";
 
 import { requireElement } from "../shared/dom";
 

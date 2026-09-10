@@ -20,7 +20,7 @@ import type { GltfAssets } from "../../utils/asset-loader/gltf-assets";
 import { applyMaterialEffects } from "../../utils/asset-loader/material-effect";
 import { createUnlitMaterial } from "../../utils/asset-loader/unlit-material";
 import { getCellRandom } from "../../world/chunk-candidates";
-import type { Viewpoint } from "../../world/viewer-rig";
+import type { Viewpoint } from "../../world/viewpoint";
 import type { WorldSurface } from "../../world-surface/world-surface";
 import {
   type AlignAnimalToSurface,

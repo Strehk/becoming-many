@@ -1,5 +1,5 @@
 import { Quaternion, Vector3 } from "three";
-import type { ControlFrame } from "../m5/control-frame";
+import type { M5Flight } from "./control-contract";
 import { FLIGHT_SETTINGS } from "./flight-settings";
 
 /** The locomotion transform owned by the flight model. */
@@ -11,13 +11,7 @@ interface FlightTransform {
 const MINIMUM_PLANAR_DIRECTION_LENGTH = 1e-6;
 
 /** Own reusable flight math for one rig; no timers or external resources. */
-export function createM5Flight(
-  flight: FlightTransform,
-): (
-  frame: ControlFrame,
-  deltaSeconds: number,
-  glideSpeedMetersPerSecond?: number,
-) => void {
+export function createM5Flight(flight: FlightTransform): M5Flight {
   const worldUp = new Vector3(0, 1, 0);
   const yawStep = new Quaternion();
   const glideDirection = new Vector3();

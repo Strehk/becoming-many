@@ -5,7 +5,7 @@
  * Boundary: Session logic lives in xr-session; the operator page has its own UI.
  */
 
-import type { XrSessionControl } from "../../world/xr-session";
+import type { XrSessionControl } from "../../world/xr-contract";
 
 import { requireElement } from "./dom";
 

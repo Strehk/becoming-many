@@ -40,7 +40,9 @@ test("Run gates training preparation and releases failed or cancelled restart ch
         voices.push(created); return created;
       };
       const main = makeModule("main");
+      const composition = await import("./src/levels/level-composition.ts");
       mock.module("./src/levels/level-composition.ts", () => ({
+        ...composition,
         loadLevelAssets: async () => ({}),
         composeLevel: async () => {
           const training = makeTraining();
@@ -89,6 +91,12 @@ test("Run gates training preparation and releases failed or cancelled restart ch
           };
           return show;
         },
+      }));
+      mock.module("./src/sound/audio-timebase.ts", () => ({
+        createAudioTimebase: () => ({ readSeconds:()=>0,readState:()=>"running",unload:async()=>{} }),
+      }));
+      mock.module("./src/sound/drone-organ/drone-organ.ts", () => ({
+        createDroneOrgan: () => ({update(){},unload:async()=>{}}),
       }));
       console.error = () => {};
       const { startLevel } = await import("./src/levels/level.runtime.ts");

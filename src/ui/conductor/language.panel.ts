@@ -1,5 +1,5 @@
 import { NARRATION_LANGUAGES } from "../../dramaturgy/narration-catalog";
-import type { RunningShow } from "../../levels/show.runtime";
+import type { RunningShow } from "../../levels/show-contract";
 import { requireElement } from "../shared/dom";
 import type { ConductorPanel } from "./view-state";
 

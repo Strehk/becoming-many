@@ -1,7 +1,7 @@
 import { expectTypeOf, test } from "bun:test";
-import type { Run } from "../../src/levels/level.runtime";
+import type { Run } from "../../src/levels/run-contract";
 import type { ControlFrame } from "../../src/m5/control-frame";
-import type { M5Observation, M5Runtime } from "../../src/m5/runtime/m5.runtime";
+import type { M5Observation, M5Runtime } from "../../src/m5/m5-contract";
 import type { SerialSetupChannel } from "../../src/m5/setup/serial-setup";
 
 // Type checking enforces capabilities; Bun alone does not validate these types.

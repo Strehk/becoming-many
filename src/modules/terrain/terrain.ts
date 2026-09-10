@@ -18,7 +18,7 @@ import {
   type StreamQueue,
   SURFACE_STREAM_PRIORITY,
 } from "../../world/stream-queue";
-import type { Viewpoint } from "../../world/viewer-rig";
+import type { Viewpoint } from "../../world/viewpoint";
 import type { WorldSurface } from "../../world-surface/world-surface";
 import {
   createTerrainChunkWriter,

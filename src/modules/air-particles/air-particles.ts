@@ -31,7 +31,7 @@ export type {
   AirParticlesParameters,
 } from "./air-particles-settings";
 
-import type { Viewpoint } from "../../world/viewer-rig";
+import type { Viewpoint } from "../../world/viewpoint";
 
 export interface AirParticlesModuleOptions {
   readonly scene: Scene;

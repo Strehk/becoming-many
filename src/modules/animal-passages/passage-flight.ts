@@ -18,7 +18,7 @@ import {
   Quaternion,
   Vector3,
 } from "three";
-import type { Viewpoint } from "../../world/viewer-rig";
+import type { Viewpoint } from "../../world/viewpoint";
 import type { WorldSurface } from "../../world-surface/world-surface";
 import type { PassageFlightDefinition } from "./passage-definitions";
 import {

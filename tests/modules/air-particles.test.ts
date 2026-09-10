@@ -19,7 +19,7 @@ import {
   createAirParticlesModule,
 } from "../../src/modules/air-particles/air-particles";
 import { StreamQueue } from "../../src/world/stream-queue";
-import type { Viewpoint } from "../../src/world/viewer-rig";
+import type { Viewpoint } from "../../src/world/viewpoint";
 
 describe("Air Particles material", () => {
   test("keeps the square default free of circle fragment work", () => {

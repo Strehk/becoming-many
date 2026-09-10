@@ -1,17 +1,5 @@
 import { Group, MathUtils, PerspectiveCamera, Vector3 } from "three";
 
-/** Borrowed world facts, refreshed before modules; consumers never mutate vectors. */
-export interface Viewpoint {
-  readonly worldPosition: Readonly<Vector3>;
-  /** Rig motion excludes the local head pose and pitch assistance. */
-  readonly worldFlightPosition?: Readonly<Vector3>;
-  readonly worldFlightDirection?: Readonly<Vector3>;
-  readonly worldDirection: Readonly<Vector3>;
-  readonly worldUp: Readonly<Vector3>;
-  readonly viewHalfAngleRadians: number;
-  readonly viewDistanceMeters: number;
-}
-
 export type ViewerRig = Pick<
   OwnedViewerRig,
   "group" | "camera" | "viewpoint" | "publish"

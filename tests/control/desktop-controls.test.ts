@@ -1,9 +1,7 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { Group, PerspectiveCamera } from "three";
-import {
-  createDesktopControls,
-  type DesktopControls,
-} from "../../src/control/desktop-controls.runtime";
+import type { DesktopControls } from "../../src/control/control-contract";
+import { createDesktopControls } from "../../src/control/desktop-controls.runtime";
 
 /** Model pointer-lock events around real Three.js controls without rendering. */
 class PointerLockDocument extends EventTarget {

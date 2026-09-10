@@ -1,4 +1,4 @@
-import type { M5Observation } from "../../m5/runtime/m5.runtime";
+import type { M5Observation } from "../../m5/m5-contract";
 import { requireElement, writeText } from "../shared/dom";
 import type { ConductorPanel } from "./view-state";
 

@@ -9,42 +9,7 @@
 // is audible, so raise this before lowering it. Unmeasured on the PICO.
 const SYNC_TOLERANCE_SECONDS = 0.25;
 
-/** One sampled show instant, as the narration needs to see it. */
-export interface NarrationFollowState {
-  /** Undefined in a gap, before the first cue, and after the show ends. */
-  readonly position:
-    | { readonly cueId: string; readonly offsetSeconds: number }
-    | undefined;
-  readonly isPlaying: boolean;
-  /** Mirrored onto playback rate, or the correction would fight the clock. */
-  readonly timeScale: number;
-  /** Tutorial speech finishes natively; authored duration must not cut its tail. */
-  readonly preserveNaturalEnd?: boolean;
-}
-
-export interface NarrationPlayer {
-  readonly follow: (state: NarrationFollowState) => void;
-  /** Actual media playback, including blocked, ended and unloaded clips. */
-  readonly readIsPlaying: () => boolean;
-  /** Native playback observation for spoken-word gates; never advances Show time. */
-  readonly readOffsetSeconds: (cueId: string) => number | undefined;
-  /** Native completion or terminal playback failure, never a clock estimate. */
-  readonly readHasEnded: (cueId: string) => boolean;
-  /** Replace the prepared clip set, retaining unchanged recordings without reloading. */
-  readonly setRecordings: (recordings: readonly NarrationRecording[]) => void;
-  readonly unload: () => void;
-}
-
-/** An approved clip, selected by Show; duration is measured from shipped bytes. */
-export interface NarrationRecording {
-  readonly cueId: string;
-  readonly url: string;
-  readonly durationSeconds: number;
-  /** Authored spoken instruction onset; Show owns its visual presentation. */
-  readonly instructionAtSeconds?: number;
-  /** Opening room reveal; Show retains the revealed space across later cues. */
-  readonly environmentAtSeconds?: number;
-}
+import type { NarrationPlayer, NarrationRecording } from "./playback";
 
 interface PreparedNarration {
   readonly element: HTMLAudioElement;

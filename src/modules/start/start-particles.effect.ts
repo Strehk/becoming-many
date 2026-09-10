@@ -12,8 +12,9 @@ import {
   Vector3,
   type WebGLProgramParametersWithUniforms,
 } from "three";
-import type { StartArrowFrame } from "./start-arrows";
 import type {
+  StartArrowFrame,
+  StartParticleEffect,
   StartParticleFrame,
   StartParticleObjects,
 } from "./start-particle-frame";
@@ -26,16 +27,6 @@ import {
 import appearanceShader from "./start-particles.frag.glsl?raw";
 import motionShader from "./start-particles.vert.glsl?raw";
 import { START_SETTINGS } from "./start-settings";
-
-export interface StartParticleEffect {
-  readonly load: () => void;
-  readonly setVisible: (visible: boolean) => void;
-  /** Externally supplied time only; invisible/unloaded effects perform no work. */
-  readonly update: (frame: StartParticleFrame) => void;
-  /** Borrowed until the next update; callers must neither mutate nor retain vectors. */
-  readonly readObjectAnchors: () => StartParticleObjects | undefined;
-  readonly unload: () => void;
-}
 
 const ORIGIN = new Vector3();
 const UNIT_SCALE = new Vector3(1, 1, 1);
