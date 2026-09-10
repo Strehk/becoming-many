@@ -10,8 +10,9 @@ export const level: LevelPreset = {
   flightGuidance: {
     color: 0xf0bc50,
     opacity: 0.6,
-    lengthMeters: 14,
+    lengthMeters: 18,
     behindMeters: 4,
+    verticalBendMeters: 0.75,
     widthMeters: 3,
     belowFlightMeters: 0.5,
   },

@@ -124,7 +124,10 @@ specialised components, while those components do not import one another.
 The standalone Start recipe uses shared flight control. Its `start.module.ts`
 connects the particle environment and the directional light corridor, owning
 their shared lifecycle. The guidance leaf consumes World observations and imports
-no other Start component. Learning orchestration and Show integration remain
+no other Start component. Its common path sampler continues horizontal steering
+and current climb, with a small bounded vertical bend. Composition injects the
+same height constraint used by flight, so preview points flatten at active limits.
+Learning orchestration and Show integration remain
 inactive; exercise files describe their future architecture. Other level recipes
 continue to construct the shared Air Particles effect directly in Composition.
 

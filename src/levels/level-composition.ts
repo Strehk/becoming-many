@@ -461,8 +461,24 @@ export async function composeLevel({
       streamQueue: world.streamQueue,
       surfaceYAt,
     };
+    const heightLimits = {
+      minimumGroundClearanceMeters:
+        hasVisibleSurface(level) || level.invisibleGround
+          ? FLIGHT_SETTINGS.minimumGroundClearanceMeters
+          : undefined,
+      maximumGroundClearanceMeters: level.maximumGroundClearanceMeters,
+    };
     return level.flightGuidance
-      ? createStartModule({ ...options, guidance: level.flightGuidance })
+      ? createStartModule({
+          ...options,
+          guidance: level.flightGuidance,
+          constrainFlightPosition: (position) =>
+            keepFlightWithinHeightLimits(
+              position,
+              worldSurface.groundYAt,
+              heightLimits,
+            ),
+        })
       : createAirParticlesModule(options);
   }
 

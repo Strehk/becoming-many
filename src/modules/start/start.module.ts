@@ -1,3 +1,4 @@
+import type { Vector3 } from "three";
 import { ModuleRuntime, type WorldModule } from "../../world/module-runtime";
 import {
   createFlightGuidance,
@@ -16,6 +17,7 @@ import {
 
 interface StartModuleOptions extends AirParticlesModuleOptions {
   readonly guidance: FlightGuidanceParameters;
+  readonly constrainFlightPosition: (position: Vector3) => void;
 }
 
 // 2. Presentation and lifetime
@@ -29,6 +31,7 @@ export function createStartModule(options: StartModuleOptions): WorldModule {
       scene: options.scene,
       viewpoint: options.viewpoint,
       parameters: options.guidance,
+      constrainFlightPosition: options.constrainFlightPosition,
     }),
   ];
   return new StartModule(runtime, modules);
