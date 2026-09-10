@@ -263,11 +263,14 @@ Air remains independent: Start authors 384 points per 16 m cell and a fading
 unchanged. No independent loop, global fog or extra postprocessing is added.
 
 Within `src/modules/start/`, read `start-settings.ts` for the learning contract
-and technical limits, then `start.module.ts` for World lifetime and the lesson
-phases. `start-motion.ts` observes rig travel; `start-course.ts` constructs fixed
+and technical limits, then `start.module.ts` for World lifetime and presentation
+binding. `start-practice.runtime.ts` owns lesson phases and borrowed observations;
+`start-motion.ts` samples eye/rig segments and predicts rig travel; `start-course.ts` constructs fixed
 cues and reachable tunnels; `start-arrows.ts` retires two reusable cue slots.
 `flight-ring-crossing.ts` checks swept passages through the open ring disk.
-These CPU helpers have no independent loop or World registration.
+These CPU owners have no independent loop or World registration. World alone
+tracks active/loaded modules; Start does not duplicate that state. Wake remains
+a presentation input, and unused miss-count telemetry is removed.
 
 Presentation crosses the borrowed `start-particle-frame.ts` contract.
 `start-particle-settings.ts` resolves and validates presentation defaults;

@@ -135,7 +135,7 @@ test("a wake follows the travelled direction and advances only with playback", (
   const beforeOffset = new Vector3(-1.6, 0.3, 5);
   moveTo(center.clone().add(beforeOffset));
   moveTo(center.clone().add(new Vector3(2.4, 0.3, -5)));
-  const wake = start.readObservation().wake;
+  const wake = frame.wake;
   expect(wake).toBeDefined();
   const direction = new Vector3(4, 0, -10).normalize();
   expect(wake?.direction.x).toBeCloseTo(direction.x);
@@ -143,7 +143,10 @@ test("a wake follows the travelled direction and advances only with playback", (
   expect(wake?.direction.z).toBeCloseTo(direction.z);
   expect(wake?.ageSeconds).toBe(0);
   runtime.update(0.1);
-  expect(start.readObservation().wake?.ageSeconds).toBeCloseTo(0.1);
+  expect(frame.wake?.ageSeconds).toBeCloseTo(0.1);
+  start.resetPractice();
+  runtime.update(0);
+  expect(frame.wake).toBeUndefined();
   runtime.unload(start.module);
 });
 
@@ -203,7 +206,6 @@ test("pause freezes formation and reset or reload starts fresh at the new arriva
   runtime.update(0);
   expect(start.readObservation().phase).toBe("arrival");
   expect(start.readObservation().crossingCount).toBe(0);
-  expect(start.readObservation().wake).toBeUndefined();
   runtime.unload(start.module);
 });
 
@@ -367,15 +369,22 @@ test("curved previews stay world-fixed and never count as learning targets", () 
 });
 
 test("an outside passage fades out and retries the same lesson ahead of the current heading", () => {
+  let frame: StartParticleFrame | undefined;
   const { start, runtime, worldPosition, worldDirection, formGoal, moveTo } =
-    createPractice();
+    createPractice(
+      PARAMETERS,
+      () => 0.5,
+      captureParticles((next) => {
+        frame = next;
+      }),
+    );
   const center = formGoal();
   moveTo(center.clone().add(new Vector3(3, 0, 2)));
   moveTo(center.clone().add(new Vector3(3, 0, -2)));
   expect(start.readObservation().phase).toBe("missed");
   expect(start.readObservation().crossingCount).toBe(0);
-  expect(start.readObservation().missCount).toBe(1);
-  expect(start.readObservation().wake).toBeUndefined();
+  expect(frame).toBeDefined();
+  expect(frame?.wake).toBeUndefined();
   expect(start.readObservation().goalPosition).toEqual(center);
 
   worldDirection.set(-1, 0, 0);
@@ -403,12 +412,10 @@ test("a distant receding target recycles spatially while waiting alone never exp
   runtime.update(10_000);
   expect(start.readObservation().phase).toBe("flying");
   expect(start.readObservation().goalPosition).toEqual(center);
-  expect(start.readObservation().missCount).toBe(0);
   const passagesBeforeMiss = start.readObservation().passageCount;
   // This remains in front of the goal plane, but leaves its relevance volume.
   moveTo(center.clone().add(new Vector3(120, 0, 10)));
   expect(start.readObservation().phase).toBe("missed");
-  expect(start.readObservation().missCount).toBe(1);
   expect(start.readObservation().crossingCount).toBe(0);
   expect(start.readObservation().passageCount).toBe(passagesBeforeMiss);
   runtime.unload(start.module);
@@ -470,7 +477,6 @@ test("repeated misses recycle three preview slots without reloading presentation
     expect(start.readObservation().phase).toBe("missed");
     runtime.update(PARAMETERS.dissolutionSeconds);
     expect(start.readObservation().attempt).toBe(attempt);
-    expect(start.readObservation().missCount).toBe(attempt);
     expect(start.readObservation().crossingCount).toBe(0);
     expect(frame?.previews).toHaveLength(3);
     for (const [index, slot] of (frame?.previews ?? []).entries()) {
@@ -495,7 +501,6 @@ test("overtaking an unfinished formation retires it without awarding a passage",
   );
   expect(start.readObservation().phase).toBe("missed");
   expect(start.readObservation().crossingCount).toBe(0);
-  expect(start.readObservation().missCount).toBe(1);
   runtime.update(PARAMETERS.dissolutionSeconds);
   expect(start.readObservation().phase).toBe("arrival");
   expect(start.readObservation().direction).toBe("right");
@@ -1055,7 +1060,6 @@ test("the production pitched view can reveal an entrance during a real two-meter
     runtime.update(0.1);
   }
   expect(start.readObservation().phase).toBe("forming");
-  expect(start.readObservation().missCount).toBe(0);
   if (!frame?.arrow.up || !frame.arrow.normal || !frame.previews?.[0])
     throw new Error("Missing pitched-view course");
   const arrowAxis = new Vector3()

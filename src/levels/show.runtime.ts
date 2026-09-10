@@ -62,7 +62,6 @@ export interface TutorialStatus {
   readonly goalIndex: number;
   readonly direction: "right" | "left" | "up" | "down";
   readonly crossingCount: number;
-  readonly missCount?: number;
   /** Prepared integrated practice may be skipped independently of learned goals. */
   readonly readyToContinue: boolean;
 }
@@ -365,7 +364,6 @@ export async function createShowRuntime(
         goalIndex: observed.goalIndex,
         direction: observed.direction,
         crossingCount: observed.crossingCount,
-        missCount: observed.missCount,
         readyToContinue: !standalone && !transitionRequested,
       };
     }

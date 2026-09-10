@@ -62,6 +62,7 @@ export function createStartCourse(
   let ringRadiusMeters = parameters.course.radiusMeters[0];
 
   return {
+    arrowLengthMeters,
     goalPosition,
     goalNormal,
     goalUp,

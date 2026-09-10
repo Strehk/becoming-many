@@ -9,11 +9,17 @@ export type StartMotion = Pick<
   "direction" | "curvature" | "speed" | "predictPosition"
 >;
 
-/** Bounded flight-only history; callers supply movement and playing time, never eye rotation. */
+/** Sample eye/rig travel and predict flight from bounded rig history, never eye rotation. */
 export function createStartMotion(
   viewpoint: Viewpoint,
   maximumGoalYAt?: (x: number, z: number) => number,
 ) {
+  const previousEye = new Vector3();
+  const eyePosition = new Vector3();
+  const flightPosition = new Vector3();
+  const eyeTravel = new Vector3();
+  const flightTravel = new Vector3();
+  let initialized = false;
   const previousTravelDirection = new Vector3();
   const curvature = new Vector3();
   const sampledCurvature = new Vector3();
@@ -22,6 +28,9 @@ export function createStartMotion(
   let hasMotionHistory = false;
 
   return {
+    previousEye,
+    eyeTravel,
+    flightTravel,
     direction: currentTravelDirection,
     curvature,
     get speed() {
@@ -32,7 +41,13 @@ export function createStartMotion(
     predictPosition,
   };
 
-  function resetHistory(): void {
+  /** New practice skips the first segment; pause/reactivation only discard hidden travel. */
+  function resetHistory(skipNextSegment = false): void {
+    if (skipNextSegment) initialized = false;
+    eyePosition.copy(viewpoint.worldPosition);
+    flightPosition.copy(
+      viewpoint.worldFlightPosition ?? viewpoint.worldPosition,
+    );
     observedSpeed = 0;
     hasMotionHistory = false;
     curvature.set(0, 0, 0);
@@ -41,7 +56,21 @@ export function createStartMotion(
     );
   }
 
-  function update(flightTravel: Vector3, elapsed: number): void {
+  function update(elapsed: number): void {
+    if (!initialized) {
+      resetHistory();
+      initialized = true;
+    }
+    previousEye.copy(eyePosition);
+    eyeTravel.subVectors(viewpoint.worldPosition, eyePosition);
+    flightTravel.subVectors(
+      viewpoint.worldFlightPosition ?? viewpoint.worldPosition,
+      flightPosition,
+    );
+    eyePosition.copy(viewpoint.worldPosition);
+    flightPosition.copy(
+      viewpoint.worldFlightPosition ?? viewpoint.worldPosition,
+    );
     if (elapsed <= 0) return;
     if (
       flightTravel.lengthSq() <= START_SETTINGS.minimumTravelSquared ||

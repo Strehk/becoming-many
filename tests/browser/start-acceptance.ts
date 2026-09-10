@@ -278,6 +278,11 @@ export async function flyStartCourse(
     );
     const text = await status.innerText();
     const tutorial = await page.evaluate(() => window.show?.readTutorial());
+    assert.notEqual(
+      tutorial?.phase,
+      "missed",
+      "Success path must not miss a goal",
+    );
     if (tutorial?.crossingCount === 4) break;
     if (text !== lastStatus) {
       console.log(
@@ -354,7 +359,6 @@ export async function flyStartCourse(
   }));
   assert(completion.sample && completion.tutorial);
   assert.equal(completion.tutorial.crossingCount, 4);
-  assert.equal(completion.tutorial.missCount ?? 0, 0);
   assert(
     completion.sample.mainStartSeconds - completion.sample.timeSeconds >=
       closingSeconds - 0.5,
@@ -413,7 +417,7 @@ export async function checkStartTimeout(
   );
   if ((await transport.innerText()).trim() === "Play") await transport.click();
   const deadline = Date.now() + 70_000;
-  let misses = 0;
+  let sawMissedGoal = false;
   let crossings = 0;
   let lastTutorialSeconds = 0;
   while (Date.now() < deadline) {
@@ -422,7 +426,7 @@ export async function checkStartTimeout(
       sample: window.show?.sample(),
     }));
     if (!observation.tutorial) break;
-    misses = Math.max(misses, observation.tutorial.missCount ?? 0);
+    sawMissedGoal ||= observation.tutorial.phase === "missed";
     crossings = Math.max(crossings, observation.tutorial.crossingCount);
     lastTutorialSeconds = observation.sample?.timeSeconds ?? 0;
     assert(crossings < 4, "Timeout fixture must not complete the course");
@@ -430,7 +434,7 @@ export async function checkStartTimeout(
     await page.waitForTimeout(100);
   }
   simulation.set(0, 0, 0);
-  assert(misses >= 1, "Timeout fixture must observe an actual missed goal");
+  assert(sawMissedGoal, "Timeout fixture must observe an actual missed goal");
   assert(
     lastTutorialSeconds >= 59.5,
     "Timeout must retain the full practice minute",
