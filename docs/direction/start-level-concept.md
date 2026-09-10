@@ -201,51 +201,89 @@ spacing and bloom are not implementation targets by measurement.
 
 ## 7. Simple architecture
 
-Use the confirmed ownership boundaries, without reproducing today's incidental
-implementation. A responsibility does not automatically require a new class,
-module, interface or file. Small private helpers stay with their owner.
+The next refactor reduces stored state and dependencies before reducing file or
+class counts. Keep one Start module with three clear responsibilities. These are
+conceptual boundaries, not a requirement for exactly three files or new classes.
 
-| Owner | Responsibility in this concept |
-| --- | --- |
-| Run / Level Runtime | Complete experience lifetime, input connection, preparation and cleanup. |
-| Show | Existing clock, narration, play/pause, instruction sequence and transition policy. |
-| World | One renderer, one render loop, XR views and module lifecycle. |
-| Composition | Construct and connect existing owners once; pass motion constraints and authored settings. |
-| Start | Sole local learning coordinator; connects motion, course, arrows, crossings and presentation. |
-| Motion | Read actual travel and produce the one bounded prediction. |
-| Course | Own stable route geometry, reachable ring poses and course recycling. |
-| Arrows / Crossing | Retain focused cue lifetime and actual swept passage responsibilities. |
-| Start particle effect | Own guidance geometry, materials, buffers and local visual animation; read route/prediction facts. |
-| Air | Own surrounding particles and their bounded world-space recycling. |
-| Background presentation | Own sky/cloud rendering resources and consistent light parameters; reuse the responsible background boundary first. |
+| Responsibility | Owns | Does not own |
+| --- | --- | --- |
+| Start: exercise flow | Current instruction/goal identity, local learning progress and passage decisions. | A second Show clock, flight physics or GPU resources. |
+| Flight calculations | Rules for motion prediction, course sampling, ring placement and swept passage tests; only indispensable history/storage. | A competing exercise state machine or presentation timers. |
+| Particle presentation | GPU resources and visual appearance of route, prediction, rings and full arrows. | Learning progress, steering decisions or narration policy. |
 
-The sky/cloud implementation starts at the existing background owner. A small
-private cloud effect is justified only by its material/resource lifetime; it is
-not a new world, controller or global atmosphere service. Start does not import
-the Air or background implementation. Composition connects any necessary narrow
-presentation capabilities. UI and Station gain no tutorial or rendering logic.
+Start is the single owner of exercise state. Do not maintain duplicate versions
+of active, completed, current goal or next instruction in several components.
+World's loaded/active resource lifecycle remains distinct and authoritative.
+Domain geometry may retain reusable buffers and stable course anchors; these are
+not duplicate learning state. Prediction retains only necessary motion history.
+
+Motion, Course and Crossing name useful calculations; they do not mandate
+independent runtime objects. Prefer small functions with explicit facts and
+results where possible. Keep necessary bounded state where its meaning is clear,
+including previous position, stable placed geometry and interrupted-release data.
+Remove a component or class only when its ownership is better expressed without it.
+
+Arrow formation, pulse and visual retirement belong to particle presentation.
+Start still decides when a cue becomes relevant or retires. Presentation derives
+animation from shared Show time and the required event timestamps. Keep historical
+release poses or velocities when needed to preserve continuity; do not replace a
+stateful spring with a different visual formula during a structural refactor.
+No separate arrow animation controller or per-particle timer is required by the
+future concept. One presentation owner does not imply one GPU draw call: select
+resource sharing and batching by simplicity and measured cost.
 
 ```mermaid
-flowchart TD
-  Composition[Composition: construct once] --> Start[Start: local learning]
-  Run[Run: lifetime and input] --> Show[Show: time and policy]
-  Run --> World[World: one loop and renderer]
-  Show -->|instruction and time| Start
-  World -->|shared frame| Start
-  Start --> Motion[Motion: one prediction]
-  Start --> Course[Course: route and ring poses]
-  Start --> Crossing[Crossing: actual passages]
-  Start --> Arrows[Arrows: cue lifetime]
-  Start --> Effect[Particle effect: presentation]
-  World --> Air[Air: ambient points]
-  World --> Background[Background: sky and clouds]
+flowchart LR
+  Motion[Flight movement] --> Guidance[Flight calculations]
+  Speech[Instruction and shared time] --> Start[Start: exercise flow]
+  Start -->|current task| Guidance
+  Guidance -->|passage result| Start
+  Guidance -->|geometry via Start| Presentation[Particle presentation]
+  Start -->|presence and feedback| Presentation
 ```
 
-Arrows in this diagram express ownership or directed calls, not a new event bus.
-The existing frame order stays authoritative. Within Start, read one valid motion
-sample, update the local course/passage facts, then publish the presentation data.
-CPU domain components never import each other's concrete implementation; Start
-passes their results through the existing narrow contracts.
+This diagram shows logical data flow, not concrete peer imports or a new event
+bus. Start connects calculations and presentation directly through narrow domain
+facts. Presentation does not import calculation implementations. Eliminate
+forwarding-only objects and one-use adapters that provide no boundary or lifetime
+value; retain contracts where real ownership separation requires them.
+
+Existing infrastructure remains outside this local diagram: Run owns lifetime
+and input integration; Show owns playback, narration and transition policy;
+World owns the renderer and sole loop. Composition constructs and connects once.
+UI and Station gain no learning or rendering responsibilities.
+
+Air retains surrounding particles and its bounded world-space recycling. Sky
+and clouds remain at the responsible background presentation boundary, with their
+own material/resource lifetime and common light direction. These background
+systems do not need the current learning goal. Start does not import their
+implementations; Composition connects any needed narrow presence controls.
+
+### Next refactor: one instruction through one passage
+
+1. Trace an existing exercise from its spoken cue through formation, body movement,
+   ring passage and local completion. Include pause, miss/retry and reset only
+   where needed to understand that same state lifetime.
+2. List the stored facts encountered, their actual owner and consumers. Identify
+   duplicates, values derivable from other facts and required historical values.
+3. Keep exercise decisions at Start; replace suitable calculation objects with
+   direct functions and reuse existing bounded outputs. Remove redundant state
+   and forwarding chains together with their obsolete contracts and consumers.
+4. Consolidate equivalent visual animation work under presentation. Derive phases
+   from shared time where equivalent; preserve necessary interrupted-animation
+   history, audio anchors and existing rendered behavior.
+5. Verify the unchanged exercise with existing targeted tests and browser checks.
+   Report removed states, dependency edges, contract surface and total source delta,
+   including displaced code. Fewer files or shorter wrappers alone do not pass.
+
+This is a behavior-preserving refactor first. New clouds, color, visible route/
+forecast and revised arrows follow as explicit product work on that simpler base.
+The live acceptance belongs to [#121](https://github.com/Strehk/becoming-many/issues/121)
+(local state/calculations), [#122](https://github.com/Strehk/becoming-many/issues/122)
+(integration), [#123](https://github.com/Strehk/becoming-many/issues/123)
+(readability) and [#124](https://github.com/Strehk/becoming-many/issues/124)
+(presentation). Preserve their current function limits and resource contracts;
+this proposal does not reopen Run/Show/World ownership.
 
 ### Minimal data and lifetime rules
 
