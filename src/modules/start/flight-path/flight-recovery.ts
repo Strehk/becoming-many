@@ -2,22 +2,22 @@ import { Vector3 } from "three";
 import type { Viewpoint } from "../../../world/viewpoint";
 import type { ExercisePose } from "../start-contract";
 
-// Recovery placement only: capture the latest view when the new route becomes visible.
+// Entry placement only: capture actual flight once; looking around never moves the route.
 const FORWARD = new Vector3(0, 0, -1);
 
-/** Keep the entry in view; preserve horizontal travel heading for the exercise. */
+/** Offset from the rig along actual travel and preserve its horizontal heading. */
 export function placeFlightRecovery(
   viewpoint: Viewpoint,
   leadMeters: number,
   constrain: (position: Vector3) => void,
 ): ExercisePose {
   const travel = viewpoint.worldFlightDirection ?? FORWARD;
-  const gaze = new Vector3().copy(viewpoint.worldDirection);
-  if (gaze.lengthSq() === 0) gaze.copy(travel);
+  const direction = new Vector3().copy(travel);
+  if (direction.lengthSq() === 0) direction.copy(FORWARD);
   const position = new Vector3().copy(
     viewpoint.worldFlightPosition ?? viewpoint.worldPosition,
   );
-  position.addScaledVector(gaze.normalize(), leadMeters);
+  position.addScaledVector(direction.normalize(), leadMeters);
   constrain(position);
   const heading = Math.hypot(travel.x, travel.z) > 0 ? travel : FORWARD;
   return { position, yawRadians: Math.atan2(-heading.x, -heading.z) };

@@ -47,7 +47,7 @@ no instruction timer and cannot award success.
 ## Continuous sections
 
 Each route has a straight entry (`straightMeters`), a curved exercise, and a
-straight tangent exit (`outroMeters`). The current default is a 10 m entry and
+straight tangent exit (`outroMeters`). The current default is a 12 m entry and
 24 m exit. Ordered passage to `exerciseEndMeters` earns success; the player then
 continues through the exit while the successor is prepared. The visible route
 never moves after placement.
@@ -57,13 +57,26 @@ heading match the previous last point and heading, including local entry offsets
 `particle-generation.ts` generates four meters per StreamQueue step using an
 injected particle factory. The center enqueues work on the existing World queue,
 retries queue admission if full, and invalidates obsolete jobs on reset/unload.
-Finished successors fade in during the exit area; no new instruction pause or
+Finished successor lines appear during the exit area at full configured transparency; no new instruction pause or
 placement in front of the player interrupts a regular connection.
 
-The center owns three reusable displays: current, successor, and retiring tail.
+The center owns independent fixed pools of four path displays and four element displays.
+A retained front ring cannot occupy a path slot. Completed paths remain visible
+until their endpoint is at least 12 m behind actual flight direction, then fade.
 Each display owns its geometry and material. Retired buffers are replaced on reuse
 or released on unload. One unfinished generation may coexist with these displays;
 there is no accumulating world history or independent render loop.
+
+`flight-entry.ts` supplies a 20 m ring-free bootstrap approach. At activation it
+starts at the player with 4 m of additional trail behind. Its initial tangent
+follows travel pitch and gently levels before the first exercise. The first ring
+is another 12 m into that exercise chunk. Progress starts immediately, independently
+of streaming completion. The same approach sampler is reused for recovery.
+
+Rings occupy only `[exerciseStartMeters, exerciseEndMeters]`. A chunk's 24 m exit
+and its successor's 12 m entry therefore form a ring-free connection. Rendering
+and progression sample the same fixed route; joining never depends on the
+player's position at the moment of transition.
 
 ## Deviation and recovery
 
@@ -74,8 +87,8 @@ Looking away or standing still never triggers recovery. Ordered progression also
 rejects shortcuts and cannot credit a reset displacement.
 
 `flight-recovery.ts` calculates only a new pose. At reveal time it captures the
-latest rig position and gaze to put the new entry in view, currently 12 m ahead,
-while retaining horizontal flight heading. Existing height constraints are applied
+latest rig position and actual travel direction to place an approach 6 m ahead.
+The approach is fixed in world space; turning the head does not drag it along. Existing height constraints are applied
 to the owned candidate position. It never changes the player position.
 
 On recovery, the center fades existing displays, cancels pending generation, and
@@ -140,7 +153,7 @@ damping is calculated once per frame for the entire cloud. Ambient drift
 continues through the reused GPU material; the bounded flight response uses
 reused CPU buffers and one dynamic center-position upload per visible section.
 
-The center pairs each of its three route displays with an element display.
+The center temporarily associates route displays with independently pooled element displays.
 Compatible element geometries are merged into one cloud per section, capped at
 20,000 moving samples (240,000 rendered grains at the current twelve-grain setting). Shape sampling occurs when the prepared section is shown;
 there is no extra loop or unbounded history. Small temporary shape geometries
@@ -187,9 +200,9 @@ Settings live in `START_SETTINGS.elementLight` and `elementPassage`. The opening
 radius is the configured ring radius minus the dense particle core radius. The
 section-wide animation controls emergence; retirement never fabricates success.
 `START_SETTINGS.elementRetirement` controls fade duration and clearance. The
-three-slot pool reuses a slot only after both its path and elements finish. If
-all slots retain front rings, publication waits for room instead of overwriting
-visible rings or allocating more slots. Resetting clears old light and retirement state.
+independent pools reuse a slot only after its own display finishes. If all element
+slots retain front rings, new rings wait while the new line can still appear.
+Neither pool overwrites visible content or allocates additional slots. Resetting clears old light and retirement state.
 
 ## Open architecture observations
 

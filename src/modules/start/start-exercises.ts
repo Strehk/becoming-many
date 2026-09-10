@@ -8,7 +8,12 @@ export const START_SETTINGS = {
   retireSeconds: 1.2,
   belowFlightMeters: 0.5,
   seed: 17,
-  entryLeadMeters: 12,
+  entryLineMeters: 20,
+  entryBehindMeters: 4,
+  recoveryLeadMeters: 6,
+  keepPathBehindMeters: 12,
+  pathPoolSize: 4,
+  elementPoolSize: 4,
   generationMetersPerStep: 4,
   revealSeconds: 0.8,
   elementAnimation: {
@@ -76,7 +81,7 @@ export const START_EXERCISES = [
     id: "left",
     route: {
       leadMeters: 0,
-      straightMeters: 10,
+      straightMeters: 12,
       outroMeters: 24,
       turnSign: -1,
       turnRadiusMeters: { from: 38, to: 46 },
@@ -114,7 +119,7 @@ export const START_EXERCISES = [
     id: "right",
     route: {
       leadMeters: 0,
-      straightMeters: 10,
+      straightMeters: 12,
       outroMeters: 24,
       turnSign: 1,
       turnRadiusMeters: { from: 38, to: 46 },

@@ -1,8 +1,10 @@
 import { expect, test } from "bun:test";
 import { Vector3 } from "three";
+import { placeElements } from "../particle-elements/element-placement";
 import { START_EXERCISES } from "../start-exercises";
 import { connectFlightRoute } from "./flight-connection";
 import { createFlightDeviation } from "./flight-deviation";
+import { createFlightEntry, prependFlightEntry } from "./flight-entry";
 import { placeFlightRecovery } from "./flight-recovery";
 import { createFlightRoute } from "./flight-route";
 import { createParticleGeneration } from "./particle-generation";
@@ -46,7 +48,7 @@ test("only sustained travel outside the corridor requests recovery", () => {
   expect(outside).toBe(true);
 });
 
-test("recovery anchors in view and borrows the flight heading without mutation", () => {
+test("recovery follows travel rather than gaze without moving the rig", () => {
   const viewpoint = {
     worldPosition: new Vector3(8, 2, 4),
     worldFlightDirection: new Vector3(0, 0, -1),
@@ -57,7 +59,7 @@ test("recovery anchors in view and borrows the flight heading without mutation",
     viewDistanceMeters: 128,
   };
   const recovery = placeFlightRecovery(viewpoint, 12, () => {});
-  expect(recovery.position.toArray()).toEqual([20, 2, 4]);
+  expect(recovery.position.toArray()).toEqual([8, 2, -8]);
   expect(Math.abs(recovery.yawRadians)).toBe(0);
   expect(viewpoint.worldPosition.toArray()).toEqual([8, 2, 4]);
 });
@@ -88,4 +90,39 @@ test("particle generation advances in bounded slices and transfers ownership onc
   expect(disposed).toBe(0);
   geometry.dispose();
   expect(disposed).toBe(1);
+});
+
+for (const pitch of [-0.6, 0, 0.6]) {
+  test(`approach preserves travel pitch ${pitch} and joins a level exercise smoothly`, () => {
+    const travel = new Vector3(0, pitch, -1).normalize();
+    const entry = { route: createFlightEntry(20, travel), pose };
+    const next = { route, pose: connectFlightRoute(entry, route) };
+    const combined = prependFlightEntry(entry, next);
+    const before = new Vector3(),
+      after = new Vector3();
+    entry.route.sampleDirection(0, before);
+    expect(before.distanceTo(travel)).toBeLessThan(1e-8);
+    combined.route.sample(20 - 1e-5, before);
+    combined.route.sample(20, after);
+    expect(before.distanceTo(after)).toBeLessThan(0.0001);
+    combined.route.sampleDirection(20 - 1e-5, before);
+    combined.route.sampleDirection(20, after);
+    expect(before.distanceTo(after)).toBeLessThan(0.0001);
+  });
+}
+
+test("rings occupy only exercises, leaving a continuous ring-free transition", () => {
+  for (const exercise of START_EXERCISES) {
+    const section = createFlightRoute(exercise.route, 18);
+    const rings = placeElements(section, exercise.elements);
+    expect(rings.length).toBeGreaterThan(0);
+    for (const ring of rings) {
+      expect(ring.routeDistanceMeters).toBeGreaterThanOrEqual(
+        section.exerciseStartMeters,
+      );
+      expect(ring.routeDistanceMeters).toBeLessThanOrEqual(
+        section.exerciseEndMeters,
+      );
+    }
+  }
 });

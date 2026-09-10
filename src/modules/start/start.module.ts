@@ -6,6 +6,10 @@ import {
 } from "./flight-guidance";
 import { connectFlightRoute } from "./flight-path/flight-connection";
 import { createFlightDeviation } from "./flight-path/flight-deviation";
+import {
+  createFlightEntry,
+  prependFlightEntry,
+} from "./flight-path/flight-entry";
 import { createFlightPath } from "./flight-path/flight-path";
 import { createFlightProgress } from "./flight-path/flight-progress";
 import { placeFlightRecovery } from "./flight-path/flight-recovery";
@@ -57,6 +61,7 @@ interface StartModuleOptions extends AirParticlesModuleOptions {
   readonly constrainFlightPosition: (position: Vector3) => void;
 }
 type Display = ReturnType<typeof createFlightPath>;
+type ElementDisplay = ReturnType<typeof createParticleElements>;
 interface PendingSection {
   readonly section: PlacedRoute;
   readonly generation: ReturnType<typeof createParticleGeneration>;
@@ -86,21 +91,23 @@ class StartModule implements WorldModule {
     retireSeconds: START_SETTINGS.retireSeconds,
   });
   private readonly paths: readonly Display[];
-  private readonly elements = new Map<
-    Display,
-    ReturnType<typeof createParticleElements>
-  >();
+  private readonly elements: readonly ElementDisplay[];
+  private readonly bindings = new Map<Display, ElementDisplay>();
   private readonly feedback = new Map<
-    Display,
+    ElementDisplay,
     { light: ParticleLight; passage: RingPassage }
   >();
+  private readonly retiringPaths = new Map<Display, Vector3>();
+  private readonly relative = new Vector3();
+  private entry: (PlacedRoute & { display: Display }) | undefined;
+  private recoveryEntryNeeded = false;
   private readonly modules: readonly WorldModule[];
   private current: ActiveSection | undefined;
   private pending: PendingSection | undefined;
   private active = false;
 
   constructor(private readonly options: StartModuleOptions) {
-    this.paths = Array.from({ length: 3 }, () =>
+    this.paths = Array.from({ length: START_SETTINGS.pathPoolSize }, () =>
       createFlightPath({
         scene: options.scene,
         belowFlightMeters: START_SETTINGS.belowFlightMeters,
@@ -109,12 +116,13 @@ class StartModule implements WorldModule {
           createPathParticleMaterial(createAirParticleMaterial),
       }),
     );
-    for (const path of this.paths)
-      this.elements.set(path, this.createElements(path));
+    this.elements = Array.from({ length: START_SETTINGS.elementPoolSize }, () =>
+      this.createElements(),
+    );
     this.modules = [
       createAirParticlesModule(options),
       ...this.paths,
-      ...this.elements.values(),
+      ...this.elements,
       ...(START_SETTINGS.showFlightGuidance
         ? [
             createFlightGuidance({
@@ -128,7 +136,7 @@ class StartModule implements WorldModule {
     ];
   }
 
-  private createElements(path: Display) {
+  private createElements() {
     const retirement = createElementRetirement(
       START_SETTINGS.elementRetirement,
     );
@@ -136,8 +144,7 @@ class StartModule implements WorldModule {
     const passage = createRingPassage(
       START_SETTINGS.elementPassage.maximumStepMeters,
     );
-    this.feedback.set(path, { light, passage });
-    return createParticleElements({
+    const display = createParticleElements({
       light,
       retirement,
       readDirection: () =>
@@ -152,6 +159,8 @@ class StartModule implements WorldModule {
       createGeometry: this.createElementGeometry,
       createMaterial: () => this.createElementMaterial(light, retirement),
     });
+    this.feedback.set(display, { light, passage });
+    return display;
   }
 
   private createElementMaterial(
@@ -185,12 +194,21 @@ class StartModule implements WorldModule {
     this.cancelPending();
     this.game.reset();
     this.current = undefined;
+    this.bindings.clear();
+    this.retiringPaths.clear();
+    this.entry = undefined;
+    this.recoveryEntryNeeded = false;
     this.active = true;
     for (const module of this.modules) this.runtime.activate(module);
+    this.showEntry(false);
     this.prepareSection(false);
   };
   readonly deactivate = (): void => {
     this.active = false;
+    this.bindings.clear();
+    this.retiringPaths.clear();
+    this.entry = undefined;
+    this.recoveryEntryNeeded = false;
     for (const { passage } of this.feedback.values())
       passage.reset([], this.readPosition());
     this.cancelPending();
@@ -198,6 +216,10 @@ class StartModule implements WorldModule {
   };
   readonly unload = (): void => {
     this.active = false;
+    this.bindings.clear();
+    this.retiringPaths.clear();
+    this.entry = undefined;
+    this.recoveryEntryNeeded = false;
     for (const { passage } of this.feedback.values())
       passage.reset([], this.readPosition());
     this.cancelPending();
@@ -216,39 +238,41 @@ class StartModule implements WorldModule {
   // 3. One coherent observation, followed by one engine decision
   readonly update = (deltaSeconds: number): void => {
     if (!this.active) return;
+    this.updateRetiredPaths();
+    this.resumeRecovery();
     this.enqueuePending();
-    this.publishSuccessor();
-    const state = this.game.readState();
+    this.publishPreparedPath();
     const position = this.readPosition();
-    const action = this.game.update({
-      deltaSeconds,
-      progress: this.current?.exerciseProgress.update(position) ?? "pending",
-      reachedEnd: this.current?.exitProgress.update(position) === "passed",
-      deviated: this.current?.deviation.update(position) ?? false,
-      prepared:
-        state.phase === "outro"
-          ? !!this.pending?.display
-          : (this.pending?.generation.isReady() ?? false) &&
-            !!this.availableDisplay(),
-      instructionReleased:
-        state.elapsedSeconds >= START_SETTINGS.demonstrationCueSeconds,
-      instructionEnded: true,
-    });
-    this.applyAction(action);
+    this.applyAction(this.observeFlight(deltaSeconds));
     for (const { light, passage } of this.feedback.values())
       for (const index of passage.update(position)) light.pass(index);
     this.runtime.update(deltaSeconds);
   };
 
+  private observeFlight(deltaSeconds: number): ExerciseAction {
+    const state = this.game.readState();
+    const position = this.readPosition();
+    return this.game.update({
+      deltaSeconds,
+      progress: this.current?.exerciseProgress.update(position) ?? "pending",
+      reachedEnd: this.current?.exitProgress.update(position) === "passed",
+      deviated: this.current?.deviation.update(position) ?? false,
+      prepared:
+        !!this.pending?.display &&
+        (this.bindings.has(this.pending.display) ||
+          (!this.pending.continuation &&
+            this.elements.some((element) => !element.isVisible()))),
+      instructionReleased:
+        state.elapsedSeconds >= START_SETTINGS.demonstrationCueSeconds,
+      instructionEnded: true,
+    });
+  }
+
   private applyAction(action: ExerciseAction): void {
     if (action === "show") this.beginPreparedSection(false);
     if (action === "prepare-next") this.prepareSection(true);
     if (action === "advance") this.beginPreparedSection(true);
-    if (action === "recover") {
-      for (const path of this.paths) this.retireDisplay(path);
-      this.current = undefined;
-      this.prepareSection(false);
-    }
+    if (action === "recover") this.recoverCourse();
   }
 
   // 4. Small cancellable jobs run on World's existing StreamQueue
@@ -264,22 +288,22 @@ class StartModule implements WorldModule {
       exercise.route,
       START_SETTINGS.seed + attempt,
     );
-    const pose =
-      continuation && this.current
-        ? connectFlightRoute(this.current, route)
-        : { position: new Vector3(), yawRadians: 0 };
-    const generation = this.createGeneration(
-      route,
-      exercise.particles,
-      attempt,
-    );
+    const predecessor = continuation ? this.current : this.entry;
+    if (!predecessor) throw new Error("Missing route predecessor");
+    const pose = connectFlightRoute(predecessor, route);
     this.pending = {
       section: { route, pose },
-      generation,
+      generation: this.createGeneration(route, exercise.particles, attempt),
       continuation,
       elements: this.createElementSources(route, exercise),
       queued: false,
     };
+    if (!continuation && this.entry)
+      this.current = this.observeSection(
+        this.pending.section,
+        this.entry.display,
+        this.entry,
+      );
     this.enqueuePending();
   }
 
@@ -333,61 +357,123 @@ class StartModule implements WorldModule {
     this.pending = undefined;
   }
 
-  // 5. Show a prepared successor without moving the current route
+  // 5. Separate pools keep a retained ring from blocking a continuous path.
   private availableDisplay(): Display | undefined {
-    return this.paths.find(
-      (path) => !path.isVisible() && !this.elements.get(path)?.isVisible(),
-    );
+    return this.paths.find((path) => !path.isVisible());
   }
 
-  private publishSuccessor(): void {
+  private publishPreparedPath(): void {
     const pending = this.pending;
-    if (
-      !pending?.continuation ||
-      pending.display ||
-      !pending.generation.isReady()
-    )
-      return;
-    const display = this.availableDisplay();
-    if (!display) return;
-    display.show(
-      pending.generation.takeGeometry(),
-      pending.section.pose,
-      START_SETTINGS.revealSeconds,
-    );
-    this.showElements(display, pending.elements, pending.section.pose);
-    pending.display = display;
+    if (!pending?.generation.isReady()) return;
+    if (!pending.display) {
+      const display = this.availableDisplay();
+      if (!display) return;
+      display.show(pending.generation.takeGeometry(), pending.section.pose);
+      pending.display = display;
+      if (!pending.continuation) this.observeEntry(display);
+    }
+    if (pending.continuation)
+      this.showElements(
+        pending.display,
+        pending.elements,
+        pending.section.pose,
+      );
+  }
+
+  private observeEntry(display: Display): void {
+    if (this.current) this.current = { ...this.current, display };
+    if (this.entry) this.retainPath(this.entry, this.entry.display);
+    this.entry = undefined;
   }
 
   private beginPreparedSection(connected: boolean): void {
     const pending = this.pending;
-    if (!pending) return;
-    const display = pending.display ?? this.availableDisplay();
-    if (!display) return;
-    const pose = connected
-      ? pending.section.pose
-      : placeFlightRecovery(
-          this.options.viewpoint,
-          START_SETTINGS.entryLeadMeters,
-          this.options.constrainFlightPosition,
-        );
-    if (!pending.display) {
-      display.show(
-        pending.generation.takeGeometry(),
-        pose,
-        START_SETTINGS.revealSeconds,
-      );
-      this.showElements(display, pending.elements, pose);
+    if (!pending?.display) return;
+    this.showElements(pending.display, pending.elements, pending.section.pose);
+    if (connected) {
+      if (this.current) {
+        this.retainPath(this.current, this.current.display);
+        this.retireElements(this.current.display);
+      }
+      this.current = this.observeSection(pending.section, pending.display);
     }
-    if (connected && this.current) this.retireDisplay(this.current.display);
-    this.current = this.observeSection({ ...pending.section, pose }, display);
     this.pending = undefined;
   }
 
-  private retireDisplay(display: Display): void {
-    display.retire(START_SETTINGS.retireSeconds);
-    this.elements.get(display)?.dissolve();
-    this.feedback.get(display)?.passage.reset([], this.readPosition());
+  // A retired line remains under and behind the player through the handoff.
+  private retainPath(section: PlacedRoute, display: Display): void {
+    const end = new Vector3();
+    section.route.sample(section.route.lengthMeters, end);
+    end
+      .applyAxisAngle(new Vector3(0, 1, 0), section.pose.yawRadians)
+      .add(section.pose.position);
+    this.retiringPaths.set(display, end);
+  }
+
+  private updateRetiredPaths(): void {
+    const direction =
+      this.options.viewpoint.worldFlightDirection ?? this.noFlightDirection;
+    for (const [display, end] of this.retiringPaths) {
+      const behind = this.relative
+        .subVectors(end, this.readPosition())
+        .dot(direction);
+      if (behind >= -START_SETTINGS.keepPathBehindMeters) continue;
+      display.retire(START_SETTINGS.retireSeconds);
+      this.retiringPaths.delete(display);
+    }
+  }
+
+  private retireElements(display: Display): void {
+    const elements = this.bindings.get(display);
+    if (!elements) return;
+    elements.dissolve();
+    this.feedback.get(elements)?.passage.reset([], this.readPosition());
+    this.bindings.delete(display);
+  }
+
+  // 6. Start immediately on a short line; recovery first offers an approach ahead.
+  private showEntry(recovery: boolean): boolean {
+    const display = this.availableDisplay();
+    const exercise = START_EXERCISES[this.game.readState().exerciseIndex];
+    if (!display || !exercise) return false;
+    const direction =
+      this.options.viewpoint.worldFlightDirection ?? this.noFlightDirection;
+    const route = createFlightEntry(START_SETTINGS.entryLineMeters, direction);
+    const pose = placeFlightRecovery(
+      this.options.viewpoint,
+      recovery ? START_SETTINGS.recoveryLeadMeters : 0,
+      this.options.constrainFlightPosition,
+    );
+    const behind = recovery ? 0 : START_SETTINGS.entryBehindMeters;
+    const geometry = createPathParticleGeometry(
+      {
+        lengthMeters: route.lengthMeters + behind,
+        sample: (distance, target) => route.sample(distance - behind, target),
+      },
+      exercise.particles,
+    );
+    display.show(geometry, pose, recovery ? START_SETTINGS.revealSeconds : 0);
+    this.entry = { route, pose, display };
+    return true;
+  }
+
+  private recoverCourse(): void {
+    this.cancelPending();
+    for (const path of this.paths) {
+      path.retire(START_SETTINGS.retireSeconds);
+      this.retireElements(path);
+    }
+    this.retiringPaths.clear();
+    this.current = undefined;
+    this.entry = undefined;
+    this.recoveryEntryNeeded = true;
+    this.resumeRecovery();
+  }
+
+  private resumeRecovery(): void {
+    if (!this.recoveryEntryNeeded || !this.showEntry(true)) return;
+    this.recoveryEntryNeeded = false;
+    this.prepareSection(false);
   }
 
   // Visual passage feedback is independent of the exercise progression observer.
@@ -396,7 +482,23 @@ class StartModule implements WorldModule {
     sources: readonly ElementSource[],
     pose: ExercisePose,
   ): void {
-    this.elements.get(display)?.show(sources, pose);
+    if (this.bindings.has(display)) return;
+    const elements = this.elements.find((element) => !element.isVisible());
+    if (!elements) return;
+    elements.show(sources, pose);
+    this.bindings.set(display, elements);
+    this.feedback
+      .get(elements)
+      ?.passage.reset(
+        this.createRingTargets(sources, pose),
+        this.readPosition(),
+      );
+  }
+
+  private createRingTargets(
+    sources: readonly ElementSource[],
+    pose: ExercisePose,
+  ): RingTarget[] {
     const targets: RingTarget[] = [];
     sources.forEach((source, elementIndex) => {
       if (!source.openingRadiusMeters) return;
@@ -414,13 +516,15 @@ class StartModule implements WorldModule {
           .applyAxisAngle(new Vector3(0, 1, 0), pose.yawRadians),
       });
     });
-    this.feedback.get(display)?.passage.reset(targets, this.readPosition());
+    return targets;
   }
 
   private observeSection(
     section: PlacedRoute,
     display: Display,
+    entry?: PlacedRoute,
   ): ActiveSection {
+    if (entry) section = prependFlightEntry(entry, section);
     const exercise = START_EXERCISES[this.game.readState().exerciseIndex];
     if (!exercise) throw new Error("Unknown Start exercise");
     const exerciseRoute = {

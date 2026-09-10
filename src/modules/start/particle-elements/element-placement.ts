@@ -18,8 +18,10 @@ export function placeElements(
   const placements: ElementPlacement[] = [];
   let outside = new Vector3(1, 0, 0);
   for (let index = 0; index < SETTINGS.maximumPairs; index++) {
-    const distance = settings.firstMeters + index * settings.spacingMeters;
-    if (distance >= route.lengthMeters) break;
+    const distance =
+      Math.max(settings.firstMeters, route.exerciseStartMeters) +
+      index * settings.spacingMeters;
+    if (distance > route.exerciseEndMeters) break;
     placements.push(samplePlacement(route, distance, "ring"));
     if (settings.showArrows === false) continue;
     const arrowDistance =
