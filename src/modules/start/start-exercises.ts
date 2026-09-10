@@ -45,7 +45,7 @@ export const START_SETTINGS = {
     coreRadiusMeters: 0.55,
     haloRadiusMeters: 1.2,
     haloFraction: 0.18,
-    coreOpacity: 1,
+    coreOpacity: 0.72,
     coreSizeScale: 1.35,
     haloSizeScale: 0.7,
     relief: 0.12,
