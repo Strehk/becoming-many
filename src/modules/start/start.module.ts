@@ -1,60 +1,78 @@
-// Start Module — composition and World lifecycle
-// Comment-only architecture; no executable implementation or runtime registration.
+import { ModuleRuntime, type WorldModule } from "../../world/module-runtime";
+import {
+  createFlightGuidance,
+  type FlightGuidanceParameters,
+} from "./flight-guidance";
+import {
+  type AirParticlesModuleOptions,
+  createAirParticlesModule,
+} from "./point-cloud/point-cloud.module";
 
-// 1. Position in the application
+// 1. Center of the local star
 
-// Level Composition constructs Start; Run owns its lifetime and reset integration.
-// World calls its lifecycle and supplies the only rendering loop.
-// Air Particles remain a separate background module.
+// Level Composition constructs Start. World supplies its lifecycle and sole loop.
+// This file alone connects Start's concrete leaves. Leaves do not import each other
+// or this center. They receive borrowed World facts and own their graphics resources.
 
-// 2. Center of the local star
+interface StartModuleOptions extends AirParticlesModuleOptions {
+  readonly guidance: FlightGuidanceParameters;
+}
 
-// start-game.runtime.ts — exercise decisions and the sole progress state.
-// start-chunks.ts — procedural geometry, passage facts and bounded assignments.
-// start-audio-cues.ts — immutable recording bindings and spoken markers.
-// Presentation — graphics resources and visual release of supplied geometry.
+// 2. Presentation and lifetime
 
-// This file is the sole integration center of the Start star.
-// Only this center imports and connects the concrete local components.
-// Every cross-component interaction passes through this center via narrow facts,
-// results or injected capabilities. Each component retains its own domain state.
-// Leaves import neither one another nor this center, including type-only imports.
-// Application-level composition and lifetime remain with Level Composition and Run.
+/** Own the particle environment and flight guide within one World module lifetime. */
+export function createStartModule(options: StartModuleOptions): WorldModule {
+  const runtime = new ModuleRuntime();
+  const modules = [
+    createAirParticlesModule(options),
+    createFlightGuidance({
+      scene: options.scene,
+      viewpoint: options.viewpoint,
+      parameters: options.guidance,
+    }),
+  ];
+  return new StartModule(runtime, modules);
+}
 
-// 3. External interfaces
+class StartModule implements WorldModule {
+  constructor(
+    private readonly runtime: ModuleRuntime,
+    private readonly modules: readonly WorldModule[],
+  ) {}
 
-// Incoming: published rig movement, flight constraints, shared time, native speech
-// observations and access to the shared stream queue.
-// Outgoing: instruction requests and read-only exercise/completion observations.
-// The existing integration connects speech requests to Show and Sound.
+  readonly load = (): void => {
+    for (const module of this.modules) this.runtime.load(module);
+  };
 
-// createStartModule(options)
-// Connects local components with their borrowed application capabilities.
-// Asynchronous speech preparation belongs to Run/Sound before module activation.
+  readonly activate = (): void => {
+    for (const module of this.modules) this.runtime.activate(module);
+  };
 
-// 4. Preparation and activation
+  readonly update = (deltaSeconds: number): void => {
+    this.runtime.update(deltaSeconds);
+  };
 
-// load()
-// Initializes bounded local storage and owned presentation resources synchronously.
+  readonly deactivate = (): void => {
+    for (const module of this.modules) this.runtime.deactivate(module);
+  };
 
-// activate()
-// Starts publication with fresh rig history, excluding earlier movement.
+  readonly unload = (): void => {
+    const errors: unknown[] = [];
+    for (const module of this.modules) {
+      try {
+        this.runtime.unload(module);
+      } catch (error) {
+        errors.push(error);
+      }
+    }
+    if (errors.length) throw new AggregateError(errors, "Start cleanup failed");
+  };
+}
 
-// 5. Frame integration
+// 3. Exercise architecture
 
-// update(frameDelta)
-// Samples published movement and speech, evaluates passage facts, advances the game
-// once and applies its chunk/presentation requests within the shared frame.
-
-// Game progress owns no independent clock. Chunk preparation uses StreamQueue.
-// UI observes exercise state; Control remains the sole writer of flight movement.
-
-// 6. Deactivation and release
-
-// deactivate()
-// Stops local updates and clears passage history. Playback pause travels through
-// its existing owner; XR head tracking remains independent.
-
-// unload()
-// Invalidates queued assignments, ends local consumers and disposes owned resources
-// once, including partial-load cleanup. Borrowed Air/World resources keep their owners.
+// start-game.runtime.ts owns exercise decisions and progress.
+// start-chunks.ts owns procedural geometry and passage facts.
+// start-audio-cues.ts describes recording bindings and spoken markers.
+// These outlines remain inactive. Their future connections pass through this center.
+// Control remains the sole owner of movement; Show and Sound own playback.

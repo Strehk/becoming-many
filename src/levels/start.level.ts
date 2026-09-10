@@ -1,4 +1,4 @@
-/** A white free-flight environment containing only airborne particles. */
+/** A white free-flight environment with airborne particles and directional light. */
 import type { LevelPreset } from "./level-preset";
 
 export const level: LevelPreset = {
@@ -7,6 +7,13 @@ export const level: LevelPreset = {
   viewDistance: 128,
   desktopFieldOfViewDegrees: 80,
   maximumGroundClearanceMeters: 50,
+  flightGuidance: {
+    color: 0xf0bc50,
+    opacity: 0.6,
+    lengthMeters: 14,
+    widthMeters: 3,
+    belowFlightMeters: 0.5,
+  },
   airParticles: {
     streaming: { chunkLevel: 0, viewDistanceMeters: 16, fadeStartMeters: 12 },
     density: { particlesPerChunk: 384 },

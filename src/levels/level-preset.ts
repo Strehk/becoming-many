@@ -13,6 +13,7 @@ import type { MotionSenseParameters } from "../modules/motion-sense/motion-sense
 import type { ConnectionsParameters } from "../modules/mycelium/mycelium";
 import type { RocksPreset } from "../modules/rocks/rocks";
 import type { ScentParticlesParameters } from "../modules/scent-particles/scent-particles";
+import type { FlightGuidanceParameters } from "../modules/start/flight-guidance";
 import type { AirParticlesParameters } from "../modules/start/point-cloud/point-cloud.module";
 import type { StaticPopulationPreset } from "../modules/static-population";
 import type { TerrainColors } from "../modules/terrain/terrain-colors";
@@ -29,6 +30,7 @@ export interface TerrainPreset {
 export type WorldComposition = {
   readonly invisibleGround?: true;
   readonly airParticles?: AirParticlesParameters;
+  readonly flightGuidance?: FlightGuidanceParameters;
   readonly scentParticles?: ScentParticlesParameters;
   readonly terrain?: TerrainPreset;
   readonly grassClipmap?: GrassClipmapPreset;

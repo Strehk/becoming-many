@@ -122,10 +122,12 @@ into those implementations.
 Each substantial domain repeats the same pattern: one domain owner connects
 specialised components, while those components do not import one another.
 
-The standalone Start recipe contains only Air Particles and uses the shared
-flight control. It has no learning orchestrator or Show integration. The future
-Start concept, guidance, visual treatment, and physical acceptance remain in
-their dedicated issues and design documents.
+The standalone Start recipe uses shared flight control. Its `start.module.ts`
+connects the particle environment and the directional light corridor, owning
+their shared lifecycle. The guidance leaf consumes World observations and imports
+no other Start component. Learning orchestration and Show integration remain
+inactive; exercise files describe their future architecture. Other level recipes
+continue to construct the shared Air Particles effect directly in Composition.
 
 ## Owners and lifetime
 

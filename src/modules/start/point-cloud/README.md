@@ -15,9 +15,10 @@ field of drifting points for Start and the other level recipes.
 
 ## Integration
 
-Level Composition creates this module through `createAirParticlesModule`.
+Start Module creates this effect alongside flight guidance for the Start recipe.
+Level Composition creates it directly for other recipes through `createAirParticlesModule`.
 The existing `airParticles` recipe and public names remain shared across levels.
-The Start architecture outline remains separate from this working background.
+Exercise architecture outlines remain separate from this working presentation.
 
 World drives load, activate, update, deactivate and unload. One Points object
 combines the resident volumes into one draw call. Movement advances one shader

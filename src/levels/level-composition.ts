@@ -59,6 +59,7 @@ import {
   type ScentParticlesParameters,
 } from "../modules/scent-particles/scent-particles";
 import { createAirParticlesModule } from "../modules/start/point-cloud/point-cloud.module";
+import { createStartModule } from "../modules/start/start.module";
 import { createGroundOccluder } from "../modules/terrain/ground-occluder";
 import { createTerrainModule } from "../modules/terrain/terrain";
 import { createTerrainColors } from "../modules/terrain/terrain-colors";
@@ -453,13 +454,16 @@ export async function composeLevel({
       ? worldSurface.surfaceYAt
       : undefined;
 
-    return createAirParticlesModule({
+    const options = {
       scene: world.scene,
       viewpoint: world.viewpoint,
       parameters,
       streamQueue: world.streamQueue,
       surfaceYAt,
-    });
+    };
+    return level.flightGuidance
+      ? createStartModule({ ...options, guidance: level.flightGuidance })
+      : createAirParticlesModule(options);
   }
 
   /**
