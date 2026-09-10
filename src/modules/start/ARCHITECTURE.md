@@ -28,7 +28,7 @@ route for that definition. A separate chunk engine is unnecessary for the MVP.
 | `flight-path/path-particles.ts` | Generate particle attributes and material variation for a supplied route. |
 | `flight-path/particle-contract.ts` | Public particle ranges, sampled route, and material contracts. |
 | `particle-elements/ring-shape.ts` | Sample only the local ring shape, with an empty center. |
-| `particle-elements/arrow-shape.ts` | Sample only a complete arrow outline, including shaft and head. |
+| `particle-elements/arrow-shape.ts` | Sample only a filled arrow silhouette, including shaft and head. |
 | `particle-elements/element-placement.ts` | Derive ring centers and exterior arrow placements from the sampled route. |
 | `particle-elements/particle-animation.ts` | Shape-independent emergence and dissolution envelope. |
 | `particle-elements/particle-simulation.ts` | Movement-only flight impulse and damped return to resting positions. |
@@ -108,6 +108,9 @@ opposite the tangent change. No camera-facing rotation changes their meaning.
 The current horizontal course is supported; generalized banked/vertical courses
 would need an explicit frame/up-vector contract. Placement is deterministic for
 the same route and parameters and capped at twelve ring/arrow pairs per section.
+
+Rings and arrows use black particles. The arrow sampler fills its shaft and head
+with interior rows; particle scatter gives the filled silhouette a soft depth.
 
 The shared `elementAnimation`, `elementSimulation`, and `elementParticles`
 settings are in `start-exercises.ts`. Emergence gathers scattered particles into

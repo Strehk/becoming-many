@@ -25,7 +25,7 @@ export const START_SETTINGS = {
   },
   elementParticles: {
     densityPerMeter: { from: 24, to: 36 },
-    color: { from: 0x2c858d, to: 0x77bec2 },
+    color: { from: 0x000000, to: 0x000000 },
     sizeMeters: { from: 0.03, to: 0.06 },
     spreadMeters: 0.18,
     seed: 43,

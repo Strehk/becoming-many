@@ -38,7 +38,7 @@ for (const exercise of START_EXERCISES) {
   });
 }
 
-test("shape samplers preserve ring opening and complete arrow perimeter", () => {
+test("shape samplers preserve ring opening and filled arrow bounds", () => {
   const ring = createRingShape(3);
   const arrow = createArrowShape(4);
   const point = new Vector3();
