@@ -15,6 +15,7 @@ import type { ExercisePose } from "../start-contract";
 import type {
   AnimationSettings,
   ElementGeometryFactory,
+  ElementRetirement,
   ElementSource,
   ParticleAnimation,
   ParticleLight,
@@ -35,6 +36,8 @@ interface ElementOptions {
   readonly animation: ParticleAnimation;
   readonly simulation: ParticleSimulation;
   readonly light: ParticleLight;
+  readonly retirement: ElementRetirement;
+  readonly readDirection: () => Readonly<Vector3>;
   readonly readPosition: () => Readonly<Vector3>;
   readonly createGeometry: ElementGeometryFactory;
   readonly createMaterial: () => PathParticleMaterial;
@@ -74,6 +77,7 @@ class ParticleElements {
   readonly deactivate = (): void => {
     this.options.animation.reset();
     this.options.light.reset(0);
+    this.options.retirement.reset([]);
     if (this.cloud) this.cloud.visible = false;
     this.cloud?.removeFromParent();
   };
@@ -137,6 +141,7 @@ class ParticleElements {
       if (!geometry)
         throw new Error("Incompatible element particle attributes");
       try {
+        this.resetRetirement(parts);
         return this.createGrains(geometry);
       } finally {
         geometry.dispose();
@@ -144,6 +149,16 @@ class ParticleElements {
     } finally {
       for (const part of parts) part.dispose();
     }
+  }
+
+  private resetRetirement(parts: readonly BufferGeometry[]): void {
+    this.options.retirement.reset(
+      parts.map((part) => {
+        part.computeBoundingSphere();
+        if (!part.boundingSphere) throw new Error("Missing element bounds");
+        return part.boundingSphere;
+      }),
+    );
   }
 
   private createGrains(source: BufferGeometry): InstancedBufferGeometry {
@@ -218,11 +233,16 @@ class ParticleElements {
   }
 
   // 4. Shared emergence/dissolve envelope plus shape-independent flight disturbance
+  readonly isVisible = (): boolean => this.cloud?.visible ?? false;
   readonly dissolve = (): void => {
-    this.options.animation.dissolve();
+    this.options.retirement.request();
   };
   readonly update = (seconds: number): void => {
     if (!this.cloud?.visible || !this.material) return;
+    this.options.retirement.update(seconds, {
+      position: this.options.readPosition(),
+      direction: this.options.readDirection(),
+    });
     const presence = this.options.animation.update(seconds);
     this.material.pointsMaterial.opacity = presence;
     this.material.update(seconds);
@@ -239,6 +259,6 @@ class ParticleElements {
         (this.scatter[index] ?? 0) * (1 - presence);
     }
     attribute.needsUpdate = true;
-    if (this.options.animation.isFinished()) this.deactivate();
+    if (this.options.retirement.isFinished()) this.deactivate();
   };
 }

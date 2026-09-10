@@ -7,6 +7,7 @@ import {
 } from "three";
 import type { PathParticleMaterial } from "../flight-path/particle-contract";
 import type {
+  ElementRetirement,
   ParticleLight,
   ParticleLightFrame,
   ParticleLightSettings,
@@ -81,6 +82,7 @@ function createRandom(seed: number): () => number {
 interface LightOptions {
   readonly settings: ParticleLightSettings;
   readonly animation: ParticleLight;
+  readonly retirement: ElementRetirement;
 }
 
 // 2. Per-particle opacity preserves black pigment while softening the outer cloud
@@ -97,14 +99,15 @@ export function createVolumeMaterial(
   points.onBeforeCompile = (shader, renderer) => {
     compileBase(shader, renderer);
     Object.assign(shader.uniforms, uniforms);
-    shader.vertexShader = patchVolumeVertex(shader.vertexShader).replace(
+    shader.uniforms.elementPresence = { value: light.retirement.presence };
+    shader.vertexShader = patchVolumeVertex(shader.vertexShader).replaceAll(
       "ELEMENT_CAPACITY",
       String(light.settings.capacity),
     );
     shader.fragmentShader = patchVolumeFragment(shader.fragmentShader);
   };
   points.customProgramCacheKey = () =>
-    `${baseKey}:particle-volume-directional-light-v8:${light.settings.capacity}`;
+    `${baseKey}:particle-volume-directional-light-v9:${light.settings.capacity}`;
   return {
     pointsMaterial: points,
     update(seconds) {

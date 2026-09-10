@@ -27,6 +27,7 @@ export const START_SETTINGS = {
     glassFraction: 0.32,
     color: 0xffce77,
   },
+  elementRetirement: { capacity: 24, dissolveSeconds: 1.2, clearanceMeters: 2 },
   elementPassage: { maximumStepMeters: 3 },
   elementSimulation: {
     radiusMeters: 5.2,

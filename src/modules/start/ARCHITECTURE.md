@@ -161,7 +161,12 @@ outside this MVP; the review observations below remain undecided.
 - `particle-grain.vert.glsl` applies the same normalized local forward coordinate
   to all forms. Arrows illuminate from tail to tip; rings illuminate across their
   depth. All rings remain until the full section, including its exit, is completed.
-  The existing section-wide dissolve then retires them together.
+  Retirement is requested at completion or recovery, but each ring fades only
+  while its complete bound is behind actual flight direction.
+- `element-retirement.ts` owns the per-element visibility envelope. It uses
+  world-space bounds plus a motion clearance, independent of gaze. Turning back
+  toward a fading ring pauses its fade; a front ring is never cleared to recycle
+  a display slot.
 - `particle-grain.frag.glsl` adds warm luminous cores and highlights to a seeded
   subset of grains. This is a glass-like shading approximation without refraction,
   bloom, extra lights or another render pass.
@@ -174,8 +179,11 @@ outside this MVP; the review observations below remain undecided.
 
 Settings live in `START_SETTINGS.elementLight` and `elementPassage`. The opening
 radius is the configured ring radius minus the dense particle core radius. The
-existing section-wide animation still controls emergence and cancellation, which
-never fabricates a success event. Resetting a display clears its old light state.
+section-wide animation controls emergence; retirement never fabricates success.
+`START_SETTINGS.elementRetirement` controls fade duration and clearance. The
+three-slot pool reuses a slot only after both its path and elements finish. If
+all slots retain front rings, publication waits for room instead of overwriting
+visible rings or allocating more slots. Resetting clears old light and retirement state.
 
 ## Open architecture observations
 

@@ -5,6 +5,7 @@ import { createPathParticleGeometry } from "../flight-path/path-particles";
 import { START_EXERCISES, START_SETTINGS } from "../start-exercises";
 import { createArrowShape } from "./arrow-shape";
 import { placeElements } from "./element-placement";
+import { createElementRetirement } from "./element-retirement";
 import { createParticleAnimation } from "./particle-animation";
 import { createParticleElements } from "./particle-elements";
 import { createParticleLight } from "./particle-light";
@@ -112,6 +113,8 @@ test("combined display dissolves and releases owned rendering resources", () => 
     disposed = true;
   });
   const display = createParticleElements({
+    retirement: createElementRetirement(START_SETTINGS.elementRetirement),
+    readDirection: () => new Vector3(0, 0, -1),
     light: createParticleLight(START_SETTINGS.elementLight),
     grainsPerSample: START_SETTINGS.elementVolume.grainsPerSample,
     scene,
@@ -119,7 +122,7 @@ test("combined display dissolves and releases owned rendering resources", () => 
     animationSettings: START_SETTINGS.elementAnimation,
     animation: createParticleAnimation(START_SETTINGS.elementAnimation),
     simulation: createParticleSimulation(START_SETTINGS.elementSimulation),
-    readPosition: () => new Vector3(),
+    readPosition: () => new Vector3(0, 0, -10),
     createGeometry: (shape) =>
       createPathParticleGeometry(shape, START_SETTINGS.elementParticles),
     createMaterial: () => ({ pointsMaterial: material, update: () => {} }),

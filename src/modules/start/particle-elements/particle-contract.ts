@@ -112,3 +112,28 @@ export interface RingPassage {
   /** Borrowed indices of newly crossed openings, in forward flight only. */
   readonly update: (player: Readonly<Vector3>) => readonly number[];
 }
+
+// 5. Retirement is requested by the section and permitted only behind actual flight.
+export interface ElementBounds {
+  readonly center: Readonly<Vector3>;
+  readonly radius: number;
+}
+export interface RetirementSettings {
+  readonly capacity: number;
+  readonly dissolveSeconds: number;
+  readonly clearanceMeters: number;
+}
+export interface ElementRetirement {
+  /** Stable GPU uniform storage; values are opacity multipliers in [0, 1]. */
+  readonly presence: Float32Array;
+  readonly reset: (bounds: readonly ElementBounds[]) => void;
+  readonly request: () => void;
+  readonly update: (
+    seconds: number,
+    flight: {
+      readonly position: Readonly<Vector3>;
+      readonly direction: Readonly<Vector3>;
+    },
+  ) => void;
+  readonly isFinished: () => boolean;
+}

@@ -18,8 +18,10 @@ import {
 } from "./flight-path/path-particles";
 import { createArrowShape } from "./particle-elements/arrow-shape";
 import { placeElements } from "./particle-elements/element-placement";
+import { createElementRetirement } from "./particle-elements/element-retirement";
 import { createParticleAnimation } from "./particle-elements/particle-animation";
 import type {
+  ElementRetirement,
   ElementSource,
   ParticleLight,
   RingPassage,
@@ -126,6 +128,9 @@ class StartModule implements WorldModule {
   }
 
   private createElements(path: Display) {
+    const retirement = createElementRetirement(
+      START_SETTINGS.elementRetirement,
+    );
     const light = createParticleLight(START_SETTINGS.elementLight);
     const passage = createRingPassage(
       START_SETTINGS.elementPassage.maximumStepMeters,
@@ -133,6 +138,8 @@ class StartModule implements WorldModule {
     this.feedback.set(path, { light, passage });
     return createParticleElements({
       light,
+      retirement,
+      readDirection: () => this.options.viewpoint.worldFlightDirection,
       grainsPerSample: START_SETTINGS.elementVolume.grainsPerSample,
       scene: this.options.scene,
       belowFlightMeters: START_SETTINGS.belowFlightMeters,
@@ -140,19 +147,27 @@ class StartModule implements WorldModule {
       animation: createParticleAnimation(START_SETTINGS.elementAnimation),
       simulation: createParticleSimulation(START_SETTINGS.elementSimulation),
       readPosition: () => this.readPosition(),
-      createGeometry: (shape) =>
-        fillParticleVolume(
-          createPathParticleGeometry(shape, START_SETTINGS.elementParticles),
-          START_SETTINGS.elementVolume,
-        ),
-      createMaterial: () =>
-        createVolumeMaterial(
-          createPathParticleMaterial(createAirParticleMaterial),
-          START_SETTINGS.elementVolume,
-          { settings: START_SETTINGS.elementLight, animation: light },
-        ),
+      createGeometry: this.createElementGeometry,
+      createMaterial: () => this.createElementMaterial(light, retirement),
     });
   }
+
+  private createElementMaterial(
+    light: ParticleLight,
+    retirement: ElementRetirement,
+  ) {
+    return createVolumeMaterial(
+      createPathParticleMaterial(createAirParticleMaterial),
+      START_SETTINGS.elementVolume,
+      { settings: START_SETTINGS.elementLight, animation: light, retirement },
+    );
+  }
+
+  private readonly createElementGeometry = (shape: ElementSource["shape"]) =>
+    fillParticleVolume(
+      createPathParticleGeometry(shape, START_SETTINGS.elementParticles),
+      START_SETTINGS.elementVolume,
+    );
 
   readonly load = (): void => {
     for (const module of this.modules) this.runtime.load(module);
@@ -206,7 +221,8 @@ class StartModule implements WorldModule {
       prepared:
         state.phase === "outro"
           ? !!this.pending?.display
-          : (this.pending?.generation.isReady() ?? false),
+          : (this.pending?.generation.isReady() ?? false) &&
+            !!this.availableDisplay(),
       instructionReleased:
         state.elapsedSeconds >= START_SETTINGS.demonstrationCueSeconds,
       instructionEnded: true,
@@ -311,6 +327,12 @@ class StartModule implements WorldModule {
   }
 
   // 5. Show a prepared successor without moving the current route
+  private availableDisplay(): Display | undefined {
+    return this.paths.find(
+      (path) => !path.isVisible() && !this.elements.get(path)?.isVisible(),
+    );
+  }
+
   private publishSuccessor(): void {
     const pending = this.pending;
     if (
@@ -319,7 +341,7 @@ class StartModule implements WorldModule {
       !pending.generation.isReady()
     )
       return;
-    const display = this.paths.find((path) => !path.isVisible());
+    const display = this.availableDisplay();
     if (!display) return;
     display.show(
       pending.generation.takeGeometry(),
@@ -333,8 +355,7 @@ class StartModule implements WorldModule {
   private beginPreparedSection(connected: boolean): void {
     const pending = this.pending;
     if (!pending) return;
-    const display =
-      pending.display ?? this.paths.find((path) => !path.isVisible());
+    const display = pending.display ?? this.availableDisplay();
     if (!display) return;
     const pose = connected
       ? pending.section.pose
