@@ -36,7 +36,9 @@ describe("VR flight", () => {
     expect(viewer.group.position.z).toBeCloseTo(
       -10 * FLIGHT_SETTINGS.glideSpeedMetersPerSecond,
     );
-    expect(viewer.group.position.y).toBeCloseTo(0);
+    expect(viewer.group.position.y).toBeCloseTo(
+      -10 * FLIGHT_SETTINGS.neutralDescentMetersPerSecond,
+    );
     expect(viewer.viewpoint.worldPosition.z).toBeGreaterThan(
       viewer.group.position.z,
     );
