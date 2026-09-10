@@ -122,10 +122,31 @@ speech. `start-audio-cues.ts` records the analysis provenance and timing limits.
 owner must supply native offset, natural end and failure separately. The engine
 never starts media or creates geometry. No audio element or second clock lives in
 Start. Without this capability, the standalone visual demo still uses its explicit
-two-second fallback and loops. Production Sound/Composition wiring is pending the
-requested exception to the Start-only edit boundary.
+two-second fallback and loops. Level Composition supplies `sound/voice-player.ts` for standalone Start. Run
+owns its cleanup, including partial startup; the Start module only stops its
+borrowed player when deactivated. The player owns one native audio element and
+retries autoplay denial on pointer/key gestures. Its native offset is hidden
+until playback starts, preventing a requested retry seek from releasing a cue
+while audio is blocked. The main Show keeps its existing narration player.
 
-With a voice capability, the first ring-free approach is 60 m. The actual media
+Each exercise has a typed `sequence` contract: `approachMeters`, optional `pathAtSeconds`, and an optional
+`worldReveal` containing recording-local `atSeconds` and `fadeSeconds`.
+`start-sequence.ts` samples smooth world presence; the center retains that reveal
+across later recordings and injects presence into particle and trail presentation.
+No particle geometry or audio knowledge crosses into those renderers.
+
+The opening stays white until 13.12 s ("einen Raum"). World presence rises over
+3.2 s, driven by native speech time. At reveal, a 12 m ring-free approach is
+anchored to the actual player, followed by the right chunk's 6 m straight entry.
+The curved centerline appears at 14.4 s; rings and the entry signpost wait until
+19.30 s and emerge over 1.3 s. At 2 m/s straight flight the bend starts about
+6 m ahead at the instruction. The first gate is 38 m into the chunk, already
+well inside the right bend; three gates at 8 m intervals mark its final portion.
+A single open-stroke arrow stands at route meter 30, 5 m to the left of the route
+and 1.8 m above it. It points at the first gate center, not along the local tangent.
+Its particle core is compact with no diffuse halo; ring appearance is unchanged. Initial placement therefore does not depend on loading or autoplay
+wait duration. The transition into the left lesson uses an 18 m exit and an 8 m entry;
+later lessons retain their 12 m entries. The actual media
 cue releases the prepared path and rings. Success plus native speech end starts
 the next recording during the existing exit. Success remains earned if the player
 deviates while the spoken tail finishes. A successor cannot activate before its
@@ -316,3 +337,9 @@ combinations fail before rendering instead of silently truncating the ring count
 Current six-ring defaults span 50 m and fit every configured radius at 90 degrees.
 Flight speed currently comes from `src/levels/start.level.ts` through the existing
 Level Runtime (`flightSpeedMetersPerSecond: 2`); it is not a particle parameter.
+
+The entry signpost is separate from repeated exterior arrows. `entry-arrow.ts`
+consumes route samples and ring placements and returns only a placement. The
+center selects the open stroke shape and arrow volume parameters. Its geometry
+factory receives the element kind, keeping appearance choices out of placement.
+`START_SETTINGS.arrowVolume` controls compactness; ring volume remains shared.

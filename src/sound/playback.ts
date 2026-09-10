@@ -53,3 +53,19 @@ export interface AudioTimebase {
 
   readonly unload: () => Promise<void>;
 }
+
+/** One native speech source. Selection belongs to the caller; Sound owns its lifetime. */
+export interface VoicePlayback {
+  readonly play: (
+    recording: { readonly url: string },
+    offsetSeconds: number,
+  ) => void;
+  /** Borrowed observation, refreshed on read. Failed/blocked playback never reports an end. */
+  readonly read: () => {
+    readonly offsetSeconds: number;
+    readonly ended: boolean;
+    readonly failed: boolean;
+  };
+  readonly stop: () => void;
+  readonly unload: () => void;
+}

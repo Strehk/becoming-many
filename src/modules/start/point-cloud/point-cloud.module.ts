@@ -35,6 +35,7 @@ import type { Viewpoint } from "../../../world/viewpoint";
 
 export interface AirParticlesModuleOptions {
   readonly scene: Scene;
+  readonly readPresence?: () => number;
   readonly viewpoint: Viewpoint;
   readonly parameters: AirParticlesParameters;
   readonly streamQueue: StreamQueue;
@@ -63,11 +64,29 @@ export function createAirParticlesModule(
 
   return {
     load: () => loadAirParticles(state, options),
-    activate: () => setAirParticlesVisible(state, true),
-    update: (deltaSeconds) => updateAirParticles(state, options, deltaSeconds),
+    activate: () => {
+      applyPresence(state, options);
+      setAirParticlesVisible(state, true);
+    },
+    update: (deltaSeconds) => {
+      applyPresence(state, options);
+      updateAirParticles(state, options, deltaSeconds);
+    },
     deactivate: () => setAirParticlesVisible(state, false),
     unload: () => unloadAirParticles(state, options.scene),
   };
+}
+
+/** Presentation changes opacity only; the resident particle field remains intact. */
+function applyPresence(
+  state: AirParticlesState,
+  options: AirParticlesModuleOptions,
+): void {
+  if (!options.readPresence || !state.currentStream) return;
+  const material = state.currentStream.particleCloud.material.pointsMaterial;
+  material.transparent = true;
+  material.depthWrite = false;
+  material.opacity = options.readPresence();
 }
 
 function loadAirParticles(

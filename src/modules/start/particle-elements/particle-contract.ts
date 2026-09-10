@@ -15,6 +15,12 @@ export interface ElementSettings {
   /** Exact ring count, 0–12. The last ring must fit inside the curved exercise. */
   readonly ringCount: number;
   readonly showArrows?: boolean;
+  /** Optional single arrow at this route distance, aimed at the first ring center. */
+  readonly entryArrow?: {
+    readonly distanceMeters: number;
+    readonly aboveMeters: number;
+    readonly sideMeters: number;
+  };
   readonly spacingMeters: number;
   readonly firstMeters: number;
   readonly ringRadiusMeters: number;
@@ -58,7 +64,10 @@ export interface ParticleSimulation {
   readonly update: (seconds: number, player: Readonly<Vector3>) => Float32Array;
 }
 /** Returns owned compatible particle attributes; the display disposes each result. */
-export type ElementGeometryFactory = (shape: FlightRoute) => BufferGeometry;
+export type ElementGeometryFactory = (
+  shape: FlightRoute,
+  kind: ElementPlacement["kind"],
+) => BufferGeometry;
 
 // 3. Shape-independent volume appearance, sampled once during generation
 export interface VolumeSettings {

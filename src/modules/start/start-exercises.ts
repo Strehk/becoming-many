@@ -3,7 +3,6 @@ import type { ExerciseDefinition } from "./start-contract";
 // 1. Shared demo and presentation settings
 export const START_SETTINGS = {
   demonstrationCueSeconds: 2,
-  narratedEntryMeters: 60,
   completeVoice: {
     url: "/audio/tutorial/de/complete.wav",
     durationSeconds: 13.861479,
@@ -57,6 +56,7 @@ export const START_SETTINGS = {
     verticalAmplitudeMeters: 0.25,
     speedMultiplier: 1.8,
   },
+  arrowVolume: { haloFraction: 0, coreRadiusMeters: 0.4 },
   elementVolume: {
     coreRadiusMeters: 0.55,
     haloRadiusMeters: 1.2,
@@ -85,6 +85,11 @@ export const START_SETTINGS = {
 export const START_EXERCISES = [
   {
     id: "right",
+    sequence: {
+      approachMeters: 12,
+      pathAtSeconds: 14.4,
+      worldReveal: { atSeconds: 13.12, fadeSeconds: 3.2 },
+    },
     voice: {
       url: "/audio/tutorial/de/introduction-right.wav",
       durationSeconds: 20.725729,
@@ -92,8 +97,8 @@ export const START_EXERCISES = [
     },
     route: {
       leadMeters: 0,
-      straightMeters: 12,
-      outroMeters: 24,
+      straightMeters: 6,
+      outroMeters: 18,
       turnSign: 1,
       turnRadiusMeters: { from: 32, to: 36 },
       turnDegrees: { from: 90, to: 90 },
@@ -107,11 +112,12 @@ export const START_EXERCISES = [
     },
     elements: {
       showArrows: false,
-      ringCount: 6,
-      firstMeters: 12,
-      spacingMeters: 10,
+      entryArrow: { distanceMeters: 30, aboveMeters: 1.8, sideMeters: -5 },
+      ringCount: 3,
+      firstMeters: 38,
+      spacingMeters: 8,
       ringRadiusMeters: 3.6,
-      arrowLengthMeters: 4.6,
+      arrowLengthMeters: 4.8,
       arrowOffsetMeters: 7,
       arrowPhaseFraction: 0.5,
     },
@@ -132,6 +138,7 @@ export const START_EXERCISES = [
   },
   {
     id: "left",
+    sequence: { approachMeters: 20 },
     voice: {
       url: "/audio/tutorial/de/left.wav",
       durationSeconds: 2.735417,
@@ -139,7 +146,7 @@ export const START_EXERCISES = [
     },
     route: {
       leadMeters: 0,
-      straightMeters: 12,
+      straightMeters: 8,
       outroMeters: 24,
       turnSign: -1,
       turnRadiusMeters: { from: 32, to: 36 },
@@ -155,7 +162,7 @@ export const START_EXERCISES = [
     elements: {
       showArrows: false,
       ringCount: 6,
-      firstMeters: 12,
+      firstMeters: 8,
       spacingMeters: 10,
       ringRadiusMeters: 3.6,
       arrowLengthMeters: 4.6,
@@ -179,6 +186,7 @@ export const START_EXERCISES = [
   },
   {
     id: "up",
+    sequence: { approachMeters: 20 },
     voice: {
       url: "/audio/tutorial/de/up.wav",
       durationSeconds: 4.334896,
@@ -227,6 +235,7 @@ export const START_EXERCISES = [
   },
   {
     id: "down",
+    sequence: { approachMeters: 20 },
     voice: {
       url: "/audio/tutorial/de/down.wav",
       durationSeconds: 2.552583,

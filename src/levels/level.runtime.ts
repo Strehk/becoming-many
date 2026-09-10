@@ -8,6 +8,7 @@
 import type { BenchmarkRun } from "../benchmark/benchmark-run";
 import { showLevelStateAt } from "../dramaturgy/show-levels";
 import type { M5Runtime } from "../m5/m5-contract";
+import type { VoicePlayback } from "../sound/playback";
 import type { SpatialAudio } from "../sound/spatial-audio";
 import { disposeGltfAssets } from "../utils/asset-loader/gltf-assets";
 import type { WorldModule } from "../world/module-runtime";
@@ -64,6 +65,7 @@ class LevelRun {
   private hasGround = false;
   private modules: WorldModule[] = [];
   private audio: SpatialAudio | undefined;
+  private voice: VoicePlayback | undefined;
   private controls: ReturnType<typeof composeControls> | undefined;
   private playback: ShowRuntime | undefined;
   private unloading: Promise<void> | undefined;
@@ -147,6 +149,7 @@ class LevelRun {
       assets: this.assets,
       forShow: this.request.kind === "show",
     });
+    this.voice = composition.voice;
     this.modules = [...composition.modules];
     this.worldSurface = composition.worldSurface;
     this.reach = composition.reach;
@@ -254,6 +257,7 @@ class LevelRun {
         ]
       : [];
     return [
+      () => this.voice?.unload(),
       () => this.audio?.unload(),
       ...[...this.modules]
         .reverse()

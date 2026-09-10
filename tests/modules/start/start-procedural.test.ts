@@ -84,13 +84,16 @@ function createFixture(warmFrames = 125, voice?: StartVoice) {
   return { scene, viewpoint, module, tick, queue };
 }
 
-function firstSection(fixture: ReturnType<typeof createFixture>): PlacedRoute {
+function firstSection(
+  fixture: ReturnType<typeof createFixture>,
+  entryMeters = START_SETTINGS.entryLineMeters,
+): PlacedRoute {
   const display = fixture.scene.getObjectByName("StartFlightPath") as Points;
   const position = display.position.clone();
   position.y += START_SETTINGS.belowFlightMeters;
   const entry = {
     route: createFlightEntry(
-      START_SETTINGS.entryLineMeters,
+      entryMeters,
       fixture.viewpoint.worldFlightDirection,
     ),
     pose: { position, yawRadians: display.rotation.y },
@@ -303,19 +306,93 @@ test("native speech offset gates the right course and failure never releases rin
   };
   const fixture = createFixture(180, voice);
   expect(calls[0]?.cue.url).toEndWith("introduction-right.wav");
-  expect(trails(fixture)).toHaveLength(1);
+  expect(trails(fixture)).toHaveLength(0);
+  playback.offsetSeconds = 13.12;
+  fixture.tick();
+  expect(trails(fixture)).toHaveLength(0);
+  playback.offsetSeconds = 14.72;
+  for (let frame = 0; frame < 30; frame++) fixture.tick();
+  expect(trails(fixture)).toHaveLength(2);
+  expect(
+    fixture.scene.getObjectByName("StartParticleElements"),
+  ).toBeUndefined();
+  expect(trails(fixture)[0]?.material.opacity).toBeCloseTo(
+    START_SETTINGS.pathOpacity * 0.5,
+  );
   playback.offsetSeconds = 19.29;
   fixture.tick();
-  expect(trails(fixture)).toHaveLength(1);
+  expect(trails(fixture)).toHaveLength(2);
+  expect(
+    fixture.scene.getObjectByName("StartParticleElements"),
+  ).toBeUndefined();
   playback.offsetSeconds = 19.3;
   playback.failed = true;
   fixture.tick();
-  expect(trails(fixture)).toHaveLength(1);
+  expect(trails(fixture)).toHaveLength(2);
+  expect(
+    fixture.scene.getObjectByName("StartParticleElements"),
+  ).toBeUndefined();
   playback.failed = false;
   fixture.tick();
   expect(trails(fixture)).toHaveLength(2);
+  expect(fixture.scene.getObjectByName("StartParticleElements")).toBeDefined();
   fixture.module.deactivate();
   expect(stops).toBe(1);
   fixture.module.unload();
   expect(fixture.scene.children).toHaveLength(0);
+});
+
+test("flying straight cannot earn the narrated right turn", () => {
+  const played: string[] = [];
+  const playback = { offsetSeconds: 0, ended: false, failed: false };
+  const fixture = createFixture(0, {
+    play: (cue) => {
+      played.push(cue.url);
+    },
+    read: () => playback,
+    stop: () => {},
+  });
+  playback.offsetSeconds = 14;
+  for (let frame = 0; frame < 30; frame++) fixture.tick();
+  playback.offsetSeconds = 20.725729;
+  playback.ended = true;
+  for (let frame = 0; frame < 30; frame++) fixture.tick();
+  for (let step = 0; step < 1000; step++) {
+    fixture.viewpoint.worldPosition.z -= 0.1;
+    fixture.tick();
+  }
+  expect(played.length).toBeGreaterThan(0);
+  expect(played.every((url) => url.endsWith("introduction-right.wav"))).toBe(
+    true,
+  );
+  fixture.module.unload();
+});
+
+test("following the right arc earns the next voice only after the current voice ends", () => {
+  const played: string[] = [];
+  const playback = { offsetSeconds: 0, ended: false, failed: false };
+  const fixture = createFixture(0, {
+    play: (cue) => {
+      played.push(cue.url);
+      playback.offsetSeconds = 0;
+      playback.ended = false;
+    },
+    read: () => playback,
+    stop: () => {},
+  });
+  playback.offsetSeconds = 14;
+  for (let frame = 0; frame < 30; frame++) fixture.tick();
+  playback.offsetSeconds = 19.5;
+  for (let frame = 0; frame < 30; frame++) fixture.tick();
+  const section = firstSection(
+    fixture,
+    START_EXERCISES[0].sequence.approachMeters,
+  );
+  flyRange(fixture, section, [0, section.route.exerciseEndMeters]);
+  expect(played).toHaveLength(1);
+  playback.ended = true;
+  fixture.tick();
+  expect(played[1]).toEndWith("left.wav");
+  expect(played).toHaveLength(2);
+  fixture.module.unload();
 });

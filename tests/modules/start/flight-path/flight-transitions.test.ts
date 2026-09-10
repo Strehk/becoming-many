@@ -31,7 +31,9 @@ test("section boundaries preserve position and tangent into the successor", () =
   expect(route.exerciseEndMeters - route.exerciseStartMeters).toBeGreaterThan(
     0,
   );
-  expect(route.lengthMeters - route.exerciseEndMeters).toBeCloseTo(24);
+  expect(route.lengthMeters - route.exerciseEndMeters).toBeCloseTo(
+    START_EXERCISES[0].route.outroMeters,
+  );
 });
 
 test("only sustained travel outside the corridor requests recovery", () => {

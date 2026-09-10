@@ -192,7 +192,10 @@ class ParticleElements {
     pose: ExercisePose,
     index: number,
   ): BufferGeometry {
-    const geometry = this.options.createGeometry(source.shape);
+    const geometry = this.options.createGeometry(
+      source.shape,
+      source.placement.kind,
+    );
     this.tagGeometry(geometry, index);
     const { placement } = source;
     geometry.applyQuaternion(

@@ -6,7 +6,7 @@ import type { ExerciseDefinition } from "../../../src/modules/start/start-contra
 import { START_EXERCISES } from "../../../src/modules/start/start-exercises";
 
 for (const exercise of START_EXERCISES as readonly ExerciseDefinition[]) {
-  test(`${exercise.id}: every seed follows the authored direction and places exactly six spaced rings`, () => {
+  test(`${exercise.id}: every seed follows the authored direction and places the authored number of spaced rings`, () => {
     for (let seed = 0; seed < 20; seed++) {
       const route = createFlightRoute(exercise.route, seed);
       const direction = new Vector3();
@@ -16,10 +16,14 @@ for (const exercise of START_EXERCISES as readonly ExerciseDefinition[]) {
       expect(direction.y).toBeCloseTo(0);
       expect(direction.z).toBeCloseTo(vertical ? -1 : 0);
       const rings = placeElements(route, exercise.elements);
-      expect(rings).toHaveLength(6);
+      expect(rings).toHaveLength(exercise.elements.ringCount);
       for (const [index, ring] of rings.entries())
         expect(ring.routeDistanceMeters).toBeCloseTo(
-          exercise.route.straightMeters + index * 10,
+          Math.max(
+            exercise.elements.firstMeters,
+            exercise.route.straightMeters,
+          ) +
+            index * exercise.elements.spacingMeters,
         );
     }
   });
@@ -32,6 +36,7 @@ test("authored count and spacing are exact, incompatible combinations fail expli
     placeElements(route, {
       ...exercise.elements,
       ringCount: 3,
+      firstMeters: route.exerciseStartMeters,
       spacingMeters: 12,
     }),
   ).toHaveLength(3);

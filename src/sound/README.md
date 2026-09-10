@@ -89,8 +89,13 @@ The original source files and prepared mono excerpts remain available as authore
 assets. The current Start level uses no audio; these recordings have no active
 runtime consumer. Selection and listening remain future content work.
 
-## Archived tutorial narration
+## Standalone tutorial voice
 
-Original recordings and their provenance remain under `public/audio/tutorial/`.
-The current Start level uses no tutorial narration. Main Show narration continues
-to use its existing EN/DE recordings, and script sources remain unchanged.
+`voice-player.ts` owns one native audio element for Start. Level Composition
+injects its public `VoicePlayback` capability; Run owns cleanup. Start selects
+recordings and instruction offsets, while native playback reports timing and
+natural completion. Failure never masquerades as completion. Autoplay denial
+retries on a pointer/key gesture; stop/unload invalidate pending promises and
+unload releases gesture listeners and the media source. There is no second clock.
+Main Show narration retains its clock-following player and EN/DE recordings.
+Tutorial DE and EN asset copies currently both contain German speech.

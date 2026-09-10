@@ -79,8 +79,10 @@ import {
 import { createAudioTimebase } from "../sound/audio-timebase";
 import { createDroneOrgan } from "../sound/drone-organ/drone-organ";
 import { createNarrationPlayer } from "../sound/narration-player";
+import type { VoicePlayback } from "../sound/playback";
 import type { SpatialAudio } from "../sound/spatial-audio";
 import { createSpatialAudio } from "../sound/spatial-audio.runtime";
+import { createVoicePlayer } from "../sound/voice-player";
 import {
   disposeGltfAssets,
   type GltfAssets,
@@ -136,6 +138,7 @@ interface LevelCompositionOptions {
 }
 
 export interface ComposedLevel {
+  readonly voice?: VoicePlayback;
   readonly worldSurface: WorldSurface;
   readonly modules: readonly WorldModule[];
   readonly reach: ShowWorldReach;
@@ -152,6 +155,7 @@ export async function composeLevel({
     WORLD_SURFACE_SETTINGS,
     ZONE_SETTINGS,
   );
+  let voice: VoicePlayback | undefined;
   const modules: WorldModule[] = [];
   const createdModules = new Set<WorldModule>();
   const gates = new Map<ShowSense, WorldModule[]>();
@@ -265,6 +269,7 @@ export async function composeLevel({
     add(undefined, endCredits?.module);
     return {
       worldSurface,
+      voice,
       modules,
       hasGround: level.invisibleGround === true || hasVisibleSurface(level),
       reach: {
@@ -286,6 +291,11 @@ export async function composeLevel({
     };
   } catch (error) {
     const errors: unknown[] = [error];
+    try {
+      voice?.unload();
+    } catch (cleanupError) {
+      errors.push(cleanupError);
+    }
     for (const module of [...createdModules].reverse()) {
       try {
         module.unload();
@@ -468,8 +478,11 @@ export async function composeLevel({
           : undefined,
       maximumGroundClearanceMeters: level.maximumGroundClearanceMeters,
     };
+    if (level.flightGuidance && !forShow)
+      voice = createVoicePlayer({ gestures: window });
     return level.flightGuidance
       ? createStartModule({
+          voice,
           ...options,
           guidance: level.flightGuidance,
           constrainFlightPosition: (position) =>

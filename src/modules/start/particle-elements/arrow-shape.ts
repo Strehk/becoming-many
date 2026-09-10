@@ -52,3 +52,34 @@ function createFillRows(lengthMeters: number) {
     };
   });
 }
+
+// A single pencil-like shaft with two open head strokes; no filled silhouette.
+export function createArrowStroke(lengthMeters: number): FlightRoute {
+  if (!Number.isFinite(lengthMeters) || lengthMeters <= 0)
+    throw new RangeError("Arrow length must be positive");
+  const strokes = [
+    [-0.5, 0, 0.5, 0],
+    [0.18, 0.22, 0.5, 0],
+    [0.18, -0.22, 0.5, 0],
+  ].map(([x = 0, y = 0, endX = 0, endY = 0]) => ({
+    x: x * lengthMeters,
+    y: y * lengthMeters,
+    dx: (endX - x) * lengthMeters,
+    dy: (endY - y) * lengthMeters,
+    length: Math.hypot(endX - x, endY - y) * lengthMeters,
+  }));
+  return {
+    lengthMeters: strokes.reduce((sum, stroke) => sum + stroke.length, 0),
+    sample(distance, target) {
+      for (const stroke of strokes) {
+        if (distance <= stroke.length) {
+          const t = Math.max(0, distance / stroke.length);
+          target.set(stroke.x + stroke.dx * t, stroke.y + stroke.dy * t, 0);
+          return;
+        }
+        distance -= stroke.length;
+      }
+      target.set(lengthMeters * 0.5, 0, 0);
+    },
+  };
+}

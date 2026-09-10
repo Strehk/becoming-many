@@ -9,6 +9,7 @@ interface FlightPathOptions {
   readonly belowFlightMeters: number;
   /** Maximum visible opacity; reveal and retirement multiply this value. */
   readonly opacity?: number;
+  readonly readPresence?: () => number;
   readonly createMaterial: () => PathParticleMaterial;
 }
 
@@ -73,7 +74,9 @@ class FlightPath implements WorldModule {
     this.revealDuration = revealSeconds;
     this.revealElapsed = 0;
     this.cloud.material.opacity =
-      revealSeconds > 0 ? 0 : (this.options.opacity ?? 1);
+      revealSeconds > 0
+        ? 0
+        : (this.options.opacity ?? 1) * (this.options.readPresence?.() ?? 1);
     this.cloud.visible = true;
     this.fadeDuration = 0;
     this.options.scene.add(this.cloud);
@@ -102,10 +105,13 @@ class FlightPath implements WorldModule {
     if (this.fadeSeconds >= this.fadeDuration) this.deactivate();
   };
   private updateReveal(deltaSeconds: number): void {
-    if (!this.cloud || this.revealDuration <= 0) return;
+    if (!this.cloud) return;
     this.revealElapsed += deltaSeconds;
     this.cloud.material.opacity =
       (this.options.opacity ?? 1) *
-      Math.min(1, this.revealElapsed / this.revealDuration);
+      (this.revealDuration > 0
+        ? Math.min(1, this.revealElapsed / this.revealDuration)
+        : 1) *
+      (this.options.readPresence?.() ?? 1);
   }
 }

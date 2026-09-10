@@ -83,7 +83,13 @@ test("a straight shortcut cannot substitute for following the curve", () => {
 test("seeded routes reproduce geometry and mirror left/right consistently", () => {
   const left = createFlightRoute(START_EXERCISES[0].route, 18);
   const again = createFlightRoute(START_EXERCISES[0].route, 18);
-  const right = createFlightRoute(START_EXERCISES[1].route, 18);
+  const right = createFlightRoute(
+    {
+      ...START_EXERCISES[0].route,
+      turnSign: -START_EXERCISES[0].route.turnSign as -1 | 1,
+    },
+    18,
+  );
   const changed = createFlightRoute(START_EXERCISES[0].route, 19);
   const a = new Vector3(),
     b = new Vector3();

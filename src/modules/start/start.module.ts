@@ -21,9 +21,10 @@ import {
   createPathParticleGeometry,
   createPathParticleMaterial,
 } from "./flight-path/path-particles";
-import { createArrowShape } from "./particle-elements/arrow-shape";
+import { createArrowStroke } from "./particle-elements/arrow-shape";
 import { placeElements } from "./particle-elements/element-placement";
 import { createElementRetirement } from "./particle-elements/element-retirement";
+import { placeEntryArrow } from "./particle-elements/entry-arrow";
 import { createParticleAnimation } from "./particle-elements/particle-animation";
 import type {
   ElementRetirement,
@@ -56,6 +57,7 @@ import type {
 } from "./start-contract";
 import { START_EXERCISES, START_SETTINGS } from "./start-exercises";
 import { createStartGame } from "./start-game.runtime";
+import { sampleWorldPresence } from "./start-sequence";
 
 // 1. Local star: all concrete connections and the fixed display pool live here
 interface StartModuleOptions extends AirParticlesModuleOptions {
@@ -106,6 +108,8 @@ class StartModule implements WorldModule {
   private current: ActiveSection | undefined;
   private pending: PendingSection | undefined;
   private active = false;
+  private worldPresence = 1;
+  private openingNeeded = false;
 
   constructor(private readonly options: StartModuleOptions) {
     this.game = createStartGame({
@@ -126,6 +130,7 @@ class StartModule implements WorldModule {
         scene: this.options.scene,
         belowFlightMeters: START_SETTINGS.belowFlightMeters,
         opacity: START_SETTINGS.pathOpacity,
+        readPresence: () => this.worldPresence,
         createMaterial: () =>
           createPathParticleMaterial(createAirParticleMaterial),
       }),
@@ -134,7 +139,10 @@ class StartModule implements WorldModule {
 
   private createModules(): WorldModule[] {
     return [
-      createAirParticlesModule(this.options),
+      createAirParticlesModule({
+        ...this.options,
+        readPresence: () => this.worldPresence,
+      }),
       ...this.paths,
       ...this.elements,
       ...(START_SETTINGS.showFlightGuidance
@@ -193,10 +201,15 @@ class StartModule implements WorldModule {
     );
   }
 
-  private readonly createElementGeometry = (shape: ElementSource["shape"]) =>
+  private readonly createElementGeometry = (
+    shape: ElementSource["shape"],
+    kind: "ring" | "arrow",
+  ) =>
     fillParticleVolume(
       createPathParticleGeometry(shape, START_SETTINGS.elementParticles),
-      START_SETTINGS.elementVolume,
+      kind === "arrow"
+        ? { ...START_SETTINGS.elementVolume, ...START_SETTINGS.arrowVolume }
+        : START_SETTINGS.elementVolume,
     );
 
   readonly load = (): void => {
@@ -213,11 +226,12 @@ class StartModule implements WorldModule {
     this.course.clear();
     this.entry = undefined;
     this.recoveryEntryNeeded = false;
+    this.worldPresence = this.options.voice ? 0 : 1;
+    this.openingNeeded = true;
     this.active = true;
     for (const module of this.modules) this.runtime.activate(module);
     this.playInstruction(false);
-    this.showEntry(false);
-    this.prepareSection(false);
+    this.updateOpening();
   };
   readonly deactivate = (): void => {
     this.active = false;
@@ -258,6 +272,7 @@ class StartModule implements WorldModule {
   // 3. One coherent observation, followed by one engine decision
   readonly update = (deltaSeconds: number): void => {
     if (!this.active) return;
+    this.updateOpening();
     this.updateRetiredPaths();
     this.resumeRecovery();
     this.enqueuePending();
@@ -268,6 +283,23 @@ class StartModule implements WorldModule {
       for (const index of passage.update(position)) light.pass(index);
     this.runtime.update(deltaSeconds);
   };
+
+  // Opening captures the moving player at the room cue, never at page-load time.
+  private updateOpening(): void {
+    const first = START_EXERCISES[0];
+    if (this.options.voice && this.worldPresence < 1) {
+      const playback = this.options.voice.read();
+      if (!playback.failed)
+        this.worldPresence = Math.max(
+          this.worldPresence,
+          sampleWorldPresence(first.sequence, playback.offsetSeconds),
+        );
+    }
+    if (!this.openingNeeded || this.worldPresence <= 0) return;
+    if (!this.showEntry(false)) return;
+    this.openingNeeded = false;
+    this.prepareSection(false);
+  }
 
   private observeFlight(deltaSeconds: number): ExerciseAction {
     const position = this.readPosition();
@@ -337,7 +369,16 @@ class StartModule implements WorldModule {
     route: ExerciseRoute,
     exercise: ExerciseDefinition,
   ): ElementSource[] {
-    return placeElements(route, exercise.elements).map((placement) => ({
+    const placements = placeElements(route, exercise.elements);
+    if (exercise.elements.entryArrow !== undefined) {
+      const arrow = placeEntryArrow(
+        route,
+        placements,
+        exercise.elements.entryArrow,
+      );
+      if (arrow) placements.push(arrow);
+    }
+    return placements.map((placement) => ({
       placement,
       openingRadiusMeters:
         placement.kind === "ring"
@@ -347,7 +388,7 @@ class StartModule implements WorldModule {
       shape:
         placement.kind === "ring"
           ? createRingShape(exercise.elements.ringRadiusMeters)
-          : createArrowShape(exercise.elements.arrowLengthMeters),
+          : createArrowStroke(exercise.elements.arrowLengthMeters),
     }));
   }
 
@@ -390,7 +431,7 @@ class StartModule implements WorldModule {
 
   private publishPreparedPath(): void {
     const pending = this.pending;
-    if (!pending?.generation.isReady() || !this.instructionReleased()) return;
+    if (!pending?.generation.isReady() || !this.pathReleased()) return;
     if (!pending.display) {
       const display = this.availableDisplay();
       if (!display) return;
@@ -398,7 +439,7 @@ class StartModule implements WorldModule {
       pending.display = display;
       if (!pending.continuation) this.observeEntry(display);
     }
-    if (pending.continuation)
+    if (pending.continuation && this.instructionReleased())
       this.showElements(
         pending.display,
         pending.elements,
@@ -466,7 +507,7 @@ class StartModule implements WorldModule {
       this.options.viewpoint.worldFlightDirection ?? this.noFlightDirection;
     const length =
       !recovery && this.options.voice
-        ? START_SETTINGS.narratedEntryMeters
+        ? exercise.sequence.approachMeters
         : START_SETTINGS.entryLineMeters;
     const route = createFlightEntry(length, direction);
     const pose = placeFlightRecovery(
@@ -586,6 +627,19 @@ class StartModule implements WorldModule {
   }
 
   // 7. Native speech facts gate visuals; elapsed frame time is only the silent demo fallback.
+  private pathReleased(): boolean {
+    if (!this.options.voice) return this.instructionReleased();
+    const state = this.game.readState();
+    const exercise: ExerciseDefinition | undefined =
+      START_EXERCISES[state.exerciseIndex + Number(state.phase === "outro")];
+    const cue =
+      exercise?.sequence.pathAtSeconds ?? exercise?.voice.instructionAtSeconds;
+    const playback = this.options.voice.read();
+    return (
+      cue !== undefined && !playback.failed && playback.offsetSeconds >= cue
+    );
+  }
+
   private instructionReleased(): boolean {
     const state = this.game.readState();
     if (!this.options.voice)
@@ -607,7 +661,7 @@ class StartModule implements WorldModule {
     const voice = this.options.voice;
     if (!voice) return;
     // Keep unfinished orientation intact during an early deviation.
-    if (retry && !voice.read().ended && !voice.read().failed) return;
+    if (retry && !voice.read().ended) return;
     const index = this.game.readState().exerciseIndex + Number(successor);
     const cue = START_EXERCISES[index]?.voice;
     if (cue) voice.play(cue, retry ? cue.instructionAtSeconds : 0);

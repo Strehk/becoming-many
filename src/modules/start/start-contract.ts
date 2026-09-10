@@ -27,11 +27,23 @@ export interface ProgressParameters {
 export interface ExerciseDefinition {
   readonly id: string;
   readonly voice: ExerciseVoiceCue;
+  readonly sequence: StartSequence;
   readonly route: RouteParameters;
   readonly particles: PathParticleParameters;
   readonly progress: ProgressParameters;
   readonly deviation: DeviationParameters;
   readonly elements: ElementSettings;
+}
+
+/** Recording-local visual cues. Omitted worldReveal retains the already visible world. */
+export interface StartSequence {
+  readonly approachMeters: number;
+  /** Optional early centerline reveal; rings still wait for the spoken instruction. */
+  readonly pathAtSeconds?: number;
+  readonly worldReveal?: {
+    readonly atSeconds: number;
+    readonly fadeSeconds: number;
+  };
 }
 
 /** Recording-local seconds; cue markers come from approximate word alignment. */
