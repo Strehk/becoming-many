@@ -262,6 +262,12 @@ Air remains independent: Start authors 384 points per 16 m cell and a fading
 16 m near field through the existing shared chunk/queue path. Main defaults stay
 unchanged. No independent loop, global fog or extra postprocessing is added.
 
+Within `src/modules/start/`, `start.module.ts` owns learning phases, passage
+observations, arrow retirement and the particle effect lifetime. `start-motion.ts`
+owns bounded flight history and prediction; `start-course.ts` owns fixed arrow
+and tunnel geometry, reachability checks and reusable curve samples. Both are
+local CPU helpers driven by Start, with no independent loop or World registration.
+
 Show starts held and owns the interactive tutorial within its existing clock.
 Its public timeline advances through practice and retains the actual tutorial
 span via `sample().mainStartSeconds`; main narration/senses still use their original
