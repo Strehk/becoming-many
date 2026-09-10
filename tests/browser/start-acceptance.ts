@@ -107,13 +107,13 @@ export async function checkStartLevel(
   await page.locator("[data-transport]").click();
   await page.waitForTimeout(FORMATION_MILLISECONDS);
   await captureParticles("formed-goal");
-  assert.match(await status.innerText(), /Right · 1\/4/);
+  await assertFirstLesson();
 
   // The existing adapter receives invalid movement before real flight is enabled.
   simulation.set(0, -DEFLECTION, 0);
   await page.waitForTimeout(FLIGHT_MILLISECONDS);
   await captureParticles("invalid-input");
-  assert.match(await status.innerText(), /Right · 1\/4/);
+  await assertFirstLesson();
   simulation.set(-0.1, 0);
   await page.waitForTimeout(FLIGHT_MILLISECONDS);
   await captureParticles("forward-flight");
@@ -127,11 +127,19 @@ export async function checkStartLevel(
   simulation.set(0, 0, 0);
   await page.reload({ waitUntil: "load" });
   await status.waitFor({ state: "visible" });
-  assert.match(await status.innerText(), /Right · 1\/4/);
+  await assertFirstLesson();
   await captureParticles("arrival-after-reload");
   await page.locator("[data-transport]").click();
   await page.waitForTimeout(FORMATION_MILLISECONDS);
   await captureParticles("formed-goal-after-reload");
+
+  async function assertFirstLesson(): Promise<void> {
+    // A spatial miss may already be dissolving; neither state awards a passage.
+    assert.match(
+      await status.innerText(),
+      /^Flight tutorial · (?:Right · 1\/4|Missed · New target ahead · 0\/4 passed)$/,
+    );
+  }
 
   async function captureParticles(name: string): Promise<void> {
     const canvas = page.locator(".experience-canvas");

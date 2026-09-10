@@ -36,10 +36,8 @@ import {
   showLevelAt,
 } from "../dramaturgy/show-levels";
 import type { MotionActorGroup } from "../modules/motion-sense/motion-sense";
-import type {
-  StartModuleHandle,
-  StartParameters,
-} from "../modules/start/start.module";
+import type { StartModuleHandle } from "../modules/start/start.module";
+import type { StartParameters } from "../modules/start/start-settings";
 import type { WorldFadeEffect } from "../modules/world-fade/world-fade";
 import { createAudioTimebase } from "../sound/audio-timebase";
 import { createDroneOrgan } from "../sound/drone-organ/drone-organ";
@@ -363,7 +361,7 @@ export async function createShowRuntime(
       const observed = tutorial.start.readObservation();
       return {
         phase: observed.phase,
-        goalTarget: observed.goalTarget,
+        goalTarget: observed.goalPosition,
         goalIndex: observed.goalIndex,
         direction: observed.direction,
         crossingCount: observed.crossingCount,
@@ -424,7 +422,7 @@ export async function createShowRuntime(
       mainStartSeconds = standalone
         ? 0
         : next.parameters.maximumPracticeSeconds;
-      tutorial.start.reset();
+      tutorial.start.resetPractice();
       tutorial.start.setPlaying(false);
       tutorial.start.setGoalAdvanceAllowed(false);
       tutorial.start.setFormationAllowed(false);
@@ -666,7 +664,7 @@ export async function createShowRuntime(
               : tutorial.parameters.maximumPracticeSeconds;
             roomPresence = 0;
             tutorial.setRoomPresence?.(0);
-            tutorial.start.reset();
+            tutorial.start.resetPractice();
             tutorial.start.setPlaying(false);
             tutorial.start.setGoalAdvanceAllowed(false);
             tutorial.start.setFormationAllowed(false);

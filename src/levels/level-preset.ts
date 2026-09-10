@@ -15,7 +15,7 @@ import type { MotionSenseParameters } from "../modules/motion-sense/motion-sense
 import type { ConnectionsParameters } from "../modules/mycelium/mycelium";
 import type { RocksPreset } from "../modules/rocks/rocks";
 import type { ScentParticlesParameters } from "../modules/scent-particles/scent-particles";
-import type { StartParameters } from "../modules/start/start.module";
+import type { StartParameters } from "../modules/start/start-settings";
 import type { StaticPopulationPreset } from "../modules/static-population";
 import type { TerrainColors } from "../modules/terrain/terrain-colors";
 import type { ThermalPerceptionParameters } from "../modules/thermal-perception/thermal-perception";

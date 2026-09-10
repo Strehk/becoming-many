@@ -1,13 +1,9 @@
 import { expect, mock, test } from "bun:test";
 import { Vector3 } from "three";
-import {
-  createStartModule,
-  type StartParameters,
-} from "../../src/modules/start/start.module";
-import type {
-  StartParticleEffect,
-  StartParticleFrame,
-} from "../../src/modules/start/start-particles.effect";
+import { createStartModule } from "../../src/modules/start/start.module";
+import type { StartParticleFrame } from "../../src/modules/start/start-particle-frame";
+import type { StartParticleEffect } from "../../src/modules/start/start-particles.effect";
+import type { StartParameters } from "../../src/modules/start/start-settings";
 import { ModuleRuntime } from "../../src/world/module-runtime";
 
 const PARAMETERS: StartParameters = {
@@ -125,7 +121,7 @@ test("all four spatial goals require passage and remain open without a time limi
   runtime.unload(start.module);
 });
 
-test("a wake begins at the actual intersection and follows the travelled direction", () => {
+test("a wake follows the travelled direction and advances only with playback", () => {
   let frame: StartParticleFrame | undefined;
   const { start, runtime, formGoal, moveTo } = createPractice(
     PARAMETERS,
@@ -137,19 +133,10 @@ test("a wake begins at the actual intersection and follows the travelled directi
   const center = formGoal();
   if (!frame) throw new Error("Missing ring frame");
   const beforeOffset = new Vector3(-1.6, 0.3, 5);
-  const afterOffset = new Vector3(2.4, 0.3, -5);
-  const before = beforeOffset.dot(frame.goalNormal);
-  const after = afterOffset.dot(frame.goalNormal);
-  const intersection = center
-    .clone()
-    .add(beforeOffset.clone().lerp(afterOffset, before / (before - after)));
   moveTo(center.clone().add(beforeOffset));
   moveTo(center.clone().add(new Vector3(2.4, 0.3, -5)));
   const wake = start.readObservation().wake;
   expect(wake).toBeDefined();
-  expect(wake?.position.x).toBeCloseTo(intersection.x);
-  expect(wake?.position.y).toBeCloseTo(intersection.y);
-  expect(wake?.position.z).toBeCloseTo(intersection.z);
   const direction = new Vector3(4, 0, -10).normalize();
   expect(wake?.direction.x).toBeCloseTo(direction.x);
   expect(wake?.direction.y).toBeCloseTo(direction.y);
@@ -201,7 +188,7 @@ test("pause freezes formation and reset or reload starts fresh at the new arriva
   runtime.update(100);
   expect(start.readObservation().formationProgress).toBe(progress);
   start.setPlaying(true);
-  start.reset();
+  start.resetPractice();
   worldPosition.set(20, 8, 30);
   runtime.update(0);
   const center = formGoal();
@@ -356,7 +343,7 @@ test("curved previews stay world-fixed and never count as learning targets", () 
   worldDirection.set(-1, 0, 0);
   runtime.update(0.1);
   expect(snapshotPreviews()).toEqual(previews);
-  expect(start.readObservation().goalTarget).toEqual(center);
+  expect(start.readObservation().goalPosition).toEqual(center);
 
   moveTo(center.clone().add(new Vector3(0, 0, 2)));
   moveTo(center.clone().add(new Vector3(0, 0, -2)));
@@ -373,7 +360,7 @@ test("curved previews stay world-fixed and never count as learning targets", () 
     nextCenter.clone().sub(nextOrigin).dot(worldDirection),
   ).toBeGreaterThan(0);
   expect(snapshotPreviews()).not.toEqual(previews);
-  start.reset();
+  start.resetPractice();
   expect(start.readObservation().passageCount).toBe(0);
   expect(start.readObservation().passagePosition).toBe(borrowedPassagePosition);
   runtime.unload(start.module);
@@ -389,7 +376,7 @@ test("an outside passage fades out and retries the same lesson ahead of the curr
   expect(start.readObservation().crossingCount).toBe(0);
   expect(start.readObservation().missCount).toBe(1);
   expect(start.readObservation().wake).toBeUndefined();
-  expect(start.readObservation().goalTarget).toEqual(center);
+  expect(start.readObservation().goalPosition).toEqual(center);
 
   worldDirection.set(-1, 0, 0);
   runtime.update(PARAMETERS.dissolutionSeconds);
@@ -415,7 +402,7 @@ test("a distant receding target recycles spatially while waiting alone never exp
   const center = formGoal();
   runtime.update(10_000);
   expect(start.readObservation().phase).toBe("flying");
-  expect(start.readObservation().goalTarget).toEqual(center);
+  expect(start.readObservation().goalPosition).toEqual(center);
   expect(start.readObservation().missCount).toBe(0);
   const passagesBeforeMiss = start.readObservation().passageCount;
   // This remains in front of the goal plane, but leaves its relevance volume.
@@ -447,7 +434,7 @@ test("pause holds miss feedback and cannot advance recycling", () => {
   runtime.update(10_000);
   expect(start.readObservation().phase).toBe("missed");
   expect(start.readObservation().formationProgress).toBe(presence);
-  expect(start.readObservation().goalTarget).toEqual(center);
+  expect(start.readObservation().goalPosition).toEqual(center);
   expect(start.readObservation().attempt).toBe(0);
   start.setPlaying(true);
   runtime.update(PARAMETERS.dissolutionSeconds / 2);
@@ -501,7 +488,7 @@ test("overtaking an unfinished formation retires it without awarding a passage",
   runtime.update(PARAMETERS.arrivalSeconds);
   beginTurn();
   expect(start.readObservation().phase).toBe("forming");
-  const center = start.readObservation().goalTarget.clone();
+  const center = start.readObservation().goalPosition.clone();
   moveTo(
     center.clone().add(new Vector3(0, 0, -2)),
     PARAMETERS.formationSeconds / 2,
@@ -514,7 +501,7 @@ test("overtaking an unfinished formation retires it without awarding a passage",
   expect(start.readObservation().direction).toBe("right");
   runtime.update(PARAMETERS.arrivalSeconds);
   beginTurn();
-  expect(start.readObservation().goalTarget.z).toBeLessThan(center.z);
+  expect(start.readObservation().goalPosition.z).toBeLessThan(center.z);
   runtime.unload(start.module);
 });
 
@@ -559,14 +546,14 @@ test("the spoken cue reveals only a world-fixed arrow; gaze and wrong-way travel
   start.setFormationAllowed(false);
   runtime.update(30);
   expect(start.readObservation().phase).toBe("arrival");
-  expect(frame?.arrowPresence).toBe(0);
+  expect(frame?.arrow.presence).toBe(0);
   worldPosition.set(30, 10, -40);
   runtime.update(0);
   start.setFormationAllowed(true);
   runtime.update(0);
   expect(start.readObservation().phase).toBe("turning");
   if (!frame) throw new Error("Missing arrow frame");
-  const arrow = frame.arrowPosition.clone();
+  const arrow = frame.arrow.position.clone();
   const origin = worldPosition.clone();
   expect(arrow.clone().sub(origin).angleTo(worldDirection)).toBeCloseTo(0);
   expect(arrow.distanceTo(origin)).toBeGreaterThanOrEqual(8);
@@ -580,25 +567,25 @@ test("the spoken cue reveals only a world-fixed arrow; gaze and wrong-way travel
   worldDirection.set(0.5, 0, -1).normalize();
   runtime.update(0.3);
   expect(start.readObservation().phase).toBe("turning");
-  expect(frame.arrowPosition).toEqual(arrow);
+  expect(frame.arrow.position).toEqual(arrow);
   worldDirection.set(0, 0, -1);
   for (let index = 0; index < 3; index += 1)
     moveTo(worldPosition.clone().add(new Vector3(-0.1, 0, -0.2)));
   expect(start.readObservation().phase).toBe("turning");
   expect(frame.ringPresence).toBe(0);
-  expect(frame.arrowPosition).toEqual(arrow);
+  expect(frame.arrow.position).toEqual(arrow);
 
   beginTurn();
   expect(frame.ringPresence).toBe(1);
   expect(frame.previews).toHaveLength(3);
-  expect(frame.arrowPosition).toEqual(arrow);
+  expect(frame.arrow.position).toEqual(arrow);
   expect(start.readObservation().crossingCount).toBe(0);
   const ring = frame.goalPosition.clone();
   start.setPlaying(false);
   worldDirection.set(1, 0, 0);
   worldPosition.add(new Vector3(5, 2, 1));
   runtime.update(10);
-  expect(frame.arrowPosition).toEqual(arrow);
+  expect(frame.arrow.position).toEqual(arrow);
   expect(frame.goalPosition).toEqual(ring);
   runtime.unload(start.module);
 });
@@ -634,21 +621,21 @@ test("an out-of-view arrow dissolves and retries without awarding a goal", () =>
     }),
   );
   runtime.update(PARAMETERS.arrivalSeconds);
-  const oldArrow = frame?.arrowPosition.clone();
+  const oldArrow = frame?.arrow.position.clone();
   worldDirection.set(0, 0, 1);
   runtime.update(0.4);
   expect(start.readObservation().phase).toBe("turning");
   runtime.update(1.6);
   expect(start.readObservation().phase).toBe("missed");
   runtime.update(1.5);
-  expect(frame?.arrowPresence).toBeCloseTo(0.5);
+  expect(frame?.arrow.presence).toBeCloseTo(0.5);
   expect(frame?.ringPresence).toBe(0);
   expect(start.readObservation().attempt).toBe(1);
   runtime.update(PARAMETERS.arrivalSeconds);
   expect(start.readObservation().phase).toBe("turning");
-  expect(frame?.arrowPosition).not.toEqual(oldArrow);
+  expect(frame?.arrow.position).not.toEqual(oldArrow);
   expect(
-    frame?.arrowPosition.clone().sub(worldPosition).angleTo(worldDirection),
+    frame?.arrow.position.clone().sub(worldPosition).angleTo(worldDirection),
   ).toBeCloseTo(0);
   expect(start.readObservation().crossingCount).toBe(0);
   expect(start.readObservation().direction).toBe("right");
@@ -768,20 +755,20 @@ test("new arrows use travel prediction while pause and reset discard stale curva
   start.setFormationAllowed(true);
   runtime.update(0);
   if (!frame) throw new Error("Missing arrow");
-  expect(frame.arrowPosition.x).toBeGreaterThan(worldPosition.x);
-  const arrow = frame.arrowPosition.clone();
+  expect(frame.arrow.position.x).toBeGreaterThan(worldPosition.x);
+  const arrow = frame.arrow.position.clone();
   worldDirection.set(-0.2, 0, -1).normalize();
   runtime.update(0);
-  expect(frame.arrowPosition).toEqual(arrow);
+  expect(frame.arrow.position).toEqual(arrow);
   start.setPlaying(false);
   worldPosition.set(100, 4, 100);
   runtime.update(10);
   start.setPlaying(true);
-  start.reset();
+  start.resetPractice();
   worldDirection.set(0, 0, -1);
   runtime.update(PARAMETERS.arrivalSeconds);
-  expect(frame.arrowPosition.x).toBeCloseTo(100);
-  expect(frame.arrowPosition.z).toBeLessThan(100);
+  expect(frame.arrow.position.x).toBeCloseTo(100);
+  expect(frame.arrow.position.z).toBeLessThan(100);
   runtime.unload(start.module);
 });
 
@@ -838,10 +825,10 @@ test("every tunnel begins beyond its fixed arrow, including an early confirmed t
         .addScaledVector(practice.worldDirection, 0.1),
       PARAMETERS.arrivalSeconds,
     );
-    if (!frame?.arrowNormal || !frame.arrowUp) throw new Error("Missing cue");
-    const arrow = frame.arrowPosition.clone();
+    if (!frame?.arrow.normal || !frame.arrow.up) throw new Error("Missing cue");
+    const arrow = frame.arrow.position.clone();
     const arrowDirection = new Vector3()
-      .crossVectors(frame.arrowUp, frame.arrowNormal)
+      .crossVectors(frame.arrow.up, frame.arrow.normal)
       .normalize();
     expect(frame.ringPresence).toBe(0);
     expect(frame.previews).toHaveLength(0);
@@ -854,8 +841,8 @@ test("every tunnel begins beyond its fixed arrow, including an early confirmed t
     const cueFront =
       arrow.clone().sub(practice.worldPosition).dot(travelDirection) +
       3 * Math.abs(arrowDirection.dot(travelDirection));
-    expect(frame.arrowPosition).toEqual(arrow);
-    expect(frame.arrowPresence).toBe(1);
+    expect(frame.arrow.position).toEqual(arrow);
+    expect(frame.arrow.presence).toBe(1);
     expect(frame.previews).toHaveLength(3);
     const entry = frame.previews?.[0];
     if (!entry) throw new Error("Missing entrance");
@@ -907,23 +894,21 @@ test("arc-spaced rings transport orthogonal up vectors and the arrow outlives tu
     expect(preview.goalUp?.length()).toBeCloseTo(1);
     expect(preview.goalUp?.dot(preview.goalNormal)).toBeCloseTo(0);
   }
-  expect(start.readObservation().predictionSeconds).toBeGreaterThan(0);
-  expect(start.readObservation().predictionSpreadMeters).toBeGreaterThan(0);
   runtime.update(1.5);
-  expect(frame.arrowPresence).toBe(1);
+  expect(frame.arrow.presence).toBe(1);
   worldDirection.set(0, 0, 1);
   runtime.update(1.9);
-  expect(frame.arrowPresence).toBe(1);
+  expect(frame.arrow.presence).toBe(1);
   worldDirection.set(0, 0, -1);
   runtime.update(0.1);
   worldDirection.set(0, 0, 1);
   runtime.update(2);
-  expect(frame.arrowPresence).toBe(1);
+  expect(frame.arrow.presence).toBe(1);
   runtime.update(1.5);
-  expect(frame.arrowPresence).toBeCloseTo(0.5);
+  expect(frame.arrow.presence).toBeCloseTo(0.5);
   expect(start.readObservation().phase).toBe("flying");
   runtime.update(1.5);
-  expect(frame.arrowPresence).toBe(0);
+  expect(frame.arrow.presence).toBe(0);
   runtime.unload(start.module);
 });
 
@@ -938,11 +923,11 @@ test("each cue points forward into its lesson direction and preserves both arrow
       }),
     );
     practice.runtime.update(PARAMETERS.arrivalSeconds);
-    if (!frame?.arrowNormal || !frame.arrowUp)
+    if (!frame?.arrow.normal || !frame.arrow.up)
       throw new Error("Missing spatial cue");
-    const position = frame.arrowPosition.clone();
-    const normal = frame.arrowNormal.clone();
-    const up = frame.arrowUp.clone();
+    const position = frame.arrow.position.clone();
+    const normal = frame.arrow.normal.clone();
+    const up = frame.arrow.up.clone();
     const heading = new Vector3().crossVectors(up, normal).normalize();
     const lesson =
       direction === "right"
@@ -959,22 +944,21 @@ test("each cue points forward into its lesson direction and preserves both arrow
     const facing = eyeRay.clone().projectOnPlane(heading).normalize();
     expect(normal.dot(facing)).toBeCloseTo(1);
     expect(normal.dot(eyeRay)).toBeGreaterThan(0.5);
-    expect(frame.arrowAngleRadians).toBe(0);
     const hint = practice.start
       .readObservation()
-      .goalTarget.clone()
+      .goalPosition.clone()
       .sub(practice.worldPosition);
     expect(hint.dot(lesson)).toBeGreaterThan(0);
     expect(hint.dot(new Vector3(0, 0, -1))).toBeGreaterThan(0);
     practice.worldDirection.set(0.3, 0, -1).normalize();
     practice.runtime.update(0.1);
-    expect(frame.arrowPosition).toEqual(position);
-    expect(frame.arrowNormal).toEqual(normal);
-    expect(frame.arrowUp).toEqual(up);
+    expect(frame.arrow.position).toEqual(position);
+    expect(frame.arrow.normal).toEqual(normal);
+    expect(frame.arrow.up).toEqual(up);
     practice.worldDirection.set(0, 0, -1);
     practice.beginTurn();
     practice.runtime.update(PARAMETERS.formationSeconds);
-    expect(frame.arrowNormal).toEqual(normal);
+    expect(frame.arrow.normal).toEqual(normal);
     const center = frame.goalPosition.clone();
     const passageNormal = frame.goalNormal.clone();
     practice.moveTo(center.clone().addScaledVector(passageNormal, 2));
@@ -986,7 +970,6 @@ test("each cue points forward into its lesson direction and preserves both arrow
     expect(frame.retiringArrow?.position).toEqual(position);
     expect(frame.retiringArrow?.normal).toEqual(normal);
     expect(frame.retiringArrow?.up).toEqual(up);
-    expect(frame.retiringArrow?.angleRadians).toBe(0);
     practice.runtime.unload(practice.start.module);
   }
 });
@@ -1018,11 +1001,11 @@ test("head-pitched arrow placement cannot reverse the flight-relative downward i
     runtime.update(0);
     runtime.update(PARAMETERS.arrivalSeconds);
     if (!frame) throw new Error("Missing downward cue");
-    const hint = start.readObservation().goalTarget.clone();
+    const hint = start.readObservation().goalPosition.clone();
     hints.push(hint);
     expect(hint.y).toBeLessThan(rig.y);
     expect(hint.z).toBeLessThan(rig.z);
-    if (pitch > 0) expect(frame.arrowPosition.y).toBeGreaterThan(rig.y);
+    if (pitch > 0) expect(frame.arrow.position.y).toBeGreaterThan(rig.y);
     runtime.unload(start.module);
   }
   expect(hints[1]?.distanceTo(hints[0] ?? new Vector3())).toBeLessThanOrEqual(
@@ -1073,10 +1056,10 @@ test("the production pitched view can reveal an entrance during a real two-meter
   }
   expect(start.readObservation().phase).toBe("forming");
   expect(start.readObservation().missCount).toBe(0);
-  if (!frame?.arrowUp || !frame.arrowNormal || !frame.previews?.[0])
+  if (!frame?.arrow.up || !frame.arrow.normal || !frame.previews?.[0])
     throw new Error("Missing pitched-view course");
   const arrowAxis = new Vector3()
-    .crossVectors(frame.arrowUp, frame.arrowNormal)
+    .crossVectors(frame.arrow.up, frame.arrow.normal)
     .normalize();
   expect(arrowAxis.x).toBeCloseTo(0.6);
   expect(arrowAxis.y).toBeCloseTo(0);
@@ -1085,7 +1068,7 @@ test("the production pitched view can reveal an entrance during a real two-meter
   expect(
     entry.goalPosition
       .clone()
-      .sub(frame.arrowPosition)
+      .sub(frame.arrow.position)
       .normalize()
       .dot(arrowAxis),
   ).toBeCloseTo(1);

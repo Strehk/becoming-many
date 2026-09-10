@@ -230,7 +230,7 @@ test("four object voices share samples and hall, follow distance and speech, and
     audio.update({...frame,phase:"turning",formationProgress:0,arrowFormationProgress:0.5},true);
     assert.deepEqual(voices.map(voice=>voice.starts),[0,0,1,0],"only the visible arrow emits before the turn");
     audio.update(frame,true);audio.update(frame,true);
-    audio.update({...frame,phase:"crossed",wake:{strength:1}},true);
+    audio.update({...frame,phase:"crossed"},true);
     assert.equal(voices[3].detune,500,"passage raises only the existing goal voice");
     audio.update({...frame,phase:"missed"},true);
     assert.equal(voices[3].detune,-500,"miss feedback differs from a successful passage");

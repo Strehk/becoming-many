@@ -31,7 +31,7 @@ test("Run gates training preparation and releases failed or cancelled restart ch
         const background = makeModule("background-" + trainingCount);
         const target = makeModule("target-" + trainingCount, failLoad);
         return {
-          start: { reset() { resets++; }, setPlaying() {}, readObservation: () => ({phase:"arrival"}) },
+          start: { resetPractice() { resets++; }, setPlaying() {}, readObservation: () => ({phase:"arrival"}) },
           modules: [background, target],
         };
       };

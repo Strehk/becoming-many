@@ -84,6 +84,20 @@ static-buffer equivalence proof live in [#80](https://github.com/Strehk/becoming
 The old #78 candidate remains historical, unapplied and unapproved; future
 reference review must include this separately explained change.
 
+The 2026-09-10 Start responsibility refactor was compared against a separate
+build archived from `506b0e1` (unchanged public assets). The candidate source digest
+was `8ee511df83d546b25ccf7157654129a5880455be4f0a4da6bc50230d5e513888`. Two sequential before/after pairs used
+Chromium 151.0.7922.34, Apple M2 Max/ANGLE Metal, 640 × 360 and the quick Start
+replay (210 measured frames). All four runs retained 2 draws, 2 geometries,
+2 programs, no triangles/textures and zero missed frames. Median was 0.1 ms and
+p99 0.5 ms throughout; p95 was 0.3/0.4 ms before and 0.4/0.4 ms after.
+The first candidate maximum was 2.1 ms; the other three maxima were 0.8 ms.
+No repeatable slowdown was observed in this short deterministic workload; this
+is not normal-show or PCVR acceptance. Scratch reports are under
+`benchmark-results/start-responsibilities-{before,after}{,-repeat}/`.
+The baseline reports' identity describes the calling harness working tree;
+the separately served baseline source is the archived commit specified above.
+
 These counters include degenerate triangles emitted by shader-culling paths and
 therefore overstate visible grass geometry. The full-profile baseline has not
 yet been accepted.

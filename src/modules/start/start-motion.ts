@@ -1,12 +1,13 @@
 import { Vector3 } from "three";
 import { FLIGHT_SETTINGS } from "../../control/flight-settings";
 import type { Viewpoint } from "../../world/viewer-rig";
+import { START_SETTINGS } from "./start-settings";
 
-export const MINIMUM_TRAVEL_SQUARED = 0.000001;
-const MOTION_HISTORY_SECONDS = 0.25;
-const MAXIMUM_CURVATURE_PER_METER = 0.12;
-export const CURVATURE_DECAY_METERS = 4;
-const MAXIMUM_OBSERVED_SPEED_METERS_PER_SECOND = 12;
+/** Read-only borrowed motion samples; vectors remain valid until the next update or reset. */
+export type StartMotion = Pick<
+  ReturnType<typeof createStartMotion>,
+  "direction" | "curvature" | "speed" | "predictPosition"
+>;
 
 /** Bounded flight-only history; callers supply movement and playing time, never eye rotation. */
 export function createStartMotion(
@@ -18,7 +19,6 @@ export function createStartMotion(
   const sampledCurvature = new Vector3();
   const currentTravelDirection = new Vector3();
   let observedSpeed = 0;
-  let directionVariation = 0;
   let hasMotionHistory = false;
 
   return {
@@ -27,17 +27,13 @@ export function createStartMotion(
     get speed() {
       return observedSpeed;
     },
-    get directionVariation() {
-      return directionVariation;
-    },
-    reset,
+    resetHistory,
     update,
     predictPosition,
   };
 
-  function reset(): void {
+  function resetHistory(): void {
     observedSpeed = 0;
-    directionVariation = 0;
     hasMotionHistory = false;
     curvature.set(0, 0, 0);
     currentTravelDirection.copy(
@@ -48,8 +44,9 @@ export function createStartMotion(
   function update(flightTravel: Vector3, elapsed: number): void {
     if (elapsed <= 0) return;
     if (
-      flightTravel.lengthSq() <= MINIMUM_TRAVEL_SQUARED ||
-      flightTravel.length() / elapsed > MAXIMUM_OBSERVED_SPEED_METERS_PER_SECOND
+      flightTravel.lengthSq() <= START_SETTINGS.minimumTravelSquared ||
+      flightTravel.length() / elapsed >
+        START_SETTINGS.maximumObservedSpeedMetersPerSecond
     ) {
       hasMotionHistory = false;
       curvature.set(0, 0, 0);
@@ -59,12 +56,13 @@ export function createStartMotion(
       return;
     }
     currentTravelDirection.copy(flightTravel).normalize();
-    const smoothing = 1 - Math.exp(-elapsed / MOTION_HISTORY_SECONDS);
+    const smoothing =
+      1 - Math.exp(-elapsed / START_SETTINGS.motionHistorySeconds);
     const speed = flightTravel.length() / elapsed;
     observedSpeed = hasMotionHistory
       ? observedSpeed + (speed - observedSpeed) * smoothing
       : speed;
-    if (hasMotionHistory && elapsed <= MOTION_HISTORY_SECONDS) {
+    if (hasMotionHistory && elapsed <= START_SETTINGS.motionHistorySeconds) {
       sampledCurvature
         .copy(currentTravelDirection)
         .sub(previousTravelDirection)
@@ -74,19 +72,14 @@ export function createStartMotion(
         currentTravelDirection,
         -sampledCurvature.dot(currentTravelDirection),
       );
-      const variation = currentTravelDirection.angleTo(previousTravelDirection);
-      directionVariation += (variation - directionVariation) * smoothing;
       const curvatureLimit = Math.min(
-        MAXIMUM_CURVATURE_PER_METER,
+        START_SETTINGS.maximumCurvaturePerMeter,
         FLIGHT_SETTINGS.yawRateRadiansPerSecond / Math.max(observedSpeed, 0.1),
       );
       const magnitude = sampledCurvature.length();
       if (magnitude > curvatureLimit)
         sampledCurvature.multiplyScalar(curvatureLimit / magnitude);
-      curvature.lerp(
-        sampledCurvature,
-        1 - Math.exp(-elapsed / MOTION_HISTORY_SECONDS),
-      );
+      curvature.lerp(sampledCurvature, smoothing);
       curvature.addScaledVector(
         currentTravelDirection,
         -curvature.dot(currentTravelDirection),
@@ -103,18 +96,21 @@ export function createStartMotion(
     position: Vector3,
     tangent: Vector3,
   ): void {
-    const decay = Math.exp(-distance / CURVATURE_DECAY_METERS);
+    const decay = Math.exp(-distance / START_SETTINGS.curvatureDecayMeters);
     position
       .copy(origin)
       .addScaledVector(currentTravelDirection, distance)
       .addScaledVector(
         curvature,
-        CURVATURE_DECAY_METERS * distance -
-          CURVATURE_DECAY_METERS ** 2 * (1 - decay),
+        START_SETTINGS.curvatureDecayMeters * distance -
+          START_SETTINGS.curvatureDecayMeters ** 2 * (1 - decay),
       );
     tangent
       .copy(currentTravelDirection)
-      .addScaledVector(curvature, CURVATURE_DECAY_METERS * (1 - decay));
+      .addScaledVector(
+        curvature,
+        START_SETTINGS.curvatureDecayMeters * (1 - decay),
+      );
     if (maximumGoalYAt) {
       const ceiling = maximumGoalYAt(position.x, position.z);
       if (position.y > ceiling) {

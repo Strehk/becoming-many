@@ -1,33 +1,28 @@
 import { CubicBezierCurve3, Quaternion, Vector3 } from "three";
 import { FLIGHT_SETTINGS } from "../../control/flight-settings";
 import type { Viewpoint } from "../../world/viewer-rig";
-import type { StartDirection, StartParameters } from "./start.module";
-import {
-  CURVATURE_DECAY_METERS,
-  type createStartMotion,
-  MINIMUM_TRAVEL_SQUARED,
-} from "./start-motion";
+import type { StartMotion } from "./start-motion";
+import { START_PARTICLE_SETTINGS } from "./start-particle-settings";
+import type {
+  DistanceRange,
+  StartDirection,
+  StartParameters,
+} from "./start-settings";
+import { START_SETTINGS } from "./start-settings";
 
 const WORLD_UP = new Vector3(0, 1, 0);
-const ARROW_FORWARD_COMPONENT = 0.8;
-const ARROW_TURN_COMPONENT = 0.6;
-const ARROW_TUNNEL_CLEARANCE_METERS = 0.75;
-const MINIMUM_ARROW_LEAD_METERS = 8;
-const MINIMUM_RING_SPACING_METERS = 1;
-const COURSE_SAMPLE_COUNT = 32;
-const COURSE_ENTRY_SAMPLE = 24;
-const MAXIMUM_PREDICTION_SECONDS = 6;
-const LESSON_BEND_COMPONENT = 0.12;
-const FORECAST_SPREAD_PER_METER = 0.04;
 
 /** Owns fixed cue/tunnel geometry and reusable samples; Start owns phases and preview passage ages. */
 export function createStartCourse(
   parameters: StartParameters,
   viewpoint: Viewpoint,
-  motion: ReturnType<typeof createStartMotion>,
+  motion: StartMotion,
   random: () => number,
   maximumGoalYAt?: (x: number, z: number) => number,
 ) {
+  const arrowLengthMeters =
+    parameters.particles?.arrowLengthMeters ??
+    START_PARTICLE_SETTINGS.arrowLengthMeters;
   const origin = new Vector3();
   const predictedTangent = new Vector3();
   const tunnelEntry = new Vector3();
@@ -36,36 +31,38 @@ export function createStartCourse(
   const goalUp = new Vector3();
   const lessonBend = new Vector3();
   const transportRotation = new Quaternion();
-  const courseSamples = Array.from({ length: COURSE_SAMPLE_COUNT + 1 }, () => ({
-    position: new Vector3(),
-    tangent: new Vector3(),
-    up: new Vector3(),
-    distance: 0,
-  }));
+  const courseSamples = Array.from(
+    { length: START_SETTINGS.courseSampleCount + 1 },
+    () => ({
+      position: new Vector3(),
+      tangent: new Vector3(),
+      up: new Vector3(),
+      distance: 0,
+    }),
+  );
   const arrowPosition = new Vector3();
   const arrowNormal = new Vector3();
   const arrowDirection = new Vector3();
   const arrowUp = new Vector3();
   const approachDirection = new Vector3();
   const turnDirection = new Vector3();
-  const previews = Array.from({ length: 3 }, () => ({
-    goalPosition: new Vector3(),
-    goalNormal: new Vector3(),
-    goalUp: new Vector3(),
-    ringRadiusMeters: 0,
-    crossingAgeSeconds: undefined as number | undefined,
-  }));
-  const targetPosition = new Vector3();
+  const previews = Array.from(
+    { length: START_PARTICLE_SETTINGS.previewCount },
+    () => ({
+      goalPosition: new Vector3(),
+      goalNormal: new Vector3(),
+      goalUp: new Vector3(),
+      ringRadiusMeters: 0,
+      crossingAgeSeconds: undefined as number | undefined,
+    }),
+  );
   const goalPosition = new Vector3();
   const goalNormal = new Vector3();
   const targetOffset = new Vector3();
   let ringRadiusMeters = parameters.course.radiusMeters[0];
-  let predictionSeconds = 0;
-  let predictionSpreadMeters = 0;
 
   return {
     goalPosition,
-    targetPosition,
     goalNormal,
     goalUp,
     arrowPosition,
@@ -77,16 +74,11 @@ export function createStartCourse(
     get ringRadiusMeters() {
       return ringRadiusMeters;
     },
-    get predictionSeconds() {
-      return predictionSeconds;
-    },
-    get predictionSpreadMeters() {
-      return predictionSpreadMeters;
-    },
     placeArrow,
     placeGoal,
   };
 
+  /** Capture the cue and its promised tunnel entrance once, in world coordinates. */
   function placeArrow(direction: StartDirection, goalIndex: number): void {
     origin.copy(viewpoint.worldPosition);
 
@@ -105,13 +97,13 @@ export function createStartCourse(
     if (direction === "left" || direction === "down") turnDirection.negate();
     // Enough lead distance to lean and turn before reaching the cue's plane.
     const distance = Math.max(
-      MINIMUM_ARROW_LEAD_METERS,
+      START_SETTINGS.minimumArrowLeadMeters,
       sample(
         goalIndex === 0
           ? parameters.course.firstDistanceMeters
           : parameters.course.spacingMeters,
       ),
-      (parameters.particles?.arrowLengthMeters ?? 6) /
+      arrowLengthMeters /
         Math.tan(Math.max(0.1, viewpoint.viewHalfAngleRadians)),
     );
     motion.predictPosition(origin, distance, arrowPosition, predictedTangent);
@@ -120,28 +112,25 @@ export function createStartCourse(
     arrowDirection
       .copy(turnDirection)
       .addScaledVector(predictedTangent, -turnDirection.dot(predictedTangent));
-    if (arrowDirection.lengthSq() < MINIMUM_TRAVEL_SQUARED)
+    if (arrowDirection.lengthSq() < START_SETTINGS.minimumTravelSquared)
       arrowDirection.copy(turnDirection);
     arrowDirection
       .normalize()
-      .multiplyScalar(ARROW_TURN_COMPONENT)
-      .addScaledVector(predictedTangent, ARROW_FORWARD_COMPONENT)
+      .multiplyScalar(START_SETTINGS.arrowTurnComponent)
+      .addScaledVector(predictedTangent, START_SETTINGS.arrowForwardComponent)
       .normalize();
     tunnelEntry
       .copy(arrowPosition)
       .addScaledVector(
         arrowDirection,
-        (parameters.particles?.arrowLengthMeters ?? 6) / 2 +
-          ARROW_TUNNEL_CLEARANCE_METERS,
+        arrowLengthMeters / 2 + START_SETTINGS.arrowTunnelClearanceMeters,
       );
     targetOffset.copy(arrowPosition).sub(origin);
     const predictionAngle = targetOffset.angleTo(viewpoint.worldDirection);
     const visibleAngle = Math.max(
       0,
       viewpoint.viewHalfAngleRadians * 0.5 -
-        Math.atan(
-          ((parameters.particles?.arrowLengthMeters ?? 6) * 0.5) / distance,
-        ),
+        Math.atan((arrowLengthMeters * 0.5) / distance),
     );
     // Move cue and entrance together, preserving the spoken turn direction.
     // A small shared offset accommodates gaze without making a level turn
@@ -163,17 +152,17 @@ export function createStartCourse(
     // Roll the broad arrow face toward the captured eye, retaining its axis
     // into the reserved opening. World-up makes vertical cues edge-on.
     arrowNormal.copy(origin).sub(arrowPosition).projectOnPlane(arrowDirection);
-    if (arrowNormal.lengthSq() < MINIMUM_TRAVEL_SQUARED)
+    if (arrowNormal.lengthSq() < START_SETTINGS.minimumTravelSquared)
       arrowNormal.copy(viewpoint.worldUp).projectOnPlane(arrowDirection);
-    if (arrowNormal.lengthSq() < MINIMUM_TRAVEL_SQUARED)
+    if (arrowNormal.lengthSq() < START_SETTINGS.minimumTravelSquared)
       arrowNormal.set(1, 0, 0).projectOnPlane(arrowDirection);
     arrowNormal.normalize();
     arrowUp.crossVectors(arrowNormal, arrowDirection).normalize();
     // Both anchors are now frozen; head motion cannot change their promise.
-    targetPosition.copy(tunnelEntry);
-    goalPosition.copy(targetPosition);
+    goalPosition.copy(tunnelEntry);
   }
 
+  /** Publish rings only when the fixed entrance is visible and the sampled path is flyable. */
   function placeGoal(): boolean {
     origin.copy(viewpoint.worldPosition);
     const radius = sample(parameters.course.radiusMeters);
@@ -200,14 +189,15 @@ export function createStartCourse(
       .addScaledVector(arrowDirection, -distance / 3);
     approachCurve.v3.copy(tunnelEntry);
     const tunnelSpan =
-      previews.length * Math.max(MINIMUM_RING_SPACING_METERS, radius * 0.5);
+      previews.length *
+      Math.max(START_SETTINGS.minimumRingSpacingMeters, radius * 0.5);
     lessonBend
       .copy(turnDirection)
       .addScaledVector(arrowDirection, -turnDirection.dot(arrowDirection))
-      .multiplyScalar(LESSON_BEND_COMPONENT);
+      .multiplyScalar(START_SETTINGS.lessonBendComponent);
     lessonBend.addScaledVector(
       motion.curvature,
-      Math.min(tunnelSpan, CURVATURE_DECAY_METERS) * 0.25,
+      Math.min(tunnelSpan, START_SETTINGS.curvatureDecayMeters) * 0.25,
     );
     tunnelCurve.v0.copy(tunnelEntry);
     tunnelCurve.v1
@@ -222,20 +212,12 @@ export function createStartCourse(
       .addScaledVector(arrowDirection, tunnelSpan)
       .addScaledVector(lessonBend, tunnelSpan);
     if (!buildCourse()) return false;
-    const finalSample = courseSamples[COURSE_SAMPLE_COUNT];
-    const entrySample = courseSamples[COURSE_ENTRY_SAMPLE];
+    const finalSample = courseSamples[START_SETTINGS.courseSampleCount];
+    const entrySample = courseSamples[START_SETTINGS.courseEntrySample];
     if (!finalSample || !entrySample) return false;
-    targetPosition.copy(finalSample.position);
-    goalPosition.copy(targetPosition);
+    goalPosition.copy(finalSample.position);
     goalNormal.copy(finalSample.tangent).negate();
     goalUp.copy(finalSample.up);
-    predictionSeconds = Math.min(
-      MAXIMUM_PREDICTION_SECONDS,
-      finalSample.distance / Math.max(motion.speed, 0.5),
-    );
-    predictionSpreadMeters =
-      finalSample.distance *
-      (FORECAST_SPREAD_PER_METER + motion.directionVariation);
     ringRadiusMeters = radius;
     for (const [index, preview] of previews.entries()) {
       preview.crossingAgeSeconds = undefined;
@@ -257,12 +239,12 @@ export function createStartCourse(
   function buildCourse(): boolean {
     const speed = Math.max(motion.speed, 0.5);
     for (const [index, sample] of courseSamples.entries()) {
-      const approaching = index <= COURSE_ENTRY_SAMPLE;
+      const approaching = index <= START_SETTINGS.courseEntrySample;
       const curve = approaching ? approachCurve : tunnelCurve;
       const t = approaching
-        ? index / COURSE_ENTRY_SAMPLE
-        : (index - COURSE_ENTRY_SAMPLE) /
-          (COURSE_SAMPLE_COUNT - COURSE_ENTRY_SAMPLE);
+        ? index / START_SETTINGS.courseEntrySample
+        : (index - START_SETTINGS.courseEntrySample) /
+          (START_SETTINGS.courseSampleCount - START_SETTINGS.courseEntrySample);
       curve.getPoint(t, sample.position);
       // Analytic derivative avoids Curve.getTangent's temporary vectors.
       sample.tangent
@@ -289,7 +271,7 @@ export function createStartCourse(
             sample.tangent,
             -viewpoint.worldUp.dot(sample.tangent),
           );
-        if (sample.up.lengthSq() < MINIMUM_TRAVEL_SQUARED)
+        if (sample.up.lengthSq() < START_SETTINGS.minimumTravelSquared)
           sample.up.set(1, 0, 0);
         sample.up.normalize();
         continue;
@@ -349,10 +331,7 @@ export function createStartCourse(
     }
   }
 
-  function sample([
-    minimum,
-    maximum,
-  ]: StartParameters["course"]["radiusMeters"]): number {
+  function sample([minimum, maximum]: DistanceRange): number {
     return minimum + (maximum - minimum) * random();
   }
 }

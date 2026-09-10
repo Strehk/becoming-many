@@ -62,7 +62,6 @@ export interface TrainingAudioFrame {
   readonly objects?: Readonly<Record<TrainingObject, Position>>;
   readonly formationProgress: number;
   readonly arrowFormationProgress?: number;
-  readonly wake?: { readonly strength: number };
   /** Monotonic actual crossings, including first passages through guide rings. */
   readonly passageCount?: number;
   readonly passagePosition?: Position;
@@ -632,7 +631,11 @@ export async function createTrainingAudio(
           if (isGoal)
             entry.voice.detune =
               entry.recipe.detuneCents +
-              (frame.phase === "missed" ? -1 : (frame.wake?.strength ?? 0)) *
+              (frame.phase === "missed"
+                ? -1
+                : Number(
+                    frame.phase === "crossed" || frame.phase === "complete",
+                  )) *
                 CROSSING_DETUNE_CENTS;
         }
       },

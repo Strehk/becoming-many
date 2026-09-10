@@ -262,11 +262,21 @@ Air remains independent: Start authors 384 points per 16 m cell and a fading
 16 m near field through the existing shared chunk/queue path. Main defaults stay
 unchanged. No independent loop, global fog or extra postprocessing is added.
 
-Within `src/modules/start/`, `start.module.ts` owns learning phases, passage
-observations, arrow retirement and the particle effect lifetime. `start-motion.ts`
-owns bounded flight history and prediction; `start-course.ts` owns fixed arrow
-and tunnel geometry, reachability checks and reusable curve samples. Both are
-local CPU helpers driven by Start, with no independent loop or World registration.
+Within `src/modules/start/`, read `start-settings.ts` for the learning contract
+and technical limits, then `start.module.ts` for World lifetime and the lesson
+phases. `start-motion.ts` observes rig travel; `start-course.ts` constructs fixed
+cues and reachable tunnels; `start-arrows.ts` retires two reusable cue slots.
+`flight-ring-crossing.ts` checks swept passages through the open ring disk.
+These CPU helpers have no independent loop or World registration.
+
+Presentation crosses the borrowed `start-particle-frame.ts` contract.
+`start-particle-settings.ts` resolves and validates presentation defaults;
+`start-particle-geometry.ts` fills immutable buffers once; `start-particles.effect.ts`
+owns material, uniform updates, bounds, sound anchors and GPU cleanup. Its adjacent
+GLSL files stay imported source code. Both placement and rendering use a six-metre
+default arrow; level-authored values remain explicit in `start.level.ts`.
+Unused prediction diagnostics and the separate arrow-angle path are removed.
+`resetPractice()` clears learning at the current pose while retaining loaded resources.
 
 Show starts held and owns the interactive tutorial within its existing clock.
 Its public timeline advances through practice and retains the actual tutorial
@@ -287,8 +297,7 @@ facts. Only rig displacement supplies speed/turn prediction and lesson turn
 confirmation; eye segments still determine actual ring passage. A smoothed,
 decaying motion forecast is distinct from the gentle lesson/visibility guidance.
 A fixed 33-point table checks existing yaw/climb limits, measures arc length and
-transports an orthogonal up vector. Forecast spread is a heuristic uncertainty
-observation, not a reachability allowance. Guidance never writes flight input.
+transports an orthogonal up vector. Guidance never writes flight input.
 The arrow reserves a fixed entry at birth and points directly at its first ring
 opening. Its broad face is rolled toward the captured eye around that axis,
 then remains fixed; head movement never billboards an existing cue. A shared view correction shifts both by at most half the minimum ring

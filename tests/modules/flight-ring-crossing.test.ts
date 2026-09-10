@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { crossesFlightRing } from "../../src/modules/start/flight-goals";
+import { crossesFlightRing } from "../../src/modules/start/flight-ring-crossing";
 
 const CENTER = { x: 0, y: 0, z: 0 };
 const NORMAL = { x: 0, y: 0, z: 1 };

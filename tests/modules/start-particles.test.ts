@@ -8,11 +8,9 @@ import {
   ShaderLib,
   Vector3,
 } from "three";
-import {
-  createStartParticleEffect,
-  type StartParticleFrame,
-  type StartParticleParameters,
-} from "../../src/modules/start/start-particles.effect";
+import type { StartParticleFrame } from "../../src/modules/start/start-particle-frame";
+import type { StartParticleParameters } from "../../src/modules/start/start-particle-settings";
+import { createStartParticleEffect } from "../../src/modules/start/start-particles.effect";
 
 const PARAMETERS: StartParticleParameters = {
   count: 1400,
@@ -30,11 +28,26 @@ function createFrame(): StartParticleFrame {
   return {
     elapsedSeconds: 0,
     goalPosition: new Vector3(2, 3, -8),
-    arrowPosition: new Vector3(2, 3, -4),
+    previewElapsedSeconds: 0,
+    ringPresence: 1,
+    previews: [],
+    arrow: {
+      position: new Vector3(2, 3, -4),
+      normal: new Vector3(0, 0, 1),
+      up: new Vector3(0, 1, 0),
+      presence: 1,
+      formation: 0,
+    },
+    retiringArrow: {
+      position: new Vector3(),
+      normal: new Vector3(0, 0, 1),
+      up: new Vector3(0, 1, 0),
+      presence: 0,
+      formation: 0,
+    },
     goalNormal: new Vector3(0, 0, 1),
     goalUp: new Vector3(0, 1, 0),
     ringRadiusMeters: 1.5,
-    arrowAngleRadians: 0,
     formationProgress: 0,
   };
 }
@@ -113,29 +126,24 @@ test("copies the shared world pose and one wake without retaining borrowed frame
   effect.load();
   effect.setVisible(true);
   const shader = compileMaterial(readPoints(scene).material);
-  const wakePosition = new Vector3(1, 2, 3);
   const wakeDirection = new Vector3(0, 0, -1);
   effect.update({
     ...createFrame(),
     wake: {
-      position: wakePosition,
       direction: wakeDirection,
-      strength: 0.8,
       ageSeconds: 0.2,
     },
   });
-  wakePosition.set(20, 20, 20);
   wakeDirection.set(1, 0, 0);
   expect(shader.uniforms.startWakeDirection?.value).toEqual(
     new Vector3(0, 0, -1),
   );
   expect(shader.uniforms.startWakeAge?.value).toBe(0.2);
-  expect(shader.uniforms.startWakeStrength?.value).toBe(0.8);
   expect(shader.uniforms.startGoalPose?.value).toEqual(
     new Matrix4().makeTranslation(2, 3, -8),
   );
   effect.update(createFrame());
-  expect(shader.uniforms.startWakeStrength?.value).toBe(0);
+  expect(shader.uniforms.startWakeAge?.value).toBe(-1);
   effect.unload();
 });
 
@@ -152,7 +160,13 @@ test("hidden effects do no frame work and unload releases each GPU resource once
   effect.update({ ...createFrame(), elapsedSeconds: 10 });
   expect(shader.uniforms.startTime?.value).toBe(0);
   effect.setVisible(true);
-  effect.update({ ...createFrame(), elapsedSeconds: 20 });
+  effect.update({ ...createFrame(), elapsedSeconds: 20, formationProgress: 1 });
+  effect.update({
+    ...createFrame(),
+    elapsedSeconds: 20,
+    formationProgress: 0.5,
+  });
+  expect(shader.uniforms.startDissolving?.value).toBe(1);
   effect.setVisible(false);
   effect.update({ ...createFrame(), elapsedSeconds: 30 });
   expect(shader.uniforms.startTime?.value).toBe(20);
@@ -169,6 +183,14 @@ test("hidden effects do no frame work and unload releases each GPU resource once
   expect(disposeMaterial).toHaveBeenCalledTimes(1);
   effect.load();
   expect(readPoints(scene)).not.toBe(points);
+  const reloadedShader = compileMaterial(readPoints(scene).material);
+  effect.setVisible(true);
+  effect.update(createFrame());
+  expect(reloadedShader.uniforms.startDissolving?.value).toBe(0);
+  expect(reloadedShader.uniforms.startFormation?.value).toBe(0);
+  expect(effect.readObjectAnchors()?.ringLeft).toEqual(
+    createFrame().goalPosition,
+  );
   effect.unload();
 });
 
@@ -237,7 +259,6 @@ test("object anchors share the formed geometry pose and disappear with their own
   effect.update({
     ...frame,
     goalNormal: new Vector3(1, 0, 0),
-    arrowAngleRadians: Math.PI / 2,
   });
   expect(effect.readObjectAnchors()).toBe(objects);
   expect(objects?.ringLeft.x).toBeCloseTo(2);
@@ -264,16 +285,14 @@ test("body anchors gather with formation and follow finite crossing wake", () =>
   effect.setVisible(true);
   const frame = createFrame();
   effect.update(frame);
-  expect(effect.readObjectAnchors()?.arrow).toEqual(frame.arrowPosition);
+  expect(effect.readObjectAnchors()?.arrow).toEqual(frame.arrow.position);
   expect(effect.readObjectAnchors()?.ringLeft).toEqual(frame.goalPosition);
   effect.update({ ...frame, formationProgress: 0.5 });
   expect(effect.readObjectAnchors()?.ringLeft.x).toBeCloseTo(
     2 - 1.86 * ((1 - 5 * Math.exp(-4)) / (1 - 9 * Math.exp(-8))),
   );
   const wake = {
-    position: frame.goalPosition,
     direction: new Vector3(0, 0, -1),
-    strength: 1,
     ageSeconds: 1.2,
   };
   effect.update({ ...frame, wake });
@@ -403,12 +422,15 @@ test("immediate local expansion and drag transport keep sound anchored to the ri
   const effect = createStartParticleEffect({ scene, parameters: PARAMETERS });
   effect.load();
   effect.setVisible(true);
-  const frame = { ...createFrame(), formationProgress: 1, elapsedSeconds: 1 };
+  const frame = {
+    ...createFrame(),
+    formationProgress: 1,
+    arrow: { ...createFrame().arrow, formation: 1 },
+    elapsedSeconds: 1,
+  };
   const wake = {
-    position: frame.goalPosition,
     direction: new Vector3(0, 0, -1),
     ageSeconds: 0.45,
-    strength: 1,
   };
   effect.update({ ...frame, wake });
   expect(effect.readObjectAnchors()?.ringLeft.x).toBeCloseTo(
@@ -430,13 +452,9 @@ test("arrow pose and presence stay independent as tunnel rings form and cross", 
   effect.setVisible(true);
   const points = readPoints(scene);
   const shader = compileMaterial(points.material);
-  const arrowNormal = new Vector3(0, 0, 1);
   const frame = {
     ...createFrame(),
-    arrowNormal,
-    arrowUp: new Vector3(0, 1, 0),
-    arrowFormation: 1,
-    arrowPresence: 1,
+    arrow: { ...createFrame().arrow, formation: 1 },
     ringPresence: 0,
   };
   effect.update(frame);
@@ -450,11 +468,12 @@ test("arrow pose and presence stay independent as tunnel rings form and cross", 
     ...frame,
     goalNormal: new Vector3(1, 0, 0),
     ringPresence: 1,
-    arrowPresence: 0.5,
+    arrow: { ...frame.arrow, presence: 0.5 },
     previews: [
       {
         goalPosition: new Vector3(2, 0, -7),
         goalNormal: new Vector3(1, 0, 0),
+        goalUp: new Vector3(0, 1, 0),
         ringRadiusMeters: 2,
         crossingAgeSeconds: 0,
       },
@@ -470,6 +489,7 @@ test("arrow pose and presence stay independent as tunnel rings form and cross", 
       {
         goalPosition: new Vector3(2, 0, -7),
         goalNormal: new Vector3(1, 0, 0),
+        goalUp: new Vector3(0, 1, 0),
         ringRadiusMeters: 2,
       },
     ],
@@ -507,22 +527,26 @@ test("retiring arrows keep matching samples and independent fixed poses through 
     position: retiredPosition,
     normal: new Vector3(0, 0, 1),
     up: new Vector3(0, 1, 0),
-    angleRadians: Math.PI / 2,
     formation: 1,
     presence: 1,
   };
   for (let cycle = 0; cycle < 50; cycle += 1) {
-    effect.update({ ...createFrame(), arrowFormation: 1 });
+    effect.update({
+      ...createFrame(),
+      arrow: { ...createFrame().arrow, formation: 1 },
+    });
     effect.update({
       ...createFrame(),
       retiringArrow: retired,
-      arrowFormation: 0,
     });
     for (let step = 1; step <= 30; step += 1) {
       effect.update({
         ...createFrame(),
-        arrowPosition: new Vector3(step, 3, -4),
-        arrowFormation: step / 30,
+        arrow: {
+          ...createFrame().arrow,
+          position: new Vector3(step, 3, -4),
+          formation: step / 30,
+        },
         retiringArrow: {
           ...retired,
           formation: 1 - step / 30,
