@@ -15,6 +15,10 @@ Every document distinguishes:
 
 ## Visual References
 
+- [Start level concept](start-level-concept.md) — consolidated target experience,
+  sky, clouds, flight guidance, color options and simple ownership boundaries;
+  includes links to the preserved reference and visualization archive.
+
 - [Tutorial scene script](tutorial-scene-script.md) — seven concept scenes aligned
   with installed narration, player movement and the procedural world. Concept
   images are separate from measured runtime captures.
