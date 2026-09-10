@@ -317,10 +317,10 @@ test("native speech offset gates the right course and failure never releases rin
   const fixture = createFixture(180, voice);
   expect(calls[0]?.cue.url).toEndWith("introduction-right.wav");
   expect(trails(fixture)).toHaveLength(0);
-  playback.offsetSeconds = 13.12;
+  playback.offsetSeconds = 6.38;
   fixture.tick();
   expect(trails(fixture)).toHaveLength(0);
-  playback.offsetSeconds = 14.72;
+  playback.offsetSeconds = 7.98;
   for (let frame = 0; frame < 30; frame++) fixture.tick();
   expect(trails(fixture)).toHaveLength(1);
   for (let frame = 0; frame < ENTRY_READY_FRAMES; frame++) fixture.tick();
@@ -330,6 +330,11 @@ test("native speech offset gates the right course and failure never releases rin
   ).toBeUndefined();
   expect(trails(fixture)[0]?.material.opacity).toBeCloseTo(
     START_SETTINGS.pathOpacity * 0.5,
+  );
+  playback.offsetSeconds = 13.36;
+  fixture.tick();
+  expect(trails(fixture)[0]?.material.opacity).toBeCloseTo(
+    START_SETTINGS.pathOpacity,
   );
   playback.offsetSeconds = 19.29;
   fixture.tick();

@@ -91,9 +91,10 @@ export const START_EXERCISES = [
   {
     id: "right",
     sequence: {
-      approachMeters: 12,
-      pathAtSeconds: 14.4,
-      worldReveal: { atSeconds: 13.12, fadeSeconds: 3.2 },
+      approachMeters: 26,
+      pathAtSeconds: 6.38,
+      pathFadeSeconds: 3.2,
+      worldReveal: { atSeconds: 13.36, fadeSeconds: 3.2 },
     },
     voice: {
       url: "/audio/tutorial/de/introduction-right.wav",

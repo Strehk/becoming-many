@@ -105,6 +105,8 @@ export interface ParticleLightFrame {
   strength: number;
 }
 export interface ParticleLight {
+  /** Monotonic pulse counts per element; reading never advances the light clock. */
+  readonly readPulses: () => readonly number[];
   readonly reset: (count: number) => void;
   /** Trigger once for a displayed element index; does not change exercise success. */
   readonly pass: (index: number) => void;

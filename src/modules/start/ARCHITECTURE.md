@@ -129,21 +129,20 @@ retries autoplay denial on pointer/key gestures. Its native offset is hidden
 until playback starts, preventing a requested retry seek from releasing a cue
 while audio is blocked. The main Show keeps its existing narration player.
 
-Each exercise has a typed `sequence` contract: `approachMeters`, optional `pathAtSeconds`, and an optional
-`worldReveal` containing recording-local `atSeconds` and `fadeSeconds`.
-`start-sequence.ts` samples smooth world presence; the center retains that reveal
-across later recordings and injects presence into particle and trail presentation.
-No particle geometry or audio knowledge crosses into those renderers.
+Each exercise has a typed `sequence` contract: `approachMeters`, optional
+`pathAtSeconds` / `pathFadeSeconds`, and `worldReveal`. Both visual envelopes
+use recording-local seconds. Start retains their presence across later recordings;
+renderers receive only opacity observations.
 
-The opening stays white until 13.12 s ("einen Raum"). World presence rises over
-3.2 s, driven by native speech time. At reveal, a 12 m ring-free approach is
-anchored to the actual player, followed by the right chunk's 3 m straight entry.
-The curved centerline appears at 14.4 s; rings and the entry signpost wait until
-19.30 s and emerge over 1.3 s. At 2 m/s straight flight the bend starts about
-3 m ahead at the instruction. The first gate is 20 m into the chunk, already
-well inside the right bend; three gates at 5.6 m intervals mark its final portion.
-A single open-stroke arrow stands at route meter 12, 5 m to the left of the route
-and 1.8 m above it. It points at the first gate center, not along the local tangent.
+The opening stays white until the end of "Anfang" at 6.38 s. The blue approach
+then fades in over 3.2 s, anchored to the actual player. Its 26 m ring-free
+approach preserves the turn distance at the later spoken instruction. Black room particles
+begin their separate 3.2 s fade at "Raum", 13.36 s. These markers come from the
+existing word alignment and remain adjustable. The continuous right curve is
+prepared with the approach; rings and the entry signpost wait until 19.30 s.
+Rings emerge progressively over 2 s each. The first gate is 18 m into the chunk;
+three gates at 4.76 m intervals mark the bend. The open-stroke signpost stands
+at route meter 10, 5 m left of the route and 1.8 m above it, pointing at that gate.
 Its particle core is compact with no diffuse halo; ring appearance is unchanged. Initial placement therefore does not depend on loading or autoplay
 wait duration. The transition into the left lesson uses a 9 m exit and a 4 m entry;
 later lessons use 6 m entries. The actual media
@@ -354,3 +353,27 @@ consumes route samples and ring placements and returns only a placement. The
 center selects the open stroke shape and arrow volume parameters. Its geometry
 factory receives the element kind, keeping appearance choices out of placement.
 `START_SETTINGS.arrowVolume` controls compactness; ring volume remains shared.
+
+### Quiet spatial atmosphere
+
+`audio/audio-contract.ts` describes section placements, visibility and pulse
+observations; `audio/audio-settings.ts` owns all gains, distances, grain sizes,
+head counts and hall parameters. `audio/start-audio.ts` owns decoded buffers,
+Tone players and Three positional sources. Start supplies world-space ring
+centers, orientations and the same reveal/retirement presence as the graphics.
+The light timeline exposes pulse counters, so sound never runs a duplicate
+visual clock. Arrows have no sound sources.
+
+Each ring has a central pulse and three granular click sources on its rim,
+randomly detuned from zero to two octaves down. Each section has three unpitched,
+offset granular heads at its midpoint. The looping pad drops from -38 dB to
+-50 dB during speech. Positional attenuation feeds one shared hall and limiter;
+no dry path bypasses distance attenuation. Sources stop and dispose with their
+section. Four section slots bound their lifetime.
+
+Composition borrows the existing Sound context/listener for standalone Start.
+Run remains the sole listener-pose writer and closes the shared context only
+after Start releases its sources. Start never creates a listener or context.
+Native voice remains the foreground source. Browser verification checks source
+placement, negative detuning, audible stereo output, ducking and final disposal:
+`node tests/browser/start-atmosphere.mjs` with the development server on port 4180.

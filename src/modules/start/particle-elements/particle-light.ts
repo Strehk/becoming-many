@@ -13,6 +13,9 @@ export function createParticleLight(
 }
 class ParticleLightTimeline implements ParticleLight {
   private elapsedSeconds = 0;
+  private pulses: number[] = [];
+  private cycles: number[] = [];
+  readonly readPulses = (): readonly number[] => this.pulses;
   private passedAt: number[] = [];
   private frames: ParticleLightFrame[] = [];
   constructor(private readonly settings: ParticleLightSettings) {}
@@ -21,6 +24,8 @@ class ParticleLightTimeline implements ParticleLight {
     if (!Number.isInteger(count) || count < 0 || count > this.settings.capacity)
       throw new RangeError("Element light capacity exceeded");
     this.elapsedSeconds = 0;
+    this.pulses = Array(count).fill(0);
+    this.cycles = Array(count).fill(-1);
     this.passedAt = Array(count).fill(Number.POSITIVE_INFINITY);
     this.frames = Array.from({ length: count }, () => ({
       head: -1,
@@ -28,8 +33,9 @@ class ParticleLightTimeline implements ParticleLight {
     }));
   };
   readonly pass = (index: number): void => {
-    if (this.passedAt[index] === Number.POSITIVE_INFINITY)
-      this.passedAt[index] = this.elapsedSeconds;
+    if (this.passedAt[index] !== Number.POSITIVE_INFINITY) return;
+    this.passedAt[index] = this.elapsedSeconds;
+    this.pulses[index] = (this.pulses[index] ?? 0) + 1;
   };
 
   // 2. Idle waves repeat; a successful crossing replaces them with one final wave
@@ -40,10 +46,21 @@ class ParticleLightTimeline implements ParticleLight {
     });
     return this.frames;
   };
+  private updatePulse(index: number): void {
+    const offset =
+      (index * this.settings.staggerSeconds) % this.settings.periodSeconds;
+    const cycle = Math.floor(
+      (this.elapsedSeconds - offset) / this.settings.periodSeconds,
+    );
+    if (cycle < 0 || cycle === this.cycles[index]) return;
+    this.cycles[index] = cycle;
+    this.pulses[index] = (this.pulses[index] ?? 0) + 1;
+  }
   private updateFrame(frame: ParticleLightFrame, index: number): void {
     const settings = this.settings;
     const age = this.elapsedSeconds - (this.passedAt[index] ?? Infinity);
     const passed = age >= 0;
+    if (!passed) this.updatePulse(index);
     const phase = passed
       ? age
       : (this.elapsedSeconds +

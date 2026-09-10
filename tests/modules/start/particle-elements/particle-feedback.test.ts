@@ -80,3 +80,23 @@ test("light storage is bounded and reset removes old success state", () => {
     START_SETTINGS.elementLight.guideStrength,
   );
 });
+
+test("audio pulses share idle sweep starts and one-shot passage feedback", () => {
+  const settings = START_SETTINGS.elementLight;
+  const light = createParticleLight(settings);
+  light.reset(2);
+  expect(light.readPulses()).toEqual([0, 0]);
+  light.update(0);
+  expect(light.readPulses()).toEqual([1, 0]);
+  light.update(settings.staggerSeconds);
+  expect(light.readPulses()).toEqual([1, 1]);
+  light.update(settings.periodSeconds - settings.staggerSeconds);
+  expect(light.readPulses()).toEqual([2, 1]);
+  light.pass(0);
+  light.pass(0);
+  expect(light.readPulses()).toEqual([3, 1]);
+  light.update(settings.periodSeconds * 2);
+  expect(light.readPulses()[0]).toBe(3);
+  light.reset(0);
+  expect(light.readPulses()).toEqual([]);
+});

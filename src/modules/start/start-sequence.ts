@@ -6,7 +6,28 @@ export function sampleWorldPresence(
   sequence: StartSequence,
   offsetSeconds: number,
 ): number {
-  const reveal = sequence.worldReveal;
+  return samplePresence(sequence.worldReveal, offsetSeconds);
+}
+
+/** The approach can emerge before the surrounding room. */
+export function samplePathPresence(
+  sequence: StartSequence,
+  offsetSeconds: number,
+): number {
+  if (sequence.pathAtSeconds === undefined) return 1;
+  return samplePresence(
+    {
+      atSeconds: sequence.pathAtSeconds,
+      fadeSeconds: sequence.pathFadeSeconds ?? 1,
+    },
+    offsetSeconds,
+  );
+}
+
+function samplePresence(
+  reveal: StartSequence["worldReveal"],
+  offsetSeconds: number,
+): number {
   if (!reveal) return 1;
   if (
     !Number.isFinite(reveal.atSeconds) ||

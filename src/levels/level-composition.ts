@@ -1,3 +1,5 @@
+import { START_AUDIO_SETTINGS } from "../modules/start/audio/audio-settings";
+import { createStartAudio } from "../modules/start/audio/start-audio";
 /**
  * Purpose: Construct the concrete module graph for one authored world.
  * Context: Level Runtime needs configured resources without knowing content-module details.
@@ -135,9 +137,11 @@ interface LevelCompositionOptions {
   readonly level: LevelPreset;
   readonly assets: LoadedLevelAssets;
   readonly forShow: boolean;
+  readonly signal?: AbortSignal;
 }
 
 export interface ComposedLevel {
+  readonly audio?: SpatialAudio;
   readonly voice?: VoicePlayback;
   readonly worldSurface: WorldSurface;
   readonly modules: readonly WorldModule[];
@@ -150,12 +154,15 @@ export async function composeLevel({
   level,
   assets,
   forShow,
+  signal = new AbortController().signal,
 }: LevelCompositionOptions): Promise<ComposedLevel> {
   const worldSurface = createWorldSurface(
     WORLD_SURFACE_SETTINGS,
     ZONE_SETTINGS,
   );
   let voice: VoicePlayback | undefined;
+  let audio: SpatialAudio | undefined;
+  let atmosphere: Awaited<ReturnType<typeof createStartAudio>> | undefined;
   const modules: WorldModule[] = [];
   const createdModules = new Set<WorldModule>();
   const gates = new Map<ShowSense, WorldModule[]>();
@@ -174,6 +181,15 @@ export async function composeLevel({
   };
 
   try {
+    if (level.flightGuidance && !forShow) {
+      audio = await createSpatialAudio(world.camera, signal);
+      atmosphere = await createStartAudio({
+        ...audio,
+        settings: START_AUDIO_SETTINGS,
+        signal,
+      });
+      signal.throwIfAborted();
+    }
     // World fades exist only for a show: a static run never fades, so its
     // materials skip the extra fragment mix entirely.
     const structureFade = forShow ? createWorldFade() : undefined;
@@ -270,6 +286,7 @@ export async function composeLevel({
     return {
       worldSurface,
       voice,
+      audio,
       modules,
       hasGround: level.invisibleGround === true || hasVisibleSurface(level),
       reach: {
@@ -302,6 +319,12 @@ export async function composeLevel({
       } catch (cleanupError) {
         errors.push(cleanupError);
       }
+    }
+    try {
+      atmosphere?.unload();
+      await audio?.unload();
+    } catch (cleanupError) {
+      errors.push(cleanupError);
     }
     if (errors.length > 1)
       throw new AggregateError(
@@ -483,6 +506,7 @@ export async function composeLevel({
     return level.flightGuidance
       ? createStartModule({
           voice,
+          atmosphere,
           ...options,
           guidance: level.flightGuidance,
           constrainFlightPosition: (position) =>

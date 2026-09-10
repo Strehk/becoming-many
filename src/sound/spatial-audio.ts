@@ -1,3 +1,4 @@
+import type { AudioListener } from "three";
 import type { Context } from "tone";
 
 /**
@@ -7,6 +8,8 @@ import type { Context } from "tone";
  */
 export interface SpatialAudio {
   readonly context: Context;
+  /** Borrowed by positional sources; only this owner writes its pose. */
+  readonly listener: AudioListener;
   /** Run calls once per frame after locomotion, using the latest available XR pose. */
   readonly update: () => void;
   readonly unload: () => Promise<void>;

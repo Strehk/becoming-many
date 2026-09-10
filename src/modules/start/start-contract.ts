@@ -40,6 +40,7 @@ export interface StartSequence {
   readonly approachMeters: number;
   /** Optional early centerline reveal; rings still wait for the spoken instruction. */
   readonly pathAtSeconds?: number;
+  readonly pathFadeSeconds?: number;
   readonly worldReveal?: {
     readonly atSeconds: number;
     readonly fadeSeconds: number;

@@ -1,5 +1,6 @@
 import { Vector3 } from "three";
 import { ModuleRuntime, type WorldModule } from "../../world/module-runtime";
+import type { StartAudio } from "./audio/audio-contract";
 import {
   createFlightGuidance,
   type FlightGuidanceParameters,
@@ -61,11 +62,12 @@ import type {
 } from "./start-contract";
 import { START_EXERCISES, START_SETTINGS } from "./start-exercises";
 import { createStartGame } from "./start-game.runtime";
-import { sampleWorldPresence } from "./start-sequence";
+import { samplePathPresence, sampleWorldPresence } from "./start-sequence";
 
 // 1. Local star: all concrete connections and the fixed display pool live here
 interface StartModuleOptions extends AirParticlesModuleOptions {
   readonly voice?: StartVoice;
+  readonly atmosphere?: StartAudio;
   readonly guidance: FlightGuidanceParameters;
   readonly constrainFlightPosition: (position: Vector3) => void;
 }
@@ -101,7 +103,13 @@ class StartModule implements WorldModule {
   private readonly bindings = new Map<Display, ElementDisplay>();
   private readonly feedback = new Map<
     ElementDisplay,
-    { light: ParticleLight; passage: RingPassage }
+    {
+      light: ParticleLight;
+      passage: RingPassage;
+      reveal: ReturnType<typeof createElementReveal>;
+      retirement: ElementRetirement;
+      presence: Float32Array;
+    }
   >();
   private readonly retiringPaths = new Map<Display, Vector3>();
   private readonly course = createFlightCourse(connectFlightRoute);
@@ -113,6 +121,7 @@ class StartModule implements WorldModule {
   private pending: PendingSection | undefined;
   private active = false;
   private worldPresence = 1;
+  private pathPresence = 1;
   private openingNeeded = false;
 
   constructor(private readonly options: StartModuleOptions) {
@@ -135,7 +144,7 @@ class StartModule implements WorldModule {
         belowFlightMeters: START_SETTINGS.belowFlightMeters,
         opacity: START_SETTINGS.pathOpacity,
         growth: START_SETTINGS.pathGrowth,
-        readPresence: () => this.worldPresence,
+        readPresence: () => this.pathPresence,
         createMaterial: () =>
           createPathRevealMaterial(
             createPathParticleMaterial(createAirParticleMaterial),
@@ -167,14 +176,8 @@ class StartModule implements WorldModule {
   }
 
   private createElements() {
-    const retirement = createElementRetirement(
-      START_SETTINGS.elementRetirement,
-    );
-    const reveal = createElementReveal(START_SETTINGS.elementReveal);
-    const light = createParticleLight(START_SETTINGS.elementLight);
-    const passage = createRingPassage(
-      START_SETTINGS.elementPassage.maximumStepMeters,
-    );
+    const feedback = this.createFeedback();
+    const { light, retirement, reveal } = feedback;
     const display = createParticleElements({
       light,
       reveal,
@@ -192,8 +195,20 @@ class StartModule implements WorldModule {
       createMaterial: () =>
         this.createElementMaterial(light, retirement, reveal.presence),
     });
-    this.feedback.set(display, { light, passage });
+    this.feedback.set(display, feedback);
     return display;
+  }
+
+  private createFeedback() {
+    return {
+      light: createParticleLight(START_SETTINGS.elementLight),
+      passage: createRingPassage(
+        START_SETTINGS.elementPassage.maximumStepMeters,
+      ),
+      retirement: createElementRetirement(START_SETTINGS.elementRetirement),
+      reveal: createElementReveal(START_SETTINGS.elementReveal),
+      presence: new Float32Array(START_SETTINGS.elementReveal.capacity),
+    };
   }
 
   private createElementMaterial(
@@ -244,6 +259,7 @@ class StartModule implements WorldModule {
     this.entry = undefined;
     this.recoveryEntryNeeded = false;
     this.worldPresence = this.options.voice ? 0 : 1;
+    this.pathPresence = this.worldPresence;
     this.openingNeeded = true;
     this.active = true;
     for (const module of this.modules) this.runtime.activate(module);
@@ -252,6 +268,7 @@ class StartModule implements WorldModule {
   };
   readonly deactivate = (): void => {
     this.active = false;
+    this.stopAtmosphere();
     this.options.voice?.stop();
     this.bindings.clear();
     this.retiringPaths.clear();
@@ -265,6 +282,7 @@ class StartModule implements WorldModule {
   };
   readonly unload = (): void => {
     this.active = false;
+    this.stopAtmosphere();
     this.options.voice?.stop();
     this.bindings.clear();
     this.retiringPaths.clear();
@@ -283,6 +301,7 @@ class StartModule implements WorldModule {
         errors.push(error);
       }
     }
+    this.options.atmosphere?.unload();
     if (errors.length) throw new AggregateError(errors, "Start cleanup failed");
   };
 
@@ -299,20 +318,29 @@ class StartModule implements WorldModule {
     for (const { light, passage } of this.feedback.values())
       for (const index of passage.update(position)) light.pass(index);
     this.runtime.update(deltaSeconds);
+    this.updateAtmosphere();
   };
 
-  // Opening captures the moving player at the room cue, never at page-load time.
+  // Capture the moving player after "Anfang"; the surrounding room has its own cue.
   private updateOpening(): void {
     const first = START_EXERCISES[0];
-    if (this.options.voice && this.worldPresence < 1) {
+    if (
+      this.options.voice &&
+      (this.worldPresence < 1 || this.pathPresence < 1)
+    ) {
       const playback = this.options.voice.read();
-      if (!playback.failed)
+      if (!playback.failed) {
         this.worldPresence = Math.max(
           this.worldPresence,
           sampleWorldPresence(first.sequence, playback.offsetSeconds),
         );
+        this.pathPresence = Math.max(
+          this.pathPresence,
+          samplePathPresence(first.sequence, playback.offsetSeconds),
+        );
+      }
     }
-    if (!this.openingNeeded || this.worldPresence <= 0) return;
+    if (!this.openingNeeded || this.pathPresence <= 0) return;
     if (!this.showEntry(false)) return;
     this.openingNeeded = false;
     this.prepareSection(false);
@@ -585,12 +613,71 @@ class StartModule implements WorldModule {
     if (!elements) return;
     elements.show(sources, pose, display.readRevealMeters);
     this.bindings.set(display, elements);
+    this.placeSectionAudio(
+      display,
+      elements,
+      this.createRingTargets(sources, pose),
+    );
     this.feedback
       .get(elements)
       ?.passage.reset(
         this.createRingTargets(sources, pose),
         this.readPosition(),
       );
+  }
+
+  // Sound observes the same placements and envelopes as the rendered rings.
+  private placeSectionAudio(
+    display: Display,
+    elements: ElementDisplay,
+    rings: RingTarget[],
+  ): void {
+    const section =
+      this.pending?.display === display ? this.pending.section : this.current;
+    if (!section || !this.options.atmosphere) return;
+    const center = new Vector3();
+    section.route.sample(section.route.lengthMeters / 2, center);
+    center
+      .applyAxisAngle(new Vector3(0, 1, 0), section.pose.yawRadians)
+      .add(section.pose.position);
+    center.y -= START_SETTINGS.belowFlightMeters;
+    this.options.atmosphere.configureSection(this.elements.indexOf(elements), {
+      center,
+      rings: rings.map((ring) => ({ ...ring, index: ring.elementIndex })),
+    });
+  }
+
+  private updateAtmosphere(): void {
+    const atmosphere = this.options.atmosphere;
+    if (!atmosphere) return;
+    const voice = this.options.voice?.read();
+    atmosphere.update({
+      active: this.active,
+      speaking: !!voice && !voice.ended && !voice.failed,
+    });
+    this.elements.forEach((display, slot) => {
+      if (!display.isVisible()) {
+        atmosphere.clearSection(slot);
+        return;
+      }
+      const feedback = this.feedback.get(display);
+      if (!feedback) return;
+      for (let index = 0; index < feedback.presence.length; index++)
+        feedback.presence[index] =
+          (feedback.reveal.presence[index] ?? 0) *
+          (feedback.retirement.presence[index] ?? 0);
+      atmosphere.updateSection(slot, {
+        presence: feedback.presence,
+        pulses: feedback.light.readPulses(),
+      });
+    });
+  }
+
+  private stopAtmosphere(): void {
+    this.options.atmosphere?.update({ active: false, speaking: false });
+    this.elements.forEach((_, slot) => {
+      this.options.atmosphere?.clearSection(slot);
+    });
   }
 
   private createRingTargets(

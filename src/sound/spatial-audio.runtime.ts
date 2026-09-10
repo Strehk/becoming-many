@@ -90,6 +90,7 @@ export async function createSpatialAudio(
 
     return {
       context,
+      listener,
       update(): void {
         if (unloading || context.state !== "running") return;
         framesSincePlacing += 1;

@@ -148,8 +148,10 @@ class LevelRun {
       level: this.level,
       assets: this.assets,
       forShow: this.request.kind === "show",
+      signal: this.signal,
     });
     this.voice = composition.voice;
+    this.audio = composition.audio;
     this.modules = [...composition.modules];
     this.worldSurface = composition.worldSurface;
     this.reach = composition.reach;
@@ -258,10 +260,10 @@ class LevelRun {
       : [];
     return [
       () => this.voice?.unload(),
-      () => this.audio?.unload(),
       ...[...this.modules]
         .reverse()
         .map((module) => () => this.world?.modules.unload(module)),
+      () => this.audio?.unload(),
       ...sources.map((batch) => () => {
         if (batch) disposeGltfAssets(batch);
       }),
