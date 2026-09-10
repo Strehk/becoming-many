@@ -118,9 +118,9 @@ The halo uses lower per-particle opacity while the pigment stays black. Shared
 `elementVolume` settings control thickness and softness independently of animation
 and physical displacement. Core particles are larger than halo dust and use a
 subtle camera-space spherical shading cue; the base pigment remains black.
-Each moving sample carries seven independently positioned GPU grains, with stable
+Each moving sample carries twelve independently positioned GPU grains, with stable
 per-sample seeds, varied sizes and occasional larger accents. The renderer draws
-seven instanced layers of the same bounded sample buffers. Wind and emergence
+twelve instanced layers of the same bounded sample buffers. Wind and emergence
 update the sample centers once; all grains follow without per-grain CPU work.
 This is a spatial point-sprite approximation, not scene lighting or geometric spheres.
 Volume treatment adds no draw call or frame-time
@@ -142,7 +142,7 @@ reused CPU buffers and one dynamic center-position upload per visible section.
 
 The center pairs each of its three route displays with an element display.
 Compatible element geometries are merged into one cloud per section, capped at
-20,000 moving samples (140,000 rendered grains at the current seven-grain setting). Shape sampling occurs when the prepared section is shown;
+20,000 moving samples (240,000 rendered grains at the current twelve-grain setting). Shape sampling occurs when the prepared section is shown;
 there is no extra loop or unbounded history. Small temporary shape geometries
 are disposed after merging, and all final buffers/materials are disposed on
 unload. Elements add one draw call per visible section. Their small fixed pool
