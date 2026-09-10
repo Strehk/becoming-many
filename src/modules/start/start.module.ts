@@ -159,7 +159,12 @@ class StartModule implements WorldModule {
     retirement: ElementRetirement,
   ) {
     return createVolumeMaterial(
-      createPathParticleMaterial(createAirParticleMaterial),
+      createPathParticleMaterial((settings) =>
+        createAirParticleMaterial({
+          ...settings,
+          motion: START_SETTINGS.elementWind,
+        }),
+      ),
       START_SETTINGS.elementVolume,
       { settings: START_SETTINGS.elementLight, animation: light, retirement },
     );

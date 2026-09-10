@@ -41,6 +41,11 @@ export const START_SETTINGS = {
     maximumOffsetMeters: 0.8,
     maximumDeltaSeconds: 0.05,
   },
+  elementWind: {
+    horizontalAmplitudeMeters: 0.09,
+    verticalAmplitudeMeters: 0.055,
+    speedMultiplier: 0.45,
+  },
   elementVolume: {
     coreRadiusMeters: 0.55,
     haloRadiusMeters: 1.2,

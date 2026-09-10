@@ -150,6 +150,12 @@ uses uncullable clouds so emergence and impulse offsets cannot clip at static
 shape bounds. Individual ring feedback now follows actual forward passage. Audio timing remains
 outside this MVP; the review observations below remain undecided.
 
+Ring grains reuse the existing airborne wind shader with a stable phase per grain.
+`START_SETTINGS.elementWind` controls their small horizontal and vertical drift
+and slow speed. The phase does not change across frames; no random frame jitter,
+extra CPU particle updates or additional render loop is introduced. Ambient air
+and route particles retain their existing coherent wind.
+
 ### Directional light and passage feedback
 
 - `ring-passage.ts` intersects real movement segments with world-space ring planes.

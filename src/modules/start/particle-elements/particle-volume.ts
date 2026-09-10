@@ -107,7 +107,7 @@ export function createVolumeMaterial(
     shader.fragmentShader = patchVolumeFragment(shader.fragmentShader);
   };
   points.customProgramCacheKey = () =>
-    `${baseKey}:particle-volume-directional-light-v11:${light.settings.capacity}`;
+    `${baseKey}:particle-volume-directional-light-wind-v12:${light.settings.capacity}`;
   return {
     pointsMaterial: points,
     update(seconds) {
@@ -159,6 +159,10 @@ function patchVolumeVertex(source: string): string {
       float seed = fract(sin(elementSeed * 137.0 + grainIndex * 91.7) * 43758.5453);
       transformed = placeElementGrain(seed);
     `,
+    )
+    .replace(
+      "transformed = animateAirParticle(transformed);",
+      "transformed = animateAirParticle(transformed, seed * 6.28318530718);",
     )
     .replace(
       "gl_PointSize = size * pathParticleSize;",
