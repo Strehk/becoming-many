@@ -62,6 +62,35 @@ The [first flight views](01-flight-views.png) and
 comparison only; they are superseded by these revisions. In particular, their
 chevrons and understeer/oversteer diagrams are not the desired design.
 
+## Color exploration
+
+The user subsequently requested restrained color studies using the game's clean
+landscape images as aesthetic references only. Start contains no landscape.
+These options explore color without replacing the initial white opening or
+establishing an approved palette. The later white-space and particle-ring images
+refine the sparse atmosphere and dissolving particulate forms.
+
+![White and turquoise](05-color-white-turquoise.png)
+
+White and neutral gray dominate; turquoise marks the route and selected particles.
+This is the most restrained color option.
+
+![Lavender and mint](06-color-lavender-mint.png)
+
+Pale lavender shadows and particle accents connect to the game palette, with mint
+along the route and prediction. This option introduces a broader atmospheric tint.
+
+![Mint and soft gold](07-color-mint-gold.png)
+
+Muted mint accompanies sparse gold on the nearest ring and the arrow light pulse.
+Gold is a proposed attention accent, not an approved success or target signal.
+
+All three remain open sky with sparse clouds and ambient gray points, without
+terrain, vegetation or a cloud floor. Their similar framing supports comparison,
+but generated geometry is not identical. Pulse brightness and particle sizes are
+illustrative; static images do not establish animation or VR readability.
+The [color prompts](color-prompts.md) preserve the full generation instructions.
+
 ## Preserved user references
 
 Original PNG files copied unchanged:
@@ -70,6 +99,15 @@ Original PNG files copied unchanged:
 2. [Left curve](references/02-left-curve.png)
 3. [Climbing curve](references/03-climbing-curve.png)
 4. [Directional arrows](references/04-directional-arrows.png)
+5. [Game color atmosphere](references/05-game-color-atmosphere.png)
+6. [Game palette reference](references/06-game-palette-reference.png)
+7. [Game white atmosphere](references/07-game-white-atmosphere.png)
+8. [White particle space](references/08-white-particle-space.png)
+9. [Particle ring course](references/09-particle-ring-course.png)
+10. [Particle arrow and ring](references/10-particle-arrow-ring.png)
+
+The landscape references inform color and visual restraint only. Their objects
+and embedded technical specifications are not instructions for Start.
 
 ## Project and technical references
 
