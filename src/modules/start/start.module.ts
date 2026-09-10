@@ -110,6 +110,7 @@ class StartModule implements WorldModule {
 
   private createElements() {
     return createParticleElements({
+      grainsPerSample: START_SETTINGS.elementVolume.grainsPerSample,
       scene: this.options.scene,
       belowFlightMeters: START_SETTINGS.belowFlightMeters,
       animationSettings: START_SETTINGS.elementAnimation,

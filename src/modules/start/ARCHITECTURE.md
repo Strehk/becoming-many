@@ -30,6 +30,7 @@ route for that definition. A separate chunk engine is unnecessary for the MVP.
 | `particle-elements/ring-shape.ts` | Sample only the local ring shape, with an empty center. |
 | `particle-elements/arrow-shape.ts` | Sample only a filled arrow silhouette, including shaft and head. |
 | `particle-elements/element-placement.ts` | Derive ring centers and exterior arrow placements from the sampled route. |
+| `particle-elements/particle-grain.frag.glsl` | Shade each small dust grain with a soft edge and restrained relief. |
 | `particle-elements/particle-volume.ts` | Add spatial core/halo distribution and per-particle opacity to either shape. |
 | `particle-elements/particle-animation.ts` | Shape-independent emergence and dissolution envelope. |
 | `particle-elements/particle-simulation.ts` | Movement-only flight impulse and damped return to resting positions. |
@@ -117,7 +118,11 @@ The halo uses lower per-particle opacity while the pigment stays black. Shared
 `elementVolume` settings control thickness and softness independently of animation
 and physical displacement. Core particles are larger than halo dust and use a
 subtle camera-space spherical shading cue; the base pigment remains black.
-This is a point-sprite approximation, not scene lighting or geometric spheres.
+Each moving sample carries seven independently positioned GPU grains, with stable
+per-sample seeds, varied sizes and occasional larger accents. The renderer draws
+seven instanced layers of the same bounded sample buffers. Wind and emergence
+update the sample centers once; all grains follow without per-grain CPU work.
+This is a spatial point-sprite approximation, not scene lighting or geometric spheres.
 Volume treatment adds no draw call or frame-time
 particle allocations.
 
@@ -133,11 +138,11 @@ return displaced particles to their resting shape. Standing still or teleporting
 does not produce wind. Time steps and displacement are capped. Untouched particles skip spring updates;
 damping is calculated once per frame for the entire cloud. Ambient drift
 continues through the reused GPU material; the bounded flight response uses
-reused CPU buffers and one dynamic position upload per visible section.
+reused CPU buffers and one dynamic center-position upload per visible section.
 
 The center pairs each of its three route displays with an element display.
 Compatible element geometries are merged into one cloud per section, capped at
-20,000 particles. Shape sampling occurs when the prepared section is shown;
+20,000 moving samples (140,000 rendered grains at the current seven-grain setting). Shape sampling occurs when the prepared section is shown;
 there is no extra loop or unbounded history. Small temporary shape geometries
 are disposed after merging, and all final buffers/materials are disposed on
 unload. Elements add one draw call per visible section. Their small fixed pool

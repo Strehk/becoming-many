@@ -1,7 +1,9 @@
 import {
-  BufferAttribute,
   BufferGeometry,
   DynamicDrawUsage,
+  Float32BufferAttribute,
+  InstancedBufferAttribute,
+  InstancedBufferGeometry,
   Points,
   Quaternion,
   type Scene,
@@ -23,8 +25,10 @@ const UP = new Vector3(0, 1, 0);
 const LOCAL_FORWARD = new Vector3(1, 0, 0);
 const SCATTER_PHASE = 12.9898;
 const MAXIMUM_PARTICLES = 20_000;
+const MAXIMUM_GRAINS_PER_SAMPLE = 16;
 interface ElementOptions {
   readonly scene: Scene;
+  readonly grainsPerSample: number;
   readonly belowFlightMeters: number;
   readonly animationSettings: AnimationSettings;
   readonly animation: ParticleAnimation;
@@ -43,7 +47,14 @@ class ParticleElements {
   private material: PathParticleMaterial | undefined;
   private targets: Float32Array = new Float32Array(0);
   private scatter = new Float32Array(0);
-  constructor(private readonly options: ElementOptions) {}
+  constructor(private readonly options: ElementOptions) {
+    if (
+      !Number.isInteger(options.grainsPerSample) ||
+      options.grainsPerSample < 1 ||
+      options.grainsPerSample > MAXIMUM_GRAINS_PER_SAMPLE
+    )
+      throw new RangeError("Invalid grain budget");
+  }
 
   // 2. Resource lifetime: one material and one draw call for all section elements
   readonly load = (): void => {
@@ -88,7 +99,9 @@ class ParticleElements {
     const geometry = this.createGeometry(sources, pose);
     this.cloud.geometry.dispose();
     this.cloud.geometry = geometry;
-    this.targets = new Float32Array(geometry.getAttribute("position").array);
+    this.targets = new Float32Array(
+      geometry.getAttribute("elementCenter").array,
+    );
     this.scatter = this.targets.map(
       (_, index) =>
         Math.sin(index * SCATTER_PHASE) *
@@ -118,13 +131,39 @@ class ParticleElements {
       const geometry = mergeGeometries(parts);
       if (!geometry)
         throw new Error("Incompatible element particle attributes");
-      const positions = geometry.getAttribute("position");
-      if (positions instanceof BufferAttribute)
-        positions.setUsage(DynamicDrawUsage);
-      return geometry;
+      try {
+        return this.createGrains(geometry);
+      } finally {
+        geometry.dispose();
+      }
     } finally {
       for (const part of parts) part.dispose();
     }
+  }
+
+  private createGrains(source: BufferGeometry): InstancedBufferGeometry {
+    const geometry = new InstancedBufferGeometry();
+    const count = source.getAttribute("position").count;
+    geometry.instanceCount = this.options.grainsPerSample;
+    geometry.setAttribute("position", new Float32BufferAttribute(count * 3, 3));
+    const indices = new Float32Array(this.options.grainsPerSample);
+    for (let index = 0; index < indices.length; index++) indices[index] = index;
+    geometry.setAttribute(
+      "grainIndex",
+      new InstancedBufferAttribute(indices, 1),
+    );
+    for (const [name, attribute] of Object.entries(source.attributes)) {
+      const instance = new Float32BufferAttribute(
+        new Float32Array(attribute.array),
+        attribute.itemSize,
+      );
+      if (name === "position") instance.setUsage(DynamicDrawUsage);
+      geometry.setAttribute(
+        name === "position" ? "elementCenter" : name,
+        instance,
+      );
+    }
+    return geometry;
   }
 
   private placeGeometry(
@@ -165,7 +204,7 @@ class ParticleElements {
       seconds,
       this.options.readPosition(),
     );
-    const attribute = this.cloud.geometry.getAttribute("position");
+    const attribute = this.cloud.geometry.getAttribute("elementCenter");
     const positions = attribute.array;
     for (let index = 0; index < positions.length; index++) {
       positions[index] =

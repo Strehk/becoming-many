@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { PointsMaterial, Scene, Vector3 } from "three";
+import { Points, PointsMaterial, Scene, Vector3 } from "three";
 import { createFlightRoute } from "../flight-path/flight-route";
 import { createPathParticleGeometry } from "../flight-path/path-particles";
 import { START_EXERCISES, START_SETTINGS } from "../start-exercises";
@@ -107,6 +107,7 @@ test("combined display dissolves and releases owned rendering resources", () => 
     disposed = true;
   });
   const display = createParticleElements({
+    grainsPerSample: START_SETTINGS.elementVolume.grainsPerSample,
     scene,
     belowFlightMeters: 0.5,
     animationSettings: START_SETTINGS.elementAnimation,
@@ -133,6 +134,14 @@ test("combined display dissolves and releases owned rendering resources", () => 
     { position: new Vector3(), yawRadians: 0 },
   );
   display.update(2);
+  const cloud = scene.getObjectByName("StartParticleElements");
+  if (!(cloud instanceof Points)) throw new Error("Missing grain cloud");
+  expect(cloud.geometry.getAttribute("grainIndex").count).toBe(
+    START_SETTINGS.elementVolume.grainsPerSample,
+  );
+  expect(cloud.geometry.getAttribute("elementCenter").count).toBe(
+    cloud.geometry.getAttribute("position").count,
+  );
   expect(scene.children.length).toBe(1);
   display.dissolve();
   display.update(2);

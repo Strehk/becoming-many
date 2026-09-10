@@ -64,6 +64,9 @@ export interface VolumeSettings {
   readonly coreSizeScale: number;
   readonly haloSizeScale: number;
   readonly relief: number;
+  readonly grainsPerSample: number;
+  readonly grainSpreadMeters: number;
+  readonly accentFraction: number;
   readonly haloOpacity: ParticleRange;
   readonly seed: number;
 }
