@@ -22,6 +22,8 @@ test("every catalog name resolves to itself", () => {
 
 test("named level paths select the standalone-level entry", () => {
   expect(levelNameFromPath("/start")).toBe("start");
+  expect(levelNameFromPath("/tutorial")).toBe("white-world");
+  expect(levelNameFromPath("/tutorial/")).toBe("white-world");
   expect(levelNameFromPath("/echo")).toBe("echo");
   expect(levelNameFromPath("/diagnostic")).toBe("diagnostic");
   expect(levelNameFromPath("/visual-integration/")).toBe("visual-integration");

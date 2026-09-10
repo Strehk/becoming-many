@@ -31,6 +31,9 @@ diagnostic metadata without restricting steering).
 - The experience page at `/?level=<name>` and named paths such as `/echo` —
   standalone development levels, benchmarks, and opt-in diagnostics. These use
   the root document; there is no separate diagnostics page.
+- `/tutorial` — the isolated Start development route. It currently reuses White
+  World's white background, bounded Air particles, and existing flight controls;
+  it has no tutorial sequence, audio, guidance, or automatic handoff.
 - `/health` — liveness JSON: status and uptime. It reports the process, never
   the show: a healthy server with zero windows is healthy.
 - `/config` — the deployment facts the process was started with, for the

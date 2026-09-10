@@ -5,18 +5,20 @@ and reuse over wrappers, new abstractions, or parallel mechanisms.
 
 ## Workflow
 
-1. Verify `git branch --show-current` is exactly `david_refactor`, inspect status,
-   and preserve unrelated changes.
-2. Read the current issue, its prerequisites, the affected owners, and relevant
-   history. Issues own scope and acceptance.
-3. Implement one coherent issue or agreed block. Remove replaced code, contracts,
-   settings, consumers, and exclusive tests together.
-4. Review the resulting dependency graph, state ownership, start/frame/end path,
-   and size. A move or rename alone is not simplification.
-5. Run one targeted verification pass. Repair actual failures and rerun only the
-   affected checks.
-6. Record a concise issue result, update only affected canonical facts, commit,
-   push to `origin/david_refactor`, and verify synchronization.
+1. Define the concrete visible result and affected files. Verify
+   `git branch --show-current` is exactly `david_refactor`, inspect status, and
+   preserve unrelated changes.
+2. Name each affected owner, its inputs, outputs, necessary state, and resource
+   cleanup. Read the current issue, prerequisites, and relevant history.
+3. Implement one coherent issue or agreed block at the existing owners. Reuse
+   first; remove duplicate state, pure forwarding, and replaced code together.
+4. Simplify the result: review direct calculations, dependency edges,
+   start/frame/end paths, and size. A move or rename alone is not simplification.
+5. Run repository lint and one targeted verification pass, including the real
+   interaction for browser work. Repair failures and rerun only affected checks.
+6. Record the concise result and limitations in the owning issue, update only
+   affected canonical facts, commit, push to `origin/david_refactor`, and verify
+   synchronization.
 
 Never change, merge, rebase, or push `main`; create no additional feature branch
 or worktree and never force-push. Completed targeted blocks may be committed and

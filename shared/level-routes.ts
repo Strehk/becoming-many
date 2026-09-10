@@ -28,5 +28,6 @@ export function isLevelName(value: string): value is LevelName {
 
 export function levelNameFromPath(pathname: string): LevelName | undefined {
   const candidate = pathname.replace(/^\/+|\/+$/g, "");
+  if (candidate === "tutorial") return "white-world";
   return isLevelName(candidate) ? candidate : undefined;
 }

@@ -65,6 +65,7 @@ async function main(): Promise<void> {
   assertRefactorBranch();
   const availableRoutes = [
     "/",
+    "/tutorial",
     "/?level=echo",
     "/?level=start",
     "/conductor.html",
