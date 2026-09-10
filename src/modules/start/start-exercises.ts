@@ -42,9 +42,9 @@ export const START_SETTINGS = {
     maximumDeltaSeconds: 0.05,
   },
   elementWind: {
-    horizontalAmplitudeMeters: 0.09,
-    verticalAmplitudeMeters: 0.055,
-    speedMultiplier: 0.45,
+    horizontalAmplitudeMeters: 0.4,
+    verticalAmplitudeMeters: 0.25,
+    speedMultiplier: 1.8,
   },
   elementVolume: {
     coreRadiusMeters: 0.55,
