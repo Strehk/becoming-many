@@ -7,7 +7,7 @@ const SETTINGS = {
   tip: 0.5,
   shaftHalfWidth: 0.09,
   headHalfWidth: 0.32,
-  rowSpacingMeters: 0.08,
+  rowSpacingMeters: 0.18,
 };
 
 /** Fill shaft and head in XY; local +X points forward. Particle scatter adds depth. */

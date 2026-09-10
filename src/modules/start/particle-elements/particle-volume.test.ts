@@ -6,10 +6,15 @@ import { fillParticleVolume } from "./particle-volume";
 // A shape-free point fixture verifies spatial depth, both layers and reproducibility.
 test("volume has a bounded dense core and translucent halo in three dimensions", () => {
   const make = () =>
-    new BufferGeometry().setAttribute(
-      "position",
-      new Float32BufferAttribute(new Float32Array(3000), 3),
-    );
+    new BufferGeometry()
+      .setAttribute(
+        "position",
+        new Float32BufferAttribute(new Float32Array(3000), 3),
+      )
+      .setAttribute(
+        "pathParticleSize",
+        new Float32BufferAttribute(new Float32Array(1000).fill(1), 1),
+      );
   const settings = START_SETTINGS.elementVolume;
   const first = fillParticleVolume(make(), settings);
   const second = fillParticleVolume(make(), settings);
@@ -28,6 +33,9 @@ test("volume has a bounded dense core and translucent halo in three dimensions",
       halo
         ? settings.haloRadiusMeters + 1e-6
         : settings.coreRadiusMeters + 1e-6,
+    );
+    expect(first.getAttribute("pathParticleSize").getX(index)).toBeCloseTo(
+      halo ? settings.haloSizeScale : settings.coreSizeScale,
     );
     if (halo) haloCount++;
     depth = Math.max(depth, Math.abs(positions.getZ(index)));

@@ -7,6 +7,7 @@ import type {
 // 1. Shape and procedural placement: borrowed samples, measured in meters
 export interface ElementPlacement {
   readonly kind: "ring" | "arrow";
+  readonly routeDistanceMeters: number;
   readonly position: Vector3;
   readonly direction: Vector3;
 }
@@ -16,6 +17,7 @@ export interface ElementSettings {
   readonly ringRadiusMeters: number;
   readonly arrowLengthMeters: number;
   readonly arrowOffsetMeters: number;
+  readonly arrowPhaseFraction: number;
 }
 export interface ElementSource {
   readonly placement: ElementPlacement;
@@ -59,6 +61,9 @@ export interface VolumeSettings {
   readonly haloRadiusMeters: number;
   readonly haloFraction: number;
   readonly coreOpacity: number;
+  readonly coreSizeScale: number;
+  readonly haloSizeScale: number;
+  readonly relief: number;
   readonly haloOpacity: ParticleRange;
   readonly seed: number;
 }

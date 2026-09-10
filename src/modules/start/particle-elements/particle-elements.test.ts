@@ -27,9 +27,14 @@ for (const exercise of START_EXERCISES) {
       expect(ring.position.distanceTo(point)).toBeLessThan(1e-6);
     });
     for (const arrow of arrows) {
-      const ring = rings.find((ring) => ring.direction === arrow.direction);
-      if (!ring) throw new Error("Missing paired ring");
-      const offset = arrow.position.clone().sub(ring.position);
+      const center = new Vector3();
+      route.sample(arrow.routeDistanceMeters, center);
+      const offset = arrow.position.clone().sub(center);
+      expect(
+        rings.some(
+          (ring) => ring.routeDistanceMeters === arrow.routeDistanceMeters,
+        ),
+      ).toBe(false);
       expect(offset.length()).toBeCloseTo(exercise.elements.arrowOffsetMeters);
       expect(Math.sign(offset.x)).toBe(-exercise.route.turnSign);
       expect(Math.abs(offset.dot(arrow.direction))).toBeLessThan(0.01);
@@ -118,6 +123,7 @@ test("combined display dissolves and releases owned rendering resources", () => 
       {
         placement: {
           kind: "ring",
+          routeDistanceMeters: 0,
           position: new Vector3(),
           direction: new Vector3(0, 0, -1),
         },

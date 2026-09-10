@@ -14,6 +14,9 @@ class Simulation implements ParticleSimulation {
   private targets: Float32Array = new Float32Array(0);
   private offsets = new Float32Array(0);
   private velocities = new Float32Array(0);
+  private active = new Uint8Array(0);
+  private damping = 1;
+  private hasImpulse = false;
   private previous: Vector3 | undefined;
   private readonly segment = new Line3();
   private readonly movement = new Vector3();
@@ -25,6 +28,7 @@ class Simulation implements ParticleSimulation {
     this.targets = targets;
     this.offsets = new Float32Array(targets.length);
     this.velocities = new Float32Array(targets.length);
+    this.active = new Uint8Array(targets.length / 3);
     this.previous = undefined;
   };
 
@@ -41,6 +45,8 @@ class Simulation implements ParticleSimulation {
     this.movement.subVectors(player, this.segment.start);
     if (this.movement.length() > this.settings.maximumStepMeters || dt === 0)
       this.movement.set(0, 0, 0);
+    this.hasImpulse = this.movement.lengthSq() > 0;
+    this.damping = Math.exp(-this.settings.damping * dt);
     this.previous ??= new Vector3();
     this.previous.copy(player);
     for (let index = 0; index < this.targets.length; index += 3)
@@ -50,13 +56,11 @@ class Simulation implements ParticleSimulation {
 
   // 2. Flight impulse and damped return; fixed buffers, no per-particle allocations
   private updateParticle(index: number, dt: number): void {
-    this.particle.fromArray(this.targets, index);
-    this.segment.closestPointToPoint(this.particle, true, this.nearest);
-    const influence = Math.max(
-      0,
-      1 - this.particle.distanceTo(this.nearest) / this.settings.radiusMeters,
-    );
-    const damping = Math.exp(-this.settings.damping * dt);
+    const particleIndex = index / 3;
+    if (!this.hasImpulse && !this.active[particleIndex]) return;
+    const influence = this.hasImpulse ? this.sampleInfluence(index) : 0;
+    if (influence === 0 && !this.active[particleIndex]) return;
+    this.active[particleIndex] = 1;
     for (let axis = 0; axis < 3; axis++) {
       const i = index + axis;
       const impulse =
@@ -65,7 +69,7 @@ class Simulation implements ParticleSimulation {
         ((this.velocities[i] ?? 0) +
           impulse -
           (this.offsets[i] ?? 0) * this.settings.spring * dt) *
-        damping;
+        this.damping;
       this.velocities[i] = velocity;
       this.offsets[i] = Math.max(
         -this.settings.maximumOffsetMeters,
@@ -75,5 +79,13 @@ class Simulation implements ParticleSimulation {
         ),
       );
     }
+  }
+  private sampleInfluence(index: number): number {
+    this.particle.fromArray(this.targets, index);
+    this.segment.closestPointToPoint(this.particle, true, this.nearest);
+    return Math.max(
+      0,
+      1 - this.particle.distanceTo(this.nearest) / this.settings.radiusMeters,
+    );
   }
 }

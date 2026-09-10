@@ -20,26 +20,32 @@ export function placeElements(
   for (let index = 0; index < SETTINGS.maximumPairs; index++) {
     const distance = settings.firstMeters + index * settings.spacingMeters;
     if (distance >= route.lengthMeters) break;
-    const position = new Vector3();
-    const direction = new Vector3();
-    route.sample(distance, position);
-    route.sampleDirection(distance, direction);
-    placements.push({ kind: "ring", position, direction });
+    placements.push(samplePlacement(route, distance, "ring"));
+    const arrowDistance =
+      distance + settings.spacingMeters * settings.arrowPhaseFraction;
     if (
-      distance < route.exerciseStartMeters ||
-      distance > route.exerciseEndMeters
+      arrowDistance < route.exerciseStartMeters ||
+      arrowDistance > route.exerciseEndMeters
     )
       continue;
-    outside = sampleOutside(route, distance, outside);
-    placements.push({
-      kind: "arrow",
-      position: position
-        .clone()
-        .addScaledVector(outside, settings.arrowOffsetMeters),
-      direction,
-    });
+    outside = sampleOutside(route, arrowDistance, outside);
+    const arrow = samplePlacement(route, arrowDistance, "arrow");
+    arrow.position.addScaledVector(outside, settings.arrowOffsetMeters);
+    placements.push(arrow);
   }
   return placements;
+}
+
+function samplePlacement(
+  route: ExerciseRoute,
+  distance: number,
+  kind: ElementPlacement["kind"],
+): ElementPlacement {
+  const position = new Vector3();
+  const direction = new Vector3();
+  route.sample(distance, position);
+  route.sampleDirection(distance, direction);
+  return { kind, position, direction, routeDistanceMeters: distance };
 }
 
 function sampleOutside(
@@ -58,6 +64,9 @@ function sampleOutside(
     after,
   );
   const inward = after.sub(before);
+  const tangent = new Vector3();
+  route.sampleDirection(distance, tangent);
+  inward.addScaledVector(tangent, -inward.dot(tangent));
   return inward.lengthSq() > SETTINGS.curvatureEpsilon
     ? inward.normalize().negate()
     : fallback;
@@ -68,7 +77,10 @@ function validateSpacing(settings: ElementSettings): void {
     !Number.isFinite(settings.spacingMeters) ||
     !Number.isFinite(settings.firstMeters) ||
     settings.spacingMeters <= 0 ||
-    settings.firstMeters < 0
+    settings.firstMeters < 0 ||
+    !Number.isFinite(settings.arrowPhaseFraction) ||
+    settings.arrowPhaseFraction < 0 ||
+    settings.arrowPhaseFraction >= 1
   )
     throw new RangeError("Invalid element spacing");
 }

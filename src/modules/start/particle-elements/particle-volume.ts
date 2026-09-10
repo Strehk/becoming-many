@@ -10,10 +10,17 @@ export function fillParticleVolume(
 ): BufferGeometry {
   const positions = geometry.getAttribute("position");
   const opacity = new Float32Array(positions.count);
+  const sizes = geometry.getAttribute("pathParticleSize");
   const random = createRandom(settings.seed);
   const offset = new Vector3();
   for (let index = 0; index < positions.count; index++) {
-    opacity[index] = sampleVolume(settings, random, offset);
+    const particleOpacity = sampleVolume(settings, random, offset);
+    opacity[index] = particleOpacity;
+    const scale =
+      particleOpacity === settings.coreOpacity
+        ? settings.coreSizeScale
+        : settings.haloSizeScale;
+    if (sizes) sizes.setX(index, sizes.getX(index) * scale);
     positions.setXYZ(
       index,
       positions.getX(index) + offset.x,
@@ -62,31 +69,50 @@ function createRandom(seed: number): () => number {
 /** Extend an injected material; ownership and its existing wind/size treatment are preserved. */
 export function createVolumeMaterial(
   material: PathParticleMaterial,
+  settings: VolumeSettings,
 ): PathParticleMaterial {
   const points = material.pointsMaterial;
   const compileBase = points.onBeforeCompile.bind(points);
   const baseKey = points.customProgramCacheKey();
   points.onBeforeCompile = (shader, renderer) => {
     compileBase(shader, renderer);
-    shader.vertexShader = shader.vertexShader
-      .replace(
-        "#include <common>",
-        "#include <common>\nattribute float elementOpacity;\nvarying float volumeOpacity;",
-      )
-      .replace(
-        "#include <begin_vertex>",
-        "#include <begin_vertex>\nvolumeOpacity = elementOpacity;",
-      );
-    shader.fragmentShader = shader.fragmentShader
-      .replace(
-        "#include <common>",
-        "#include <common>\nvarying float volumeOpacity;",
-      )
-      .replace(
-        "#include <clipping_planes_fragment>",
-        "#include <clipping_planes_fragment>\ndiffuseColor.a *= volumeOpacity;",
-      );
+    shader.uniforms.elementRelief = { value: settings.relief };
+    shader.vertexShader = patchVolumeVertex(shader.vertexShader);
+    shader.fragmentShader = patchVolumeFragment(shader.fragmentShader);
   };
-  points.customProgramCacheKey = () => `${baseKey}:particle-volume-v1`;
+  points.customProgramCacheKey = () => `${baseKey}:particle-volume-v2`;
   return material;
+}
+
+function patchVolumeVertex(source: string): string {
+  return source
+    .replace(
+      "#include <common>",
+      "#include <common>\nattribute float elementOpacity;\nvarying float volumeOpacity;",
+    )
+    .replace(
+      "#include <begin_vertex>",
+      "#include <begin_vertex>\nvolumeOpacity = elementOpacity;",
+    );
+}
+
+function patchVolumeFragment(source: string): string {
+  return source
+    .replace(
+      "#include <common>",
+      "#include <common>\nvarying float volumeOpacity;\nuniform float elementRelief;",
+    )
+    .replace(
+      "#include <clipping_planes_fragment>",
+      "#include <clipping_planes_fragment>\ndiffuseColor.a *= volumeOpacity;",
+    )
+    .replace(
+      "#include <color_fragment>",
+      `#include <color_fragment>
+        vec2 disc = gl_PointCoord * 2.0 - 1.0;
+        vec3 normal = vec3(disc.x, -disc.y, sqrt(max(0.0, 1.0 - dot(disc, disc))));
+        float light = max(0.0, dot(normal, normalize(vec3(-0.45, 0.65, 0.65))));
+        diffuseColor.rgb += vec3(pow(light, 2.0) * elementRelief);
+      `,
+    );
 }

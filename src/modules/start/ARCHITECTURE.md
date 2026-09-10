@@ -102,10 +102,10 @@ injects the existing particle geometry/material factories, preserving the same
 size, color, scatter and ambient wind as the route's point-cloud style.
 
 Each exercise's `elements` settings specify first distance, interval, ring radius,
-arrow length and exterior offset. Placement samples the generated route: rings
+arrow length, exterior offset and phase along the interval. Placement samples the generated route: rings
 are centered on its visible line and their planes are perpendicular to travel.
-Arrows appear during the curved exercise, point along its tangent, and are offset
-opposite the tangent change. No camera-facing rotation changes their meaning.
+Arrows appear between ring stations during the curved exercise, point along its tangent, and are offset
+opposite the tangent change projected onto the travel-normal plane. No camera-facing rotation changes their meaning.
 The current horizontal course is supported; generalized banked/vertical courses
 would need an explicit frame/up-vector contract. Placement is deterministic for
 the same route and parameters and capped at twelve ring/arrow pairs per section.
@@ -115,7 +115,10 @@ with interior rows. `particle-volume.ts` expands both shape samplers into real
 three-dimensional resting positions: a dense core and a broader sparse halo.
 The halo uses lower per-particle opacity while the pigment stays black. Shared
 `elementVolume` settings control thickness and softness independently of animation
-and physical displacement. Volume treatment adds no draw call or frame-time
+and physical displacement. Core particles are larger than halo dust and use a
+subtle camera-space spherical shading cue; the base pigment remains black.
+This is a point-sprite approximation, not scene lighting or geometric spheres.
+Volume treatment adds no draw call or frame-time
 particle allocations.
 
 The shared `elementAnimation`, `elementSimulation`, and `elementParticles`
@@ -127,7 +130,8 @@ appear together and retire with that section or during route recovery.
 The simulation borrows actual world-space flight positions, never gaze. A swept
 segment applies a local impulse in travel direction; spring force and damping
 return displaced particles to their resting shape. Standing still or teleporting
-does not produce wind. Time steps and displacement are capped. Ambient drift
+does not produce wind. Time steps and displacement are capped. Untouched particles skip spring updates;
+damping is calculated once per frame for the entire cloud. Ambient drift
 continues through the reused GPU material; the bounded flight response uses
 reused CPU buffers and one dynamic position upload per visible section.
 

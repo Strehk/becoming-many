@@ -124,6 +124,7 @@ class StartModule implements WorldModule {
       createMaterial: () =>
         createVolumeMaterial(
           createPathParticleMaterial(createAirParticleMaterial),
+          START_SETTINGS.elementVolume,
         ),
     });
   }
