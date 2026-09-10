@@ -1,5 +1,8 @@
 import type { BufferGeometry, Vector3 } from "three";
-import type { FlightRoute } from "../flight-path/particle-contract";
+import type {
+  FlightRoute,
+  ParticleRange,
+} from "../flight-path/particle-contract";
 
 // 1. Shape and procedural placement: borrowed samples, measured in meters
 export interface ElementPlacement {
@@ -49,3 +52,13 @@ export interface ParticleSimulation {
 }
 /** Returns owned compatible particle attributes; the display disposes each result. */
 export type ElementGeometryFactory = (shape: FlightRoute) => BufferGeometry;
+
+// 3. Shape-independent volume appearance, sampled once during generation
+export interface VolumeSettings {
+  readonly coreRadiusMeters: number;
+  readonly haloRadiusMeters: number;
+  readonly haloFraction: number;
+  readonly coreOpacity: number;
+  readonly haloOpacity: ParticleRange;
+  readonly seed: number;
+}

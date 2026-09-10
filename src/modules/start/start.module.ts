@@ -22,6 +22,10 @@ import { createParticleAnimation } from "./particle-elements/particle-animation"
 import type { ElementSource } from "./particle-elements/particle-contract";
 import { createParticleElements } from "./particle-elements/particle-elements";
 import { createParticleSimulation } from "./particle-elements/particle-simulation";
+import {
+  createVolumeMaterial,
+  fillParticleVolume,
+} from "./particle-elements/particle-volume";
 import { createRingShape } from "./particle-elements/ring-shape";
 import {
   type AirParticlesModuleOptions,
@@ -113,9 +117,14 @@ class StartModule implements WorldModule {
       simulation: createParticleSimulation(START_SETTINGS.elementSimulation),
       readPosition: () => this.readPosition(),
       createGeometry: (shape) =>
-        createPathParticleGeometry(shape, START_SETTINGS.elementParticles),
+        fillParticleVolume(
+          createPathParticleGeometry(shape, START_SETTINGS.elementParticles),
+          START_SETTINGS.elementVolume,
+        ),
       createMaterial: () =>
-        createPathParticleMaterial(createAirParticleMaterial),
+        createVolumeMaterial(
+          createPathParticleMaterial(createAirParticleMaterial),
+        ),
     });
   }
 

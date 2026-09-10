@@ -23,11 +23,19 @@ export const START_SETTINGS = {
     maximumOffsetMeters: 0.8,
     maximumDeltaSeconds: 0.05,
   },
+  elementVolume: {
+    coreRadiusMeters: 0.28,
+    haloRadiusMeters: 0.9,
+    haloFraction: 0.25,
+    coreOpacity: 0.85,
+    haloOpacity: { from: 0.08, to: 0.3 },
+    seed: 137,
+  },
   elementParticles: {
-    densityPerMeter: { from: 24, to: 36 },
+    densityPerMeter: { from: 48, to: 64 },
     color: { from: 0x000000, to: 0x000000 },
-    sizeMeters: { from: 0.03, to: 0.06 },
-    spreadMeters: 0.18,
+    sizeMeters: { from: 0.025, to: 0.05 },
+    spreadMeters: 0,
     seed: 43,
   },
 };

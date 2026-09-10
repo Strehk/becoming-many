@@ -30,6 +30,7 @@ route for that definition. A separate chunk engine is unnecessary for the MVP.
 | `particle-elements/ring-shape.ts` | Sample only the local ring shape, with an empty center. |
 | `particle-elements/arrow-shape.ts` | Sample only a filled arrow silhouette, including shaft and head. |
 | `particle-elements/element-placement.ts` | Derive ring centers and exterior arrow placements from the sampled route. |
+| `particle-elements/particle-volume.ts` | Add spatial core/halo distribution and per-particle opacity to either shape. |
 | `particle-elements/particle-animation.ts` | Shape-independent emergence and dissolution envelope. |
 | `particle-elements/particle-simulation.ts` | Movement-only flight impulse and damped return to resting positions. |
 | `particle-elements/particle-elements.ts` | Own combined particle buffers, rendering and display lifetime. |
@@ -110,7 +111,12 @@ would need an explicit frame/up-vector contract. Placement is deterministic for
 the same route and parameters and capped at twelve ring/arrow pairs per section.
 
 Rings and arrows use black particles. The arrow sampler fills its shaft and head
-with interior rows; particle scatter gives the filled silhouette a soft depth.
+with interior rows. `particle-volume.ts` expands both shape samplers into real
+three-dimensional resting positions: a dense core and a broader sparse halo.
+The halo uses lower per-particle opacity while the pigment stays black. Shared
+`elementVolume` settings control thickness and softness independently of animation
+and physical displacement. Volume treatment adds no draw call or frame-time
+particle allocations.
 
 The shared `elementAnimation`, `elementSimulation`, and `elementParticles`
 settings are in `start-exercises.ts`. Emergence gathers scattered particles into
