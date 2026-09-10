@@ -6,7 +6,7 @@
  */
 
 import { describe, expect, test } from "bun:test";
-import { Matrix4, type Object3D, Scene } from "three";
+import { Matrix4, type Object3D, Scene, Vector3 } from "three";
 import { createFlightControl } from "../../src/control/flight-control";
 import { FLIGHT_SETTINGS } from "../../src/control/flight-settings";
 import {
@@ -36,9 +36,7 @@ describe("VR flight", () => {
     expect(viewer.group.position.z).toBeCloseTo(
       -10 * FLIGHT_SETTINGS.glideSpeedMetersPerSecond,
     );
-    expect(viewer.group.position.y).toBeCloseTo(
-      -10 * FLIGHT_SETTINGS.neutralDescentMetersPerSecond,
-    );
+    expect(viewer.group.position.y).toBeCloseTo(0);
     expect(viewer.viewpoint.worldPosition.z).toBeGreaterThan(
       viewer.group.position.z,
     );
@@ -84,3 +82,30 @@ function headPoseOver(rigWorldMatrix: Matrix4): Matrix4 {
     new Matrix4().makeTranslation(0, STANDING_HEIGHT_METERS, 0),
   );
 }
+
+test("body pitch changes travel without doubling the tracked head tilt", () => {
+  const viewer = createViewerRig();
+  const scene = new Scene();
+  scene.add(viewer.group);
+  const flight = createFlightControl(viewer.group, [
+    { readInput: () => ({ forwardTilt: 0.5, rightTilt: 0 }) },
+  ]);
+  viewer.camera.rotation.x = -Math.PI / 8;
+  viewer.camera.rotation.y = Math.PI / 3;
+  const localPose = viewer.camera.quaternion.clone();
+  viewer.beginFrame();
+  flight.update(1);
+  viewer.publish();
+  const headPose = new Matrix4().makeRotationFromQuaternion(localPose);
+  writeHeadsetPose(
+    viewer.camera,
+    headPoseOver(viewer.group.matrixWorld).multiply(headPose),
+  );
+  expect(viewer.camera.quaternion.angleTo(localPose)).toBeLessThan(1e-7);
+  expect(viewer.group.quaternion.toArray()).toEqual([0, 0, 0, 1]);
+  expect(viewer.viewpoint.worldFlightDirection?.y).toBeCloseTo(
+    -Math.sin(Math.PI / 8),
+  );
+  expect(viewer.group.position.x).toBeCloseTo(0);
+  expect(viewer.camera.getWorldDirection(new Vector3()).x).not.toBeCloseTo(0);
+});

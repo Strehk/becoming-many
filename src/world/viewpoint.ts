@@ -5,6 +5,7 @@ export interface Viewpoint {
   readonly worldPosition: Readonly<Vector3>;
   /** Rig motion excludes the local head pose and pitch assistance. */
   readonly worldFlightPosition?: Readonly<Vector3>;
+  /** Actual frame displacement, normalized after height limits; rig heading at rest. */
   readonly worldFlightDirection?: Readonly<Vector3>;
   readonly worldDirection: Readonly<Vector3>;
   readonly worldUp: Readonly<Vector3>;

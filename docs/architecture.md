@@ -102,13 +102,17 @@ unchanged. This behavior runs inside the same source read and creates no timer,
 runtime, or second loop.
 
 Control owns the one flight model that mutates the viewer rig. Each live update
-applies continuous forward thrust plus the combined tilt. Mouse and headset pose
-change only the camera's local view and publish no flight axes, so looking around
+applies constant speed along a path whose pitch is set by the combined forward
+tilt (±45 degrees); neutral tilt flies level. Side tilt sets the yaw rate.
+Circular-arc integration preserves the same held-input path across frame rates.
+Mouse and headset pose change only the camera's local view and publish no flight axes, so looking around
 cannot alter the trajectory. Run owns frame integration, active speed, and
 height limits; Composition owns source construction and wiring. World publishes
 the resulting `worldFlightPosition` and `worldFlightDirection` alongside local
-eye facts. The proposed visible Start prediction is outside this refactor; a
-later implementation consumes actual rig movement instead of adding flight
+eye facts. Direction is the normalized displacement captured within the current
+frame after height limits, with rig heading as the stationary fallback. Resets
+between frames do not become flight displacement. The proposed visible Start
+prediction is outside this refactor; a later implementation consumes actual rig movement instead of adding flight
 physics, a runtime, or a loop. Show owns time, language, narration, and
 presentation policy. Content and Sound consume injected facts without reaching
 into those implementations.

@@ -7,8 +7,6 @@ interface FlightTransform {
   readonly quaternion: Quaternion;
 }
 
-const MINIMUM_PLANAR_DIRECTION_LENGTH = 1e-6;
-
 /** Own the only rig-mutating flight model and combine all connected sources. */
 export function createFlightControl(
   flight: FlightTransform,
@@ -24,30 +22,33 @@ export function createFlightControl(
       deltaSeconds,
       glideSpeedMetersPerSecond = FLIGHT_SETTINGS.glideSpeedMetersPerSecond,
     ): void {
-      readCombinedInput(sources, combinedInput, deltaSeconds);
-      yawStep.setFromAxisAngle(
-        worldUp,
-        -combinedInput.rightTilt *
-          FLIGHT_SETTINGS.yawRateRadiansPerSecond *
-          deltaSeconds,
-      );
-      flight.quaternion.premultiply(yawStep);
+      const elapsedSeconds = validNonnegative(deltaSeconds);
+      readCombinedInput(sources, combinedInput, elapsedSeconds);
+      const distance =
+        validNonnegative(glideSpeedMetersPerSecond) * elapsedSeconds;
+      if (distance === 0) return;
 
+      const pitch =
+        -combinedInput.forwardTilt * FLIGHT_SETTINGS.maximumPitchRadians;
+      const halfTurn =
+        (-combinedInput.rightTilt *
+          FLIGHT_SETTINGS.yawRateRadiansPerSecond *
+          elapsedSeconds) /
+        2;
+      yawStep.setFromAxisAngle(worldUp, halfTurn);
+      flight.quaternion.premultiply(yawStep).normalize();
       glideDirection.set(0, 0, -1).applyQuaternion(flight.quaternion);
       glideDirection.y = 0;
-      const planarLength = glideDirection.length();
-      if (planarLength > MINIMUM_PLANAR_DIRECTION_LENGTH) {
-        glideDirection.divideScalar(planarLength);
-        flight.position.addScaledVector(
-          glideDirection,
-          glideSpeedMetersPerSecond * deltaSeconds,
-        );
-      }
+      glideDirection.normalize();
 
-      flight.position.y +=
-        (-combinedInput.forwardTilt * FLIGHT_SETTINGS.climbRateMetersPerSecond -
-          FLIGHT_SETTINGS.neutralDescentMetersPerSecond) *
-        deltaSeconds;
+      // Integrate the circular arc at its midpoint, including its chord length.
+      const chordScale = halfTurn === 0 ? 1 : Math.sin(halfTurn) / halfTurn;
+      flight.position.addScaledVector(
+        glideDirection,
+        distance * Math.cos(pitch) * chordScale,
+      );
+      flight.position.y += distance * Math.sin(pitch);
+      flight.quaternion.premultiply(yawStep).normalize();
     },
   };
 }
@@ -61,8 +62,12 @@ function readCombinedInput(
   combined.rightTilt = 0;
   for (const source of sources) {
     const input = source.readInput(deltaSeconds);
-    combined.forwardTilt += input.forwardTilt;
-    combined.rightTilt += input.rightTilt;
+    combined.forwardTilt += Number.isFinite(input.forwardTilt)
+      ? input.forwardTilt
+      : 0;
+    combined.rightTilt += Number.isFinite(input.rightTilt)
+      ? input.rightTilt
+      : 0;
   }
   combined.forwardTilt = clampTilt(combined.forwardTilt);
   combined.rightTilt = clampTilt(combined.rightTilt);
@@ -70,4 +75,8 @@ function readCombinedInput(
 
 function clampTilt(tilt: number): number {
   return Math.max(-1, Math.min(1, tilt));
+}
+
+function validNonnegative(value: number): number {
+  return Number.isFinite(value) && value > 0 ? value : 0;
 }

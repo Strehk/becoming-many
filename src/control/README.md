@@ -26,10 +26,12 @@ limits. Show transport and visitor replacement remain with Show and Run.
   or stale M5 input contributes neutral axes.
 - `flight-control.ts` combines every source and owns the only reusable flight
   math that mutates the viewer rig. Every live update applies continuous forward
-  thrust plus tilt. World-up yaw keeps a level horizon; climb is independent of
-  view pose. Neutral input still glides with the descent bias. Physical polarity
-  acceptance remains open.
-- `flight-settings.ts` holds shared glide, climb, yaw, descent and minimum
+  travel along a tilted path at constant speed. Forward/backward tilt selects a
+  held path angle within ±45 degrees; neutral input flies level. Right/left tilt
+  sets turn rate, integrated as a circular arc independent of frame subdivision.
+  The rig carries yaw only; physical headset tilt is never applied twice.
+  Flight angles are independent of gaze. Physical polarity acceptance remains open.
+- `flight-settings.ts` holds shared path speed, maximum pitch, yaw and minimum
   ground-clearance values. View pitch assistance belongs to World in
   `src/world/viewer-rig.ts` and also aligns Credits presentation.
 - `flight-pose.ts` contains the pure height clamp and origin/heading reset.

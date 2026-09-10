@@ -157,6 +157,7 @@ export function createWorld(
         ? frameControl.fixedDeltaSeconds
         : timer.getDelta();
 
+      viewer.beginFrame();
       updateWorld(deltaSeconds);
       if (lifetime.signal.aborted) return;
       // Navigation has moved the rig and nothing refreshes world matrices until

@@ -14,7 +14,12 @@ export interface FlightInputSource {
 }
 
 export interface FlightControl {
-  /** Combine connected sources and integrate one flight step on the rig. */
+  /**
+   * Integrate body-relative flight at a speed along the path in metres/second.
+   * Forward tilt sets a downward path angle; right tilt sets right-turn rate.
+   * Neutral flies level. Rig rotation contains yaw only: XR owns physical tilt.
+   * Invalid/nonpositive time or speed produces no movement. Samples are still read.
+   */
   readonly update: (
     deltaSeconds: number,
     glideSpeedMetersPerSecond?: number,

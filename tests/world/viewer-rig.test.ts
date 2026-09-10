@@ -188,3 +188,23 @@ test("flight facts exclude head translation, look and pitch assistance", () => {
   expect(viewer.viewpoint.worldFlightDirection?.y).toBeCloseTo(0);
   expect(viewer.viewpoint.worldPosition).not.toEqual(position);
 });
+
+test("flight direction measures the constrained step and excludes reset teleportation", () => {
+  const viewer = createViewerRig();
+  viewer.group.position.set(100, 20, -100);
+  viewer.publish();
+  viewer.group.position.set(0, 0, 0);
+  viewer.beginFrame();
+  viewer.group.position.set(0, -2, -4);
+  viewer.group.position.y = 0;
+  viewer.publish();
+  expect(viewer.viewpoint.worldFlightDirection?.toArray()).toEqual([0, 0, -1]);
+  viewer.beginFrame();
+  viewer.group.position.add(new Vector3(0, 2, -2));
+  viewer.publish();
+  expect(viewer.viewpoint.worldFlightDirection?.y).toBeCloseTo(Math.SQRT1_2);
+  expect(viewer.viewpoint.worldFlightDirection?.z).toBeCloseTo(-Math.SQRT1_2);
+  viewer.beginFrame();
+  viewer.publish();
+  expect(viewer.viewpoint.worldFlightDirection?.y).toBeCloseTo(0);
+});

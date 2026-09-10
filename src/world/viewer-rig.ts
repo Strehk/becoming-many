@@ -2,7 +2,7 @@ import { Group, MathUtils, PerspectiveCamera, Vector3 } from "three";
 
 export type ViewerRig = Pick<
   OwnedViewerRig,
-  "group" | "camera" | "viewpoint" | "publish"
+  "group" | "camera" | "viewpoint" | "beginFrame" | "publish"
 >;
 
 /** Parent-only assistance survives the head pose written by WebXR. */
@@ -17,6 +17,8 @@ class OwnedViewerRig {
   readonly group = new Group();
   readonly camera = new PerspectiveCamera();
   readonly viewpoint = createViewpoint(this.camera);
+  private readonly frameStartPosition = new Vector3();
+  private frameStarted = false;
 
   constructor(viewPitchAssistDegrees: number) {
     this.group.name = "ViewerRig";
@@ -27,15 +29,18 @@ class OwnedViewerRig {
     this.group.add(viewAssist);
   }
 
+  /** Capture before Run moves or constrains the rig; exclude between-frame resets. */
+  readonly beginFrame = (): void => {
+    this.group.getWorldPosition(this.frameStartPosition);
+    this.frameStarted = true;
+  };
+
   /** Refresh once; matrix reads avoid getWorldPosition's repeated tree updates. */
   readonly publish = (): void => {
     this.group.updateMatrixWorld(true);
     const { viewpoint, camera, group } = this;
     viewpoint.worldFlightPosition.setFromMatrixPosition(group.matrixWorld);
-    viewpoint.worldFlightDirection
-      .setFromMatrixColumn(group.matrixWorld, 2)
-      .negate()
-      .normalize();
+    this.publishFlightDirection();
     viewpoint.worldPosition.setFromMatrixPosition(camera.matrixWorld);
     viewpoint.worldDirection
       .setFromMatrixColumn(camera.matrixWorld, 2)
@@ -44,6 +49,23 @@ class OwnedViewerRig {
     viewpoint.worldUp.setFromMatrixColumn(camera.matrixWorld, 1).normalize();
     viewpoint.viewHalfAngleRadians = viewHalfAngle(camera);
   };
+
+  private publishFlightDirection(): void {
+    const { worldFlightPosition, worldFlightDirection } = this.viewpoint;
+    if (this.frameStarted) {
+      worldFlightDirection.subVectors(
+        worldFlightPosition,
+        this.frameStartPosition,
+      );
+    }
+    if (!this.frameStarted || worldFlightDirection.lengthSq() === 0) {
+      worldFlightDirection
+        .setFromMatrixColumn(this.group.matrixWorld, 2)
+        .negate();
+    }
+    worldFlightDirection.normalize();
+    this.frameStarted = false;
+  }
 }
 
 function createViewpoint(camera: PerspectiveCamera) {

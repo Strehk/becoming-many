@@ -3,7 +3,6 @@ import { Group, PerspectiveCamera } from "three";
 import type { DesktopController } from "../../src/control/control-contract";
 import { createDesktopController } from "../../src/control/desktop-controller";
 import { createFlightControl } from "../../src/control/flight-control";
-import { FLIGHT_SETTINGS } from "../../src/control/flight-settings";
 
 /** Model pointer-lock events around real Three.js controls without rendering. */
 class PointerLockDocument extends EventTarget {
@@ -107,9 +106,6 @@ describe("desktop flight control", () => {
 
       flight.update(deltaSeconds);
 
-      const neutralHeight =
-        -FLIGHT_SETTINGS.neutralDescentMetersPerSecond * deltaSeconds;
-      expect(viewerRig.position.y).toBeGreaterThan(neutralHeight);
       expect(viewerRig.position.y).toBeGreaterThan(0);
     },
   );

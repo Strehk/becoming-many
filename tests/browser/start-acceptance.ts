@@ -68,9 +68,12 @@ export async function checkStartLevel(
   await captureParticles(page, `${artifactBase}-start-arrival.png`);
   for (const [name, pitch, roll, quality] of [
     ["invalid-input", 0, -DEFLECTION, 0],
-    ["forward-flight", -0.1, 0, 1],
-    ["turning-flight", -0.1, -DEFLECTION, 1],
+    ["forward-flight", 0, 0, 1],
+    ["turning-flight", 0, -DEFLECTION, 1],
+    ["left-turning-flight", 0, DEFLECTION, 1],
     ["climbing-flight", -DEFLECTION, 0, 1],
+    ["descending-flight", DEFLECTION, 0, 1],
+    ["centered-flight", 0, 0, 1],
   ] as const) {
     simulation.set(pitch, roll, quality);
     await page.waitForTimeout(FLIGHT_MILLISECONDS);

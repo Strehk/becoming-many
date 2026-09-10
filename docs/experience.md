@@ -38,8 +38,9 @@ concept and issues.
 
 Desktop development uses pointer-lock look and keyboard flight. W/↑ leans
 forward and descends, S/↓ leans backward and climbs, A/← leans left into a left
-turn, and D/→ leans right into a right turn. Mouse and headset movement change
-only the local view; they do not steer. Releasing a desktop flight key eases
+turn, and D/→ leans right into a right turn. Forward/backward tilt sets a held
+flight angle up to 45 degrees at constant path speed; centered input flies level.
+Mouse and headset movement change only the local view; they do not steer. Releasing a desktop flight key eases
 that keyboard tilt back to center over 0.25 seconds; M5 keeps its existing
 response.
 Keyboard and M5 can act together on the same global flight model in every
