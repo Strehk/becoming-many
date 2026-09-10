@@ -15,7 +15,11 @@ import { createRingShape } from "./ring-shape";
 for (const exercise of START_EXERCISES) {
   test(`${exercise.id}: rings center on route and arrows remain outside the turn`, () => {
     const route = createFlightRoute(exercise.route, 18);
-    const placements = placeElements(route, exercise.elements);
+    const settings = { ...exercise.elements, showArrows: true };
+    const placements = placeElements(route, settings);
+    expect(placeElements(route, exercise.elements)).toEqual(
+      placements.filter((placement) => placement.kind === "ring"),
+    );
     const rings = placements.filter((placement) => placement.kind === "ring");
     const arrows = placements.filter((placement) => placement.kind === "arrow");
     expect(arrows.length).toBeGreaterThan(0);
@@ -40,7 +44,7 @@ for (const exercise of START_EXERCISES) {
       expect(Math.sign(offset.x)).toBe(-exercise.route.turnSign);
       expect(Math.abs(offset.dot(arrow.direction))).toBeLessThan(0.01);
     }
-    expect(placeElements(route, exercise.elements)).toEqual(placements);
+    expect(placeElements(route, settings)).toEqual(placements);
   });
 }
 

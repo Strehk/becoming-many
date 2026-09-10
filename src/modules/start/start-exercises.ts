@@ -84,6 +84,7 @@ export const START_EXERCISES = [
       seed: 17,
     },
     elements: {
+      showArrows: false,
       firstMeters: 4,
       spacingMeters: 14,
       ringRadiusMeters: 3.6,
@@ -121,6 +122,7 @@ export const START_EXERCISES = [
       seed: 17,
     },
     elements: {
+      showArrows: false,
       firstMeters: 4,
       spacingMeters: 14,
       ringRadiusMeters: 3.6,

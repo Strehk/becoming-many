@@ -228,6 +228,9 @@ whether to document this as an intentional internal composition boundary or
 inject material creation through the center. A restructuring solely for symmetry
 is not currently justified.
 
+Arrows are disabled in the current exercises through `elements.showArrows`;
+only ring placements are generated.
+
 The route trail uses `START_SETTINGS.pathOpacity` as its maximum opacity.
 Reveal and retirement preserve this transparency.
 

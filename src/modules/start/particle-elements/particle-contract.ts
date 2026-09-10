@@ -12,6 +12,7 @@ export interface ElementPlacement {
   readonly direction: Vector3;
 }
 export interface ElementSettings {
+  readonly showArrows?: boolean;
   readonly spacingMeters: number;
   readonly firstMeters: number;
   readonly ringRadiusMeters: number;

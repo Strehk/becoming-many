@@ -21,6 +21,7 @@ export function placeElements(
     const distance = settings.firstMeters + index * settings.spacingMeters;
     if (distance >= route.lengthMeters) break;
     placements.push(samplePlacement(route, distance, "ring"));
+    if (settings.showArrows === false) continue;
     const arrowDistance =
       distance + settings.spacingMeters * settings.arrowPhaseFraction;
     if (
