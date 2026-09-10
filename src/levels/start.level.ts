@@ -11,6 +11,7 @@ export const level: LevelPreset = {
     color: 0xf0bc50,
     opacity: 0.6,
     lengthMeters: 14,
+    behindMeters: 4,
     widthMeters: 3,
     belowFlightMeters: 0.5,
   },

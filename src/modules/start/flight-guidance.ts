@@ -14,6 +14,7 @@ export interface FlightGuidanceParameters {
   readonly color: number;
   readonly opacity: number;
   readonly lengthMeters: number;
+  readonly behindMeters: number;
   readonly widthMeters: number;
   readonly belowFlightMeters: number;
 }
@@ -41,21 +42,7 @@ class FlightGuidance implements WorldModule {
   readonly load = (): void => {
     if (this.road) return;
     const { parameters, scene } = this.options;
-    const geometry = new PlaneGeometry(
-      parameters.widthMeters,
-      parameters.lengthMeters,
-    );
-    geometry
-      .rotateX(-Math.PI / 2)
-      .translate(0, 0, -parameters.lengthMeters / 2 - 0.1);
-    // Far corners are transparent; near corners retain the authored opacity.
-    geometry.setAttribute(
-      "color",
-      new Float32BufferAttribute(
-        [1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1],
-        4,
-      ),
-    );
+    const geometry = createRoadGeometry(parameters);
     const material = new MeshBasicMaterial({
       color: parameters.color,
       opacity: parameters.opacity,
@@ -100,4 +87,33 @@ class FlightGuidance implements WorldModule {
     this.road.material.dispose();
     this.road = undefined;
   };
+}
+
+// Vertex opacity emphasizes the edges and fades both ends without a custom shader.
+function createRoadGeometry(
+  parameters: FlightGuidanceParameters,
+): PlaneGeometry {
+  const { widthMeters, lengthMeters, behindMeters } = parameters;
+  const geometry = new PlaneGeometry(
+    widthMeters,
+    lengthMeters + behindMeters,
+    8,
+    24,
+  );
+  geometry
+    .rotateX(-Math.PI / 2)
+    .translate(0, 0, (behindMeters - lengthMeters) / 2);
+  const positions = geometry.getAttribute("position");
+  const colors = new Float32BufferAttribute(positions.count * 4, 4);
+  for (let index = 0; index < positions.count; index++) {
+    const across = Math.abs(positions.getX(index)) / (widthMeters / 2);
+    const z = positions.getZ(index);
+    const reach = z > 0 ? behindMeters : lengthMeters;
+    const fade = Math.max(0, 1 - Math.abs(z) / reach) ** 3;
+    const edge = Math.exp(-(((across - 0.8) / 0.14) ** 2));
+    const opacity = (0.025 + edge) * Math.min(1, (1 - across) * 4) * fade;
+    colors.setXYZW(index, 1, 1, 1, opacity);
+  }
+  geometry.setAttribute("color", colors);
+  return geometry;
 }

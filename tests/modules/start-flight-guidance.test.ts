@@ -61,13 +61,14 @@ test("guidance reuses resources and disposes each loaded lifetime once", () => {
   module.load();
   module.load();
   const mesh = scene.children[0] as Mesh;
+  const geometry = mesh.geometry;
   let disposals = 0;
   mesh.geometry.addEventListener("dispose", () => disposals++);
   expect(mesh.visible).toBe(false);
   module.activate();
   for (let frame = 0; frame < 900; frame++) module.update?.(1 / 90);
   expect(scene.children).toEqual([mesh]);
-  expect(mesh.geometry.getAttribute("position").count).toBe(4);
+  expect(mesh.geometry).toBe(geometry);
   module.deactivate();
   expect(mesh.visible).toBe(false);
   module.unload();
