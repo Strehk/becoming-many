@@ -146,3 +146,28 @@ test("rings occupy only exercises, leaving a continuous ring-free transition", (
     }
   }
 });
+
+test("streamed reveal distances remain continuous across generation slices", () => {
+  const straight = createFlightEntry(11.5, new Vector3(0, 0, -1));
+  const parameters = {
+    ...START_EXERCISES[0].particles,
+    densityPerMeter: { from: 4, to: 4 },
+    spreadMeters: 0,
+  };
+  const job = createParticleGeneration({
+    route: straight,
+    maximumDensity: 4,
+    metersPerStep: 4,
+    createSlice: (slice) => createPathParticleGeometry(slice, parameters),
+  });
+  while (!job.isReady()) job.step();
+  const geometry = job.takeGeometry();
+  const distances = geometry.getAttribute("routeDistance");
+  const positions = geometry.getAttribute("position");
+  expect(geometry.drawRange.count).toBe(46);
+  for (let index = 0; index < geometry.drawRange.count; index++) {
+    expect(distances.getX(index)).toBeCloseTo((index + 0.5) / 4);
+    expect(distances.getX(index)).toBeCloseTo(-positions.getZ(index));
+  }
+  geometry.dispose();
+});

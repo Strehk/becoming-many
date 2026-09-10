@@ -30,6 +30,7 @@ const SCATTER_PHASE = 12.9898;
 const MAXIMUM_PARTICLES = 20_000;
 const MAXIMUM_GRAINS_PER_SAMPLE = 16;
 interface ElementOptions {
+  readonly reveal?: import("./particle-contract").ElementReveal;
   readonly scene: Scene;
   readonly grainsPerSample: number;
   readonly belowFlightMeters: number;
@@ -52,6 +53,7 @@ class ParticleElements {
   private cloud: Points | undefined;
   private material: PathParticleMaterial | undefined;
   private targets: Float32Array = new Float32Array(0);
+  private readFront: () => number = () => Infinity;
   private scatter = new Float32Array(0);
   constructor(private readonly options: ElementOptions) {
     if (
@@ -77,6 +79,7 @@ class ParticleElements {
   };
   readonly deactivate = (): void => {
     this.options.animation.reset();
+    this.options.reveal?.reset([]);
     this.options.light.reset(0);
     this.options.retirement.reset([]);
     if (this.cloud) this.cloud.visible = false;
@@ -97,6 +100,7 @@ class ParticleElements {
   readonly show = (
     sources: readonly ElementSource[],
     pose: ExercisePose,
+    readFront: () => number = () => Infinity,
   ): void => {
     if (!this.cloud)
       throw new Error("Load particle elements before showing them");
@@ -104,6 +108,10 @@ class ParticleElements {
       this.deactivate();
       return;
     }
+    this.readFront = readFront;
+    this.options.reveal?.reset(
+      sources.map((source) => source.placement.routeDistanceMeters),
+    );
     const geometry = this.createGeometry(sources, pose);
     this.cloud.geometry.dispose();
     this.cloud.geometry = geometry;
@@ -242,6 +250,7 @@ class ParticleElements {
     mode: ElementRetirementMode = "completed",
     durationSeconds?: number,
   ): void => {
+    this.options.reveal?.cancel();
     this.options.retirement.request(mode, durationSeconds);
   };
   readonly update = (seconds: number): void => {
@@ -250,6 +259,7 @@ class ParticleElements {
       position: this.options.readPosition(),
       direction: this.options.readDirection(),
     });
+    this.options.reveal?.update(seconds, this.readFront());
     const presence = this.options.animation.update(seconds);
     this.material.pointsMaterial.opacity = presence;
     this.material.update(seconds);
@@ -257,15 +267,24 @@ class ParticleElements {
       seconds,
       this.options.readPosition(),
     );
+    this.updatePositions(offsets, presence);
+
+    if (this.options.retirement.isFinished()) this.deactivate();
+  };
+  private updatePositions(offsets: Float32Array, presence: number): void {
+    if (!this.cloud) return;
     const attribute = this.cloud.geometry.getAttribute("elementCenter");
+    const indices = this.cloud.geometry.getAttribute("elementIndex");
     const positions = attribute.array;
     for (let index = 0; index < positions.length; index++) {
+      const reveal =
+        this.options.reveal?.presence[indices.getX(Math.floor(index / 3))] ??
+        presence;
       positions[index] =
         (this.targets[index] ?? 0) +
         (offsets[index] ?? 0) +
-        (this.scatter[index] ?? 0) * (1 - presence);
+        (this.scatter[index] ?? 0) * (1 - reveal);
     }
     attribute.needsUpdate = true;
-    if (this.options.retirement.isFinished()) this.deactivate();
-  };
+  }
 }

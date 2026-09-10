@@ -1,6 +1,7 @@
 import { expect, test } from "bun:test";
 import { type Points, type PointsMaterial, Scene, Vector3 } from "three";
 import { createStartModule } from "../../../src/modules/start/start.module";
+import { START_SETTINGS } from "../../../src/modules/start/start-exercises";
 import { StreamQueue } from "../../../src/world/stream-queue";
 
 // Test-owned presentation keeps this fixture independent of external level recipes.
@@ -46,7 +47,17 @@ function createViewpoint() {
   };
 }
 
-function createFixture(warmFrames = 125) {
+// Allow the entry's full soft edge to reach the first section before testing flight.
+const ENTRY_READY_FRAMES =
+  Math.ceil(
+    ((START_SETTINGS.entryLineMeters +
+      START_SETTINGS.entryBehindMeters +
+      START_SETTINGS.pathGrowth.softEdgeMeters) /
+      START_SETTINGS.pathGrowth.speedMetersPerSecond) *
+      60,
+  ) + 2;
+
+function createFixture(warmFrames = ENTRY_READY_FRAMES) {
   const scene = new Scene();
   const viewpoint = createViewpoint();
   const queue = new StreamQueue({ budgetMilliseconds: 5, capacity: 256 });

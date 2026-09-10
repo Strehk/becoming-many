@@ -83,6 +83,7 @@ interface LightOptions {
   readonly settings: ParticleLightSettings;
   readonly animation: ParticleLight;
   readonly retirement: ElementRetirement;
+  readonly reveal?: Float32Array;
 }
 
 // 2. Per-particle opacity preserves black pigment while softening the outer cloud
@@ -100,6 +101,11 @@ export function createVolumeMaterial(
     compileBase(shader, renderer);
     Object.assign(shader.uniforms, uniforms);
     shader.uniforms.elementPresence = { value: light.retirement.presence };
+    shader.uniforms.elementReveal = {
+      value:
+        light.reveal ??
+        new Float32Array(light.retirement.presence.length).fill(1),
+    };
     shader.vertexShader = patchVolumeVertex(shader.vertexShader).replaceAll(
       "ELEMENT_CAPACITY",
       String(light.settings.capacity),

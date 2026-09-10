@@ -155,3 +155,11 @@ export interface ElementRetirement {
   ) => void;
   readonly isFinished: () => boolean;
 }
+
+/** Bounded reveal observations; retirement independently multiplies this presence. */
+export interface ElementReveal {
+  readonly presence: Float32Array;
+  readonly reset: (distances: readonly number[]) => void;
+  readonly update: (seconds: number, frontMeters: number) => void;
+  readonly cancel: () => void;
+}

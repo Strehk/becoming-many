@@ -21,6 +21,8 @@ export const START_SETTINGS = {
   elementPoolSize: 4,
   generationMetersPerStep: 4,
   revealSeconds: 0.8,
+  pathGrowth: { speedMetersPerSecond: 12, softEdgeMeters: 3 },
+  elementReveal: { capacity: 24, fadeSeconds: 2, speedMetersPerSecond: 12 },
   elementAnimation: {
     revealSeconds: 1.3,
     dissolveSeconds: 1.2,
@@ -82,9 +84,9 @@ export const START_SETTINGS = {
 
 // 2. Exercise sequence
 // Speech order is right, left, climb, descent. Praise requires prior success.
-// Radius tuning: new spacing / (old spacing / old radius + radians(5)).
-// All lengths are meters. Ring spacing is 70% of the previous course;
-// Entry/exit lengths are halved. Speech, emergence timing and flight speed stay intact.
+// All lengths are meters. Compact spacing preserves the opening turn per ring.
+// Later exercises add four degrees per ring interval; vertical arcs return to level.
+// Speech cues and flight speed remain independent of presentation growth.
 export const START_EXERCISES = [
   {
     id: "right",
@@ -103,7 +105,7 @@ export const START_EXERCISES = [
       straightMeters: 3,
       outroMeters: 9,
       turnSign: 1,
-      turnRadiusMeters: { from: 16.6041, to: 18.0944 },
+      turnRadiusMeters: { from: 14.1135, to: 15.3802 },
       turnDegrees: { from: 110, to: 110 },
     },
     particles: {
@@ -115,10 +117,10 @@ export const START_EXERCISES = [
     },
     elements: {
       showArrows: false,
-      entryArrow: { distanceMeters: 12, aboveMeters: 1.8, sideMeters: -5 },
+      entryArrow: { distanceMeters: 10, aboveMeters: 1.8, sideMeters: -5 },
       ringCount: 3,
-      firstMeters: 20,
-      spacingMeters: 5.6,
+      firstMeters: 18,
+      spacingMeters: 4.76,
       ringRadiusMeters: 3.6,
       arrowLengthMeters: 4.8,
       arrowOffsetMeters: 7,
@@ -134,7 +136,7 @@ export const START_EXERCISES = [
     },
     progress: {
       checkpointSpacingMeters: 2,
-      toleranceMeters: 12,
+      toleranceMeters: 10.2,
       extraTravelMeters: 7,
       maximumStepMeters: 3,
     },
@@ -152,8 +154,8 @@ export const START_EXERCISES = [
       straightMeters: 4,
       outroMeters: 12,
       turnSign: -1,
-      turnRadiusMeters: { from: 17.5102, to: 19.1758 },
-      turnDegrees: { from: 120, to: 120 },
+      turnRadiusMeters: { from: 12.67089, to: 13.68267 },
+      turnDegrees: { from: 140, to: 140 },
     },
     particles: {
       densityPerMeter: { from: 40, to: 68 },
@@ -166,7 +168,7 @@ export const START_EXERCISES = [
       showArrows: false,
       ringCount: 6,
       firstMeters: 4,
-      spacingMeters: 7,
+      spacingMeters: 5.95,
       ringRadiusMeters: 3.6,
       arrowLengthMeters: 4.6,
       arrowOffsetMeters: 7,
@@ -201,8 +203,8 @@ export const START_EXERCISES = [
       straightMeters: 6,
       outroMeters: 12,
       turnSign: 1,
-      turnRadiusMeters: { from: 32.9774, to: 33.9289 },
-      turnDegrees: { from: 32, to: 32 },
+      turnRadiusMeters: { from: 21.09333, to: 21.54806 },
+      turnDegrees: { from: 42, to: 42 },
     },
     particles: {
       densityPerMeter: { from: 40, to: 68 },
@@ -215,7 +217,7 @@ export const START_EXERCISES = [
       showArrows: false,
       ringCount: 6,
       firstMeters: 6,
-      spacingMeters: 7,
+      spacingMeters: 5.95,
       ringRadiusMeters: 3.6,
       arrowLengthMeters: 4.6,
       arrowOffsetMeters: 7,
@@ -250,8 +252,8 @@ export const START_EXERCISES = [
       straightMeters: 6,
       outroMeters: 12,
       turnSign: -1,
-      turnRadiusMeters: { from: 32.9774, to: 33.9289 },
-      turnDegrees: { from: 32, to: 32 },
+      turnRadiusMeters: { from: 21.09333, to: 21.54806 },
+      turnDegrees: { from: 42, to: 42 },
     },
     particles: {
       densityPerMeter: { from: 40, to: 68 },
@@ -264,7 +266,7 @@ export const START_EXERCISES = [
       showArrows: false,
       ringCount: 6,
       firstMeters: 6,
-      spacingMeters: 7,
+      spacingMeters: 5.95,
       ringRadiusMeters: 3.6,
       arrowLengthMeters: 4.6,
       arrowOffsetMeters: 7,

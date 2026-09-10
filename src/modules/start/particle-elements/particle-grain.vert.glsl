@@ -7,6 +7,7 @@ attribute float elementAxis;
 attribute float elementIndex;
 uniform vec2 elementEffects[ELEMENT_CAPACITY];
 uniform float elementPresence[ELEMENT_CAPACITY];
+uniform float elementReveal[ELEMENT_CAPACITY];
 uniform float elementGrainSpread;
 uniform float elementLightSizeBoost;
 uniform float elementAccentFraction;
@@ -23,6 +24,6 @@ vec3 placeElementGrain(float seed) {
   float wave = (elementAxis - elementEffect.x) / elementBandWidth;
   grainLight = exp(-wave * wave * 4.0) * elementEffect.y;
   grainGlass = 1.0 - step(elementGlassFraction, seed);
-  volumeOpacity = elementOpacity * elementPresence[int(elementIndex)];
+  volumeOpacity = elementOpacity * elementPresence[int(elementIndex)] * elementReveal[int(elementIndex)];
   return elementCenter + offset * elementGrainSpread * sqrt(seed);
 }

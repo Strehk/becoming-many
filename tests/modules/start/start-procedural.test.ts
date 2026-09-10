@@ -61,7 +61,17 @@ function createViewpoint() {
   };
 }
 
-function createFixture(warmFrames = 125, voice?: StartVoice) {
+// Allow the entry's full soft edge to reach the first section before testing flight.
+const ENTRY_READY_FRAMES =
+  Math.ceil(
+    ((START_SETTINGS.entryLineMeters +
+      START_SETTINGS.entryBehindMeters +
+      START_SETTINGS.pathGrowth.softEdgeMeters) /
+      START_SETTINGS.pathGrowth.speedMetersPerSecond) *
+      60,
+  ) + 2;
+
+function createFixture(warmFrames = ENTRY_READY_FRAMES, voice?: StartVoice) {
   const scene = new Scene();
   const viewpoint = createViewpoint();
   const queue = new StreamQueue({ budgetMilliseconds: 5, capacity: 256 });
@@ -312,6 +322,8 @@ test("native speech offset gates the right course and failure never releases rin
   expect(trails(fixture)).toHaveLength(0);
   playback.offsetSeconds = 14.72;
   for (let frame = 0; frame < 30; frame++) fixture.tick();
+  expect(trails(fixture)).toHaveLength(1);
+  for (let frame = 0; frame < ENTRY_READY_FRAMES; frame++) fixture.tick();
   expect(trails(fixture)).toHaveLength(2);
   expect(
     fixture.scene.getObjectByName("StartParticleElements"),

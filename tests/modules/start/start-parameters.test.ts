@@ -98,17 +98,17 @@ test("vertical lessons stay forward, respect pitch and finish level with correct
   }
 });
 
-test("compact course preserves ring counts with 30 percent less spacing and five degrees more curvature", () => {
+test("compact course tightens spacing by fifteen percent and increases only later curvature", () => {
   const previous = [
-    { spacing: 8, radii: [32, 36] },
-    { spacing: 10, radii: [32, 36] },
-    { spacing: 10, radii: [80, 84] },
-    { spacing: 10, radii: [80, 84] },
+    { spacing: 5.6, radii: [16.6041, 18.0944] },
+    { spacing: 7, radii: [17.5102, 19.1758] },
+    { spacing: 7, radii: [32.9774, 33.9289] },
+    { spacing: 7, radii: [32.9774, 33.9289] },
   ];
   START_EXERCISES.forEach((exercise, index) => {
     const before = previous[index];
     if (!before) throw new Error("Missing comparison course");
-    expect(exercise.elements.spacingMeters).toBeCloseTo(before.spacing * 0.7);
+    expect(exercise.elements.spacingMeters).toBeCloseTo(before.spacing * 0.85);
     [
       exercise.route.turnRadiusMeters.from,
       exercise.route.turnRadiusMeters.to,
@@ -120,7 +120,7 @@ test("compact course preserves ring counts with 30 percent less spacing and five
           before.spacing / oldRadius) *
           180) /
         Math.PI;
-      expect(difference).toBeCloseTo(5, 3);
+      expect(difference).toBeCloseTo(index === 0 ? 0 : 4, 3);
     });
   });
   expect(

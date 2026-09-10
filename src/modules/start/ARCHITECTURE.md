@@ -65,8 +65,8 @@ heading match the previous last point and heading, including local entry offsets
 `particle-generation.ts` generates four meters per StreamQueue step using an
 injected particle factory. The center enqueues work on the existing World queue,
 retries queue admission if full, and invalidates obsolete jobs on reset/unload.
-Finished successor lines appear during the exit area at full configured transparency; no new instruction pause or
-placement in front of the player interrupts a regular connection.
+Prepared successor lines grow forward after the previous reveal front reaches the seam.
+Generation stays independent of presentation; regular connections preserve position and tangent.
 
 Geometry follows one course; fixed rendering pools are only its presentation.
 The center owns four path displays and four element displays.
@@ -196,7 +196,7 @@ The shared `elementAnimation`, `elementSimulation`, and `elementParticles`
 settings are in `start-exercises.ts`. Emergence gathers scattered particles into
 their resting shape while increasing opacity. Dissolution reverses that effect.
 The same envelope applies to both shapes. In this MVP, a section's elements
-appear together and retire with that section or during route recovery.
+appear progressively along route distance after the speech cue and retire with that section or during route recovery.
 
 The simulation borrows actual world-space flight positions, never gaze. A swept
 segment applies a local impulse in travel direction; spring force and damping
@@ -324,7 +324,7 @@ disable variation; a fixed seed reproduces varied routes.
 | `route.turnRadiusMeters` | Curve radius; smaller is tighter | 16.60–19.18 m horizontal / 32.98–33.93 m vertical |
 | `route.straightMeters` / `outroMeters` | Ring-free entry and exit | 3–6 / 9–12 m |
 | `elements.ringCount` | Exact authored ring count, 0–12 | 3 right, 6 others |
-| `elements.spacingMeters` | Distance along the route between rings | 5.6 m right, 7 m others |
+| `elements.spacingMeters` | Distance along the route between rings | 4.76 m right, 5.95 m others |
 | `elements.firstMeters` | First ring route distance, clamped to exercise start | 12 m |
 | `elements.ringRadiusMeters` | Ring opening geometry radius | 3.6 m |
 | `particles` | Density, color, size and scatter ranges | Existing particle palette |
@@ -334,10 +334,18 @@ Ring count, spacing and route dimensions must agree. The last ring must fit
 inside the curved exercise: radius × angle in radians for horizontal turns,
 twice that length for the two-arc vertical profile. Invalid
 combinations fail before rendering instead of silently truncating the ring count.
-Six-ring sections span 35 m. All authored counts fit the configured arc lengths.
-Ring spacing is reduced by 30%; paired radius endpoints add five degrees of
-curvature per interval. Regular entry/exit distances are halved; the original 1.3 s ring emergence
-and flight speed are preserved. Native spoken-word markers and opening world reveal remain intact.
+Six-ring sections span 29.75 m. All authored counts fit the configured arc lengths.
+Ring spacing is another 15% shorter. The opening preserves its angular spacing;
+later exercises add four degrees per ring interval. Horizontal turns span 110°
+and 140°; vertical profiles rise or descend through 42° before returning level.
+Native spoken-word markers and flight speed remain intact.
+
+`START_SETTINGS.pathGrowth` controls the forward reveal speed (12 m/s) and soft
+leading edge (3 m). A route-distance shader reveals prepared geometry without
+allocating particles per frame. `elementReveal` controls ring growth speed and a
+2 s fade per element. Rings wait for both the cue and the fully revealed path at
+their station, then emerge in distance order. Retirement cancels pending reveals;
+reusing a display clears their state. The center connects these independent owners.
 Flight speed currently comes from `src/levels/start.level.ts` through the existing
 Level Runtime (`flightSpeedMetersPerSecond: 2`); it is not a particle parameter.
 

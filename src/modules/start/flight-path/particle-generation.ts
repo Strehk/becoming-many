@@ -22,6 +22,7 @@ function allocateGeometry(capacity: number): BufferGeometry {
   const geometry = new BufferGeometry();
   for (const [name, size] of Object.entries({
     position: 3,
+    routeDistance: 1,
     color: 3,
     pathParticleSize: 1,
     airParticleVisible: 1,
@@ -98,6 +99,11 @@ class ParticleGeneration {
         this.offset * target.itemSize,
       );
     }
+    const distances = this.geometry.getAttribute(
+      "routeDistance",
+    ) as Float32BufferAttribute;
+    for (let index = this.offset; index < this.offset + count; index++)
+      distances.setX(index, distances.getX(index) + this.distance);
     if (!slice.boundingSphere) slice.computeBoundingSphere();
     if (slice.boundingSphere) this.bounds.union(slice.boundingSphere);
     this.offset += count;

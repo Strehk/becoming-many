@@ -6,6 +6,10 @@ import type { PathParticleMaterial } from "./particle-contract";
 // 1. Presentation contract
 interface FlightPathOptions {
   readonly scene: Scene;
+  readonly growth?: {
+    readonly speedMetersPerSecond: number;
+    readonly softEdgeMeters: number;
+  };
   readonly belowFlightMeters: number;
   /** Maximum visible opacity; reveal and retirement multiply this value. */
   readonly opacity?: number;
@@ -22,6 +26,16 @@ export function createFlightPath(options: FlightPathOptions) {
 class FlightPath implements WorldModule {
   private cloud: Points<BufferGeometry, PointsMaterial> | undefined;
   private material: PathParticleMaterial | undefined;
+  private frontMeters = 0;
+  private routeEndMeters = 0;
+  readonly readRevealMeters = (): number =>
+    this.options.growth
+      ? this.frontMeters - this.options.growth.softEdgeMeters
+      : Infinity;
+  readonly isRevealed = (): boolean =>
+    !this.options.growth ||
+    this.frontMeters >=
+      this.routeEndMeters + this.options.growth.softEdgeMeters;
   private fadeSeconds = 0;
   private fadeDuration = 0;
   private revealDuration = 0;
@@ -68,6 +82,7 @@ class FlightPath implements WorldModule {
       throw new Error("Load the flight path before showing geometry");
     this.cloud.geometry.dispose();
     this.cloud.geometry = geometry;
+    this.resetGrowth(geometry);
     this.cloud.position.copy(pose.position);
     this.cloud.position.y -= this.options.belowFlightMeters;
     this.cloud.rotation.y = pose.yawRadians;
@@ -82,6 +97,19 @@ class FlightPath implements WorldModule {
     this.options.scene.add(this.cloud);
   };
 
+  private resetGrowth(geometry: BufferGeometry): void {
+    const distances = geometry.getAttribute("routeDistance");
+    this.routeEndMeters = distances
+      ? distances.getX(
+          geometry.drawRange.count === Infinity
+            ? distances.count - 1
+            : geometry.drawRange.count - 1,
+        )
+      : 0;
+    this.frontMeters = 0;
+    this.material?.setRevealMeters?.(0);
+  }
+
   // 4. GPU wind and retirement fade
   readonly retire = (seconds: number): void => {
     this.fadeDuration = seconds;
@@ -91,6 +119,14 @@ class FlightPath implements WorldModule {
   };
 
   readonly update = (deltaSeconds: number): void => {
+    if (this.options.growth && this.fadeDuration <= 0) {
+      this.frontMeters = Math.min(
+        this.routeEndMeters + this.options.growth.softEdgeMeters,
+        this.frontMeters +
+          Math.max(0, deltaSeconds) * this.options.growth.speedMetersPerSecond,
+      );
+      this.material?.setRevealMeters?.(this.frontMeters);
+    }
     this.material?.update(deltaSeconds);
     if (!this.cloud) return;
     if (this.fadeDuration <= 0) {

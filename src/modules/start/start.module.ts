@@ -21,11 +21,15 @@ import {
   createPathParticleGeometry,
   createPathParticleMaterial,
 } from "./flight-path/path-particles";
+import { createPathRevealMaterial } from "./flight-path/path-reveal";
 import { createArrowStroke } from "./particle-elements/arrow-shape";
 import { placeElements } from "./particle-elements/element-placement";
 import { createElementRetirement } from "./particle-elements/element-retirement";
 import { placeEntryArrow } from "./particle-elements/entry-arrow";
-import { createParticleAnimation } from "./particle-elements/particle-animation";
+import {
+  createElementReveal,
+  createParticleAnimation,
+} from "./particle-elements/particle-animation";
 import type {
   ElementRetirement,
   ElementSource,
@@ -130,9 +134,13 @@ class StartModule implements WorldModule {
         scene: this.options.scene,
         belowFlightMeters: START_SETTINGS.belowFlightMeters,
         opacity: START_SETTINGS.pathOpacity,
+        growth: START_SETTINGS.pathGrowth,
         readPresence: () => this.worldPresence,
         createMaterial: () =>
-          createPathParticleMaterial(createAirParticleMaterial),
+          createPathRevealMaterial(
+            createPathParticleMaterial(createAirParticleMaterial),
+            START_SETTINGS.pathGrowth.softEdgeMeters,
+          ),
       }),
     );
   }
@@ -162,12 +170,14 @@ class StartModule implements WorldModule {
     const retirement = createElementRetirement(
       START_SETTINGS.elementRetirement,
     );
+    const reveal = createElementReveal(START_SETTINGS.elementReveal);
     const light = createParticleLight(START_SETTINGS.elementLight);
     const passage = createRingPassage(
       START_SETTINGS.elementPassage.maximumStepMeters,
     );
     const display = createParticleElements({
       light,
+      reveal,
       retirement,
       readDirection: () =>
         this.options.viewpoint.worldFlightDirection ?? this.noFlightDirection,
@@ -179,7 +189,8 @@ class StartModule implements WorldModule {
       simulation: createParticleSimulation(START_SETTINGS.elementSimulation),
       readPosition: () => this.readPosition(),
       createGeometry: this.createElementGeometry,
-      createMaterial: () => this.createElementMaterial(light, retirement),
+      createMaterial: () =>
+        this.createElementMaterial(light, retirement, reveal.presence),
     });
     this.feedback.set(display, { light, passage });
     return display;
@@ -188,6 +199,7 @@ class StartModule implements WorldModule {
   private createElementMaterial(
     light: ParticleLight,
     retirement: ElementRetirement,
+    reveal: Float32Array,
   ) {
     return createVolumeMaterial(
       createPathParticleMaterial((settings) =>
@@ -197,7 +209,12 @@ class StartModule implements WorldModule {
         }),
       ),
       START_SETTINGS.elementVolume,
-      { settings: START_SETTINGS.elementLight, animation: light, retirement },
+      {
+        settings: START_SETTINGS.elementLight,
+        animation: light,
+        retirement,
+        reveal,
+      },
     );
   }
 
@@ -433,6 +450,10 @@ class StartModule implements WorldModule {
     const pending = this.pending;
     if (!pending?.generation.isReady() || !this.pathReleased()) return;
     if (!pending.display) {
+      const previous = pending.continuation
+        ? this.current?.display
+        : this.entry?.display;
+      if (previous && !previous.isRevealed()) return;
       const display = this.availableDisplay();
       if (!display) return;
       display.show(pending.generation.takeGeometry(), pending.section.pose);
@@ -562,7 +583,7 @@ class StartModule implements WorldModule {
     if (this.bindings.has(display)) return;
     const elements = this.elements.find((element) => !element.isVisible());
     if (!elements) return;
-    elements.show(sources, pose);
+    elements.show(sources, pose, display.readRevealMeters);
     this.bindings.set(display, elements);
     this.feedback
       .get(elements)

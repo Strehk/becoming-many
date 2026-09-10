@@ -35,5 +35,6 @@ export interface FlightRoute {
 /** The caller disposes the material; update advances only GPU animation uniforms. */
 export interface PathParticleMaterial {
   readonly pointsMaterial: PointsMaterial;
+  readonly setRevealMeters?: (meters: number) => void;
   readonly update: (deltaSeconds: number) => void;
 }

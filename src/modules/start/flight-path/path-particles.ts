@@ -37,6 +37,7 @@ export function createPathParticleGeometry(
   const geometry = new BufferGeometry();
   const attributes = {
     position: new Float32BufferAttribute(particles.positions, 3),
+    routeDistance: new Float32BufferAttribute(particles.distances, 1),
     color: new Float32BufferAttribute(particles.colors, 3),
     pathParticleSize: new Float32BufferAttribute(particles.sizes, 1),
     airParticleVisible: new Float32BufferAttribute(
@@ -86,7 +87,7 @@ function sampleParticles(
     colors.push(color.r, color.g, color.b);
     sizes.push(sampleRange(parameters.sizeMeters, random));
   }
-  return { positions, colors, sizes };
+  return { positions, colors, sizes, distances };
 }
 
 function sampleDistances(
