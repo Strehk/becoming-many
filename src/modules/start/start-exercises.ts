@@ -3,6 +3,12 @@ import type { ExerciseDefinition } from "./start-contract";
 // 1. Shared demo and presentation settings
 export const START_SETTINGS = {
   demonstrationCueSeconds: 2,
+  narratedEntryMeters: 60,
+  completeVoice: {
+    url: "/audio/tutorial/de/complete.wav",
+    durationSeconds: 13.861479,
+    instructionAtSeconds: 0,
+  },
   showFlightGuidance: false,
   pathOpacity: 0.22,
   retireSeconds: 2.5,
@@ -75,10 +81,62 @@ export const START_SETTINGS = {
 };
 
 // 2. Exercise sequence
-// The MVP demonstrates both turn directions. Narration ordering is authored later.
+// Speech order is right, left, climb, descent. Praise requires prior success.
 export const START_EXERCISES = [
   {
+    id: "right",
+    voice: {
+      url: "/audio/tutorial/de/introduction-right.wav",
+      durationSeconds: 20.725729,
+      instructionAtSeconds: 19.3,
+    },
+    route: {
+      leadMeters: 0,
+      straightMeters: 12,
+      outroMeters: 24,
+      turnSign: 1,
+      turnRadiusMeters: { from: 32, to: 36 },
+      turnDegrees: { from: 90, to: 90 },
+    },
+    particles: {
+      densityPerMeter: { from: 40, to: 68 },
+      color: { from: 0x2c858d, to: 0x77bec2 },
+      sizeMeters: { from: 0.025, to: 0.055 },
+      spreadMeters: 0.55,
+      seed: 17,
+    },
+    elements: {
+      showArrows: false,
+      ringCount: 6,
+      firstMeters: 12,
+      spacingMeters: 10,
+      ringRadiusMeters: 3.6,
+      arrowLengthMeters: 4.6,
+      arrowOffsetMeters: 7,
+      arrowPhaseFraction: 0.5,
+    },
+    deviation: {
+      distanceMeters: 12,
+      outsideTravelMeters: 8,
+      directionDifferenceRadians: 0.87,
+      lookAheadMeters: 20,
+      visibilityPaddingMeters: 6,
+      maximumStepMeters: 3,
+    },
+    progress: {
+      checkpointSpacingMeters: 2,
+      toleranceMeters: 12,
+      extraTravelMeters: 7,
+      maximumStepMeters: 3,
+    },
+  },
+  {
     id: "left",
+    voice: {
+      url: "/audio/tutorial/de/left.wav",
+      durationSeconds: 2.735417,
+      instructionAtSeconds: 1.14,
+    },
     route: {
       leadMeters: 0,
       straightMeters: 12,
@@ -120,14 +178,68 @@ export const START_EXERCISES = [
     },
   },
   {
-    id: "right",
+    id: "up",
+    voice: {
+      url: "/audio/tutorial/de/up.wav",
+      durationSeconds: 4.334896,
+      instructionAtSeconds: 2.66,
+    },
     route: {
+      turnPlane: "vertical",
       leadMeters: 0,
       straightMeters: 12,
       outroMeters: 24,
       turnSign: 1,
-      turnRadiusMeters: { from: 32, to: 36 },
-      turnDegrees: { from: 90, to: 90 },
+      turnRadiusMeters: { from: 80, to: 84 },
+      turnDegrees: { from: 20, to: 20 },
+    },
+    particles: {
+      densityPerMeter: { from: 40, to: 68 },
+      color: { from: 0x2c858d, to: 0x77bec2 },
+      sizeMeters: { from: 0.025, to: 0.055 },
+      spreadMeters: 0.55,
+      seed: 17,
+    },
+    elements: {
+      showArrows: false,
+      ringCount: 6,
+      firstMeters: 12,
+      spacingMeters: 10,
+      ringRadiusMeters: 3.6,
+      arrowLengthMeters: 4.6,
+      arrowOffsetMeters: 7,
+      arrowPhaseFraction: 0.5,
+    },
+    deviation: {
+      distanceMeters: 12,
+      outsideTravelMeters: 8,
+      directionDifferenceRadians: 0.87,
+      lookAheadMeters: 20,
+      visibilityPaddingMeters: 6,
+      maximumStepMeters: 3,
+    },
+    progress: {
+      checkpointSpacingMeters: 2,
+      toleranceMeters: 12,
+      extraTravelMeters: 7,
+      maximumStepMeters: 3,
+    },
+  },
+  {
+    id: "down",
+    voice: {
+      url: "/audio/tutorial/de/down.wav",
+      durationSeconds: 2.552583,
+      instructionAtSeconds: 1.04,
+    },
+    route: {
+      turnPlane: "vertical",
+      leadMeters: 0,
+      straightMeters: 12,
+      outroMeters: 24,
+      turnSign: -1,
+      turnRadiusMeters: { from: 80, to: 84 },
+      turnDegrees: { from: 20, to: 20 },
     },
     particles: {
       densityPerMeter: { from: 40, to: 68 },

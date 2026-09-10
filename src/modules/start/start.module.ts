@@ -52,12 +52,14 @@ import type {
   ExercisePose,
   ExerciseRoute,
   PlacedRoute,
+  StartVoice,
 } from "./start-contract";
 import { START_EXERCISES, START_SETTINGS } from "./start-exercises";
 import { createStartGame } from "./start-game.runtime";
 
 // 1. Local star: all concrete connections and the fixed display pool live here
 interface StartModuleOptions extends AirParticlesModuleOptions {
+  readonly voice?: StartVoice;
   readonly guidance: FlightGuidanceParameters;
   readonly constrainFlightPosition: (position: Vector3) => void;
 }
@@ -87,10 +89,7 @@ class StartModule implements WorldModule {
   private readonly runtime = new ModuleRuntime();
   private readonly generationKey = {};
   private readonly noFlightDirection = new Vector3();
-  private readonly game = createStartGame({
-    exerciseCount: START_EXERCISES.length,
-    retireSeconds: START_SETTINGS.retireSeconds,
-  });
+  private readonly game: ReturnType<typeof createStartGame>;
   private readonly paths: readonly Display[];
   private readonly elements: readonly ElementDisplay[];
   private readonly bindings = new Map<Display, ElementDisplay>();
@@ -109,29 +108,42 @@ class StartModule implements WorldModule {
   private active = false;
 
   constructor(private readonly options: StartModuleOptions) {
-    this.paths = Array.from({ length: START_SETTINGS.pathPoolSize }, () =>
+    this.game = createStartGame({
+      exerciseCount: START_EXERCISES.length,
+      repeatSequence: !options.voice,
+      retireSeconds: START_SETTINGS.retireSeconds,
+    });
+    this.paths = this.createPaths();
+    this.elements = Array.from({ length: START_SETTINGS.elementPoolSize }, () =>
+      this.createElements(),
+    );
+    this.modules = this.createModules();
+  }
+
+  private createPaths(): Display[] {
+    return Array.from({ length: START_SETTINGS.pathPoolSize }, () =>
       createFlightPath({
-        scene: options.scene,
+        scene: this.options.scene,
         belowFlightMeters: START_SETTINGS.belowFlightMeters,
         opacity: START_SETTINGS.pathOpacity,
         createMaterial: () =>
           createPathParticleMaterial(createAirParticleMaterial),
       }),
     );
-    this.elements = Array.from({ length: START_SETTINGS.elementPoolSize }, () =>
-      this.createElements(),
-    );
-    this.modules = [
-      createAirParticlesModule(options),
+  }
+
+  private createModules(): WorldModule[] {
+    return [
+      createAirParticlesModule(this.options),
       ...this.paths,
       ...this.elements,
       ...(START_SETTINGS.showFlightGuidance
         ? [
             createFlightGuidance({
-              scene: options.scene,
-              viewpoint: options.viewpoint,
-              parameters: options.guidance,
-              constrainFlightPosition: options.constrainFlightPosition,
+              scene: this.options.scene,
+              viewpoint: this.options.viewpoint,
+              parameters: this.options.guidance,
+              constrainFlightPosition: this.options.constrainFlightPosition,
             }),
           ]
         : []),
@@ -203,11 +215,13 @@ class StartModule implements WorldModule {
     this.recoveryEntryNeeded = false;
     this.active = true;
     for (const module of this.modules) this.runtime.activate(module);
+    this.playInstruction(false);
     this.showEntry(false);
     this.prepareSection(false);
   };
   readonly deactivate = (): void => {
     this.active = false;
+    this.options.voice?.stop();
     this.bindings.clear();
     this.retiringPaths.clear();
     this.course.clear();
@@ -220,6 +234,7 @@ class StartModule implements WorldModule {
   };
   readonly unload = (): void => {
     this.active = false;
+    this.options.voice?.stop();
     this.bindings.clear();
     this.retiringPaths.clear();
     this.course.clear();
@@ -255,7 +270,6 @@ class StartModule implements WorldModule {
   };
 
   private observeFlight(deltaSeconds: number): ExerciseAction {
-    const state = this.game.readState();
     const position = this.readPosition();
     return this.game.update({
       deltaSeconds,
@@ -269,15 +283,23 @@ class StartModule implements WorldModule {
         (this.bindings.has(this.pending.display) ||
           (!this.pending.continuation &&
             this.elements.every((element) => !element.isVisible()))),
-      instructionReleased:
-        state.elapsedSeconds >= START_SETTINGS.demonstrationCueSeconds,
-      instructionEnded: true,
+      instructionReleased: this.instructionReleased(),
+      instructionEnded: this.options.voice
+        ? this.options.voice.read().ended && !this.options.voice.read().failed
+        : true,
     });
   }
 
   private applyAction(action: ExerciseAction): void {
     if (action === "show") this.beginPreparedSection(false);
-    if (action === "prepare-next") this.prepareSection(true);
+    if (action === "prepare-next") {
+      this.playInstruction(false, true);
+      this.prepareSection(true);
+    }
+    if (action === "complete")
+      this.options.voice?.play(START_SETTINGS.completeVoice, 0);
+    if (action === "finish" && this.current)
+      this.retireElements(this.current.display);
     if (action === "advance") this.beginPreparedSection(true);
     if (action === "recover") this.recoverCourse();
   }
@@ -368,7 +390,7 @@ class StartModule implements WorldModule {
 
   private publishPreparedPath(): void {
     const pending = this.pending;
-    if (!pending?.generation.isReady()) return;
+    if (!pending?.generation.isReady() || !this.instructionReleased()) return;
     if (!pending.display) {
       const display = this.availableDisplay();
       if (!display) return;
@@ -442,7 +464,11 @@ class StartModule implements WorldModule {
     if (!display || !exercise) return false;
     const direction =
       this.options.viewpoint.worldFlightDirection ?? this.noFlightDirection;
-    const route = createFlightEntry(START_SETTINGS.entryLineMeters, direction);
+    const length =
+      !recovery && this.options.voice
+        ? START_SETTINGS.narratedEntryMeters
+        : START_SETTINGS.entryLineMeters;
+    const route = createFlightEntry(length, direction);
     const pose = placeFlightRecovery(
       this.options.viewpoint,
       recovery ? START_SETTINGS.recoveryLeadMeters : 0,
@@ -482,6 +508,7 @@ class StartModule implements WorldModule {
   private resumeRecovery(): void {
     if (!this.recoveryEntryNeeded || !this.showEntry(true)) return;
     this.recoveryEntryNeeded = false;
+    this.playInstruction(true);
     this.prepareSection(false);
   }
 
@@ -556,6 +583,34 @@ class StartModule implements WorldModule {
       exercise.deviation,
     );
     return { ...section, display, exerciseProgress, exitProgress, deviation };
+  }
+
+  // 7. Native speech facts gate visuals; elapsed frame time is only the silent demo fallback.
+  private instructionReleased(): boolean {
+    const state = this.game.readState();
+    if (!this.options.voice)
+      return (
+        state.elapsedSeconds >= START_SETTINGS.demonstrationCueSeconds ||
+        state.phase === "outro"
+      );
+    const index = state.exerciseIndex + Number(state.phase === "outro");
+    const cue = START_EXERCISES[index]?.voice;
+    const playback = this.options.voice.read();
+    return (
+      !!cue &&
+      !playback.failed &&
+      playback.offsetSeconds >= cue.instructionAtSeconds
+    );
+  }
+
+  private playInstruction(retry: boolean, successor = false): void {
+    const voice = this.options.voice;
+    if (!voice) return;
+    // Keep unfinished orientation intact during an early deviation.
+    if (retry && !voice.read().ended && !voice.read().failed) return;
+    const index = this.game.readState().exerciseIndex + Number(successor);
+    const cue = START_EXERCISES[index]?.voice;
+    if (cue) voice.play(cue, retry ? cue.instructionAtSeconds : 0);
   }
 
   private readPosition(): Readonly<Vector3> {

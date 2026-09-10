@@ -7,6 +7,7 @@ import type {
 // 1. Engine contract: lesson decisions only, no geometry or rendering dependencies
 interface GameSettings {
   readonly exerciseCount: number;
+  readonly repeatSequence?: boolean;
   readonly retireSeconds: number;
 }
 export function createStartGame(settings: GameSettings) {
@@ -47,22 +48,36 @@ class StartGame {
         return;
       case "flying":
         return this.observeExercise(frame);
+      case "closing":
+        if (!frame.reachedEnd) return;
+        this.enterPhase("complete");
+        return "finish";
+      case "complete":
+        return;
       case "outro":
         return this.observeExit(frame);
     }
   };
 
   private observeExercise(frame: ExerciseFrame): ExerciseAction {
-    if (frame.deviated) return this.recover(false);
+    if (frame.deviated && !this.exercisePassed) return this.recover(false);
     if (frame.progress === "passed") this.exercisePassed = true;
     if (!this.exercisePassed || !frame.instructionEnded) return;
+    if (
+      this.settings.repeatSequence === false &&
+      this.state.exerciseIndex === this.settings.exerciseCount - 1
+    ) {
+      this.enterPhase("closing");
+      return "complete";
+    }
     this.enterPhase("outro");
     return "prepare-next";
   }
 
   private observeExit(frame: ExerciseFrame): ExerciseAction {
     if (frame.deviated) return this.recover(true);
-    if (!frame.reachedEnd || !frame.prepared) return;
+    if (!frame.reachedEnd || !frame.prepared || !frame.instructionReleased)
+      return;
     this.advanceExercise();
     this.enterPhase("flying");
     return "advance";

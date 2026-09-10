@@ -8,6 +8,8 @@ import type { ElementSettings } from "./particle-elements/particle-contract";
 
 // 1. Authored exercise data
 export interface RouteParameters {
+  /** Vertical bends climb/descend and return to a level tangent. */
+  readonly turnPlane?: "horizontal" | "vertical";
   readonly leadMeters: number;
   readonly straightMeters: number;
   readonly outroMeters: number;
@@ -24,11 +26,32 @@ export interface ProgressParameters {
 }
 export interface ExerciseDefinition {
   readonly id: string;
+  readonly voice: ExerciseVoiceCue;
   readonly route: RouteParameters;
   readonly particles: PathParticleParameters;
   readonly progress: ProgressParameters;
   readonly deviation: DeviationParameters;
   readonly elements: ElementSettings;
+}
+
+/** Recording-local seconds; cue markers come from approximate word alignment. */
+export interface ExerciseVoiceCue {
+  readonly url: string;
+  readonly durationSeconds: number;
+  readonly instructionAtSeconds: number;
+}
+
+/** Injected playback capability. Sound owns media and cleanup; Start owns lesson selection.
+ * Offsets are native media seconds. Failure must never count as natural completion.
+ */
+export interface StartVoice {
+  readonly play: (cue: ExerciseVoiceCue, offsetSeconds: number) => void;
+  readonly read: () => {
+    readonly offsetSeconds: number;
+    readonly ended: boolean;
+    readonly failed: boolean;
+  };
+  readonly stop: () => void;
 }
 
 // 2. World placement and movement observations
@@ -77,12 +100,20 @@ export interface ExerciseFrame {
   readonly instructionEnded: boolean;
 }
 export interface ExerciseState {
-  phase: "instruction" | "flying" | "outro" | "recovering";
+  phase:
+    | "instruction"
+    | "flying"
+    | "outro"
+    | "recovering"
+    | "closing"
+    | "complete";
   exerciseIndex: number;
   attempt: number;
   elapsedSeconds: number;
 }
 export type ExerciseAction =
+  | "complete"
+  | "finish"
   | "show"
   | "prepare-next"
   | "advance"

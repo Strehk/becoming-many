@@ -7,7 +7,11 @@ import {
 } from "../../../src/modules/start/flight-path/flight-entry";
 import { createFlightRoute } from "../../../src/modules/start/flight-path/flight-route";
 import { createStartModule } from "../../../src/modules/start/start.module";
-import type { PlacedRoute } from "../../../src/modules/start/start-contract";
+import type {
+  ExerciseVoiceCue,
+  PlacedRoute,
+  StartVoice,
+} from "../../../src/modules/start/start-contract";
 import {
   START_EXERCISES,
   START_SETTINGS,
@@ -57,13 +61,14 @@ function createViewpoint() {
   };
 }
 
-function createFixture(warmFrames = 125) {
+function createFixture(warmFrames = 125, voice?: StartVoice) {
   const scene = new Scene();
   const viewpoint = createViewpoint();
   const queue = new StreamQueue({ budgetMilliseconds: 5, capacity: 256 });
   const module = createStartModule({
     scene,
     viewpoint,
+    voice,
     parameters: PRESENTATION.particles,
     guidance: PRESENTATION.guidance,
     streamQueue: queue,
@@ -191,7 +196,7 @@ test("success prepares a joined successor while the original exit remains visibl
   const positions = next?.geometry.getAttribute("position");
   expect(
     positions?.getX((next?.geometry.drawRange.count ?? 1) - 1),
-  ).toBeGreaterThan(0);
+  ).toBeLessThan(0);
   fixture.module.unload();
   expect(fixture.scene.children).toHaveLength(0);
 });
@@ -281,4 +286,36 @@ test("immediate flight keeps progress while route generation is delayed", () => 
   expect(successor?.position.x).toBeCloseTo(end.x);
   expect(successor?.position.z).toBeCloseTo(end.z);
   fixture.module.unload();
+});
+
+test("native speech offset gates the right course and failure never releases rings", () => {
+  const calls: { cue: ExerciseVoiceCue; offset: number }[] = [];
+  const playback = { offsetSeconds: 0, ended: false, failed: false };
+  let stops = 0;
+  const voice: StartVoice = {
+    play: (cue, offset) => {
+      calls.push({ cue, offset });
+    },
+    read: () => playback,
+    stop: () => {
+      stops++;
+    },
+  };
+  const fixture = createFixture(180, voice);
+  expect(calls[0]?.cue.url).toEndWith("introduction-right.wav");
+  expect(trails(fixture)).toHaveLength(1);
+  playback.offsetSeconds = 19.29;
+  fixture.tick();
+  expect(trails(fixture)).toHaveLength(1);
+  playback.offsetSeconds = 19.3;
+  playback.failed = true;
+  fixture.tick();
+  expect(trails(fixture)).toHaveLength(1);
+  playback.failed = false;
+  fixture.tick();
+  expect(trails(fixture)).toHaveLength(2);
+  fixture.module.deactivate();
+  expect(stops).toBe(1);
+  fixture.module.unload();
+  expect(fixture.scene.children).toHaveLength(0);
 });

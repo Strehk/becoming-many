@@ -11,7 +11,8 @@ export function createFlightRoute(
   validateRoute(parameters);
   const radius = sampleRange(parameters.turnRadiusMeters, seed);
   const angle = (sampleRange(parameters.turnDegrees, seed + 1) * Math.PI) / 180;
-  const exerciseEnd = parameters.straightMeters + radius * angle;
+  const arcAngle = angle * (parameters.turnPlane === "vertical" ? 2 : 1);
+  const exerciseEnd = parameters.straightMeters + radius * arcAngle;
   return {
     lengthMeters: exerciseEnd + parameters.outroMeters,
     exerciseStartMeters: parameters.straightMeters,
@@ -20,10 +21,16 @@ export function createFlightRoute(
       samplePosition({ parameters, radius, angle }, distance, target),
     sampleDirection: (distance, target) => {
       const turn = Math.min(
-        angle,
+        arcAngle,
         Math.max(0, distance - parameters.straightMeters) / radius,
       );
-      target.set(parameters.turnSign * Math.sin(turn), 0, -Math.cos(turn));
+      const vertical = parameters.turnPlane === "vertical";
+      const bend = vertical ? Math.min(turn, arcAngle - turn) : turn;
+      target.set(
+        vertical ? 0 : parameters.turnSign * Math.sin(bend),
+        vertical ? parameters.turnSign * Math.sin(bend) : 0,
+        -Math.cos(bend),
+      );
     },
   };
 }
@@ -35,6 +42,10 @@ function samplePosition(
   target: Vector3,
 ): void {
   const { parameters, radius, angle } = section;
+  if (parameters.turnPlane === "vertical") {
+    sampleVerticalPosition(section, distance, target);
+    return;
+  }
   const turn = Math.min(
     angle,
     Math.max(0, distance - parameters.straightMeters) / radius,
@@ -51,6 +62,39 @@ function samplePosition(
       Math.min(distance, parameters.straightMeters) -
       radius * Math.sin(turn) -
       exit * Math.cos(angle),
+  );
+}
+
+// A pair of opposite arcs changes altitude without leaving a pitched chunk seam.
+function sampleVerticalPosition(
+  section: { parameters: RouteParameters; radius: number; angle: number },
+  distance: number,
+  target: Vector3,
+): void {
+  const { parameters, radius, angle } = section;
+  const turn = Math.min(
+    2 * angle,
+    Math.max(0, distance - parameters.straightMeters) / radius,
+  );
+  const returning = turn > angle;
+  const bend = returning ? 2 * angle - turn : turn;
+  const height =
+    radius *
+    (returning ? 1 - 2 * Math.cos(angle) + Math.cos(bend) : 1 - Math.cos(bend));
+  const forward =
+    radius *
+    (returning ? 2 * Math.sin(angle) - Math.sin(bend) : Math.sin(bend));
+  const exit = Math.max(
+    0,
+    distance - parameters.straightMeters - 2 * radius * angle,
+  );
+  target.set(
+    0,
+    parameters.turnSign * height,
+    -parameters.leadMeters -
+      Math.min(distance, parameters.straightMeters) -
+      forward -
+      exit,
   );
 }
 
@@ -73,7 +117,11 @@ function validateRoute(parameters: RouteParameters): void {
       "Route entry and exit lengths must be finite and nonnegative",
     );
   validateRange(parameters.turnRadiusMeters, Number.MIN_VALUE, Infinity);
-  validateRange(parameters.turnDegrees, 0, 360);
+  validateRange(
+    parameters.turnDegrees,
+    0,
+    parameters.turnPlane === "vertical" ? 45 : 360,
+  );
   if (parameters.turnSign !== -1 && parameters.turnSign !== 1)
     throw new RangeError("Turn direction must be -1 (left) or 1 (right)");
 }

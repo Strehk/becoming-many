@@ -45,7 +45,11 @@ for (const exercise of START_EXERCISES) {
         ),
       ).toBe(false);
       expect(offset.length()).toBeCloseTo(exercise.elements.arrowOffsetMeters);
-      expect(Math.sign(offset.x)).toBe(-exercise.route.turnSign);
+      const before = new Vector3();
+      const after = new Vector3();
+      route.sampleDirection(arrow.routeDistanceMeters - 2, before);
+      route.sampleDirection(arrow.routeDistanceMeters + 2, after);
+      expect(offset.dot(after.sub(before))).toBeLessThan(0);
       expect(Math.abs(offset.dot(arrow.direction))).toBeLessThan(0.01);
     }
     expect(placeElements(route, settings)).toEqual(placements);

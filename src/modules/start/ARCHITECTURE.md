@@ -111,18 +111,34 @@ retirement during normal flight. The new course begins with a particle-only
 approach; new rings cannot coexist with an abandoned course's rings. An unearned
 exercise repeats; a completed exercise remains earned when leaving its exit.
 
-## Engine and temporary audio adapter
+## Narration and lesson sequence
 
-The engine has instruction, flying, outro, and recovering phases. It returns show,
-prepare-next, advance, or recover decisions. Its inputs include instruction release,
-natural instruction end, geometry readiness, movement progress, and deviation.
-The center alone executes these decisions and connects the independent leaves.
+The authored order is right, left, climb, descent. Each exercise owns its recording
+URL, measured duration and approximate word-aligned instruction offset. Current
+German WAVs match the transcript hashes; the EN copies contain identical German
+speech. `start-audio-cues.ts` records the analysis provenance and timing limits.
 
-The current demo repeats the left/right sequence continuously. A two-second cue
-adapter releases initial and recovery entries; regular connections have no pause.
-There is no real audio playback or Show handoff yet. Final narration order and
-verified audio markers belong in `start-exercises.ts`; `start-audio-cues.ts` retains
-earlier research. Up/down exercises and application handoff remain separate work.
+`StartVoice` is an injected playback capability. Start selects the lesson; a Sound
+owner must supply native offset, natural end and failure separately. The engine
+never starts media or creates geometry. No audio element or second clock lives in
+Start. Without this capability, the standalone visual demo still uses its explicit
+two-second fallback and loops. Production Sound/Composition wiring is pending the
+requested exception to the Start-only edit boundary.
+
+With a voice capability, the first ring-free approach is 60 m. The actual media
+cue releases the prepared path and rings. Success plus native speech end starts
+the next recording during the existing exit. Success remains earned if the player
+deviates while the spoken tail finishes. A successor cannot activate before its
+cue. Retry playback begins at the instruction marker, without preceding praise;
+an unfinished introduction remains intact during early recovery. Four successes
+play the closing recording once. Final rings retain behind-only retirement.
+There is no automatic transition into the main Experience yet.
+
+Horizontal routes turn 90 degrees. Vertical routes use two opposite circular arcs
+with a maximum 20-degree pitch and level entry/exit tangents. This preserves the
+existing yaw-only chunk placement contract while changing altitude. Rings sample
+the same position and tangent in either plane. The route does not move the player
+or bypass the level's height limits.
 
 ## Procedural rings and arrows
 
@@ -136,8 +152,8 @@ arrow length, exterior offset and phase along the interval. Placement samples th
 are centered on its visible line and their planes are perpendicular to travel.
 Arrows appear between ring stations during the curved exercise, point along its tangent, and are offset
 opposite the tangent change projected onto the travel-normal plane. No camera-facing rotation changes their meaning.
-The current horizontal course is supported; generalized banked/vertical courses
-would need an explicit frame/up-vector contract. Placement is deterministic for
+Horizontal turns and vertical bends with level chunk seams are supported;
+arbitrary banked or pitched seams would require an explicit frame contract. Placement is deterministic for
 the same route and parameters and capped at twelve ring/arrow pairs per section.
 
 Rings and arrows use black particles. The arrow sampler fills its shaft and head
@@ -176,8 +192,7 @@ there is no extra loop or unbounded history. Small temporary shape geometries
 are disposed after merging, and all final buffers/materials are disposed on
 unload. Elements add one draw call per visible section. Their small fixed pool
 uses uncullable clouds so emergence and impulse offsets cannot clip at static
-shape bounds. Individual ring feedback now follows actual forward passage. Audio timing remains
-outside this MVP; the review observations below remain undecided.
+shape bounds. Individual ring feedback now follows actual forward passage. Native audio observations are injected through the Start voice contract.
 
 Ring grains reuse the existing airborne wind shader with a stable phase per grain.
 `START_SETTINGS.elementWind` controls their small horizontal and vertical drift
@@ -226,19 +241,6 @@ Neither pool overwrites visible content or allocates additional slots. Resetting
 These observations are retained for later design decisions, not approved changes
 or an implementation checklist. Reassess them as the implementation develops,
 particularly when real audio timing and lesson progression are introduced.
-
-### Success while narration is still running
-
-In `start-game.runtime.ts`, passage success can be recorded while
-`instructionEnded` is false. If deviation then occurs before narration ends,
-the current recovery branch treats the exercise as unearned. This sequence was
-reproduced independently; the current demo does not encounter it because the
-center always supplies `instructionEnded: true`.
-
-The audio integration needs an explicit decision about when success becomes
-durable and how recovery interacts with unfinished narration. Preserving recorded
-success during recovery is one possible solution; a different audio/phase model
-may be more appropriate. No solution is selected yet.
 
 ### Ownership of successor selection
 
@@ -296,9 +298,9 @@ disable variation; a fixed seed reproduces varied routes.
 
 | Parameter | Meaning | Current value |
 | --- | --- | --- |
-| `route.turnDegrees` | Total heading change per exercise, in degrees | 90–90 |
-| `route.turnSign` | Left (-1) or right (+1) | Alternating |
-| `route.turnRadiusMeters` | Curve radius; smaller is tighter | 32–36 m |
+| `route.turnDegrees` | Horizontal heading change or vertical peak pitch, in degrees | 90 horizontal / 20 vertical |
+| `route.turnSign` | Left/down (-1), right/up (+1) | Per lesson |
+| `route.turnRadiusMeters` | Curve radius; smaller is tighter | 32–36 m horizontal / 80–84 m vertical |
 | `route.straightMeters` / `outroMeters` | Ring-free entry and exit | 12 / 24 m |
 | `elements.ringCount` | Exact authored ring count, 0–12 | 6 |
 | `elements.spacingMeters` | Distance along the route between rings | 10 m |
@@ -308,7 +310,8 @@ disable variation; a fixed seed reproduces varied routes.
 | `deviation` / `progress` | Recovery corridor and forward-passage tolerance | 12 m corridor |
 
 Ring count, spacing and route dimensions must agree. The last ring must fit
-inside the curved exercise, whose length is radius × angle in radians. Invalid
+inside the curved exercise: radius × angle in radians for horizontal turns,
+twice that length for the two-arc vertical profile. Invalid
 combinations fail before rendering instead of silently truncating the ring count.
 Current six-ring defaults span 50 m and fit every configured radius at 90 degrees.
 Flight speed currently comes from `src/levels/start.level.ts` through the existing

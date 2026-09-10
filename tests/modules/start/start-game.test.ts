@@ -78,3 +78,43 @@ test("deviation while waiting for reveal reanchors instead of showing a stale ro
   expect(game.readState().phase).toBe("recovering");
   expect(game.readState().attempt).toBe(2);
 });
+
+test("narrated sequence finishes once after four earned exercises", () => {
+  const game = createStartGame({
+    exerciseCount: 4,
+    retireSeconds: 1,
+    repeatSequence: false,
+  });
+  game.update(FRAME);
+  for (let index = 0; index < 3; index++) {
+    expect(game.update({ ...FRAME, progress: "passed" })).toBe("prepare-next");
+    expect(
+      game.update({ ...FRAME, reachedEnd: true, instructionReleased: false }),
+    ).toBeUndefined();
+    expect(game.update({ ...FRAME, reachedEnd: true })).toBe("advance");
+  }
+  expect(
+    game.update({ ...FRAME, progress: "passed", instructionEnded: false }),
+  ).toBeUndefined();
+  expect(game.update(FRAME)).toBe("complete");
+  expect(game.update(FRAME)).toBeUndefined();
+  expect(game.update({ ...FRAME, reachedEnd: true })).toBe("finish");
+  expect(
+    game.update({ ...FRAME, reachedEnd: true, deviated: true }),
+  ).toBeUndefined();
+  expect(game.readState().exerciseIndex).toBe(3);
+});
+
+test("earned passage survives deviation while the spoken tail finishes", () => {
+  const game = createStartGame({
+    exerciseCount: 4,
+    retireSeconds: 1,
+    repeatSequence: false,
+  });
+  game.update(FRAME);
+  game.update({ ...FRAME, progress: "passed", instructionEnded: false });
+  expect(
+    game.update({ ...FRAME, deviated: true, instructionEnded: false }),
+  ).toBeUndefined();
+  expect(game.update({ ...FRAME, deviated: true })).toBe("prepare-next");
+});
