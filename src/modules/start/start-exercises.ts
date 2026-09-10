@@ -86,7 +86,7 @@ export const START_EXERCISES = [
     },
     elements: {
       showArrows: false,
-      firstMeters: 4,
+      firstMeters: 12,
       spacingMeters: 14,
       ringRadiusMeters: 3.6,
       arrowLengthMeters: 4.6,
@@ -124,7 +124,7 @@ export const START_EXERCISES = [
     },
     elements: {
       showArrows: false,
-      firstMeters: 4,
+      firstMeters: 12,
       spacingMeters: 14,
       ringRadiusMeters: 3.6,
       arrowLengthMeters: 4.6,
