@@ -257,7 +257,10 @@ export async function composeLevel({
         connections?.terrain,
       ),
     );
-    add(undefined, createAirParticles());
+    // A Start preset's Air belongs to its removable training composition.
+    // Composing it here as well would give standalone Start a second particle
+    // room that the integrated tutorial does not have.
+    if (!level.start) add(undefined, createAirParticles());
     add("scent", scent?.module);
     add(undefined, createGrassClipmap(echoDepth, thermal, structureFade));
     add("echo", createVegetation(echoDepth, thermal, structureFade));

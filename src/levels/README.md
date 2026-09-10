@@ -49,7 +49,9 @@ frame coordination. It:
 - applies the initial static or show presentation before module loading;
 - loads and activates the configured module list;
 - awaits World-owned shader compilation and first-use uploads for a show;
-- connects desktop and M5 input, selecting exactly one source per frame;
+- connects ordered M5 and desktop sources to the shared two-axis contract;
+- asks the one global flight model to apply continuous thrust and combined tilt
+  on each live frame, for Start, standalone levels, and the complete Show;
 - passes frame delta to entry-owned diagnostics before input/Show work;
 - delegates optional show time, narration, transitions, sense fades, and the
   drone organ's per-frame contract to `show.runtime.ts`;
@@ -57,8 +59,10 @@ frame coordination. It:
   `Run` command/query surface currently used by pages.
 
 Its local frame handles benchmark placement or live input, Show updates and
-height limits in order. World then publishes the viewpoint, updates
-modules and streaming, renders, and reports the finished benchmark frame.
+height limits in order. Run supplies the active flight speed and limits, while
+Composition only wires sources. World then publishes the resulting rig and eye
+facts, updates modules and streaming, renders, and reports the finished
+benchmark frame.
 Flight reset restores rig orientation/position and restarts active training;
 the complete fresh-visitor operation remains a separate gate.
 
@@ -96,8 +100,10 @@ derivatives. UI releases only its own presentation resources. The existing
 
 ## Required Flight Tutorial
 
-`start.level.ts` supplies the same training content to `/start`, `/?level=start`
-and the opening of the full Show. Existing route/catalog registration is retained.
+`start.level.ts` supplies the same training content to `/tutorial`, `/start`,
+`/?level=start` and the opening of the full Show. `/tutorial` is only a route
+alias; standalone policy keeps the existing Run active instead of handing off
+to the main experience. It does not select a second preset or runtime.
 The approved sequence is right, left, up, down. Show caps integrated practice at
 60 playing seconds; standalone practice remains independently exercisable. Start generates
 goals from bounded distance, displacement and radius ranges in the

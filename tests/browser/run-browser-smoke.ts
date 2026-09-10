@@ -198,6 +198,7 @@ async function runSmokeRoute(
     }
     const startInput = [
       "/start",
+      "/tutorial",
       "/?level=start",
       "/",
       "/conductor.html",
@@ -211,7 +212,7 @@ async function runSmokeRoute(
       "Entry URL must remain the requested route",
     );
     observation = await checkEntry(page, route, startInput);
-    if (startInput && (route === "/start" || route === "/?level=start"))
+    if (startInput && ["/start", "/tutorial", "/?level=start"].includes(route))
       await checkStartLevel(page, startInput, artifactBase);
     assertRefactorBranch();
     await page.screenshot({

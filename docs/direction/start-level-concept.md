@@ -119,6 +119,10 @@ Color may reinforce the distinction but is not required to understand it.
 
 ### Prediction behavior
 
+The visible prediction corridor is deferred product work and is not part of the
+global flight-control refactor. When implemented, it must consume World's actual
+rig movement facts rather than control-source values or local camera pose.
+
 - Left lean bends the forward prediction left; right lean bends it right.
 - Neutral input shows the continuation implied by the actual motion model. In
   steady neutral flight this is straight; existing turn inertia must not be hidden.

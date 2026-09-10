@@ -13,17 +13,24 @@ and bounded stream queue.
 
 `world-runtime.ts` creates one XR-compatible WebGL2 renderer, scene, rig with a
 child camera, module runtime, and stream queue. Desktop look or headset tracking
-owns the camera's local pose; navigation moves the rig. Modules receive the
-combined world-space viewpoint.
+owns the camera's local pose and contributes no flight tilt; navigation moves
+the rig independently. After navigation, World publishes actual rig position
+and direction separately from local eye facts. Modules receive this combined
+world-space viewpoint without owning locomotion.
 
 Every frame follows one order:
 
 ```text
-update time and navigation
+Run integrates the one global flight control
+→ World publishes rig and eye facts
 → update active modules
 → advance bounded streaming work
 → render once
 ```
+
+The proposed visible Start look-ahead is deferred. It will consume the published
+rig movement rather than camera look and will not add another flight model,
+runtime, or loop.
 
 `module-runtime.ts` owns the lifecycle
 `load → activate → update → deactivate → unload`. Loading creates fixed CPU/GPU

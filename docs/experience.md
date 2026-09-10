@@ -36,10 +36,15 @@ current structural implementation and future product design are separate:
 architecture work must preserve current behavior, while the dedicated Start
 concept and issues own new guidance, transition, visuals, and physical tests.
 
-Desktop development uses pointer-lock look and keyboard flight. WebXR preserves
-headset-local pose while Desktop or M5 input moves the same viewer rig. Spatial
-learning uses real world movement; narration or elapsed time cannot award a
-passage.
+Desktop development uses pointer-lock look and keyboard flight. W/↑ leans
+forward and descends, S/↓ leans backward and climbs, A/← leans left into a left
+turn, and D/→ leans right into a right turn. Mouse and headset movement change
+only the local view; they do not steer. Releasing a desktop flight key eases
+that keyboard tilt back to center over 0.25 seconds; M5 keeps its existing
+response.
+Keyboard and M5 can act together on the same global flight model in every
+experience. Spatial learning uses actual rig movement; narration or elapsed
+time cannot award a passage.
 
 The Experience page provides rehearsal transport. The Conductor page hosts the
 same show in-process for station operation. Show owns playback, language, time,
