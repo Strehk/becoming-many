@@ -4,10 +4,12 @@ import {
   createFlightGuidance,
   type FlightGuidanceParameters,
 } from "./flight-guidance";
+import { createFlightPath } from "./flight-path/flight-path";
 import {
   type AirParticlesModuleOptions,
   createAirParticlesModule,
 } from "./point-cloud/point-cloud.module";
+import { createAirParticleMaterial } from "./point-cloud/point-cloud-material";
 
 // 1. Center of the local star
 
@@ -27,6 +29,11 @@ export function createStartModule(options: StartModuleOptions): WorldModule {
   const runtime = new ModuleRuntime();
   const modules = [
     createAirParticlesModule(options),
+    createFlightPath({
+      scene: options.scene,
+      viewpoint: options.viewpoint,
+      createMaterial: createAirParticleMaterial,
+    }),
     createFlightGuidance({
       scene: options.scene,
       viewpoint: options.viewpoint,
