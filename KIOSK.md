@@ -6,7 +6,7 @@ Context: A station PC runs the station server and shows the conductor page,
 Responsibility: Give the launch command, name the flags that matter and why,
   and state the limits of what a browser can lock down.
 Boundary: What the process serves is station/README.md; where the page comes
-  from and why it must be http://localhost is docs/direction/deployment.md;
+  from and why it must be http://localhost is docs/operations.md;
   how an installed station keeps the window open unattended is
   watchdog/README.md.
 -->

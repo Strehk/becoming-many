@@ -13,9 +13,9 @@ read it too.
   Behavior changes remain explicitly identified as bug fixes or features.
 - Small product additions remain possible when they answer a concrete current
   need, have a dedicated issue, and can be delivered as a small testable step.
-- `src/` and `public/` are the source of truth. The current as-built state is
-  documented in [docs/current-status.md](docs/current-status.md), while
-  [docs/roadmap.md](docs/roadmap.md) mirrors the remaining issue-backed work.
+- `src/` and `public/` are the source of truth. The binding boundaries are in
+  [Architecture](docs/architecture.md); [Current Work](docs/CURRENT.md) is only
+  a short resume pointer. GitHub issues own mutable scope, order, and acceptance.
 - Product direction is kept in [docs/direction/](docs/direction/README.md).
   Never implement an open product or deployment decision silently.
 
@@ -43,34 +43,27 @@ narration assets, and audience-facing copy.
 
 ## Required Reading
 
-Read the workflow, test plan and roadmap checkpoint when starting or resuming;
-then read only the architecture sections relevant to the current issue.
+Read the current-work pointer and the relevant Architecture and Development
+sections when starting or resuming.
 Implement a coherent issue first, test the combined change once, repair actual
 failures, then commit when authorized. Do not test every edit or turn issue
 maintenance into the main work. The workflow and test plan own process and
 verification cadence; historical checklists do not add recurring gates. Keep
 procedures in those documents, not here.
 
-- [Target Architecture](docs/target-architecture.md): binding refactor direction and
-  deletion ledger. Explicitly open decisions remain open; the roadmap identifies
-  dependencies and remaining product or physical acceptance.
-- [Refactor Workflow](docs/refactor-workflow.md): implementation-first execution,
-  concise GitHub results and completion rules.
-- [Refactor Test Plan](docs/refactor-test-plan.md): local checks, browser
-  acceptance, performance comparisons, and evidence requirements.
-- [Roadmap](docs/roadmap.md): resume checkpoint, M0 preparation, ordered issues,
-  milestones, and external dependencies. Start at its resume checkpoint.
-- [Engineering Standards](docs/engineering-standards.md),
-  [Architecture](docs/architecture.md), and
-  [Architecture Decisions](docs/architecture-decisions.md): implementation
-  rules and confirmed ownership boundaries.
+- [Current Work](docs/CURRENT.md): one-page checkpoint and active issue links.
+- [Architecture](docs/architecture.md): binding integration star, import matrix,
+  ownership, contracts, and lifetime boundaries.
+- [Development](docs/development.md): implementation workflow, targeted test
+  selection, naming, and documentation rules.
+- [Performance](docs/performance.md): measurement layers and physical gate.
 
 ## Architecture Boundaries
 
-- Follow the [Engineering Standards](docs/engineering-standards.md) for
+- Follow [Development](docs/development.md) for
   architectural filename roles, contract names, file reading order and central
   styling. Keep Entry, UI, browser Engine and Station backend responsibilities
-  separate as defined by the [Target Architecture](docs/target-architecture.md).
+  separate as defined by [Architecture](docs/architecture.md).
 - Conductor pages/panels own input and display only. Entry connects browser
   startup to Run; Show and Run own playback and experience lifecycle policy.
 - Contracts and modularity are primary constraints. Small modules own their
@@ -112,7 +105,8 @@ procedures in those documents, not here.
   complexity findings.
 - Development commands: `bun run dev`, `bun run station`, and
   `docker compose up -d --build` for a complete station container.
-- Verification commands and their required cadence live in the test plan.
+- Verification commands and their required cadence live in
+  [Development](docs/development.md).
 
 ## Performance
 
@@ -131,9 +125,10 @@ procedures in those documents, not here.
 ## Documentation and Content
 
 - Documentation lives in `docs/`; [docs/README.md](docs/README.md) is its index.
-- Keep `current-status.md` factual, `architecture.md` implementation-based,
-  `performance.md` evidence-based, `roadmap.md` forward-looking, and
-  `architecture-decisions.md` limited to current confirmed decisions.
+- Keep stable rules in the canonical documents. Mutable work, order, acceptance,
+  and results belong in GitHub issues; `CURRENT.md` only links to active work.
+- Do not append dated histories or recreate deleted evidence ledgers. Git and
+  issue discussions retain historical context.
 - `README.md` introduces the piece to a new reader. Keep vision separate from
   implementation detail.
 - `script/en.md` and `script/de.md` are the authoritative narration. Do not

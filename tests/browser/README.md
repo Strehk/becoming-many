@@ -2,7 +2,7 @@
 Purpose: Explain local production browser acceptance and its evidence.
 Context: Unit tests do not exercise built pages, real controls, or WebGL startup.
 Responsibility: Describe explicit station startup, scenarios, commands, and limits.
-Boundary: Performance acceptance follows docs/refactor-test-plan.md; no physical-device acceptance is implied.
+Boundary: Performance acceptance follows docs/development.md and docs/performance.md; no physical-device acceptance is implied.
 -->
 
 # Production Browser Checks
@@ -83,7 +83,7 @@ diagnostics and must not be enabled during timing measurements.
 This suite does not prove headset tracking, physical M5 operation, audio quality,
 GPU memory disposal, full-show stability, or target-device performance. Select
 evidence for the affected criterion under the
-[refactor test plan](../../docs/refactor-test-plan.md); user browser review is
+[development guide](../../docs/development.md); user browser review is
 optional and unavailable physical acceptance remains open. This command catalog
 does not require running every scenario after every issue.
 

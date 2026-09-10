@@ -71,4 +71,4 @@ children. World owns complete renderer/XR cleanup.
 The shared DOM button lives in `src/ui/shared/xr-entry-button.ts`;
 `xr-session.ts` owns session mechanics here. Styling is in `src/ui/app.css`.
 Browser XR/resource APIs belong here; labels, buttons and DOM styling do not.
-See the [target architecture](../../docs/target-architecture.md#3-target-structure).
+See the [binding architecture](../../docs/architecture.md#integration-star).

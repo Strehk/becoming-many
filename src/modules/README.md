@@ -55,5 +55,5 @@ not need an artificial module lifecycle. Their inputs/outputs are wired by
 Composition and must state any borrowed-buffer validity. Run-owned GLTF sources
 are borrowed; module-created derivatives, pools and workers are released locally.
 Operator UI never imports a concrete content implementation. Adopt role names
-with the affected owner refactor under the [Engineering Standards](../../docs/engineering-standards.md),
+with the affected owner refactor under the [Development guide](../../docs/development.md),
 without generating companion files or recreating retired modules.

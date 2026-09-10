@@ -5,7 +5,7 @@ unlit material effect.
 
 The effect shows the result of echolocation directly through
 distance-dependent visibility; individual visible echo waves are explicitly
-excluded (see `docs/levels/README.md` §03). It patches its consumers'
+excluded. It patches its consumers'
 existing `MeshBasicMaterial` passes: the vertex stage writes the camera-space
 radial distance (rotation-invariant, so nothing swims during headset turns),
 and the fragment stage maps that distance onto the authored five-stop palette

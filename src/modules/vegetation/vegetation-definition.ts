@@ -160,7 +160,7 @@ export const VEGETATION_DEFINITION: StaticPopulationDefinition = {
     // two sizes. Its heights run taller and thinner than the trees around it
     // for the same reason. It also carries fewer triangles per instance than
     // the trees it displaces, so the mix costs nothing on the frame; what it
-    // costs is transfer, and that is recorded in docs/assets/vegetation.md.
+    // costs is transfer, as required by docs/performance.md.
     {
       id: "birch-1",
       url: "/models/vegetation/birch-pack.glb",

@@ -68,17 +68,13 @@ differences never prevent steering from the configured host.
 UI releases its listeners, subscriptions, timers and cloned chapter nodes. Static
 markup belongs to `src/ui/conductor.html` and survives UI cleanup. The entry connects
 page exit/cancellation to Run's awaited cleanup; UI never unloads its children.
-All authored styling lives in `src/ui/app.css` under the [Engineering Standards](../../../docs/engineering-standards.md#application-styling).
-The [target architecture](../../../docs/target-architecture.md#3-target-structure)
-owns diagrams and placement; the [roadmap](../../../docs/roadmap.md) owns order.
+All authored styling lives in `src/ui/app.css` under the
+[Development guide](../../../docs/development.md#ui-and-documentation).
+The [binding architecture](../../../docs/architecture.md#integration-star)
+owns dependencies and placement; GitHub issues own order.
 The full visitor restart and XR/calibration operation remain #9/#46.
 
 ## Verification record
 
-The [design review and evidence](../../../docs/evidence/conductor-ui/design-qa.md)
-record the mockup comparison, independent structure/accessibility reviews,
-desktop/narrow screenshots, interaction checks and the dialog close-state fix.
-The [language follow-up](../../../docs/evidence/conductor-ui/language-smoke.json)
-records successful browser checks for continuous EN/DE switching and preserved
-pause state. Implementation validation included lint, build and focused tests;
-these records do not establish physical PICO/M5 or Windows-PCVR acceptance.
+Historical visual and language evidence remains in Git and the owning issues.
+Local checks do not establish physical PICO/M5 or Windows-PCVR acceptance.

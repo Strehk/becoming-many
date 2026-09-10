@@ -65,9 +65,8 @@ Every actor prints trails through the same seam: a trail ring consumes
 nothing but a packed world-position stream, so the module pairs each source
 with its own ring and appearance. Flies and birds implement it today;
 further moving actors join without a bus, a sibling import, or any change
-to the existing paths. Upgrading the point birds to bm-base's rigged
-wing-vertex sampling is recorded in
-`docs/levels/04-motion-perception/README.md`.
+to the existing paths. Any upgrade from point birds to rigged wing-vertex
+sampling requires a current issue with visual and performance acceptance.
 
 ## Where the clouds are
 

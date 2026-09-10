@@ -102,7 +102,7 @@ try {
     Start-StationContainer -Recreate
     Wait-StationHealth
 } catch {
-    Write-Error "Deployment failed: $_ Recovery: see docs/direction/deployment.md." -ErrorAction Continue
+    Write-Error "Deployment failed: $_ Recovery: see docs/operations.md." -ErrorAction Continue
     throw
 } finally {
     # Try both even when the first watchdog cannot be reached.

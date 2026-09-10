@@ -1,65 +1,51 @@
 # Experience
 
-## Implemented Piece
+**Becoming Many** is one continuous VR flight through a procedurally streamed
+world. The visitor keeps their position while non-human perceptual layers appear
+around them. The show prepares one composition and changes presentation rather
+than loading a new scene at every cue.
 
-**Becoming Many** is one continuous flight through a procedurally streamed
-world. The visitor retains their position while sensory layers appear around
-them. World states are authored levels, but the running show composes their
-union once and transitions through intensities rather than loading separate
-scenes.
-
-The current typed schedule lasts 8 minutes 41 seconds:
+## Narrative sequence
 
 | Time | World state | Perceptual focus |
 | ---: | --- | --- |
-| 0:00 | White World | silent lead-in and openness |
-| 0:05 | White World | prologue |
-| 1:22 | Scent | chemical traces and sources |
-| 2:14 | Echolocation | depth reveals the solid world |
-| 2:47 | Motion | moving signals and trails |
-| 3:50 | Thermal | false-colour heat relationships |
-| 4:39 | Magnetic | directional sky perception |
-| 5:35 | Connections | the layered network synthesis |
-| 7:26 | White World | return |
-| 8:36 | White World | end credits |
+| 0:00 | White World | Openness and silent lead-in |
+| 0:05 | White World | Prologue |
+| 1:22 | Scent | Chemical traces and sources |
+| 2:14 | Echolocation | Depth reveals the solid world |
+| 2:47 | Motion | Moving signals and trails |
+| 3:50 | Thermal | False-colour heat relationships |
+| 4:39 | Magnetic | Directional sky perception |
+| 5:35 | Connections | Layered network synthesis |
+| 7:26 | White World | Return |
+| 8:36 | White World | End credits |
 
-Cue timings are authored in `src/dramaturgy/piece-schedule.ts`; narration text
-is authoritative in `script/en.md` and `script/de.md`.
+The authored main show lasts 8:41. `src/dramaturgy/piece-schedule.ts` owns exact
+timing. `script/en.md` and `script/de.md` own narration wording.
 
-## Presentation Flow
+Senses accumulate rather than replace one another. White World supplies
+atmosphere and air; Scent adds source traces; Echolocation reveals terrain and
+vegetation; Motion adds actors and trails; Thermal changes local surface
+perception; Magnetic adds a directional sky; Connections reveals the final
+world network. The return removes those layers before the credits.
 
-The default page starts the complete show and waits for a user gesture when the
-browser has suspended audio. The rehearsal transport can hold, seek, or jump.
-The conductor page provides the same show in an operator-facing station window,
-with transport, language, reset, headset entry, controller setup, and technical
-status.
+## Interaction
 
-Passthrough onboarding/offboarding and an explicit installation session state
-machine are product direction, not current runtime behavior. Their decisions
-remain in [direction](direction/README.md).
+The complete experience begins with the required spatial flight tutorial. Its
+current structural implementation and future product design are separate:
+architecture work must preserve current behavior, while the dedicated Start
+concept and issues own new guidance, transition, visuals, and physical tests.
 
-## Visual Layers
+Desktop development uses pointer-lock look and keyboard flight. WebXR preserves
+headset-local pose while Desktop or M5 input moves the same viewer rig. Spatial
+learning uses real world movement; narration or elapsed time cannot award a
+passage.
 
-- White World establishes fog, background, and air.
-- Scent adds bounded particles emitted from deterministic plants and animals.
-- Echolocation reveals terrain, vegetation, rocks, and distance colour, and
-  introduces the narrative Grass Clipmap.
-- Motion adds point actors and persistent movement trails.
-- Thermal applies a local false-colour view to solid surfaces and animals.
-- Magnetic adds a directional sky dome without recolouring the ground.
-- Connections reveals a pulsing network between world anchors.
+The Experience page provides rehearsal transport. The Conductor page hosts the
+same show in-process for station operation. Show owns playback, language, time,
+and narration; UI only sends commands and displays observations.
 
-The finale layers these signals deliberately. The return removes them until the
-visitor reaches White World again, where the end credits fade in over the last
-German lines and hold until the experience is restarted.
-
-## Input and Audio
-
-Desktop development uses pointer-lock look and keyboard flight. WebXR tracking
-provides local head pose while the same viewer rig receives flight movement.
-The M5 adapter maps physical tilt and button state into that flight boundary.
-
-English and German narration share one typed schedule and one audio timebase.
-The audio timebase is show-time authority; if audio is suspended, show time does
-not silently advance. Additional spatial sound design remains possible as a
-small issue-backed product addition, but it must stay synchronized and bounded.
+English and German narration share one typed schedule. The audio timebase is
+show-time authority, so suspended audio does not silently advance the piece.
+Exact visitor replacement, calibration, physical comfort, and installation
+acceptance remain issue-owned work.

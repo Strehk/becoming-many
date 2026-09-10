@@ -8,7 +8,7 @@ Responsibility: Name the install layout, the supervision chain, the UDP ports,
   and the few things an operator has to do by hand.
 Boundary: What the browser flags do is ../KIOSK.md. What the container serves
   is ../station/README.md. Where the pages must come from and why is
-  ../docs/direction/deployment.md.
+  ../docs/operations.md.
 -->
 
 # Station supervision
@@ -60,7 +60,7 @@ cold container start to every restart.
 
 **Headset cable: use the front USB port. Do not use the rear USB-C port next to
 Ethernet; the user reports whole-PC shutdown when connecting there.** See the
-[recorded cabling restriction](../docs/direction/deployment.md#verified-cabling-restriction--office-report-2026-09-09).
+[recorded cabling restriction](../docs/operations.md#safety-critical-usb-restriction).
 This hardware symptom cannot be repaired by a Watchdog restart.
 
 Keep the repository at `C:\becoming-many` and run the tracked configs and
@@ -157,7 +157,7 @@ at the first missing privilege or unavailable tool.
 
 For the confirmed EventLog collision on TCP 49667, the manual
 `scripts/repair-pico-port.bat` performs a reversible administrator repair. It is
-not run silently by startup. See the [repair procedure](../docs/direction/deployment.md#eventlog-port-conflict-repair)
+not run silently by startup. See the [repair procedure](../docs/operations.md#diagnosis-and-recovery)
 before running it; Windows must restart before the existing EventLog listener
 can move to another dynamic port.
 
@@ -191,7 +191,7 @@ shares a file lock with deployment, so concurrent hooks skip their bring-up.
 The local `.git\station-deployment.json` selects the image across restarts;
 without it, the base Compose file continues to select the release. Branch mode
 never builds or pulls during boot and never falls back to GHCR when its image
-is missing. See [deployment and recovery](../docs/direction/deployment.md).
+is missing. See [deployment and recovery](../docs/operations.md).
 
 ## Reading the logs
 

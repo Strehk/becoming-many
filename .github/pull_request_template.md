@@ -21,6 +21,6 @@ For performance-sensitive changes:
 - [ ] Required human/device acceptance for this exact candidate
 - PICO: passed / failed / not tested (link evidence)
 
-Missing evidence remains pending. Follow the [test plan](../docs/refactor-test-plan.md)
+Missing evidence remains pending. Follow the [development guide](../docs/development.md)
 and [performance policy](../docs/performance.md); this record is not an automated
 merge restriction or permission for Git operations.

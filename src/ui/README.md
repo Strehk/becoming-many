@@ -30,5 +30,5 @@ references, so Vite must emit external files.
 Flash is independent of Run. Its [page](flash/README.md) binds setup controls;
 Entry connects them to the serial adapter. The [Conductor](conductor/README.md)
 documents operator-specific contracts. See the
-[Engineering Standards](../../docs/engineering-standards.md#declarative-browser-ui)
+[Development guide](../../docs/development.md#ui-and-documentation)
 for markup, styling and lifecycle rules.

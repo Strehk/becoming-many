@@ -1,66 +1,28 @@
 # Project Documentation
 
-The current `src/` and `public/` trees define the running system. Documentation
-separates verified implementation, forward work, installation direction, and
-dated evidence.
+The running code and typed configuration are the authority for implementation
+details. These documents contain only stable development guidance and a short
+entry point into current work.
 
-## Refactor Workstream
+| Document | Authority |
+| --- | --- |
+| [Current work](CURRENT.md) | One-page resume point; GitHub issues own scope, order, and acceptance |
+| [Architecture](architecture.md) | Binding ownership, dependency, contract, and lifetime rules |
+| [Development](development.md) | Implementation workflow, verification selection, and naming conventions |
+| [Experience](experience.md) | Product flow, narrative sequence, and interaction intent |
+| [Performance](performance.md) | Performance target, evidence rules, and measurement gates |
+| [Operations](operations.md) | Verified station operation, safety constraints, and recovery entry points |
+| [Assets](assets.md) | Shipping asset layout, provenance, and material-name contracts |
 
-- [Target Architecture](target-architecture.md) — binding target responsibilities,
-  diagrams for backend/browser separation, lifetime ownership and direct commands;
-  start/frame/end flows, deletion ledger and explicitly open decisions.
+Current product and implementation work belongs in
+[GitHub issues](https://github.com/Strehk/becoming-many/issues). Dated reports,
+completed plans, and superseded decisions remain available through Git history
+and issue discussions; they are not maintained as a second backlog here.
 
-- [Roadmap](roadmap.md) — the binding plan, resume checkpoint, issue order,
-  M0 checklist, and milestones; start here after context compression.
-- [Refactor Workflow](refactor-workflow.md) — implementation-first issue blocks,
-  concise GitHub results and completion rules.
-- [Refactor Test Plan](refactor-test-plan.md) — targeted checks after a complete issue, browser scenarios,
-  performance comparisons and evidence rules.
+The protected Start-level design material under `docs/direction/` and
+`docs/moodboards/start-flight-guidance/` is active product planning. It is not
+part of the canonical engineering-document count and must not be rewritten as
+part of documentation maintenance.
 
-## Current System
-
-- [Current Status](current-status.md) — implemented behavior; readiness and verification history live elsewhere.
-- [Architecture](architecture.md) — runtime composition, ownership, lifecycle,
-  and contracts.
-- [Architecture Decisions](architecture-decisions.md) — current decisions that
-  constrain changes.
-- [Engineering Standards](engineering-standards.md) — coding, architecture,
-  filename roles, contract vocabulary, file reading order, central CSS and
-  documentation rules.
-- [Experience](experience.md) — the implemented narrative and interaction flow.
-- [Levels](levels/README.md) — the current world-state sequence and presets.
-- [World Streaming](world-streaming.md) — fixed windows, scheduling, and
-  generation rules.
-- [Landscape Modules](landscape-modules.md) — current module ownership and
-  cross-module contracts.
-- [Platforms](platforms.md) — browser, station, PICO, and PCVR status.
-- [Performance](performance.md) — accepted evidence, targets, and open risks.
-
-## Installation Direction
-
-[docs/direction](direction/README.md) contains product and delivery direction
-for the Futurium installation. Every statement there is labelled as current,
-planned, or open. Open decisions remain in
-[Open Decisions](direction/open-decisions.md) and must not be resolved silently.
-
-## Evidence and References
-
-- [Session handoff — 2026-09-09](evidence/2026-09-09-session-handoff.md) — grouped changes, corrected phone-feedback assumptions and review entry points; the roadmap owns next work.
-
-- [Refactor Evidence](evidence/README.md) — dated results and shared run metadata,
-  with individual measurements retained under their originating issue.
-
-- [Browser Performance Audit — 2026-09-08](performance-audit-2026-09-08.md)
-  records full-show, ten-level, CPU/GPU and loading findings with focused removal-first work packages.
-- [Browser Performance Audit — 2026-08-24](performance-audit-2026-08-24.md)
-  preserves its dated desktop measurements.
-- [Grass Clipmap Review — 2026-09-02](performance-review-grass-clipmap-2026-09-02.md)
-  preserves findings against the reviewed revision; current issues decide what
-  still applies.
-- [Assets](assets/README.md) records shipping structure, provenance and current asset use.
-- [Moodboards](moodboards/) preserve visual references, not implementation
-  claims. [Connections atmosphere references](moodboards/connections-atmosphere-references.md)
-  support the stronger final reveal requested in #114.
-
-Keep documents concise. Replace stale claims instead of accumulating competing
-histories; keep dated evidence only when its date and scope remain explicit.
+[Active visual references](references/README.md) link the protected Start work
+and the retained Connections direction for issue #114.

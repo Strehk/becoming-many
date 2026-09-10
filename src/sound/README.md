@@ -120,8 +120,8 @@ trimmed or transcoded. Direct listening was unavailable in this session.
 | [atmosphere-source-10.mp3](../../public/audio/granular/atmosphere-source-10.mp3) | 3:33 | -14.2 LUFS |
 | [atmosphere-source-11.mp3](../../public/audio/granular/atmosphere-source-11.mp3) | 3:49 | -13.8 LUFS |
 
-The [#112 integration step](../../docs/roadmap.md#granular-atmosphere--112)
-extends `training-audio.runtime.ts` in place: replace the ordinary sample bed
+The implemented [#112](https://github.com/Strehk/becoming-many/issues/112)
+integration extends `training-audio.runtime.ts` in place: replace the ordinary sample bed
 with bounded granular layers, keep the separate spatial goal cue, and own one
 shared atmosphere reverb within that same lifetime. `spatial-audio.runtime.ts`
 continues to own placement/context/listener; Show continues to own transport and

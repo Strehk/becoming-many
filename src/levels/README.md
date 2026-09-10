@@ -15,7 +15,7 @@ Each level is one self-contained literal parameter object, following
 or inheritance. All authored settings can be read and changed in that file.
 Repeated configuration is intentional; `authored/` is retired. Required fields
 are typed; technical defaults and validation belong to the concrete module.
-See the [target architecture](../../docs/target-architecture.md).
+See the [binding architecture](../../docs/architecture.md).
 
 Narrative names remain ordered as:
 
@@ -87,7 +87,7 @@ transition.
 Run owns experience startup, frame coordination and complete end; Show owns
 transport and language. Browser Entry chooses requests and connects a Run to
 UI. Page/panel code receives narrow public capabilities under the
-[Engineering Standards](../../docs/engineering-standards.md).
+[Development guide](../../docs/development.md).
 
 Run owns loaded GLTF sources until all borrowers finish. Composition constructs
 and connects; World coordinates module lifecycle; modules release their own

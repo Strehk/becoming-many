@@ -2,7 +2,7 @@
 Purpose: Explain how to build, export, simulate, and configure the M5StickS3 controller firmware.
 Context: The firmware is a PlatformIO project outside the browser runtime.
 Responsibility: Document the device tools, release export, and serial setup channel.
-Boundary: The wire contract lives in src/m5/protocol.ts; direction in docs/direction/controls-m5.md.
+Boundary: The wire contract lives in src/m5/protocol.ts; architecture in docs/architecture.md.
 -->
 
 # M5StickS3 Controller Firmware

@@ -35,7 +35,7 @@ export interface OrganEngine {
 /**
  * Borrow the Run's Tone-created context. The native Show clock context broke
  * the rooms' AudioWorklets in Chromium; that compatibility evidence and the
- * two owners are recorded in docs/target-architecture.md.
+ * two owners are recorded in docs/architecture.md.
  */
 export async function createOrganEngine(
   composition: OrganComposition,

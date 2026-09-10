@@ -1,6 +1,6 @@
 # Purpose: Start one Becoming Many station with a single command.
 # Context: Runs on each station PC; the pages must come from http://localhost
-#   (docs/direction/deployment.md), so this publishes a local port, not a host.
+#   (docs/operations.md), so this publishes a local port, not a host.
 # Responsibility: Run the released image, pass the per-station env through,
 #   keep the process restarted, and offer the M5 simulator for testing.
 # Boundary: Per-station values live in `.env` (see .env.example), never here.
