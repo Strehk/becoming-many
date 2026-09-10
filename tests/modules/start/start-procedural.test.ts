@@ -1,15 +1,18 @@
 import { expect, test } from "bun:test";
 import { type Points, type PointsMaterial, Scene, Vector3 } from "three";
-import { StreamQueue } from "../../world/stream-queue";
-import { connectFlightRoute } from "./flight-path/flight-connection";
+import { connectFlightRoute } from "../../../src/modules/start/flight-path/flight-connection";
 import {
   createFlightEntry,
   prependFlightEntry,
-} from "./flight-path/flight-entry";
-import { createFlightRoute } from "./flight-path/flight-route";
-import { createStartModule } from "./start.module";
-import type { PlacedRoute } from "./start-contract";
-import { START_EXERCISES, START_SETTINGS } from "./start-exercises";
+} from "../../../src/modules/start/flight-path/flight-entry";
+import { createFlightRoute } from "../../../src/modules/start/flight-path/flight-route";
+import { createStartModule } from "../../../src/modules/start/start.module";
+import type { PlacedRoute } from "../../../src/modules/start/start-contract";
+import {
+  START_EXERCISES,
+  START_SETTINGS,
+} from "../../../src/modules/start/start-exercises";
+import { StreamQueue } from "../../../src/world/stream-queue";
 
 // Test-owned presentation keeps this fixture independent of external level recipes.
 const PRESENTATION = {
@@ -146,7 +149,12 @@ test("success prepares a joined successor while the original exit remains visibl
     section.route.exerciseEndMeters,
     section.route.lengthMeters,
   ]);
-  for (let frame = 0; frame < 90; frame++) fixture.tick();
+  for (
+    let frame = 0;
+    frame < Math.ceil(START_SETTINGS.retireSeconds * 60) + 30;
+    frame++
+  )
+    fixture.tick();
   expect(trails(fixture)).toHaveLength(2);
   expect(first?.visible).toBe(true);
   const next = trails(fixture).find((path) => path !== first);
@@ -172,7 +180,12 @@ test("success prepares a joined successor while the original exit remains visibl
     0,
     START_SETTINGS.keepPathBehindMeters + 3,
   ]);
-  for (let frame = 0; frame < 90; frame++) fixture.tick();
+  for (
+    let frame = 0;
+    frame < Math.ceil(START_SETTINGS.retireSeconds * 60) + 30;
+    frame++
+  )
+    fixture.tick();
   expect(first?.visible).toBe(false);
   expect(trails(fixture)).toHaveLength(1);
   const positions = next?.geometry.getAttribute("position");
@@ -187,6 +200,7 @@ test("recovery offers a fixed line ahead of flight even when gaze points elsewhe
   const fixture = createFixture();
   const original = new Set(trails(fixture));
   fixture.viewpoint.worldFlightDirection.set(1, 0, 0);
+  fixture.viewpoint.worldDirection.set(0, 1, 0);
   let entry: Points | undefined;
   for (let step = 1; step <= 100 && !entry; step++) {
     fixture.viewpoint.worldPosition.set(step * 0.25, 0, 0);
@@ -253,7 +267,12 @@ test("immediate flight keeps progress while route generation is delayed", () => 
     fixture.module.update?.(1 / 60);
   }
   flyRange(fixture, section, [4, section.route.exerciseEndMeters]);
-  for (let frame = 0; frame < 90; frame++) fixture.tick();
+  for (
+    let frame = 0;
+    frame < Math.ceil(START_SETTINGS.retireSeconds * 60) + 30;
+    frame++
+  )
+    fixture.tick();
   expect(trails(fixture)).toHaveLength(2);
   const successor = trails(fixture).at(-1);
   const end = new Vector3();

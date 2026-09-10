@@ -1,8 +1,8 @@
 import { expect, test } from "bun:test";
 import { Vector3 } from "three";
-import { START_SETTINGS } from "../start-exercises";
-import { createParticleLight } from "./particle-light";
-import { createRingPassage } from "./ring-passage";
+import { createParticleLight } from "../../../../src/modules/start/particle-elements/particle-light";
+import { createRingPassage } from "../../../../src/modules/start/particle-elements/ring-passage";
+import { START_SETTINGS } from "../../../../src/modules/start/start-exercises";
 
 // 1. Real opening crossings: forward only, swept intersection, once per ring
 const ring = {

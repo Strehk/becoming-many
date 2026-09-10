@@ -1,8 +1,8 @@
 import { expect, test } from "bun:test";
 import { Color } from "three";
-import { START_EXERCISES } from "../start-exercises";
-import type { FlightRoute } from "./particle-contract";
-import { createPathParticleGeometry } from "./path-particles";
+import type { FlightRoute } from "../../../../src/modules/start/flight-path/particle-contract";
+import { createPathParticleGeometry } from "../../../../src/modules/start/flight-path/path-particles";
+import { START_EXERCISES } from "../../../../src/modules/start/start-exercises";
 
 const PATH_PARTICLE_SETTINGS = START_EXERCISES[0].particles;
 

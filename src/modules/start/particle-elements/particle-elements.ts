@@ -16,6 +16,7 @@ import type {
   AnimationSettings,
   ElementGeometryFactory,
   ElementRetirement,
+  ElementRetirementMode,
   ElementSource,
   ParticleAnimation,
   ParticleLight,
@@ -234,8 +235,11 @@ class ParticleElements {
 
   // 4. Shared emergence/dissolve envelope plus shape-independent flight disturbance
   readonly isVisible = (): boolean => this.cloud?.visible ?? false;
-  readonly dissolve = (): void => {
-    this.options.retirement.request();
+  readonly dissolve = (
+    mode: ElementRetirementMode = "completed",
+    durationSeconds?: number,
+  ): void => {
+    this.options.retirement.request(mode, durationSeconds);
   };
   readonly update = (seconds: number): void => {
     if (!this.cloud?.visible || !this.material) return;

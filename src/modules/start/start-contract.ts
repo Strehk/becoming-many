@@ -48,7 +48,18 @@ export interface PlacedRoute {
   readonly route: ExerciseRoute;
   readonly pose: ExercisePose;
 }
+/** Actual travel and camera facts; looking away alone cannot request recovery. */
+export interface RecoveryView {
+  readonly worldPosition: Readonly<Vector3>;
+  readonly worldDirection: Readonly<Vector3>;
+  readonly worldFlightDirection?: Readonly<Vector3>;
+  readonly viewHalfAngleRadians: number;
+  readonly viewDistanceMeters: number;
+}
 export interface DeviationParameters {
+  readonly directionDifferenceRadians: number;
+  readonly lookAheadMeters: number;
+  readonly visibilityPaddingMeters: number;
   readonly distanceMeters: number;
   readonly outsideTravelMeters: number;
   readonly maximumStepMeters: number;

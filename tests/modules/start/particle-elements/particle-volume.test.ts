@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test";
 import { BufferGeometry, Float32BufferAttribute } from "three";
-import { START_SETTINGS } from "../start-exercises";
-import { fillParticleVolume } from "./particle-volume";
+import { fillParticleVolume } from "../../../../src/modules/start/particle-elements/particle-volume";
+import { START_SETTINGS } from "../../../../src/modules/start/start-exercises";
 
 // A shape-free point fixture verifies spatial depth, both layers and reproducibility.
 test("volume has a bounded dense core and translucent halo in three dimensions", () => {

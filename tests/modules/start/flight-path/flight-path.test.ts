@@ -6,7 +6,7 @@ import {
   Scene,
   Vector3,
 } from "three";
-import { createFlightPath } from "./flight-path";
+import { createFlightPath } from "../../../../src/modules/start/flight-path/flight-path";
 
 function createDisplay() {
   const scene = new Scene();

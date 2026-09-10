@@ -116,7 +116,8 @@ export interface RingPassage {
   readonly update: (player: Readonly<Vector3>) => readonly number[];
 }
 
-// 5. Retirement is requested by the section and permitted only behind actual flight.
+// 5. Completed courses retire behind flight; abandoned courses fade as a whole.
+export type ElementRetirementMode = "completed" | "abandoned";
 export interface ElementBounds {
   readonly center: Readonly<Vector3>;
   readonly radius: number;
@@ -130,7 +131,10 @@ export interface ElementRetirement {
   /** Stable GPU uniform storage; values are opacity multipliers in [0, 1]. */
   readonly presence: Float32Array;
   readonly reset: (bounds: readonly ElementBounds[]) => void;
-  readonly request: () => void;
+  readonly request: (
+    mode?: ElementRetirementMode,
+    durationSeconds?: number,
+  ) => void;
   readonly update: (
     seconds: number,
     flight: {

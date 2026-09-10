@@ -1,16 +1,19 @@
 import { describe, expect, test } from "bun:test";
 import { Points, PointsMaterial, Scene, Vector3 } from "three";
-import { createFlightRoute } from "../flight-path/flight-route";
-import { createPathParticleGeometry } from "../flight-path/path-particles";
-import { START_EXERCISES, START_SETTINGS } from "../start-exercises";
-import { createArrowShape } from "./arrow-shape";
-import { placeElements } from "./element-placement";
-import { createElementRetirement } from "./element-retirement";
-import { createParticleAnimation } from "./particle-animation";
-import { createParticleElements } from "./particle-elements";
-import { createParticleLight } from "./particle-light";
-import { createParticleSimulation } from "./particle-simulation";
-import { createRingShape } from "./ring-shape";
+import { createFlightRoute } from "../../../../src/modules/start/flight-path/flight-route";
+import { createPathParticleGeometry } from "../../../../src/modules/start/flight-path/path-particles";
+import { createArrowShape } from "../../../../src/modules/start/particle-elements/arrow-shape";
+import { placeElements } from "../../../../src/modules/start/particle-elements/element-placement";
+import { createElementRetirement } from "../../../../src/modules/start/particle-elements/element-retirement";
+import { createParticleAnimation } from "../../../../src/modules/start/particle-elements/particle-animation";
+import { createParticleElements } from "../../../../src/modules/start/particle-elements/particle-elements";
+import { createParticleLight } from "../../../../src/modules/start/particle-elements/particle-light";
+import { createParticleSimulation } from "../../../../src/modules/start/particle-elements/particle-simulation";
+import { createRingShape } from "../../../../src/modules/start/particle-elements/ring-shape";
+import {
+  START_EXERCISES,
+  START_SETTINGS,
+} from "../../../../src/modules/start/start-exercises";
 
 // Geometry contracts: route centering, exterior placement, and stable reproduction
 for (const exercise of START_EXERCISES) {

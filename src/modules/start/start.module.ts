@@ -5,6 +5,7 @@ import {
   type FlightGuidanceParameters,
 } from "./flight-guidance";
 import { connectFlightRoute } from "./flight-path/flight-connection";
+import { createFlightCourse } from "./flight-path/flight-course";
 import { createFlightDeviation } from "./flight-path/flight-deviation";
 import {
   createFlightEntry,
@@ -98,6 +99,7 @@ class StartModule implements WorldModule {
     { light: ParticleLight; passage: RingPassage }
   >();
   private readonly retiringPaths = new Map<Display, Vector3>();
+  private readonly course = createFlightCourse(connectFlightRoute);
   private readonly relative = new Vector3();
   private entry: (PlacedRoute & { display: Display }) | undefined;
   private recoveryEntryNeeded = false;
@@ -196,6 +198,7 @@ class StartModule implements WorldModule {
     this.current = undefined;
     this.bindings.clear();
     this.retiringPaths.clear();
+    this.course.clear();
     this.entry = undefined;
     this.recoveryEntryNeeded = false;
     this.active = true;
@@ -207,6 +210,7 @@ class StartModule implements WorldModule {
     this.active = false;
     this.bindings.clear();
     this.retiringPaths.clear();
+    this.course.clear();
     this.entry = undefined;
     this.recoveryEntryNeeded = false;
     for (const { passage } of this.feedback.values())
@@ -218,6 +222,7 @@ class StartModule implements WorldModule {
     this.active = false;
     this.bindings.clear();
     this.retiringPaths.clear();
+    this.course.clear();
     this.entry = undefined;
     this.recoveryEntryNeeded = false;
     for (const { passage } of this.feedback.values())
@@ -256,12 +261,14 @@ class StartModule implements WorldModule {
       deltaSeconds,
       progress: this.current?.exerciseProgress.update(position) ?? "pending",
       reachedEnd: this.current?.exitProgress.update(position) === "passed",
-      deviated: this.current?.deviation.update(position) ?? false,
+      deviated:
+        this.current?.deviation.update(position, this.options.viewpoint) ??
+        false,
       prepared:
         !!this.pending?.display &&
         (this.bindings.has(this.pending.display) ||
           (!this.pending.continuation &&
-            this.elements.some((element) => !element.isVisible()))),
+            this.elements.every((element) => !element.isVisible()))),
       instructionReleased:
         state.elapsedSeconds >= START_SETTINGS.demonstrationCueSeconds,
       instructionEnded: true,
@@ -288,11 +295,8 @@ class StartModule implements WorldModule {
       exercise.route,
       START_SETTINGS.seed + attempt,
     );
-    const predecessor = continuation ? this.current : this.entry;
-    if (!predecessor) throw new Error("Missing route predecessor");
-    const pose = connectFlightRoute(predecessor, route);
     this.pending = {
-      section: { route, pose },
+      section: this.course.append(route),
       generation: this.createGeneration(route, exercise.particles, attempt),
       continuation,
       elements: this.createElementSources(route, exercise),
@@ -454,15 +458,20 @@ class StartModule implements WorldModule {
     );
     display.show(geometry, pose, recovery ? START_SETTINGS.revealSeconds : 0);
     this.entry = { route, pose, display };
+    this.course.begin(this.entry);
     return true;
   }
 
   private recoverCourse(): void {
     this.cancelPending();
-    for (const path of this.paths) {
-      path.retire(START_SETTINGS.retireSeconds);
-      this.retireElements(path);
-    }
+    // A reset retires the complete course on one timeline, including front rings.
+    for (const path of this.paths) path.retire(START_SETTINGS.retireSeconds);
+    for (const elements of this.elements)
+      elements.dissolve("abandoned", START_SETTINGS.retireSeconds);
+    for (const { passage } of this.feedback.values())
+      passage.reset([], this.readPosition());
+    this.bindings.clear();
+    this.course.clear();
     this.retiringPaths.clear();
     this.current = undefined;
     this.entry = undefined;
@@ -532,14 +541,14 @@ class StartModule implements WorldModule {
       lengthMeters: section.route.exerciseEndMeters,
     };
     const exerciseProgress = createFlightProgress(
-      exerciseRoute,
-      section.pose,
+      { route: exerciseRoute, pose: section.pose },
       exercise.progress,
+      this.readPosition(),
     );
     const exitProgress = createFlightProgress(
-      section.route,
-      section.pose,
+      section,
       exercise.progress,
+      this.readPosition(),
     );
     const deviation = createFlightDeviation(
       section,

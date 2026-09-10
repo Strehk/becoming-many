@@ -19,9 +19,10 @@ route for that definition. A separate chunk engine is unnecessary for the MVP.
 | `start-exercises.ts` | One literal list of exercises and shared presentation settings. No functions. |
 | `start-game.runtime.ts` | Current exercise, attempt identity, phase, retry, and completion decisions. |
 | `flight-path/flight-route.ts` | Generate and sample a route from geometric parameters and a seed. |
+| `flight-path/flight-course.ts` | Own the bounded course tail; every appended section connects to that tail. |
 | `flight-path/flight-connection.ts` | Compute a position- and tangent-continuous successor pose. |
 | `flight-path/flight-deviation.ts` | Observe sustained movement outside the route corridor. |
-| `flight-path/flight-recovery.ts` | Compute a fresh visible entry from current view and flight facts. |
+| `flight-path/flight-recovery.ts` | Compute a fresh approach from actual position and flight direction. |
 | `flight-path/particle-generation.ts` | Own bounded incremental particle work and cancellation. |
 | `flight-path/flight-progress.ts` | Observe ordered passage along the route using actual rig movement. |
 | `flight-path/flight-path.ts` | Own the visible particle trail, anchoring, fade, and resource disposal. |
@@ -46,6 +47,13 @@ no instruction timer and cannot award success.
 
 ## Continuous sections
 
+Continuity is a construction invariant. `flight-course.ts` owns the current
+course tail. `begin` establishes its only root; `append` derives the next pose
+from that tail through the injected connection function, then advances the tail.
+No exercise supplies its own world placement. The returned section is shared by
+path generation, ring placement and progression. Storage contains only the tail,
+not an accumulating history. Clearing the course invalidates its old root.
+
 Each route has a straight entry (`straightMeters`), a curved exercise, and a
 straight tangent exit (`outroMeters`). The current default is a 12 m entry and
 24 m exit. Ordered passage to `exerciseEndMeters` earns success; the player then
@@ -60,7 +68,8 @@ retries queue admission if full, and invalidates obsolete jobs on reset/unload.
 Finished successor lines appear during the exit area at full configured transparency; no new instruction pause or
 placement in front of the player interrupts a regular connection.
 
-The center owns independent fixed pools of four path displays and four element displays.
+Geometry follows one course; fixed rendering pools are only its presentation.
+The center owns four path displays and four element displays.
 A retained front ring cannot occupy a path slot. Completed paths remain visible
 until their endpoint is at least 12 m behind actual flight direction, then fade.
 Each display owns its geometry and material. Retired buffers are replaced on reuse
@@ -81,19 +90,26 @@ player's position at the moment of transition.
 ## Deviation and recovery
 
 `flight-deviation.ts` observes distance to a sampled route corridor and distance
-actually flown outside it. The defaults allow 5 m separation and 3 m sustained
-outside travel. The approach to a fresh entry is included in the corridor.
+actually flown outside it. The defaults allow 12 m separation. Recovery requires another 8 m of sustained
+outside travel, a heading difference of at least 0.87 radians from the forward
+route target, and the exercise ring area outside the camera view. A conservative
+6 m padding protects visible ring edges. Parallel offsets, returning toward the
+route, gaze alone and reset displacements do not trigger a course replacement. The approach to a fresh entry is included in the corridor.
 Looking away or standing still never triggers recovery. Ordered progression also
-rejects shortcuts and cannot credit a reset displacement.
+uses ordered forward checkpoint-plane crossings with lateral corridor tolerance.
+The final plane must be crossed: wider tolerance cannot finish a chunk early.
+A missed checkpoint never independently requests recovery.
 
 `flight-recovery.ts` calculates only a new pose. At reveal time it captures the
 latest rig position and actual travel direction to place an approach 6 m ahead.
 The approach is fixed in world space; turning the head does not drag it along. Existing height constraints are applied
 to the owned candidate position. It never changes the player position.
 
-On recovery, the center fades existing displays, cancels pending generation, and
-prepares a new attempt. An unearned exercise repeats. A completed exercise remains
-earned even if the player leaves its exit; recovery then offers the next exercise.
+Recovery replaces the entire abandoned course: its line and rings fade out
+together over 2.5 seconds, including rings ahead. This is the explicit exception to behind-only
+retirement during normal flight. The new course begins with a particle-only
+approach; new rings cannot coexist with an abandoned course's rings. An unearned
+exercise repeats; a completed exercise remains earned when leaving its exit.
 
 ## Engine and temporary audio adapter
 
@@ -180,12 +196,13 @@ and route particles retain their existing coherent wind.
 - `particle-grain.vert.glsl` applies the same normalized local forward coordinate
   to all forms. Arrows illuminate from tail to tip; rings illuminate across their
   depth. All rings remain until the full section, including its exit, is completed.
-  Retirement is requested at completion or recovery, but each ring fades only
-  while its complete bound is behind actual flight direction.
+  Normal retirement fades only while each complete ring bound is behind actual
+  flight direction. Abandoned-course retirement fades every ring over the same
+  duration as its path, regardless of direction.
 - `element-retirement.ts` owns the per-element visibility envelope. It uses
   world-space bounds plus a motion clearance, independent of gaze. Turning back
   toward a fading ring pauses its fade; a front ring is never cleared to recycle
-  a display slot.
+  a display slot during normal flight.
 - `particle-grain.frag.glsl` adds warm luminous cores and highlights to a seeded
   subset of grains. This is a glass-like shading approximation without refraction,
   bloom, extra lights or another render pass.

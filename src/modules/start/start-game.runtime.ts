@@ -37,6 +37,7 @@ class StartGame {
     this.state.elapsedSeconds += Math.max(0, frame.deltaSeconds);
     switch (this.state.phase) {
       case "instruction":
+        if (frame.deviated) return this.recover(false);
         if (!frame.instructionReleased || !frame.prepared) return;
         this.enterPhase("flying");
         return "show";
@@ -52,8 +53,7 @@ class StartGame {
   };
 
   private observeExercise(frame: ExerciseFrame): ExerciseAction {
-    if (frame.deviated || frame.progress === "missed")
-      return this.recover(false);
+    if (frame.deviated) return this.recover(false);
     if (frame.progress === "passed") this.exercisePassed = true;
     if (!this.exercisePassed || !frame.instructionEnded) return;
     this.enterPhase("outro");

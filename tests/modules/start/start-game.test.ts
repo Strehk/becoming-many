@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
-import type { ExerciseFrame } from "./start-contract";
-import { createStartGame } from "./start-game.runtime";
+import type { ExerciseFrame } from "../../../src/modules/start/start-contract";
+import { createStartGame } from "../../../src/modules/start/start-game.runtime";
 
 const FRAME: ExerciseFrame = {
   deltaSeconds: 0.1,
@@ -59,4 +59,22 @@ test("the demonstration sequence loops and reset clears progression", () => {
   game.reset();
   expect(game.readState().phase).toBe("instruction");
   expect(game.readState().attempt).toBe(1);
+});
+
+test("checkpoint misses alone do not reset a visible nearby course", () => {
+  const game = createStartGame({ exerciseCount: 2, retireSeconds: 1 });
+  game.update(FRAME);
+  expect(game.update({ ...FRAME, progress: "missed" })).toBeUndefined();
+  expect(game.readState().phase).toBe("flying");
+  expect(game.readState().attempt).toBe(1);
+  expect(game.update({ ...FRAME, progress: "passed" })).toBe("prepare-next");
+});
+
+test("deviation while waiting for reveal reanchors instead of showing a stale route", () => {
+  const game = createStartGame({ exerciseCount: 2, retireSeconds: 1 });
+  expect(game.update({ ...FRAME, prepared: false, deviated: true })).toBe(
+    "recover",
+  );
+  expect(game.readState().phase).toBe("recovering");
+  expect(game.readState().attempt).toBe(2);
 });

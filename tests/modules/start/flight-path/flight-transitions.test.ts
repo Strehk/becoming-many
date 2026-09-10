@@ -1,14 +1,17 @@
 import { expect, test } from "bun:test";
 import { Vector3 } from "three";
-import { placeElements } from "../particle-elements/element-placement";
-import { START_EXERCISES } from "../start-exercises";
-import { connectFlightRoute } from "./flight-connection";
-import { createFlightDeviation } from "./flight-deviation";
-import { createFlightEntry, prependFlightEntry } from "./flight-entry";
-import { placeFlightRecovery } from "./flight-recovery";
-import { createFlightRoute } from "./flight-route";
-import { createParticleGeneration } from "./particle-generation";
-import { createPathParticleGeometry } from "./path-particles";
+import { connectFlightRoute } from "../../../../src/modules/start/flight-path/flight-connection";
+import { createFlightDeviation } from "../../../../src/modules/start/flight-path/flight-deviation";
+import {
+  createFlightEntry,
+  prependFlightEntry,
+} from "../../../../src/modules/start/flight-path/flight-entry";
+import { placeFlightRecovery } from "../../../../src/modules/start/flight-path/flight-recovery";
+import { createFlightRoute } from "../../../../src/modules/start/flight-path/flight-route";
+import { createParticleGeneration } from "../../../../src/modules/start/flight-path/particle-generation";
+import { createPathParticleGeometry } from "../../../../src/modules/start/flight-path/path-particles";
+import { placeElements } from "../../../../src/modules/start/particle-elements/element-placement";
+import { START_EXERCISES } from "../../../../src/modules/start/start-exercises";
 
 const pose = { position: new Vector3(10, 4, 20), yawRadians: 0.7 };
 const route = createFlightRoute(START_EXERCISES[0].route, 18);
@@ -38,13 +41,28 @@ test("only sustained travel outside the corridor requests recovery", () => {
     origin,
     START_EXERCISES[0].deviation,
   );
+  const view = {
+    worldPosition: origin,
+    worldDirection: new Vector3(1, 0, 0),
+    worldFlightDirection: new Vector3(1, 0, 0),
+    viewHalfAngleRadians: 0.7,
+    viewDistanceMeters: 128,
+  };
   for (let frame = 0; frame < 300; frame++)
-    expect(deviation.update(origin)).toBe(false);
+    expect(deviation.update(origin, view)).toBe(false);
   for (let x = 0; x <= 5; x += 0.5)
-    expect(deviation.update(new Vector3(x, 0, 0))).toBe(false);
+    expect(
+      deviation.update(new Vector3(x, 0, 0), {
+        ...view,
+        worldPosition: new Vector3(x, 0, 0),
+      }),
+    ).toBe(false);
   let outside = false;
-  for (let x = 5.5; x <= 9; x += 0.5)
-    outside = deviation.update(new Vector3(x, 0, 0));
+  for (let x = 5.5; x <= 25; x += 0.5)
+    outside = deviation.update(new Vector3(x, 0, 0), {
+      ...view,
+      worldPosition: new Vector3(x, 0, 0),
+    });
   expect(outside).toBe(true);
 });
 
