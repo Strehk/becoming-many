@@ -38,7 +38,6 @@ declare global {
       | "readLanguage"
       | "setLanguage"
       | "readTutorial"
-      | "continueToExperience"
     >;
   }
 }

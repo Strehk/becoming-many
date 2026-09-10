@@ -32,6 +32,17 @@ Git authorization. See [confirmed decisions](architecture-decisions.md).
 
 ## 2. Necessary capabilities and non-goals
 
+The 2026-09-10 delivery boundary is architecture and structure only (#118–#125).
+Keep the current spatial, visual, audio and timing behavior during this block.
+Run remains the lifetime hub, Show the playback-policy owner and Start the sole
+local learning orchestrator. Start connects Motion, Course, Arrows, Crossing and
+particle presentation through narrow contracts, without concrete peer imports.
+Composition supplies control constraints; the effect owns geometry and shaders.
+The new calm ending in #122 (closing after success or timeout, gradual release,
+then 5–10 seconds of quiet) is confirmed later work, not current behavior or a
+prerequisite for this structural block. No exact quiet duration is selected here.
+New guidance under #117 and shader/layout changes under #124 are also deferred.
+
 The application must support:
 
 - One independently configured static level, including the diagnostic level and
@@ -335,7 +346,7 @@ handoff adds 1.5 playing seconds of breathing space after native speech ends;
 about 74 seconds is an estimate, not a cutoff that may truncate speech.
 Without success, the cutoff ends learning without a false success recording;
 current speech and the breathing interval still finish before main playback.
-The existing UI command may enter directly whenever preparation is ready. The same
+The later kiosk revision removed direct UI skipping. The same
 Show clock serves practice, the closing voice and main playback. Its public timeline
 retains the actual tutorial span before the unchanged relative main score. Standalone
 Start remains an independently exercisable level without a prepared main handoff.
@@ -873,7 +884,7 @@ Three unresolved flow choices deserve explicit human decisions:
   Never retain two encounter systems. Bat meshes and swarm trails still need
   different render mechanisms.
 - **Tutorial audio / credits (#50/#51):** both features are required. The four-goal
-  tutorial, timed/automatic handoff and direct UI transition are confirmed and use the existing owners/clock.
+  tutorial and timed/automatic handoff use the existing owners/clock; the later kiosk revision removed direct UI skipping.
   German tutorial voice use is requested and implemented; EN temporarily uses those
   recordings by user approval. Replacement English recordings and
   physical mix acceptance remain distinct from credits content/timing/movement. Current credits

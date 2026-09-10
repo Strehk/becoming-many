@@ -49,7 +49,6 @@ test("tutorial feedback distinguishes successful passages from a retry without a
     goalIndex: 1,
     direction: "left" as const,
     crossingCount: 1,
-    readyToContinue: false,
   };
   expect(formatTutorialStatus(status)).toBe(
     "Flight tutorial · Missed · New target ahead · 1/4 passed",

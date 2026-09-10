@@ -46,6 +46,14 @@ history belongs in Git; unresolved product and deployment questions belong in
   it is not a parallel runtime.
 - Concrete content modules never import sibling modules. Level Composition
   connects them through small directional contracts.
+- Confirmed 2026-09-10: structure first, with existing observable behavior held
+  fixed. Run connects experience lifetimes, Show owns playback policy and Start
+  alone coordinates local learning. Motion, Course, Arrows, Crossing and particle
+  presentation exchange narrow facts through Start; the effect owns its geometry
+  and shaders. Composition passes motion constraints and resolves shared arrow
+  length. No new hub, clock, feature, shader path or movement model is authorized
+  by this block. The later calm ending in #122 and guidance changes in #117 stay
+  deferred. Function limits are defined in the existing engineering standards.
 - Confirmed 2026-09-06, D3: level files state their modules and desired settings
   explicitly and independently, using `diagnostic.level.ts` as the reading model.
   Confirmed 2026-09-07: one level is one self-contained literal parameter object.
@@ -128,10 +136,10 @@ history belongs in Git; unresolved product and deployment questions belong in
   rules and competing UI state. No command bus or generic control framework.
 - Tutorial and credits are required, using existing owners and one Show clock.
   The 2026-09-09 user revision replaces the earlier unlimited/operator-only flow:
-  integrated practice has 60 playing seconds, with a direct UI transition whenever
-  preparation is ready. Four passages in right/left/up/down order before the cutoff
+  integrated practice has 60 playing seconds. The later kiosk revision removed
+  direct UI skipping. Four passages in right/left/up/down order before the cutoff
   play the full successful closing voice and automatically enter the experience
-  (up to about 74 seconds total). Timeout/skip does not award passages or play false
+  (about 74 seconds is an estimate, not a speech cutoff). Timeout does not award passages or play false
   success speech. Missed sections continue recycling within the remaining budget.
   Pause and suspended audio hold time and flight; practice language changes repeat
   the instruction without restarting the budget. Closing-language changes retain

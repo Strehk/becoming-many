@@ -7,9 +7,27 @@ const NORMAL = { x: 0, y: 0, z: 1 };
 test("a fast segment crosses the open ring in either direction", () => {
   const before = { x: 0.5, y: 0.5, z: 100 };
   const after = { x: 0.5, y: 0.5, z: -100 };
-  expect(crossesFlightRing(before, after, CENTER, NORMAL, 1)).toBe(true);
-  expect(crossesFlightRing(after, before, CENTER, NORMAL, 1)).toBe(true);
-  expect(crossesFlightRing(before, CENTER, CENTER, NORMAL, 1)).toBe(true);
+  expect(
+    crossesFlightRing(before, after, {
+      goalPosition: CENTER,
+      goalNormal: NORMAL,
+      ringRadiusMeters: 1,
+    }),
+  ).toBe(true);
+  expect(
+    crossesFlightRing(after, before, {
+      goalPosition: CENTER,
+      goalNormal: NORMAL,
+      ringRadiusMeters: 1,
+    }),
+  ).toBe(true);
+  expect(
+    crossesFlightRing(before, CENTER, {
+      goalPosition: CENTER,
+      goalNormal: NORMAL,
+      ringRadiusMeters: 1,
+    }),
+  ).toBe(true);
 });
 
 test("misses, the solid rim, parallel flight and leaving the plane are not passages", () => {
@@ -18,9 +36,7 @@ test("misses, the solid rim, parallel flight and leaving the plane are not passa
       crossesFlightRing(
         { x, y: 0, z: 2 },
         { x, y: 0, z: -2 },
-        CENTER,
-        NORMAL,
-        1,
+        { goalPosition: CENTER, goalNormal: NORMAL, ringRadiusMeters: 1 },
       ),
     ).toBe(false);
   }
@@ -28,15 +44,23 @@ test("misses, the solid rim, parallel flight and leaving the plane are not passa
     crossesFlightRing(
       { x: -2, y: 0, z: 1 },
       { x: 2, y: 0, z: 1 },
-      CENTER,
-      NORMAL,
-      1,
+      { goalPosition: CENTER, goalNormal: NORMAL, ringRadiusMeters: 1 },
     ),
   ).toBe(false);
   expect(
-    crossesFlightRing(CENTER, { x: 0, y: 0, z: -2 }, CENTER, NORMAL, 1),
+    crossesFlightRing(
+      CENTER,
+      { x: 0, y: 0, z: -2 },
+      { goalPosition: CENTER, goalNormal: NORMAL, ringRadiusMeters: 1 },
+    ),
   ).toBe(false);
-  expect(crossesFlightRing(CENTER, CENTER, CENTER, NORMAL, 1)).toBe(false);
+  expect(
+    crossesFlightRing(CENTER, CENTER, {
+      goalPosition: CENTER,
+      goalNormal: NORMAL,
+      ringRadiusMeters: 1,
+    }),
+  ).toBe(false);
 });
 
 test("passage uses the authored world-space plane rather than an assumed forward axis", () => {
@@ -46,18 +70,14 @@ test("passage uses the authored world-space plane rather than an assumed forward
     crossesFlightRing(
       { x: 8, y: 3.5, z: -2 },
       { x: 12, y: 3.5, z: -2 },
-      center,
-      normal,
-      1,
+      { goalPosition: center, goalNormal: normal, ringRadiusMeters: 1 },
     ),
   ).toBe(true);
   expect(
     crossesFlightRing(
       { x: 8, y: 5, z: -2 },
       { x: 12, y: 5, z: -2 },
-      center,
-      normal,
-      1,
+      { goalPosition: center, goalNormal: normal, ringRadiusMeters: 1 },
     ),
   ).toBe(false);
 });

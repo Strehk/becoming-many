@@ -1,27 +1,31 @@
 import { Vector3 } from "three";
 import type { Viewpoint } from "../../world/viewer-rig";
-import type { StartArrowFrame } from "./start-particle-frame";
 import { START_SETTINGS } from "./start-settings";
 
-/** Own two reusable cue lifetimes. Course writes the current pose; the retired pose stays fixed. */
-export function createStartArrows(
-  viewpoint: Viewpoint,
-  lengthMeters: number,
-  pose: Pick<StartArrowFrame, "position" | "normal" | "up">,
-) {
-  const current = { ...pose, ...createLifetime() };
-  const retiring = {
-    position: new Vector3(),
-    normal: new Vector3(),
-    up: new Vector3(),
-    ...createLifetime(),
-  };
-  const arrows = [current, retiring];
-  const offset = new Vector3();
-  return { current, retiring, replace, update, resetArrows };
+/** Borrowed world-space cue pose and lifetime; only Arrows and its orchestrator may mutate it. */
+export interface StartArrowFrame {
+  readonly position: Readonly<Vector3>;
+  readonly normal: Readonly<Vector3>;
+  readonly up: Readonly<Vector3>;
+  readonly presence: number;
+  readonly formation: number;
+}
 
-  /** Preserve the old cue before Course overwrites the current pose. */
-  function replace(): void {
+/** Own two reusable cue poses/lifetimes; Start supplies Course's newly calculated pose. */
+export class StartArrows {
+  readonly current = createArrow();
+  readonly retiring = createArrow();
+  private readonly arrows = [this.current, this.retiring];
+  private readonly offset = new Vector3();
+
+  constructor(
+    private readonly viewpoint: Viewpoint,
+    private readonly lengthMeters: number,
+  ) {}
+
+  /** Preserve the old cue before Start places the next pose. */
+  replace(): void {
+    const { current, retiring } = this;
     if (current.presence > 0) {
       retiring.position.copy(current.position);
       retiring.normal.copy(current.normal);
@@ -36,37 +40,51 @@ export function createStartArrows(
     Object.assign(current, createLifetime(), { presence: 1 });
   }
 
-  /** Advance spatial retirement in playing seconds; a freshly placed cue gets its first frame intact. */
-  function update(elapsedSeconds: number, justPlaced: boolean): void {
+  /** Advance retirement in playing seconds; a freshly placed cue keeps its first frame intact. */
+  update(elapsedSeconds: number, justPlaced: boolean): void {
     if (elapsedSeconds <= 0) return;
-    for (const arrow of arrows) {
-      if (arrow.presence <= 0 || (arrow === current && justPlaced)) continue;
-      offset.copy(arrow.position).sub(viewpoint.worldPosition);
-      if (arrow.fadeSeconds < 0) {
-        const inView =
-          offset.angleTo(viewpoint.worldDirection) <
-          viewpoint.viewHalfAngleRadians +
-            Math.atan2(lengthMeters / 2, offset.length());
-        arrow.outsideSeconds = inView
-          ? 0
-          : arrow.outsideSeconds + elapsedSeconds;
-        if (arrow.outsideSeconds < START_SETTINGS.arrowOutOfViewSeconds)
-          continue;
-        arrow.fadeSeconds = 0;
-        arrow.releaseFormation = arrow.formation;
-      } else arrow.fadeSeconds += elapsedSeconds;
-      arrow.presence = Math.max(
-        0,
-        1 - arrow.fadeSeconds / START_SETTINGS.arrowFadeSeconds,
-      );
-      arrow.formation = arrow.releaseFormation * arrow.presence;
+    for (const arrow of this.arrows) {
+      if (arrow.presence <= 0 || (arrow === this.current && justPlaced))
+        continue;
+      this.updateArrow(arrow, elapsedSeconds);
     }
   }
 
-  /** Clear both cue lifetimes without replacing their borrowed pose vectors. */
-  function resetArrows(): void {
-    for (const arrow of arrows) Object.assign(arrow, createLifetime());
+  /** Clear both lifetimes without replacing their borrowed pose vectors. */
+  reset(): void {
+    for (const arrow of this.arrows) Object.assign(arrow, createLifetime());
   }
+
+  private updateArrow(
+    arrow: typeof this.current,
+    elapsedSeconds: number,
+  ): void {
+    this.offset.copy(arrow.position).sub(this.viewpoint.worldPosition);
+    if (arrow.fadeSeconds < 0) {
+      const inView =
+        this.offset.angleTo(this.viewpoint.worldDirection) <
+        this.viewpoint.viewHalfAngleRadians +
+          Math.atan2(this.lengthMeters / 2, this.offset.length());
+      arrow.outsideSeconds = inView ? 0 : arrow.outsideSeconds + elapsedSeconds;
+      if (arrow.outsideSeconds < START_SETTINGS.arrowOutOfViewSeconds) return;
+      arrow.fadeSeconds = 0;
+      arrow.releaseFormation = arrow.formation;
+    } else arrow.fadeSeconds += elapsedSeconds;
+    arrow.presence = Math.max(
+      0,
+      1 - arrow.fadeSeconds / START_SETTINGS.arrowFadeSeconds,
+    );
+    arrow.formation = arrow.releaseFormation * arrow.presence;
+  }
+}
+
+function createArrow() {
+  return {
+    position: new Vector3(),
+    normal: new Vector3(),
+    up: new Vector3(),
+    ...createLifetime(),
+  };
 }
 
 function createLifetime() {

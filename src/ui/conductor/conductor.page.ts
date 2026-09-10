@@ -51,7 +51,6 @@ export interface ConductorPageOptions {
     | "readActiveLevel"
     | "readAudioState"
     | "readTutorial"
-    | "continueToExperience"
   >;
   readonly run: Pick<Run, "resetFlight" | "resetShowAndFlight">;
   readonly xr: Run["xr"];

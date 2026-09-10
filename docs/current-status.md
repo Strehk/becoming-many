@@ -1,5 +1,19 @@
 # Current Development Status
 
+The 2026-09-10 structural block makes Start the sole local learning orchestrator
+and removes `start-practice.runtime.ts`. Composition injects existing movement
+constraints; Motion and Course no longer import Control settings or each other's
+implementation. Run owns reset/lifetime commands and retains no retired initial
+training handles through Composition. Show removes unused public skipping;
+ViewerRig publishes vectors from one matrix refresh. Particle layout, material,
+motion equations, speech and transition timing are preserved.
+Lint, build/type checks and all 598 Bun tests pass. Start's 114 functions meet
+the strict limits, but actual production source reduction is not achieved: Run
+and Show remain larger. Their reduction issues stay open. Browser and comparison
+evidence, including existing media-request failures, is recorded in the
+[structural result](evidence/issue-50/README.md#architecture-first-structural-block--2026-09-10).
+New guidance, the calm ending and material/layout changes remain deferred.
+
 The current kiosk correction embeds the last parsed M5 `/state` reply and bundled
 firmware in the technician drawer. The subsequent user-approved simplification
 accepts all parsed replies from the configured host: identity, firmware,

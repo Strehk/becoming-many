@@ -263,21 +263,36 @@ Air remains independent: Start authors 384 points per 16 m cell and a fading
 unchanged. No independent loop, global fog or extra postprocessing is added.
 
 Within `src/modules/start/`, read `start-settings.ts` for the learning contract
-and technical limits, then `start.module.ts` for World lifetime and presentation
-binding. `start-practice.runtime.ts` owns lesson phases and borrowed observations;
-`start-motion.ts` samples eye/rig segments and predicts rig travel; `start-course.ts` constructs fixed
-cues and reachable tunnels; `start-arrows.ts` retires two reusable cue slots.
+and technical limits, then `start.module.ts` for the complete learning sequence,
+World lifecycle and borrowed observations. The separate practice runtime is
+removed. Start connects Motion, Course, Arrows, Crossing and the particle effect;
+specialized components do not import each other's implementation. Motion samples
+eye/rig segments and predicts rig travel. Course borrows concrete predictions and
+constructs fixed cues and reachable tunnels. Arrows retires two reusable slots.
 `flight-ring-crossing.ts` checks swept passages through the open ring disk.
 These CPU owners have no independent loop or World registration. World alone
 tracks active/loaded modules; Start does not duplicate that state. Wake remains
 a presentation input, and unused miss-count telemetry is removed.
+
+```mermaid
+flowchart TD
+  Composition[Level Composition] --> Start[Start: local learning]
+  Start --> Motion[Motion: sampled travel and prediction]
+  Start --> Course[Course: fixed cue and tunnel geometry]
+  Start --> Arrows[Arrows: two reusable slots]
+  Start --> Crossing[Crossing: swept passage]
+  Start --> Effect[Particle effect: presentation and resources]
+  Effect --> Geometry[Immutable geometry and shaders]
+```
 
 Presentation crosses the borrowed `start-particle-frame.ts` contract.
 `start-particle-settings.ts` resolves and validates presentation defaults;
 `start-particle-geometry.ts` fills immutable buffers once; `start-particles.effect.ts`
 owns material, uniform updates, bounds, sound anchors and GPU cleanup. Its adjacent
 GLSL files stay imported source code. Both placement and rendering use a six-metre
-default arrow; level-authored values remain explicit in `start.level.ts`.
+default arrow, resolved once by Composition; level-authored values remain explicit
+in `start.level.ts`. Composition also supplies the existing control motion limits
+through `StartMotionLimits`; neither Motion nor Course imports Control settings.
 Unused prediction diagnostics and the separate arrow-angle path are removed.
 `resetPractice()` clears learning at the current pose while retaining loaded resources.
 
@@ -285,8 +300,10 @@ Show starts held and owns the interactive tutorial within its existing clock.
 Its public timeline advances through practice and retains the actual tutorial
 span via `sample().mainStartSeconds`; main narration/senses still use their original
 relative score. Four passages before the 60-second cutoff finish the successful
-closing voice and automatically hand off. Timeout or the always-available prepared
-UI transition skips that success speech. The same internal clock rebases for main
+closing voice and automatically hand off. Timeout skips that success speech.
+The removed UI skip has no remaining public Show capability. Show requests reset
+and handoff through Run's injected tutorial commands; Run resets practice once.
+The same internal clock rebases for main
 playback; public seeks subtract the retained prefix and clamp at the main start. Pause holds training and flight; seeking/rate
 changes are blocked and language changes repeat the current instruction. Directional recordings finish before the next goal is presented, preserving the
 opening instruction. The fourth passage waits for any current directional speech before starting

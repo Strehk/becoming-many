@@ -8,8 +8,11 @@ import {
   Quaternion,
   type Scene,
   Sphere,
+  Uniform,
   Vector3,
+  type WebGLProgramParametersWithUniforms,
 } from "three";
+import type { StartArrowFrame } from "./start-arrows";
 import type {
   StartParticleFrame,
   StartParticleObjects,
@@ -22,6 +25,7 @@ import {
 } from "./start-particle-settings";
 import appearanceShader from "./start-particles.frag.glsl?raw";
 import motionShader from "./start-particles.vert.glsl?raw";
+import { START_SETTINGS } from "./start-settings";
 
 export interface StartParticleEffect {
   readonly load: () => void;
@@ -41,178 +45,184 @@ const MAXIMUM_DISPERSAL_MARGIN_METERS = 2.5;
 /** Own one fixed Points draw; Start supplies its pose, transition and crossing facts. */
 export function createStartParticleEffect({
   scene,
-  parameters: authoredParameters,
+  parameters,
+  arrowLengthMeters,
 }: {
   readonly scene: Scene;
   readonly parameters: StartParticleParameters;
+  readonly arrowLengthMeters: number;
 }): StartParticleEffect {
-  const parameters = readStartParticleSettings(authoredParameters);
-  const goalRotation = new Quaternion();
-  const orientation = new Matrix4();
-  const bounds = new Box3();
-  const arrowLength = parameters.arrowLengthMeters;
-  const thickness = parameters.ringThicknessRatio;
-  const previewPoses = Array.from(
-    { length: SETTINGS.previewCount },
+  return new ParticleEffect(
+    scene,
+    readStartParticleSettings(parameters, arrowLengthMeters),
+  );
+}
+
+class ParticleEffect implements StartParticleEffect {
+  private readonly rotation = new Quaternion();
+  private readonly orientation = new Matrix4();
+  private readonly bounds = new Box3();
+  private readonly previewPoses = Array.from(
+    { length: START_SETTINGS.previewCount },
     () => new Matrix4(),
   );
-  const previewRadii = new Float32Array(SETTINGS.previewCount);
-  const previewCrossingAges = new Float32Array(SETTINGS.previewCount).fill(-1);
-  const ringGather = createGatherUniforms();
-  const arrowGather = createGatherUniforms();
-  const retiringGather = createGatherUniforms();
-  const objects = {
+  private readonly previewRadii = new Float32Array(START_SETTINGS.previewCount);
+  private readonly previewCrossingAges = new Float32Array(
+    START_SETTINGS.previewCount,
+  ).fill(-1);
+  private readonly ringGather = createGatherUniforms();
+  private readonly arrowGather = createGatherUniforms();
+  private readonly retiringGather = createGatherUniforms();
+  private readonly objects = {
     ringLeft: new Vector3(),
     ringRight: new Vector3(),
     arrow: new Vector3(),
   };
-  let anchorsReady = false;
-  const uniforms = {
-    startTime: { value: 0 },
-    startPreviewTime: { value: 0 },
-    startGoalPose: { value: new Matrix4() },
-    startRadius: { value: 1 },
-    startArrowPose: { value: new Matrix4() },
-    startRetiringArrowPose: { value: new Matrix4() },
-    startRetiringArrowFormation: retiringGather.formation,
-    startRetiringArrowPresence: { value: 0 },
-    startRetiringArrowDissolving: retiringGather.dissolving,
-    startRetiringArrowReleaseOrigin: retiringGather.releaseOrigin,
-    startArrowAccent: {
-      value: new Color(parameters.arrowAccentColor),
-    },
-    startCrossingAccent: {
-      value: new Color(parameters.crossingAccentColor),
-    },
-    startArrowScale: { value: arrowLength / ARROW_SOURCE_WIDTH },
-    startThickness: { value: thickness },
-    startPreviewPoses: { value: previewPoses },
-    startPreviewRadii: { value: previewRadii },
-    startPreviewCrossingAges: { value: previewCrossingAges },
-    startPreviewCount: { value: 0 },
-    startMaximumPointSize: { value: parameters.maximumPointSizePixels },
-    startMaximumHazePointSize: {
-      value: parameters.maximumHazePointSizePixels,
-    },
-    startFormation: ringGather.formation,
-    startDissolving: ringGather.dissolving,
-    startReleaseOrigin: ringGather.releaseOrigin,
-    startArrowFormation: arrowGather.formation,
-    startArrowDissolving: arrowGather.dissolving,
-    startArrowReleaseOrigin: arrowGather.releaseOrigin,
-    startArrowPresence: { value: 0 },
-    startRingPresence: { value: 0 },
-    startDriftAmplitude: { value: parameters.driftAmplitudeMeters },
-    startDriftSpeed: { value: parameters.driftSpeed },
-    startSparkle: { value: parameters.sparkle },
-    startGlow: { value: parameters.glow },
-    startWakeDirection: { value: new Vector3() },
-    startWakeAge: { value: -1 },
-  };
-  let points: Points<BufferGeometry, PointsMaterial> | undefined;
-
-  return {
-    load,
-    setVisible: (visible): void => {
-      if (points) points.visible = visible;
-    },
-    update,
-    readObjectAnchors: () =>
-      points?.visible && anchorsReady ? objects : undefined,
-    unload,
+  private readonly ringAnchors = [
+    this.objects.ringLeft,
+    this.objects.ringRight,
+  ];
+  private points: Points<BufferGeometry, PointsMaterial> | undefined;
+  private anchorsReady = false;
+  private readonly uniforms = {
+    startTime: new Uniform(0),
+    startPreviewTime: new Uniform(0),
+    startGoalPose: new Uniform(new Matrix4()),
+    startRadius: new Uniform(1),
+    startArrowPose: new Uniform(new Matrix4()),
+    startRetiringArrowPose: new Uniform(new Matrix4()),
+    startRetiringArrowFormation: this.retiringGather.formation,
+    startRetiringArrowPresence: new Uniform(0),
+    startRetiringArrowDissolving: this.retiringGather.dissolving,
+    startRetiringArrowReleaseOrigin: this.retiringGather.releaseOrigin,
+    startPreviewPoses: new Uniform(this.previewPoses),
+    startPreviewRadii: new Uniform(this.previewRadii),
+    startPreviewCrossingAges: new Uniform(this.previewCrossingAges),
+    startPreviewCount: new Uniform(0),
+    startFormation: this.ringGather.formation,
+    startDissolving: this.ringGather.dissolving,
+    startReleaseOrigin: this.ringGather.releaseOrigin,
+    startArrowFormation: this.arrowGather.formation,
+    startArrowDissolving: this.arrowGather.dissolving,
+    startArrowReleaseOrigin: this.arrowGather.releaseOrigin,
+    startArrowPresence: new Uniform(0),
+    startRingPresence: new Uniform(0),
+    startWakeDirection: new Uniform(new Vector3()),
+    startWakeAge: new Uniform(-1),
   };
 
-  function load(): void {
-    if (points) return;
+  constructor(
+    private readonly scene: Scene,
+    private readonly parameters: Required<StartParticleParameters>,
+  ) {}
+
+  readonly load = (): void => {
+    if (this.points) return;
     const geometry = new BufferGeometry();
     let material: PointsMaterial | undefined;
     try {
-      writeStartParticleAttributes(geometry, parameters);
+      writeStartParticleAttributes(geometry, this.parameters);
       geometry.boundingSphere = new Sphere();
-      material = new PointsMaterial({
-        color: parameters.color,
-        size: parameters.sizeMeters,
-        sizeAttenuation: true,
-        transparent: true,
-        depthWrite: false,
-        toneMapped: false,
-      });
-      material.defines = {
-        START_MAXIMUM_PREVIEWS: SETTINGS.previewCount,
-        START_CROSSING_EXPANSION: SETTINGS.crossingExpansion,
-        START_CROSSING_PULSE_DECAY: SETTINGS.crossingPulseDecay,
-        START_WAKE_DRAG: SETTINGS.wakeDrag,
-        START_WAKE_SPEED: SETTINGS.wakeSpeed,
-        START_ARROW_DRIFT_SPEED: SETTINGS.arrowDriftSpeed,
-        START_ARROW_DRIFT_AMPLITUDE: SETTINGS.arrowDriftAmplitude,
-      };
-      material.onBeforeCompile = (shader): void => {
-        for (const [source, anchors] of [
-          [
-            shader.vertexShader,
-            ["common", "begin_vertex", "logdepthbuf_vertex"],
-          ],
-          [shader.fragmentShader, ["common", "color_fragment"]],
-        ] as const) {
-          for (const anchor of anchors)
-            if (!source.includes(`#include <${anchor}>`))
-              throw new Error(`Start particle shader is missing ${anchor}`);
-        }
-        Object.assign(shader.uniforms, uniforms);
-        shader.vertexShader = shader.vertexShader
-          .replace("#include <common>", `#include <common>\n${motionShader}`)
-          .replace(
-            "#include <begin_vertex>",
-            "vec3 transformed = animateStartParticle(position);",
-          )
-          .replace(
-            "#include <logdepthbuf_vertex>",
-            "gl_PointSize = min(gl_PointSize * startParticleSize, mix(startMaximumPointSize, startMaximumHazePointSize, startHaze));\nstartDistanceFade = smoothstep(0.5, 2.5, -mvPosition.z);\n#include <logdepthbuf_vertex>",
-          );
-        shader.fragmentShader = shader.fragmentShader
-          .replace(
-            "#include <common>",
-            `#include <common>\n${appearanceShader}`,
-          )
-          .replace(
-            "#include <color_fragment>",
-            "#include <color_fragment>\napplyStartParticleAppearance(diffuseColor);",
-          );
-      };
-      material.customProgramCacheKey = () => "start-cloud-particles-v6";
-      points = new Points(geometry, material);
-      points.name = "StartTrainingParticles";
-      points.visible = false;
+      material = new PointsMaterial();
+      this.configureMaterial(material);
+      this.points = new Points(geometry, material);
+      this.points.name = "StartTrainingParticles";
+      this.points.visible = false;
       // Bounds include shader displacement, every preview and the full arrow body.
-      points.frustumCulled = true;
-      scene.add(points);
+      this.points.frustumCulled = true;
+      this.scene.add(this.points);
     } catch (error) {
-      if (points) scene.remove(points);
-      points = undefined;
+      if (this.points) this.scene.remove(this.points);
+      this.points = undefined;
       geometry.dispose();
       material?.dispose();
       throw error;
     }
+  };
+
+  private configureMaterial(material: PointsMaterial): void {
+    material.setValues({
+      color: this.parameters.color,
+      size: this.parameters.sizeMeters,
+      sizeAttenuation: true,
+      transparent: true,
+      depthWrite: false,
+      toneMapped: false,
+    });
+    material.defines = {
+      START_MAXIMUM_PREVIEWS: START_SETTINGS.previewCount,
+      START_CROSSING_EXPANSION: SETTINGS.crossingExpansion,
+      START_CROSSING_PULSE_DECAY: SETTINGS.crossingPulseDecay,
+      START_WAKE_DRAG: SETTINGS.wakeDrag,
+      START_WAKE_SPEED: SETTINGS.wakeSpeed,
+      START_ARROW_DRIFT_SPEED: SETTINGS.arrowDriftSpeed,
+      START_ARROW_DRIFT_AMPLITUDE: SETTINGS.arrowDriftAmplitude,
+    };
+    material.onBeforeCompile = (shader): void => this.patchShader(shader);
+    material.customProgramCacheKey = () => "start-cloud-particles-v6";
   }
 
-  function update(frame: StartParticleFrame): void {
-    if (!points?.visible) return;
-    writePose(
-      uniforms.startGoalPose.value,
-      frame.goalPosition,
-      frame.goalNormal,
-      frame.goalUp,
+  private patchShader(shader: WebGLProgramParametersWithUniforms): void {
+    validateShaderAnchors(shader.vertexShader, [
+      "common",
+      "begin_vertex",
+      "logdepthbuf_vertex",
+    ]);
+    validateShaderAnchors(shader.fragmentShader, ["common", "color_fragment"]);
+    Object.assign(
+      shader.uniforms,
+      this.uniforms,
+      readAppearanceUniforms(this.parameters),
     );
+    shader.vertexShader = shader.vertexShader
+      .replace("#include <common>", `#include <common>\n${motionShader}`)
+      .replace(
+        "#include <begin_vertex>",
+        "vec3 transformed = animateStartParticle(position);",
+      )
+      .replace(
+        "#include <logdepthbuf_vertex>",
+        "gl_PointSize = min(gl_PointSize * startParticleSize, mix(startMaximumPointSize, startMaximumHazePointSize, startHaze));\nstartDistanceFade = smoothstep(0.5, 2.5, -mvPosition.z);\n#include <logdepthbuf_vertex>",
+      );
+    shader.fragmentShader = shader.fragmentShader
+      .replace("#include <common>", `#include <common>\n${appearanceShader}`)
+      .replace(
+        "#include <color_fragment>",
+        "#include <color_fragment>\napplyStartParticleAppearance(diffuseColor);",
+      );
+  }
+
+  readonly setVisible = (visible: boolean): void => {
+    if (this.points) this.points.visible = visible;
+  };
+
+  readonly readObjectAnchors = (): StartParticleObjects | undefined => {
+    return this.points?.visible && this.anchorsReady ? this.objects : undefined;
+  };
+
+  readonly update = (frame: StartParticleFrame): void => {
+    if (!this.points?.visible) return;
+    const uniforms = this.uniforms;
+    this.writePose(uniforms.startGoalPose.value, frame);
+    this.writePose(uniforms.startArrowPose.value, frame.arrow);
+    this.updateRetiringArrow(frame.retiringArrow);
     uniforms.startTime.value = frame.elapsedSeconds;
     uniforms.startPreviewTime.value = frame.previewElapsedSeconds;
     uniforms.startRadius.value = frame.ringRadiusMeters;
-    writePose(
-      uniforms.startArrowPose.value,
-      frame.arrow.position,
-      frame.arrow.normal,
-      frame.arrow.up,
-    );
-    const retiring = frame.retiringArrow;
+    updateGather(this.ringGather, frame.formationProgress);
+    updateGather(this.arrowGather, frame.arrow.formation);
+    uniforms.startArrowPresence.value = frame.arrow.presence;
+    uniforms.startRingPresence.value = frame.ringPresence;
+    uniforms.startWakeAge.value = frame.wake?.ageSeconds ?? -1;
+    this.updateObjectAnchors(frame);
+    this.updateBounds(frame);
+    this.anchorsReady = Math.max(frame.arrow.presence, frame.ringPresence) > 0;
+    if (frame.wake)
+      uniforms.startWakeDirection.value.copy(frame.wake.direction);
+  };
+
+  private updateRetiringArrow(retiring: StartArrowFrame): void {
+    const uniforms = this.uniforms;
     if (retiring.presence > 0) {
       const previousPose = uniforms.startRetiringArrowPose.value.elements;
       const replaced =
@@ -220,127 +230,152 @@ export function createStartParticleEffect({
         previousPose[12] !== retiring.position.x ||
         previousPose[13] !== retiring.position.y ||
         previousPose[14] !== retiring.position.z;
-      writePose(
-        uniforms.startRetiringArrowPose.value,
-        retiring.position,
-        retiring.normal,
-        retiring.up,
-      );
+      this.writePose(uniforms.startRetiringArrowPose.value, retiring);
       if (replaced) {
-        retiringGather.formation.value = arrowGather.formation.value;
-        retiringGather.dissolving.value = arrowGather.dissolving.value;
-        retiringGather.releaseOrigin.value.set(arrowGather.releaseOrigin.value);
+        this.retiringGather.formation.value = this.arrowGather.formation.value;
+        this.retiringGather.dissolving.value =
+          this.arrowGather.dissolving.value;
+        this.retiringGather.releaseOrigin.value.set(
+          this.arrowGather.releaseOrigin.value,
+        );
       }
-      updateGather(retiringGather, retiring.formation);
+      updateGather(this.retiringGather, retiring.formation);
     }
     uniforms.startRetiringArrowPresence.value = retiring.presence;
-    updateGather(ringGather, frame.formationProgress);
-    updateGather(arrowGather, frame.arrow.formation);
-    uniforms.startArrowPresence.value = frame.arrow.presence;
-    uniforms.startRingPresence.value = frame.ringPresence;
-    const wake = frame.wake;
-    uniforms.startWakeAge.value = wake?.ageSeconds ?? -1;
-    const pulse = wake
-      ? Math.exp(-Math.max(0, wake.ageSeconds) * SETTINGS.crossingPulseDecay)
+  }
+
+  private updateObjectAnchors(frame: StartParticleFrame): void {
+    const wakeAge = Math.max(0, frame.wake?.ageSeconds ?? 0);
+    const pulse = frame.wake
+      ? Math.exp(-wakeAge * SETTINGS.crossingPulseDecay)
       : 0;
-    const expandedRadius =
+    const radius =
       frame.ringRadiusMeters *
-      (1 + thickness) *
+      (1 + this.parameters.ringThicknessRatio) *
       (1 + SETTINGS.crossingExpansion * pulse);
-    objects.ringLeft.set(-expandedRadius, 0, 0);
-    objects.ringRight.set(expandedRadius, 0, 0);
-    objects.arrow
-      .set(
-        0,
-        0,
-        Math.sin(frame.elapsedSeconds * SETTINGS.arrowDriftSpeed) *
-          SETTINGS.arrowDriftAmplitude *
-          smoothstep(frame.arrow.formation),
-      )
-      .applyMatrix4(uniforms.startArrowPose.value);
-    updateObjectAnchor(objects.ringLeft, frame);
-    updateObjectAnchor(objects.ringRight, frame);
-    const previewCount = Math.min(SETTINGS.previewCount, frame.previews.length);
-    uniforms.startPreviewCount.value = previewCount;
+    this.updateRingAnchors(frame, radius);
+    this.updateArrowAnchor(frame);
+  }
+
+  private updateRingAnchors(frame: StartParticleFrame, radius: number): void {
+    const { objects, uniforms, ringGather } = this;
+    const formation = springGather(
+      frame.formationProgress,
+      ringGather.dissolving.value > 0,
+      ringGather.releaseOrigin.value,
+    );
+    const wakeAge = Math.max(0, frame.wake?.ageSeconds ?? 0);
+    const travel =
+      (1 - Math.exp(-wakeAge * SETTINGS.wakeDrag)) / SETTINGS.wakeDrag;
+    objects.ringLeft.set(-radius, 0, 0);
+    objects.ringRight.set(radius, 0, 0);
+    for (const anchor of this.ringAnchors) {
+      anchor
+        .multiplyScalar(formation)
+        .applyMatrix4(uniforms.startGoalPose.value);
+      if (frame.wake)
+        anchor.addScaledVector(
+          frame.wake.direction,
+          SETTINGS.wakeSpeed * travel,
+        );
+    }
+  }
+
+  private updateArrowAnchor(frame: StartParticleFrame): void {
+    // Preserve the existing sound-anchor easing until the separate presentation correction.
+    const drift =
+      Math.sin(frame.elapsedSeconds * SETTINGS.arrowDriftSpeed) *
+      SETTINGS.arrowDriftAmplitude;
+    this.objects.arrow
+      .set(0, 0, drift * smoothstep(frame.arrow.formation))
+      .applyMatrix4(this.uniforms.startArrowPose.value);
+  }
+
+  private updateBounds(frame: StartParticleFrame): void {
+    const { bounds, parameters } = this;
     bounds
       .makeEmpty()
       .expandByPoint(frame.goalPosition)
       .expandByPoint(frame.arrow.position);
-    if (retiring.presence > 0) bounds.expandByPoint(retiring.position);
-    let largestRadius = frame.ringRadiusMeters;
-    for (let index = 0; index < previewCount; index += 1) {
-      const preview = frame.previews[index];
-      const pose = previewPoses[index];
-      if (!preview || !pose) continue;
-      writePose(pose, preview.goalPosition, preview.goalNormal, preview.goalUp);
-      previewRadii[index] = preview.ringRadiusMeters;
-      previewCrossingAges[index] = preview.crossingAgeSeconds ?? -1;
-      largestRadius = Math.max(largestRadius, preview.ringRadiusMeters);
-      bounds.expandByPoint(preview.goalPosition);
-    }
+    if (frame.retiringArrow.presence > 0)
+      bounds.expandByPoint(frame.retiringArrow.position);
+    const largestRadius = this.updatePreviews(frame);
     bounds.expandByScalar(
       Math.max(
         parameters.cloudRadiusMeters,
         parameters.cloudDepthMeters,
-        largestRadius * (1 + thickness * 2) * (1 + SETTINGS.crossingExpansion),
-        arrowLength,
+        largestRadius *
+          (1 + parameters.ringThicknessRatio * 2) *
+          (1 + SETTINGS.crossingExpansion),
+        parameters.arrowLengthMeters,
       ) +
         parameters.driftAmplitudeMeters * 3 +
         MAXIMUM_DISPERSAL_MARGIN_METERS +
         1,
     );
-    if (points.geometry.boundingSphere)
-      bounds.getBoundingSphere(points.geometry.boundingSphere);
-    anchorsReady =
-      Math.max(
-        uniforms.startArrowPresence.value,
-        uniforms.startRingPresence.value,
-      ) > 0;
-    if (!wake) return;
-    uniforms.startWakeDirection.value.copy(wake.direction);
+    const sphere = this.points?.geometry.boundingSphere;
+    if (sphere) bounds.getBoundingSphere(sphere);
   }
 
-  function writePose(
+  private updatePreviews(frame: StartParticleFrame): number {
+    const count = Math.min(START_SETTINGS.previewCount, frame.previews.length);
+    this.uniforms.startPreviewCount.value = count;
+    let largestRadius = frame.ringRadiusMeters;
+    for (let index = 0; index < count; index += 1) {
+      const preview = frame.previews[index];
+      const pose = this.previewPoses[index];
+      if (!preview || !pose) continue;
+      this.writePose(pose, preview);
+      this.previewRadii[index] = preview.ringRadiusMeters;
+      this.previewCrossingAges[index] = preview.crossingAgeSeconds ?? -1;
+      largestRadius = Math.max(largestRadius, preview.ringRadiusMeters);
+      this.bounds.expandByPoint(preview.goalPosition);
+    }
+    return largestRadius;
+  }
+
+  private writePose(
     pose: Matrix4,
-    position: Readonly<Vector3>,
-    normal: Readonly<Vector3>,
-    up: Readonly<Vector3>,
+    frame:
+      | Pick<StartArrowFrame, "position" | "normal" | "up">
+      | Pick<StartParticleFrame, "goalPosition" | "goalNormal" | "goalUp">,
   ): void {
-    goalRotation.setFromRotationMatrix(orientation.lookAt(normal, ORIGIN, up));
-    pose.compose(position, goalRotation, UNIT_SCALE);
-  }
-
-  function updateObjectAnchor(
-    anchor: Vector3,
-    frame: StartParticleFrame,
-  ): void {
-    const formation = springGather(
-      frame.formationProgress,
-      uniforms.startDissolving.value > 0,
-      uniforms.startReleaseOrigin.value,
+    const position = "position" in frame ? frame.position : frame.goalPosition;
+    const normal = "normal" in frame ? frame.normal : frame.goalNormal;
+    const up = "up" in frame ? frame.up : frame.goalUp;
+    this.rotation.setFromRotationMatrix(
+      this.orientation.lookAt(normal, ORIGIN, up),
     );
-    anchor.multiplyScalar(formation).applyMatrix4(uniforms.startGoalPose.value);
-    const wake = frame.wake;
-    if (!wake) return;
-    const travel =
-      (1 - Math.exp(-Math.max(0, wake.ageSeconds) * SETTINGS.wakeDrag)) /
-      SETTINGS.wakeDrag;
-    anchor.addScaledVector(wake.direction, SETTINGS.wakeSpeed * travel);
+    pose.compose(position, this.rotation, UNIT_SCALE);
   }
 
-  function unload(): void {
-    if (!points) return;
-    const releasedPoints = points;
-    points = undefined;
-    anchorsReady = false;
-    for (const gather of [ringGather, arrowGather, retiringGather]) {
+  readonly unload = (): void => {
+    if (!this.points) return;
+    const released = this.points;
+    this.points = undefined;
+    this.anchorsReady = false;
+    for (const gather of [
+      this.ringGather,
+      this.arrowGather,
+      this.retiringGather,
+    ]) {
       gather.formation.value = 0;
       gather.dissolving.value = 0;
     }
-    uniforms.startRetiringArrowPresence.value = 0;
-    scene.remove(releasedPoints);
-    releasedPoints.geometry.dispose();
-    releasedPoints.material.dispose();
+    this.uniforms.startRetiringArrowPresence.value = 0;
+    this.scene.remove(released);
+    released.geometry.dispose();
+    released.material.dispose();
+  };
+}
+
+function validateShaderAnchors(
+  source: string,
+  anchors: readonly string[],
+): void {
+  for (const anchor of anchors) {
+    if (!source.includes(`#include <${anchor}>`))
+      throw new Error(`Start particle shader is missing ${anchor}`);
   }
 }
 
@@ -370,8 +405,8 @@ function smoothstep(progress: number): number {
 
 function createGatherUniforms() {
   return {
-    formation: { value: 0 },
-    dissolving: { value: 0 },
+    formation: new Uniform(0),
+    dissolving: new Uniform(0),
     releaseOrigin: { value: new Float32Array([1, 1]) },
   };
 }
@@ -390,4 +425,23 @@ function updateGather(
   }
   gather.dissolving.value = Number(dissolving);
   gather.formation.value = progress;
+}
+
+function readAppearanceUniforms(parameters: Required<StartParticleParameters>) {
+  return {
+    startArrowAccent: new Uniform(new Color(parameters.arrowAccentColor)),
+    startCrossingAccent: new Uniform(new Color(parameters.crossingAccentColor)),
+    startArrowScale: new Uniform(
+      parameters.arrowLengthMeters / ARROW_SOURCE_WIDTH,
+    ),
+    startThickness: new Uniform(parameters.ringThicknessRatio),
+    startMaximumPointSize: new Uniform(parameters.maximumPointSizePixels),
+    startMaximumHazePointSize: new Uniform(
+      parameters.maximumHazePointSizePixels,
+    ),
+    startDriftAmplitude: new Uniform(parameters.driftAmplitudeMeters),
+    startDriftSpeed: new Uniform(parameters.driftSpeed),
+    startSparkle: new Uniform(parameters.sparkle),
+    startGlow: new Uniform(parameters.glow),
+  };
 }

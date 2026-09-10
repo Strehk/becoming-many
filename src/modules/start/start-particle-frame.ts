@@ -1,18 +1,10 @@
 import type { Vector3 } from "three";
+import type { StartArrowFrame } from "./start-arrows";
 
 /** One crossing impulse; direction is world-space unit length, age is playing seconds. */
 export interface StartParticleWake {
   readonly direction: Readonly<Vector3>;
   readonly ageSeconds: number;
-}
-
-/** Borrowed during update; vectors use world coordinates and must not be mutated. */
-export interface StartArrowFrame {
-  readonly position: Readonly<Vector3>;
-  readonly normal: Readonly<Vector3>;
-  readonly up: Readonly<Vector3>;
-  readonly presence: number;
-  readonly formation: number;
 }
 
 /** Current presentation facts; the effect copies inputs and never changes learning. */

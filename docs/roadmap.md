@@ -6,14 +6,14 @@ own names, contracts and styling. The [workflow](refactor-workflow.md) and
 [test plan](refactor-test-plan.md) own implementation and verification cadence.
 Live issues own acceptance. Do not create a second implementation plan.
 
-## Resume Checkpoint — 2026-09-09
+## Resume Checkpoint — 2026-09-10
 
 | Field | Current state |
 | --- | --- |
 | Branch | `david_refactor` only. Commit/push completed, tested blocks to `origin/david_refactor` and verify success; no main, force-push or additional branches. |
-| Current request | Documentation and handoff only. User reports installation running via front USB; do not use rear USB-C next to Ethernet. Tutorial remains physically unusable for following arrows; no new runtime changes in this closeout. |
-| Source checkpoint | `226038d` is the latest implementation checkpoint. Read the [session handoff](evidence/2026-09-09-session-handoff.md) for grouped commits, corrected assumptions and verification limits; `1adc872` remains the historical pre-tutorial source. |
-| Next implementation | First review the session changes at their existing owners (#76), then address [#117](https://github.com/Strehk/becoming-many/issues/117) under #50: reachable arrow lead, full silhouette and flight-direction perception. A curve indicator is a design candidate, not an approved overlay. Preserve spoken timing, fixed anchors, shared transport, 60-second learning budget and complete speech/tails. |
+| Current request | Reconcile issues, then implement only the first three structural steps, with architecture first. Preserve observable behavior; no new features, guidance, transition, shader or audio design in this block. |
+| Source checkpoint | `30309a3` preserves the pre-refactor `bb2ef0c` source. The 2026-09-10 structural block follows it; its results and remaining criteria are in [tutorial evidence](evidence/issue-50/README.md#architecture-first-structural-block--2026-09-10). The [previous session handoff](evidence/2026-09-09-session-handoff.md) retains deployment facts and earlier verification limits. |
+| Next implementation | Finish actual source/state reduction under #118/#119/#121/#123 before later behavior work. The first structural pass establishes local Start orchestration, injected motion limits, a single reset path and narrower Show commands; file/function limits do not by themselves establish net reduction. |
 | Confirmed direction | Conductor is UI only; Entry connects UI to the existing browser Engine. Show owns transport/language, Run owns lifetime, World owns rendering, M5 owns validity. Backend remains Station delivery/config/health. Affected role filenames and `src/ui/app.css` are implemented. |
 | Existing software | Direct startup, complete child/source cleanup, entry diagnostics, explicit literal levels, legacy Grass retirement, shared zone influences, approved bank clearance and shared Rocks/Vegetation lifecycle are implemented. Their distinct remaining issue acceptance is preserved. |
 | Current visitor behavior | Initial Play; up to 60 seconds for four spatial goals. A transition request finishes the current native speech, then leaves 1.5 playing seconds before main playback; earned closing remains complete. The separate Begin experience button is removed; operators use the existing Play/Pause and Stop. Interim Stop resets rig/time and holds; after handoff it recreates only retired training content. Complete replacement and fresh calibration remain #9/#46 decisions. |
@@ -49,7 +49,26 @@ cold start, supervision and front-USB reconnect on both stations. Do not rerun
 network repair on a working installation without the documented collision. No
 browser shell bridge or automatic OS settings repair is planned.
 
-## Immediate tutorial corrections after office review
+## Architecture-first tutorial revision
+
+The 2026-09-10 issue reconciliation supersedes the earlier feature-first order:
+
+1. Establish the existing owner graph (#122/#121): Run owns lifetime, Show owns
+   playback policy, Start connects its spatial components. Remove the separate
+   practice runtime and direct specialized-component dependencies.
+2. Simplify the existing Run/Show/ViewerRig boundaries (#118/#119/#120/#125): one
+   reset command, explicit motion constraints, one publication of viewer facts,
+   no unused skip capability or duplicate ownership state.
+3. Make the retained Start algorithms readable (#123 and the structural portion
+   of #124), preserving equations, material, fixed particle layout and authored
+   values. Enforce the strict function rules and report actual source deltas.
+
+The user authorized issue edits followed by this code block. #117 guidance,
+#122's later calm ending and #124's new material/layout remain deferred. The
+Show limit of 396 lines and actual net reduction remain open until achieved;
+do not close these issues merely because structural checks pass.
+
+### Deferred physical tutorial correction
 
 [#117](https://github.com/Strehk/becoming-many/issues/117) captures the latest
 physical feedback: arrows are too close to follow with a deliberate curve and
@@ -59,8 +78,8 @@ physically unaccepted. Review the captured-view/flight-prognosis/guide separatio
 then tune actual lead time and angular readability with the existing flight model.
 Evaluate a minimal motion or curve reference without assuming a HUD or auto-steering.
 
-Resume in this order: inspect the [session handoff](evidence/2026-09-09-session-handoff.md)
-and current owner boundaries; implement #117 as a coherent #50 correction; run
+After the structural steps, inspect the [session handoff](evidence/2026-09-09-session-handoff.md)
+and current owner boundaries; address #117 as a separate #50 correction; run
 focused checks and real browser interactions/screenshots; obtain physical
 comprehension, listening and PCVR performance evidence. Preserve already-corrected
 language-after-handoff, retained wind reset and cold initial narration seek.

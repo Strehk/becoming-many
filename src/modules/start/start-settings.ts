@@ -2,6 +2,13 @@ import type { StartParticleParameters } from "./start-particle-settings";
 
 export type StartDirection = "right" | "left" | "up" | "down";
 
+/** Numeric flight constraints supplied by composition; Start never reads Control tuning. */
+export interface StartMotionLimits {
+  readonly yawRateRadiansPerSecond: number;
+  readonly climbRateMetersPerSecond: number;
+  readonly neutralDescentMetersPerSecond: number;
+}
+
 export type DistanceRange = readonly [minimum: number, maximum: number];
 
 export interface StartParameters {
@@ -25,6 +32,8 @@ export interface StartParameters {
 
 /** Technical learning/course limits. Level-authored timings and appearance stay in the level recipe. */
 export const START_SETTINGS = {
+  arrowLengthMeters: 6,
+  previewCount: 3,
   turnComponent: 0.12,
   turnConfirmSeconds: 0.2,
   arrowOutOfViewSeconds: 2,

@@ -1,152 +1,147 @@
 import { Vector3 } from "three";
-import { FLIGHT_SETTINGS } from "../../control/flight-settings";
 import type { Viewpoint } from "../../world/viewer-rig";
-import { START_SETTINGS } from "./start-settings";
+import { START_SETTINGS, type StartMotionLimits } from "./start-settings";
 
-/** Read-only borrowed motion samples; vectors remain valid until the next update or reset. */
-export type StartMotion = Pick<
-  ReturnType<typeof createStartMotion>,
-  "direction" | "curvature" | "speed" | "predictPosition"
->;
+interface MotionOptions {
+  readonly viewpoint: Viewpoint;
+  readonly limits: StartMotionLimits;
+  readonly maximumGoalYAt?: (x: number, z: number) => number;
+}
 
 /** Sample eye/rig travel and predict flight from bounded rig history, never eye rotation. */
-export function createStartMotion(
-  viewpoint: Viewpoint,
-  maximumGoalYAt?: (x: number, z: number) => number,
-) {
-  const previousEye = new Vector3();
-  const eyePosition = new Vector3();
-  const flightPosition = new Vector3();
-  const eyeTravel = new Vector3();
-  const flightTravel = new Vector3();
-  let initialized = false;
-  const previousTravelDirection = new Vector3();
-  const curvature = new Vector3();
-  const sampledCurvature = new Vector3();
-  const currentTravelDirection = new Vector3();
-  let observedSpeed = 0;
-  let hasMotionHistory = false;
+export class StartMotion {
+  readonly previousEye = new Vector3();
+  readonly eyeTravel = new Vector3();
+  readonly flightTravel = new Vector3();
+  readonly direction = new Vector3();
+  readonly curvature = new Vector3();
+  speed = 0;
+  private readonly eyePosition = new Vector3();
+  private readonly flightPosition = new Vector3();
+  private readonly previousTravelDirection = new Vector3();
+  private readonly sampledCurvature = new Vector3();
+  private initialized = false;
+  private hasMotionHistory = false;
 
-  return {
-    previousEye,
-    eyeTravel,
-    flightTravel,
-    direction: currentTravelDirection,
-    curvature,
-    get speed() {
-      return observedSpeed;
-    },
-    resetHistory,
-    update,
-    predictPosition,
-  };
+  constructor(private readonly options: MotionOptions) {}
 
-  /** New practice skips the first segment; pause/reactivation only discard hidden travel. */
-  function resetHistory(skipNextSegment = false): void {
-    if (skipNextSegment) initialized = false;
-    eyePosition.copy(viewpoint.worldPosition);
-    flightPosition.copy(
-      viewpoint.worldFlightPosition ?? viewpoint.worldPosition,
-    );
-    observedSpeed = 0;
-    hasMotionHistory = false;
-    curvature.set(0, 0, 0);
-    currentTravelDirection.copy(
-      viewpoint.worldFlightDirection ?? viewpoint.worldDirection,
-    );
+  /** Discard hidden travel; a new practice also skips the next segment. */
+  resetHistory(reason: "resume" | "restart" = "resume"): void {
+    if (reason === "restart") this.initialized = false;
+    this.capturePosition();
+    this.speed = 0;
+    this.clearTrend();
   }
 
-  function update(elapsed: number): void {
-    if (!initialized) {
-      resetHistory();
-      initialized = true;
+  /** Borrowed vectors remain valid until the next update or reset. */
+  update(elapsed: number): void {
+    if (!this.initialized) {
+      this.resetHistory();
+      this.initialized = true;
     }
-    previousEye.copy(eyePosition);
-    eyeTravel.subVectors(viewpoint.worldPosition, eyePosition);
-    flightTravel.subVectors(
+    const { viewpoint } = this.options;
+    this.previousEye.copy(this.eyePosition);
+    this.eyeTravel.subVectors(viewpoint.worldPosition, this.eyePosition);
+    this.flightTravel.subVectors(
       viewpoint.worldFlightPosition ?? viewpoint.worldPosition,
-      flightPosition,
+      this.flightPosition,
     );
-    eyePosition.copy(viewpoint.worldPosition);
-    flightPosition.copy(
-      viewpoint.worldFlightPosition ?? viewpoint.worldPosition,
-    );
+    this.capturePosition();
     if (elapsed <= 0) return;
+    const distance = this.flightTravel.length();
     if (
-      flightTravel.lengthSq() <= START_SETTINGS.minimumTravelSquared ||
-      flightTravel.length() / elapsed >
-        START_SETTINGS.maximumObservedSpeedMetersPerSecond
+      this.flightTravel.lengthSq() <= START_SETTINGS.minimumTravelSquared ||
+      distance / elapsed > START_SETTINGS.maximumObservedSpeedMetersPerSecond
     ) {
-      hasMotionHistory = false;
-      curvature.set(0, 0, 0);
-      currentTravelDirection.copy(
-        viewpoint.worldFlightDirection ?? viewpoint.worldDirection,
-      );
+      this.clearTrend();
       return;
     }
-    currentTravelDirection.copy(flightTravel).normalize();
-    const smoothing =
-      1 - Math.exp(-elapsed / START_SETTINGS.motionHistorySeconds);
-    const speed = flightTravel.length() / elapsed;
-    observedSpeed = hasMotionHistory
-      ? observedSpeed + (speed - observedSpeed) * smoothing
-      : speed;
-    if (hasMotionHistory && elapsed <= START_SETTINGS.motionHistorySeconds) {
-      sampledCurvature
-        .copy(currentTravelDirection)
-        .sub(previousTravelDirection)
-        .multiplyScalar(1 / flightTravel.length());
-      // Only sideways change bends the prediction; speed remains Run-owned.
-      sampledCurvature.addScaledVector(
-        currentTravelDirection,
-        -sampledCurvature.dot(currentTravelDirection),
-      );
-      const curvatureLimit = Math.min(
-        START_SETTINGS.maximumCurvaturePerMeter,
-        FLIGHT_SETTINGS.yawRateRadiansPerSecond / Math.max(observedSpeed, 0.1),
-      );
-      const magnitude = sampledCurvature.length();
-      if (magnitude > curvatureLimit)
-        sampledCurvature.multiplyScalar(curvatureLimit / magnitude);
-      curvature.lerp(sampledCurvature, smoothing);
-      curvature.addScaledVector(
-        currentTravelDirection,
-        -curvature.dot(currentTravelDirection),
-      );
-    } else curvature.set(0, 0, 0);
-    previousTravelDirection.copy(currentTravelDirection);
-    hasMotionHistory = true;
+    this.sampleTrend(elapsed, distance);
   }
 
-  /** Integrate a decaying turn trend; remote predictions gradually straighten. */
-  function predictPosition(
+  /** Mutate the supplied position and tangent with a decaying flight-trend prediction. */
+  predictPosition(
     origin: Readonly<Vector3>,
     distance: number,
-    position: Vector3,
-    tangent: Vector3,
+    prediction: { position: Vector3; tangent: Vector3 },
   ): void {
+    const { position, tangent } = prediction;
     const decay = Math.exp(-distance / START_SETTINGS.curvatureDecayMeters);
     position
       .copy(origin)
-      .addScaledVector(currentTravelDirection, distance)
+      .addScaledVector(this.direction, distance)
       .addScaledVector(
-        curvature,
+        this.curvature,
         START_SETTINGS.curvatureDecayMeters * distance -
           START_SETTINGS.curvatureDecayMeters ** 2 * (1 - decay),
       );
     tangent
-      .copy(currentTravelDirection)
+      .copy(this.direction)
       .addScaledVector(
-        curvature,
+        this.curvature,
         START_SETTINGS.curvatureDecayMeters * (1 - decay),
       );
-    if (maximumGoalYAt) {
-      const ceiling = maximumGoalYAt(position.x, position.z);
-      if (position.y > ceiling) {
-        position.y = ceiling;
-        tangent.y = 0;
-      }
+    const ceiling = this.options.maximumGoalYAt?.(position.x, position.z);
+    if (ceiling !== undefined && position.y > ceiling) {
+      position.y = ceiling;
+      tangent.y = 0;
     }
     tangent.normalize();
+  }
+
+  private capturePosition(): void {
+    const { viewpoint } = this.options;
+    this.eyePosition.copy(viewpoint.worldPosition);
+    this.flightPosition.copy(
+      viewpoint.worldFlightPosition ?? viewpoint.worldPosition,
+    );
+  }
+
+  private clearTrend(): void {
+    this.hasMotionHistory = false;
+    this.curvature.set(0, 0, 0);
+    this.direction.copy(
+      this.options.viewpoint.worldFlightDirection ??
+        this.options.viewpoint.worldDirection,
+    );
+  }
+
+  private sampleTrend(elapsed: number, distance: number): void {
+    this.direction.copy(this.flightTravel).normalize();
+    const smoothing =
+      1 - Math.exp(-elapsed / START_SETTINGS.motionHistorySeconds);
+    const speed = distance / elapsed;
+    this.speed = this.hasMotionHistory
+      ? this.speed + (speed - this.speed) * smoothing
+      : speed;
+    if (this.hasMotionHistory && elapsed <= START_SETTINGS.motionHistorySeconds)
+      this.sampleCurvature(distance, smoothing);
+    else this.curvature.set(0, 0, 0);
+    this.previousTravelDirection.copy(this.direction);
+    this.hasMotionHistory = true;
+  }
+
+  private sampleCurvature(distance: number, smoothing: number): void {
+    this.sampledCurvature
+      .copy(this.direction)
+      .sub(this.previousTravelDirection)
+      .multiplyScalar(1 / distance);
+    // Only sideways change bends the prediction; speed remains Run-owned.
+    this.sampledCurvature.addScaledVector(
+      this.direction,
+      -this.sampledCurvature.dot(this.direction),
+    );
+    const limit = Math.min(
+      START_SETTINGS.maximumCurvaturePerMeter,
+      this.options.limits.yawRateRadiansPerSecond / Math.max(this.speed, 0.1),
+    );
+    const magnitude = this.sampledCurvature.length();
+    if (magnitude > limit)
+      this.sampledCurvature.multiplyScalar(limit / magnitude);
+    this.curvature.lerp(this.sampledCurvature, smoothing);
+    this.curvature.addScaledVector(
+      this.direction,
+      -this.curvature.dot(this.direction),
+    );
   }
 }

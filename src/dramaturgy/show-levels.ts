@@ -16,7 +16,7 @@ export type ShowSense =
   | "magnetic"
   | "connections";
 
-const SHOW_SENSES: readonly ShowSense[] = [
+export const SHOW_SENSES: readonly ShowSense[] = [
   "scent",
   "echo",
   "motion",

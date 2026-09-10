@@ -5,6 +5,13 @@ export interface FlightPosition {
   readonly z: number;
 }
 
+/** A world-space open disk; the caller retains ownership of its pose. */
+export interface FlightRing {
+  readonly goalPosition: FlightPosition;
+  readonly goalNormal: FlightPosition;
+  readonly ringRadiusMeters: number;
+}
+
 /**
  * Intersect a movement segment with a ring's open disk, in either direction.
  * Starting on the plane is not a second crossing. The caller latches success
@@ -13,10 +20,13 @@ export interface FlightPosition {
 export function crossesFlightRing(
   previous: FlightPosition,
   current: FlightPosition,
-  center: FlightPosition,
-  normal: FlightPosition,
-  radiusMeters: number,
+  ring: FlightRing,
 ): boolean {
+  const {
+    goalPosition: center,
+    goalNormal: normal,
+    ringRadiusMeters: radiusMeters,
+  } = ring;
   const before =
     (previous.x - center.x) * normal.x +
     (previous.y - center.y) * normal.y +

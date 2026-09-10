@@ -1198,12 +1198,13 @@ async function checkTechnicianControls(page: Page): Promise<void> {
   );
   quality = 0;
   await page
-    .locator('[data-tile="controller"] output')
-    .filter({ hasText: "Neutral" })
+    .locator(".conductor__m5-readout")
+    .filter({ hasText: /sample q0\.0 · input q1\.0/ })
     .waitFor();
-  assert.match(
-    await page.locator(".conductor__m5-readout").innerText(),
-    /input q0\.0/,
+  // Parsed configured-host input remains accepted even when reported quality is zero.
+  assert.equal(
+    await page.locator('[data-tile="controller"] output').innerText(),
+    "OK",
   );
   assertRefactorBranch();
   await page.screenshot({

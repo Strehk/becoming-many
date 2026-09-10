@@ -129,13 +129,14 @@ anchors its forward arrow and curved ring path. Run selects the Start recipe’s
 The literal Start recipe supplies `maximumPracticeSeconds: 60`. The same clock
 runs practice, an earned closing voice and the main score; no UI timer exists.
 Four actual passages before the cutoff allow the complete closing recording,
-then an automatic transition (up to about 74 seconds). If practice expires, or the
-operator selects Begin experience, main playback starts directly without claiming
-success. The direct command is available throughout prepared integrated practice.
+then an automatic transition. On timeout, current speech finishes without an
+unearned success recording. Both paths retain the existing 1.5 playing seconds of
+breathing space before main playback; about 74 seconds is not a speech cutoff.
+The later kiosk revision removed the separate Begin experience control.
 
 The public `sample()` reports total timeline time and `mainStartSeconds`. The UI
 starts with a one-minute Tutorial chapter, then retains its actual duration at
-success/skip/handoff; later chapter positions, seeking and readouts use that prefix.
+success/timeout/handoff; later chapter positions, seeking and readouts use that prefix.
 Main narration, senses, organ and passage schedules keep their original relative
 seconds. Seeking into retired training clamps to the main start; Run reset is the
 route back to fresh practice. Pause and suspended audio consume no tutorial budget.

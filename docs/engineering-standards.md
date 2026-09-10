@@ -24,6 +24,17 @@ These standards guide readable code; they do not require new infrastructure.
 - Preserve clear formatting. Minifying, packing statements or moving files
   outside the count is not simplification.
 
+## Start function limits
+
+For the Start refactor (#123), every function under `src/modules/start/` and
+every function introduced or relocated by the block must have at most 30
+non-empty code lines, two nested control-flow levels and three parameters.
+Count signatures, braces and nested function code; exclude comment-only lines.
+Factories, methods, callbacks and GLSL have the same limits, without exceptions.
+Remove redundant work before separating meaningful operations. Do not satisfy
+the limits through packing statements, forwarding wrappers or mechanical moves.
+These constraints supplement, rather than replace, actual source reduction.
+
 ## File names and architectural roles
 
 Use `<domain-name>.<role>.ts` for files with an architectural role. The domain

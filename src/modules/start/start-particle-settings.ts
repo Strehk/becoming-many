@@ -21,8 +21,6 @@ export interface StartParticleParameters {
 }
 
 export const START_PARTICLE_SETTINGS = {
-  arrowLengthMeters: 6,
-  previewCount: 3,
   ringThicknessRatio: 0.24,
   hazeFraction: 0.12,
   maximumPointSizePixels: 24,
@@ -41,11 +39,11 @@ const MAXIMUM_PARTICLE_COUNT = 65_536;
 /** Resolve authored omissions once and reject invalid settings before GPU allocation. */
 export function readStartParticleSettings(
   authored: StartParticleParameters,
+  arrowLengthMeters: number,
 ): Required<StartParticleParameters> {
   const settings = {
     ...authored,
-    arrowLengthMeters:
-      authored.arrowLengthMeters ?? START_PARTICLE_SETTINGS.arrowLengthMeters,
+    arrowLengthMeters,
     ringThicknessRatio:
       authored.ringThicknessRatio ?? START_PARTICLE_SETTINGS.ringThicknessRatio,
     hazeFraction: authored.hazeFraction ?? START_PARTICLE_SETTINGS.hazeFraction,
@@ -76,6 +74,13 @@ function validateParameters(
     throw new Error(
       `Start particle count must be an integer in [${MINIMUM_PARTICLE_COUNT}, ${MAXIMUM_PARTICLE_COUNT}]`,
     );
+  validateDimensions(parameters);
+  validateAppearance(parameters);
+}
+
+function validateDimensions(
+  parameters: Required<StartParticleParameters>,
+): void {
   for (const [key, maximum] of [
     ["arrowLengthMeters", 16],
     ["ringThicknessRatio", 0.6],
@@ -91,6 +96,11 @@ function validateParameters(
         `Start particle ${key} must be positive and at most ${maximum}`,
       );
   }
+}
+
+function validateAppearance(
+  parameters: Required<StartParticleParameters>,
+): void {
   const hazeFraction = parameters.hazeFraction;
   if (!Number.isFinite(hazeFraction) || hazeFraction < 0 || hazeFraction > 0.25)
     throw new Error("Start particle hazeFraction must be in [0, 0.25]");

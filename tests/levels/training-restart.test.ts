@@ -79,13 +79,13 @@ test("Run gates training preparation and releases failed or cancelled restart ch
       mock.module("./src/levels/show.runtime.ts", () => ({
         createShowRuntime: async (...args) => {
           show = {
-            state:"ready", tutorial:args[6], stateWrites:[], update(){}, readSpeechActive:()=>false,
+            state:"ready", tutorial:args[1].tutorial, stateWrites:[], update(){}, readSpeechActive:()=>false,
             setTutorial(tutorial){this.tutorial=tutorial;},
             setPreparationState(state){this.state=state;this.stateWrites.push(state);if(state==="failed")this.tutorial=undefined;},
             unload:async()=>{show.tutorial=undefined;},
             finish(){const tutorial=this.tutorial;this.tutorial=undefined;tutorial.finish();},
             readActiveLevelState:()=>({}),
-            running:{resetTime(){resets++;},readTutorial:()=>show.tutorial,sample:()=>({isPlaying:false})},
+            running:{resetTime(){show.tutorial?.reset();},readTutorial:()=>show.tutorial,sample:()=>({isPlaying:false})},
           };
           return show;
         },
@@ -105,7 +105,9 @@ test("Run gates training preparation and releases failed or cancelled restart ch
       frame(0.1);
       assert.equal(rig.position.y,0,"prepared invisible terrain cannot block Start goals");
       const audioResets=voices[0].resets;
+      const practiceResets = resets;
       run.resetShowAndFlight();
+      assert.equal(resets,practiceResets+1,"combined reset reaches Start exactly once");
       assert.equal(voices[0].resets,audioResets+1,"a retained tutorial audio owner resets with the flight and visual lesson");
       show.finish();
       frame(0.1);

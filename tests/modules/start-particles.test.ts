@@ -10,7 +10,7 @@ import {
 } from "three";
 import type { StartParticleFrame } from "../../src/modules/start/start-particle-frame";
 import type { StartParticleParameters } from "../../src/modules/start/start-particle-settings";
-import { createStartParticleEffect } from "../../src/modules/start/start-particles.effect";
+import { createStartParticleEffect as createEffect } from "../../src/modules/start/start-particles.effect";
 
 const PARAMETERS: StartParticleParameters = {
   count: 1400,
@@ -23,6 +23,16 @@ const PARAMETERS: StartParticleParameters = {
   sparkle: 0.08,
   glow: 0.12,
 };
+
+function createStartParticleEffect(options: {
+  scene: Scene;
+  parameters: StartParticleParameters;
+}) {
+  return createEffect({
+    ...options,
+    arrowLengthMeters: options.parameters.arrowLengthMeters ?? 6,
+  });
+}
 
 function createFrame(): StartParticleFrame {
   return {

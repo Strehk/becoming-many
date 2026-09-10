@@ -4,7 +4,8 @@ The spatial tutorial replaces the held-gesture Start MVP on its existing routes
 and opens the full experience. The approved sequence is right → left → up → down.
 Actual ring passages advance learning; missed sections recycle ahead. The latest
 integrated policy is 60 seconds of practice, a full closing voice on success and
-an available direct UI transition, as recorded below. Show owns this policy; Run
+automatic handoff after current speech and 1.5 playing seconds of breathing space.
+The later kiosk revision removed direct UI skipping. Show owns this policy; Run
 retires training and releases the prepared main experience. World, M5 and
 locomotion retain their ownership. No second renderer, loop or clock was added.
 Older dated sections retain the evidence and decisions valid at their revision.
@@ -1318,3 +1319,159 @@ The screenshot uses simulated HTTP replies. Physical office M5 steering remains
 the final installation check; no new PCVR performance claim is made.
 
 ![Configured controller accepted despite differing metadata](kiosk-open-acceptance.png)
+
+
+## Architecture-first structural block — 2026-09-10
+
+Scope: the user authorized issue reconciliation followed by the first three
+structural steps, with architecture first and existing observable behavior fixed.
+All 96 issues were inventoried (63 open, 33 closed). Bodies #50, #76, #110–#113
+and #117–#125 were reconciled and read back. #122 owns the delivery boundary,
+#121 the local Start graph and #123 the strict function rules. The later calm
+ending, new guidance and ShaderMaterial/layout work are explicitly deferred.
+
+Implemented ownership and removals:
+
+- `start.module.ts` owns the entire learning sequence and connects Motion,
+  Course, Arrows, Crossing and particle presentation. The 317-line
+  `start-practice.runtime.ts` is deleted. Motion no longer flows into Course as
+  a concrete owner; Start passes prediction results and motion facts.
+- Composition passes the existing `StartMotionLimits` and resolves arrow length
+  once. Motion and Course no longer import Control settings. Generic Desktop/M5
+  control adapters and the authored 2 m/s tutorial translation are unchanged.
+- Run owns reset and handoff through injected commands. The combined reset
+  reaches practice once. Main/training lists replace the redundant combined
+  ownership list; initial Composition and Show options no longer retain retired
+  tutorial handles. Cancellation and failed restart still release children.
+- Show retains one clock and the current speech/60-second/1.5-second behavior.
+  Unused public `continueToExperience`/`readyToContinue` capabilities and their
+  exclusive fixture coverage are removed; a timeout-reset case covers cancellation
+  of a pending transition. A narrow bound-command object keeps the clock private.
+- ViewerRig reads eye/rig vectors from one matrix-tree refresh. Particle geometry,
+  shaders and audio anchors stay with the effect. Equivalent CPU/GLSL spring/wake
+  calculations are consolidated without changing PointsMaterial, immutable
+  attributes, draw layout, authored values or retained mathematical differences.
+
+The graph and changed contracts are documented in [Architecture](../../architecture.md).
+Function inventory counts signatures, braces and nested code, excludes
+comment-only lines, and includes constructors, getters, factories and callbacks:
+
+| Start file | Functions | Maximum code lines | Maximum nesting | Maximum parameters |
+| --- | ---: | ---: | ---: | ---: |
+| `flight-ring-crossing.ts` | 1 | 25 | 1 | 3 |
+| `start-arrows.ts` | 7 | 21 | 2 | 2 |
+| `start-course.ts` | 18 | 29 | 2 | 3 |
+| `start-motion.ts` | 8 | 28 | 1 | 3 |
+| `start-particle-frame.ts` | 0 | — | — | — |
+| `start-particle-geometry.ts` | 8 | 23 | 2 | 3 |
+| `start-particle-settings.ts` | 4 | 25 | 2 | 2 |
+| `start-particles.effect.ts` | 25 | 29 | 2 | 3 |
+| `start-particles.vert.glsl` | 6 | 23 | 2 | 3 |
+| `start-particles.frag.glsl` | 1 | 16 | 1 | 1 |
+| `start-settings.ts` | 3 | 19 | 1 | 1 |
+| `start.module.ts` | 33 | 29 | 2 | 1 |
+
+All 114 Start functions meet the limits, including ternaries; an `else if` is
+an alternative at the same control level. New Run/Show functions were also
+reviewed against the same limits. Type-only shared arrow-frame references are
+contracts, not concrete runtime dependencies.
+
+**Unmet reduction criteria:** production source is +2,476 / −2,195 (**net +281**),
+tests/tooling +127 / −68 (**net +59**); documentation is reported separately in
+the issue result. Counts include the deleted practice runtime and all moved code.
+Run is 632 lines (577 before); Show is 762 (755 before), still above #119's
+396-line ceiling. ViewerRig is 87 (132 before), below #120's 88-line ceiling.
+The block removes coupling, state and capabilities but does not meet the required
+net source reduction. #118/#119/#121/#123 and shared reduction acceptance remain
+open; shorter functions alone do not close them. Next work must remove remaining
+redundant behavior-independent machinery at existing owners before features.
+
+Verification of the final runtime candidate:
+
+- `bun run lint`: passes, 347 files. A destructured private-vector read triggered
+  an unused-member diagnostic; explicit access preserves the required vector.
+  Its incorrect intermediate removal caused 20 Start failures and a type error;
+  restoring it fixed the cause without changing any assertions.
+- `bun run build`: passes type checks and Vite production build, 437 modules;
+  the existing large-chunk warning remains.
+- `bun test`: **598 pass, 0 fail**, 47,812 assertions across 76 files. This includes
+  desktop/M5 defaults, swept crossings, Start/particle lifetime, Run restart/abort,
+  full speech, timeout-reset and Show's narrow public commands. Earlier targeted
+  checks exposed lost method binding and clock exposure during class conversion;
+  both were repaired at the owner before final verification.
+- Comparable headed Start quick replay: 450 frames, 240 warmup, 210 measured,
+  640×360, scale 1, Chromium 151.0.7922.34, Apple M2 Max via ANGLE Metal
+  (`software: false`). Before/after counters are identical: 2 draws, 0 triangles,
+  2 geometries, 0 textures, 2 programs, queue peak 0, missed frames 0. Median
+  0.10→0.10 ms, p95 0.30→0.30 ms, p99 0.40→0.50 ms. No improvement or PCVR
+  acceptance is claimed; the short local sample cannot establish sustained cost.
+
+The before build used checkpoint `30309a3` (same production source as `bb2ef0c`).
+Its benchmark metadata was collected while source work had started; the recorded
+working-tree digest is not the built-source identity. The after build contains
+this structural diff on `41dcec6` (intervening commits changed only moodboards).
+After source SHA-256: `0649b322e52f404401824fa5f0faead4e44cd065e1362472d6fc5d79b12a2dd2`;
+after diff SHA-256: `381465aa0e06bb8373723880da12a9435379badcdd598405f5c4a18caae3146b`.
+The report digests precede these final documentation-only additions. Scratch
+reports are under `benchmark-results/start-architecture-{before,after}` and
+`benchmark-results/start-architecture-browser-{before,after}`; benchmark references
+were not changed. The final commit identifies the complete reviewed source.
+
+
+Browser acceptance uses the unchanged production runtime plus one corrected
+fixture: reported M5 quality zero must remain accepted (`OK`) after the existing
+configured-host policy change; the test now waits for diagnostic `sample q0.0 · input q1.0`
+and asserts acceptance, instead of timing out waiting for obsolete `Neutral`.
+This changes no application policy or error filtering.
+
+The initial after smoke exercises Start, Rehearsal and Conductor plus four
+startup/UI-mount failures. Start's interaction/reload assertions complete, but
+five native WAV `net::ERR_ABORTED` requests fail its error check (the pre-refactor
+Start smoke already failed on eight such requests). Rehearsal initially fails
+`Success path must not miss a goal`. Conductor completes all four passages,
+full closing, automatic handoff and subsequent transport/layout checks before
+the stale `Neutral` assertion times out. All four startup/mount-failure scenarios
+pass. These failed traces and screenshots are retained; none is relabeled green.
+
+To distinguish regressions, an isolated build was made from the `30309a3` source
+archive with the unchanged installed dependencies/public assets; no Git branch
+or worktree was switched. It runs through Vite preview on port 4191 (the runner's
+`--dev` flag skips only Station health/config probes). The comparison report's
+checkout digest describes the test runner, not that archived browser build.
+The baseline Rehearsal completes its functional assertions and also fails only
+on five WAV request aborts. The simulated pilot integrates Node wall time while
+movement uses browser frame time, and authored course choices remain random;
+source comparison found no changed geometry/phase formula, but this is not proof
+that the initial missed-goal failure is harmless.
+
+The archived baseline Conductor reproduces the same obsolete `Neutral` timeout;
+its four startup/mount-failure cases pass. The final corrected-fixture run reuses
+the already tested after build. Only the browser expectation changed, followed
+by passing lint and type checks; no runtime was rebuilt or retuned to affect the
+comparison.
+
+In the final after run, Rehearsal completes every functional assertion (four
+passages, full closing, timeout, transport/language, responsive UI and teardown)
+and fails only on the same five WAV aborts as the baseline Rehearsal. The initial
+miss was not reproduced; its cause remains unproven and the failed trace stays
+part of the result. No assertion, simulation target or application behavior was
+changed to make that second flight succeed.
+
+The first fixture correction still confused device-reported quality with effective
+input quality and timed out waiting for `input q0.0`. The readout explicitly owns
+both facts: the final assertion waits for `sample q0.0 · input q1.0` and requires
+an `OK` tile. This retains both diagnostic and accepted-input checks. No M5/UI
+source was changed; only the affected Conductor scenario is rerun after this fix.
+
+Final Conductor outcome: every functional assertion completes, including all four
+passages, natural closing/handoff, transport/language, responsive technician UI,
+zero-reported-quality acceptance, Stop/restart and page-end cleanup. Both targeted
+startup/mount-failure cases pass. The route still fails the unchanged error check
+on five WAV `net::ERR_ABORTED` requests. The final Rehearsal and Conductor runs
+therefore establish the exercised interactions, not a green browser suite.
+The audio aborts, non-reproduced initial missed-goal result, source reduction and
+physical/listening/Windows-PCVR acceptance remain open. Final artifacts:
+`benchmark-results/start-architecture-browser-final` and
+`benchmark-results/start-architecture-conductor-final`. Source digest remains
+`0649b322e52f404401824fa5f0faead4e44cd065e1362472d6fc5d79b12a2dd2`;
+subsequent `07ed9d4` changes only another task's moodboard documentation/assets.

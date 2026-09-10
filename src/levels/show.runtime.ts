@@ -5,7 +5,7 @@
  * Boundary: Level Runtime constructs modules; concrete modules and the render loop remain elsewhere.
  */
 
-import { Color } from "three";
+import { Color, MathUtils } from "three";
 import { endCreditsPresenceAt } from "../dramaturgy/end-credits";
 import {
   type NarrationLanguage,
@@ -30,6 +30,7 @@ import {
 } from "../dramaturgy/show-clock";
 import {
   levelTransitionAt,
+  SHOW_SENSES,
   type ShowLevelState,
   type ShowSense,
   senseIntensityAt,
@@ -42,6 +43,7 @@ import type { WorldFadeEffect } from "../modules/world-fade/world-fade";
 import { createAudioTimebase } from "../sound/audio-timebase";
 import { createDroneOrgan } from "../sound/drone-organ/drone-organ";
 import type { OrganPlacementGroup } from "../sound/drone-organ/drone-organ-settings";
+import type { ListenerPose } from "../sound/drone-organ/organ-signals";
 import type { NarrationRecording } from "../sound/narration-player";
 import { createNarrationPlayer } from "../sound/narration-player";
 import type { SpatialAudio } from "../sound/spatial-audio.runtime";
@@ -62,13 +64,10 @@ export interface TutorialStatus {
   readonly goalIndex: number;
   readonly direction: "right" | "left" | "up" | "down";
   readonly crossingCount: number;
-  /** Prepared integrated practice may be skipped independently of learned goals. */
-  readonly readyToContinue: boolean;
 }
 
 export interface RunningShow {
   readonly readTutorial: () => TutorialStatus | undefined;
-  readonly continueToExperience: () => void;
   /** Continuous visit timeline; main cues remain relative to mainStartSeconds. */
   readonly sample: () => ShowTimeSample & { readonly mainStartSeconds: number };
   readonly play: ShowClock["play"];
@@ -126,16 +125,20 @@ const TUTORIAL_BREATH_SECONDS = 1.5;
 
 /** The listener pose scratch a show writes each frame; the organ only reads. */
 type MutableListenerPose = {
-  x: number;
-  y: number;
-  z: number;
-  yawRadians: number;
-  pitchRadians: number;
+  -readonly [Key in keyof ListenerPose]: ListenerPose[Key];
 };
 
-interface ShowTutorial {
+export interface ShowTutorial {
   readonly setRoomPresence?: (presence: number) => void;
-  readonly start: StartModuleHandle;
+  readonly start: Pick<
+    StartModuleHandle,
+    | "readObservation"
+    | "setPlaying"
+    | "setFormationAllowed"
+    | "setGoalAdvanceAllowed"
+  >;
+  /** Run resets practice once; Show resets playback policy. */
+  readonly reset: () => void;
   readonly parameters: StartParameters;
   readonly recordings?: Readonly<
     Record<NarrationLanguage, readonly NarrationRecording[]>
@@ -155,558 +158,576 @@ export interface ShowRuntime {
   readonly unload: () => Promise<void>;
 }
 
+interface ShowRuntimeOptions {
+  readonly world: ShowWorld;
+  readonly reach: ShowWorldReach;
+  readonly worldSurface: WorldSurface;
+  readonly audio?: SpatialAudio;
+  readonly standalone?: boolean;
+  readonly tutorial?: ShowTutorial;
+}
+
 export async function createShowRuntime(
   request: ShowRequest,
-  world: ShowWorld,
-  reach: ShowWorldReach,
-  worldSurface: WorldSurface,
-  audio: SpatialAudio | undefined,
-  standalone = false,
-  initialTutorial?: ShowTutorial,
+  options: ShowRuntimeOptions,
 ): Promise<ShowRuntime> {
-  const { schedule, states } = request;
-  if (
-    !Number.isFinite(schedule.durationSeconds) ||
-    schedule.durationSeconds <= 0
-  )
-    throw new RangeError("Show duration must be positive and finite");
-  const openingLevel = showLevelAt(schedule, 0);
+  validateDuration(request.schedule.durationSeconds, "Show");
+  const openingLevel = showLevelAt(request.schedule, 0);
   if (!openingLevel) throw new Error("A show schedule needs at least one cue");
-
-  const timebase = createAudioTimebase();
-  let clock: ShowClock;
-  const cueIds = schedule.narration.map((cue) => cue.cueId);
-  let language = request.language;
-  let narration: ReturnType<typeof createNarrationPlayer> | undefined;
-  let droneOrgan: ReturnType<typeof createDroneOrgan> | undefined;
-  let unloading: Promise<void> | undefined;
-  let tutorial: ShowTutorial | undefined;
-  let roomPresence = 0;
-  let mainStartSeconds = 0;
-  let instruction = "right";
-  let instructionStartSeconds = 0;
-  let tutorialGoalIndex = 0;
-  let tutorialAttempt = 0;
-  let transitionRequested = false;
-  let breathStartSeconds: number | undefined;
-  let preparationState: "loading" | "ready" | "failed" = "ready";
-  function unload(): Promise<void> {
-    clock?.pause();
-    unloading ??= (async () => {
-      const results = await Promise.allSettled([
-        Promise.resolve().then(() => narration?.unload()),
-        droneOrgan?.unload(),
-        timebase.unload(),
-      ]);
-      const errors = results.flatMap((result) =>
-        result.status === "rejected" ? [result.reason] : [],
-      );
-      if (errors.length)
-        throw new AggregateError(errors, "Show cleanup failed");
-    })();
-    return unloading;
-  }
+  const { tutorial, ...configuration } = options;
+  const show = new Show(request, configuration, openingLevel);
   try {
-    // The same clock runs practice and its successful closing voice, then rebases
-    // to the main score. The public timeline retains the actual tutorial span.
-    clock = createShowClock(schedule.durationSeconds, timebase.readSeconds);
-    function prepareNarration(nextTutorial?: ShowTutorial): void {
-      const recordings: NarrationRecording[] = standalone
-        ? []
-        : cueIds.map((cueId) => ({
-            cueId,
-            url: narrationUrl(cueId, language),
-            durationSeconds: narrationDurationSeconds(cueId, language),
-          }));
-      recordings.push(...(nextTutorial?.recordings?.[language] ?? []));
-      if (narration) narration.setRecordings(recordings);
-      else narration = createNarrationPlayer({ recordings });
+    show.prepare(tutorial);
+    return show;
+  } catch (error) {
+    try {
+      await show.unload();
+    } catch (cleanupError) {
+      throw new AggregateError([error, cleanupError], "Show startup failed");
     }
-    if (!initialTutorial) prepareNarration();
-    // The organ follows the same clock but plays on Tone's own context, which
-    // is the only context its rooms come up on. It loads Tone.js by itself, so
-    // the world runs on before the organ makes a sound.
-    if (audio && (!standalone || initialTutorial?.parameters.windStrength))
-      droneOrgan = createDroneOrgan(
+    throw error;
+  }
+}
+
+/** One Show owns both practice and score policy on the same audio clock. */
+class Show implements ShowRuntime, RunningShow {
+  private readonly timebase = createAudioTimebase();
+  private clock!: ShowClock;
+  private readonly targetBackground = new Color();
+  private readonly liveBackground = new Color(0xffffff);
+  private readonly listenerPose: MutableListenerPose = {
+    x: 0,
+    y: 0,
+    z: 0,
+    yawRadians: 0,
+    pitchRadians: 0,
+  };
+  private readonly voiceStrengths: Record<OrganVoiceName, number> = {
+    wind: 0,
+    choir: 0,
+    sonar: 0,
+    birdWingBeat: 0,
+    insectWingBeat: 0,
+    bassLoop: 0,
+    pressureWave: 0,
+    polyRhythm: 0,
+    hiHat: 0,
+  };
+  private language: NarrationLanguage;
+  private narration: ReturnType<typeof createNarrationPlayer> | undefined;
+  private droneOrgan: ReturnType<typeof createDroneOrgan> | undefined;
+  private unloading: Promise<void> | undefined;
+  private tutorial: ShowTutorial | undefined;
+  private activeLevel: ShowLevelName | undefined;
+  private roomPresence = 0;
+  private mainStartSeconds = 0;
+  private instruction = "right";
+  private instructionStartSeconds = 0;
+  private tutorialGoalIndex = 0;
+  private tutorialAttempt = 0;
+  private transition: { breathStartSeconds?: number } | undefined;
+  private preparationState: "loading" | "ready" | "failed" = "ready";
+
+  constructor(
+    private readonly request: ShowRequest,
+    private readonly options: Omit<ShowRuntimeOptions, "tutorial">,
+    private readonly openingLevel: ShowLevelName,
+  ) {
+    this.language = request.language;
+  }
+
+  prepare(tutorial?: ShowTutorial): void {
+    this.clock = createShowClock(
+      this.request.schedule.durationSeconds,
+      this.timebase.readSeconds,
+    );
+    const { audio, standalone } = this.options;
+    if (!tutorial) this.prepareNarration();
+    if (audio && (!standalone || tutorial?.parameters.windStrength))
+      this.droneOrgan = createDroneOrgan(
         {
           pulseSeconds: ORGAN_SCORE.pulseSeconds,
           voices: standalone ? ["wind"] : undefined,
         },
         audio,
       );
-    let activeLevel: ShowLevelName | undefined;
-    // Scratch state, so following the show allocates nothing per frame.
-    const voiceStrengths: Record<OrganVoiceName, number> = {
-      wind: 0,
-      choir: 0,
-      sonar: 0,
-      birdWingBeat: 0,
-      insectWingBeat: 0,
-      bassLoop: 0,
-      pressureWave: 0,
-      polyRhythm: 0,
-      hiHat: 0,
-    };
-    const listenerPose: MutableListenerPose = {
-      x: 0,
-      y: 0,
-      z: 0,
-      yawRadians: 0,
-      pitchRadians: 0,
-    };
-    const liveBackground = new Color(0xffffff);
-    const backgroundColors = createBackgroundColors(states);
-
-    function followViewDistance(showTimeSeconds: number): void {
-      const levelName = showLevelAt(schedule, showTimeSeconds);
-      if (levelName === undefined || levelName === activeLevel) return;
-
-      world.camera.far = states[levelName].viewDistance;
-      world.camera.updateProjectionMatrix();
-      activeLevel = levelName;
-    }
-
-    function followBackground(showTimeSeconds: number): void {
-      const transition = levelTransitionAt(schedule, showTimeSeconds);
-      if (!transition) return;
-
-      liveBackground
-        .copy(backgroundColors[transition.from])
-        .lerp(backgroundColors[transition.to], transition.progress);
-      world.renderer.setClearColor(liveBackground);
-      reach.worldFades.structure?.setBackground(liveBackground);
-      reach.worldFades.animals?.setBackground(liveBackground);
-      reach.setSkyBackground?.(liveBackground);
-    }
-
-    function setSense(sense: ShowSense, intensity: number): void {
-      reach.senses[sense]?.(intensity);
-      const modules = reach.gates.get(sense);
-      if (!modules) return;
-
-      for (const module of modules) {
-        if (intensity > 0) world.modules.activate(module);
-        else world.modules.deactivate(module);
-      }
-    }
-
-    function followSenses(showTimeSeconds: number): void {
-      const scent = senseIntensityAt(
-        schedule,
-        states,
-        "scent",
-        showTimeSeconds,
-      );
-      const echo = senseIntensityAt(schedule, states, "echo", showTimeSeconds);
-      const motion = senseIntensityAt(
-        schedule,
-        states,
-        "motion",
-        showTimeSeconds,
-      );
-      const thermal = senseIntensityAt(
-        schedule,
-        states,
-        "thermal",
-        showTimeSeconds,
-      );
-      const magnetic = senseIntensityAt(
-        schedule,
-        states,
-        "magnetic",
-        showTimeSeconds,
-      );
-      const connections = senseIntensityAt(
-        schedule,
-        states,
-        "connections",
-        showTimeSeconds,
-      );
-
-      setSense("scent", scent);
-      setSense("echo", echo);
-      setSense("motion", motion);
-      setSense("thermal", thermal);
-      setSense("magnetic", magnetic);
-      setSense("connections", connections);
-      reach.worldFades.structure?.setPresence(echo);
-      reach.worldFades.animals?.setPresence(thermal);
-      // Derived like everything else here, so a seek lands mid-fade and a seek
-      // to zero puts the credits away without a second piece of state.
-      reach.setEndCreditsPresence?.(
-        endCreditsPresenceAt(schedule, showTimeSeconds),
-      );
-    }
-
-    function followWorld(showTimeSeconds: number): void {
-      followViewDistance(showTimeSeconds);
-      followBackground(showTimeSeconds);
-      followSenses(showTimeSeconds);
-      // Passages read the same instant as the senses they announce, so an
-      // animal crossing a cue boundary stays in step with the fade under it.
-      reach.followPassages?.(showTimeSeconds);
-    }
-
-    function readTutorial(): TutorialStatus | undefined {
-      if (preparationState !== "ready")
-        return {
-          phase: preparationState,
-          goalIndex: 0,
-          direction: "right",
-          crossingCount: 0,
-          readyToContinue: false,
-        };
-      if (!tutorial) return undefined;
-      const observed = tutorial.start.readObservation();
-      return {
-        phase: observed.phase,
-        goalTarget: observed.goalPosition,
-        goalIndex: observed.goalIndex,
-        direction: observed.direction,
-        crossingCount: observed.crossingCount,
-        readyToContinue: !standalone && !transitionRequested,
-      };
-    }
-
-    // The organ is a follower like the narration: the score says how strong
-    // each voice stands at this instant, and the clock says what instant it is.
-    function followOrgan(showTime: ShowTimeSample): void {
-      for (const voice of ORGAN_VOICES) {
-        voiceStrengths[voice] = tutorial
-          ? voice === "wind" && showTime.isPlaying
-            ? (tutorial.parameters.windStrength ?? 0) *
-              roomPresence *
-              (narration?.readIsPlaying() ? 0.5 : 1)
-            : 0
-          : organVoiceStrengthAt(
-              schedule,
-              ORGAN_SCORE,
-              voice,
-              showTime.timeSeconds,
-            );
-      }
-      readListenerPose(world, listenerPose);
-      droneOrgan?.update({
-        showTimeSeconds: showTime.timeSeconds,
-        isPlaying: showTime.isPlaying,
-        timeScale: showTime.timeScale,
-        voiceStrengths,
-        listener: listenerPose,
-        groundYMeters: worldSurface.groundYAt(listenerPose.x, listenerPose.z),
-        readGroupCenters: (group) => readActorCenters(reach, group),
-      });
-    }
-
-    if (!standalone) followWorld(0);
-
-    function setTutorial(next: ShowTutorial): void {
-      if (
-        !Number.isFinite(next.parameters.maximumPracticeSeconds) ||
-        next.parameters.maximumPracticeSeconds <= 0
-      )
-        throw new RangeError(
-          "Tutorial practice duration must be positive and finite",
-        );
-      clock.pause();
-      clock.seekTo(0);
-      clock.setTimeScale(1);
-      clock.setDuration(undefined);
-      tutorial = next;
-      transitionRequested = false;
-      breathStartSeconds = undefined;
-      roomPresence = 0;
-      tutorial.setRoomPresence?.(0);
-      followOrgan({ ...clock.sample(), isPlaying: false });
-      mainStartSeconds = standalone
-        ? 0
-        : next.parameters.maximumPracticeSeconds;
-      tutorial.start.resetPractice();
-      tutorial.start.setPlaying(false);
-      tutorial.start.setGoalAdvanceAllowed(false);
-      tutorial.start.setFormationAllowed(false);
-      instruction = next.parameters.directions[0];
-      tutorialGoalIndex = 0;
-      tutorialAttempt = 0;
-      instructionStartSeconds = 0;
-      prepareNarration(next);
-    }
-    function continueToExperience(): void {
-      if (!tutorial || preparationState !== "ready" || standalone || unloading)
-        return;
-      if (transitionRequested) return;
-      transitionRequested = true;
-      tutorial.start.setGoalAdvanceAllowed(false);
-      tutorial.start.setFormationAllowed(false);
-      tutorial.start.setPlaying(false);
-      clock.play();
-    }
-    function finishTutorial(): void {
-      if (!tutorial) return;
-      const completed = tutorial;
-      mainStartSeconds = clock.sample().timeSeconds;
-      tutorial = undefined;
-      transitionRequested = false;
-      breathStartSeconds = undefined;
-      prepareNarration();
-      completed.finish();
-      clock.seekTo(0);
-      clock.setTimeScale(1);
-      clock.setDuration(schedule.durationSeconds);
-      activeLevel = undefined;
-      followWorld(0);
-      clock.play();
-    }
-    if (initialTutorial) setTutorial(initialTutorial);
-
-    return {
-      unload,
-      setTutorial,
-      readSpeechActive: () => narration?.readIsPlaying() ?? false,
-      setPreparationState(state): void {
-        preparationState = state;
-        if (state !== "ready") {
-          clock.pause();
-          if (!standalone) followOrgan({ ...clock.sample(), isPlaying: false });
-          tutorial?.start.setPlaying(false);
-        }
-        if (state === "failed") {
-          tutorial = undefined;
-          narration?.unload();
-          narration = undefined;
-        }
-      },
-      update: (): void => {
-        if (unloading || preparationState !== "ready") return;
-        const showTime = clock.sample();
-        if (tutorial) {
-          const observed = tutorial.start.readObservation();
-          const succeeded =
-            observed.crossingCount === tutorial.parameters.directions.length;
-          if (
-            !standalone &&
-            showTime.isPlaying &&
-            !succeeded &&
-            showTime.timeSeconds >= tutorial.parameters.maximumPracticeSeconds
-          ) {
-            continueToExperience();
-          }
-          const currentRecording = tutorial.recordings?.[language].find(
-            (clip) => clip.cueId === instruction,
-          );
-          const instructionFinished =
-            narration?.readHasEnded(instruction) ?? true;
-          const nextInstruction = succeeded ? "complete" : observed.direction;
-          if (
-            !transitionRequested &&
-            instructionFinished &&
-            (nextInstruction !== instruction ||
-              observed.goalIndex !== tutorialGoalIndex ||
-              observed.attempt !== tutorialAttempt)
-          ) {
-            const retry =
-              nextInstruction === instruction &&
-              observed.goalIndex === tutorialGoalIndex;
-            instruction = nextInstruction;
-            tutorialGoalIndex = observed.goalIndex;
-            tutorialAttempt = observed.attempt;
-            instructionStartSeconds =
-              showTime.timeSeconds -
-              (retry ? (currentRecording?.instructionAtSeconds ?? 0) : 0);
-            if (!standalone && instruction === "complete") {
-              const completion = tutorial.recordings?.[language].find(
-                (clip) => clip.cueId === "complete",
-              );
-              mainStartSeconds =
-                instructionStartSeconds + (completion?.durationSeconds ?? 0);
-            }
-          }
-          if (
-            !standalone &&
-            showTime.isPlaying &&
-            instruction === "complete" &&
-            showTime.timeSeconds >= mainStartSeconds
-          ) {
-            continueToExperience();
-          }
-          const selectedRecording = tutorial.recordings?.[language].find(
-            (clip) => clip.cueId === instruction,
-          );
-          narration?.follow({
-            position: {
-              cueId: instruction,
-              offsetSeconds: showTime.timeSeconds - instructionStartSeconds,
-            },
-            isPlaying: showTime.isPlaying,
-            timeScale: 1,
-            preserveNaturalEnd: true,
-          });
-          if (transitionRequested) {
-            // Show owns the breathing interval; native completion only reports
-            // when the voice is safe to retire. Hold freezes both followers.
-            if (
-              showTime.isPlaying &&
-              (narration?.readHasEnded(instruction) ?? true)
-            ) {
-              breathStartSeconds ??= showTime.timeSeconds;
-              if (
-                showTime.timeSeconds - breathStartSeconds >=
-                TUTORIAL_BREATH_SECONDS
-              ) {
-                finishTutorial();
-                return;
-              }
-            }
-            followOrgan(showTime);
-            return;
-          }
-          const requestedOffset =
-            showTime.timeSeconds - instructionStartSeconds;
-          const spokenOffset = selectedRecording
-            ? Math.min(
-                requestedOffset,
-                narration?.readOffsetSeconds(instruction) ?? 0,
-              )
-            : requestedOffset;
-          const openingCue = tutorial.parameters.directions[0];
-          const openingRecording = tutorial.recordings?.[language].find(
-            (clip) => clip.cueId === openingCue,
-          );
-          roomPresence = Math.max(
-            roomPresence,
-            observed.goalIndex > 0 || observed.attempt > 0 || succeeded
-              ? 1
-              : Math.min(
-                  1,
-                  Math.max(
-                    0,
-                    (spokenOffset -
-                      (openingRecording?.environmentAtSeconds ?? 0)) /
-                      tutorial.parameters.formationSeconds,
-                  ),
-                ),
-          );
-          tutorial.setRoomPresence?.(roomPresence);
-          tutorial.start.setFormationAllowed(
-            observed.attempt === tutorialAttempt &&
-              spokenOffset >= (selectedRecording?.instructionAtSeconds ?? 0),
-          );
-          tutorial.start.setGoalAdvanceAllowed(instructionFinished);
-          tutorial.start.setPlaying(
-            preparationState === "ready" &&
-              showTime.isPlaying &&
-              timebase.readState() === "running",
-          );
-          followOrgan(showTime);
-          return;
-        }
-        if (standalone) return;
-        narration?.follow({
-          position: narrationCueAt(schedule, showTime.timeSeconds),
-          isPlaying: showTime.isPlaying,
-          timeScale: showTime.timeScale,
-        });
-        followWorld(showTime.timeSeconds);
-        followOrgan(showTime);
-      },
-
-      readActiveLevelState: () => states[activeLevel ?? openingLevel],
-
-      running: {
-        readTutorial,
-        continueToExperience,
-        sample: () => {
-          const sample = clock.sample();
-          return {
-            ...sample,
-            timeSeconds: sample.timeSeconds + (tutorial ? 0 : mainStartSeconds),
-            mainStartSeconds,
-            isPlaying:
-              sample.isPlaying &&
-              preparationState === "ready" &&
-              (!tutorial || timebase.readState() === "running"),
-          };
-        },
-        play: () => {
-          if (preparationState === "ready") clock.play();
-        },
-        pause: () => {
-          clock.pause();
-          tutorial?.start.setPlaying(false);
-        },
-        seekTo: (seconds) => {
-          if (!tutorial && preparationState === "ready")
-            clock.seekTo(seconds - mainStartSeconds);
-        },
-        seekBy: (seconds) => {
-          if (!tutorial && preparationState === "ready") clock.seekBy(seconds);
-        },
-        setTimeScale: (scale) => {
-          if (!tutorial && preparationState === "ready")
-            clock.setTimeScale(scale);
-        },
-        togglePlayback: () => {
-          if (preparationState !== "ready") return;
-          if (clock.sample().isPlaying) {
-            clock.pause();
-            tutorial?.start.setPlaying(false);
-          } else clock.play();
-        },
-        resetTime: () => {
-          clock.seekTo(0);
-          clock.pause();
-          if (tutorial) {
-            transitionRequested = false;
-            breathStartSeconds = undefined;
-            mainStartSeconds = standalone
-              ? 0
-              : tutorial.parameters.maximumPracticeSeconds;
-            roomPresence = 0;
-            tutorial.setRoomPresence?.(0);
-            tutorial.start.resetPractice();
-            tutorial.start.setPlaying(false);
-            tutorial.start.setGoalAdvanceAllowed(false);
-            tutorial.start.setFormationAllowed(false);
-            instruction = tutorial.parameters.directions[0];
-            instructionStartSeconds = 0;
-            tutorialGoalIndex = 0;
-            tutorialAttempt = 0;
-          }
-        },
-        readLanguage: () => language,
-        readActiveLevel: () => activeLevel ?? openingLevel,
-        readAudioState: timebase.readState,
-        setLanguage: (next): void => {
-          if (unloading || next === language || transitionRequested) return;
-
-          language = next;
-          if (preparationState === "failed") return;
-          prepareNarration(tutorial);
-          if (tutorial) {
-            if (instruction !== "complete")
-              instructionStartSeconds = clock.sample().timeSeconds;
-            else if (!standalone) {
-              const completion = tutorial.recordings?.[language].find(
-                (clip) => clip.cueId === "complete",
-              );
-              mainStartSeconds = Math.max(
-                clock.sample().timeSeconds,
-                instructionStartSeconds + (completion?.durationSeconds ?? 0),
-              );
-            }
-            tutorial.start.setGoalAdvanceAllowed(false);
-            tutorial.start.setFormationAllowed(false);
-          }
-        },
-      },
-    };
-  } catch (error) {
-    try {
-      await unload();
-    } catch (cleanupError) {
-      throw new AggregateError([error, cleanupError], "Show startup failed");
-    }
-    throw error;
+    if (!standalone) this.followWorld(0);
+    if (tutorial) this.setTutorial(tutorial);
   }
+
+  readonly unload = (): Promise<void> => {
+    this.clock?.pause();
+    this.unloading ??= this.releaseAudio();
+    return this.unloading;
+  };
+
+  private async releaseAudio(): Promise<void> {
+    const results = await Promise.allSettled([
+      Promise.resolve().then(() => this.narration?.unload()),
+      this.droneOrgan?.unload(),
+      this.timebase.unload(),
+    ]);
+    const errors = results.flatMap((result) =>
+      result.status === "rejected" ? [result.reason] : [],
+    );
+    if (errors.length) throw new AggregateError(errors, "Show cleanup failed");
+  }
+
+  private prepareNarration(): void {
+    const recordings: NarrationRecording[] = this.options.standalone
+      ? []
+      : this.request.schedule.narration.map(({ cueId }) => ({
+          cueId,
+          url: narrationUrl(cueId, this.language),
+          durationSeconds: narrationDurationSeconds(cueId, this.language),
+        }));
+    recordings.push(...(this.tutorial?.recordings?.[this.language] ?? []));
+    if (this.narration) this.narration.setRecordings(recordings);
+    else this.narration = createNarrationPlayer({ recordings });
+  }
+
+  private followBackground(seconds: number): void {
+    const transition = levelTransitionAt(this.request.schedule, seconds);
+    if (!transition) return;
+    this.targetBackground.setHex(
+      this.request.states[transition.to].backgroundColor,
+    );
+    this.liveBackground
+      .setHex(this.request.states[transition.from].backgroundColor)
+      .lerp(this.targetBackground, transition.progress);
+    const { world, reach } = this.options;
+    world.renderer.setClearColor(this.liveBackground);
+    reach.worldFades.structure?.setBackground(this.liveBackground);
+    reach.worldFades.animals?.setBackground(this.liveBackground);
+    reach.setSkyBackground?.(this.liveBackground);
+  }
+
+  private setSense(sense: ShowSense, intensity: number): void {
+    const { reach, world } = this.options;
+    reach.senses[sense]?.(intensity);
+    for (const module of reach.gates.get(sense) ?? []) {
+      if (intensity > 0) world.modules.activate(module);
+      else world.modules.deactivate(module);
+    }
+    if (sense === "echo") reach.worldFades.structure?.setPresence(intensity);
+    if (sense === "thermal") reach.worldFades.animals?.setPresence(intensity);
+  }
+
+  private followWorld(seconds: number): void {
+    const level = showLevelAt(this.request.schedule, seconds);
+    if (level !== undefined && level !== this.activeLevel) {
+      const { camera } = this.options.world;
+      camera.far = this.request.states[level].viewDistance;
+      camera.updateProjectionMatrix();
+      this.activeLevel = level;
+    }
+    this.followBackground(seconds);
+    for (const sense of SHOW_SENSES)
+      this.setSense(
+        sense,
+        senseIntensityAt(
+          this.request.schedule,
+          this.request.states,
+          sense,
+          seconds,
+        ),
+      );
+    this.options.reach.setEndCreditsPresence?.(
+      endCreditsPresenceAt(this.request.schedule, seconds),
+    );
+    this.options.reach.followPassages?.(seconds);
+  }
+
+  readonly readTutorial = (): TutorialStatus | undefined => {
+    if (this.preparationState !== "ready")
+      return {
+        phase: this.preparationState,
+        goalIndex: 0,
+        direction: "right",
+        crossingCount: 0,
+      };
+    if (!this.tutorial) return undefined;
+    const observed = this.tutorial.start.readObservation();
+    return {
+      phase: observed.phase,
+      goalTarget: observed.goalPosition,
+      goalIndex: observed.goalIndex,
+      direction: observed.direction,
+      crossingCount: observed.crossingCount,
+    };
+  };
+
+  private voiceStrength(
+    voice: OrganVoiceName,
+    showTime: ShowTimeSample,
+  ): number {
+    if (!this.tutorial)
+      return organVoiceStrengthAt(
+        this.request.schedule,
+        ORGAN_SCORE,
+        voice,
+        showTime.timeSeconds,
+      );
+    if (voice !== "wind" || !showTime.isPlaying) return 0;
+    return (
+      (this.tutorial.parameters.windStrength ?? 0) *
+      this.roomPresence *
+      (this.narration?.readIsPlaying() ? 0.5 : 1)
+    );
+  }
+
+  private followOrgan(showTime: ShowTimeSample): void {
+    for (const voice of ORGAN_VOICES)
+      this.voiceStrengths[voice] = this.voiceStrength(voice, showTime);
+    readListenerPose(this.options.world, this.listenerPose);
+    this.droneOrgan?.update({
+      showTimeSeconds: showTime.timeSeconds,
+      isPlaying: showTime.isPlaying,
+      timeScale: showTime.timeScale,
+      voiceStrengths: this.voiceStrengths,
+      listener: this.listenerPose,
+      groundYMeters: this.options.worldSurface.groundYAt(
+        this.listenerPose.x,
+        this.listenerPose.z,
+      ),
+      readGroupCenters: (group) => readActorCenters(this.options.reach, group),
+    });
+  }
+
+  readonly setTutorial = (tutorial: ShowTutorial): void => {
+    validateDuration(
+      tutorial.parameters.maximumPracticeSeconds,
+      "Tutorial practice",
+    );
+    this.clock.pause();
+    this.clock.seekTo(0);
+    this.clock.setTimeScale(1);
+    this.clock.setDuration(undefined);
+    this.tutorial = tutorial;
+    this.resetTutorial();
+    this.followOrgan(this.clock.sample());
+    this.prepareNarration();
+  };
+
+  private holdTutorial(): void {
+    this.tutorial?.start.setPlaying(false);
+    this.tutorial?.start.setGoalAdvanceAllowed(false);
+    this.tutorial?.start.setFormationAllowed(false);
+  }
+
+  private resetTutorial(): void {
+    if (!this.tutorial) return;
+    this.transition = undefined;
+    this.roomPresence = 0;
+    this.tutorial.setRoomPresence?.(0);
+    this.mainStartSeconds = this.options.standalone
+      ? 0
+      : this.tutorial.parameters.maximumPracticeSeconds;
+    this.tutorial.reset();
+    this.holdTutorial();
+    this.instruction = this.tutorial.parameters.directions[0];
+    this.instructionStartSeconds = 0;
+    this.tutorialGoalIndex = 0;
+    this.tutorialAttempt = 0;
+  }
+
+  private requestTransition(): void {
+    if (this.options.standalone || this.transition) return;
+    this.transition = {};
+    this.holdTutorial();
+  }
+
+  private finishTutorial(): void {
+    if (!this.tutorial) return;
+    const completed = this.tutorial;
+    this.mainStartSeconds = this.clock.sample().timeSeconds;
+    this.tutorial = undefined;
+    this.transition = undefined;
+    this.prepareNarration();
+    completed.finish();
+    this.clock.seekTo(0);
+    this.clock.setTimeScale(1);
+    this.clock.setDuration(this.request.schedule.durationSeconds);
+    this.activeLevel = undefined;
+    this.followWorld(0);
+    this.clock.play();
+  }
+
+  readonly readSpeechActive = (): boolean =>
+    this.narration?.readIsPlaying() ?? false;
+  readonly readActiveLevelState = (): ShowLevelState =>
+    this.request.states[this.readActiveLevel()];
+
+  readonly setPreparationState = (
+    state: "loading" | "ready" | "failed",
+  ): void => {
+    this.preparationState = state;
+    if (state !== "ready") {
+      this.pause();
+      if (!this.options.standalone) this.followOrgan(this.clock.sample());
+    }
+    if (state !== "failed") return;
+    this.tutorial = undefined;
+    this.narration?.unload();
+    this.narration = undefined;
+  };
+
+  readonly update = (): void => {
+    if (this.unloading || this.preparationState !== "ready") return;
+    const showTime = this.clock.sample();
+    if (this.tutorial) {
+      if (!this.followTutorial(showTime)) this.followOrgan(showTime);
+      return;
+    }
+    if (this.options.standalone) return;
+    this.narration?.follow({
+      position: narrationCueAt(this.request.schedule, showTime.timeSeconds),
+      isPlaying: showTime.isPlaying,
+      timeScale: showTime.timeScale,
+    });
+    this.followWorld(showTime.timeSeconds);
+    this.followOrgan(showTime);
+  };
+
+  /** Returning true ends this frame after rebasing onto the main score. */
+  private followTutorial(showTime: ShowTimeSample): boolean {
+    if (!this.tutorial) return false;
+    const observed = this.tutorial.start.readObservation();
+    const instructionFinished = this.advanceTutorial(showTime, observed);
+    this.narration?.follow({
+      position: {
+        cueId: this.instruction,
+        offsetSeconds: showTime.timeSeconds - this.instructionStartSeconds,
+      },
+      isPlaying: showTime.isPlaying,
+      timeScale: 1,
+      preserveNaturalEnd: true,
+    });
+    if (this.transition) return this.followBreathing(showTime);
+    this.followPractice(observed, showTime, instructionFinished);
+    return false;
+  }
+
+  private advanceTutorial(
+    showTime: ShowTimeSample,
+    observed: TutorialObservation,
+  ): boolean {
+    if (!this.tutorial) return true;
+    const succeeded =
+      observed.crossingCount === this.tutorial.parameters.directions.length;
+    if (
+      showTime.isPlaying &&
+      !succeeded &&
+      showTime.timeSeconds >= this.tutorial.parameters.maximumPracticeSeconds
+    )
+      this.requestTransition();
+    const instructionFinished =
+      this.narration?.readHasEnded(this.instruction) ?? true;
+    if (!this.transition && instructionFinished)
+      this.advanceInstruction(observed, succeeded, showTime.timeSeconds);
+    if (
+      showTime.isPlaying &&
+      this.instruction === "complete" &&
+      showTime.timeSeconds >= this.mainStartSeconds
+    )
+      this.requestTransition();
+    return instructionFinished;
+  }
+
+  private recording(cueId: string): NarrationRecording | undefined {
+    return this.tutorial?.recordings?.[this.language].find(
+      (clip) => clip.cueId === cueId,
+    );
+  }
+
+  private advanceInstruction(
+    observed: TutorialObservation,
+    succeeded: boolean,
+    seconds: number,
+  ): void {
+    const next = succeeded ? "complete" : observed.direction;
+    if (
+      next === this.instruction &&
+      observed.goalIndex === this.tutorialGoalIndex &&
+      observed.attempt === this.tutorialAttempt
+    )
+      return;
+    const retry =
+      next === this.instruction &&
+      observed.goalIndex === this.tutorialGoalIndex;
+    this.instructionStartSeconds =
+      seconds -
+      (retry
+        ? (this.recording(this.instruction)?.instructionAtSeconds ?? 0)
+        : 0);
+    this.instruction = next;
+    this.tutorialGoalIndex = observed.goalIndex;
+    this.tutorialAttempt = observed.attempt;
+    if (!this.options.standalone && next === "complete")
+      this.mainStartSeconds =
+        this.instructionStartSeconds +
+        (this.recording("complete")?.durationSeconds ?? 0);
+  }
+
+  private followBreathing(showTime: ShowTimeSample): boolean {
+    const transition = this.transition;
+    if (
+      !transition ||
+      !showTime.isPlaying ||
+      !(this.narration?.readHasEnded(this.instruction) ?? true)
+    )
+      return false;
+    transition.breathStartSeconds ??= showTime.timeSeconds;
+    if (
+      showTime.timeSeconds - transition.breathStartSeconds <
+      TUTORIAL_BREATH_SECONDS
+    )
+      return false;
+    this.finishTutorial();
+    return true;
+  }
+
+  private followPractice(
+    observed: TutorialObservation,
+    showTime: ShowTimeSample,
+    instructionFinished: boolean,
+  ): void {
+    if (!this.tutorial) return;
+    const selected = this.recording(this.instruction);
+    const requestedOffset = showTime.timeSeconds - this.instructionStartSeconds;
+    const spokenOffset = selected
+      ? Math.min(
+          requestedOffset,
+          this.narration?.readOffsetSeconds(this.instruction) ?? 0,
+        )
+      : requestedOffset;
+    this.followRoom(observed, spokenOffset);
+    this.tutorial.start.setFormationAllowed(
+      observed.attempt === this.tutorialAttempt &&
+        spokenOffset >= (selected?.instructionAtSeconds ?? 0),
+    );
+    this.tutorial.start.setGoalAdvanceAllowed(instructionFinished);
+    this.tutorial.start.setPlaying(
+      showTime.isPlaying && this.timebase.readState() === "running",
+    );
+  }
+
+  private followRoom(
+    observed: TutorialObservation,
+    spokenOffset: number,
+  ): void {
+    if (!this.tutorial) return;
+    const opening = this.recording(this.tutorial.parameters.directions[0]);
+    const progressed =
+      observed.goalIndex > 0 ||
+      observed.attempt > 0 ||
+      observed.crossingCount === this.tutorial.parameters.directions.length;
+    this.roomPresence = Math.max(
+      this.roomPresence,
+      progressed
+        ? 1
+        : MathUtils.clamp(
+            (spokenOffset - (opening?.environmentAtSeconds ?? 0)) /
+              this.tutorial.parameters.formationSeconds,
+            0,
+            1,
+          ),
+    );
+    this.tutorial.setRoomPresence?.(this.roomPresence);
+  }
+
+  readonly pause = (): void => {
+    this.clock.pause();
+    this.tutorial?.start.setPlaying(false);
+  };
+
+  readonly resetTime = (): void => {
+    this.clock.seekTo(0);
+    this.clock.pause();
+    this.resetTutorial();
+  };
+
+  readonly setLanguage = (language: NarrationLanguage): void => {
+    if (this.unloading || language === this.language || this.transition) return;
+    this.language = language;
+    if (this.preparationState === "failed") return;
+    this.prepareNarration();
+    if (!this.tutorial) return;
+    if (this.instruction !== "complete")
+      this.instructionStartSeconds = this.clock.sample().timeSeconds;
+    else if (!this.options.standalone)
+      this.mainStartSeconds = Math.max(
+        this.clock.sample().timeSeconds,
+        this.instructionStartSeconds +
+          (this.recording("complete")?.durationSeconds ?? 0),
+      );
+    this.tutorial.start.setGoalAdvanceAllowed(false);
+    this.tutorial.start.setFormationAllowed(false);
+  };
+
+  readonly play = (): void => {
+    if (this.preparationState === "ready") this.clock.play();
+  };
+  readonly seekTo = (seconds: number): void => {
+    if (this.canScrub()) this.clock.seekTo(seconds - this.mainStartSeconds);
+  };
+  readonly seekBy = (seconds: number): void => {
+    if (this.canScrub()) this.clock.seekBy(seconds);
+  };
+  readonly setTimeScale = (scale: number): void => {
+    if (this.canScrub()) this.clock.setTimeScale(scale);
+  };
+  readonly togglePlayback = (): void => {
+    if (this.preparationState !== "ready") return;
+    if (this.clock.sample().isPlaying) this.pause();
+    else this.clock.play();
+  };
+  readonly readLanguage = (): NarrationLanguage => this.language;
+  readonly readActiveLevel = (): ShowLevelName =>
+    this.activeLevel ?? this.openingLevel;
+  readonly readAudioState = this.timebase.readState;
+
+  private canScrub(): boolean {
+    return !this.tutorial && this.preparationState === "ready";
+  }
+
+  readonly sample = (): ShowTimeSample & {
+    readonly mainStartSeconds: number;
+  } => {
+    const sample = this.clock.sample();
+    return {
+      ...sample,
+      timeSeconds:
+        sample.timeSeconds + (this.tutorial ? 0 : this.mainStartSeconds),
+      mainStartSeconds: this.mainStartSeconds,
+      isPlaying:
+        sample.isPlaying &&
+        this.preparationState === "ready" &&
+        (!this.tutorial || this.timebase.readState() === "running"),
+    };
+  };
+  readonly running: RunningShow = {
+    readTutorial: this.readTutorial,
+    sample: this.sample,
+    play: this.play,
+    pause: this.pause,
+    seekTo: this.seekTo,
+    seekBy: this.seekBy,
+    setTimeScale: this.setTimeScale,
+    togglePlayback: this.togglePlayback,
+    resetTime: this.resetTime,
+    readLanguage: this.readLanguage,
+    readActiveLevel: this.readActiveLevel,
+    readAudioState: this.readAudioState,
+    setLanguage: this.setLanguage,
+  };
+}
+
+type TutorialObservation = ReturnType<ShowTutorial["start"]["readObservation"]>;
+
+function validateDuration(seconds: number, subject: string): void {
+  if (!Number.isFinite(seconds) || seconds <= 0)
+    throw new RangeError(`${subject} duration must be positive and finite`);
 }
 
 /**
@@ -738,18 +759,4 @@ function readActorCenters(
     reach.readMotionActorCenters?.(group === "insects" ? "flies" : "birds") ??
     NO_ACTOR_CENTERS
   );
-}
-
-function createBackgroundColors(
-  states: Record<ShowLevelName, ShowLevelState>,
-): Record<ShowLevelName, Color> {
-  return {
-    "white-world": new Color(states["white-world"].backgroundColor),
-    scent: new Color(states.scent.backgroundColor),
-    echo: new Color(states.echo.backgroundColor),
-    motion: new Color(states.motion.backgroundColor),
-    thermal: new Color(states.thermal.backgroundColor),
-    magnetic: new Color(states.magnetic.backgroundColor),
-    connections: new Color(states.connections.backgroundColor),
-  };
 }

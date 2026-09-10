@@ -54,43 +54,53 @@ float springGather(float progress, float dissolving, vec2 releaseOrigin) {
   return dissolving > 0.5 ? releaseOrigin.y * (1.0 - response) : response;
 }
 
-vec3 animateStartParticle(vec3 cloudPosition) {
-  float time = startTime * startDriftSpeed;
+struct StartBody {
+  float formation;
+  float crossingAge;
+  float radius;
+  mat4 pose;
+  bool arrow;
+  bool preview;
+};
+
+StartBody readStartBody() {
   bool retiring = startRole > 4.5;
-  bool arrow = (startRole > 0.5 && startRole < 1.5) || retiring;
-  bool preview = startRole > 1.5 && startRole < 4.5;
-  float formation = springGather(startFormation, startDissolving, startReleaseOrigin);
-  float crossingAge = startWakeAge;
-  float radius = startRadius;
-  mat4 pose = startGoalPose;
+  StartBody body = StartBody(springGather(startFormation, startDissolving, startReleaseOrigin),
+    startWakeAge, startRadius, startGoalPose, (startRole > 0.5 && startRole < 1.5) || retiring,
+    startRole > 1.5 && startRole < 4.5);
   startVisibility = startRingPresence;
-  if (preview) {
+  if (body.preview) {
     int index = int(startRole) - 2;
-    radius = startPreviewRadii[index];
-    pose = startPreviewPoses[index];
-    formation = springGather((startPreviewTime - float(index) * 0.25) / 1.8, 0.0, vec2(1.0));
-    crossingAge = startPreviewCrossingAges[index];
+    body.radius = startPreviewRadii[index];
+    body.pose = startPreviewPoses[index];
+    body.formation = springGather((startPreviewTime - float(index) * 0.25) / 1.8, 0.0, vec2(1.0));
+    body.crossingAge = startPreviewCrossingAges[index];
     startVisibility = float(index) < startPreviewCount ? 0.8 * startRingPresence : 0.0;
   }
-  float crossingPulse = crossingAge >= 0.0 ? exp(-crossingAge * START_CROSSING_PULSE_DECAY) : 0.0;
-  vec3 target;
-  if (arrow) {
-    formation = retiring
+  if (body.arrow) {
+    body.formation = retiring
       ? springGather(startRetiringArrowFormation, startRetiringArrowDissolving, startRetiringArrowReleaseOrigin)
       : springGather(startArrowFormation, startArrowDissolving, startArrowReleaseOrigin);
+    body.pose = retiring ? startRetiringArrowPose : startArrowPose;
     startVisibility = retiring ? startRetiringArrowPresence : startArrowPresence;
-    target = startTarget * startArrowScale;
-    pose = retiring ? startRetiringArrowPose : startArrowPose;
-    target.z += sin(startTime * START_ARROW_DRIFT_SPEED) * START_ARROW_DRIFT_AMPLITUDE;
-  } else {
-    float expansion = 1.0 + crossingPulse * START_CROSSING_EXPANSION;
-    target = vec3(startTarget.xy * radius * (1.0 + startThickness + startTarget.z * startThickness) * expansion,
-      startDepth * radius * startThickness);
   }
-  vec3 localPosition = mix(cloudPosition, target, formation);
-  vec3 worldPosition = (pose * vec4(localPosition, 1.0)).xyz;
-  // A slow world-space breeze binds neighbours together. Small seeded eddies
-  // decorrelate their paths; release opens the air without a second simulation.
+  return body;
+}
+
+vec3 readStartTarget(StartBody body, float crossingPulse) {
+  if (body.arrow) {
+    vec3 target = startTarget * startArrowScale;
+    target.z += sin(startTime * START_ARROW_DRIFT_SPEED) * START_ARROW_DRIFT_AMPLITUDE;
+    return target;
+  }
+  float expansion = 1.0 + crossingPulse * START_CROSSING_EXPANSION;
+  return vec3(startTarget.xy * body.radius * (1.0 + startThickness + startTarget.z * startThickness) * expansion,
+    startDepth * body.radius * startThickness);
+}
+
+// A slow world-space breeze binds neighbours together. Small seeded eddies
+// decorrelate their paths; release opens the air without a second simulation.
+vec3 driftStartParticle(vec3 worldPosition, float time, float formation) {
   float placePhase = dot(worldPosition, vec3(0.083, 0.059, 0.101));
   float ownPhase = fract(startPhase * 2.128 + 0.37) * 6.2831853;
   vec3 breeze = vec3(sin(time * 0.31 + placePhase),
@@ -98,21 +108,33 @@ vec3 animateStartParticle(vec3 cloudPosition) {
     cos(time * 0.29 + placePhase));
   vec3 eddy = vec3(cos(time * 0.73 + ownPhase),
     sin(time * 0.61 + ownPhase * 1.7), sin(time * 0.83 - ownPhase));
-  worldPosition += (breeze * 0.7 + eddy * 0.3) * startDriftAmplitude
+  return worldPosition + (breeze * 0.7 + eddy * 0.3) * startDriftAmplitude
     * mix(1.6, 0.45, formation);
-  startArrowAccentStrength = arrow ? formation : 0.0;
-  if (!arrow && crossingAge >= 0.0) {
-    // Exact impulse response under linear drag: dv/dt = -drag*v.
-    // Per-grain radial/tangential velocity disperses each crossed body independently.
-    float travel = (1.0 - exp(-crossingAge * START_WAKE_DRAG)) / START_WAKE_DRAG;
-    vec3 velocity = vec3(startTarget.xy * 1.7, sin(startPhase) * 0.8);
-    vec3 forwardVelocity = preview ? (pose * vec4(0.0, 0.0, -START_WAKE_SPEED, 0.0)).xyz : startWakeDirection * START_WAKE_SPEED;
-    worldPosition += ((pose * vec4(velocity, 0.0)).xyz + forwardVelocity) * travel;
-    startVisibility *= 1.0 - smoothstep(0.35, 2.2, crossingAge);
-  }
+}
+
+vec3 disperseStartParticle(vec3 worldPosition, StartBody body) {
+  if (body.arrow || !(body.crossingAge >= 0.0)) return worldPosition;
+  // Exact impulse response under linear drag: dv/dt = -drag*v.
+  // Per-grain radial/tangential velocity disperses each crossed body independently.
+  float travel = (1.0 - exp(-body.crossingAge * START_WAKE_DRAG)) / START_WAKE_DRAG;
+  vec3 velocity = vec3(startTarget.xy * 1.7, sin(startPhase) * 0.8);
+  vec3 forwardVelocity = body.preview ? (body.pose * vec4(0.0, 0.0, -START_WAKE_SPEED, 0.0)).xyz : startWakeDirection * START_WAKE_SPEED;
+  startVisibility *= 1.0 - smoothstep(0.35, 2.2, body.crossingAge);
+  return worldPosition + ((body.pose * vec4(velocity, 0.0)).xyz + forwardVelocity) * travel;
+}
+
+vec3 animateStartParticle(vec3 cloudPosition) {
+  StartBody body = readStartBody();
+  float time = startTime * startDriftSpeed;
+  float crossingPulse = body.crossingAge >= 0.0 ? exp(-body.crossingAge * START_CROSSING_PULSE_DECAY) : 0.0;
+  vec3 localPosition = mix(cloudPosition, readStartTarget(body, crossingPulse), body.formation);
+  vec3 worldPosition = (body.pose * vec4(localPosition, 1.0)).xyz;
+  worldPosition = driftStartParticle(worldPosition, time, body.formation);
+  worldPosition = disperseStartParticle(worldPosition, body);
+  startArrowAccentStrength = body.arrow ? body.formation : 0.0;
   startBrightness = (0.5 + 0.5 * sin(startPhase + time * 0.8)) * startSparkle;
-  startShapePresence = formation;
+  startShapePresence = body.formation;
   startHazePresence = startHaze;
-  startLocalPulse = arrow ? 0.0 : crossingPulse;
+  startLocalPulse = body.arrow ? 0.0 : crossingPulse;
   return worldPosition;
 }

@@ -6,6 +6,7 @@
  */
 
 import { type Matrix4, Vector3 } from "three";
+import { FLIGHT_SETTINGS } from "../control/flight-settings";
 import { END_CREDITS } from "../dramaturgy/end-credits";
 import { PIECE_PASSAGES } from "../dramaturgy/piece-schedule";
 import type { ShowSense } from "../dramaturgy/show-levels";
@@ -51,6 +52,7 @@ import {
   type StartModuleHandle,
 } from "../modules/start/start.module";
 import { createStartParticleEffect } from "../modules/start/start-particles.effect";
+import { START_SETTINGS } from "../modules/start/start-settings";
 import { createGroundOccluder } from "../modules/terrain/ground-occluder";
 import { createTerrainModule } from "../modules/terrain/terrain";
 import { createTerrainColors } from "../modules/terrain/terrain-colors";
@@ -724,13 +726,19 @@ export function composeTraining(
     }
   | undefined {
   if (!preset.start) return undefined;
+  const arrowLengthMeters =
+    preset.start.particles?.arrowLengthMeters ??
+    START_SETTINGS.arrowLengthMeters;
   const start = createStartModule({
+    arrowLengthMeters,
+    motionLimits: FLIGHT_SETTINGS,
     viewpoint: world.viewpoint,
     parameters: preset.start,
     maximumGoalYAt: (x, z) =>
       groundYAt(x, z) + preset.maximumGroundClearanceMeters,
     particles: preset.start.particles
       ? createStartParticleEffect({
+          arrowLengthMeters,
           scene: world.scene,
           parameters: preset.start.particles,
         })

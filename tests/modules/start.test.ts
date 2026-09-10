@@ -1,5 +1,6 @@
 import { expect, mock, test } from "bun:test";
 import { Vector3 } from "three";
+import { FLIGHT_SETTINGS } from "../../src/control/flight-settings";
 import { createStartModule } from "../../src/modules/start/start.module";
 import type { StartParticleFrame } from "../../src/modules/start/start-particle-frame";
 import type { StartParticleEffect } from "../../src/modules/start/start-particles.effect";
@@ -27,6 +28,8 @@ function createPractice(
   const worldPosition = new Vector3(0, 4, 0);
   const worldDirection = new Vector3(0, 0, -1);
   const start = createStartModule({
+    motionLimits: FLIGHT_SETTINGS,
+    arrowLengthMeters: 6,
     viewpoint: {
       worldPosition,
       worldUp: new Vector3(0, 1, 0),
@@ -222,6 +225,8 @@ test("the selected presentation ends after a partial load and receives no inacti
     arrow: new Vector3(-2, 0, 0),
   };
   const start = createStartModule({
+    motionLimits: FLIGHT_SETTINGS,
+    arrowLengthMeters: 6,
     viewpoint: {
       worldPosition,
       worldUp: new Vector3(0, 1, 0),
@@ -652,6 +657,8 @@ test("an unreachable reserved upward entrance stays hidden instead of moving aft
   const worldDirection = new Vector3(0, 0.9, -0.3).normalize();
   let frame: StartParticleFrame | undefined;
   const start = createStartModule({
+    motionLimits: FLIGHT_SETTINGS,
+    arrowLengthMeters: 6,
     viewpoint: {
       worldPosition,
       worldDirection,
@@ -781,6 +788,8 @@ test("head translation cannot confirm a turn while rig motion can", () => {
   const eye = new Vector3(0, 4, 0);
   const rig = new Vector3(0, 3, 0);
   const start = createStartModule({
+    motionLimits: FLIGHT_SETTINGS,
+    arrowLengthMeters: 6,
     viewpoint: {
       worldPosition: eye,
       worldFlightPosition: rig,
@@ -986,6 +995,8 @@ test("head-pitched arrow placement cannot reverse the flight-relative downward i
     const gaze = new Vector3(0, Math.sin(pitch), -Math.cos(pitch));
     let frame: StartParticleFrame | undefined;
     const start = createStartModule({
+      motionLimits: FLIGHT_SETTINGS,
+      arrowLengthMeters: 6,
       viewpoint: {
         worldPosition: rig,
         worldFlightPosition: rig,
@@ -1024,6 +1035,8 @@ test("the production pitched view can reveal an entrance during a real two-meter
   const flightDirection = new Vector3(0, 0, -1);
   let frame: StartParticleFrame | undefined;
   const start = createStartModule({
+    motionLimits: FLIGHT_SETTINGS,
+    arrowLengthMeters: 6,
     viewpoint: {
       worldPosition: position,
       worldFlightPosition: position,
