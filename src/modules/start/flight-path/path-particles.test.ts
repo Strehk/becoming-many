@@ -1,10 +1,10 @@
 import { expect, test } from "bun:test";
 import { Color } from "three";
+import { START_EXERCISES } from "../start-exercises";
 import type { FlightRoute } from "./particle-contract";
-import {
-  createPathParticleGeometry,
-  PATH_PARTICLE_SETTINGS,
-} from "./path-particles";
+import { createPathParticleGeometry } from "./path-particles";
+
+const PATH_PARTICLE_SETTINGS = START_EXERCISES[0].particles;
 
 const STRAIGHT_ROUTE: FlightRoute = {
   lengthMeters: 4,

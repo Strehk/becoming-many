@@ -1,86 +1,68 @@
 import { expect, test } from "bun:test";
-import { type Points, PointsMaterial, Scene, Vector3 } from "three";
-import { createFlightPath } from "./flight-path";
-import { createFlightRoute } from "./flight-route";
 import {
-  createPathParticleGeometry,
-  PATH_PARTICLE_SETTINGS,
-} from "./path-particles";
+  BufferGeometry,
+  type Points,
+  PointsMaterial,
+  Scene,
+  Vector3,
+} from "three";
+import { createFlightPath } from "./flight-path";
 
-function createExercise() {
+function createDisplay() {
   const scene = new Scene();
-  const viewpoint = {
-    worldPosition: new Vector3(10, 5, 20),
-    worldFlightDirection: new Vector3(0, 0, -1),
-    worldBodyDirection: new Vector3(0, 0, -1),
-    worldDirection: new Vector3(1, 0, 0),
-    worldUp: new Vector3(0, 1, 0),
-    viewHalfAngleRadians: 0.7,
-    viewDistanceMeters: 128,
-  };
   const material = new PointsMaterial();
   const module = createFlightPath({
     scene,
-    viewpoint,
-    createGeometry: () =>
-      createPathParticleGeometry(createFlightRoute(), PATH_PARTICLE_SETTINGS),
+    belowFlightMeters: 0.5,
     createMaterial: () => ({ pointsMaterial: material, update: () => {} }),
   });
   module.load();
   module.activate();
-  return { scene, viewpoint, module, material };
+  return { scene, module, material };
 }
 
-test("exercise captures flight heading at its cue and stays fixed during travel", () => {
-  const { scene, viewpoint, module } = createExercise();
-  module.update?.(1);
+test("presentation waits for an explicit show and copies its fixed pose", () => {
+  const { scene, module } = createDisplay();
+  module.update(30);
   expect(scene.children).toHaveLength(0);
-  viewpoint.worldFlightDirection.set(1, 0, 0);
-  module.update?.(1);
+  const position = new Vector3(10, 5, 20);
+  module.show(new BufferGeometry(), { position, yawRadians: 1 });
   const cloud = scene.children[0] as Points;
-  expect(cloud.rotation.y).toBeCloseTo(-Math.PI / 2);
-  const anchor = cloud.position.clone();
-  viewpoint.worldPosition.set(40, 10, 80);
-  viewpoint.worldFlightDirection.set(0, 0, -1);
-  module.update?.(1);
-  expect(cloud.position.equals(anchor)).toBe(true);
-  expect(cloud.rotation.y).toBeCloseTo(-Math.PI / 2);
+  position.set(40, 10, 80);
+  module.update(1);
+  expect(cloud.position.toArray()).toEqual([10, 4.5, 20]);
+  expect(cloud.rotation.y).toBe(1);
   module.unload();
 });
 
-test("left route stays bounded and wind never uploads new geometry", () => {
-  const { scene, module } = createExercise();
-  module.update?.(2);
-  const cloud = scene.children[0] as Points;
-  const positions = cloud.geometry.getAttribute("position");
-  const last = positions.count - 1;
-  expect(positions.getX(0)).toBeGreaterThan(-1);
-  expect(positions.getZ(0)).toBeCloseTo(-9, 0);
-  expect(positions.getX(last)).toBeLessThan(-9);
-  expect(positions.getZ(last)).toBeLessThan(-30);
-  const before = Array.from(positions.array);
-  for (let frame = 0; frame < 900; frame++) module.update?.(1 / 90);
-  expect(Array.from(positions.array)).toEqual(before);
-  expect(scene.children).toEqual([cloud]);
+test("retirement fades without changing geometry and detaches the trail", () => {
+  const { scene, module, material } = createDisplay();
+  const geometry = new BufferGeometry();
+  module.show(geometry, { position: new Vector3(), yawRadians: 0 });
+  module.retire(1);
+  module.update(0.5);
+  expect(material.opacity).toBeCloseTo(0.5);
+  expect((scene.children[0] as Points).geometry).toBe(geometry);
+  module.update(0.5);
+  expect(scene.children).toHaveLength(0);
   module.unload();
 });
 
-test("exercise hides, reanchors on restart, and disposes once", () => {
-  const { scene, viewpoint, module, material } = createExercise();
-  module.update?.(2);
-  const cloud = scene.children[0] as Points;
+test("replacement reuses one material and disposes both geometries once", () => {
+  const { scene, module, material } = createDisplay();
   let disposals = 0;
-  cloud.geometry.addEventListener("dispose", () => disposals++);
   material.addEventListener("dispose", () => disposals++);
-  module.deactivate();
-  expect(cloud.visible).toBe(false);
-  module.activate();
-  viewpoint.worldPosition.set(30, 8, 50);
-  module.update?.(2);
-  expect(cloud.position.toArray()).toEqual([30, 7.5, 50]);
-  expect(scene.children).toEqual([cloud]);
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const geometry = new BufferGeometry();
+    geometry.addEventListener("dispose", () => disposals++);
+    module.show(geometry, {
+      position: new Vector3(attempt, 0, 0),
+      yawRadians: 0,
+    });
+    expect(scene.children).toHaveLength(1);
+  }
   module.unload();
   module.unload();
-  expect(disposals).toBe(2);
+  expect(disposals).toBe(3);
   expect(scene.children).toHaveLength(0);
 });

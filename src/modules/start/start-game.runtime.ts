@@ -1,85 +1,80 @@
-// Start Game — exercise flow
-// Comment-only architecture; no executable implementation.
+import type {
+  ExerciseAction,
+  ExerciseFrame,
+  ExerciseState,
+} from "./start-contract";
 
-// 1. Responsibility
+// 1. Engine construction
+interface GameSettings {
+  readonly exerciseCount: number;
+  readonly retireSeconds: number;
+}
 
-// The game owns the current lesson, its attempts and earned progress.
-// Start Module connects its decisions to chunks, presentation and speech.
-// Run owns application lifetime; World owns the loop; Control owns flight.
+/** Own lesson decisions only; the center executes returned actions. */
+export function createStartGame(settings: GameSettings) {
+  return new StartGame(settings);
+}
 
-// This component is a leaf of the star centered on start.module.ts.
-// It receives dependencies through arguments and returns facts to that center.
-// Imports are absent by default; only indispensable owner-neutral types or
-// technical library dependencies belong here. Local peers and the center are
-// never imported, including through type-only imports or re-export wrappers.
+// 2. State and reset
+class StartGame {
+  private state: ExerciseState = this.initialState();
+  constructor(private readonly settings: GameSettings) {}
 
-// 2. Exercise model
+  readonly readState = (): Readonly<ExerciseState> => this.state;
+  readonly reset = (): void => {
+    this.state = this.initialState();
+  };
 
-// One chunk represents one attempt at one exercise.
-// The recordings establish the order: right -> left -> up -> down.
-// Procedural variation changes spatial layout, while lesson meaning stays fixed.
+  private initialState(): ExerciseState {
+    return {
+      phase: "instruction",
+      exerciseIndex: 0,
+      attempt: 1,
+      elapsedSeconds: 0,
+      outcome: "pending",
+    };
+  }
 
-// The introduction accompanies the first right exercise.
-// The closing recording follows four successes and contains no additional exercise.
+  // 3. One phase transition per frame
+  readonly update = (frame: ExerciseFrame): ExerciseAction => {
+    this.state.elapsedSeconds += Math.max(0, frame.deltaSeconds);
+    switch (this.state.phase) {
+      case "instruction":
+        if (!frame.instructionReleased) return;
+        this.enterPhase("flying");
+        return "show";
+      case "flying":
+        return this.observeFlight(frame);
+      case "retiring":
+        if (this.state.elapsedSeconds >= this.settings.retireSeconds)
+          this.finishAttempt();
+        return;
+      case "complete":
+        return;
+    }
+  };
 
-// 3. State and interfaces
+  private observeFlight(frame: ExerciseFrame): ExerciseAction {
+    if (this.state.outcome === "pending") this.state.outcome = frame.progress;
+    if (this.state.outcome === "pending" || !frame.instructionEnded) return;
+    this.enterPhase("retiring");
+    return "retire";
+  }
 
-// Owned state: lesson index, attempt revision, phase, accepted passage identity
-// and the speech request bound to the current playback instance.
-// Chunk geometry and resource-slot revisions belong to the chunk component.
+  // 4. Retry and course completion
+  private finishAttempt(): void {
+    if (this.state.outcome === "passed") this.state.exerciseIndex++;
+    this.state.attempt++;
+    this.state.outcome = "pending";
+    this.enterPhase(
+      this.state.exerciseIndex < this.settings.exerciseCount
+        ? "instruction"
+        : "complete",
+    );
+  }
 
-// Inputs: exercise definitions, seed, actual rig movement, flight constraints,
-// shared playback state, native speech observations and chunk readiness.
-// Outputs: chunk requests, speech requests and a read-only exercise observation.
-
-// 4. Exercise lifecycle
-
-// preparing -> instruction -> exercising -> retiring
-// Success advances to the next lesson; a miss starts another attempt at this lesson.
-// The fourth success leads to closing -> complete.
-// Pause holds progression within the current phase.
-
-// createStartGame(options)
-// Establishes the exercise state and its narrow input/output contracts.
-
-// updateExercise(frame)
-// Consumes one coherent movement/audio sample and makes at most one lesson
-// transition per World frame. Unavailable playback facts hold progression.
-
-// beginExercise(request)
-// Binds a reachable chunk and recording to a new attempt identity.
-// Prepared resources precede playback; final placement follows actual flight.
-
-// releaseInstruction(observation)
-// Releases guidance when native playback crosses the instruction marker.
-// Paused, blocked or stale playback cannot release the current attempt.
-
-// 5. Passage and progression
-
-// acceptExercisePassage(result)
-// Accepts the active goal's swept rig passage after instruction release, once.
-// Head movement, previews and reset displacement carry no success.
-
-// finishExercise(observation)
-// Advances after both the earned passage and natural instruction completion.
-// Praise at the beginning of the next clip therefore refers to actual success.
-
-// retryExercise(reason)
-// Retires the missed chunk and retains its lesson for a new attempt.
-// The repeated excerpt contains the instruction without preceding praise.
-
-// finishCourse(observation)
-// Plays the closing once after four successes and publishes completion after
-// its natural end. Main-Show transition policy remains outside the game.
-
-// 6. Observation and cleanup
-
-// readExercise()
-// Publishes borrowed, read-only facts valid for the current frame.
-
-// resetExercise(seed)
-// Invalidates attempt identities, pending speech and movement history through
-// Run's reset path. The new attempt cannot inherit an old passage.
-
-// unload()
-// Ends publication and invalidates pending game decisions before local release.
+  private enterPhase(phase: ExerciseState["phase"]): void {
+    this.state.phase = phase;
+    this.state.elapsedSeconds = 0;
+  }
+}

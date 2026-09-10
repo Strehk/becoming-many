@@ -1,3 +1,6 @@
+// Historical narration research, not active runtime configuration.
+// See ARCHITECTURE.md; future authored cues belong in start-exercises.ts.
+
 // Start Audio Cues — recordings and exercise meaning
 // Comment-only architecture; no executable implementation.
 

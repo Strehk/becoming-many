@@ -7,13 +7,6 @@ import type {
 } from "./particle-contract";
 
 // 1. Particle settings
-export const PATH_PARTICLE_SETTINGS: PathParticleParameters = {
-  densityPerMeter: { from: 40, to: 68 },
-  color: { from: 0x2c858d, to: 0x77bec2 },
-  sizeMeters: { from: 0.025, to: 0.055 },
-  spreadMeters: 0.55,
-  seed: 17,
-};
 const SETTINGS = {
   sectionMeters: 1,
   maximumParticles: 100_000,
