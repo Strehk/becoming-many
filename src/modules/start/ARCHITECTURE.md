@@ -286,3 +286,30 @@ small and focused. Tests cover success, retries, cue gating, movement discontinu
 route variation, particle ranges, and cleanup. Browser checks cover the real Start
 route plus controlled successful and missed flights. Browser screenshots do not
 constitute headset acceptance.
+
+
+## Exercise authoring contract
+
+All exercise tuning lives in `START_EXERCISES` in `start-exercises.ts` and is
+checked by `ExerciseDefinition`. Distances are world meters. Equal range endpoints
+disable variation; a fixed seed reproduces varied routes.
+
+| Parameter | Meaning | Current value |
+| --- | --- | --- |
+| `route.turnDegrees` | Total heading change per exercise, in degrees | 90–90 |
+| `route.turnSign` | Left (-1) or right (+1) | Alternating |
+| `route.turnRadiusMeters` | Curve radius; smaller is tighter | 32–36 m |
+| `route.straightMeters` / `outroMeters` | Ring-free entry and exit | 12 / 24 m |
+| `elements.ringCount` | Exact authored ring count, 0–12 | 6 |
+| `elements.spacingMeters` | Distance along the route between rings | 10 m |
+| `elements.firstMeters` | First ring route distance, clamped to exercise start | 12 m |
+| `elements.ringRadiusMeters` | Ring opening geometry radius | 3.6 m |
+| `particles` | Density, color, size and scatter ranges | Existing particle palette |
+| `deviation` / `progress` | Recovery corridor and forward-passage tolerance | 12 m corridor |
+
+Ring count, spacing and route dimensions must agree. The last ring must fit
+inside the curved exercise, whose length is radius × angle in radians. Invalid
+combinations fail before rendering instead of silently truncating the ring count.
+Current six-ring defaults span 50 m and fit every configured radius at 90 degrees.
+Flight speed currently comes from `src/levels/start.level.ts` through the existing
+Level Runtime (`flightSpeedMetersPerSecond: 2`); it is not a particle parameter.

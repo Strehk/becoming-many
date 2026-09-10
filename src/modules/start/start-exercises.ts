@@ -84,8 +84,8 @@ export const START_EXERCISES = [
       straightMeters: 12,
       outroMeters: 24,
       turnSign: -1,
-      turnRadiusMeters: { from: 38, to: 46 },
-      turnRadians: { from: 0.8, to: 1.05 },
+      turnRadiusMeters: { from: 32, to: 36 },
+      turnDegrees: { from: 90, to: 90 },
     },
     particles: {
       densityPerMeter: { from: 40, to: 68 },
@@ -96,8 +96,9 @@ export const START_EXERCISES = [
     },
     elements: {
       showArrows: false,
+      ringCount: 6,
       firstMeters: 12,
-      spacingMeters: 14,
+      spacingMeters: 10,
       ringRadiusMeters: 3.6,
       arrowLengthMeters: 4.6,
       arrowOffsetMeters: 7,
@@ -125,8 +126,8 @@ export const START_EXERCISES = [
       straightMeters: 12,
       outroMeters: 24,
       turnSign: 1,
-      turnRadiusMeters: { from: 38, to: 46 },
-      turnRadians: { from: 0.8, to: 1.05 },
+      turnRadiusMeters: { from: 32, to: 36 },
+      turnDegrees: { from: 90, to: 90 },
     },
     particles: {
       densityPerMeter: { from: 40, to: 68 },
@@ -137,8 +138,9 @@ export const START_EXERCISES = [
     },
     elements: {
       showArrows: false,
+      ringCount: 6,
       firstMeters: 12,
-      spacingMeters: 14,
+      spacingMeters: 10,
       ringRadiusMeters: 3.6,
       arrowLengthMeters: 4.6,
       arrowOffsetMeters: 7,

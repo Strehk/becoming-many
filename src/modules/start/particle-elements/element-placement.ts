@@ -15,13 +15,13 @@ export function placeElements(
   settings: ElementSettings,
 ): ElementPlacement[] {
   validateSpacing(settings);
+  validateRingCount(route, settings);
   const placements: ElementPlacement[] = [];
   let outside = new Vector3(1, 0, 0);
-  for (let index = 0; index < SETTINGS.maximumPairs; index++) {
+  for (let index = 0; index < settings.ringCount; index++) {
     const distance =
       Math.max(settings.firstMeters, route.exerciseStartMeters) +
       index * settings.spacingMeters;
-    if (distance > route.exerciseEndMeters) break;
     placements.push(samplePlacement(route, distance, "ring"));
     if (settings.showArrows === false) continue;
     const arrowDistance =
@@ -86,4 +86,25 @@ function validateSpacing(settings: ElementSettings): void {
     settings.arrowPhaseFraction >= 1
   )
     throw new RangeError("Invalid element spacing");
+}
+
+// Authored count is exact: reject incompatible dimensions instead of dropping rings.
+function validateRingCount(
+  route: ExerciseRoute,
+  settings: ElementSettings,
+): void {
+  if (
+    !Number.isInteger(settings.ringCount) ||
+    settings.ringCount < 0 ||
+    settings.ringCount > SETTINGS.maximumPairs
+  )
+    throw new RangeError("Ring count must be an integer between 0 and 12");
+  if (settings.ringCount === 0) return;
+  const last =
+    Math.max(settings.firstMeters, route.exerciseStartMeters) +
+    (settings.ringCount - 1) * settings.spacingMeters;
+  if (last > route.exerciseEndMeters)
+    throw new RangeError(
+      "Ring count and spacing exceed the exercise length; reduce count/spacing or increase turn radius/angle",
+    );
 }

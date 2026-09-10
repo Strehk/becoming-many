@@ -12,6 +12,8 @@ export interface ElementPlacement {
   readonly direction: Vector3;
 }
 export interface ElementSettings {
+  /** Exact ring count, 0–12. The last ring must fit inside the curved exercise. */
+  readonly ringCount: number;
   readonly showArrows?: boolean;
   readonly spacingMeters: number;
   readonly firstMeters: number;

@@ -12,7 +12,8 @@ export interface RouteParameters {
   readonly straightMeters: number;
   readonly outroMeters: number;
   readonly turnRadiusMeters: ParticleRange;
-  readonly turnRadians: ParticleRange;
+  /** Total heading change in degrees; equal endpoints disable variation. */
+  readonly turnDegrees: ParticleRange;
   readonly turnSign: -1 | 1;
 }
 export interface ProgressParameters {

@@ -8,8 +8,9 @@ export function createFlightRoute(
   parameters: RouteParameters,
   seed: number,
 ): ExerciseRoute {
+  validateRoute(parameters);
   const radius = sampleRange(parameters.turnRadiusMeters, seed);
-  const angle = sampleRange(parameters.turnRadians, seed + 1);
+  const angle = (sampleRange(parameters.turnDegrees, seed + 1) * Math.PI) / 180;
   const exerciseEnd = parameters.straightMeters + radius * angle;
   return {
     lengthMeters: exerciseEnd + parameters.outroMeters,
@@ -58,4 +59,35 @@ function sampleRange(range: ParticleRange, seed: number): number {
   const fraction =
     ((Math.imul(seed, 1597334677) ^ 3812015801) >>> 0) / 4294967296;
   return range.from + (range.to - range.from) * fraction;
+}
+
+// 4. Reject invalid authoring before geometry allocation.
+function validateRoute(parameters: RouteParameters): void {
+  const lengths = [
+    parameters.leadMeters,
+    parameters.straightMeters,
+    parameters.outroMeters,
+  ];
+  if (lengths.some((length) => !Number.isFinite(length) || length < 0))
+    throw new RangeError(
+      "Route entry and exit lengths must be finite and nonnegative",
+    );
+  validateRange(parameters.turnRadiusMeters, Number.MIN_VALUE, Infinity);
+  validateRange(parameters.turnDegrees, 0, 360);
+  if (parameters.turnSign !== -1 && parameters.turnSign !== 1)
+    throw new RangeError("Turn direction must be -1 (left) or 1 (right)");
+}
+function validateRange(
+  range: ParticleRange,
+  minimum: number,
+  maximum: number,
+): void {
+  if (
+    !Number.isFinite(range.from) ||
+    !Number.isFinite(range.to) ||
+    range.from < minimum ||
+    range.to > maximum ||
+    range.to < range.from
+  )
+    throw new RangeError("Invalid route parameter range");
 }
