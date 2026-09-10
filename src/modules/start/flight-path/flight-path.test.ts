@@ -1,6 +1,11 @@
 import { expect, test } from "bun:test";
 import { type Points, PointsMaterial, Scene, Vector3 } from "three";
 import { createFlightPath } from "./flight-path";
+import { createFlightRoute } from "./flight-route";
+import {
+  createPathParticleGeometry,
+  PATH_PARTICLE_SETTINGS,
+} from "./path-particles";
 
 function createExercise() {
   const scene = new Scene();
@@ -17,6 +22,8 @@ function createExercise() {
   const module = createFlightPath({
     scene,
     viewpoint,
+    createGeometry: () =>
+      createPathParticleGeometry(createFlightRoute(), PATH_PARTICLE_SETTINGS),
     createMaterial: () => ({ pointsMaterial: material, update: () => {} }),
   });
   module.load();

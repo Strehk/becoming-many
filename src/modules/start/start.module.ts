@@ -5,6 +5,12 @@ import {
   type FlightGuidanceParameters,
 } from "./flight-guidance";
 import { createFlightPath } from "./flight-path/flight-path";
+import { createFlightRoute } from "./flight-path/flight-route";
+import {
+  createPathParticleGeometry,
+  createPathParticleMaterial,
+  PATH_PARTICLE_SETTINGS,
+} from "./flight-path/path-particles";
 import {
   type AirParticlesModuleOptions,
   createAirParticlesModule,
@@ -29,11 +35,7 @@ export function createStartModule(options: StartModuleOptions): WorldModule {
   const runtime = new ModuleRuntime();
   const modules = [
     createAirParticlesModule(options),
-    createFlightPath({
-      scene: options.scene,
-      viewpoint: options.viewpoint,
-      createMaterial: createAirParticleMaterial,
-    }),
+    createExercisePath(options),
     createFlightGuidance({
       scene: options.scene,
       viewpoint: options.viewpoint,
@@ -42,6 +44,18 @@ export function createStartModule(options: StartModuleOptions): WorldModule {
     }),
   ];
   return new StartModule(runtime, modules);
+}
+
+// Route generation and particle generation meet only at this local center.
+function createExercisePath(options: StartModuleOptions): WorldModule {
+  const route = createFlightRoute();
+  return createFlightPath({
+    scene: options.scene,
+    viewpoint: options.viewpoint,
+    createGeometry: () =>
+      createPathParticleGeometry(route, PATH_PARTICLE_SETTINGS),
+    createMaterial: () => createPathParticleMaterial(createAirParticleMaterial),
+  });
 }
 
 class StartModule implements WorldModule {
