@@ -872,13 +872,26 @@ async function checkScrubbing(
 
 /** Shared styling must preserve each surface and its actual responsive controls. */
 async function checkUiLayout(page: Page, route: string): Promise<void> {
-  for (const width of route === "/conductor.html"
-    ? [1672, VIEWPORT.width, 390]
-    : [VIEWPORT.width, 390]) {
-    await page.setViewportSize({
-      width,
-      height: width === 1672 ? 940 : VIEWPORT.height,
-    });
+  const viewports =
+    route === "/conductor.html"
+      ? [
+          [1920, 1080],
+          [1672, 940],
+          [1280, 720],
+          [920, 600],
+          [844, 390],
+          [700, 1024],
+          [699, 1024],
+          [390, 844],
+          [320, 568],
+        ]
+      : [
+          [VIEWPORT.width, VIEWPORT.height],
+          [390, VIEWPORT.height],
+        ];
+  for (const [width, height] of viewports) {
+    assert(width && height);
+    await page.setViewportSize({ width, height });
     const layout = await page.evaluate(() => ({
       viewportWidth: innerWidth,
       scrollWidth: document.documentElement.scrollWidth,
@@ -937,6 +950,29 @@ async function checkUiLayout(page: Page, route: string): Promise<void> {
             ),
         "Language controls remain below Play/Pause and Stop",
       );
+      assert(
+        languageBounds.height <= 72,
+        "Language controls stay compact at every screen size",
+      );
+      if (width >= 1280 && height >= 720) {
+        assert(
+          await page.evaluate(
+            () => document.documentElement.scrollHeight <= innerHeight,
+          ),
+          "Desktop Conductor fits the available screen height",
+        );
+      }
+      const stageBounds = await page
+        .locator(".conductor__stage-view")
+        .boundingBox();
+      assert(stageBounds);
+      if (width >= 700) {
+        assert(
+          stageBounds.x > buttonBounds.x &&
+            stageBounds.y < buttonBounds.y + buttonBounds.height,
+          "Landscape and tablet widths keep preview beside transport",
+        );
+      }
       const previewBounds = await page
         .locator(".conductor__stage-mount canvas")
         .boundingBox();
