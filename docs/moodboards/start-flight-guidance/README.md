@@ -29,19 +29,38 @@ than head gaze alone. The diagrams compare steering responses from the same pose
 they do not prescribe flight equations or automatic steering. Distances, ring
 counts, contrast and climb angles are illustrative, not authored level values.
 
-## New views
+## Revised views
 
-![Left turn and climb](01-flight-views.png)
+The user corrected the first concepts: use large single full arrows with a shaft
+and one head, sculpted from cloudlike particles, and a subtle traveling light
+pulse. Keep the overhead steering explanation separate from immersive views.
+The overhead diagram follows the original left-lean / neutral / right-lean sketch;
+the previous understeer / aligned / oversteer comparison was rejected.
+
+![Left turn and climb](01-flight-views-v2.png)
 
 The left view explores approaching a curved course; the right explores a climb.
-Dots, rings and chevrons share a restrained particulate language. The diffuse
+Dots, rings and full cloudlike arrows share a particulate language. The diffuse
 prediction remains distinguishable from the narrow route. Static images suggest
 material and composition; they do not demonstrate animation or stereo readability.
 
-![Route and prediction](02-route-and-prediction.png)
+![Overhead steering response](03-overhead-steering.png)
 
-The comparison explains insufficient, matching and excessive turn input. The
-intended route stays fixed while the prediction changes. Geometry is schematic.
+Three separate overhead diagrams show a left-curving, straight and right-curving
+prediction corridor, respectively. Small hollow circles are diagram sampling
+markers, not physical ring gates. These panels explain steering response only;
+they do not compare missed targets or impose a shared left-turn course.
+
+![Arrow light sequence](04-arrow-light-sequence.png)
+
+Three moments show a soft brightness pulse at the tail, shaft and tip of the same
+arrow. The arrow stays visible. This is an animation storyboard, not a playable
+animation or a final decision about pulse speed and intensity.
+
+The [first flight views](01-flight-views.png) and
+[rejected mixed system board](02-route-and-prediction.png) remain archived for
+comparison only; they are superseded by these revisions. In particular, their
+chevrons and understeer/oversteer diagrams are not the desired design.
 
 ## Preserved user references
 
@@ -72,6 +91,7 @@ User-selected Three.js references:
 - [Volume cloud](https://threejs.org/examples/#webgl_volume_cloud)
 
 Created with the built-in image generation tool. The complete
-[prompt set](prompts.md) records the intended semantics and image-reference roles.
+[original prompt set](prompts.md) and [revision prompts](revision-prompts.md)
+record the intended semantics and image-reference roles.
 Cloud traversal, final prediction appearance, animation timing and VR performance
 remain to be discussed or tested during a later implementation step.
