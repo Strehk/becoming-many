@@ -13,7 +13,9 @@ test("the signpost is off the route and aims exactly at the first right-hand gat
     const arrow = placeEntryArrow(route, rings, exercise.elements.entryArrow);
     const gate = rings[0];
     if (!arrow || !gate) throw new Error("Missing opening guidance");
-    expect(gate.position.x).toBeGreaterThan(13);
+    expect(gate.position.x).toBeGreaterThan(
+      exercise.route.turnRadiusMeters.from * 0.4,
+    );
     expect(arrow.position.y).toBeCloseTo(1.8);
     expect(
       arrow.direction.dot(

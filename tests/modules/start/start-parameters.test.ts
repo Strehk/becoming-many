@@ -12,9 +12,18 @@ for (const exercise of START_EXERCISES as readonly ExerciseDefinition[]) {
       const direction = new Vector3();
       route.sampleDirection(route.lengthMeters, direction);
       const vertical = exercise.route.turnPlane === "vertical";
-      expect(direction.x).toBeCloseTo(vertical ? 0 : exercise.route.turnSign);
+      expect(direction.x).toBeCloseTo(
+        vertical
+          ? 0
+          : exercise.route.turnSign *
+              Math.sin((exercise.route.turnDegrees.from * Math.PI) / 180),
+      );
       expect(direction.y).toBeCloseTo(0);
-      expect(direction.z).toBeCloseTo(vertical ? -1 : 0);
+      expect(direction.z).toBeCloseTo(
+        vertical
+          ? -1
+          : -Math.cos((exercise.route.turnDegrees.from * Math.PI) / 180),
+      );
       const rings = placeElements(route, exercise.elements);
       expect(rings).toHaveLength(exercise.elements.ringCount);
       for (const [index, ring] of rings.entries())
@@ -75,9 +84,11 @@ test("vertical lessons stay forward, respect pitch and finish level with correct
       expect(
         ahead.sub(position).normalize().distanceTo(direction),
       ).toBeLessThan(0.0001);
-      expect(direction.z).toBeLessThan(-0.9);
+      expect(direction.z).toBeLessThanOrEqual(
+        -Math.cos((exercise.route.turnDegrees.to * Math.PI) / 180) + 1e-8,
+      );
       expect(Math.abs(direction.y)).toBeLessThanOrEqual(
-        Math.sin(Math.PI / 9) + 1e-8,
+        Math.sin((exercise.route.turnDegrees.to * Math.PI) / 180) + 1e-8,
       );
     }
     route.sample(route.lengthMeters, position);
@@ -85,4 +96,43 @@ test("vertical lessons stay forward, respect pitch and finish level with correct
     route.sampleDirection(route.lengthMeters, direction);
     expect(direction.y).toBeCloseTo(0);
   }
+});
+
+test("compact course preserves ring counts with 30 percent less spacing and five degrees more curvature", () => {
+  const previous = [
+    { spacing: 8, radii: [32, 36] },
+    { spacing: 10, radii: [32, 36] },
+    { spacing: 10, radii: [80, 84] },
+    { spacing: 10, radii: [80, 84] },
+  ];
+  START_EXERCISES.forEach((exercise, index) => {
+    const before = previous[index];
+    if (!before) throw new Error("Missing comparison course");
+    expect(exercise.elements.spacingMeters).toBeCloseTo(before.spacing * 0.7);
+    [
+      exercise.route.turnRadiusMeters.from,
+      exercise.route.turnRadiusMeters.to,
+    ].forEach((radius, end) => {
+      const oldRadius = before.radii[end];
+      if (!oldRadius) throw new Error("Missing comparison radius");
+      const difference =
+        ((exercise.elements.spacingMeters / radius -
+          before.spacing / oldRadius) *
+          180) /
+        Math.PI;
+      expect(difference).toBeCloseTo(5, 3);
+    });
+  });
+  expect(
+    START_EXERCISES[0].route.outroMeters +
+      START_EXERCISES[1].route.straightMeters,
+  ).toBe(13);
+  expect(
+    START_EXERCISES[1].route.outroMeters +
+      START_EXERCISES[2].route.straightMeters,
+  ).toBe(18);
+  expect(
+    START_EXERCISES[2].route.outroMeters +
+      START_EXERCISES[3].route.straightMeters,
+  ).toBe(18);
 });

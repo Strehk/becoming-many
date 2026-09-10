@@ -137,16 +137,16 @@ No particle geometry or audio knowledge crosses into those renderers.
 
 The opening stays white until 13.12 s ("einen Raum"). World presence rises over
 3.2 s, driven by native speech time. At reveal, a 12 m ring-free approach is
-anchored to the actual player, followed by the right chunk's 6 m straight entry.
+anchored to the actual player, followed by the right chunk's 3 m straight entry.
 The curved centerline appears at 14.4 s; rings and the entry signpost wait until
-19.30 s and emerge over 1.3 s. At 2 m/s straight flight the bend starts about
-6 m ahead at the instruction. The first gate is 38 m into the chunk, already
-well inside the right bend; three gates at 8 m intervals mark its final portion.
-A single open-stroke arrow stands at route meter 30, 5 m to the left of the route
+19.30 s and emerge over 0.65 s. At 2 m/s straight flight the bend starts about
+3 m ahead at the instruction. The first gate is 20 m into the chunk, already
+well inside the right bend; three gates at 5.6 m intervals mark its final portion.
+A single open-stroke arrow stands at route meter 12, 5 m to the left of the route
 and 1.8 m above it. It points at the first gate center, not along the local tangent.
 Its particle core is compact with no diffuse halo; ring appearance is unchanged. Initial placement therefore does not depend on loading or autoplay
-wait duration. The transition into the left lesson uses an 18 m exit and an 8 m entry;
-later lessons retain their 12 m entries. The actual media
+wait duration. The transition into the left lesson uses a 9 m exit and a 4 m entry;
+later lessons use 6 m entries. The actual media
 cue releases the prepared path and rings. Success plus native speech end starts
 the next recording during the existing exit. Success remains earned if the player
 deviates while the spoken tail finishes. A successor cannot activate before its
@@ -155,8 +155,8 @@ an unfinished introduction remains intact during early recovery. Four successes
 play the closing recording once. Final rings retain behind-only retirement.
 There is no automatic transition into the main Experience yet.
 
-Horizontal routes turn 90 degrees. Vertical routes use two opposite circular arcs
-with a maximum 20-degree pitch and level entry/exit tangents. This preserves the
+Horizontal routes turn 110 degrees right and 120 degrees left. Vertical routes use two opposite circular arcs
+with a maximum 32-degree pitch and level entry/exit tangents. This preserves the
 existing yaw-only chunk placement contract while changing altitude. Rings sample
 the same position and tangent in either plane. The route does not move the player
 or bypass the level's height limits.
@@ -319,12 +319,12 @@ disable variation; a fixed seed reproduces varied routes.
 
 | Parameter | Meaning | Current value |
 | --- | --- | --- |
-| `route.turnDegrees` | Horizontal heading change or vertical peak pitch, in degrees | 90 horizontal / 20 vertical |
+| `route.turnDegrees` | Horizontal heading change or vertical peak pitch, in degrees | 110 right / 120 left / 32 vertical |
 | `route.turnSign` | Left/down (-1), right/up (+1) | Per lesson |
-| `route.turnRadiusMeters` | Curve radius; smaller is tighter | 32–36 m horizontal / 80–84 m vertical |
-| `route.straightMeters` / `outroMeters` | Ring-free entry and exit | 12 / 24 m |
-| `elements.ringCount` | Exact authored ring count, 0–12 | 6 |
-| `elements.spacingMeters` | Distance along the route between rings | 10 m |
+| `route.turnRadiusMeters` | Curve radius; smaller is tighter | 16.60–19.18 m horizontal / 32.98–33.93 m vertical |
+| `route.straightMeters` / `outroMeters` | Ring-free entry and exit | 3–6 / 9–12 m |
+| `elements.ringCount` | Exact authored ring count, 0–12 | 3 right, 6 others |
+| `elements.spacingMeters` | Distance along the route between rings | 5.6 m right, 7 m others |
 | `elements.firstMeters` | First ring route distance, clamped to exercise start | 12 m |
 | `elements.ringRadiusMeters` | Ring opening geometry radius | 3.6 m |
 | `particles` | Density, color, size and scatter ranges | Existing particle palette |
@@ -334,7 +334,10 @@ Ring count, spacing and route dimensions must agree. The last ring must fit
 inside the curved exercise: radius × angle in radians for horizontal turns,
 twice that length for the two-arc vertical profile. Invalid
 combinations fail before rendering instead of silently truncating the ring count.
-Current six-ring defaults span 50 m and fit every configured radius at 90 degrees.
+Six-ring sections span 35 m. All authored counts fit the configured arc lengths.
+Ring spacing is reduced by 30%; paired radius endpoints add five degrees of
+curvature per interval. Regular entry/exit distances and ring emergence duration
+are halved. Native spoken-word markers and opening world reveal remain intact.
 Flight speed currently comes from `src/levels/start.level.ts` through the existing
 Level Runtime (`flightSpeedMetersPerSecond: 2`); it is not a particle parameter.
 

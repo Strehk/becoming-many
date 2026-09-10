@@ -20,9 +20,9 @@ export const START_SETTINGS = {
   pathPoolSize: 4,
   elementPoolSize: 4,
   generationMetersPerStep: 4,
-  revealSeconds: 0.8,
+  revealSeconds: 0.4,
   elementAnimation: {
-    revealSeconds: 1.3,
+    revealSeconds: 0.65,
     dissolveSeconds: 1.2,
     scatterMeters: 0.8,
   },
@@ -82,6 +82,9 @@ export const START_SETTINGS = {
 
 // 2. Exercise sequence
 // Speech order is right, left, climb, descent. Praise requires prior success.
+// Radius tuning: new spacing / (old spacing / old radius + radians(5)).
+// All lengths are meters. Ring spacing is 70% of the previous course;
+// entry/exit lengths and emergence duration are halved. Opening speech stays intact.
 export const START_EXERCISES = [
   {
     id: "right",
@@ -97,11 +100,11 @@ export const START_EXERCISES = [
     },
     route: {
       leadMeters: 0,
-      straightMeters: 6,
-      outroMeters: 18,
+      straightMeters: 3,
+      outroMeters: 9,
       turnSign: 1,
-      turnRadiusMeters: { from: 32, to: 36 },
-      turnDegrees: { from: 90, to: 90 },
+      turnRadiusMeters: { from: 16.6041, to: 18.0944 },
+      turnDegrees: { from: 110, to: 110 },
     },
     particles: {
       densityPerMeter: { from: 40, to: 68 },
@@ -112,10 +115,10 @@ export const START_EXERCISES = [
     },
     elements: {
       showArrows: false,
-      entryArrow: { distanceMeters: 30, aboveMeters: 1.8, sideMeters: -5 },
+      entryArrow: { distanceMeters: 12, aboveMeters: 1.8, sideMeters: -5 },
       ringCount: 3,
-      firstMeters: 38,
-      spacingMeters: 8,
+      firstMeters: 20,
+      spacingMeters: 5.6,
       ringRadiusMeters: 3.6,
       arrowLengthMeters: 4.8,
       arrowOffsetMeters: 7,
@@ -138,7 +141,7 @@ export const START_EXERCISES = [
   },
   {
     id: "left",
-    sequence: { approachMeters: 20 },
+    sequence: { approachMeters: 10 },
     voice: {
       url: "/audio/tutorial/de/left.wav",
       durationSeconds: 2.735417,
@@ -146,11 +149,11 @@ export const START_EXERCISES = [
     },
     route: {
       leadMeters: 0,
-      straightMeters: 8,
-      outroMeters: 24,
+      straightMeters: 4,
+      outroMeters: 12,
       turnSign: -1,
-      turnRadiusMeters: { from: 32, to: 36 },
-      turnDegrees: { from: 90, to: 90 },
+      turnRadiusMeters: { from: 17.5102, to: 19.1758 },
+      turnDegrees: { from: 120, to: 120 },
     },
     particles: {
       densityPerMeter: { from: 40, to: 68 },
@@ -162,8 +165,8 @@ export const START_EXERCISES = [
     elements: {
       showArrows: false,
       ringCount: 6,
-      firstMeters: 8,
-      spacingMeters: 10,
+      firstMeters: 4,
+      spacingMeters: 7,
       ringRadiusMeters: 3.6,
       arrowLengthMeters: 4.6,
       arrowOffsetMeters: 7,
@@ -186,7 +189,7 @@ export const START_EXERCISES = [
   },
   {
     id: "up",
-    sequence: { approachMeters: 20 },
+    sequence: { approachMeters: 10 },
     voice: {
       url: "/audio/tutorial/de/up.wav",
       durationSeconds: 4.334896,
@@ -195,11 +198,11 @@ export const START_EXERCISES = [
     route: {
       turnPlane: "vertical",
       leadMeters: 0,
-      straightMeters: 12,
-      outroMeters: 24,
+      straightMeters: 6,
+      outroMeters: 12,
       turnSign: 1,
-      turnRadiusMeters: { from: 80, to: 84 },
-      turnDegrees: { from: 20, to: 20 },
+      turnRadiusMeters: { from: 32.9774, to: 33.9289 },
+      turnDegrees: { from: 32, to: 32 },
     },
     particles: {
       densityPerMeter: { from: 40, to: 68 },
@@ -211,8 +214,8 @@ export const START_EXERCISES = [
     elements: {
       showArrows: false,
       ringCount: 6,
-      firstMeters: 12,
-      spacingMeters: 10,
+      firstMeters: 6,
+      spacingMeters: 7,
       ringRadiusMeters: 3.6,
       arrowLengthMeters: 4.6,
       arrowOffsetMeters: 7,
@@ -235,7 +238,7 @@ export const START_EXERCISES = [
   },
   {
     id: "down",
-    sequence: { approachMeters: 20 },
+    sequence: { approachMeters: 10 },
     voice: {
       url: "/audio/tutorial/de/down.wav",
       durationSeconds: 2.552583,
@@ -244,11 +247,11 @@ export const START_EXERCISES = [
     route: {
       turnPlane: "vertical",
       leadMeters: 0,
-      straightMeters: 12,
-      outroMeters: 24,
+      straightMeters: 6,
+      outroMeters: 12,
       turnSign: -1,
-      turnRadiusMeters: { from: 80, to: 84 },
-      turnDegrees: { from: 20, to: 20 },
+      turnRadiusMeters: { from: 32.9774, to: 33.9289 },
+      turnDegrees: { from: 32, to: 32 },
     },
     particles: {
       densityPerMeter: { from: 40, to: 68 },
@@ -260,8 +263,8 @@ export const START_EXERCISES = [
     elements: {
       showArrows: false,
       ringCount: 6,
-      firstMeters: 12,
-      spacingMeters: 10,
+      firstMeters: 6,
+      spacingMeters: 7,
       ringRadiusMeters: 3.6,
       arrowLengthMeters: 4.6,
       arrowOffsetMeters: 7,
