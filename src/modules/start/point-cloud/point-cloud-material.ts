@@ -6,14 +6,14 @@
  */
 
 import { PointsMaterial } from "three";
-import circleShader from "./air-particle-circle.frag.glsl?raw";
-import distanceShader from "./air-particle-distance.frag.glsl?raw";
-import motionShader from "./air-particle-motion.vert.glsl?raw";
+import circleShader from "./point-cloud-circle.frag.glsl?raw";
+import distanceShader from "./point-cloud-distance.frag.glsl?raw";
+import motionShader from "./point-cloud-motion.vert.glsl?raw";
 import {
   AIR_PARTICLES_SETTINGS,
   type AirParticleShape,
   type AirParticlesParameters,
-} from "./air-particles-settings";
+} from "./point-cloud-settings";
 
 const THREE_COMMON_SHADER = "#include <common>";
 const THREE_POSITION_SHADER = "#include <begin_vertex>";

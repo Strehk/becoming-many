@@ -12,16 +12,16 @@ import {
   Points,
   type PointsMaterial,
 } from "three";
-import type { VolumeChunkAssignment } from "../../world/volume-chunk-window";
-import type { WorldSurface } from "../../world-surface/world-surface";
+import type { VolumeChunkAssignment } from "../../../world/volume-chunk-window";
+import type { WorldSurface } from "../../../world-surface/world-surface";
 import {
   type AirParticleMaterial,
   createAirParticleMaterial,
-} from "./air-particle-material";
+} from "./point-cloud-material";
 import {
   AIR_PARTICLES_SETTINGS,
   type AirParticlesParameters,
-} from "./air-particles-settings";
+} from "./point-cloud-settings";
 
 const POSITION_COMPONENT_COUNT = 3;
 const RANDOM_VALUE_RANGE = 0x1_0000_0000;

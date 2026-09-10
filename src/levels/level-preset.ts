@@ -5,7 +5,6 @@
  * Boundary: This file contains types only and creates no browser or Three.js resources.
  */
 
-import type { AirParticlesParameters } from "../modules/air-particles/air-particles";
 import type { AnimalsPreset } from "../modules/animals/animals";
 import type { EchoDepthParameters } from "../modules/echo-depth/echo-depth";
 import type { GrassClipmapPreset } from "../modules/grass-clipmap/grass-clipmap";
@@ -14,6 +13,7 @@ import type { MotionSenseParameters } from "../modules/motion-sense/motion-sense
 import type { ConnectionsParameters } from "../modules/mycelium/mycelium";
 import type { RocksPreset } from "../modules/rocks/rocks";
 import type { ScentParticlesParameters } from "../modules/scent-particles/scent-particles";
+import type { AirParticlesParameters } from "../modules/start/point-cloud/point-cloud.module";
 import type { StaticPopulationPreset } from "../modules/static-population";
 import type { TerrainColors } from "../modules/terrain/terrain-colors";
 import type { ThermalPerceptionParameters } from "../modules/thermal-perception/thermal-perception";

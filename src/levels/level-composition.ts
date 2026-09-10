@@ -22,7 +22,6 @@ import { ORGAN_SCORE } from "../dramaturgy/organ-score";
 import { PIECE_PASSAGES } from "../dramaturgy/piece-schedule";
 import type { ShowSense } from "../dramaturgy/show-levels";
 import { createM5Runtime } from "../m5/runtime/m5.runtime";
-import { createAirParticlesModule } from "../modules/air-particles/air-particles";
 import {
   type AnimalPassagesModuleHandle,
   createAnimalPassagesModule,
@@ -59,6 +58,7 @@ import {
   type ScentParticlesModuleHandle,
   type ScentParticlesParameters,
 } from "../modules/scent-particles/scent-particles";
+import { createAirParticlesModule } from "../modules/start/point-cloud/point-cloud.module";
 import { createGroundOccluder } from "../modules/terrain/ground-occluder";
 import { createTerrainModule } from "../modules/terrain/terrain";
 import { createTerrainColors } from "../modules/terrain/terrain-colors";

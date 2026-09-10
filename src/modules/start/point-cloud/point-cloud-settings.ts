@@ -5,7 +5,7 @@
  * Boundary: Geometry, materials, shaders, lifecycle, and stream scheduling stay elsewhere.
  */
 
-import type { ChunkLevel } from "../../world/chunk-system";
+import type { ChunkLevel } from "../../../world/chunk-system";
 
 export const AIR_PARTICLES_SETTINGS = {
   defaultShape: "square", // Keeps the unmodified PointsMaterial fragment path unless a circle is requested.

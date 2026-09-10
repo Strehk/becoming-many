@@ -6,32 +6,32 @@
  */
 
 import type { Scene } from "three";
-import { getChunkSize } from "../../world/chunk-system";
-import type { WorldModule } from "../../world/module-runtime";
-import type { StreamJob, StreamQueue } from "../../world/stream-queue";
+import { getChunkSize } from "../../../world/chunk-system";
+import type { WorldModule } from "../../../world/module-runtime";
+import type { StreamJob, StreamQueue } from "../../../world/stream-queue";
 import {
   type VolumeChunkAssignment,
   VolumeChunkWindow,
-} from "../../world/volume-chunk-window";
-import type { WorldSurface } from "../../world-surface/world-surface";
+} from "../../../world/volume-chunk-window";
+import type { WorldSurface } from "../../../world-surface/world-surface";
 import {
   type AirParticleCloud,
   createAirParticleCloud,
   disposeAirParticleCloud,
   initializeAirParticleSlots,
   updateAirParticleSlot,
-} from "./air-particle-cloud";
+} from "./point-cloud-geometry";
 import {
   AIR_PARTICLES_SETTINGS,
   type AirParticlesParameters,
-} from "./air-particles-settings";
+} from "./point-cloud-settings";
 
 export type {
   AirParticleShape,
   AirParticlesParameters,
-} from "./air-particles-settings";
+} from "./point-cloud-settings";
 
-import type { Viewpoint } from "../../world/viewpoint";
+import type { Viewpoint } from "../../../world/viewpoint";
 
 export interface AirParticlesModuleOptions {
   readonly scene: Scene;

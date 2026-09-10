@@ -8,16 +8,16 @@
 import { describe, expect, test } from "bun:test";
 import { Points, type PointsMaterial, Scene, ShaderLib, Vector3 } from "three";
 import {
-  createAirParticleCloud,
-  disposeAirParticleCloud,
-  initializeAirParticleSlots,
-} from "../../src/modules/air-particles/air-particle-cloud";
-import { createAirParticleMaterial } from "../../src/modules/air-particles/air-particle-material";
-import {
   type AirParticleShape,
   type AirParticlesParameters,
   createAirParticlesModule,
-} from "../../src/modules/air-particles/air-particles";
+} from "../../src/modules/start/point-cloud/point-cloud.module";
+import {
+  createAirParticleCloud,
+  disposeAirParticleCloud,
+  initializeAirParticleSlots,
+} from "../../src/modules/start/point-cloud/point-cloud-geometry";
+import { createAirParticleMaterial } from "../../src/modules/start/point-cloud/point-cloud-material";
 import { StreamQueue } from "../../src/world/stream-queue";
 import type { Viewpoint } from "../../src/world/viewpoint";
 
