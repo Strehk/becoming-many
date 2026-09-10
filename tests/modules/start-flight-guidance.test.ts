@@ -103,3 +103,45 @@ test("Start owns particles and guidance through activation and restart", () => {
   expect(scene.children).toHaveLength(2);
   module.unload();
 });
+
+for (const turn of [-1, 1]) {
+  test(`guidance predicts a ${turn < 0 ? "left" : "right"} arc and straightens at neutral`, () => {
+    const scene = new Scene();
+    const viewpoint = createViewpoint();
+    viewpoint.worldFlightPosition.set(0, 0, 0);
+    viewpoint.worldFlightDirection.set(0, 0, -1);
+    const module = createFlightGuidance({
+      scene,
+      viewpoint,
+      parameters: guidance,
+    });
+    module.load();
+    module.activate();
+    viewpoint.worldFlightDirection.set(
+      Math.sin(turn * 0.02),
+      0,
+      -Math.cos(0.02),
+    );
+    viewpoint.worldFlightPosition.addScaledVector(
+      viewpoint.worldFlightDirection,
+      0.1,
+    );
+    module.update?.(0.05);
+    const mesh = scene.children[0] as Mesh;
+    const positions = mesh.geometry.getAttribute("position");
+    expect(positions.getX(4)).toBeCloseTo(turn * 5, 3);
+    expect(positions.getZ(4)).toBeCloseTo(-5, 3);
+    viewpoint.worldFlightPosition.addScaledVector(
+      viewpoint.worldFlightDirection,
+      0.1,
+    );
+    module.update?.(0.05);
+    expect(positions.getX(4)).toBeCloseTo(0, 6);
+    expect(positions.getZ(4)).toBeCloseTo(-guidance.lengthMeters, 5);
+    module.deactivate();
+    viewpoint.worldFlightDirection.set(-1, 0, 0);
+    module.activate();
+    expect(positions.getX(4)).toBeCloseTo(0, 6);
+    module.unload();
+  });
+}

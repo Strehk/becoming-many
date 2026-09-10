@@ -111,9 +111,8 @@ height limits; Composition owns source construction and wiring. World publishes
 the resulting `worldFlightPosition` and `worldFlightDirection` alongside local
 eye facts. Direction is the normalized displacement captured within the current
 frame after height limits, with rig heading as the stationary fallback. Resets
-between frames do not become flight displacement. The proposed visible Start
-prediction is outside this refactor; a later implementation consumes actual rig movement instead of adding flight
-physics, a runtime, or a loop. Show owns time, language, narration, and
+between frames do not become flight displacement. Start guidance approximates continued steering from heading change per meter
+of actual rig movement. Its arc preview owns no flight model or loop. Show owns time, language, narration, and
 presentation policy. Content and Sound consume injected facts without reaching
 into those implementations.
 
