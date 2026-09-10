@@ -80,6 +80,7 @@ export function createStartModule(options: StartModuleOptions): WorldModule {
 class StartModule implements WorldModule {
   private readonly runtime = new ModuleRuntime();
   private readonly generationKey = {};
+  private readonly noFlightDirection = new Vector3();
   private readonly game = createStartGame({
     exerciseCount: START_EXERCISES.length,
     retireSeconds: START_SETTINGS.retireSeconds,
@@ -139,7 +140,8 @@ class StartModule implements WorldModule {
     return createParticleElements({
       light,
       retirement,
-      readDirection: () => this.options.viewpoint.worldFlightDirection,
+      readDirection: () =>
+        this.options.viewpoint.worldFlightDirection ?? this.noFlightDirection,
       grainsPerSample: START_SETTINGS.elementVolume.grainsPerSample,
       scene: this.options.scene,
       belowFlightMeters: START_SETTINGS.belowFlightMeters,

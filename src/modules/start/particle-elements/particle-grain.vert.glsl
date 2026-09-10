@@ -8,6 +8,7 @@ attribute float elementIndex;
 uniform vec2 elementEffects[ELEMENT_CAPACITY];
 uniform float elementPresence[ELEMENT_CAPACITY];
 uniform float elementGrainSpread;
+uniform float elementLightSizeBoost;
 uniform float elementAccentFraction;
 uniform float elementBandWidth;
 uniform float elementGlassFraction;

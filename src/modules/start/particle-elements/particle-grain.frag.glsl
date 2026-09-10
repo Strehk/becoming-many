@@ -2,16 +2,17 @@
 uniform float elementRelief;
 varying float volumeOpacity;
 uniform vec3 elementLightColor;
+uniform float elementLightGain;
+uniform float elementGlintStrength;
 varying float grainLight;
 varying float grainGlass;
 
-// Warm luminous centers with a sharp glass-like glint; no extra lighting pass.
-vec3 illuminateGrain(vec3 pigment, vec3 normal, float radius) {
-  float core = exp(-radius * radius * 5.0);
+// Preserve the authored hue; only small glass highlights approach white.
+vec3 illuminateGrain(vec3 pigment, vec3 normal) {
   float glint = pow(max(0.0, dot(normal, normalize(vec3(-0.35, 0.45, 0.82)))), 24.0);
-  vec3 glow = mix(elementLightColor, vec3(1.0), core * 0.75);
-  float intensity = grainLight * mix(0.35, 1.0, grainGlass);
-  return mix(pigment, glow, intensity) + vec3(glint * grainGlass * grainLight * 0.6);
+  float intensity = clamp(grainLight * elementLightGain, 0.0, 1.0);
+  return mix(pigment, elementLightColor, intensity)
+    + vec3(glint * grainGlass * grainLight * elementGlintStrength);
 }
 
 vec4 shadeElementGrain(vec4 pigment) {
@@ -22,7 +23,7 @@ vec4 shadeElementGrain(vec4 pigment) {
   vec3 normal = vec3(disc.x, -disc.y, sqrt(max(0.0, 1.0 - dot(disc, disc))));
   float light = max(0.0, dot(normal, normalize(vec3(-0.45, 0.65, 0.65))));
   pigment.rgb += vec3(light * light * elementRelief);
-  pigment.rgb = illuminateGrain(pigment.rgb, normal, radius);
+  pigment.rgb = illuminateGrain(pigment.rgb, normal);
   pigment.a *= coverage * volumeOpacity;
   return pigment;
 }

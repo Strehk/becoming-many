@@ -81,6 +81,9 @@ export interface ParticleLightSettings {
   readonly sweepSeconds: number;
   readonly staggerSeconds: number;
   readonly guideStrength: number;
+  readonly lightGain: number;
+  readonly lightSizeBoost: number;
+  readonly glintStrength: number;
   readonly flashSeconds: number;
   readonly bandWidth: number;
   readonly glassFraction: number;

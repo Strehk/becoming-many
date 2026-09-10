@@ -107,7 +107,7 @@ export function createVolumeMaterial(
     shader.fragmentShader = patchVolumeFragment(shader.fragmentShader);
   };
   points.customProgramCacheKey = () =>
-    `${baseKey}:particle-volume-directional-light-v9:${light.settings.capacity}`;
+    `${baseKey}:particle-volume-directional-light-v11:${light.settings.capacity}`;
   return {
     pointsMaterial: points,
     update(seconds) {
@@ -139,6 +139,9 @@ function createVolumeUniforms(
       value: Array.from({ length: light.capacity }, () => new Vector2(-1, 0)),
     },
     elementLightColor: { value: new Color(light.color) },
+    elementLightGain: { value: light.lightGain },
+    elementLightSizeBoost: { value: light.lightSizeBoost },
+    elementGlintStrength: { value: light.glintStrength },
     elementBandWidth: { value: light.bandWidth },
     elementGlassFraction: { value: light.glassFraction },
     elementRelief: { value: settings.relief },
@@ -159,7 +162,7 @@ function patchVolumeVertex(source: string): string {
     )
     .replace(
       "gl_PointSize = size * pathParticleSize;",
-      "gl_PointSize = size * pathParticleSize * (seed < elementAccentFraction ? 1.8 : 0.45 + seed * 0.55);",
+      "gl_PointSize = size * pathParticleSize * (seed < elementAccentFraction ? 1.8 : 0.45 + seed * 0.55) * (1.0 + grainLight * elementLightSizeBoost);",
     );
 }
 
