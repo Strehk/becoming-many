@@ -7,15 +7,19 @@
 // World calls its lifecycle and supplies the only rendering loop.
 // Air Particles remain a separate background module.
 
-// 2. Local components
+// 2. Center of the local star
 
 // start-game.runtime.ts — exercise decisions and the sole progress state.
 // start-chunks.ts — procedural geometry, passage facts and bounded assignments.
 // start-audio-cues.ts — immutable recording bindings and spoken markers.
 // Presentation — graphics resources and visual release of supplied geometry.
 
-// Start Module connects these responsibilities through narrow inputs and outputs.
-// Sibling components receive facts rather than importing one another's internals.
+// This file is the sole integration center of the Start star.
+// Only this center imports and connects the concrete local components.
+// Every cross-component interaction passes through this center via narrow facts,
+// results or injected capabilities. Each component retains its own domain state.
+// Leaves import neither one another nor this center, including type-only imports.
+// Application-level composition and lifetime remain with Level Composition and Run.
 
 // 3. External interfaces
 

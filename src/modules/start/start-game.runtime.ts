@@ -7,6 +7,12 @@
 // Start Module connects its decisions to chunks, presentation and speech.
 // Run owns application lifetime; World owns the loop; Control owns flight.
 
+// This component is a leaf of the star centered on start.module.ts.
+// It receives dependencies through arguments and returns facts to that center.
+// Imports are absent by default; only indispensable owner-neutral types or
+// technical library dependencies belong here. Local peers and the center are
+// never imported, including through type-only imports or re-export wrappers.
+
 // 2. Exercise model
 
 // One chunk represents one attempt at one exercise.
