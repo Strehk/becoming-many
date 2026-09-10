@@ -59,10 +59,6 @@ import {
   type ScentParticlesModuleHandle,
   type ScentParticlesParameters,
 } from "../modules/scent-particles/scent-particles";
-import { createStartModule } from "../modules/start/start.module";
-import type { StartModuleHandle } from "../modules/start/start-contract";
-import { createStartParticleEffect } from "../modules/start/start-particles.effect";
-import { START_SETTINGS } from "../modules/start/start-settings";
 import { createGroundOccluder } from "../modules/terrain/ground-occluder";
 import { createTerrainModule } from "../modules/terrain/terrain";
 import { createTerrainColors } from "../modules/terrain/terrain-colors";
@@ -84,8 +80,6 @@ import { createDroneOrgan } from "../sound/drone-organ/drone-organ";
 import { createNarrationPlayer } from "../sound/narration-player";
 import type { SpatialAudio } from "../sound/spatial-audio";
 import { createSpatialAudio } from "../sound/spatial-audio.runtime";
-import type { TrainingAudio } from "../sound/training-audio";
-import { createTrainingAudio } from "../sound/training-audio.runtime";
 import {
   disposeGltfAssets,
   type GltfAssets,
@@ -138,13 +132,9 @@ interface LevelCompositionOptions {
   readonly level: LevelPreset;
   readonly assets: LoadedLevelAssets;
   readonly forShow: boolean;
-  readonly tutorial?: LevelPreset;
 }
 
 export interface ComposedLevel {
-  readonly start: StartModuleHandle | undefined;
-  readonly setTrainingRoomPresence?: (presence: number) => void;
-  readonly trainingModules: readonly WorldModule[];
   readonly worldSurface: WorldSurface;
   readonly modules: readonly WorldModule[];
   readonly reach: ShowWorldReach;
@@ -156,7 +146,6 @@ export async function composeLevel({
   level,
   assets,
   forShow,
-  tutorial,
 }: LevelCompositionOptions): Promise<ComposedLevel> {
   const worldSurface = createWorldSurface(
     WORLD_SURFACE_SETTINGS,
@@ -257,10 +246,7 @@ export async function composeLevel({
         connections?.terrain,
       ),
     );
-    // A Start preset's Air belongs to its removable training composition.
-    // Composing it here as well would give standalone Start a second particle
-    // room that the integrated tutorial does not have.
-    if (!level.start) add(undefined, createAirParticles());
+    add(undefined, createAirParticles());
     add("scent", scent?.module);
     add(undefined, createGrassClipmap(echoDepth, thermal, structureFade));
     add("echo", createVegetation(echoDepth, thermal, structureFade));
@@ -276,19 +262,7 @@ export async function composeLevel({
     add(undefined, passages?.module);
     add(undefined, passageSwarm);
     add(undefined, endCredits?.module);
-    const training = composeTraining(
-      tutorial ?? level,
-      world,
-      worldSurface.groundYAt,
-    );
-    const start = training?.start;
-    const trainingModules = training?.modules ?? [];
-    for (const module of trainingModules) add(undefined, module);
-
     return {
-      start,
-      trainingModules,
-      setTrainingRoomPresence: training?.setRoomPresence,
       worldSurface,
       modules,
       hasGround: level.invisibleGround === true || hasVisibleSurface(level),
@@ -473,7 +447,7 @@ export async function composeLevel({
 
   function createAirParticles(): WorldModule | undefined {
     const parameters = level.airParticles;
-    if (!parameters || level.start) return undefined;
+    if (!parameters) return undefined;
 
     const surfaceYAt = hasVisibleSurface(level)
       ? worldSurface.surfaceYAt
@@ -744,52 +718,6 @@ export async function loadLevelAssets(
   };
 }
 
-/** Construct only the removable training content, including its own background. */
-export function composeTraining(
-  preset: LevelPreset,
-  world: LevelCompositionOptions["world"],
-  groundYAt: WorldSurface["groundYAt"],
-):
-  | {
-      start: StartModuleHandle;
-      modules: WorldModule[];
-      setRoomPresence?: (presence: number) => void;
-    }
-  | undefined {
-  if (!preset.start) return undefined;
-  const arrowLengthMeters =
-    preset.start.particles?.arrowLengthMeters ??
-    START_SETTINGS.arrowLengthMeters;
-  const start = createStartModule({
-    arrowLengthMeters,
-    motionLimits: FLIGHT_SETTINGS,
-    viewpoint: world.viewpoint,
-    parameters: preset.start,
-    maximumGoalYAt: (x, z) =>
-      groundYAt(x, z) + preset.maximumGroundClearanceMeters,
-    particles: preset.start.particles
-      ? createStartParticleEffect({
-          arrowLengthMeters,
-          scene: world.scene,
-          parameters: preset.start.particles,
-        })
-      : undefined,
-  });
-  const modules: WorldModule[] = [];
-  const room = preset.airParticles
-    ? createAirParticlesModule({
-        scene: world.scene,
-        viewpoint: world.viewpoint,
-        streamQueue: world.streamQueue,
-        parameters: preset.airParticles,
-      })
-    : undefined;
-  room?.setPresence(0);
-  if (room) modules.push(room);
-  modules.push(start.module);
-  return { start, modules, setRoomPresence: room?.setPresence };
-}
-
 /** Construct the renderer with the experience's fixed parent pitch assistance. */
 export function composeWorld(
   surface: WorldViewport,
@@ -843,17 +771,6 @@ function composeRigCommands(
   };
 }
 
-/** Construct the current recipe's removable audio only after Run prepares its world. */
-export async function composeTrainingAudio(
-  preset: LevelPreset | undefined,
-  audio: SpatialAudio | undefined,
-  signal: AbortSignal,
-) {
-  return preset?.startAudio && audio
-    ? createTrainingAudio(preset.startAudio, audio, signal)
-    : undefined;
-}
-
 type PlaybackBindings = Omit<
   ShowRuntimeOptions,
   "timebase" | "createNarration" | "droneOrgan"
@@ -861,7 +778,6 @@ type PlaybackBindings = Omit<
 interface PlaybackComposition extends PlaybackBindings {
   readonly world: World;
   readonly signal: AbortSignal;
-  readonly preset?: LevelPreset;
 }
 
 /** Construct shared sound, releasing unpublished resources if preparation fails. */
@@ -870,31 +786,28 @@ export async function composePlayback(
   options: PlaybackComposition,
 ) {
   validateShowRequest(request);
-  const preset = options.preset;
-  const audio =
-    !options.standalone || preset?.startAudio || preset?.start?.windStrength
-      ? await createSpatialAudio(options.world.camera, options.signal)
-      : undefined;
-  let trainingAudio: TrainingAudio | undefined;
+  const audio = await createSpatialAudio(options.world.camera, options.signal);
   try {
     options.signal.throwIfAborted();
-    trainingAudio = await composeTrainingAudio(preset, audio, options.signal);
     const playback = await composeShow(request, options, audio);
-    return { audio, trainingAudio, playback };
+    return { audio, playback };
   } catch (error) {
-    return releaseUnpublishedSound([trainingAudio, audio], error);
+    return releaseUnpublishedSound([audio], error);
   }
 }
 
 async function composeShow(
   request: ShowRequest,
   options: PlaybackBindings,
-  audio: SpatialAudio | undefined,
+  audio: SpatialAudio,
 ): Promise<ShowRuntime> {
   const timebase = createAudioTimebase();
-  let droneOrgan: ReturnType<typeof composeOrgan>;
+  let droneOrgan: ReturnType<typeof createDroneOrgan>;
   try {
-    droneOrgan = composeOrgan(options, audio);
+    droneOrgan = createDroneOrgan(
+      { pulseSeconds: ORGAN_SCORE.pulseSeconds },
+      audio,
+    );
   } catch (error) {
     return releaseUnpublishedSound([timebase], error);
   }
@@ -904,24 +817,6 @@ async function composeShow(
     createNarration: () => createNarrationPlayer({ recordings: [] }),
     droneOrgan,
   });
-}
-
-function composeOrgan(
-  options: PlaybackBindings,
-  audio: SpatialAudio | undefined,
-) {
-  if (
-    !audio ||
-    (options.standalone && !options.tutorial?.parameters.windStrength)
-  )
-    return undefined;
-  return createDroneOrgan(
-    {
-      pulseSeconds: ORGAN_SCORE.pulseSeconds,
-      voices: options.standalone ? ["wind"] : undefined,
-    },
-    audio,
-  );
 }
 
 /** End unpublished followers before their context and preserve the construction failure. */

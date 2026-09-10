@@ -1,6 +1,6 @@
 /**
  * Purpose: Author when each narration recording starts in the piece.
- * Context: The piece is the main show; a tutorial schedule follows separately.
+ * Context: The complete show follows one authored narration schedule.
  * Responsibility: Provide immutable baked schedule data to the Level Runtime.
  * Boundary: This file contains data only and creates no runtime resources.
  */

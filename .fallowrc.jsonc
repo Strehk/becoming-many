@@ -45,41 +45,6 @@
         "patterns": ["src/levels/show-contract.ts"]
       },
       {
-        "name": "start-hub",
-        "patterns": ["src/modules/start/start.module.ts"]
-      },
-      {
-        "name": "start-motion",
-        "patterns": ["src/modules/start/start-motion.ts"]
-      },
-      {
-        "name": "start-course",
-        "patterns": ["src/modules/start/start-course.ts"]
-      },
-      {
-        "name": "start-arrows",
-        "patterns": ["src/modules/start/start-arrows.ts"]
-      },
-      {
-        "name": "start-crossing",
-        "patterns": ["src/modules/start/flight-ring-crossing.ts"]
-      },
-      {
-        "name": "start-contracts",
-        "patterns": [
-          "src/modules/start/start-contract.ts",
-          "src/modules/start/start-particle-frame.ts"
-        ]
-      },
-      {
-        "name": "start-settings",
-        "patterns": ["src/modules/start/start-settings.ts"]
-      },
-      {
-        "name": "start-particles",
-        "patterns": ["src/modules/start/start-particle*"]
-      },
-      {
         "name": "world-contracts",
         "patterns": [
           "src/world/world-contract.ts",
@@ -101,7 +66,6 @@
         "patterns": [
           "src/sound/playback.ts",
           "src/sound/spatial-audio.ts",
-          "src/sound/training-audio.ts",
           "src/sound/drone-organ/organ-frame.ts",
           "src/sound/drone-organ/organ-signals.ts",
           "src/sound/drone-organ/drone-organ-settings.ts"
@@ -226,9 +190,7 @@
           "modules",
           "module-contracts",
           "show-queries",
-          "sound-contracts",
-          "start-contracts",
-          "start-settings"
+          "sound-contracts"
         ]
       },
       {
@@ -389,10 +351,6 @@
           "shared",
           "modules",
           "module-contracts",
-          "start-hub",
-          "start-particles",
-          "start-settings",
-          "start-contracts",
           "world",
           "world-contracts",
           "world-surface",
@@ -435,55 +393,9 @@
         "allowTypeOnly": [
           "show-queries",
           "dramaturgy",
-          "start-contracts",
           "sound-contracts",
           "world-contracts"
         ]
-      },
-      {
-        "from": "start-hub",
-        "allow": [
-          "start-motion",
-          "start-course",
-          "start-arrows",
-          "start-crossing",
-          "start-settings"
-        ],
-        "allowTypeOnly": ["start-contracts", "world-contracts"]
-      },
-      {
-        "from": "start-motion",
-        "allow": ["start-settings"],
-        "allowTypeOnly": ["world-contracts"]
-      },
-      {
-        "from": "start-course",
-        "allow": ["start-settings"],
-        "allowTypeOnly": ["world-contracts"]
-      },
-      {
-        "from": "start-arrows",
-        "allow": ["start-settings"],
-        "allowTypeOnly": ["world-contracts"]
-      },
-      {
-        "from": "start-crossing",
-        "allow": []
-      },
-      {
-        "from": "start-contracts",
-        "allow": [],
-        "allowTypeOnly": ["world-contracts", "start-settings"]
-      },
-      {
-        "from": "start-settings",
-        "allow": [],
-        "allowTypeOnly": ["start-particles"]
-      },
-      {
-        "from": "start-particles",
-        "allow": ["start-settings"],
-        "allowTypeOnly": ["start-contracts"]
       },
       {
         "from": "world-contracts",

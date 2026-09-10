@@ -53,27 +53,22 @@ export function cueSlots(
   });
 }
 
-/** Display chapters retain the elapsed tutorial before the relative main score. */
+/** Display chapters include silent pre-roll in the opening chapter. */
 export interface TimelineChapter {
-  readonly cueId: NarrationCueId | "tutorial";
+  readonly cueId: NarrationCueId;
   readonly startSeconds: number;
   readonly endSeconds: number;
 }
 
 export function timelineChapters(
   schedule: NarrationSchedule,
-  mainStartSeconds: number,
 ): readonly TimelineChapter[] {
-  return [
-    { cueId: "tutorial", startSeconds: 0, endSeconds: mainStartSeconds },
-    ...schedule.narration.map((cue, index) => ({
-      cueId: cue.cueId,
-      startSeconds: mainStartSeconds + (index === 0 ? 0 : cue.atSeconds),
-      endSeconds:
-        mainStartSeconds +
-        (schedule.narration[index + 1]?.atSeconds ?? schedule.durationSeconds),
-    })),
-  ];
+  return schedule.narration.map((cue, index) => ({
+    cueId: cue.cueId,
+    startSeconds: index === 0 ? 0 : cue.atSeconds,
+    endSeconds:
+      schedule.narration[index + 1]?.atSeconds ?? schedule.durationSeconds,
+  }));
 }
 
 /**

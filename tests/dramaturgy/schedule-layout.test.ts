@@ -100,7 +100,7 @@ describe("nextCueAt", () => {
 });
 
 describe("timelineChapters", () => {
-  test("retains the tutorial and offsets main chapters including silent pre-roll", () => {
+  test("includes silent pre-roll in the first chapter", () => {
     const schedule: NarrationSchedule = {
       durationSeconds: 200,
       narration: [
@@ -108,25 +108,10 @@ describe("timelineChapters", () => {
         { cueId: "echo", atSeconds: 100, level: "echo" },
       ],
     };
-    expect(timelineChapters(schedule, 60)).toEqual([
-      { cueId: "tutorial", startSeconds: 0, endSeconds: 60 },
-      { cueId: "prologue", startSeconds: 60, endSeconds: 160 },
-      { cueId: "echo", startSeconds: 160, endSeconds: 260 },
+    expect(timelineChapters(schedule)).toEqual([
+      { cueId: "prologue", startSeconds: 0, endSeconds: 100 },
+      { cueId: "echo", startSeconds: 100, endSeconds: 200 },
     ]);
     expect(schedule.narration[0]?.atSeconds).toBe(5);
-  });
-
-  test("moves the same chapters for early skip, full success narration and restart", () => {
-    for (const duration of [12.5, 73.9, 60, 0]) {
-      const chapters = timelineChapters(SCHEDULE, duration);
-      expect(chapters.map((chapter) => chapter.cueId)).toEqual([
-        "tutorial",
-        "prologue",
-        "echo",
-      ]);
-      expect(chapters[0]?.endSeconds).toBe(duration);
-      expect(chapters[1]?.startSeconds).toBe(duration);
-      expect(chapters.at(-1)?.endSeconds).toBe(duration + 200);
-    }
   });
 });

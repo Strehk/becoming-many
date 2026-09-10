@@ -55,10 +55,7 @@ reference or unexplained measurement with a successful rerun.
 
 - Performance-labelled work and its acceptance live in the
   [open performance issues](https://github.com/Strehk/becoming-many/issues?q=is%3Aissue%20is%3Aopen%20label%3Aperformance).
-- The current Start structural pass has matching deterministic counters and no
-  claimed speedup. Its strict browser runs remain red on inherited WAV request
-  aborts; this is not physical or listening acceptance.
-- Complete show, tutorial, M5, reconnect, and repeated-visitor performance remain
+- Complete show, standalone Start, M5, reconnect, and repeated-visitor performance remain
   open on the installation hardware.
 
 A measured regression blocks completion until it is removed or explicitly

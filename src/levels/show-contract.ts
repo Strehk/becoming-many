@@ -6,13 +6,8 @@ import type {
 } from "../dramaturgy/narration-schedule";
 import type { ShowClock, ShowTimeSample } from "../dramaturgy/show-clock";
 import type { ShowLevelState, ShowSense } from "../dramaturgy/show-levels";
-import type { StartObservation } from "../modules/start/start-contract";
 import type { DroneOrgan } from "../sound/drone-organ/organ-frame";
-import type {
-  AudioTimebase,
-  NarrationPlayer,
-  NarrationRecording,
-} from "../sound/playback";
+import type { AudioTimebase, NarrationPlayer } from "../sound/playback";
 import type { WorldModule } from "../world/module-runtime";
 
 interface PresentationFade {
@@ -26,19 +21,8 @@ export interface ShowRequest {
   readonly states: Record<ShowLevelName, ShowLevelState>;
 }
 
-export interface TutorialStatus {
-  /** Borrowed world-space passage target; absent during preparation. */
-  readonly goalTarget?: Readonly<{ x: number; y: number; z: number }>;
-  readonly phase: string;
-  readonly goalIndex: number;
-  readonly direction: "right" | "left" | "up" | "down";
-  readonly crossingCount: number;
-}
-
 export interface RunningShow {
-  readonly readTutorial: () => TutorialStatus | undefined;
-  /** Continuous visit timeline; main cues remain relative to mainStartSeconds. */
-  readonly sample: () => ShowTimeSample & { readonly mainStartSeconds: number };
+  readonly sample: () => ShowTimeSample;
   readonly play: ShowClock["play"];
   readonly pause: ShowClock["pause"];
   readonly seekTo: ShowClock["seekTo"];
@@ -98,37 +82,7 @@ export interface ShowWorldReach {
   readonly readMotionActorCenters?: (group: "birds" | "flies") => Float32Array;
 }
 
-export interface ShowTutorial {
-  readonly setRoomPresence?: (presence: number) => void;
-  readonly start: {
-    readonly readObservation: () => StartObservation;
-    readonly setPlaying: (playing: boolean) => void;
-    readonly setFormationAllowed: (allowed: boolean) => void;
-    readonly setGoalAdvanceAllowed: (allowed: boolean) => void;
-  };
-  /** Run resets practice once; Show resets playback policy. */
-  readonly reset: () => void;
-  readonly parameters: {
-    readonly maximumPracticeSeconds: number;
-    readonly directions: readonly [
-      StartObservation["direction"],
-      ...StartObservation["direction"][],
-    ];
-    readonly formationSeconds: number;
-    readonly windStrength?: number;
-  };
-  readonly recordings?: Readonly<
-    Record<NarrationLanguage, readonly NarrationRecording[]>
-  >;
-  /** Run removes training resources and releases the prepared main world. */
-  readonly finish: () => void;
-}
-
 export interface ShowRuntime {
-  readonly setTutorial: (tutorial: ShowTutorial) => void;
-  readonly readSpeechActive: () => boolean;
-  /** Run holds playback until an exclusive training sample is prepared. */
-  readonly setPreparationState: (state: "loading" | "ready" | "failed") => void;
   readonly update: () => void;
   readonly readActiveLevelState: () => ShowLevelState;
   readonly running: RunningShow;
@@ -144,6 +98,4 @@ export interface ShowRuntimeOptions {
   readonly timebase: AudioTimebase;
   readonly createNarration: () => NarrationPlayer;
   readonly droneOrgan?: DroneOrgan;
-  readonly standalone?: boolean;
-  readonly tutorial?: ShowTutorial;
 }

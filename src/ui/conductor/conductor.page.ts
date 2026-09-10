@@ -50,7 +50,6 @@ export interface ConductorPageOptions {
     | "readLanguage"
     | "readActiveLevel"
     | "readAudioState"
-    | "readTutorial"
   >;
   readonly run: Pick<Run, "resetFlight" | "resetShowAndFlight">;
   readonly xr: Run["xr"];
@@ -201,13 +200,6 @@ export function mountConductorPage({
               target.isContentEditable),
         });
         if (!action) return;
-        if (
-          show.readTutorial() &&
-          (action.kind === "seekBy" ||
-            action.kind === "jumpToCue" ||
-            action.kind === "resetShow")
-        )
-          return;
         event.preventDefault();
         switch (action.kind) {
           case "toggleTransport":
@@ -219,8 +211,7 @@ export function mountConductorPage({
             break;
           case "jumpToCue": {
             const cue = schedule.narration[action.cueIndex];
-            if (cue)
-              show.seekTo(show.sample().mainStartSeconds + cue.atSeconds);
+            if (cue) show.seekTo(cue.atSeconds);
             break;
           }
           case "resetShow":
@@ -255,7 +246,6 @@ export function mountConductorPage({
       }
       const state: ConductorViewState = {
         showTimeSeconds: scrubSeconds ?? sample.timeSeconds,
-        mainStartSeconds: sample.mainStartSeconds,
         isPlaying: sample.isPlaying,
         timeScale: sample.timeScale,
         language: show.readLanguage(),
@@ -265,7 +255,6 @@ export function mountConductorPage({
         p95Milliseconds: metrics?.p95Milliseconds,
         m5: m5?.readObservation(),
         xr: xrState,
-        tutorial: show.readTutorial(),
       };
       for (const panel of panels) panel.update(state);
       animationFrame = requestAnimationFrame(draw);

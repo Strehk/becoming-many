@@ -24,8 +24,6 @@ import {
 import { checkFlashLifecycle } from "./flash-acceptance";
 import {
   checkStartLevel,
-  checkStartTimeout,
-  flyStartCourse,
   prepareStartInput,
   type StartSimulation,
 } from "./start-acceptance";
@@ -227,7 +225,16 @@ async function runSmokeRoute(
       if (route === "/flash.html") await checkFlashLifecycle(page, baseUrl);
     }
     if (route === "/conductor.html") await checkConductorStop(page);
-    if (["/", "/?level=echo", "/conductor.html"].includes(route)) {
+    if (
+      [
+        "/",
+        "/?level=echo",
+        "/conductor.html",
+        "/start",
+        "/tutorial",
+        "/?level=start",
+      ].includes(route)
+    ) {
       await page.evaluate(() =>
         window.dispatchEvent(
           new PageTransitionEvent("pagehide", { persisted: true }),
@@ -323,14 +330,7 @@ async function checkEntry(
   await waitForLevel(page);
   if (route === "/") {
     assert(startInput);
-    await flyStartCourse(page, startInput);
     await checkRehearsal(page);
-    await page.reload({ waitUntil: "load" });
-    await waitForLevel(page);
-    await page.waitForFunction(
-      () => window.show?.readTutorial()?.phase === "arrival",
-    );
-    await checkStartTimeout(page, startInput);
   } else
     assert.equal(
       await page.evaluate(() => window.show),
@@ -403,10 +403,7 @@ async function waitForLevel(page: Page): Promise<void> {
 
 async function checkRehearsal(page: Page): Promise<void> {
   await page.waitForFunction(() => window.show !== undefined);
-  const mainStartSeconds = await page.evaluate(
-    () => window.show?.sample().mainStartSeconds,
-  );
-  assert(mainStartSeconds !== undefined);
+  await page.getByRole("button", { name: "Play", exact: true }).click();
   await page.getByRole("button", { name: "Hold", exact: true }).click();
   await page.waitForFunction(() => window.show?.sample().isPlaying === false);
   const pausedTime = await page.evaluate(
@@ -450,17 +447,17 @@ async function checkRehearsal(page: Page): Promise<void> {
   await page.getByRole("button", { name: "Echo", exact: true }).click();
   await page.waitForFunction(
     (seconds) => window.show?.sample().timeSeconds === seconds,
-    mainStartSeconds + ECHO_START_SECONDS,
+    ECHO_START_SECONDS,
   );
   await page.getByRole("button", { name: "Prologue", exact: true }).click();
   await page.waitForFunction(
     (start) => window.show?.sample().timeSeconds === start,
-    mainStartSeconds,
+    0,
   );
   await page.getByRole("button", { name: "Play", exact: true }).click();
   await page.waitForFunction(
     (start) => (window.show?.sample().timeSeconds ?? 0) > start + 0.2,
-    mainStartSeconds,
+    0,
   );
   await checkScrubbing(
     page,
@@ -486,7 +483,6 @@ async function checkConductor(
   await page
     .getByRole("button", { name: "Close technician tools", exact: true })
     .click();
-  await flyStartCourse(page, startInput);
   await page
     .getByRole("button", { name: "Technician tools", exact: true })
     .click();
@@ -494,7 +490,6 @@ async function checkConductor(
   await page
     .getByRole("button", { name: "Close technician tools", exact: true })
     .click();
-  await page.locator(".conductor__transport-button").click();
   await page
     .locator('.conductor__transport-button[data-playing="false"]')
     .waitFor();
@@ -535,17 +530,6 @@ async function observeConductorTime(
   await observation.dispose();
   assert(sample);
   return sample.seconds;
-}
-
-/** Read the retained tutorial duration from the visible timeline's total. */
-async function readConductorMainStart(page: Page): Promise<number> {
-  return (
-    Number(
-      await page
-        .locator(".conductor__timeline-slider")
-        .getAttribute("aria-valuemax"),
-    ) - PIECE_SCHEDULE.durationSeconds
-  );
 }
 
 /** Native focused controls and global transport shortcuts must both remain usable. */
@@ -614,10 +598,7 @@ async function checkConductorKeyboard(page: Page): Promise<void> {
     .locator('.conductor__transport-button[data-playing="false"]')
     .waitFor();
   await page.getByRole("button", { name: /Echo/ }).press("Space");
-  await observeConductorTime(
-    page,
-    (await readConductorMainStart(page)) + ECHO_START_SECONDS,
-  );
+  await observeConductorTime(page, ECHO_START_SECONDS);
   assert.equal(await transport.getAttribute("data-playing"), "false");
   await page.evaluate(() => (document.activeElement as HTMLElement)?.blur());
   await page.keyboard.press("Space");
@@ -699,16 +680,15 @@ async function checkConductorTransport(page: Page): Promise<void> {
 
 /** The visible timeline exposes the same position to keyboard and assistive users. */
 async function checkConductorTimelineKeyboard(page: Page): Promise<void> {
-  const mainStartSeconds = await readConductorMainStart(page);
   const timeline = page.getByRole("slider");
   assert.equal(await timeline.getAttribute("aria-valuemin"), "0");
   assert.equal(
     Number(await timeline.getAttribute("aria-valuemax")),
-    mainStartSeconds + PIECE_SCHEDULE.durationSeconds,
+    PIECE_SCHEDULE.durationSeconds,
   );
   assert.equal(
     await page.locator(".conductor__chapters button").count(),
-    PIECE_SCHEDULE.narration.length + 1,
+    PIECE_SCHEDULE.narration.length,
   );
   for (const [key, seconds] of [
     ["Home", 0],
@@ -720,10 +700,10 @@ async function checkConductorTimelineKeyboard(page: Page): Promise<void> {
     ["End", PIECE_SCHEDULE.durationSeconds],
   ] as const) {
     await timeline.press(key);
-    await observeConductorTime(page, mainStartSeconds + seconds);
+    await observeConductorTime(page, seconds);
     assert.equal(
       Number(await timeline.getAttribute("aria-valuenow")),
-      Math.floor(mainStartSeconds + seconds),
+      Math.floor(seconds),
     );
     assert(await timeline.getAttribute("aria-valuetext"));
     assert.equal(
@@ -740,7 +720,7 @@ async function checkConductorTimelineKeyboard(page: Page): Promise<void> {
   assert.equal(await currentChapter.count(), 1);
   assert.match(await currentChapter.innerText(), /Return/);
   await timeline.press("Home");
-  await observeConductorTime(page, mainStartSeconds);
+  await observeConductorTime(page, 0);
 }
 
 async function checkConductorStop(page: Page): Promise<void> {
@@ -756,10 +736,7 @@ async function checkConductorStop(page: Page): Promise<void> {
     .filter({ hasText: /^EN$/ })
     .waitFor();
   await page.keyboard.press(ECHO_CUE_KEY);
-  await observeConductorTime(
-    page,
-    (await readConductorMainStart(page)) + ECHO_START_SECONDS,
-  );
+  await observeConductorTime(page, ECHO_START_SECONDS);
   await transport.click();
   await page
     .locator('.conductor__transport-button[data-playing="true"]')
@@ -767,29 +744,20 @@ async function checkConductorStop(page: Page): Promise<void> {
   await page.getByRole("button", { name: "Stop", exact: true }).click();
   await observeConductorTime(page, 0);
   assert.equal(await transport.getAttribute("data-playing"), "false");
-  await page.waitForFunction(
-    () => window.show?.readTutorial()?.phase === "arrival",
-  );
   await transport.click();
   await page
     .locator('.conductor__transport-button[data-playing="true"]')
     .waitFor();
-  await page.locator("[data-tutorial-status]").waitFor({ state: "visible" });
-  assert.match(
-    await page.locator("[data-tutorial-status]").innerText(),
-    /Right · 1\/4/,
-  );
-  assert.equal(await page.locator("[data-continue-experience]").count(), 0);
   const restartedAt = await observeConductorTime(page);
   await page.waitForTimeout(PAUSE_OBSERVATION_MILLISECONDS);
   assert(
     (await observeConductorTime(page)) > restartedAt,
-    "Playing tutorial advances the retained timeline",
+    "Playing the restarted show advances the timeline",
   );
   assert.equal(
     await page.locator("canvas").count(),
     1,
-    "Restarting tutorial after Stop must reuse the existing renderer",
+    "Restarting after Stop must reuse the existing renderer",
   );
 }
 
@@ -858,11 +826,7 @@ async function checkScrubbing(
       trackSelector === ".timeline__track"
         ? await observeConductorTime(page)
         : await page.evaluate(() => window.show?.sample().timeSeconds);
-    const durationSeconds =
-      (await page.evaluate(() => window.show?.sample().mainStartSeconds)) ??
-      (await readConductorMainStart(page));
-    const targetSeconds =
-      (durationSeconds + PIECE_SCHEDULE.durationSeconds) * 0.2;
+    const targetSeconds = PIECE_SCHEDULE.durationSeconds * 0.2;
     assert(
       seconds !== undefined &&
         seconds >= targetSeconds - 0.1 &&
@@ -1141,12 +1105,11 @@ async function checkTechnicianControls(page: Page): Promise<void> {
       scale,
     );
   }
-  const mainStartSeconds = await readConductorMainStart(page);
   await drawer.locator("[data-reset-show]").click();
-  await observeConductorTime(page, mainStartSeconds);
+  await observeConductorTime(page, 0);
   assert.equal(await transport.getAttribute("data-playing"), "false");
   await drawer.locator("[data-reset-flight]").click();
-  await observeConductorTime(page, mainStartSeconds);
+  await observeConductorTime(page, 0);
   const reload = drawer.locator(".conductor__reload-button");
   const reloadLabel = await reload.innerText();
   await reload.click();

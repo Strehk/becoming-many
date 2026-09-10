@@ -39,9 +39,6 @@ from: an empty group leaves the scratch point untouched and reports it, the
 nearest is picked in three dimensions from the listener, and a trailing value
 that is not a whole point is ignored.
 
-`training-audio.test.ts` rejects recipes that exceed grain scheduling bounds and
-verifies interactive recordings through the same narration implementation: cue
-replacement, pause/resume, silence after clip end and complete media cleanup.
 The organ lifetime probe also covers shared context gesture wake, cancellation,
 late follower construction and awaited context close across repeated lifetimes.
 Spatial listening and actual audio-thread cost still need browser/headset evidence.

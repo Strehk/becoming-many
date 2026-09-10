@@ -156,9 +156,6 @@ button[data-armed="true"],
 .conductor__transport {
   grid-template-rows: minmax(72px, 1fr) auto;
 }
-.conductor__transport:has([data-tutorial-status]:not([hidden])) {
-  grid-template-rows: minmax(72px, 1fr) auto auto;
-}
 .conductor__chapter-button {
   flex-direction: column;
   gap: 0;

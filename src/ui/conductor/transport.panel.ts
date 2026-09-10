@@ -1,7 +1,6 @@
 import type { Run } from "../../levels/run-contract";
 import type { RunningShow } from "../../levels/show-contract";
-import { requireElement, writeText } from "../shared/dom";
-import { formatTutorialStatus } from "../shared/show-time-format";
+import { requireElement } from "../shared/dom";
 import type { ConductorPanel } from "./view-state";
 
 export interface TransportPanelOptions {
@@ -40,11 +39,6 @@ export function createTransportPanel({
     HTMLElement,
   );
   transportButton.addEventListener("click", show.togglePlayback, { signal });
-  const tutorialStatus = requireElement(
-    root,
-    "[data-tutorial-status]",
-    HTMLOutputElement,
-  );
   requireElement(
     root,
     ".conductor__stop-button",
@@ -54,9 +48,6 @@ export function createTransportPanel({
 
   return {
     update(state): void {
-      tutorialStatus.hidden = !state.tutorial;
-      if (state.tutorial)
-        writeText(tutorialStatus, formatTutorialStatus(state.tutorial));
       if (renderedPlaying === state.isPlaying) return;
       renderedPlaying = state.isPlaying;
       transportButton.dataset.playing = String(state.isPlaying);

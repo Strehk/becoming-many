@@ -5,7 +5,6 @@
  * Boundary: This file contains types only and creates no browser or Three.js resources.
  */
 
-import type { NarrationLanguage } from "../dramaturgy/narration-catalog";
 import type { AirParticlesParameters } from "../modules/air-particles/air-particles";
 import type { AnimalsPreset } from "../modules/animals/animals";
 import type { EchoDepthParameters } from "../modules/echo-depth/echo-depth";
@@ -15,13 +14,10 @@ import type { MotionSenseParameters } from "../modules/motion-sense/motion-sense
 import type { ConnectionsParameters } from "../modules/mycelium/mycelium";
 import type { RocksPreset } from "../modules/rocks/rocks";
 import type { ScentParticlesParameters } from "../modules/scent-particles/scent-particles";
-import type { StartParameters } from "../modules/start/start-settings";
 import type { StaticPopulationPreset } from "../modules/static-population";
 import type { TerrainColors } from "../modules/terrain/terrain-colors";
 import type { ThermalPerceptionParameters } from "../modules/thermal-perception/thermal-perception";
 import type { VegetationPreset } from "../modules/vegetation/vegetation";
-import type { NarrationRecording } from "../sound/playback";
-import type { TrainingAudioParameters } from "../sound/training-audio";
 
 export interface TerrainPreset {
   readonly opacity: number;
@@ -31,7 +27,6 @@ export interface TerrainPreset {
 
 /** Immutable module and asset choices used to construct one world. */
 export type WorldComposition = {
-  readonly start?: StartParameters;
   readonly invisibleGround?: true;
   readonly airParticles?: AirParticlesParameters;
   readonly scentParticles?: ScentParticlesParameters;
@@ -57,12 +52,8 @@ export type WorldComposition = {
 
 /** A complete world recipe used by standalone routes, benchmarks and the Show. */
 export type LevelPreset = WorldComposition & {
-  /** Tutorial translation speed; Run restores the main controls' defaults on handoff. */
+  /** Optional standalone translation speed in meters per second. */
   readonly flightSpeedMetersPerSecond?: number;
-  readonly startAudio?: TrainingAudioParameters;
-  readonly startNarration?: Readonly<
-    Record<NarrationLanguage, readonly NarrationRecording[]>
-  >;
   readonly backgroundColor: number;
   readonly viewDistance: number;
   /** Vertical desktop view angle; immersive XR retains the headset projection. */

@@ -49,7 +49,6 @@ function mount(playing = true, readDurationSeconds = () => 100) {
         isPlaying: playing,
         timeSeconds: 0,
         timeScale: 1,
-        mainStartSeconds: 0,
       }),
       pause: () => playback.push("pause"),
       play: () => playback.push("play"),
@@ -62,7 +61,7 @@ function mount(playing = true, readDurationSeconds = () => 100) {
 }
 
 describe("shared transport scrubbing", () => {
-  test("uses the retained tutorial duration after handoff without rebinding gestures", () => {
+  test("reads the current duration for each gesture", () => {
     let durationSeconds = 160;
     const { track, seeks } = mount(false, () => durationSeconds);
     track.pointer("pointerdown", 50);

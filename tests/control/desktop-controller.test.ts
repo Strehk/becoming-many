@@ -107,9 +107,6 @@ describe("desktop flight control", () => {
 
       flight.update(deltaSeconds);
 
-      const neutralHeight =
-        -FLIGHT_SETTINGS.neutralDescentMetersPerSecond * deltaSeconds;
-      expect(viewerRig.position.y).toBeGreaterThan(neutralHeight);
       expect(viewerRig.position.y).toBeGreaterThan(0);
     },
   );

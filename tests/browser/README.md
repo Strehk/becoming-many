@@ -95,11 +95,8 @@ bun run observe:show --mode full --language en --base-url http://localhost:4180 
 bun run observe:show --mode full --language de --base-url http://localhost:4180 --out benchmark-results/issue-75/full-show-de-1
 ```
 
-The observer plays the one-minute tutorial in each fresh Run and waits up to
-80 seconds for automatic main handoff, including any remaining speech and the
-breathing interval. Startup readiness is recorded before that wait. Transition
-mode creates a fresh Run for each cue. There is no tutorial skip or simulated M5
-input in this observer. This procedure does not establish a new full-show result.
+The observer starts directly with the main Show schedule. Transition mode creates
+a fresh Run for each cue. This procedure does not establish a new full-show result.
 
 Transitions use a fresh context per scheduled cue and compare first/repeated
 sought crossings (two seconds before, ten seconds of real playback). They do

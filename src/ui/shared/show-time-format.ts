@@ -6,8 +6,6 @@
  * Boundary: Where a number comes from is decided by the caller.
  */
 
-import type { RunningShow } from "../../levels/show-contract";
-
 const SECONDS_PER_MINUTE = 60;
 
 /**
@@ -25,20 +23,4 @@ export function formatShowTime(seconds: number): string {
 /** A cue id reads as a chapter name: "prologue" is the chapter "Prologue". */
 export function cueDisplayName(cueId: string): string {
   return cueId.charAt(0).toUpperCase() + cueId.slice(1);
-}
-
-/** Compact learning feedback accompanies the shared timeline readout. */
-export function formatTutorialStatus(
-  tutorial: NonNullable<ReturnType<RunningShow["readTutorial"]>>,
-): string {
-  if (tutorial.phase === "loading") return "Flight tutorial · Preparing audio";
-  if (tutorial.phase === "failed")
-    return "Flight tutorial · Preparation failed · Reset to retry";
-  if (tutorial.phase === "missed")
-    return `Flight tutorial · Missed · New target ahead · ${tutorial.crossingCount}/4 passed`;
-  if (tutorial.phase === "crossed")
-    return `Flight tutorial · Passed · ${tutorial.crossingCount}/4`;
-  const completed = tutorial.phase === "complete";
-  const direction = completed ? "Complete" : cueDisplayName(tutorial.direction);
-  return `Flight tutorial · ${direction} · ${completed ? 4 : tutorial.goalIndex + 1}/4`;
 }

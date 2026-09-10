@@ -6,8 +6,6 @@ interface ScrubbingOptions {
   readonly show: Pick<RunningShow, "sample" | "play" | "pause" | "seekTo">;
   readonly onScrubChange: (showTimeSeconds: number | undefined) => void;
   readonly signal: AbortSignal;
-  /** UI availability, evaluated at gesture start; absent means enabled. */
-  readonly isEnabled?: () => boolean;
 }
 
 const SCRUB_INTERVAL_MILLISECONDS = 1_000 / 20;
@@ -23,7 +21,6 @@ export function attachScrubbing({
   show,
   onScrubChange,
   signal,
-  isEnabled,
 }: ScrubbingOptions): void {
   if (signal.aborted) return;
   let pointerId: number | undefined;
@@ -55,12 +52,7 @@ export function attachScrubbing({
   track.addEventListener(
     "pointerdown",
     (event) => {
-      if (
-        pointerId !== undefined ||
-        event.button !== 0 ||
-        isEnabled?.() === false
-      )
-        return;
+      if (pointerId !== undefined || event.button !== 0) return;
       track.setPointerCapture(event.pointerId);
       pointerId = event.pointerId;
       wasPlaying = show.sample().isPlaying;

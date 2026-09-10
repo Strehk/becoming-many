@@ -13,10 +13,9 @@ export interface Run {
   readonly readGraphicsInfo: () => GraphicsInfo;
   readonly unload: () => Promise<void>;
   readonly show: RunningShow | undefined;
-  readonly training: RunningShow | undefined;
 
   /**
-   * Reset the rig and retained training practice/audio, without rewinding Show.
+   * Reset the flight rig without rewinding Show.
    * The visitor's local head pose remains owned by pointer look or the headset.
    */
   readonly resetFlight: () => void;
@@ -49,7 +48,6 @@ export interface StaticLevelRequest extends CommonLevelRequest {
 export interface ShowLevelRequest extends CommonLevelRequest {
   readonly kind: "show";
   readonly show: ShowRequest;
-  readonly tutorial?: LevelPreset;
 }
 
 /** Both run modes construct one preset; Show adds its timeline and live states. */

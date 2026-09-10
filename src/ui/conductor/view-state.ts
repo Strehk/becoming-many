@@ -1,13 +1,11 @@
 import type { NarrationLanguage } from "../../dramaturgy/narration-catalog";
 import type { ShowLevelName } from "../../dramaturgy/narration-schedule";
-import type { RunningShow } from "../../levels/show-contract";
 import type { M5Observation } from "../../m5/m5-contract";
 import type { XrSessionState } from "../../world/xr-contract";
 
 /** UI observations; display time follows the pointer during a scrub gesture. */
 export interface ConductorViewState {
   readonly showTimeSeconds: number;
-  readonly mainStartSeconds: number;
   readonly isPlaying: boolean;
   readonly timeScale: number;
   readonly language: NarrationLanguage;
@@ -21,7 +19,6 @@ export interface ConductorViewState {
   readonly m5: M5Observation | undefined;
   /** The headset session, so every panel reads the same instant of it. */
   readonly xr: XrSessionState;
-  readonly tutorial: ReturnType<RunningShow["readTutorial"]>;
 }
 
 /** A UI region with local gesture/display state and no experience policy. */

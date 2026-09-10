@@ -6,16 +6,12 @@ import type { NarrationSchedule } from "../../dramaturgy/narration-schedule";
 import { timelineChapters } from "../../dramaturgy/schedule-layout";
 import type { RunningShow } from "../../levels/show-contract";
 import { requireElement, writeText } from "../shared/dom";
-import {
-  cueDisplayName,
-  formatShowTime,
-  formatTutorialStatus,
-} from "../shared/show-time-format";
+import { cueDisplayName, formatShowTime } from "../shared/show-time-format";
 import { attachScrubbing } from "../shared/transport-scrubbing";
 
 export interface RehearsalTransportOptions {
   readonly container: HTMLElement;
-  readonly schedule?: NarrationSchedule;
+  readonly schedule: NarrationSchedule;
   readonly show: Pick<
     RunningShow,
     | "sample"
@@ -25,7 +21,6 @@ export interface RehearsalTransportOptions {
     | "seekTo"
     | "readLanguage"
     | "setLanguage"
-    | "readTutorial"
   >;
 }
 
@@ -43,8 +38,7 @@ export function mountRehearsalTransport({
 }: RehearsalTransportOptions): () => void {
   const lifetime = new AbortController();
   const { signal } = lifetime;
-  let mainStartSeconds = show.sample().mainStartSeconds;
-  let durationSeconds = mainStartSeconds + (schedule?.durationSeconds ?? 0);
+  const durationSeconds = schedule.durationSeconds;
   const bar = requireElement(container, "[data-rehearsal]", HTMLElement);
   const transportButton = requireElement(
     bar,
@@ -52,11 +46,6 @@ export function mountRehearsalTransport({
     HTMLButtonElement,
   );
   const readout = requireElement(bar, "[data-readout]", HTMLOutputElement);
-  const tutorialStatus = requireElement(
-    bar,
-    "[data-tutorial-status]",
-    HTMLOutputElement,
-  );
   const track = requireElement(bar, "[data-track]", SVGSVGElement);
   const playhead = requireElement(track, "[data-playhead]", SVGLineElement);
   const sections = requireElement(bar, "[data-sections]", HTMLElement);
@@ -79,9 +68,7 @@ export function mountRehearsalTransport({
     ),
   }));
 
-  const chapters = (
-    schedule ? timelineChapters(schedule, mainStartSeconds) : []
-  ).map((chapter) => {
+  const chapters = timelineChapters(schedule).map((chapter) => {
     const { startSeconds } = chapter;
     const sectionContent = document.importNode(sectionTemplate.content, true);
     const button = requireElement(sectionContent, "button", HTMLButtonElement);
@@ -118,7 +105,6 @@ export function mountRehearsalTransport({
     readDurationSeconds: () => durationSeconds,
     show,
     signal,
-    isEnabled: () => Boolean(schedule) && !show.readTutorial(),
     onScrubChange: (seconds) => {
       scrubSeconds = seconds;
     },
@@ -126,38 +112,9 @@ export function mountRehearsalTransport({
   let renderedPlaying: boolean | undefined;
   let renderedPlayheadLeft: string | undefined;
   let renderedLanguage: NarrationLanguage | undefined;
-  let renderedTutorial: boolean | undefined;
 
   function draw(): void {
     const sample = show.sample();
-    if (mainStartSeconds !== sample.mainStartSeconds) {
-      mainStartSeconds = sample.mainStartSeconds;
-      durationSeconds = mainStartSeconds + (schedule?.durationSeconds ?? 0);
-      const layout = schedule
-        ? timelineChapters(schedule, mainStartSeconds)
-        : [];
-      for (const [index, view] of chapters.entries()) {
-        const chapter = layout[index];
-        if (!chapter) continue;
-        view.chapter = chapter;
-        const position = `${toPercent(view.chapter.startSeconds, durationSeconds)}%`;
-        view.tick.setAttribute("x1", position);
-        view.tick.setAttribute("x2", position);
-      }
-    }
-    const tutorial = show.readTutorial();
-    const inTutorial = Boolean(tutorial);
-    if (renderedTutorial !== inTutorial) {
-      renderedTutorial = inTutorial;
-      tutorialStatus.hidden = !tutorial;
-      track.toggleAttribute("hidden", !schedule);
-      track.setAttribute("aria-disabled", String(inTutorial));
-      sections.hidden = !schedule;
-      sections.inert = inTutorial;
-      for (const view of chapters)
-        view.button.disabled = inTutorial || view.chapter.cueId === "tutorial";
-    }
-    if (tutorial) writeText(tutorialStatus, formatTutorialStatus(tutorial));
     const showTimeSeconds = scrubSeconds ?? sample.timeSeconds;
     if (renderedPlaying !== sample.isPlaying) {
       renderedPlaying = sample.isPlaying;
@@ -165,9 +122,7 @@ export function mountRehearsalTransport({
     }
     writeText(
       readout,
-      schedule
-        ? `${formatShowTime(showTimeSeconds)} / ${formatShowTime(durationSeconds)}`
-        : formatShowTime(showTimeSeconds),
+      `${formatShowTime(showTimeSeconds)} / ${formatShowTime(durationSeconds)}`,
     );
     const position = `${toPercent(showTimeSeconds, durationSeconds).toFixed(PLAYHEAD_DECIMALS)}%`;
     if (renderedPlayheadLeft !== position) {

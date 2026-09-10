@@ -19,38 +19,6 @@ sampling remains separate from listener mutation. Native pose ramps are fixed
 to 1/30 second: using Three's internal listener Timer with skipped idle writes
 would otherwise make the first movement ramp over the entire stationary period.
 
-`SpatialAudio.createSource` bridges a caller-owned native node through
-Three.js PositionalAudio with HRTF panning. Coordinates and distance parameters
-are metres. A maximum of four placements is enforced; unloading a placement
-disconnects its route and gain without stopping or disposing the caller's node.
-Connected nodes use the same Tone-created native context. The positional route
-has one destination path; its Tone source must not also call toDestination.
-
-`training-audio.runtime.ts` consumes borrowed visual object/formation/wake facts.
-Three granular layers belong to the two sides of the visible particle ring and
-the arrow body; a fourth voice marks the current goal. Start's particle effect
-publishes their world anchors using the same formation, goal transform, arrow
-offset and wake as its graphics. Hidden/removed presentation supplies no anchors
-and schedules no sound. No emitter follows the listener.
-
-Four GrainPlayers share at most three mono excerpts (20 seconds each, 2 MB
-encoded; decoding may resample up to 96 kHz). The production recipe loads three
-12-second/48 kHz WAVs, about 6.6 MiB decoded at 48 kHz, and schedules about 12.4
-grains/s. Validation caps the complete recipe at 40 starts/s. Tone's lookahead and
-stop tails retain additional native sources; browser evidence counts these too.
-One training-owned, fully wet eight-second Reverb is prepared before readiness.
-Each voice has a low-pass filter and separate direct/room gains. Direct sound
-passes through the shared HRTF placement; diffuse sends use the same inverse
-distance attenuation without an upper clamp. Retreat lowers level and cutoff
-while increasing the room/direct ratio. Show supplies actual narration playback
-for ambience/room ducking, without copying the visual observation each frame.
-
-Pause immediately mutes direct and hall outputs and stops grain clocks. At
-formation zero no voices schedule; complete/unload retires the four voices,
-placements, filters, gains, shared room and exclusive buffers. Run awaits room
-preparation even when cancelled, so its asynchronous impulse cannot publish into
-a disposed owner. The ordinary non-positional sample bed is removed.
-
 Live gain/filter, source and listener parameters retire their previous automation
 history before each changed write, holding the rendered value first. Tone 14's
 bundled automation list otherwise retains past-only events and scans growing
@@ -59,12 +27,9 @@ unmodulated live followers; it never cancels scheduled music controls. Existing
 80 ms target smoothing, listener ramp timing and Three placement remain in place.
 
 `narration-player.ts` remains the single media playback implementation. It
-accepts the recordings selected by Show, with measured durations. Main clips
-preload during integrated training; changing the prepared set retains unchanged
-cue/URL elements and releases tutorial-exclusive clips at handoff. Standalone
-Start prepares only its own recordings. Show supplies the selected cue and offset, including pause
-and language-repeat behavior. Reaching a recording's end leaves silence while
-a spatial goal remains; audio completion never completes a learning task.
+accepts the main recordings selected by Show, with measured durations. Changing
+language retains unchanged cue/URL elements and releases replaced clips. Show
+supplies the selected cue and offset, including pause and language-repeat behavior.
 Unchanged Hold frames write neither native time nor rate. The player remembers
 only the last applied held seek and one pending/rejected native play attempt;
 Show remains the sole clock. A rejected start waits for Pause → Play or a new
@@ -120,58 +85,12 @@ trimmed or transcoded. Direct listening was unavailable in this session.
 | [atmosphere-source-10.mp3](../../public/audio/granular/atmosphere-source-10.mp3) | 3:33 | -14.2 LUFS |
 | [atmosphere-source-11.mp3](../../public/audio/granular/atmosphere-source-11.mp3) | 3:49 | -13.8 LUFS |
 
-The implemented [#112](https://github.com/Strehk/becoming-many/issues/112)
-integration extends `training-audio.runtime.ts` in place: replace the ordinary sample bed
-with bounded granular layers, keep the separate spatial goal cue, and own one
-shared atmosphere reverb within that same lifetime. `spatial-audio.runtime.ts`
-continues to own placement/context/listener; Show continues to own transport and
-speech. The drone organ is not replaced or used as a hidden resource owner.
-Production Start now enables the complete bounded mix. `atmosphere-grain-01.wav`,
-`atmosphere-grain-03.wav` and `atmosphere-grain-08.wav` preserve documented
-12-second source selections with mono downmix, 6 dB headroom and edge fades.
-Selection and mix values are initial technical choices; listening/tuning remains
-open. Originals are never fetched by the running recipe.
+The original source files and prepared mono excerpts remain available as authored
+assets. The current Start level uses no audio; these recordings have no active
+runtime consumer. Selection and listening remain future content work.
 
+## Archived tutorial narration
 
-## Tutorial narration
-
-The earlier issue's repository link resolves to
-[E-Mus/becoming-many-tutorial, revision 52fdfdb69a80b63988b71e035614db8abad4bac1](https://github.com/E-Mus/becoming-many-tutorial/tree/52fdfdb69a80b63988b71e035614db8abad4bac1/public/audio).
-Only the original audio bytes were inspected; no legacy runtime is reused.
-The five German files are stereo, 48 kHz, float32 PCM. The source contains no
-English recordings, effect samples, license or speaker attribution. On 2026-09-09
-the user explicitly requested installing the located voice.
-The five original recordings are now shipped under `public/audio/tutorial/de/`
-with English cue filenames; [provenance](../../public/audio/tutorial/provenance.json)
-records their source revision, original names, hashes and measured formats.
-The literal Start recipe selects them through the existing narration owner.
-Following the 2026-09-09 request, the EN tutorial selection temporarily uses the
-same German recordings and phrase timings. These are placeholders, not English
-translations; replace the literal EN entries when the English files arrive.
-The main experience retains its existing EN/DE recordings.
-The narration runtime remains unchanged. Both selections begin at offset zero;
-physical listening on the installation is still required.
-
-| Original file | Duration (s) | SHA-256 |
-| --- | ---: | --- |
-| `anfangundrechts.wav` | 20.725729 | `545adc1da2ee42ede8270483ac02281c879778fc750debf9ffece1711b0f244b` |
-| `links.wav` | 2.735417 | `3964679d4963dc861787ab5024933b1a98dd44d512baad36578609e184ce46a0` |
-| `oben.wav` | 4.334896 | `79a1ba5a1000fead1ce0abdea88c8da37f61536baff9cba60a3cc3becfb55d6d` |
-| `unten.wav` | 2.552583 | `fe05c34a5668602e31a21960de10408e1f6d4df3f37c77b0341b3ec267f49cc9` |
-| `ende.wav` | 13.861479 | `874e2854758de0907851de78c9fd3af09ead32e749da2b143795398ad3fbd5c7` |
-
-The first recording reaches its right-lean instruction near 19 seconds. Final
-content integration must align that orientation period with the unchanged
-continuous M5 glide; preventing speech truncation alone does not establish
-first-visitor pacing. Replacement English recordings remain a content delivery.
-Instrumental source material is now user-supplied above; excerpt/mix suitability and speech intelligibility still need actual listening. Script sources are unchanged.
-
-
-Tutorial audio borrows the organ's wind voice through Show: integrated playback
-uses the already prepared organ, standalone practice selects only wind. Its
-literal strength is 0.22, multiplied by the spoken room reveal and halved during
-narration; tutorial Pause silences it. Main score strengths are unchanged.
-The three ring-associated GrainPlayers choose a different buffer and random valid
-offset at each course/attempt change. Their pool remains at most three decoded
-mono buffers, shared with the unchanged arrow voice. Pause/resume keeps the
-selection; no frame-time downloads, decodes or additional voices are introduced.
+Original recordings and their provenance remain under `public/audio/tutorial/`.
+The current Start level uses no tutorial narration. Main Show narration continues
+to use its existing EN/DE recordings, and script sources remain unchanged.

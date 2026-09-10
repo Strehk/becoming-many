@@ -92,6 +92,5 @@ reaches for was carried over:
   not placed at all.
 
 The shared `spatial-audio.runtime.ts` listener now follows the complete camera world
-pose for both the organ and training sources. The organ no longer writes the
-listener or resumes/closes the context. Its existing equal-power layer mix and
-room sends remain unchanged; training alone uses Three.js HRTF placement.
+pose for the organ. The organ does not write the listener or resume/close the
+context. Its existing equal-power layer mix and room sends remain unchanged.

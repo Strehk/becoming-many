@@ -139,13 +139,11 @@ export function createTechDrawer({
         streamButton.dataset.streaming = String(isSessionActive);
 
         rateButtons.forEach((button, index) => {
-          button.disabled = Boolean(state.tutorial);
           button.setAttribute(
             "aria-pressed",
             String(CONDUCTOR_SETTINGS.timeScales[index] === state.timeScale),
           );
         });
-        resetShow.disabled = Boolean(state.tutorial);
 
         writeText(
           frames,

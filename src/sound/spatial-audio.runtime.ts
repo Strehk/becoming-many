@@ -2,15 +2,13 @@ import {
   AudioListener,
   type Camera,
   Matrix4,
-  PositionalAudio,
   Quaternion,
   AudioContext as ThreeAudioContext,
   Vector3,
 } from "three";
 import { holdAudioParameter } from "./audio-parameter";
-import type { SpatialAudio, SpatialSource } from "./spatial-audio";
+import type { SpatialAudio } from "./spatial-audio";
 
-const MAXIMUM_SPATIAL_SOURCES = 5;
 // Retain the organ's measured listener-write budget; stationary poses write nothing.
 const LISTENER_WRITE_INTERVAL_FRAMES = 3;
 const LISTENER_RAMP_SECONDS = 1 / 30;
@@ -30,7 +28,6 @@ export async function createSpatialAudio(
     previousContext.state === "closed" ? new Context() : previousContext;
   if (context !== previousContext) setContext(context);
   let ownedListener: AudioListener | undefined;
-  const sources = new Set<SpatialSource>();
   let unloading: Promise<void> | undefined;
 
   function resume(): void {
@@ -44,7 +41,6 @@ export async function createSpatialAudio(
         window.removeEventListener(gesture, resume);
       const errors: unknown[] = [];
       for (const release of [
-        ...Array.from(sources, (source) => source.unload),
         () => ownedListener?.gain.disconnect(),
         () => context.close(),
         () => context.dispose(),
@@ -94,58 +90,6 @@ export async function createSpatialAudio(
 
     return {
       context,
-      createSource(input, parameters): SpatialSource {
-        if (unloading) throw new Error("Spatial audio is unloaded");
-        if (sources.size >= MAXIMUM_SPATIAL_SOURCES)
-          throw new Error("Spatial audio source capacity exceeded");
-        if (input.context !== context.rawContext)
-          throw new Error("A spatial source must use its listener's context");
-        const sound = new PositionalAudio(listener);
-        sound.setRefDistance(parameters.referenceDistanceMeters);
-        sound.setMaxDistance(parameters.maximumDistanceMeters);
-        sound.setRolloffFactor(parameters.rolloffFactor);
-        sound.setDistanceModel("inverse");
-        sound.panner.panningModel = "HRTF";
-        sound.setNodeSource(input);
-        const placementParameters = [
-          sound.panner.positionX,
-          sound.panner.positionY,
-          sound.panner.positionZ,
-          sound.panner.orientationX,
-          sound.panner.orientationY,
-          sound.panner.orientationZ,
-        ];
-        let isUnloaded = false;
-        let isPlaced = false;
-        const source: SpatialSource = {
-          readDistanceMeters: () => sound.position.distanceTo(position),
-          setPosition(x, y, z): void {
-            if (isUnloaded) return;
-            if (
-              isPlaced &&
-              sound.position.x === x &&
-              sound.position.y === y &&
-              sound.position.z === z
-            )
-              return;
-            isPlaced = true;
-            const now = context.immediate();
-            for (const parameter of placementParameters)
-              holdAudioParameter(parameter, now);
-            sound.position.set(x, y, z);
-            sound.updateMatrixWorld(true);
-          },
-          unload(): void {
-            if (isUnloaded) return;
-            isUnloaded = true;
-            sound.disconnect();
-            sound.gain.disconnect();
-            sources.delete(source);
-          },
-        };
-        sources.add(source);
-        return source;
-      },
       update(): void {
         if (unloading || context.state !== "running") return;
         framesSincePlacing += 1;

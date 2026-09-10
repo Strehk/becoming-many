@@ -31,7 +31,7 @@ limits. Show transport and visitor replacement remain with Show and Run.
   acceptance remains open.
 - `flight-settings.ts` holds shared glide, climb, yaw, descent and minimum
   ground-clearance values. View pitch assistance belongs to World in
-  `src/world/viewer-rig.ts` and also aligns Start and Credits presentation.
+  `src/world/viewer-rig.ts` and also aligns Credits presentation.
 - `flight-pose.ts` contains the pure height clamp and origin/heading reset.
   Run selects height limits and reset timing; neither operation changes local
   head pose or replaces a complete Run lifetime.

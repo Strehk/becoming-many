@@ -118,16 +118,10 @@ into those implementations.
 Each substantial domain repeats the same pattern: one domain owner connects
 specialised components, while those components do not import one another.
 
-For Start, `start.module.ts` is the only local learning orchestrator. It connects
-Course, Motion, Crossing, Arrows, and particle presentation through narrow local
-contracts. Course owns cue geometry, Motion owns movement observations, Arrows
-owns reusable arrow slots, Crossing owns passage calculation, and the particle
-effect owns graphics resources. None may acquire Control, Show, Sound, or a
-sibling implementation directly.
-
-The Start structure is a stable architectural constraint, not the product plan.
-The protected Start concept, transition design, guidance, visual treatment, and
-physical acceptance remain in their dedicated issues and design documents.
+The standalone Start recipe contains only Air Particles and uses the shared
+flight control. It has no learning orchestrator or Show integration. The future
+Start concept, guidance, visual treatment, and physical acceptance remain in
+their dedicated issues and design documents.
 
 ## Owners and lifetime
 

@@ -39,21 +39,3 @@ describe("cueDisplayName", () => {
     expect(cueDisplayName("return")).toBe("Return");
   });
 });
-
-test("tutorial feedback distinguishes successful passages from a retry without awarding progress", async () => {
-  const { formatTutorialStatus } = await import(
-    "../../src/ui/shared/show-time-format"
-  );
-  const status = {
-    phase: "missed",
-    goalIndex: 1,
-    direction: "left" as const,
-    crossingCount: 1,
-  };
-  expect(formatTutorialStatus(status)).toBe(
-    "Flight tutorial · Missed · New target ahead · 1/4 passed",
-  );
-  expect(
-    formatTutorialStatus({ ...status, phase: "crossed", crossingCount: 2 }),
-  ).toBe("Flight tutorial · Passed · 2/4");
-});

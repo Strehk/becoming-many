@@ -31,10 +31,10 @@ world network. The return removes those layers before the credits.
 
 ## Interaction
 
-The complete experience begins with the required spatial flight tutorial. Its
-current structural implementation and future product design are separate:
-architecture work must preserve current behavior, while the dedicated Start
-concept and issues own new guidance, transition, visuals, and physical tests.
+The complete experience begins directly with White World. The standalone Start
+preset contains only airborne particles and shared flight controls. Its future
+guidance, transition, visuals, and physical tests remain in the dedicated Start
+concept and issues.
 
 Desktop development uses pointer-lock look and keyboard flight. W/↑ leans
 forward and descends, S/↓ leans backward and climbs, A/← leans left into a left
@@ -43,8 +43,7 @@ only the local view; they do not steer. Releasing a desktop flight key eases
 that keyboard tilt back to center over 0.25 seconds; M5 keeps its existing
 response.
 Keyboard and M5 can act together on the same global flight model in every
-experience. Spatial learning uses actual rig movement; narration or elapsed
-time cannot award a passage.
+experience.
 
 The Experience page provides rehearsal transport. The Conductor page hosts the
 same show in-process for station operation. Show owns playback, language, time,

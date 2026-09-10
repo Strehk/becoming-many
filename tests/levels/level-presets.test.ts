@@ -40,7 +40,6 @@ test("every level authors the current terrain-relative flight ceiling", () => {
 
 test("each world component appears only in its intended levels", () => {
   const expectedLevels = [
-    ["start", "start"],
     [
       "airParticles",
       "start white-world scent echo motion thermal magnetic connections diagnostic visual-integration",
@@ -78,6 +77,18 @@ test("each world component appears only in its intended levels", () => {
       .map(([name]) => name);
     expect(configuredLevels.sort()).toEqual(expected.split(" ").sort());
   }
+});
+
+test("Start contains only the airborne particle environment", () => {
+  expect(Object.keys(LEVEL_CATALOG.start).sort()).toEqual([
+    "airParticles",
+    "backgroundColor",
+    "desktopFieldOfViewDegrees",
+    "flightSpeedMetersPerSecond",
+    "maximumGroundClearanceMeters",
+    "viewDistance",
+  ]);
+  expect(LEVEL_CATALOG.start.airParticles?.density.particlesPerChunk).toBe(384);
 });
 
 test("Diagnostic owns its world values independently", () => {

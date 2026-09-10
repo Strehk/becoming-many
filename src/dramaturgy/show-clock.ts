@@ -33,8 +33,6 @@ export interface ShowClock {
   readonly seekBy: (offsetSeconds: number) => void;
   /** Rebases before changing rate, so the playhead never jumps. */
   readonly setTimeScale: (timeScale: number) => void;
-  /** Undefined during an interactive segment; restoring a duration clamps time. */
-  readonly setDuration: (durationSeconds: number | undefined) => void;
 }
 
 /**
@@ -52,7 +50,6 @@ export function createShowClock(
     );
   }
 
-  let durationLimitSeconds: number | undefined = durationSeconds;
   let showSecondsAtOrigin = 0;
   let originTimebaseSeconds = readTimebaseSeconds();
   let timeScale = 1;
@@ -63,10 +60,7 @@ export function createShowClock(
 
     const elapsedSeconds =
       (readTimebaseSeconds() - originTimebaseSeconds) * timeScale;
-    return clampToShow(
-      showSecondsAtOrigin + elapsedSeconds,
-      durationLimitSeconds,
-    );
+    return clampToShow(showSecondsAtOrigin + elapsedSeconds, durationSeconds);
   }
 
   /** Make the current instant the new origin so a change cannot move it. */
@@ -82,7 +76,7 @@ export function createShowClock(
       );
     }
 
-    showSecondsAtOrigin = clampToShow(showTimeSeconds, durationLimitSeconds);
+    showSecondsAtOrigin = clampToShow(showTimeSeconds, durationSeconds);
     originTimebaseSeconds = readTimebaseSeconds();
   }
 
@@ -109,20 +103,6 @@ export function createShowClock(
       seekTo(currentShowSeconds() + offsetSeconds);
     },
 
-    setDuration(nextDurationSeconds): void {
-      if (
-        nextDurationSeconds !== undefined &&
-        !isPositiveFinite(nextDurationSeconds)
-      )
-        throw new RangeError("Show duration must be positive and finite");
-      rebase();
-      durationLimitSeconds = nextDurationSeconds;
-      showSecondsAtOrigin = clampToShow(
-        showSecondsAtOrigin,
-        durationLimitSeconds,
-      );
-    },
-
     setTimeScale(nextTimeScale): void {
       if (!isPositiveFinite(nextTimeScale)) {
         throw new RangeError(
@@ -136,12 +116,8 @@ export function createShowClock(
   };
 }
 
-function clampToShow(
-  showTimeSeconds: number,
-  durationSeconds: number | undefined,
-): number {
+function clampToShow(showTimeSeconds: number, durationSeconds: number): number {
   if (showTimeSeconds < 0) return 0;
-  if (durationSeconds !== undefined && showTimeSeconds > durationSeconds)
-    return durationSeconds;
+  if (showTimeSeconds > durationSeconds) return durationSeconds;
   return showTimeSeconds;
 }

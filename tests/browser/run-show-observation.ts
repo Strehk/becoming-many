@@ -22,7 +22,6 @@ import {
 const VIEWPORT = { width: 1280, height: 720 };
 const TRANSITION_LEAD_SECONDS = 2;
 const TRANSITION_DURATION_SECONDS = 10;
-const TUTORIAL_COMPLETION_TIMEOUT_MILLISECONDS = 80_000;
 const REFERENCE_FRAME_MS = 1000 / 90;
 const MAX_AUDIO_RECORDS = 100;
 const { values } = parseArgs({
@@ -179,19 +178,6 @@ async function loadShow(page: Page, url: URL) {
   await page.locator("canvas").first().waitFor({ state: "visible" });
   const readinessMs = performance.now() - startedAt;
   await page.bringToFront();
-  if (await page.evaluate(() => Boolean(window.show?.readTutorial()))) {
-    console.log(
-      "Playing the one-minute tutorial before main-show observation; successful completion may extend it through the closing instruction.",
-    );
-    await page.getByRole("button", { name: "Play", exact: true }).click();
-    await page.waitForFunction(
-      () =>
-        window.show !== undefined && window.show.readTutorial() === undefined,
-      undefined,
-      { timeout: TUTORIAL_COMPLETION_TIMEOUT_MILLISECONDS },
-    );
-  }
-  await page.getByRole("button", { name: "Hold", exact: true }).click();
   const selectedLanguage = page.getByRole("button", {
     name: language.toUpperCase(),
     exact: true,
@@ -201,9 +187,6 @@ async function loadShow(page: Page, url: URL) {
   }
   return {
     readinessMs,
-    mainStartSeconds: await page.evaluate(
-      () => window.show?.sample().mainStartSeconds ?? 0,
-    ),
     rendering: await readRenderingInfo(page),
   };
 }
@@ -221,7 +204,7 @@ function verifyFrameCollection(
 async function observePlayback(page: Page, target: number, duration: number) {
   await page.evaluate((target) => {
     const show = window.show;
-    if (show) show.seekTo(show.sample().mainStartSeconds + target);
+    if (show) show.seekTo(target);
   }, target);
   await page.getByRole("button", { name: "Play", exact: true }).click();
   const observation = await sampleFrames(page, duration);
@@ -273,8 +256,7 @@ async function observeShow(
       verifyFrameCollection(observation);
       verifyClockProgress(
         observation,
-        startup.mainStartSeconds +
-          Math.min(target + duration, PIECE_SCHEDULE.durationSeconds),
+        Math.min(target + duration, PIECE_SCHEDULE.durationSeconds),
       );
     }
     const missingAudio = requiredAudioPaths.filter(

@@ -52,24 +52,16 @@ interface AirParticleStream {
 /** The current stream identity also invalidates delayed jobs after unloading. */
 interface AirParticlesState {
   currentStream: AirParticleStream | undefined;
-  presence: number;
-  active: boolean;
 }
 
 export function createAirParticlesModule(
   options: AirParticlesModuleOptions,
-): WorldModule & { readonly setPresence: (presence: number) => void } {
+): WorldModule {
   const state: AirParticlesState = {
     currentStream: undefined,
-    presence: 1,
-    active: false,
   };
 
   return {
-    setPresence(presence) {
-      state.presence = Math.max(0, Math.min(1, presence));
-      setAirParticlesVisible(state, state.active);
-    },
     load: () => loadAirParticles(state, options),
     activate: () => setAirParticlesVisible(state, true),
     update: (deltaSeconds) => updateAirParticles(state, options, deltaSeconds),
@@ -156,11 +148,9 @@ function setAirParticlesVisible(
   state: AirParticlesState,
   visible: boolean,
 ): void {
-  state.active = visible;
   const stream = state.currentStream;
   if (!stream) return;
-  stream.particleCloud.material.pointsMaterial.opacity = state.presence;
-  stream.particleCloud.points.visible = visible && state.presence > 0;
+  stream.particleCloud.points.visible = visible;
 }
 
 function unloadAirParticles(state: AirParticlesState, scene: Scene): void {

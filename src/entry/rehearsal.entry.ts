@@ -14,7 +14,6 @@ import { level as connectionsLevel } from "../levels/connections.level";
 import { startLevel } from "../levels/level.runtime";
 import type { Run } from "../levels/run-contract";
 import type { RunningShow } from "../levels/show-contract";
-import { level as tutorialLevel } from "../levels/start.level";
 import { mountRehearsalTransport } from "../ui/rehearsal/transport.panel";
 import { mountVrEntryButton } from "../ui/shared/xr-entry-button";
 import { loadDeploymentConfig } from "./deployment-config";
@@ -24,7 +23,7 @@ declare global {
     /**
      * Show console access in Rehearsal and Conductor. Commands and observations
      * use the same owner as UI. Entry clears the reference when its Run ends.
-     * Available in production for headset rehearsal and generated-course inspection.
+     * Available in production for headset rehearsal.
      */
     show?: Pick<
       RunningShow,
@@ -38,7 +37,6 @@ declare global {
       | "resetTime"
       | "readLanguage"
       | "setLanguage"
-      | "readTutorial"
     >;
   }
 }
@@ -70,7 +68,6 @@ try {
       signal: lifetime.signal,
       kind: "show",
       preset: connectionsLevel,
-      tutorial: tutorialLevel,
       show: {
         schedule: PIECE_SCHEDULE,
         language: resolveNarrationLanguage(request.get("language")),
@@ -91,7 +88,6 @@ try {
 
   const show = level.show;
   if (show) {
-    // A deliberate transport gesture releases the required tutorial.
     const unmountTransport = mountRehearsalTransport({
       container: document.body,
       schedule: PIECE_SCHEDULE,

@@ -6,11 +6,9 @@
  */
 
 import type { BenchmarkRun } from "../benchmark/benchmark-run";
-import { PIECE_SCHEDULE } from "../dramaturgy/piece-schedule";
-import { SHOW_LEVEL_STATES, showLevelStateAt } from "../dramaturgy/show-levels";
+import { showLevelStateAt } from "../dramaturgy/show-levels";
 import type { M5Runtime } from "../m5/m5-contract";
 import type { SpatialAudio } from "../sound/spatial-audio";
-import type { TrainingAudio } from "../sound/training-audio";
 import { disposeGltfAssets } from "../utils/asset-loader/gltf-assets";
 import type { WorldModule } from "../world/module-runtime";
 import type {
@@ -24,15 +22,13 @@ import {
   composeControls,
   composeLevel,
   composePlayback,
-  composeTraining,
-  composeTrainingAudio,
   composeWorld,
   type LoadedLevelAssets,
   loadLevelAssets,
 } from "./level-composition";
 import type { LevelPreset } from "./level-preset";
 import type { LevelStartRequest, Run } from "./run-contract";
-import type { RunningShow, ShowRuntime, ShowTutorial } from "./show-contract";
+import type { RunningShow, ShowRuntime } from "./show-contract";
 
 export async function startLevel(
   surface: WorldViewport,
@@ -60,27 +56,17 @@ class LevelRun {
   private readonly lifetime = new AbortController();
   private readonly signal: AbortSignal;
   private readonly level: LevelPreset;
-  private readonly tutorialPreset: LevelPreset | undefined;
   private readonly benchmark: BenchmarkRun | undefined;
   private assets: LoadedLevelAssets | undefined;
   private world!: World;
   private worldSurface!: ComposedLevel["worldSurface"];
   private reach!: ComposedLevel["reach"];
   private hasGround = false;
-  private trainingModules: WorldModule[] = [];
-  private mainModules: WorldModule[] = [];
-  private startContent: ComposedLevel["start"];
+  private modules: WorldModule[] = [];
   private audio: SpatialAudio | undefined;
-  private trainingAudio: TrainingAudio | undefined;
-  private retiringTrainingAudio: TrainingAudio | undefined;
-  private audioRelease: Promise<void> | undefined;
-  private resolveAudioRelease: (() => void) | undefined;
-  private trainingPreparation: AbortController | undefined;
-  private trainingLoading: Promise<void> | undefined;
   private controls: ReturnType<typeof composeControls> | undefined;
   private playback: ShowRuntime | undefined;
   private unloading: Promise<void> | undefined;
-  private mainFieldOfViewDegrees = 0;
   private readonly heightLimits = {
     minimumGroundClearanceMeters: undefined as number | undefined,
     maximumGroundClearanceMeters: undefined as number | undefined,
@@ -92,12 +78,6 @@ class LevelRun {
   constructor(private readonly request: LevelStartRequest) {
     this.level = request.preset;
     this.benchmark = request.kind === "static" ? request.benchmark : undefined;
-    this.tutorialPreset =
-      request.kind === "show"
-        ? request.tutorial
-        : this.level.start
-          ? this.level
-          : undefined;
     this.signal = request.signal
       ? AbortSignal.any([request.signal, this.lifetime.signal])
       : this.lifetime.signal;
@@ -112,9 +92,6 @@ class LevelRun {
   get show(): RunningShow | undefined {
     return this.request.kind === "show" ? this.playback?.running : undefined;
   }
-  get training(): RunningShow | undefined {
-    return this.request.kind === "static" ? this.playback?.running : undefined;
-  }
   readonly readGraphicsInfo = (): GraphicsInfo => this.world.readGraphicsInfo();
 
   async start(surface: WorldViewport): Promise<void> {
@@ -127,22 +104,17 @@ class LevelRun {
     );
     this.signal.throwIfAborted();
     this.world = composeWorld(surface, this.benchmark);
-    this.mainFieldOfViewDegrees =
+    const fieldOfViewDegrees =
       this.level.desktopFieldOfViewDegrees ?? this.world.camera.fov;
-    this.present(
-      presentation,
-      this.tutorialPreset?.desktopFieldOfViewDegrees ??
-        this.mainFieldOfViewDegrees,
-    );
-    const setRoomPresence = await this.loadComposition();
+    this.present(presentation, fieldOfViewDegrees);
+    await this.loadComposition();
     this.signal.throwIfAborted();
     this.controls = composeControls(
       this.world,
       this.benchmark,
       this.worldSurface,
     );
-    if (!this.benchmark && (this.request.kind === "show" || this.startContent))
-      await this.startPlayback(setRoomPresence);
+    if (this.request.kind === "show") await this.startPlayback();
     this.signal.throwIfAborted();
     this.signal.addEventListener("abort", this.onAbort, { once: true });
     this.world.start(this.updateFrame);
@@ -152,26 +124,10 @@ class LevelRun {
   readonly resetShowAndFlight = (): void => {
     if (this.signal.aborted) return;
     this.controls?.resetRig();
-    this.trainingAudio?.reset();
-    if (this.startContent || !this.tutorialPreset?.start || !this.playback) {
-      this.playback?.running.resetTime();
-      return;
-    }
-    this.playback.setPreparationState("loading");
-    try {
-      this.recreateTraining();
-      const preparation = new AbortController();
-      this.trainingPreparation = preparation;
-      this.trainingLoading = this.prepareTraining(preparation);
-      void this.trainingLoading.catch(() => undefined);
-    } catch (error) {
-      this.failTraining(error);
-    }
+    this.playback?.running.resetTime();
   };
 
   readonly resetFlight = (): void => {
-    this.trainingAudio?.reset();
-    this.resetPractice();
     this.controls?.resetRig();
   };
 
@@ -183,199 +139,37 @@ class LevelRun {
     return this.unloading;
   };
 
-  private async loadComposition(): Promise<
-    ComposedLevel["setTrainingRoomPresence"]
-  > {
+  private async loadComposition(): Promise<void> {
     if (!this.assets) throw new Error("Level assets are unavailable");
     const composition = await composeLevel({
       world: this.world,
       level: this.level,
       assets: this.assets,
       forShow: this.request.kind === "show",
-      tutorial:
-        this.request.kind === "show" ? this.request.tutorial : undefined,
     });
-    this.startContent = composition.start;
-    this.trainingModules = [...composition.trainingModules];
-    this.mainModules = composition.modules.filter(
-      (module) => !this.trainingModules.includes(module),
-    );
+    this.modules = [...composition.modules];
     this.worldSurface = composition.worldSurface;
     this.reach = composition.reach;
     this.hasGround = composition.hasGround;
-    if (this.benchmark) composition.setTrainingRoomPresence?.(1);
     for (const module of composition.modules) {
       this.world.modules.load(module);
       this.world.modules.activate(module);
     }
-    if (this.request.kind === "show" || (this.startContent && !this.benchmark))
-      await this.world.prepareRenderer();
-    return composition.setTrainingRoomPresence;
+    if (this.request.kind === "show") await this.world.prepareRenderer();
   }
 
-  private async startPlayback(
-    setRoomPresence?: (presence: number) => void,
-  ): Promise<void> {
-    const preset = this.tutorialPreset;
-    const request =
-      this.request.kind === "show"
-        ? this.request.show
-        : {
-            schedule: PIECE_SCHEDULE,
-            states: SHOW_LEVEL_STATES,
-            language: this.request.language ?? "en",
-          };
-    const sound = await composePlayback(request, {
+  private async startPlayback(): Promise<void> {
+    if (this.request.kind !== "show") return;
+    const sound = await composePlayback(this.request.show, {
       signal: this.signal,
-      preset,
       world: this.world,
       reach: this.reach,
       worldSurface: this.worldSurface,
-      standalone: this.request.kind === "static",
-      tutorial: this.tutorialDefinition(setRoomPresence),
     });
     this.audio = sound.audio;
-    this.trainingAudio = sound.trainingAudio;
     this.playback = sound.playback;
-    if (!this.startContent || !preset?.start) return;
-    if (this.request.kind === "show") this.setMainActive(false);
-    this.present(preset, this.world.camera.fov);
   }
 
-  private tutorialDefinition(
-    setRoomPresence?: (presence: number) => void,
-  ): ShowTutorial | undefined {
-    if (!this.startContent || !this.tutorialPreset?.start) return undefined;
-    return {
-      start: this.startContent,
-      setRoomPresence,
-      parameters: this.tutorialPreset.start,
-      recordings: this.tutorialPreset.startNarration,
-      reset: this.resetPractice,
-      finish: this.finishTraining,
-    };
-  }
-
-  private recreateTraining(): void {
-    const preset = this.tutorialPreset;
-    if (!preset?.start || !this.playback) return;
-    this.setMainActive(false);
-    const training = composeTraining(
-      preset,
-      this.world,
-      this.worldSurface.groundYAt,
-    );
-    if (!training) throw new Error("Training composition is unavailable");
-    this.startContent = training.start;
-    this.trainingModules = training.modules;
-    const tutorial = this.tutorialDefinition(training.setRoomPresence);
-    if (tutorial) this.playback.setTutorial(tutorial);
-    for (const module of training.modules) {
-      this.world.modules.load(module);
-      this.world.modules.activate(module);
-    }
-    this.present(
-      preset,
-      preset.desktopFieldOfViewDegrees ?? this.mainFieldOfViewDegrees,
-    );
-  }
-
-  private async prepareTraining(preparation: AbortController): Promise<void> {
-    try {
-      await this.world.prepareRenderer();
-      if (!this.isCurrentPreparation(preparation)) return;
-      await this.audioRelease;
-      if (!this.isCurrentPreparation(preparation)) return;
-      const created = await composeTrainingAudio(
-        this.tutorialPreset,
-        this.audio,
-        AbortSignal.any([this.signal, preparation.signal]),
-      );
-      if (!this.isCurrentPreparation(preparation)) {
-        created?.unload();
-        return;
-      }
-      this.trainingAudio = created;
-      this.playback?.setPreparationState("ready");
-    } catch (error) {
-      if (this.isCurrentPreparation(preparation))
-        throw this.failTraining(error);
-    }
-  }
-
-  private isCurrentPreparation(preparation: AbortController): boolean {
-    return (
-      !this.signal.aborted &&
-      !preparation.signal.aborted &&
-      this.trainingPreparation === preparation
-    );
-  }
-
-  private failTraining(error: unknown): unknown {
-    const errors = [error];
-    for (const release of [
-      () => this.playback?.setPreparationState("failed"),
-      () => this.unloadTraining(),
-    ]) {
-      try {
-        release();
-      } catch (failure) {
-        errors.push(failure);
-      }
-    }
-    const failure =
-      errors.length === 1
-        ? error
-        : new AggregateError(errors, "Training restart and cleanup failed");
-    console.error("Training restart failed", failure);
-    return failure;
-  }
-
-  private readonly finishTraining = (): void => {
-    if (this.trainingAudio) {
-      this.retiringTrainingAudio = this.trainingAudio;
-      this.trainingAudio = undefined;
-      this.retiringTrainingAudio.beginRelease();
-      this.audioRelease = new Promise<void>((resolve) => {
-        this.resolveAudioRelease = resolve;
-      });
-    }
-    this.unloadTraining();
-    this.world.camera.fov = this.mainFieldOfViewDegrees;
-    this.world.camera.updateProjectionMatrix();
-    this.setMainActive(true);
-    this.controls?.resetRig();
-  };
-
-  private unloadTraining(): void {
-    this.trainingPreparation?.abort();
-    this.trainingPreparation = undefined;
-    const audio = this.trainingAudio;
-    this.trainingAudio = undefined;
-    const modules = this.trainingModules;
-    this.trainingModules = [];
-    this.startContent = undefined;
-    const errors: unknown[] = [];
-    const operations = [
-      () => audio?.unload(),
-      ...[...modules]
-        .reverse()
-        .map((module) => () => this.world.modules.unload(module)),
-    ];
-    for (const release of operations) {
-      try {
-        release();
-      } catch (error) {
-        errors.push(error);
-      }
-    }
-    if (errors.length)
-      throw new AggregateError(errors, "Training cleanup failed");
-  }
-
-  private readonly resetPractice = (): void => {
-    this.startContent?.resetPractice();
-  };
   private present(
     presentation: LevelPresentation,
     fieldOfViewDegrees: number,
@@ -386,27 +180,11 @@ class LevelRun {
     this.world.camera.updateProjectionMatrix();
   }
 
-  private setMainActive(active: boolean): void {
-    for (const module of this.mainModules) {
-      if (active) this.world.modules.activate(module);
-      else this.world.modules.deactivate(module);
-    }
-  }
-
   private readonly updateFrame = (deltaSeconds: number): void => {
     this.request.onFrame?.(deltaSeconds);
     this.updateFlight(deltaSeconds);
     this.playback?.update();
     this.audio?.update();
-    const playing = this.playback?.running.sample().isPlaying ?? true;
-    if (this.retiringTrainingAudio?.updateRelease(playing))
-      this.finishAudioRelease();
-    if (this.startContent && this.trainingAudio)
-      this.trainingAudio.update(
-        this.startContent.readObservation(),
-        playing,
-        this.playback?.readSpeechActive() ?? false,
-      );
     this.updateHeightLimits();
   };
 
@@ -415,46 +193,27 @@ class LevelRun {
       this.benchmark.placeViewer(this.world.viewerRig);
       return;
     }
-    if (
-      this.playback?.running.readTutorial() &&
-      !this.playback.running.sample().isPlaying
-    )
-      return;
-    const speed = this.startContent
-      ? this.tutorialPreset?.flightSpeedMetersPerSecond
-      : undefined;
-    this.controls?.flight.update(deltaSeconds, speed);
+    this.controls?.flight.update(
+      deltaSeconds,
+      this.request.kind === "static"
+        ? this.level.flightSpeedMetersPerSecond
+        : undefined,
+    );
   }
 
   private updateHeightLimits(): void {
-    this.heightLimits.minimumGroundClearanceMeters =
-      !this.startContent && this.hasGround
-        ? this.controls?.minimumGroundClearanceMeters
-        : undefined;
-    this.heightLimits.maximumGroundClearanceMeters = this.startContent
-      ? this.tutorialPreset?.maximumGroundClearanceMeters
-      : this.request.kind === "show" && this.playback
+    this.heightLimits.minimumGroundClearanceMeters = this.hasGround
+      ? this.controls?.minimumGroundClearanceMeters
+      : undefined;
+    this.heightLimits.maximumGroundClearanceMeters =
+      this.request.kind === "show" && this.playback
         ? this.playback.readActiveLevelState().maximumGroundClearanceMeters
-        : this.request.kind === "static"
-          ? this.level.maximumGroundClearanceMeters
-          : undefined;
+        : this.level.maximumGroundClearanceMeters;
     if (
       this.heightLimits.minimumGroundClearanceMeters !== undefined ||
       this.heightLimits.maximumGroundClearanceMeters !== undefined
     )
       this.controls?.constrainHeight(this.heightLimits);
-  }
-
-  private finishAudioRelease(): void {
-    const retired = this.retiringTrainingAudio;
-    this.retiringTrainingAudio = undefined;
-    try {
-      retired?.unload();
-    } finally {
-      this.resolveAudioRelease?.();
-      this.resolveAudioRelease = undefined;
-      this.audioRelease = undefined;
-    }
   }
 
   private readonly onAbort = (): void => {
@@ -474,7 +233,6 @@ class LevelRun {
     const errors = results.flatMap((result) =>
       result.status === "rejected" ? [result.reason] : [],
     );
-    this.trainingPreparation?.abort();
     for (const release of this.remainingReleases()) {
       try {
         await release();
@@ -482,7 +240,6 @@ class LevelRun {
         errors.push(error);
       }
     }
-    this.trainingAudio = undefined;
     if (errors.length) throw new AggregateError(errors, "Level cleanup failed");
   }
 
@@ -497,11 +254,8 @@ class LevelRun {
         ]
       : [];
     return [
-      () => this.finishAudioRelease(),
-      () => this.trainingLoading,
-      () => this.trainingAudio?.unload(),
       () => this.audio?.unload(),
-      ...[...this.mainModules, ...this.trainingModules]
+      ...[...this.modules]
         .reverse()
         .map((module) => () => this.world?.modules.unload(module)),
       ...sources.map((batch) => () => {

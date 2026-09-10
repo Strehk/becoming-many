@@ -14,10 +14,9 @@ and XR controls; surface-specific behavior stays with its surface.
 Entry resolves deployment inputs, connects UI to existing owner commands and
 owns page-exit cleanup. Show owns playback, Run owns experience lifetime and
 World owns rendering resources while borrowing the declared canvas/viewport.
-The same rehearsal transport binds both a complete show and standalone training.
-An optional schedule supplies timeline chapters; elapsed time and runtime transport/
-language observations use the same controls. Show exposes handoff availability;
-there is no standalone-specific UI mode or duplicate tutorial markup.
+The rehearsal transport binds the complete Show. Its schedule supplies timeline
+chapters; elapsed time, transport, and language observations use the same controls.
+Standalone presets have no Show transport.
 
 Frame metrics live outside UI in `src/diagnostics/`; the standalone-level entry
 owns the optional diagnostics overlay. Device validity stays in M5, whose
