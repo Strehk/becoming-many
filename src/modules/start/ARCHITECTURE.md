@@ -156,11 +156,12 @@ outside this MVP; the review observations below remain undecided.
   Only forward crossings inside the clear opening emit an element index, once.
   Reverse movement, misses and position discontinuities do not produce success.
 - `particle-light.ts` owns a bounded timeline per element: a repeating forward
-  sweep, a stronger single success sweep, then a two-second dissolve. It knows
+  sweep, a stronger single success sweep. Passage never retires an individual ring. It knows
   neither ring geometry nor exercise completion.
 - `particle-grain.vert.glsl` applies the same normalized local forward coordinate
   to all forms. Arrows illuminate from tail to tip; rings illuminate across their
-  depth. Passed grains scatter and drift forward independently of other elements.
+  depth. All rings remain until the full section, including its exit, is completed.
+  The existing section-wide dissolve then retires them together.
 - `particle-grain.frag.glsl` adds warm luminous cores and highlights to a seeded
   subset of grains. This is a glass-like shading approximation without refraction,
   bloom, extra lights or another render pass.

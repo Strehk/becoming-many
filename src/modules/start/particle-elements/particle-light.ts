@@ -5,7 +5,7 @@ import type {
 } from "./particle-contract";
 
 // 1. One bounded clock and one feedback state per displayed element
-/** Shape-independent sweep, success flash and delayed dissolve; Start supplies time. */
+/** Shape-independent sweep and success flash; section lifetime owns visibility; Start supplies time. */
 export function createParticleLight(
   settings: ParticleLightSettings,
 ): ParticleLight {
@@ -25,7 +25,6 @@ class ParticleLightTimeline implements ParticleLight {
     this.frames = Array.from({ length: count }, () => ({
       head: -1,
       strength: 0,
-      presence: 1,
     }));
   };
   readonly pass = (index: number): void => {
@@ -55,12 +54,5 @@ class ParticleLightTimeline implements ParticleLight {
     frame.head =
       -settings.bandWidth + (phase / duration) * (1 + 2 * settings.bandWidth);
     frame.strength = passed ? 1 : settings.guideStrength;
-    const dissolved = passed
-      ? Math.min(
-          1,
-          Math.max(0, age - settings.flashSeconds) / settings.dissolveSeconds,
-        )
-      : 0;
-    frame.presence = 1 - dissolved * dissolved * (3 - 2 * dissolved);
   }
 }

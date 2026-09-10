@@ -82,17 +82,13 @@ export interface ParticleLightSettings {
   readonly staggerSeconds: number;
   readonly guideStrength: number;
   readonly flashSeconds: number;
-  readonly dissolveSeconds: number;
   readonly bandWidth: number;
   readonly glassFraction: number;
   readonly color: number;
-  readonly driftMeters: number;
-  readonly scatterMeters: number;
 }
 export interface ParticleLightFrame {
   head: number;
   strength: number;
-  presence: number;
 }
 export interface ParticleLight {
   readonly reset: (count: number) => void;

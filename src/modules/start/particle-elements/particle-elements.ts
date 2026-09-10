@@ -195,25 +195,7 @@ class ParticleElements {
       pose.position.y - this.options.belowFlightMeters,
       pose.position.z,
     );
-    this.setDirection(geometry, placement.direction, pose.yawRadians);
     return geometry;
-  }
-
-  private setDirection(
-    geometry: BufferGeometry,
-    forward: Vector3,
-    yaw: number,
-  ): void {
-    const direction = forward.clone().applyAxisAngle(UP, yaw);
-    const forwards = new Float32Array(
-      geometry.getAttribute("position").count * 3,
-    );
-    for (let offset = 0; offset < forwards.length; offset += 3)
-      direction.toArray(forwards, offset);
-    geometry.setAttribute(
-      "elementDirection",
-      new Float32BufferAttribute(forwards, 3),
-    );
   }
 
   // Local forward coordinates survive world placement and drive every shape alike.

@@ -44,8 +44,8 @@ test("rotated openings use the swept plane intersection, not endpoint distance",
   expect(passage.update(new Vector3(1, 0, 0))).toEqual([]);
 });
 
-// 2. A common forward light coordinate, followed by independent delayed dissolution
-test("success sweeps forward, preserves other elements and dissolves without replay", () => {
+// 2. Passage changes light only; completed sections own ring retirement
+test("success sweeps once without changing section lifetime", () => {
   const settings = START_SETTINGS.elementLight;
   const light = createParticleLight(settings);
   light.reset(2);
@@ -55,16 +55,13 @@ test("success sweeps forward, preserves other elements and dissolves without rep
   const peak = light.update(settings.flashSeconds / 2);
   expect(peak[0]?.head).toBeCloseTo(0.5);
   expect(peak[0]?.strength).toBe(1);
-  expect(peak[0]?.presence).toBe(1);
   expect(peak[1]?.strength).toBe(settings.guideStrength);
-  light.update(settings.flashSeconds / 2 + settings.dissolveSeconds / 2);
-  expect(peak[0]?.presence).toBeCloseTo(0.5);
-  expect(peak[1]?.presence).toBe(1);
+  light.update(30);
+  const finishedHead = peak[0]?.head;
   light.pass(0);
-  light.update(settings.dissolveSeconds);
-  expect(peak[0]?.presence).toBe(0);
+  expect(light.update(0)[0]?.head).toBe(finishedHead);
   light.reset(2);
-  expect(light.update(0)[0]?.presence).toBe(1);
+  expect(light.update(0)[0]?.strength).toBe(settings.guideStrength);
 });
 
 test("light storage is bounded and reset removes old success state", () => {

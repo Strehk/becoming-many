@@ -2,6 +2,7 @@ import {
   type BufferGeometry,
   Color,
   Float32BufferAttribute,
+  Vector2,
   Vector3,
 } from "three";
 import type { PathParticleMaterial } from "../flight-path/particle-contract";
@@ -103,7 +104,7 @@ export function createVolumeMaterial(
     shader.fragmentShader = patchVolumeFragment(shader.fragmentShader);
   };
   points.customProgramCacheKey = () =>
-    `${baseKey}:particle-volume-directional-light-v7:${light.settings.capacity}`;
+    `${baseKey}:particle-volume-directional-light-v8:${light.settings.capacity}`;
   return {
     pointsMaterial: points,
     update(seconds) {
@@ -118,10 +119,10 @@ export function createVolumeMaterial(
 
 function updateLightUniforms(
   frames: readonly ParticleLightFrame[],
-  effects: Vector3[],
+  effects: Vector2[],
 ): void {
   frames.forEach((frame, index) => {
-    effects[index]?.set(frame.head, frame.strength, frame.presence);
+    effects[index]?.set(frame.head, frame.strength);
   });
 }
 
@@ -132,16 +133,11 @@ function createVolumeUniforms(
 ) {
   return {
     elementEffects: {
-      value: Array.from(
-        { length: light.capacity },
-        () => new Vector3(-1, 0, 1),
-      ),
+      value: Array.from({ length: light.capacity }, () => new Vector2(-1, 0)),
     },
     elementLightColor: { value: new Color(light.color) },
     elementBandWidth: { value: light.bandWidth },
     elementGlassFraction: { value: light.glassFraction },
-    elementDrift: { value: light.driftMeters },
-    elementScatter: { value: light.scatterMeters },
     elementRelief: { value: settings.relief },
     elementGrainSpread: { value: settings.grainSpreadMeters },
     elementAccentFraction: { value: settings.accentFraction },

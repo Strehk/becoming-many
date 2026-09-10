@@ -23,12 +23,9 @@ export const START_SETTINGS = {
     staggerSeconds: 0.18,
     guideStrength: 0.38,
     flashSeconds: 0.85,
-    dissolveSeconds: 2,
     bandWidth: 0.3,
     glassFraction: 0.32,
     color: 0xffce77,
-    driftMeters: 1.6,
-    scatterMeters: 1.1,
   },
   elementPassage: { maximumStepMeters: 3 },
   elementSimulation: {
