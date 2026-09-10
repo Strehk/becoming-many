@@ -3,6 +3,8 @@ import type { ExerciseDefinition } from "./start-contract";
 // 1. Shared demo and presentation settings
 export const START_SETTINGS = {
   demonstrationCueSeconds: 2,
+  showFlightGuidance: false,
+  pathOpacity: 0.22,
   retireSeconds: 1.2,
   belowFlightMeters: 0.5,
   seed: 17,

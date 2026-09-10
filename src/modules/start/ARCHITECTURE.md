@@ -36,7 +36,7 @@ route for that definition. A separate chunk engine is unnecessary for the MVP.
 | `particle-elements/particle-simulation.ts` | Movement-only flight impulse and damped return to resting positions. |
 | `particle-elements/particle-elements.ts` | Own combined particle buffers, rendering and display lifetime. |
 | `particle-elements/particle-contract.ts` | Placement, animation, simulation and geometry-factory contracts. |
-| `flight-guidance.ts` | Display the independent prediction of current flight. |
+| `flight-guidance.ts` | Optional prediction of current flight; disabled through `START_SETTINGS.showFlightGuidance`. |
 | `point-cloud/` | Own the ambient airborne particles. |
 
 Only the center imports the concrete engine, route, progress, and presentation.
@@ -227,6 +227,9 @@ This is not a demonstrated runtime defect. At the next relevant change, decide
 whether to document this as an intentional internal composition boundary or
 inject material creation through the center. A restructuring solely for symmetry
 is not currently justified.
+
+The route trail uses `START_SETTINGS.pathOpacity` as its maximum opacity.
+Reveal and retirement preserve this transparency.
 
 ## Quality and verification
 

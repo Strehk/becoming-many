@@ -101,6 +101,7 @@ class StartModule implements WorldModule {
       createFlightPath({
         scene: options.scene,
         belowFlightMeters: START_SETTINGS.belowFlightMeters,
+        opacity: START_SETTINGS.pathOpacity,
         createMaterial: () =>
           createPathParticleMaterial(createAirParticleMaterial),
       }),
@@ -111,12 +112,16 @@ class StartModule implements WorldModule {
       createAirParticlesModule(options),
       ...this.paths,
       ...this.elements.values(),
-      createFlightGuidance({
-        scene: options.scene,
-        viewpoint: options.viewpoint,
-        parameters: options.guidance,
-        constrainFlightPosition: options.constrainFlightPosition,
-      }),
+      ...(START_SETTINGS.showFlightGuidance
+        ? [
+            createFlightGuidance({
+              scene: options.scene,
+              viewpoint: options.viewpoint,
+              parameters: options.guidance,
+              constrainFlightPosition: options.constrainFlightPosition,
+            }),
+          ]
+        : []),
     ];
   }
 

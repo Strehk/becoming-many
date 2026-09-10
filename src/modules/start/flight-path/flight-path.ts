@@ -7,6 +7,8 @@ import type { PathParticleMaterial } from "./particle-contract";
 interface FlightPathOptions {
   readonly scene: Scene;
   readonly belowFlightMeters: number;
+  /** Maximum visible opacity; reveal and retirement multiply this value. */
+  readonly opacity?: number;
   readonly createMaterial: () => PathParticleMaterial;
 }
 
@@ -70,7 +72,8 @@ class FlightPath implements WorldModule {
     this.cloud.rotation.y = pose.yawRadians;
     this.revealDuration = revealSeconds;
     this.revealElapsed = 0;
-    this.cloud.material.opacity = revealSeconds > 0 ? 0 : 1;
+    this.cloud.material.opacity =
+      revealSeconds > 0 ? 0 : (this.options.opacity ?? 1);
     this.cloud.visible = true;
     this.fadeDuration = 0;
     this.options.scene.add(this.cloud);
@@ -101,9 +104,8 @@ class FlightPath implements WorldModule {
   private updateReveal(deltaSeconds: number): void {
     if (!this.cloud || this.revealDuration <= 0) return;
     this.revealElapsed += deltaSeconds;
-    this.cloud.material.opacity = Math.min(
-      1,
-      this.revealElapsed / this.revealDuration,
-    );
+    this.cloud.material.opacity =
+      (this.options.opacity ?? 1) *
+      Math.min(1, this.revealElapsed / this.revealDuration);
   }
 }
