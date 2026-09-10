@@ -16,6 +16,13 @@ import {
   createPathParticleGeometry,
   createPathParticleMaterial,
 } from "./flight-path/path-particles";
+import { createArrowShape } from "./particle-elements/arrow-shape";
+import { placeElements } from "./particle-elements/element-placement";
+import { createParticleAnimation } from "./particle-elements/particle-animation";
+import type { ElementSource } from "./particle-elements/particle-contract";
+import { createParticleElements } from "./particle-elements/particle-elements";
+import { createParticleSimulation } from "./particle-elements/particle-simulation";
+import { createRingShape } from "./particle-elements/ring-shape";
 import {
   type AirParticlesModuleOptions,
   createAirParticlesModule,
@@ -23,6 +30,7 @@ import {
 import { createAirParticleMaterial } from "./point-cloud/point-cloud-material";
 import type {
   ExerciseAction,
+  ExerciseDefinition,
   ExerciseRoute,
   PlacedRoute,
 } from "./start-contract";
@@ -39,6 +47,7 @@ interface PendingSection {
   readonly section: PlacedRoute;
   readonly generation: ReturnType<typeof createParticleGeneration>;
   readonly continuation: boolean;
+  readonly elements: readonly ElementSource[];
   queued: boolean;
   display?: Display;
 }
@@ -62,6 +71,10 @@ class StartModule implements WorldModule {
     retireSeconds: START_SETTINGS.retireSeconds,
   });
   private readonly paths: readonly Display[];
+  private readonly elements = new Map<
+    Display,
+    ReturnType<typeof createParticleElements>
+  >();
   private readonly modules: readonly WorldModule[];
   private current: ActiveSection | undefined;
   private pending: PendingSection | undefined;
@@ -76,9 +89,12 @@ class StartModule implements WorldModule {
           createPathParticleMaterial(createAirParticleMaterial),
       }),
     );
+    for (const path of this.paths)
+      this.elements.set(path, this.createElements());
     this.modules = [
       createAirParticlesModule(options),
       ...this.paths,
+      ...this.elements.values(),
       createFlightGuidance({
         scene: options.scene,
         viewpoint: options.viewpoint,
@@ -86,6 +102,21 @@ class StartModule implements WorldModule {
         constrainFlightPosition: options.constrainFlightPosition,
       }),
     ];
+  }
+
+  private createElements() {
+    return createParticleElements({
+      scene: this.options.scene,
+      belowFlightMeters: START_SETTINGS.belowFlightMeters,
+      animationSettings: START_SETTINGS.elementAnimation,
+      animation: createParticleAnimation(START_SETTINGS.elementAnimation),
+      simulation: createParticleSimulation(START_SETTINGS.elementSimulation),
+      readPosition: () => this.readPosition(),
+      createGeometry: (shape) =>
+        createPathParticleGeometry(shape, START_SETTINGS.elementParticles),
+      createMaterial: () =>
+        createPathParticleMaterial(createAirParticleMaterial),
+    });
   }
 
   readonly load = (): void => {
@@ -148,7 +179,7 @@ class StartModule implements WorldModule {
     if (action === "prepare-next") this.prepareSection(true);
     if (action === "advance") this.beginPreparedSection(true);
     if (action === "recover") {
-      for (const path of this.paths) path.retire(START_SETTINGS.retireSeconds);
+      for (const path of this.paths) this.retireDisplay(path);
       this.current = undefined;
       this.prepareSection(false);
     }
@@ -180,9 +211,23 @@ class StartModule implements WorldModule {
       section: { route, pose },
       generation,
       continuation,
+      elements: this.createElementSources(route, exercise),
       queued: false,
     };
     this.enqueuePending();
+  }
+
+  private createElementSources(
+    route: ExerciseRoute,
+    exercise: ExerciseDefinition,
+  ): ElementSource[] {
+    return placeElements(route, exercise.elements).map((placement) => ({
+      placement,
+      shape:
+        placement.kind === "ring"
+          ? createRingShape(exercise.elements.ringRadiusMeters)
+          : createArrowShape(exercise.elements.arrowLengthMeters),
+    }));
   }
 
   private createGeneration(
@@ -233,6 +278,7 @@ class StartModule implements WorldModule {
       pending.section.pose,
       START_SETTINGS.revealSeconds,
     );
+    this.elements.get(display)?.show(pending.elements, pending.section.pose);
     pending.display = display;
   }
 
@@ -249,15 +295,22 @@ class StartModule implements WorldModule {
           START_SETTINGS.entryLeadMeters,
           this.options.constrainFlightPosition,
         );
-    if (!pending.display)
+    if (!pending.display) {
       display.show(
         pending.generation.takeGeometry(),
         pose,
         START_SETTINGS.revealSeconds,
       );
-    if (connected) this.current?.display.retire(START_SETTINGS.retireSeconds);
+      this.elements.get(display)?.show(pending.elements, pose);
+    }
+    if (connected && this.current) this.retireDisplay(this.current.display);
     this.current = this.observeSection({ ...pending.section, pose }, display);
     this.pending = undefined;
+  }
+
+  private retireDisplay(display: Display): void {
+    display.retire(START_SETTINGS.retireSeconds);
+    this.elements.get(display)?.dissolve();
   }
 
   private observeSection(

@@ -4,6 +4,7 @@ import type {
   ParticleRange,
   PathParticleParameters,
 } from "./flight-path/particle-contract";
+import type { ElementSettings } from "./particle-elements/particle-contract";
 
 // 1. Authored exercise data
 export interface RouteParameters {
@@ -26,6 +27,7 @@ export interface ExerciseDefinition {
   readonly particles: PathParticleParameters;
   readonly progress: ProgressParameters;
   readonly deviation: DeviationParameters;
+  readonly elements: ElementSettings;
 }
 
 // 2. World placement and movement observations

@@ -9,6 +9,27 @@ export const START_SETTINGS = {
   entryLeadMeters: 12,
   generationMetersPerStep: 4,
   revealSeconds: 0.8,
+  elementAnimation: {
+    revealSeconds: 1.3,
+    dissolveSeconds: 1.2,
+    scatterMeters: 0.8,
+  },
+  elementSimulation: {
+    radiusMeters: 4.5,
+    impulse: 4,
+    spring: 3,
+    damping: 2.2,
+    maximumStepMeters: 3,
+    maximumOffsetMeters: 0.8,
+    maximumDeltaSeconds: 0.05,
+  },
+  elementParticles: {
+    densityPerMeter: { from: 24, to: 36 },
+    color: { from: 0x2c858d, to: 0x77bec2 },
+    sizeMeters: { from: 0.03, to: 0.06 },
+    spreadMeters: 0.18,
+    seed: 43,
+  },
 };
 
 // 2. Exercise sequence
@@ -30,6 +51,13 @@ export const START_EXERCISES = [
       sizeMeters: { from: 0.025, to: 0.055 },
       spreadMeters: 0.55,
       seed: 17,
+    },
+    elements: {
+      firstMeters: 4,
+      spacingMeters: 14,
+      ringRadiusMeters: 3,
+      arrowLengthMeters: 3.8,
+      arrowOffsetMeters: 4.2,
     },
     deviation: {
       distanceMeters: 5,
@@ -59,6 +87,13 @@ export const START_EXERCISES = [
       sizeMeters: { from: 0.025, to: 0.055 },
       spreadMeters: 0.55,
       seed: 17,
+    },
+    elements: {
+      firstMeters: 4,
+      spacingMeters: 14,
+      ringRadiusMeters: 3,
+      arrowLengthMeters: 3.8,
+      arrowOffsetMeters: 4.2,
     },
     deviation: {
       distanceMeters: 5,

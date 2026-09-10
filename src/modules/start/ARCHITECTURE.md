@@ -27,6 +27,13 @@ route for that definition. A separate chunk engine is unnecessary for the MVP.
 | `flight-path/flight-path.ts` | Own the visible particle trail, anchoring, fade, and resource disposal. |
 | `flight-path/path-particles.ts` | Generate particle attributes and material variation for a supplied route. |
 | `flight-path/particle-contract.ts` | Public particle ranges, sampled route, and material contracts. |
+| `particle-elements/ring-shape.ts` | Sample only the local ring shape, with an empty center. |
+| `particle-elements/arrow-shape.ts` | Sample only a complete arrow outline, including shaft and head. |
+| `particle-elements/element-placement.ts` | Derive ring centers and exterior arrow placements from the sampled route. |
+| `particle-elements/particle-animation.ts` | Shape-independent emergence and dissolution envelope. |
+| `particle-elements/particle-simulation.ts` | Movement-only flight impulse and damped return to resting positions. |
+| `particle-elements/particle-elements.ts` | Own combined particle buffers, rendering and display lifetime. |
+| `particle-elements/particle-contract.ts` | Placement, animation, simulation and geometry-factory contracts. |
 | `flight-guidance.ts` | Display the independent prediction of current flight. |
 | `point-cloud/` | Own the ambient airborne particles. |
 
@@ -85,6 +92,45 @@ adapter releases initial and recovery entries; regular connections have no pause
 There is no real audio playback or Show handoff yet. Final narration order and
 verified audio markers belong in `start-exercises.ts`; `start-audio-cues.ts` retains
 earlier research. Up/down exercises and application handoff remain separate work.
+
+## Procedural rings and arrows
+
+`particle-elements/` is independent of `flight-path/` implementations. Shape files
+only sample local coordinates, with +X as their shared forward axis. The center
+injects the existing particle geometry/material factories, preserving the same
+size, color, scatter and ambient wind as the route's point-cloud style.
+
+Each exercise's `elements` settings specify first distance, interval, ring radius,
+arrow length and exterior offset. Placement samples the generated route: rings
+are centered on its visible line and their planes are perpendicular to travel.
+Arrows appear during the curved exercise, point along its tangent, and are offset
+opposite the tangent change. No camera-facing rotation changes their meaning.
+The current horizontal course is supported; generalized banked/vertical courses
+would need an explicit frame/up-vector contract. Placement is deterministic for
+the same route and parameters and capped at twelve ring/arrow pairs per section.
+
+The shared `elementAnimation`, `elementSimulation`, and `elementParticles`
+settings are in `start-exercises.ts`. Emergence gathers scattered particles into
+their resting shape while increasing opacity. Dissolution reverses that effect.
+The same envelope applies to both shapes. In this MVP, a section's elements
+appear together and retire with that section or during route recovery.
+
+The simulation borrows actual world-space flight positions, never gaze. A swept
+segment applies a local impulse in travel direction; spring force and damping
+return displaced particles to their resting shape. Standing still or teleporting
+does not produce wind. Time steps and displacement are capped. Ambient drift
+continues through the reused GPU material; the bounded flight response uses
+reused CPU buffers and one dynamic position upload per visible section.
+
+The center pairs each of its three route displays with an element display.
+Compatible element geometries are merged into one cloud per section, capped at
+20,000 particles. Shape sampling occurs when the prepared section is shown;
+there is no extra loop or unbounded history. Small temporary shape geometries
+are disposed after merging, and all final buffers/materials are disposed on
+unload. Elements add one draw call per visible section. Their small fixed pool
+uses uncullable clouds so emergence and impulse offsets cannot clip at static
+shape bounds. Individual passage-triggered fades and audio timing remain outside
+this MVP; the review observations below remain undecided.
 
 ## Open architecture observations
 
