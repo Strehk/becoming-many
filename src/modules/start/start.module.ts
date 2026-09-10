@@ -1,29 +1,56 @@
-/**
- * Planning scaffold only. Not imported, composed, or activated by the application.
- *
- * Purpose: Host the procedural Start game within the existing WorldModule lifecycle.
- * Responsibility: Connect the local game, chunk calculations and future presentation.
- * Boundary: This is a content module, not an application/game framework or new loop.
- *
- * PLANNED FUNCTIONS
- * createStartModule(options): connect the local helpers to narrow injected World,
- *   movement, shared-time and speech observations; acquire no sibling implementations.
- * load(): initialize the bounded chunk/presentation pool. Asynchronous speech asset
- *   preparation remains with Run/Sound, not this synchronous WorldModule callback.
- * activate(): begin publication and capture initial rig history without false travel.
- * update(frameDelta): consume one frame of published flight and playback facts,
- *   advance the game once, and pass borrowed chunk/presentation facts to their owner.
- * deactivate(): stop local updates and invalidate passage history; coordinate speech
- *   pause through the existing owner without assuming that head tracking must stop.
- * unload(): invalidate queued chunk revisions, end local consumers and dispose owned
- *   resources once, including partial-load failure; release no borrowed Air/World data.
- *
- * FUTURE INTEGRATION, NOT PART OF THIS SCAFFOLD
- * Level Composition constructs/injects the module; Run owns startup/reset/teardown.
- * Show/Sound receive instruction requests through an explicit narrow contract and
- * publish trustworthy native playback facts back through the existing integration.
- * Review that contract before restoring any standalone speech or main-Show handoff.
- * Air Particles continue as their separate existing module and background layer.
- * start.level.ts will author selected exercise parameters as one literal only when
- * implementation is authorized. Current Air-only behavior remains unchanged.
- */
+// Start Module — composition and World lifecycle
+// Comment-only architecture; no executable implementation or runtime registration.
+
+// 1. Position in the application
+
+// Level Composition constructs Start; Run owns its lifetime and reset integration.
+// World calls its lifecycle and supplies the only rendering loop.
+// Air Particles remain a separate background module.
+
+// 2. Local components
+
+// start-game.runtime.ts — exercise decisions and the sole progress state.
+// start-chunks.ts — procedural geometry, passage facts and bounded assignments.
+// start-audio-cues.ts — immutable recording bindings and spoken markers.
+// Presentation — graphics resources and visual release of supplied geometry.
+
+// Start Module connects these responsibilities through narrow inputs and outputs.
+// Sibling components receive facts rather than importing one another's internals.
+
+// 3. External interfaces
+
+// Incoming: published rig movement, flight constraints, shared time, native speech
+// observations and access to the shared stream queue.
+// Outgoing: instruction requests and read-only exercise/completion observations.
+// The existing integration connects speech requests to Show and Sound.
+
+// createStartModule(options)
+// Connects local components with their borrowed application capabilities.
+// Asynchronous speech preparation belongs to Run/Sound before module activation.
+
+// 4. Preparation and activation
+
+// load()
+// Initializes bounded local storage and owned presentation resources synchronously.
+
+// activate()
+// Starts publication with fresh rig history, excluding earlier movement.
+
+// 5. Frame integration
+
+// update(frameDelta)
+// Samples published movement and speech, evaluates passage facts, advances the game
+// once and applies its chunk/presentation requests within the shared frame.
+
+// Game progress owns no independent clock. Chunk preparation uses StreamQueue.
+// UI observes exercise state; Control remains the sole writer of flight movement.
+
+// 6. Deactivation and release
+
+// deactivate()
+// Stops local updates and clears passage history. Playback pause travels through
+// its existing owner; XR head tracking remains independent.
+
+// unload()
+// Invalidates queued assignments, ends local consumers and disposes owned resources
+// once, including partial-load cleanup. Borrowed Air/World resources keep their owners.

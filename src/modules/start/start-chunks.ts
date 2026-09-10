@@ -1,51 +1,70 @@
-/**
- * Planning scaffold only. No geometry, buffers, classes, or jobs are created.
- *
- * Purpose: Generate and recycle spatial exercise chunks ahead of actual flight.
- * Responsibility: Own bounded chunk geometry, placement and resource assignments.
- * Boundary: Learning decisions belong to the game engine; audio belongs to Sound.
- * An exercise chunk is a path section with one learning goal, not an Air/terrain
- * grid cell. Its size must follow reachability and audio lead time, not grid size.
- *
- * CHUNK FACTS
- * Stable identity: lesson ID, attempt revision, deterministic seed, pool revision.
- * Spatial facts: fixed world entry/exit poses, bounds, route samples and goal shape.
- * Binding: exercise/audio cue ID; chunk generation itself never starts playback.
- * Resource facts: preparation readiness and owned fixed-capacity presentation slots.
- * No duplicate current-lesson index, success counter or narration state lives here.
- *
- * GENERATION AND RECYCLING
- * Plan from worldFlightPosition/worldFlightDirection plus injected flight limits.
- * At the current 2 m/s, the 19.30-second opening marker represents 38.60 metres of
- * path travel before the right instruction, even before formation/reaction time.
- * This is a lead-distance observation, not a prescribed straight-line spawn offset.
- * Reserve final poses near actual instruction release; prebuild reusable resources
- * earlier. Do not pin the first target near spawn while its long introduction runs.
- * Once shown, geometry stays world-fixed and never follows the viewer's gaze.
- * Pre-generate only bounded lookahead; do not activate the next exercise early.
- * Keep a bounded set of current, prepared and retiring slots; choose exact capacities
- * before implementation. There is no growing history of past chunks or GPU objects.
- * Reuse World's StreamQueue and revision-checked incremental jobs for expensive work.
- * No allocation, decoding, unbounded search or synchronous generation burst per frame.
- *
- * PLANNED FUNCTIONS
- * planExerciseChunk(request): calculate a reachable section from actual flight,
- *   exercise direction, available height and the required instruction lead time.
- * generateExerciseChunk(plan): fill preallocated route/goal buffers reproducibly;
- *   return not-ready when a bounded attempt cannot satisfy the constraints.
- * connectExerciseChunk(connection): match entry position/tangent to the preceding
- *   exit where reachable; otherwise wait/replan an unseen section without teleporting.
- * prepareChunk(job): perform one small generation step through the shared queue;
- *   publish only when the slot and attempt revisions still match.
- * sampleExercisePassage(frame): perform a swept previous-to-current rig passage test
- *   on the same geometry used for presentation; report facts, never award progress.
- * retireExerciseChunk(request): stop new passage reports and retain old world poses
- *   until presentation release completes; a miss produces no success feedback.
- * recycleExerciseChunk(slot): invalidate stale jobs/observations before reassignment.
- * unloadChunks(): invalidate every assignment and dispose only owned resources once.
- *
- * VISUAL DESIGN BOUNDARY
- * A chunk will contain one exercise; exact arrow, ring, route and cloud appearance
- * remains a separate presentation decision. Do not recreate the deleted effects
- * merely because earlier scene illustrations show them.
- */
+// Start Chunks — procedural exercise space
+// Comment-only architecture; no executable implementation.
+
+// 1. Responsibility
+
+// The chunk component owns spatial generation, stable geometry and pool assignments.
+// The game owns learning progress; presentation owns graphics resources.
+// An exercise chunk is a flight-path section, independent of Air's volume grid.
+
+// 2. Chunk structure
+
+// Identity: lesson ID, attempt revision, deterministic seed and pool revision.
+// Geometry: entry/exit poses, bounds, route samples and a counted goal shape.
+// Binding: exercise cue ID and references to assigned presentation slots.
+// Readiness: preparation status for this exact assignment revision.
+
+// Placement, visible guidance and passage detection share the same geometry.
+// Published poses remain fixed in world space throughout their visible lifetime.
+
+// 3. Placement and continuity
+
+// Placement follows worldFlightPosition and worldFlightDirection, constrained by
+// actual flight limits, height clearance and instruction lead time.
+// Gaze affects discovery, while rig movement determines the reachable path.
+
+// Reusable resources are prepared before narration. Final placement uses flight
+// near instruction release, so the long introduction does not leave a goal behind.
+// At 2 m/s, its 19.30-second marker represents 38.60 metres of travelled path.
+
+// planExerciseChunk(request)
+// Describes a reachable section from the current flight pose and lesson direction.
+// A bounded placement attempt returns not-ready when constraints cannot be met.
+
+// connectExerciseChunk(connection)
+// Aligns a new entry with the preceding exit and tangent where reachable.
+// An unreachable connection is replaced while unseen; visible chunks stay fixed.
+
+// 4. Generation and preparation
+
+// Current, prepared and retiring chunks occupy a fixed-capacity pool.
+// Lookahead prepares upcoming space without activating the next lesson.
+// Authored dimensions and capacities bound generation work and memory.
+
+// generateExerciseChunk(plan)
+// Fills reusable route and goal buffers deterministically from the chunk seed.
+
+// prepareChunk(job)
+// Performs one bounded generation step through World's shared StreamQueue.
+// Publication requires matching attempt and slot revisions.
+
+// 5. Passage observation
+
+// sampleExercisePassage(frame)
+// Tests swept movement between previous and current rig positions against the
+// published goal geometry. It reports a passage fact; the game awards progress.
+
+// 6. Retirement and recycling
+
+// retireExerciseChunk(request)
+// Ends passage reporting and retains geometry until presentation release finishes.
+// Neutral retirement and earned passage feedback are distinct outcomes.
+
+// recycleExerciseChunk(slot)
+// Invalidates the old assignment before reusing its buffers and presentation slots.
+// Delayed jobs cannot publish into a reassigned slot.
+
+// unloadChunks()
+// Invalidates all assignments and releases owned storage once.
+// Presentation disposes its graphics; borrowed World and Air resources remain owned
+// by their existing components.
