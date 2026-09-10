@@ -49,6 +49,16 @@ describe("control source", () => {
     expect(source.consumeFrame(77).buttonDown).toBe(false);
   });
 
+  it("reuses one borrowed frame across render reads", () => {
+    const source = createControlSource();
+    source.pushState(state({ pitch: 0.4 }), 0);
+
+    const first = source.consumeFrame(10);
+    const second = source.consumeFrame(20);
+
+    expect(second).toBe(first);
+  });
+
   it("discards pending edges once polls become stale", () => {
     const source = createControlSource();
     source.pushState(state({ pitch: 0.4 }), 0);

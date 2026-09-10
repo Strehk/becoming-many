@@ -1,5 +1,6 @@
-/** Shared glider rates and terrain-relative minimum rig clearance. */
+/** Desktop response, glider rates and terrain-relative minimum rig clearance. */
 export const FLIGHT_SETTINGS = {
+  desktopTiltReturnPerSecond: 4, // Released keys return from full tilt in 0.25 seconds.
   glideSpeedMetersPerSecond: 5, // Constant forward speed; lower values make flight gentler.
   climbRateMetersPerSecond: 10, // Vertical speed at full pitch deflection, before descent bias.
   yawRateRadiansPerSecond: 0.8, // Heading change at full roll deflection.

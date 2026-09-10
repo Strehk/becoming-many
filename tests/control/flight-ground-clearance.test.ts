@@ -7,7 +7,7 @@
 
 import { describe, expect, test } from "bun:test";
 import { Vector3 } from "three";
-import { keepFlightWithinHeightLimits } from "../../src/control/flight-ground-clearance";
+import { keepFlightWithinHeightLimits } from "../../src/control/flight-pose";
 
 const HEIGHT_LIMITS = {
   minimumGroundClearanceMeters: 1,

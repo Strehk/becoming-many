@@ -24,7 +24,8 @@ export interface M5Runtime {
   readonly setHost: (host: string) => void;
   /**
    * Exactly one render-frame reader consumes button edges. Undefined without
-   * a host; stale configured input yields neutral steering.
+   * a host; stale configured input yields neutral steering. The returned frame
+   * is borrowed and remains valid only until the next consume.
    */
   readonly consumeFrame: () => ControlFrame | undefined;
   readonly readObservation: () => M5Observation;

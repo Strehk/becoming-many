@@ -10,7 +10,7 @@ export type M5ConnectionStatus = "connecting" | "live";
 export interface ControlSource {
   /** Accept every parsed response from the configured host. */
   readonly pushState: (state: M5State, nowMilliseconds: number) => void;
-  /** Exactly one render-frame reader consumes pending button edges. */
+  /** Consume pending button edges into a sample borrowed until the next call. */
   readonly consumeFrame: (nowMilliseconds: number) => ControlFrame;
   /** Observe one timestamp without consuming button events or changing state. */
   readonly readObservation: (nowMilliseconds: number) => {
@@ -29,6 +29,14 @@ export function createControlSource(): ControlSource {
 
   let previousState: M5State | undefined;
   let currentFrame = createNeutralControl();
+  const consumedFrame = {
+    pitch: 0,
+    roll: 0,
+    quality: 0,
+    buttonPressed: false,
+    buttonDown: false,
+    buttonUp: false,
+  };
   let lastAcceptedAtMilliseconds: number | null = null;
   let pendingButtonDown = false;
   let pendingButtonUp = false;
@@ -68,14 +76,15 @@ export function createControlSource(): ControlSource {
     consumeFrame(nowMilliseconds) {
       const live = isLive(nowMilliseconds);
       // Only current edges reach the single reader, exactly once.
-      const frame: ControlFrame = {
-        ...(live ? currentFrame : createNeutralControl()),
-        buttonDown: live && pendingButtonDown,
-        buttonUp: live && pendingButtonUp,
-      };
+      consumedFrame.pitch = live ? currentFrame.pitch : 0;
+      consumedFrame.roll = live ? currentFrame.roll : 0;
+      consumedFrame.quality = live ? currentFrame.quality : 0;
+      consumedFrame.buttonPressed = live && currentFrame.buttonPressed;
+      consumedFrame.buttonDown = live && pendingButtonDown;
+      consumedFrame.buttonUp = live && pendingButtonUp;
       pendingButtonDown = false;
       pendingButtonUp = false;
-      return frame;
+      return consumedFrame;
     },
 
     readObservation(nowMilliseconds) {

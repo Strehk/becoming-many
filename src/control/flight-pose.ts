@@ -1,4 +1,4 @@
-import type { Vector3 } from "three";
+import type { Quaternion, Vector3 } from "three";
 import type { WorldSurface } from "../world-surface/world-surface";
 
 export interface FlightHeightLimits {
@@ -23,4 +23,13 @@ export function keepFlightWithinHeightLimits(
       : groundY + limits.maximumGroundClearanceMeters;
 
   position.y = Math.min(Math.max(position.y, minimumY), maximumY);
+}
+
+/** Reset rig position and heading; Run applies terrain clearance separately. */
+export function resetFlightPose(
+  position: Vector3,
+  quaternion: Quaternion,
+): void {
+  position.set(0, 0, 0);
+  quaternion.identity();
 }

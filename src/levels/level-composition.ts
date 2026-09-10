@@ -7,12 +7,16 @@
 
 import { type Matrix4, Vector3 } from "three";
 import type { BenchmarkRun } from "../benchmark/benchmark-run";
-import { createDesktopControls } from "../control/desktop-controls.runtime";
-import type { FlightHeightLimits } from "../control/flight-ground-clearance";
-import { keepFlightWithinHeightLimits } from "../control/flight-ground-clearance";
-import { resetFlightPose } from "../control/flight-reset";
+import type { FlightInputSource } from "../control/control-contract";
+import { createDesktopController } from "../control/desktop-controller";
+import { createFlightControl } from "../control/flight-control";
+import type { FlightHeightLimits } from "../control/flight-pose";
+import {
+  keepFlightWithinHeightLimits,
+  resetFlightPose,
+} from "../control/flight-pose";
 import { FLIGHT_SETTINGS } from "../control/flight-settings";
-import { createM5Flight } from "../control/m5-flight.runtime";
+import { createM5Controller } from "../control/m5-controller";
 import { END_CREDITS } from "../dramaturgy/end-credits";
 import { ORGAN_SCORE } from "../dramaturgy/organ-score";
 import { PIECE_PASSAGES } from "../dramaturgy/piece-schedule";
@@ -794,26 +798,29 @@ export function composeWorld(
   });
 }
 
-/** Bind input owners to the rig; release an unpublished M5 if desktop construction fails. */
+/** Bind input owners to the rig and release unpublished resources after failure. */
 export function composeControls(
   world: World,
   benchmark: BenchmarkRun | undefined,
   surface: Pick<WorldSurface, "groundYAt">,
 ) {
   const m5 = benchmark ? undefined : createM5Runtime();
+  let desktop: ReturnType<typeof createDesktopController> | undefined;
   try {
+    desktop = benchmark
+      ? undefined
+      : createDesktopController(world.camera, world.renderer.domElement);
+    const sources: FlightInputSource[] = [];
+    if (m5) sources.push(createM5Controller(m5));
+    if (desktop) sources.push(desktop);
     return {
       ...composeRigCommands(world, surface.groundYAt),
       m5,
-      desktop: benchmark
-        ? undefined
-        : createDesktopControls(
-            world.camera,
-            world.viewerRig,
-            world.renderer.domElement,
-          ),
+      desktop,
+      flight: createFlightControl(world.viewerRig, sources),
     };
   } catch (error) {
+    void desktop?.unload();
     m5?.unload();
     throw error;
   }
@@ -825,7 +832,6 @@ function composeRigCommands(
   groundYAt: (x: number, z: number) => number,
 ) {
   return {
-    applyM5Flight: createM5Flight(world.viewerRig),
     resetRig: () =>
       resetFlightPose(world.viewerRig.position, world.viewerRig.quaternion),
     constrainHeight: (limits: FlightHeightLimits) =>

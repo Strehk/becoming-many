@@ -62,8 +62,8 @@ test("Run gates training preparation and releases failed or cancelled restart ch
           unload:async()=>{worldEnds++;}, readGraphicsInfo(){}, renderCounters:{}, xr:{},
         }),
       }));
-      mock.module("./src/control/desktop-controls.runtime.ts", () => ({
-        createDesktopControls: () => ({update(){},unload(){}}),
+      mock.module("./src/control/desktop-controller.ts", () => ({
+        createDesktopController: () => ({readInput(){return {forwardTilt:0,rightTilt:0}},unload(){}}),
       }));
       mock.module("./src/m5/runtime/m5.runtime.ts", () => ({
         createM5Runtime: () => ({consumeFrame(){},unload(){}}),

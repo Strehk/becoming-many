@@ -415,7 +415,6 @@ class LevelRun {
       this.benchmark.placeViewer(this.world.viewerRig);
       return;
     }
-    const controlFrame = this.m5?.consumeFrame();
     if (
       this.playback?.running.readTutorial() &&
       !this.playback.running.sample().isPlaying
@@ -424,9 +423,7 @@ class LevelRun {
     const speed = this.startContent
       ? this.tutorialPreset?.flightSpeedMetersPerSecond
       : undefined;
-    if (controlFrame)
-      this.controls?.applyM5Flight(controlFrame, deltaSeconds, speed);
-    else this.controls?.desktop?.update(deltaSeconds, speed);
+    this.controls?.flight.update(deltaSeconds, speed);
   }
 
   private updateHeightLimits(): void {

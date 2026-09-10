@@ -1,5 +1,5 @@
 /**
- * Purpose: Prove M5 locomotion survives WebXR's per-frame head-pose write.
+ * Purpose: Prove locomotion survives WebXR's per-frame head-pose write.
  * Context: WebXR owns the child camera while flight owns its parent viewer rig.
  * Responsibility: Exercise the integration between the glider and viewer rig.
  * Boundary: Session lifecycle, polling, rendering, and target-device checks stay outside.
@@ -7,9 +7,8 @@
 
 import { describe, expect, test } from "bun:test";
 import { Matrix4, type Object3D, Scene } from "three";
+import { createFlightControl } from "../../src/control/flight-control";
 import { FLIGHT_SETTINGS } from "../../src/control/flight-settings";
-import { createM5Flight } from "../../src/control/m5-flight.runtime";
-import { createNeutralControl } from "../../src/m5/control-frame";
 import {
   createViewerRig,
   VIEW_PITCH_ASSIST_DEGREES,
@@ -18,14 +17,14 @@ import {
 const STANDING_HEIGHT_METERS = 1.6;
 
 describe("VR flight", () => {
-  test("keeps a steady M5 glide while WebXR replaces the head pose", () => {
+  test("keeps a steady glide while WebXR replaces the head pose", () => {
     const scene = new Scene();
     const viewer = createViewerRig(VIEW_PITCH_ASSIST_DEGREES);
     scene.add(viewer.group);
-    const applyM5Flight = createM5Flight(viewer.group);
+    const flight = createFlightControl(viewer.group, []);
 
     for (let frame = 0; frame < 10; frame += 1) {
-      applyM5Flight(createNeutralControl(), 1);
+      flight.update(1);
       viewer.publish();
       writeHeadsetPose(
         viewer.camera,
@@ -45,13 +44,15 @@ describe("VR flight", () => {
     );
   });
 
-  test("keeps M5 steering on the rig instead of the headset camera", () => {
+  test("keeps steering on the rig instead of the headset camera", () => {
     const scene = new Scene();
     const viewer = createViewerRig(VIEW_PITCH_ASSIST_DEGREES);
     scene.add(viewer.group);
-    const applyM5Flight = createM5Flight(viewer.group);
+    const flight = createFlightControl(viewer.group, [
+      { readInput: () => ({ forwardTilt: 0, rightTilt: -0.5 }) },
+    ]);
 
-    applyM5Flight({ ...createNeutralControl(), roll: 0.5 }, 1);
+    flight.update(1);
     viewer.publish();
     const steeredQuaternion = viewer.group.quaternion.clone();
 

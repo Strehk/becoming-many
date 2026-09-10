@@ -13,6 +13,8 @@ test("Level Runtime delegates concrete world construction", async () => {
   ).text();
 
   expect(runtimeSource).toContain('from "./level-composition"');
+  expect(runtimeSource).toContain("this.controls?.flight.update(");
+  expect(runtimeSource).not.toContain("consumeFrame()");
   expect(runtimeSource).not.toMatch(/from "\.\.\/modules\//);
   expect(runtimeSource).not.toContain("-definition");
 });

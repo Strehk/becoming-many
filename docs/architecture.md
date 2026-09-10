@@ -86,9 +86,32 @@ World -> publish viewpoint -> update active modules -> bounded stream work
 World -> render once
 ```
 
-World publishes viewpoint and rendering facts. Control maps input to rig
-movement. Show owns time, language, narration, and presentation policy. Content
-and Sound consume injected facts without reaching into those implementations.
+Every flight input source exposes only `forwardTilt` and `rightTilt`, normalized
+to −1..1. Control reads every connected source on each live frame, adds the axes
+in the fixed order wired by Composition, and clamps each sum to −1..1. Neutral,
+disconnected, or stale sources return zero axes. This is the complete conflict
+rule: desktop and M5 input remain simultaneous, with no exclusive mode or
+priority policy. A later source such as a gamepad can implement the same
+contract without changing Run or the flight model.
+
+Only the desktop adapter has source-local response state: key presses reach full
+tilt immediately, while released axes return linearly to zero over 0.25 seconds
+from the supplied frame delta. Pointer-lock loss, blur, and unload neutralize it
+immediately. The M5 adapter adds no rebound and leaves its existing processing
+unchanged. This behavior runs inside the same source read and creates no timer,
+runtime, or second loop.
+
+Control owns the one flight model that mutates the viewer rig. Each live update
+applies continuous forward thrust plus the combined tilt. Mouse and headset pose
+change only the camera's local view and publish no flight axes, so looking around
+cannot alter the trajectory. Run owns frame integration, active speed, and
+height limits; Composition owns source construction and wiring. World publishes
+the resulting `worldFlightPosition` and `worldFlightDirection` alongside local
+eye facts. The proposed visible Start prediction is outside this refactor; a
+later implementation consumes actual rig movement instead of adding flight
+physics, a runtime, or a loop. Show owns time, language, narration, and
+presentation policy. Content and Sound consume injected facts without reaching
+into those implementations.
 
 ## Local domain stars
 

@@ -2,7 +2,7 @@
 
 M5 owns device communication and normalized input. Run owns its HTTP runtime;
 Flash Entry owns its USB setup session. UI consumes public capabilities; flight
-in `src/control/m5-flight.runtime.ts` consumes normalized input without device
+in `src/control/m5-controller.ts` consumes normalized input without device
 connection details. This document is the entry point across these environments.
 
 ## Public module boundary
@@ -16,16 +16,17 @@ tests, not application consumers.
 | Public entry | Inputs and output | Ownership and failure contract |
 | --- | --- | --- |
 | `runtime/m5.runtime.ts` | `setHost(host)` accepts hostname, host:port or origin. `consumeFrame()` produces normalized input; `readObservation()` produces device status/sample/effective input. | Run constructs it without I/O, starts polling by setting the host and calls `unload`. Poll/parse failures become neutral input after expiry. Host replacement clears history; unload permanently stops new work. |
-| `control-frame.ts` | Pitch/roll in −1..1, quality in 0..1, button state and one-consumer edges. | Pure read-only contract with no host, firmware or transport facts. Flight borrows input and changes only its own rig. Neutral axes preserve glide/descent, not stop. |
+| `control-frame.ts` | Pitch/roll in −1..1, quality in 0..1, button state and one-consumer edges. | Pure read-only device contract with no host, firmware or transport facts. `m5-controller.ts` maps pitch/roll onto Control's `forwardTilt`/`rightTilt` sample. Neutral axes preserve thrust/descent, not stop. |
 | `setup/serial-setup.ts` | `openSerialSetup(events)` returns an open USB channel. `send(command)` writes one newline-delimited command; events report validated responses. | Flash Entry creates/closes the channel. Picker/open/write/close failures reject; read errors use `onError` and end the channel. No concurrent writes or command queue. Closing awaits reader/writer release; repeat close shares completion. |
 | `protocol.ts` | Untrusted HTTP/serial text → validated wire values or null; serial commands and result discriminants. | Pure device contract shared by firmware tooling, simulator and adapters. Firmware implements the C++ side; export verifies the compatible version. It owns neither runtime state nor resources. |
 
 Observations never consume button edges. `consumeFrame` has one application
-reader in Run; first/reconnected samples establish the counter baseline without
-replaying earlier presses. Each returned frame is read-only and valid for that
-processing step. Retaining an observation does not keep its freshness current;
-call `readObservation` again. Accepted sample storage can be shared and must not
-be mutated; UI cannot obtain runtime cleanup or the frame consumer.
+reader in Control; first/reconnected samples establish the counter baseline
+without replaying earlier presses. Each returned frame is a reused read-only
+sample and valid only for that processing step. Retaining an observation does
+not keep its freshness current; call `readObservation` again. Accepted sample
+storage can be shared and must not be mutated; UI cannot obtain runtime cleanup
+or the frame consumer.
 
 Serial response callbacks observe asynchronous device replies. A completed send
 is not an acknowledgement, and replies are not returned by `send`. Callbacks
@@ -72,9 +73,11 @@ exports exist for this processing chain and its focused tests only.
 `readObservation` uses one timestamp: `host` is the configured address, `status`
 is connection freshness, `sample` is the accepted raw pose and `control`
 is effective pitch/roll/quality. Invalid/stale samples are absent and configured
-input is neutral. With no host, control is undefined and desktop input can take
-over. A live device may still have neutral effective input. The UI must not infer
-steering readiness from connection status alone.
+input is neutral. With no host, the diagnostic control observation is undefined,
+while the flight adapter still returns both neutral axes. Desktop input is read
+independently and combines with M5 input in either state; there is no source
+selection or priority. A live device may still have neutral effective input. The
+UI must not infer steering readiness from connection status alone.
 
 ## Firmware and executable tools
 
