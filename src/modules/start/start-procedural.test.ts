@@ -94,9 +94,11 @@ function flyFirstRoute(fixture: ReturnType<typeof createFixture>): void {
       Math.min(distance, route.lengthMeters),
       viewpoint.worldPosition,
     );
-    viewpoint.worldFlightDirection
-      .subVectors(viewpoint.worldPosition, previous)
-      .normalize();
+    if (!viewpoint.worldPosition.equals(previous)) {
+      viewpoint.worldFlightDirection
+        .subVectors(viewpoint.worldPosition, previous)
+        .normalize();
+    }
     tick();
   }
 }

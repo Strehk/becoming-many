@@ -14,10 +14,10 @@ export const START_EXERCISES = [
   {
     id: "left",
     route: {
-      leadMeters: 9,
-      straightMeters: 5,
+      leadMeters: 0,
+      straightMeters: 10,
       turnSign: -1,
-      turnRadiusMeters: { from: 18, to: 22 },
+      turnRadiusMeters: { from: 38, to: 46 },
       turnRadians: { from: 0.8, to: 1.05 },
     },
     particles: {
@@ -37,10 +37,10 @@ export const START_EXERCISES = [
   {
     id: "right",
     route: {
-      leadMeters: 9,
-      straightMeters: 5,
+      leadMeters: 0,
+      straightMeters: 10,
       turnSign: 1,
-      turnRadiusMeters: { from: 18, to: 22 },
+      turnRadiusMeters: { from: 38, to: 46 },
       turnRadians: { from: 0.8, to: 1.05 },
     },
     particles: {
