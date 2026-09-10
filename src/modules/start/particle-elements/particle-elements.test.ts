@@ -7,6 +7,7 @@ import { createArrowShape } from "./arrow-shape";
 import { placeElements } from "./element-placement";
 import { createParticleAnimation } from "./particle-animation";
 import { createParticleElements } from "./particle-elements";
+import { createParticleLight } from "./particle-light";
 import { createParticleSimulation } from "./particle-simulation";
 import { createRingShape } from "./ring-shape";
 
@@ -107,6 +108,7 @@ test("combined display dissolves and releases owned rendering resources", () => 
     disposed = true;
   });
   const display = createParticleElements({
+    light: createParticleLight(START_SETTINGS.elementLight),
     grainsPerSample: START_SETTINGS.elementVolume.grainsPerSample,
     scene,
     belowFlightMeters: 0.5,

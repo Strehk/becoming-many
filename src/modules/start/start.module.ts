@@ -19,13 +19,20 @@ import {
 import { createArrowShape } from "./particle-elements/arrow-shape";
 import { placeElements } from "./particle-elements/element-placement";
 import { createParticleAnimation } from "./particle-elements/particle-animation";
-import type { ElementSource } from "./particle-elements/particle-contract";
+import type {
+  ElementSource,
+  ParticleLight,
+  RingPassage,
+  RingTarget,
+} from "./particle-elements/particle-contract";
 import { createParticleElements } from "./particle-elements/particle-elements";
+import { createParticleLight } from "./particle-elements/particle-light";
 import { createParticleSimulation } from "./particle-elements/particle-simulation";
 import {
   createVolumeMaterial,
   fillParticleVolume,
 } from "./particle-elements/particle-volume";
+import { createRingPassage } from "./particle-elements/ring-passage";
 import { createRingShape } from "./particle-elements/ring-shape";
 import {
   type AirParticlesModuleOptions,
@@ -35,6 +42,7 @@ import { createAirParticleMaterial } from "./point-cloud/point-cloud-material";
 import type {
   ExerciseAction,
   ExerciseDefinition,
+  ExercisePose,
   ExerciseRoute,
   PlacedRoute,
 } from "./start-contract";
@@ -79,6 +87,10 @@ class StartModule implements WorldModule {
     Display,
     ReturnType<typeof createParticleElements>
   >();
+  private readonly feedback = new Map<
+    Display,
+    { light: ParticleLight; passage: RingPassage }
+  >();
   private readonly modules: readonly WorldModule[];
   private current: ActiveSection | undefined;
   private pending: PendingSection | undefined;
@@ -94,7 +106,7 @@ class StartModule implements WorldModule {
       }),
     );
     for (const path of this.paths)
-      this.elements.set(path, this.createElements());
+      this.elements.set(path, this.createElements(path));
     this.modules = [
       createAirParticlesModule(options),
       ...this.paths,
@@ -108,8 +120,14 @@ class StartModule implements WorldModule {
     ];
   }
 
-  private createElements() {
+  private createElements(path: Display) {
+    const light = createParticleLight(START_SETTINGS.elementLight);
+    const passage = createRingPassage(
+      START_SETTINGS.elementPassage.maximumStepMeters,
+    );
+    this.feedback.set(path, { light, passage });
     return createParticleElements({
+      light,
       grainsPerSample: START_SETTINGS.elementVolume.grainsPerSample,
       scene: this.options.scene,
       belowFlightMeters: START_SETTINGS.belowFlightMeters,
@@ -126,6 +144,7 @@ class StartModule implements WorldModule {
         createVolumeMaterial(
           createPathParticleMaterial(createAirParticleMaterial),
           START_SETTINGS.elementVolume,
+          { settings: START_SETTINGS.elementLight, animation: light },
         ),
     });
   }
@@ -134,6 +153,8 @@ class StartModule implements WorldModule {
     for (const module of this.modules) this.runtime.load(module);
   };
   readonly activate = (): void => {
+    for (const { passage } of this.feedback.values())
+      passage.reset([], this.readPosition());
     this.cancelPending();
     this.game.reset();
     this.current = undefined;
@@ -143,11 +164,15 @@ class StartModule implements WorldModule {
   };
   readonly deactivate = (): void => {
     this.active = false;
+    for (const { passage } of this.feedback.values())
+      passage.reset([], this.readPosition());
     this.cancelPending();
     for (const module of this.modules) this.runtime.deactivate(module);
   };
   readonly unload = (): void => {
     this.active = false;
+    for (const { passage } of this.feedback.values())
+      passage.reset([], this.readPosition());
     this.cancelPending();
     this.current = undefined;
     const errors: unknown[] = [];
@@ -182,6 +207,8 @@ class StartModule implements WorldModule {
       instructionEnded: true,
     });
     this.applyAction(action);
+    for (const { light, passage } of this.feedback.values())
+      for (const index of passage.update(position)) light.pass(index);
     this.runtime.update(deltaSeconds);
   };
 
@@ -234,6 +261,11 @@ class StartModule implements WorldModule {
   ): ElementSource[] {
     return placeElements(route, exercise.elements).map((placement) => ({
       placement,
+      openingRadiusMeters:
+        placement.kind === "ring"
+          ? exercise.elements.ringRadiusMeters -
+            START_SETTINGS.elementVolume.coreRadiusMeters
+          : undefined,
       shape:
         placement.kind === "ring"
           ? createRingShape(exercise.elements.ringRadiusMeters)
@@ -289,7 +321,7 @@ class StartModule implements WorldModule {
       pending.section.pose,
       START_SETTINGS.revealSeconds,
     );
-    this.elements.get(display)?.show(pending.elements, pending.section.pose);
+    this.showElements(display, pending.elements, pending.section.pose);
     pending.display = display;
   }
 
@@ -312,7 +344,7 @@ class StartModule implements WorldModule {
         pose,
         START_SETTINGS.revealSeconds,
       );
-      this.elements.get(display)?.show(pending.elements, pose);
+      this.showElements(display, pending.elements, pose);
     }
     if (connected && this.current) this.retireDisplay(this.current.display);
     this.current = this.observeSection({ ...pending.section, pose }, display);
@@ -322,6 +354,34 @@ class StartModule implements WorldModule {
   private retireDisplay(display: Display): void {
     display.retire(START_SETTINGS.retireSeconds);
     this.elements.get(display)?.dissolve();
+    this.feedback.get(display)?.passage.reset([], this.readPosition());
+  }
+
+  // Visual passage feedback is independent of the exercise progression observer.
+  private showElements(
+    display: Display,
+    sources: readonly ElementSource[],
+    pose: ExercisePose,
+  ): void {
+    this.elements.get(display)?.show(sources, pose);
+    const targets: RingTarget[] = [];
+    sources.forEach((source, elementIndex) => {
+      if (!source.openingRadiusMeters) return;
+      const center = source.placement.position
+        .clone()
+        .applyAxisAngle(new Vector3(0, 1, 0), pose.yawRadians)
+        .add(pose.position);
+      center.y -= START_SETTINGS.belowFlightMeters;
+      targets.push({
+        elementIndex,
+        center,
+        radiusMeters: source.openingRadiusMeters,
+        direction: source.placement.direction
+          .clone()
+          .applyAxisAngle(new Vector3(0, 1, 0), pose.yawRadians),
+      });
+    });
+    this.feedback.get(display)?.passage.reset(targets, this.readPosition());
   }
 
   private observeSection(

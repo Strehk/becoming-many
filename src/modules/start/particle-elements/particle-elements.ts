@@ -17,6 +17,7 @@ import type {
   ElementGeometryFactory,
   ElementSource,
   ParticleAnimation,
+  ParticleLight,
   ParticleSimulation,
 } from "./particle-contract";
 
@@ -33,6 +34,7 @@ interface ElementOptions {
   readonly animationSettings: AnimationSettings;
   readonly animation: ParticleAnimation;
   readonly simulation: ParticleSimulation;
+  readonly light: ParticleLight;
   readonly readPosition: () => Readonly<Vector3>;
   readonly createGeometry: ElementGeometryFactory;
   readonly createMaterial: () => PathParticleMaterial;
@@ -71,6 +73,7 @@ class ParticleElements {
   };
   readonly deactivate = (): void => {
     this.options.animation.reset();
+    this.options.light.reset(0);
     if (this.cloud) this.cloud.visible = false;
     this.cloud?.removeFromParent();
   };
@@ -108,6 +111,7 @@ class ParticleElements {
         this.options.animationSettings.scatterMeters,
     );
     this.options.simulation.reset(this.targets);
+    this.options.light.reset(sources.length);
     this.options.animation.reveal();
     if (this.material) this.material.pointsMaterial.opacity = 0;
     this.cloud.visible = true;
@@ -120,8 +124,9 @@ class ParticleElements {
   ): BufferGeometry {
     const parts: BufferGeometry[] = [];
     try {
-      for (const source of sources)
-        parts.push(this.placeGeometry(source, pose));
+      sources.forEach((source, index) => {
+        parts.push(this.placeGeometry(source, pose, index));
+      });
       const count = parts.reduce(
         (sum, part) => sum + part.getAttribute("position").count,
         0,
@@ -169,8 +174,10 @@ class ParticleElements {
   private placeGeometry(
     source: ElementSource,
     pose: ExercisePose,
+    index: number,
   ): BufferGeometry {
     const geometry = this.options.createGeometry(source.shape);
+    this.tagGeometry(geometry, index);
     const { placement } = source;
     geometry.applyQuaternion(
       new Quaternion().setFromUnitVectors(LOCAL_FORWARD, placement.direction),
@@ -188,7 +195,44 @@ class ParticleElements {
       pose.position.y - this.options.belowFlightMeters,
       pose.position.z,
     );
+    this.setDirection(geometry, placement.direction, pose.yawRadians);
     return geometry;
+  }
+
+  private setDirection(
+    geometry: BufferGeometry,
+    forward: Vector3,
+    yaw: number,
+  ): void {
+    const direction = forward.clone().applyAxisAngle(UP, yaw);
+    const forwards = new Float32Array(
+      geometry.getAttribute("position").count * 3,
+    );
+    for (let offset = 0; offset < forwards.length; offset += 3)
+      direction.toArray(forwards, offset);
+    geometry.setAttribute(
+      "elementDirection",
+      new Float32BufferAttribute(forwards, 3),
+    );
+  }
+
+  // Local forward coordinates survive world placement and drive every shape alike.
+  private tagGeometry(geometry: BufferGeometry, index: number): void {
+    geometry.computeBoundingBox();
+    const positions = geometry.getAttribute("position");
+    const minimum = geometry.boundingBox?.min.x ?? 0;
+    const span = Math.max(0.001, (geometry.boundingBox?.max.x ?? 0) - minimum);
+    const axis = new Float32Array(positions.count);
+    for (let sample = 0; sample < axis.length; sample++)
+      axis[sample] = (positions.getX(sample) - minimum) / span;
+    geometry.setAttribute("elementAxis", new Float32BufferAttribute(axis, 1));
+    geometry.setAttribute(
+      "elementIndex",
+      new Float32BufferAttribute(
+        new Float32Array(positions.count).fill(index),
+        1,
+      ),
+    );
   }
 
   // 4. Shared emergence/dissolve envelope plus shape-independent flight disturbance

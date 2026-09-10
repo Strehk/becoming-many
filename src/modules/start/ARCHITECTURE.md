@@ -147,8 +147,34 @@ there is no extra loop or unbounded history. Small temporary shape geometries
 are disposed after merging, and all final buffers/materials are disposed on
 unload. Elements add one draw call per visible section. Their small fixed pool
 uses uncullable clouds so emergence and impulse offsets cannot clip at static
-shape bounds. Individual passage-triggered fades and audio timing remain outside
-this MVP; the review observations below remain undecided.
+shape bounds. Individual ring feedback now follows actual forward passage. Audio timing remains
+outside this MVP; the review observations below remain undecided.
+
+### Directional light and passage feedback
+
+- `ring-passage.ts` intersects real movement segments with world-space ring planes.
+  Only forward crossings inside the clear opening emit an element index, once.
+  Reverse movement, misses and position discontinuities do not produce success.
+- `particle-light.ts` owns a bounded timeline per element: a repeating forward
+  sweep, a stronger single success sweep, then a two-second dissolve. It knows
+  neither ring geometry nor exercise completion.
+- `particle-grain.vert.glsl` applies the same normalized local forward coordinate
+  to all forms. Arrows illuminate from tail to tip; rings illuminate across their
+  depth. Passed grains scatter and drift forward independently of other elements.
+- `particle-grain.frag.glsl` adds warm luminous cores and highlights to a seeded
+  subset of grains. This is a glass-like shading approximation without refraction,
+  bloom, extra lights or another render pass.
+- `particle-volume.ts` updates a fixed uniform array once per element. It borrows
+  the injected timeline; particle buffers do not need per-frame light uploads.
+- `start.module.ts` alone connects detector events to the timelines. It places the
+  ring targets with the same pose and vertical offset as the displayed geometry,
+  and clears observers during retirement, recovery and shutdown. Visual success
+  does not decide whether an exercise is passed.
+
+Settings live in `START_SETTINGS.elementLight` and `elementPassage`. The opening
+radius is the configured ring radius minus the dense particle core radius. The
+existing section-wide animation still controls emergence and cancellation, which
+never fabricates a success event. Resetting a display clears its old light state.
 
 ## Open architecture observations
 

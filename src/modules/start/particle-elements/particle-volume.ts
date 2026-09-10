@@ -1,7 +1,18 @@
-import { type BufferGeometry, Float32BufferAttribute, Vector3 } from "three";
+import {
+  type BufferGeometry,
+  Color,
+  Float32BufferAttribute,
+  Vector3,
+} from "three";
 import type { PathParticleMaterial } from "../flight-path/particle-contract";
-import type { VolumeSettings } from "./particle-contract";
+import type {
+  ParticleLight,
+  ParticleLightFrame,
+  ParticleLightSettings,
+  VolumeSettings,
+} from "./particle-contract";
 import grainShader from "./particle-grain.frag.glsl?raw";
+import grainVertex from "./particle-grain.vert.glsl?raw";
 
 // 1. Shared volume distribution: dense center with a sparse, translucent dust envelope
 /** Mutate owned particle geometry; local shape samples remain independent of this material treatment. */
@@ -66,49 +77,85 @@ function createRandom(seed: number): () => number {
   };
 }
 
+interface LightOptions {
+  readonly settings: ParticleLightSettings;
+  readonly animation: ParticleLight;
+}
+
 // 2. Per-particle opacity preserves black pigment while softening the outer cloud
 /** Extend an injected material; ownership and its existing wind/size treatment are preserved. */
 export function createVolumeMaterial(
   material: PathParticleMaterial,
   settings: VolumeSettings,
+  light: LightOptions,
 ): PathParticleMaterial {
+  const uniforms = createVolumeUniforms(settings, light.settings);
   const points = material.pointsMaterial;
   const compileBase = points.onBeforeCompile.bind(points);
   const baseKey = points.customProgramCacheKey();
   points.onBeforeCompile = (shader, renderer) => {
     compileBase(shader, renderer);
-    shader.uniforms.elementRelief = { value: settings.relief };
-    shader.uniforms.elementGrainSpread = { value: settings.grainSpreadMeters };
-    shader.uniforms.elementAccentFraction = { value: settings.accentFraction };
-    shader.vertexShader = patchVolumeVertex(shader.vertexShader);
+    Object.assign(shader.uniforms, uniforms);
+    shader.vertexShader = patchVolumeVertex(shader.vertexShader).replace(
+      "ELEMENT_CAPACITY",
+      String(light.settings.capacity),
+    );
     shader.fragmentShader = patchVolumeFragment(shader.fragmentShader);
   };
   points.customProgramCacheKey = () =>
-    `${baseKey}:particle-volume-instanced-grains-v5`;
-  return material;
+    `${baseKey}:particle-volume-directional-light-v7:${light.settings.capacity}`;
+  return {
+    pointsMaterial: points,
+    update(seconds) {
+      material.update(seconds);
+      updateLightUniforms(
+        light.animation.update(seconds),
+        uniforms.elementEffects.value,
+      );
+    },
+  };
+}
+
+function updateLightUniforms(
+  frames: readonly ParticleLightFrame[],
+  effects: Vector3[],
+): void {
+  frames.forEach((frame, index) => {
+    effects[index]?.set(frame.head, frame.strength, frame.presence);
+  });
+}
+
+// Fixed uniform storage: update one record per element instead of every grain.
+function createVolumeUniforms(
+  settings: VolumeSettings,
+  light: ParticleLightSettings,
+) {
+  return {
+    elementEffects: {
+      value: Array.from(
+        { length: light.capacity },
+        () => new Vector3(-1, 0, 1),
+      ),
+    },
+    elementLightColor: { value: new Color(light.color) },
+    elementBandWidth: { value: light.bandWidth },
+    elementGlassFraction: { value: light.glassFraction },
+    elementDrift: { value: light.driftMeters },
+    elementScatter: { value: light.scatterMeters },
+    elementRelief: { value: settings.relief },
+    elementGrainSpread: { value: settings.grainSpreadMeters },
+    elementAccentFraction: { value: settings.accentFraction },
+  };
 }
 
 function patchVolumeVertex(source: string): string {
   return source
-    .replace(
-      "#include <common>",
-      `#include <common>
-      attribute float elementOpacity;
-      attribute float elementSeed;
-      attribute vec3 elementCenter;
-      attribute float grainIndex;
-      uniform float elementGrainSpread;
-      uniform float elementAccentFraction;
-      varying float volumeOpacity;
-    `,
-    )
+    .replace("#include <common>", `#include <common>\n${grainVertex}`)
     .replace(
       "#include <begin_vertex>",
       `#include <begin_vertex>
-      volumeOpacity = elementOpacity;
       float seed = fract(sin(elementSeed * 137.0 + grainIndex * 91.7) * 43758.5453);
-      vec3 grainOffset = vec3(sin(seed * 137.0), cos(seed * 93.0), sin(seed * 71.0));
-      transformed = elementCenter + grainOffset * elementGrainSpread * sqrt(seed);
+      transformed = placeElementGrain(seed);
     `,
     )
     .replace(

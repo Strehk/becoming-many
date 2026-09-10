@@ -22,6 +22,8 @@ export interface ElementSettings {
 export interface ElementSource {
   readonly placement: ElementPlacement;
   readonly shape: FlightRoute;
+  /** Clear opening after subtracting the dense particle core; absent for arrows. */
+  readonly openingRadiusMeters?: number;
 }
 
 // 2. Shared animation and simulation contracts; neither knows the shape
@@ -69,4 +71,47 @@ export interface VolumeSettings {
   readonly accentFraction: number;
   readonly haloOpacity: ParticleRange;
   readonly seed: number;
+}
+
+// 4. Directional feedback: independent timing, passage detection and rendering
+export interface ParticleLightSettings {
+  readonly capacity: number;
+  readonly periodSeconds: number;
+  readonly sweepSeconds: number;
+  readonly staggerSeconds: number;
+  readonly guideStrength: number;
+  readonly flashSeconds: number;
+  readonly dissolveSeconds: number;
+  readonly bandWidth: number;
+  readonly glassFraction: number;
+  readonly color: number;
+  readonly driftMeters: number;
+  readonly scatterMeters: number;
+}
+export interface ParticleLightFrame {
+  head: number;
+  strength: number;
+  presence: number;
+}
+export interface ParticleLight {
+  readonly reset: (count: number) => void;
+  /** Trigger once for a displayed element index; does not change exercise success. */
+  readonly pass: (index: number) => void;
+  /** Borrowed per-element frames, valid until the next update or reset. */
+  readonly update: (seconds: number) => readonly ParticleLightFrame[];
+}
+export interface RingTarget {
+  readonly elementIndex: number;
+  readonly center: Readonly<Vector3>;
+  readonly direction: Readonly<Vector3>;
+  readonly radiusMeters: number;
+}
+export interface RingPassage {
+  /** Owns a snapshot; reset clears passage history and seeds the movement segment. */
+  readonly reset: (
+    rings: readonly RingTarget[],
+    player: Readonly<Vector3>,
+  ) => void;
+  /** Borrowed indices of newly crossed openings, in forward flight only. */
+  readonly update: (player: Readonly<Vector3>) => readonly number[];
 }
