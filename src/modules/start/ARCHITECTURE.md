@@ -86,6 +86,58 @@ There is no real audio playback or Show handoff yet. Final narration order and
 verified audio markers belong in `start-exercises.ts`; `start-audio-cues.ts` retains
 earlier research. Up/down exercises and application handoff remain separate work.
 
+## Open architecture observations
+
+These observations are retained for later design decisions, not approved changes
+or an implementation checklist. Reassess them as the implementation develops,
+particularly when real audio timing and lesson progression are introduced.
+
+### Success while narration is still running
+
+In `start-game.runtime.ts`, passage success can be recorded while
+`instructionEnded` is false. If deviation then occurs before narration ends,
+the current recovery branch treats the exercise as unearned. This sequence was
+reproduced independently; the current demo does not encounter it because the
+center always supplies `instructionEnded: true`.
+
+The audio integration needs an explicit decision about when success becomes
+durable and how recovery interacts with unfinished narration. Preserving recorded
+success during recovery is one possible solution; a different audio/phase model
+may be more appropriate. No solution is selected yet.
+
+### Ownership of successor selection
+
+`start.module.ts` currently calculates the successor exercise index and attempt
+for preparation, while `start-game.runtime.ts` calculates the same progression
+when advancing. Both agree today. Changes to ordering, retries, or completion
+could cause the prepared route to differ from the engine's selected exercise.
+
+An explicit preparation selection supplied by the engine, or a shared engine
+query, could remove that duplication. Revisit the contract when progression
+requirements are clearer; no additional coordinator is proposed.
+
+### Particle slice contract
+
+The factory injected into `flight-path/particle-generation.ts` returns a general
+`BufferGeometry`, but copying assumes `position`, `color`, `pathParticleSize`,
+and `airParticleVisible` attributes with compatible counts and sufficient target
+capacity. The existing producer satisfies these assumptions; an alternative
+producer could satisfy the TypeScript signature and still fail during copying.
+
+A more explicit slice contract in `flight-path/particle-contract.ts` could describe
+these attributes, capacity, and disposal ownership, with checks at the boundary.
+Choose the smallest useful contract when particle generation is extended.
+
+### Existing point-cloud composition
+
+The ambient `point-cloud/` implementation is an existing exception to the strict
+file-level star described above: `point-cloud.module.ts` imports its geometry
+implementation, and `point-cloud-geometry.ts` constructs the concrete material.
+This is not a demonstrated runtime defect. At the next relevant change, decide
+whether to document this as an intentional internal composition boundary or
+inject material creation through the center. A restructuring solely for symmetry
+is not currently justified.
+
 ## Quality and verification
 
 Keep settings at the top, comments organized by responsibility, and functions
