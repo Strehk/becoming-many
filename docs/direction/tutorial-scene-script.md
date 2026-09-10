@@ -7,9 +7,8 @@ images are independent concept illustrations, **not runtime screenshots**, scale
 drawings, particle budgets or an additional rendering specification.
 
 The recording bytes and durations are recorded in
-[audio provenance](../../public/audio/tutorial/provenance.json). The complete
-line-by-line English gloss and alignment evidence live in
-[spoken-line staging](../evidence/issue-50/README.md#spoken-line-staging--2026-09-09).
+[audio provenance](../../public/audio/tutorial/provenance.json). The direct German transcript and action mapping are preserved in
+[Audio transcript and action cues](start-audio-transcript.md).
 Word boundaries are locally estimated; precise listening approval remains open.
 The authored runtime values live in
 [the Start recipe](../../src/levels/start.level.ts), not in this document.

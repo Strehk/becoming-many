@@ -6,7 +6,7 @@ future behavior, not the current implementation or measured VR acceptance.
 Application code is unchanged by this document.
 
 The current structural refactor remains governed by the
-[target architecture](../target-architecture.md). This concept does not bring
+[target architecture](../architecture.md). This concept does not bring
 deferred visual features into that behavior-preserving work. Existing narration,
 learning order, timing and handoff contracts remain authoritative unless changed
 by a separate explicit product decision.
@@ -42,6 +42,27 @@ Retain the existing right/left/up/down learning sequence and separately approved
 practice/closing policy. This visual concept neither rewrites narration nor
 chooses a new tutorial duration. The separately planned calm ending remains
 separate work; visual fades follow whichever closing policy is implemented.
+
+### Spoken instructions are the staging anchor
+
+The [direct audio transcription](start-audio-transcript.md) records all five
+installed clips and their approximate local timestamps. The introduction first
+establishes a beginning, the visitor and a room; directional guidance starts with
+“Lehn dich mal nach rechts.” The next cue, “zur anderen Seite”, means left because
+it follows right. Keep this order and avoid presenting an unexplained left cue.
+
+For vertical movement the voice names body action: leaning backward causes a
+climb, leaning forward causes descent. Arrows show the resulting flight direction
+(up/forward or down/forward), while prediction follows actual motion. Head gaze
+is not the requested control. The participant must have enough time after the
+spoken instruction to move; audio timestamps are not passage deadlines.
+
+The closing clip confirms the completed movements, then says “Warte kurz, ich
+hole ihn mal.” Its directional list is retrospective, not another sequence of
+commands. Let guidance release into a quiet waiting transition. Preserve the
+existing success/timeout distinction: this completion speech is not neutral
+failure or timeout copy. Exact cue timing belongs to the existing Show owner;
+transcription does not create another timer or change the movement model.
 
 ## 3. Sky, light and clouds
 
@@ -274,7 +295,7 @@ Deliver coherent small steps after the structural refactor:
 Use existing issue/workflow ownership for each step. Replace superseded behavior
 and its exclusive code together. Do not implement a parallel preview application.
 
-Acceptance follows the [test plan](../refactor-test-plan.md): targeted logic tests
+Acceptance follows the [test plan](../development.md): targeted logic tests
 for curve/passages where changed, repository lint, appropriate type/build checks,
 real browser interaction and comparative rendering measurements. Final physical
 checks must establish that visitors can distinguish route from prediction, see
@@ -302,7 +323,6 @@ image prompts. Original images are preserved unchanged. Earlier rejected images
 remain labeled as superseded. Text embedded in reference sheets supplies visual
 context only; it does not override the user's request or repository contracts.
 
-Binding engineering boundaries remain in [Engineering Standards](../engineering-standards.md),
-[Architecture Decisions](../architecture-decisions.md) and the
-[Target Architecture](../target-architecture.md). This concept adds product intent,
+Binding engineering boundaries remain in [Development](../development.md) and
+[Architecture](../architecture.md). This concept adds product intent,
 not a second architecture authority or a claim that the features are implemented.

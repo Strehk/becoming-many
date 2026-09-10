@@ -1,51 +1,17 @@
-# Installation Direction
+# Start level planning
 
-These documents describe the remaining product and delivery direction for a
-Futurium installation. They do not override the as-built
-[architecture](../architecture.md), [current status](../current-status.md),
-[engineering standards](../engineering-standards.md), or issue-backed
-[roadmap](../roadmap.md).
+Protected product planning and visual references for the future Start level.
+These documents describe intended experience and do not claim implementation.
 
-Every document distinguishes:
+- [Complete Start concept](start-level-concept.md): experience, flight guidance,
+  sky, clouds, color options and simple ownership boundaries.
+- [Audio transcript and action cues](start-audio-transcript.md): the five installed
+  German recordings, approximate timestamps and requested body movements.
+- [Tutorial scene script](tutorial-scene-script.md): narration-linked staging
+  and seven existing storyboard images in `tutorial-storyboard/`.
+- [Original flight sketch](tutorial-flight-sketch.png): earlier route composition.
+- [Visual archive](../moodboards/start-flight-guidance/README.md): original
+  references, corrected views, color studies and image prompts.
 
-- **Current** — implemented in this repository;
-- **Planned** — intended product or operations work without an implementation
-  claim;
-- **Open** — a choice or hardware fact that needs evidence or discussion.
-
-## Visual References
-
-- [Start level concept](start-level-concept.md) — consolidated target experience,
-  sky, clouds, flight guidance, color options and simple ownership boundaries;
-  includes links to the preserved reference and visualization archive.
-
-- [Tutorial scene script](tutorial-scene-script.md) — seven concept scenes aligned
-  with installed narration, player movement and the procedural world. Concept
-  images are separate from measured runtime captures.
-
-- [Tutorial flight sketch](tutorial-flight-sketch.png) — user-supplied spatial
-  inspiration, archived unchanged. Its interpretation and implementation status
-  belong to the [procedural flight-world plan](../roadmap.md#procedural-flight-world--2026-09-09).
-
-## Documents
-
-- [Open Decisions](open-decisions.md) — unresolved choices that must not be
-  implemented by assumption.
-- [Deployment](deployment.md) — current station package and intended two-station
-  topology.
-- [Headset](headset.md) — current WebXR support and planned passthrough/device
-  integration.
-- [Controls and M5](controls-m5.md) — implemented control chain and remaining
-  hardware/security work.
-- [Dramaturgy and Audio](dramaturgy-audio.md) — current show authority and small
-  possible audio additions.
-- [Session and Operator](session-operator.md) — current Conductor and planned
-  installation session flow.
-- [Quality and Operations](quality-operations.md) — current gates and required
-  device/station evidence.
-
-Rendering constraints now live in [Engineering Standards](../engineering-standards.md)
-and [Performance](../performance.md). The implemented senses are documented in
-[Experience](../experience.md) and the [Level Guide](../levels/README.md). The
-superseded architecture-review notes are not part of current product direction;
-their remaining actionable findings are represented by current issues.
+Canonical implementation and process facts live in [Architecture](../architecture.md),
+[Development](../development.md) and [Current work](../CURRENT.md).
