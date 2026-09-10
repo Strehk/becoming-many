@@ -1,0 +1,91 @@
+import { expect, test } from "bun:test";
+import { Vector3 } from "three";
+import { START_EXERCISES } from "../start-exercises";
+import { connectFlightRoute } from "./flight-connection";
+import { createFlightDeviation } from "./flight-deviation";
+import { placeFlightRecovery } from "./flight-recovery";
+import { createFlightRoute } from "./flight-route";
+import { createParticleGeneration } from "./particle-generation";
+import { createPathParticleGeometry } from "./path-particles";
+
+const pose = { position: new Vector3(10, 4, 20), yawRadians: 0.7 };
+const route = createFlightRoute(START_EXERCISES[0].route, 18);
+
+test("section boundaries preserve position and tangent into the successor", () => {
+  const end = new Vector3(),
+    direction = new Vector3(),
+    up = new Vector3(0, 1, 0);
+  route.sample(route.lengthMeters, end);
+  end.applyAxisAngle(up, pose.yawRadians).add(pose.position);
+  route.sampleDirection(route.lengthMeters, direction);
+  direction.applyAxisAngle(up, pose.yawRadians);
+  const next = connectFlightRoute({ route, pose }, route);
+  expect(next.position.distanceTo(end)).toBeLessThan(1e-8);
+  const forward = new Vector3(0, 0, -1).applyAxisAngle(up, next.yawRadians);
+  expect(forward.distanceTo(direction)).toBeLessThan(1e-8);
+  expect(route.exerciseEndMeters - route.exerciseStartMeters).toBeGreaterThan(
+    0,
+  );
+  expect(route.lengthMeters - route.exerciseEndMeters).toBeCloseTo(24);
+});
+
+test("only sustained travel outside the corridor requests recovery", () => {
+  const origin = new Vector3();
+  const deviation = createFlightDeviation(
+    { route, pose: { position: origin, yawRadians: 0 } },
+    origin,
+    START_EXERCISES[0].deviation,
+  );
+  for (let frame = 0; frame < 300; frame++)
+    expect(deviation.update(origin)).toBe(false);
+  for (let x = 0; x <= 5; x += 0.5)
+    expect(deviation.update(new Vector3(x, 0, 0))).toBe(false);
+  let outside = false;
+  for (let x = 5.5; x <= 9; x += 0.5)
+    outside = deviation.update(new Vector3(x, 0, 0));
+  expect(outside).toBe(true);
+});
+
+test("recovery anchors in view and borrows the flight heading without mutation", () => {
+  const viewpoint = {
+    worldPosition: new Vector3(8, 2, 4),
+    worldFlightDirection: new Vector3(0, 0, -1),
+    worldBodyDirection: new Vector3(0, 0, -1),
+    worldDirection: new Vector3(1, 0, 0),
+    worldUp: new Vector3(0, 1, 0),
+    viewHalfAngleRadians: 0.7,
+    viewDistanceMeters: 128,
+  };
+  const recovery = placeFlightRecovery(viewpoint, 12, () => {});
+  expect(recovery.position.toArray()).toEqual([20, 2, 4]);
+  expect(Math.abs(recovery.yawRadians)).toBe(0);
+  expect(viewpoint.worldPosition.toArray()).toEqual([8, 2, 4]);
+});
+
+test("particle generation advances in bounded slices and transfers ownership once", () => {
+  let slices = 0;
+  const parameters = START_EXERCISES[0].particles;
+  const job = createParticleGeneration({
+    route,
+    maximumDensity: parameters.densityPerMeter.to,
+    metersPerStep: 4,
+    createSlice: (slice) => {
+      slices++;
+      expect(slice.lengthMeters).toBeLessThanOrEqual(4);
+      return createPathParticleGeometry(slice, parameters);
+    },
+  });
+  expect(job.step()).toBe(false);
+  expect(slices).toBe(1);
+  expect(() => job.takeGeometry()).toThrow();
+  for (let frame = 0; frame < 50 && !job.isReady(); frame++) job.step();
+  const geometry = job.takeGeometry();
+  expect(geometry.drawRange.count).toBeGreaterThan(0);
+  expect(() => job.takeGeometry()).toThrow();
+  let disposed = 0;
+  geometry.addEventListener("dispose", () => disposed++);
+  job.dispose();
+  expect(disposed).toBe(0);
+  geometry.dispose();
+  expect(disposed).toBe(1);
+});

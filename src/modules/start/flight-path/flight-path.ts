@@ -21,6 +21,9 @@ class FlightPath implements WorldModule {
   private material: PathParticleMaterial | undefined;
   private fadeSeconds = 0;
   private fadeDuration = 0;
+  private revealDuration = 0;
+  private revealElapsed = 0;
+  private fadeStartOpacity = 1;
 
   constructor(private readonly options: FlightPathOptions) {}
 
@@ -51,7 +54,13 @@ class FlightPath implements WorldModule {
   };
 
   // 3. Fixed placement; geometry ownership transfers to this display
-  readonly show = (geometry: BufferGeometry, pose: ExercisePose): void => {
+  readonly isVisible = (): boolean => this.cloud?.visible ?? false;
+
+  readonly show = (
+    geometry: BufferGeometry,
+    pose: ExercisePose,
+    revealSeconds = 0,
+  ): void => {
     if (!this.cloud)
       throw new Error("Load the flight path before showing geometry");
     this.cloud.geometry.dispose();
@@ -59,7 +68,9 @@ class FlightPath implements WorldModule {
     this.cloud.position.copy(pose.position);
     this.cloud.position.y -= this.options.belowFlightMeters;
     this.cloud.rotation.y = pose.yawRadians;
-    this.cloud.material.opacity = 1;
+    this.revealDuration = revealSeconds;
+    this.revealElapsed = 0;
+    this.cloud.material.opacity = revealSeconds > 0 ? 0 : 1;
     this.cloud.visible = true;
     this.fadeDuration = 0;
     this.options.scene.add(this.cloud);
@@ -69,17 +80,30 @@ class FlightPath implements WorldModule {
   readonly retire = (seconds: number): void => {
     this.fadeDuration = seconds;
     this.fadeSeconds = 0;
+    this.fadeStartOpacity = this.cloud?.material.opacity ?? 1;
     if (seconds <= 0) this.deactivate();
   };
 
   readonly update = (deltaSeconds: number): void => {
     this.material?.update(deltaSeconds);
-    if (!this.cloud || this.fadeDuration <= 0) return;
+    if (!this.cloud) return;
+    if (this.fadeDuration <= 0) {
+      this.updateReveal(deltaSeconds);
+      return;
+    }
     this.fadeSeconds += deltaSeconds;
     this.cloud.material.opacity = Math.max(
       0,
-      1 - this.fadeSeconds / this.fadeDuration,
+      this.fadeStartOpacity * (1 - this.fadeSeconds / this.fadeDuration),
     );
     if (this.fadeSeconds >= this.fadeDuration) this.deactivate();
   };
+  private updateReveal(deltaSeconds: number): void {
+    if (!this.cloud || this.revealDuration <= 0) return;
+    this.revealElapsed += deltaSeconds;
+    this.cloud.material.opacity = Math.min(
+      1,
+      this.revealElapsed / this.revealDuration,
+    );
+  }
 }

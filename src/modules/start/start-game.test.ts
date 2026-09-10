@@ -7,41 +7,55 @@ const FRAME: ExerciseFrame = {
   progress: "pending",
   instructionReleased: true,
   instructionEnded: true,
+  prepared: true,
+  reachedEnd: false,
+  deviated: false,
 };
 
-// Engine decisions do not depend on graphics, movement sampling, or an audio player.
-test("instruction release and natural end independently gate advancement", () => {
+test("success prepares the next section but does not retire or advance at the exercise end", () => {
   const game = createStartGame({ exerciseCount: 2, retireSeconds: 1 });
-  expect(game.update({ ...FRAME, instructionReleased: false })).toBeUndefined();
-  expect(game.readState().phase).toBe("instruction");
+  expect(game.update({ ...FRAME, prepared: false })).toBeUndefined();
   expect(game.update(FRAME)).toBe("show");
   expect(
     game.update({ ...FRAME, progress: "passed", instructionEnded: false }),
   ).toBeUndefined();
+  expect(game.update(FRAME)).toBe("prepare-next");
+  expect(game.readState().phase).toBe("outro");
+  expect(game.readState().exerciseIndex).toBe(0);
+  expect(
+    game.update({ ...FRAME, prepared: false, reachedEnd: true }),
+  ).toBeUndefined();
+  expect(game.update({ ...FRAME, reachedEnd: true })).toBe("advance");
   expect(game.readState().phase).toBe("flying");
-  expect(game.update(FRAME)).toBe("retire");
-  game.update({ ...FRAME, deltaSeconds: 1 });
   expect(game.readState().exerciseIndex).toBe(1);
+});
+
+test("deviation retries an unearned exercise with a new attempt", () => {
+  const game = createStartGame({ exerciseCount: 2, retireSeconds: 1 });
+  game.update(FRAME);
+  expect(game.update({ ...FRAME, deviated: true })).toBe("recover");
+  expect(game.readState().exerciseIndex).toBe(0);
+  expect(game.readState().attempt).toBe(2);
+  expect(game.readState().phase).toBe("recovering");
+  game.update({ ...FRAME, deltaSeconds: 1 });
   expect(game.readState().phase).toBe("instruction");
 });
 
-test("a miss repeats the exercise with a fresh attempt identity", () => {
+test("deviation during the exit keeps earned success and prepares the next exercise", () => {
   const game = createStartGame({ exerciseCount: 2, retireSeconds: 1 });
   game.update(FRAME);
-  expect(game.update({ ...FRAME, progress: "missed" })).toBe("retire");
-  game.update({ ...FRAME, deltaSeconds: 1 });
-  expect(game.readState().exerciseIndex).toBe(0);
-  expect(game.readState().attempt).toBe(2);
-  expect(game.readState().outcome).toBe("pending");
+  game.update({ ...FRAME, progress: "passed" });
+  expect(game.update({ ...FRAME, deviated: true })).toBe("recover");
+  expect(game.readState().exerciseIndex).toBe(1);
 });
 
-test("the final success completes once and reset returns to the first instruction", () => {
+test("the demonstration sequence loops and reset clears progression", () => {
   const game = createStartGame({ exerciseCount: 1, retireSeconds: 1 });
   game.update(FRAME);
   game.update({ ...FRAME, progress: "passed" });
-  game.update({ ...FRAME, deltaSeconds: 1 });
-  expect(game.readState().phase).toBe("complete");
-  expect(game.update(FRAME)).toBeUndefined();
+  expect(game.update({ ...FRAME, reachedEnd: true })).toBe("advance");
+  expect(game.readState().exerciseIndex).toBe(0);
+  expect(game.readState().attempt).toBe(2);
   game.reset();
   expect(game.readState().phase).toBe("instruction");
   expect(game.readState().attempt).toBe(1);

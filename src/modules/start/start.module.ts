@@ -4,9 +4,14 @@ import {
   createFlightGuidance,
   type FlightGuidanceParameters,
 } from "./flight-guidance";
+import { connectFlightRoute } from "./flight-path/flight-connection";
+import { createFlightDeviation } from "./flight-path/flight-deviation";
 import { createFlightPath } from "./flight-path/flight-path";
 import { createFlightProgress } from "./flight-path/flight-progress";
+import { placeFlightRecovery } from "./flight-path/flight-recovery";
 import { createFlightRoute } from "./flight-path/flight-route";
+import type { PathParticleParameters } from "./flight-path/particle-contract";
+import { createParticleGeneration } from "./flight-path/particle-generation";
 import {
   createPathParticleGeometry,
   createPathParticleMaterial,
@@ -16,42 +21,64 @@ import {
   createAirParticlesModule,
 } from "./point-cloud/point-cloud.module";
 import { createAirParticleMaterial } from "./point-cloud/point-cloud-material";
-import type { ExercisePose } from "./start-contract";
+import type {
+  ExerciseAction,
+  ExerciseRoute,
+  PlacedRoute,
+} from "./start-contract";
 import { START_EXERCISES, START_SETTINGS } from "./start-exercises";
 import { createStartGame } from "./start-game.runtime";
 
-// 1. Center of the local star
-// Only this file connects concrete leaves. World and Control remain external owners.
+// 1. Local star: all concrete connections and the fixed display pool live here
 interface StartModuleOptions extends AirParticlesModuleOptions {
   readonly guidance: FlightGuidanceParameters;
   readonly constrainFlightPosition: (position: Vector3) => void;
+}
+type Display = ReturnType<typeof createFlightPath>;
+interface PendingSection {
+  readonly section: PlacedRoute;
+  readonly generation: ReturnType<typeof createParticleGeneration>;
+  readonly continuation: boolean;
+  queued: boolean;
+  display?: Display;
+}
+interface ActiveSection extends PlacedRoute {
+  readonly display: Display;
+  readonly exerciseProgress: ReturnType<typeof createFlightProgress>;
+  readonly exitProgress: ReturnType<typeof createFlightProgress>;
+  readonly deviation: ReturnType<typeof createFlightDeviation>;
 }
 
 export function createStartModule(options: StartModuleOptions): WorldModule {
   return new StartModule(options);
 }
 
-// 2. Construction and lifecycle
+// 2. Lifetime and borrowed streaming resources
 class StartModule implements WorldModule {
   private readonly runtime = new ModuleRuntime();
+  private readonly generationKey = {};
   private readonly game = createStartGame({
     exerciseCount: START_EXERCISES.length,
     retireSeconds: START_SETTINGS.retireSeconds,
   });
-  private readonly path: ReturnType<typeof createFlightPath>;
+  private readonly paths: readonly Display[];
   private readonly modules: readonly WorldModule[];
-  private progress: ReturnType<typeof createFlightProgress> | undefined;
+  private current: ActiveSection | undefined;
+  private pending: PendingSection | undefined;
+  private active = false;
 
   constructor(private readonly options: StartModuleOptions) {
-    this.path = createFlightPath({
-      scene: options.scene,
-      belowFlightMeters: START_SETTINGS.belowFlightMeters,
-      createMaterial: () =>
-        createPathParticleMaterial(createAirParticleMaterial),
-    });
+    this.paths = Array.from({ length: 3 }, () =>
+      createFlightPath({
+        scene: options.scene,
+        belowFlightMeters: START_SETTINGS.belowFlightMeters,
+        createMaterial: () =>
+          createPathParticleMaterial(createAirParticleMaterial),
+      }),
+    );
     this.modules = [
       createAirParticlesModule(options),
-      this.path,
+      ...this.paths,
       createFlightGuidance({
         scene: options.scene,
         viewpoint: options.viewpoint,
@@ -64,18 +91,23 @@ class StartModule implements WorldModule {
   readonly load = (): void => {
     for (const module of this.modules) this.runtime.load(module);
   };
-
   readonly activate = (): void => {
+    this.cancelPending();
     this.game.reset();
-    this.progress = undefined;
+    this.current = undefined;
+    this.active = true;
     for (const module of this.modules) this.runtime.activate(module);
+    this.prepareSection(false);
   };
-
   readonly deactivate = (): void => {
+    this.active = false;
+    this.cancelPending();
     for (const module of this.modules) this.runtime.deactivate(module);
   };
-
   readonly unload = (): void => {
+    this.active = false;
+    this.cancelPending();
+    this.current = undefined;
     const errors: unknown[] = [];
     for (const module of this.modules) {
       try {
@@ -84,56 +116,182 @@ class StartModule implements WorldModule {
         errors.push(error);
       }
     }
-    this.progress = undefined;
     if (errors.length) throw new AggregateError(errors, "Start cleanup failed");
   };
 
-  // 3. Observation and decision wiring
-  // The temporary cue adapter can later read native audio instead of phase time.
+  // 3. One coherent observation, followed by one engine decision
   readonly update = (deltaSeconds: number): void => {
+    if (!this.active) return;
+    this.enqueuePending();
+    this.publishSuccessor();
     const state = this.game.readState();
-    const viewpoint = this.options.viewpoint;
-    const position = viewpoint.worldFlightPosition ?? viewpoint.worldPosition;
-    const progress =
-      state.phase === "flying" ? this.progress?.update(position) : undefined;
+    const position = this.readPosition();
     const action = this.game.update({
       deltaSeconds,
-      progress: progress ?? "pending",
+      progress: this.current?.exerciseProgress.update(position) ?? "pending",
+      reachedEnd: this.current?.exitProgress.update(position) === "passed",
+      deviated: this.current?.deviation.update(position) ?? false,
+      prepared:
+        state.phase === "outro"
+          ? !!this.pending?.display
+          : (this.pending?.generation.isReady() ?? false),
       instructionReleased:
         state.elapsedSeconds >= START_SETTINGS.demonstrationCueSeconds,
       instructionEnded: true,
     });
-    if (action === "show") this.showAttempt();
-    if (action === "retire") this.path.retire(START_SETTINGS.retireSeconds);
+    this.applyAction(action);
     this.runtime.update(deltaSeconds);
   };
 
-  // 4. Generate one attempt and share its geometry with progress and presentation
-  private showAttempt(): void {
-    const state = this.game.readState();
-    const exercise = START_EXERCISES[state.exerciseIndex];
-    if (!exercise) return;
-    const route = createFlightRoute(
-      exercise.route,
-      START_SETTINGS.seed + state.attempt,
-    );
-    const pose = this.capturePose();
-    this.progress = createFlightProgress(route, pose, exercise.progress);
-    const geometry = createPathParticleGeometry(route, {
-      ...exercise.particles,
-      seed: exercise.particles.seed + state.attempt,
-    });
-    this.path.show(geometry, pose);
+  private applyAction(action: ExerciseAction): void {
+    if (action === "show") this.beginPreparedSection(false);
+    if (action === "prepare-next") this.prepareSection(true);
+    if (action === "advance") this.beginPreparedSection(true);
+    if (action === "recover") {
+      for (const path of this.paths) path.retire(START_SETTINGS.retireSeconds);
+      this.current = undefined;
+      this.prepareSection(false);
+    }
   }
 
-  private capturePose(): ExercisePose {
-    const { viewpoint } = this.options;
-    const direction = viewpoint.worldFlightDirection;
-    return {
-      position: new Vector3().copy(
-        viewpoint.worldFlightPosition ?? viewpoint.worldPosition,
-      ),
-      yawRadians: direction ? Math.atan2(-direction.x, -direction.z) : 0,
+  // 4. Small cancellable jobs run on World's existing StreamQueue
+  private prepareSection(continuation: boolean): void {
+    this.cancelPending();
+    const state = this.game.readState();
+    const index =
+      (state.exerciseIndex + Number(continuation)) % START_EXERCISES.length;
+    const exercise = START_EXERCISES[index];
+    if (!exercise) return;
+    const attempt = state.attempt + Number(continuation);
+    const route = createFlightRoute(
+      exercise.route,
+      START_SETTINGS.seed + attempt,
+    );
+    const pose =
+      continuation && this.current
+        ? connectFlightRoute(this.current, route)
+        : { position: new Vector3(), yawRadians: 0 };
+    const generation = this.createGeneration(
+      route,
+      exercise.particles,
+      attempt,
+    );
+    this.pending = {
+      section: { route, pose },
+      generation,
+      continuation,
+      queued: false,
     };
+    this.enqueuePending();
+  }
+
+  private createGeneration(
+    route: ExerciseRoute,
+    parameters: PathParticleParameters,
+    attempt: number,
+  ) {
+    return createParticleGeneration({
+      route,
+      maximumDensity: parameters.densityPerMeter.to,
+      metersPerStep: START_SETTINGS.generationMetersPerStep,
+      createSlice: (slice, index) =>
+        createPathParticleGeometry(slice, {
+          ...parameters,
+          seed: parameters.seed + attempt + index,
+        }),
+    });
+  }
+
+  private enqueuePending(): void {
+    const pending = this.pending;
+    if (!pending || pending.queued || pending.generation.isReady()) return;
+    pending.queued = this.options.streamQueue.enqueue({
+      key: this.generationKey,
+      isCurrent: () => this.active && this.pending === pending,
+      runStep: pending.generation.step,
+    });
+  }
+
+  private cancelPending(): void {
+    this.pending?.generation.dispose();
+    this.pending = undefined;
+  }
+
+  // 5. Show a prepared successor without moving the current route
+  private publishSuccessor(): void {
+    const pending = this.pending;
+    if (
+      !pending?.continuation ||
+      pending.display ||
+      !pending.generation.isReady()
+    )
+      return;
+    const display = this.paths.find((path) => !path.isVisible());
+    if (!display) return;
+    display.show(
+      pending.generation.takeGeometry(),
+      pending.section.pose,
+      START_SETTINGS.revealSeconds,
+    );
+    pending.display = display;
+  }
+
+  private beginPreparedSection(connected: boolean): void {
+    const pending = this.pending;
+    if (!pending) return;
+    const display =
+      pending.display ?? this.paths.find((path) => !path.isVisible());
+    if (!display) return;
+    const pose = connected
+      ? pending.section.pose
+      : placeFlightRecovery(
+          this.options.viewpoint,
+          START_SETTINGS.entryLeadMeters,
+          this.options.constrainFlightPosition,
+        );
+    if (!pending.display)
+      display.show(
+        pending.generation.takeGeometry(),
+        pose,
+        START_SETTINGS.revealSeconds,
+      );
+    if (connected) this.current?.display.retire(START_SETTINGS.retireSeconds);
+    this.current = this.observeSection({ ...pending.section, pose }, display);
+    this.pending = undefined;
+  }
+
+  private observeSection(
+    section: PlacedRoute,
+    display: Display,
+  ): ActiveSection {
+    const exercise = START_EXERCISES[this.game.readState().exerciseIndex];
+    if (!exercise) throw new Error("Unknown Start exercise");
+    const exerciseRoute = {
+      ...section.route,
+      lengthMeters: section.route.exerciseEndMeters,
+    };
+    const exerciseProgress = createFlightProgress(
+      exerciseRoute,
+      section.pose,
+      exercise.progress,
+    );
+    const exitProgress = createFlightProgress(
+      section.route,
+      section.pose,
+      exercise.progress,
+    );
+    const deviation = createFlightDeviation(
+      section,
+      this.readPosition(),
+      exercise.deviation,
+    );
+    return { ...section, display, exerciseProgress, exitProgress, deviation };
+  }
+
+  private readPosition(): Readonly<Vector3> {
+    return (
+      this.options.viewpoint.worldFlightPosition ??
+      this.options.viewpoint.worldPosition
+    );
   }
 }

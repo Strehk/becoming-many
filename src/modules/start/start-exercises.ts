@@ -6,6 +6,9 @@ export const START_SETTINGS = {
   retireSeconds: 1.2,
   belowFlightMeters: 0.5,
   seed: 17,
+  entryLeadMeters: 12,
+  generationMetersPerStep: 4,
+  revealSeconds: 0.8,
 };
 
 // 2. Exercise sequence
@@ -16,6 +19,7 @@ export const START_EXERCISES = [
     route: {
       leadMeters: 0,
       straightMeters: 10,
+      outroMeters: 24,
       turnSign: -1,
       turnRadiusMeters: { from: 38, to: 46 },
       turnRadians: { from: 0.8, to: 1.05 },
@@ -26,6 +30,11 @@ export const START_EXERCISES = [
       sizeMeters: { from: 0.025, to: 0.055 },
       spreadMeters: 0.55,
       seed: 17,
+    },
+    deviation: {
+      distanceMeters: 5,
+      outsideTravelMeters: 3,
+      maximumStepMeters: 3,
     },
     progress: {
       checkpointSpacingMeters: 2,
@@ -39,6 +48,7 @@ export const START_EXERCISES = [
     route: {
       leadMeters: 0,
       straightMeters: 10,
+      outroMeters: 24,
       turnSign: 1,
       turnRadiusMeters: { from: 38, to: 46 },
       turnRadians: { from: 0.8, to: 1.05 },
@@ -49,6 +59,11 @@ export const START_EXERCISES = [
       sizeMeters: { from: 0.025, to: 0.055 },
       spreadMeters: 0.55,
       seed: 17,
+    },
+    deviation: {
+      distanceMeters: 5,
+      outsideTravelMeters: 3,
+      maximumStepMeters: 3,
     },
     progress: {
       checkpointSpacingMeters: 2,

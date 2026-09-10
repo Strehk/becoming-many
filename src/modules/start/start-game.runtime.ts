@@ -4,25 +4,23 @@ import type {
   ExerciseState,
 } from "./start-contract";
 
-// 1. Engine construction
+// 1. Engine contract: lesson decisions only, no geometry or rendering dependencies
 interface GameSettings {
   readonly exerciseCount: number;
   readonly retireSeconds: number;
 }
-
-/** Own lesson decisions only; the center executes returned actions. */
 export function createStartGame(settings: GameSettings) {
   return new StartGame(settings);
 }
 
-// 2. State and reset
 class StartGame {
   private state: ExerciseState = this.initialState();
+  private exercisePassed = false;
   constructor(private readonly settings: GameSettings) {}
-
   readonly readState = (): Readonly<ExerciseState> => this.state;
   readonly reset = (): void => {
     this.state = this.initialState();
+    this.exercisePassed = false;
   };
 
   private initialState(): ExerciseState {
@@ -31,49 +29,61 @@ class StartGame {
       exerciseIndex: 0,
       attempt: 1,
       elapsedSeconds: 0,
-      outcome: "pending",
     };
   }
 
-  // 3. One phase transition per frame
+  // 2. Success prepares the successor while the player traverses the exit area
   readonly update = (frame: ExerciseFrame): ExerciseAction => {
     this.state.elapsedSeconds += Math.max(0, frame.deltaSeconds);
     switch (this.state.phase) {
       case "instruction":
-        if (!frame.instructionReleased) return;
+        if (!frame.instructionReleased || !frame.prepared) return;
         this.enterPhase("flying");
         return "show";
-      case "flying":
-        return this.observeFlight(frame);
-      case "retiring":
+      case "recovering":
         if (this.state.elapsedSeconds >= this.settings.retireSeconds)
-          this.finishAttempt();
+          this.enterPhase("instruction");
         return;
-      case "complete":
-        return;
+      case "flying":
+        return this.observeExercise(frame);
+      case "outro":
+        return this.observeExit(frame);
     }
   };
 
-  private observeFlight(frame: ExerciseFrame): ExerciseAction {
-    if (this.state.outcome === "pending") this.state.outcome = frame.progress;
-    if (this.state.outcome === "pending" || !frame.instructionEnded) return;
-    this.enterPhase("retiring");
-    return "retire";
+  private observeExercise(frame: ExerciseFrame): ExerciseAction {
+    if (frame.deviated || frame.progress === "missed")
+      return this.recover(false);
+    if (frame.progress === "passed") this.exercisePassed = true;
+    if (!this.exercisePassed || !frame.instructionEnded) return;
+    this.enterPhase("outro");
+    return "prepare-next";
   }
 
-  // 4. Retry and course completion
-  private finishAttempt(): void {
-    if (this.state.outcome === "passed") this.state.exerciseIndex++;
+  private observeExit(frame: ExerciseFrame): ExerciseAction {
+    if (frame.deviated) return this.recover(true);
+    if (!frame.reachedEnd || !frame.prepared) return;
+    this.advanceExercise();
+    this.enterPhase("flying");
+    return "advance";
+  }
+
+  // 3. Recovery retains an unearned lesson; the demo sequence repeats continuously
+  private recover(earned: boolean): ExerciseAction {
+    if (earned) this.advanceExercise();
+    else this.state.attempt++;
+    this.enterPhase("recovering");
+    return "recover";
+  }
+
+  private advanceExercise(): void {
+    this.state.exerciseIndex =
+      (this.state.exerciseIndex + 1) % this.settings.exerciseCount;
     this.state.attempt++;
-    this.state.outcome = "pending";
-    this.enterPhase(
-      this.state.exerciseIndex < this.settings.exerciseCount
-        ? "instruction"
-        : "complete",
-    );
   }
 
   private enterPhase(phase: ExerciseState["phase"]): void {
+    if (phase === "flying") this.exercisePassed = false;
     this.state.phase = phase;
     this.state.elapsedSeconds = 0;
   }

@@ -3,6 +3,7 @@ import { type Points, Scene, Vector3 } from "three";
 import { StreamQueue } from "../../world/stream-queue";
 import { createFlightRoute } from "./flight-path/flight-route";
 import { createStartModule } from "./start.module";
+import type { PlacedRoute } from "./start-contract";
 import { START_EXERCISES, START_SETTINGS } from "./start-exercises";
 
 // Test-owned presentation keeps this fixture independent of external level recipes.
@@ -51,92 +52,137 @@ function createViewpoint() {
 function createFixture() {
   const scene = new Scene();
   const viewpoint = createViewpoint();
+  const queue = new StreamQueue({ budgetMilliseconds: 5, capacity: 256 });
   const module = createStartModule({
     scene,
     viewpoint,
     parameters: PRESENTATION.particles,
     guidance: PRESENTATION.guidance,
-    streamQueue: new StreamQueue({ budgetMilliseconds: 1, capacity: 256 }),
+    streamQueue: queue,
     constrainFlightPosition: () => {},
   });
   module.load();
   module.activate();
-  const tick = () => module.update?.(1 / 60);
+  const tick = () => {
+    module.update?.(1 / 60);
+    queue.update();
+  };
   for (let frame = 0; frame < 125; frame++) tick();
-  return { scene, viewpoint, module, tick };
+  return { scene, viewpoint, module, tick, queue };
 }
 
-function flyApproach(
+function firstSection(fixture: ReturnType<typeof createFixture>): PlacedRoute {
+  const display = fixture.scene.getObjectByName("StartFlightPath") as Points;
+  const position = display.position.clone();
+  position.y += START_SETTINGS.belowFlightMeters;
+  return {
+    route: createFlightRoute(START_EXERCISES[0].route, START_SETTINGS.seed + 1),
+    pose: { position, yawRadians: display.rotation.y },
+  };
+}
+
+function flyRange(
   fixture: ReturnType<typeof createFixture>,
-  leadMeters: number,
+  section: PlacedRoute,
+  range: [number, number],
 ): void {
-  for (let distance = 0; distance < leadMeters; distance += 0.1) {
-    fixture.viewpoint.worldPosition.set(0, 0, -distance);
+  const up = new Vector3(0, 1, 0);
+  for (let distance = range[0]; distance <= range[1] + 0.1; distance += 0.1) {
+    section.route.sample(
+      Math.min(distance, range[1]),
+      fixture.viewpoint.worldPosition,
+    );
+    fixture.viewpoint.worldPosition
+      .applyAxisAngle(up, section.pose.yawRadians)
+      .add(section.pose.position);
+    section.route.sampleDirection(
+      distance,
+      fixture.viewpoint.worldFlightDirection,
+    );
+    fixture.viewpoint.worldFlightDirection.applyAxisAngle(
+      up,
+      section.pose.yawRadians,
+    );
+    fixture.viewpoint.worldDirection.copy(
+      fixture.viewpoint.worldFlightDirection,
+    );
     fixture.tick();
   }
 }
 
-function flyFirstRoute(fixture: ReturnType<typeof createFixture>): void {
-  const route = createFlightRoute(
-    START_EXERCISES[0].route,
-    START_SETTINGS.seed + 1,
-  );
-  const { viewpoint, tick } = fixture;
-  flyApproach(fixture, START_EXERCISES[0].route.leadMeters);
-  const previous = new Vector3();
-  for (
-    let distance = 0;
-    distance <= route.lengthMeters + 0.1;
-    distance += 0.1
-  ) {
-    previous.copy(viewpoint.worldPosition);
-    route.sample(
-      Math.min(distance, route.lengthMeters),
-      viewpoint.worldPosition,
+function approach(
+  fixture: ReturnType<typeof createFixture>,
+  section: PlacedRoute,
+): void {
+  const start = fixture.viewpoint.worldPosition.clone();
+  for (let fraction = 0; fraction <= 1; fraction += 0.01) {
+    fixture.viewpoint.worldPosition.lerpVectors(
+      start,
+      section.pose.position,
+      fraction,
     );
-    if (!viewpoint.worldPosition.equals(previous)) {
-      viewpoint.worldFlightDirection
-        .subVectors(viewpoint.worldPosition, previous)
-        .normalize();
-    }
-    tick();
+    fixture.tick();
   }
 }
 
-test("the integrated center advances left to right and reuses one display slot", () => {
+function trails(fixture: ReturnType<typeof createFixture>): Points[] {
+  return fixture.scene.children.filter(
+    (child) => child.name === "StartFlightPath",
+  ) as Points[];
+}
+
+test("success prepares a joined successor while the original exit remains visible", () => {
   const fixture = createFixture();
-  const first = fixture.scene.getObjectByName("StartFlightPath") as Points;
-  expect(first).toBeDefined();
-  const geometry = first.geometry;
-  const material = first.material;
-  let disposed = 0;
-  geometry.addEventListener("dispose", () => disposed++);
-  flyFirstRoute(fixture);
-  for (let frame = 0; frame < 200; frame++) fixture.tick();
-  const next = fixture.scene.getObjectByName("StartFlightPath") as Points;
-  expect(next).toBe(first);
-  expect(next.material).toBe(material);
-  expect(next.geometry).not.toBe(geometry);
-  expect(disposed).toBe(1);
-  const positions = next.geometry.getAttribute("position");
-  expect(positions.getX(positions.count - 1)).toBeGreaterThan(0);
+  const section = firstSection(fixture);
+  const first = trails(fixture)[0];
+  approach(fixture, section);
+  flyRange(fixture, section, [0, section.route.exerciseEndMeters]);
+  for (let frame = 0; frame < 40; frame++) fixture.tick();
+  expect(trails(fixture)).toHaveLength(2);
+  expect(first?.visible).toBe(true);
+  flyRange(fixture, section, [
+    section.route.exerciseEndMeters,
+    section.route.lengthMeters,
+  ]);
+  for (let frame = 0; frame < 90; frame++) fixture.tick();
+  expect(trails(fixture)).toHaveLength(1);
+  const next = trails(fixture)[0];
+  expect(next).not.toBe(first);
+  const positions = next?.geometry.getAttribute("position");
+  expect(
+    positions?.getX((next?.geometry.drawRange.count ?? 1) - 1),
+  ).toBeGreaterThan(0);
   fixture.module.unload();
   expect(fixture.scene.children).toHaveLength(0);
 });
 
-test("the integrated center repeats left after a miss without retaining the old trail", () => {
+test("recovery uses the latest gaze and flight position, without moving the player", () => {
   const fixture = createFixture();
-  const first = fixture.scene.getObjectByName("StartFlightPath") as Points;
-  const geometry = first.geometry;
   for (let step = 1; step <= 70; step++) {
     fixture.viewpoint.worldPosition.set(step * 0.25, 0, 0);
     fixture.tick();
   }
-  for (let frame = 0; frame < 210; frame++) fixture.tick();
-  const retry = fixture.scene.getObjectByName("StartFlightPath") as Points;
-  expect(retry.geometry).not.toBe(geometry);
-  const positions = retry.geometry.getAttribute("position");
-  expect(positions.getX(positions.count - 1)).toBeLessThan(0);
-  expect(retry.position.x).toBeCloseTo(17.5);
+  fixture.viewpoint.worldDirection.set(1, 0, 0);
+  for (let frame = 0; frame < 250; frame++) fixture.tick();
+  expect(trails(fixture)).toHaveLength(1);
+  const retry = trails(fixture)[0];
+  expect(retry?.position.x).toBeCloseTo(17.5 + START_SETTINGS.entryLeadMeters);
+  expect(fixture.viewpoint.worldPosition.toArray()).toEqual([17.5, 0, 0]);
+  const positions = retry?.geometry.getAttribute("position");
+  expect(
+    positions?.getX((retry?.geometry.drawRange.count ?? 1) - 1),
+  ).toBeLessThan(0);
   fixture.module.unload();
+  fixture.queue.update();
+  expect(fixture.scene.children).toHaveLength(0);
+});
+
+test("unload cancels unfinished generation and cannot publish stale geometry", () => {
+  const fixture = createFixture();
+  fixture.module.deactivate();
+  fixture.module.activate();
+  fixture.module.unload();
+  for (let frame = 0; frame < 40; frame++) fixture.queue.update();
+  expect(fixture.scene.children).toHaveLength(0);
+  expect(fixture.queue.size).toBe(0);
 });
