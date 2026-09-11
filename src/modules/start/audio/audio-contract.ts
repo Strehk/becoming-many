@@ -55,6 +55,10 @@ export interface StartAudio {
   configureSection(slot: number, section: AudioSection): void;
   updateSection(slot: number, frame: AudioSectionFrame): void;
   clearSection(slot: number): void;
-  update(frame: { active: boolean; speaking: boolean }): void;
+  update(frame: {
+    active: boolean;
+    speaking: boolean;
+    presence?: number;
+  }): void;
   unload(): void;
 }

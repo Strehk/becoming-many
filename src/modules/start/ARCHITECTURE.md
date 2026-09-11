@@ -152,7 +152,11 @@ deviates while the spoken tail finishes. A successor cannot activate before its
 cue. Retry playback begins at the instruction marker, without preceding praise;
 an unfinished introduction remains intact during early recovery. Four successes
 play the closing recording once. Final rings retain behind-only retirement.
-There is no automatic transition into the main Experience yet.
+`StartExperience.readComplete()` becomes true only after the final route exit and
+the closing recording's natural end; playback failure never completes Start. Run
+owns the transition and supplies `setPresence()` for a shared room, path, ring
+and atmosphere fade. This multiplier is separate from spoken visual cues and
+per-ring reveal/retirement. Start does not import Show or move the player.
 
 Horizontal routes turn 110 degrees right and 120 degrees left. Vertical routes use two opposite circular arcs
 with a maximum 32-degree pitch and level entry/exit tangents. This preserves the
@@ -371,9 +375,10 @@ offset granular heads at its midpoint. The looping pad drops from -38 dB to
 no dry path bypasses distance attenuation. Sources stop and dispose with their
 section. Four section slots bound their lifetime.
 
-Composition borrows the existing Sound context/listener for standalone Start.
+Composition borrows the existing Sound context/listener for Start.
 Run remains the sole listener-pose writer and closes the shared context only
 after Start releases its sources. Start never creates a listener or context.
-Native voice remains the foreground source. Browser verification checks source
+The atmosphere applies handoff presence once to every source gain, including
+the background pad. Native voice remains the foreground source. Browser verification checks source
 placement, negative detuning, audible stereo output, ducking and final disposal:
 `node tests/browser/start-atmosphere.mjs` with the development server on port 4180.

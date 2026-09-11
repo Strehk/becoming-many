@@ -40,6 +40,7 @@ interface ElementOptions {
   readonly light: ParticleLight;
   readonly retirement: ElementRetirement;
   readonly readDirection: () => Readonly<Vector3>;
+  readonly readPresence?: () => number;
   readonly readPosition: () => Readonly<Vector3>;
   readonly createGeometry: ElementGeometryFactory;
   readonly createMaterial: () => PathParticleMaterial;
@@ -261,7 +262,8 @@ class ParticleElements {
     });
     this.options.reveal?.update(seconds, this.readFront());
     const presence = this.options.animation.update(seconds);
-    this.material.pointsMaterial.opacity = presence;
+    this.material.pointsMaterial.opacity =
+      presence * (this.options.readPresence?.() ?? 1);
     this.material.update(seconds);
     const offsets = this.options.simulation.update(
       seconds,

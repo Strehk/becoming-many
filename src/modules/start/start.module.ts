@@ -58,6 +58,7 @@ import type {
   ExercisePose,
   ExerciseRoute,
   PlacedRoute,
+  StartExperience,
   StartVoice,
 } from "./start-contract";
 import { START_EXERCISES, START_SETTINGS } from "./start-exercises";
@@ -88,12 +89,14 @@ interface ActiveSection extends PlacedRoute {
   readonly deviation: ReturnType<typeof createFlightDeviation>;
 }
 
-export function createStartModule(options: StartModuleOptions): WorldModule {
+export function createStartModule(
+  options: StartModuleOptions,
+): StartExperience {
   return new StartModule(options);
 }
 
 // 2. Lifetime and borrowed streaming resources
-class StartModule implements WorldModule {
+class StartModule implements StartExperience {
   private readonly runtime = new ModuleRuntime();
   private readonly generationKey = {};
   private readonly noFlightDirection = new Vector3();
@@ -121,6 +124,7 @@ class StartModule implements WorldModule {
   private pending: PendingSection | undefined;
   private active = false;
   private worldPresence = 1;
+  private presence = 1;
   private pathPresence = 1;
   private openingNeeded = false;
 
@@ -144,7 +148,7 @@ class StartModule implements WorldModule {
         belowFlightMeters: START_SETTINGS.belowFlightMeters,
         opacity: START_SETTINGS.pathOpacity,
         growth: START_SETTINGS.pathGrowth,
-        readPresence: () => this.pathPresence,
+        readPresence: () => this.pathPresence * this.presence,
         createMaterial: () =>
           createPathRevealMaterial(
             createPathParticleMaterial(createAirParticleMaterial),
@@ -158,7 +162,7 @@ class StartModule implements WorldModule {
     return [
       createAirParticlesModule({
         ...this.options,
-        readPresence: () => this.worldPresence,
+        readPresence: () => this.worldPresence * this.presence,
       }),
       ...this.paths,
       ...this.elements,
@@ -191,6 +195,7 @@ class StartModule implements WorldModule {
       animation: createParticleAnimation(START_SETTINGS.elementAnimation),
       simulation: createParticleSimulation(START_SETTINGS.elementSimulation),
       readPosition: () => this.readPosition(),
+      readPresence: () => this.presence,
       createGeometry: this.createElementGeometry,
       createMaterial: () =>
         this.createElementMaterial(light, retirement, reveal.presence),
@@ -262,6 +267,7 @@ class StartModule implements WorldModule {
     this.pathPresence = this.worldPresence;
     this.openingNeeded = true;
     this.active = true;
+    this.presence = 1;
     for (const module of this.modules) this.runtime.activate(module);
     this.playInstruction(false);
     this.updateOpening();
@@ -303,6 +309,24 @@ class StartModule implements WorldModule {
     }
     this.options.atmosphere?.unload();
     if (errors.length) throw new AggregateError(errors, "Start cleanup failed");
+  };
+
+  /** Completion requires both the final flight exit and the closing recording's natural end. */
+  readonly readComplete = (): boolean => {
+    const voice = this.options.voice?.read();
+    return (
+      this.active &&
+      this.game.readState().phase === "complete" &&
+      !!voice &&
+      voice.ended &&
+      !voice.failed
+    );
+  };
+
+  readonly setPresence = (presence: number): void => {
+    this.presence = Number.isFinite(presence)
+      ? Math.max(0, Math.min(1, presence))
+      : 0;
   };
 
   // 3. One coherent observation, followed by one engine decision
@@ -653,6 +677,7 @@ class StartModule implements WorldModule {
     const voice = this.options.voice?.read();
     atmosphere.update({
       active: this.active,
+      presence: this.presence,
       speaking: !!voice && !voice.ended && !voice.failed,
     });
     this.elements.forEach((display, slot) => {

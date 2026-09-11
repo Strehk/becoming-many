@@ -131,6 +131,7 @@ class SpatialAtmosphere implements StartAudio {
   private readonly limiter: Limiter;
   private readonly pad: Voice;
   private active = false;
+  private presence = 1;
   private disposed = false;
 
   constructor(
@@ -322,8 +323,13 @@ class SpatialAtmosphere implements StartAudio {
     ring.counter = frame.counter;
   }
 
-  update(frame: { active: boolean; speaking: boolean }): void {
+  update(frame: {
+    active: boolean;
+    speaking: boolean;
+    presence?: number;
+  }): void {
     if (this.disposed) return;
+    this.presence = Math.max(0, Math.min(1, frame.presence ?? 1));
     this.active = frame.active && this.options.context.state === "running";
     const settings = this.options.settings;
     this.loop(
@@ -345,7 +351,7 @@ class SpatialAtmosphere implements StartAudio {
   }
 
   private volume(voice: Voice, presence: number, db: number): void {
-    const target = presence * 10 ** (db / 20);
+    const target = presence * this.presence * 10 ** (db / 20);
     if (voice.targetGain === target) return;
     voice.targetGain = target;
     const context = this.options.listener.context;

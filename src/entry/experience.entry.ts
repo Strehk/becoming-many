@@ -8,10 +8,11 @@
 import { levelNameFromPath } from "../../shared/level-routes";
 
 const request = new URLSearchParams(window.location.search);
-const standaloneParameters = ["benchmark", "diagnostics", "level", "m5"];
+const selectedLevel =
+  request.get("level") ?? levelNameFromPath(window.location.pathname);
 const startsStandaloneLevel =
-  levelNameFromPath(window.location.pathname) !== undefined ||
-  standaloneParameters.some((name) => request.has(name));
+  (selectedLevel !== undefined && selectedLevel !== "start") ||
+  ["benchmark", "diagnostics"].some((name) => request.has(name));
 
 await (startsStandaloneLevel
   ? import("./standalone-level.entry")

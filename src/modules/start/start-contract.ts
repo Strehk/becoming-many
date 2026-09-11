@@ -1,4 +1,5 @@
 import type { Vector3 } from "three";
+import type { WorldModule } from "../../world/module-runtime";
 import type {
   FlightRoute,
   ParticleRange,
@@ -132,3 +133,10 @@ export type ExerciseAction =
   | "advance"
   | "recover"
   | undefined;
+
+/** Run owns the handoff; Start reports natural completion and accepts its visual/audio fade. */
+export interface StartExperience extends WorldModule {
+  readonly readComplete: () => boolean;
+  /** Unit presence, applied once to all Start visuals and atmosphere. */
+  readonly setPresence: (presence: number) => void;
+}

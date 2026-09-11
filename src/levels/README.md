@@ -93,11 +93,16 @@ and connects; World coordinates module lifecycle; modules release their own
 derivatives. UI releases only its own presentation resources. The existing
 `unload()` path is implemented; full next-visitor operation remains #9/#46.
 
-## Standalone Start
+## Tutorial entry and handoff
 
-`start.level.ts` supplies a free-flight Air Particles environment to `/start`,
-`/tutorial`, and `/?level=start`. `/tutorial` remains a route alias. Start has no
-learning goals, ring or arrow presentation, tutorial audio, or Show transport.
-It uses the same Run, global flight control, and Air Particles module as other
-standalone presets. Air keeps 48 particles per 16 m chunk and fades its 16 m local
-field before recycling. The complete Show starts with its main schedule.
+The audience routes `/`, `/start`, `/tutorial` and `/?level=start` prepare the
+main show and run `start.level.ts` first. `LevelRun` waits for the complete
+closing narration and final route exit, fades Start, disposes its voice and
+atmosphere, resets the existing rig with eight meters of terrain clearance, and
+starts the main Show at zero. `handoff-settings.ts` owns these transition values.
+The same renderer, listener and XR session remain active throughout.
+
+Start exposes completion and presentation presence through its public contract.
+Composition connects resources; Run owns the handoff. Main modules stay inactive
+during the tutorial. `subscribeShow` lets the audience entry mount transport only
+when Show becomes available. Conductor retains direct main-show rehearsal.

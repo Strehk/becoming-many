@@ -14,6 +14,7 @@ import { level as connectionsLevel } from "../levels/connections.level";
 import { startLevel } from "../levels/level.runtime";
 import type { Run } from "../levels/run-contract";
 import type { RunningShow } from "../levels/show-contract";
+import { level as tutorialLevel } from "../levels/start.level";
 import { mountRehearsalTransport } from "../ui/rehearsal/transport.panel";
 import { mountVrEntryButton } from "../ui/shared/xr-entry-button";
 import { loadDeploymentConfig } from "./deployment-config";
@@ -68,6 +69,7 @@ try {
       signal: lifetime.signal,
       kind: "show",
       preset: connectionsLevel,
+      tutorial: tutorialLevel,
       show: {
         schedule: PIECE_SCHEDULE,
         language: resolveNarrationLanguage(request.get("language")),
@@ -77,29 +79,33 @@ try {
   );
   lifetime.signal.throwIfAborted();
 
-  window.show = level.show;
+  let unmountTransport: (() => void) | undefined;
+  const unsubscribeShow = level.subscribeShow((show) => {
+    window.show = show;
+    unmountTransport?.();
+    unmountTransport = show
+      ? mountRehearsalTransport({
+          container: document.body,
+          schedule: PIECE_SCHEDULE,
+          show,
+        })
+      : undefined;
+  });
   lifetime.signal.addEventListener(
     "abort",
     () => {
+      unsubscribeShow();
+      unmountTransport?.();
       delete window.show;
     },
     { once: true },
   );
 
-  const show = level.show;
-  if (show) {
-    const unmountTransport = mountRehearsalTransport({
-      container: document.body,
-      schedule: PIECE_SCHEDULE,
-      show,
-    });
-    lifetime.signal.addEventListener("abort", unmountTransport, { once: true });
-  }
-
   const unmountVr = mountVrEntryButton(document.body, level.xr);
   lifetime.signal.addEventListener("abort", unmountVr, { once: true });
 
-  if (deployment.m5Host) level.m5?.setHost(deployment.m5Host);
+  const m5Host = request.get("m5") ?? deployment.m5Host;
+  if (m5Host) level.m5?.setHost(m5Host);
 } catch (error) {
   let failure = error;
   lifetime.abort();

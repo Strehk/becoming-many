@@ -62,6 +62,7 @@ import {
 } from "../modules/scent-particles/scent-particles";
 import { createAirParticlesModule } from "../modules/start/point-cloud/point-cloud.module";
 import { createStartModule } from "../modules/start/start.module";
+import type { StartExperience } from "../modules/start/start-contract";
 import { createGroundOccluder } from "../modules/terrain/ground-occluder";
 import { createTerrainModule } from "../modules/terrain/terrain";
 import { createTerrainColors } from "../modules/terrain/terrain-colors";
@@ -138,9 +139,11 @@ interface LevelCompositionOptions {
   readonly assets: LoadedLevelAssets;
   readonly forShow: boolean;
   readonly signal?: AbortSignal;
+  readonly sharedAudio?: SpatialAudio;
 }
 
 export interface ComposedLevel {
+  readonly tutorial?: StartExperience;
   readonly audio?: SpatialAudio;
   readonly voice?: VoicePlayback;
   readonly worldSurface: WorldSurface;
@@ -155,12 +158,14 @@ export async function composeLevel({
   assets,
   forShow,
   signal = new AbortController().signal,
+  sharedAudio,
 }: LevelCompositionOptions): Promise<ComposedLevel> {
   const worldSurface = createWorldSurface(
     WORLD_SURFACE_SETTINGS,
     ZONE_SETTINGS,
   );
   let voice: VoicePlayback | undefined;
+  let tutorial: StartExperience | undefined;
   let audio: SpatialAudio | undefined;
   let atmosphere: Awaited<ReturnType<typeof createStartAudio>> | undefined;
   const modules: WorldModule[] = [];
@@ -182,7 +187,7 @@ export async function composeLevel({
 
   try {
     if (level.flightGuidance && !forShow) {
-      audio = await createSpatialAudio(world.camera, signal);
+      audio = sharedAudio ?? (await createSpatialAudio(world.camera, signal));
       atmosphere = await createStartAudio({
         ...audio,
         settings: START_AUDIO_SETTINGS,
@@ -286,6 +291,7 @@ export async function composeLevel({
     return {
       worldSurface,
       voice,
+      tutorial,
       audio,
       modules,
       hasGround: level.invisibleGround === true || hasVisibleSurface(level),
@@ -322,7 +328,7 @@ export async function composeLevel({
     }
     try {
       atmosphere?.unload();
-      await audio?.unload();
+      if (!sharedAudio) await audio?.unload();
     } catch (cleanupError) {
       errors.push(cleanupError);
     }
@@ -503,20 +509,20 @@ export async function composeLevel({
     };
     if (level.flightGuidance && !forShow)
       voice = createVoicePlayer({ gestures: window });
-    return level.flightGuidance
-      ? createStartModule({
-          voice,
-          atmosphere,
-          ...options,
-          guidance: level.flightGuidance,
-          constrainFlightPosition: (position) =>
-            keepFlightWithinHeightLimits(
-              position,
-              worldSurface.groundYAt,
-              heightLimits,
-            ),
-        })
-      : createAirParticlesModule(options);
+    if (!level.flightGuidance) return createAirParticlesModule(options);
+    tutorial = createStartModule({
+      voice,
+      atmosphere,
+      ...options,
+      guidance: level.flightGuidance,
+      constrainFlightPosition: (position) =>
+        keepFlightWithinHeightLimits(
+          position,
+          worldSurface.groundYAt,
+          heightLimits,
+        ),
+    });
+    return tutorial;
   }
 
   /**

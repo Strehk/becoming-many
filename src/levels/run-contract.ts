@@ -13,6 +13,10 @@ export interface Run {
   readonly readGraphicsInfo: () => GraphicsInfo;
   readonly unload: () => Promise<void>;
   readonly show: RunningShow | undefined;
+  /** Observe availability; the main transport is unavailable during the tutorial. */
+  readonly subscribeShow: (
+    listener: (show: RunningShow | undefined) => void,
+  ) => () => void;
 
   /**
    * Reset the flight rig without rewinding Show.
@@ -48,6 +52,8 @@ export interface StaticLevelRequest extends CommonLevelRequest {
 export interface ShowLevelRequest extends CommonLevelRequest {
   readonly kind: "show";
   readonly show: ShowRequest;
+  /** Optional guided entry before the prepared main show. */
+  readonly tutorial?: LevelPreset;
 }
 
 /** Both run modes construct one preset; Show adds its timeline and live states. */

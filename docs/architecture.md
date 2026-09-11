@@ -121,15 +121,17 @@ into those implementations.
 Each substantial domain repeats the same pattern: one domain owner connects
 specialised components, while those components do not import one another.
 
-The standalone Start recipe uses shared flight control. Its `start.module.ts`
-connects the particle environment and the directional light corridor, owning
-their shared lifecycle. The guidance leaf consumes World observations and imports
-no other Start component. Its common path sampler continues horizontal steering
-and current climb, with a small bounded vertical bend. Composition injects the
-same height constraint used by flight, so preview points flatten at active limits.
-Learning orchestration and Show integration remain
-inactive; exercise files describe their future architecture. Other level recipes
-continue to construct the shared Air Particles effect directly in Composition.
+Start owns procedural lessons, particle presentation and tutorial atmosphere through
+its local star. It exposes only completion and a presentation-presence input to
+Run; it never imports Show or Control. Completion requires both the last course
+exit and the naturally completed closing voice.
+
+For the audience route, Run prepares the main composition and then deactivates it
+while Start is active. Both borrow the same spatial-audio owner. Run fades Start,
+releases its sources, resets the existing flight rig to a terrain-relative arrival,
+reactivates the main composition and starts Show. The renderer, XR session and
+controls survive this transition. Show transport becomes available only afterward.
+Conductor continues to provide direct Show rehearsal.
 
 ## Owners and lifetime
 

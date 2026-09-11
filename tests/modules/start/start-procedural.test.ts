@@ -1,5 +1,6 @@
 import { expect, test } from "bun:test";
-import { type Points, type PointsMaterial, Scene, Vector3 } from "three";
+import { Points, type PointsMaterial, Scene, Vector3 } from "three";
+import type { StartAudio } from "../../../src/modules/start/audio/audio-contract";
 import { connectFlightRoute } from "../../../src/modules/start/flight-path/flight-connection";
 import {
   createFlightEntry,
@@ -71,7 +72,11 @@ const ENTRY_READY_FRAMES =
       60,
   ) + 2;
 
-function createFixture(warmFrames = ENTRY_READY_FRAMES, voice?: StartVoice) {
+function createFixture(
+  warmFrames = ENTRY_READY_FRAMES,
+  voice?: StartVoice,
+  atmosphere?: StartAudio,
+) {
   const scene = new Scene();
   const viewpoint = createViewpoint();
   const queue = new StreamQueue({ budgetMilliseconds: 5, capacity: 256 });
@@ -79,6 +84,7 @@ function createFixture(warmFrames = ENTRY_READY_FRAMES, voice?: StartVoice) {
     scene,
     viewpoint,
     voice,
+    atmosphere,
     parameters: PRESENTATION.particles,
     guidance: PRESENTATION.guidance,
     streamQueue: queue,
@@ -411,5 +417,112 @@ test("following the right arc earns the next voice only after the current voice 
   fixture.tick();
   expect(played[1]).toEndWith("left.wav");
   expect(played).toHaveLength(2);
+  fixture.module.unload();
+});
+
+function createClosingFixture() {
+  const played: string[] = [];
+  const playback = { offsetSeconds: 0, ended: false, failed: false };
+  const fixture = createFixture(0, {
+    play: (cue) => {
+      played.push(cue.url);
+      playback.offsetSeconds = 0;
+      playback.ended = false;
+    },
+    read: () => playback,
+    stop: () => {},
+  });
+  playback.offsetSeconds = START_EXERCISES[0].voice.durationSeconds;
+  playback.ended = true;
+  for (let frame = 0; frame < 240; frame++) fixture.tick();
+  return { fixture, playback, played };
+}
+
+function finishNarratedCourse(
+  closing: ReturnType<typeof createClosingFixture>,
+): void {
+  const { fixture, playback } = closing;
+  let section = firstSection(
+    fixture,
+    START_EXERCISES[0].sequence.approachMeters,
+  );
+  for (let index = 0; index < START_EXERCISES.length; index++) {
+    flyRange(fixture, section, [0, section.route.exerciseEndMeters]);
+    expect(fixture.module.readComplete()).toBe(false);
+    const next = START_EXERCISES[index + 1];
+    if (next) {
+      playback.offsetSeconds = next.voice.durationSeconds;
+      playback.ended = true;
+    }
+    for (let frame = 0; frame < 240; frame++) fixture.tick();
+    flyRange(fixture, section, [
+      section.route.exerciseEndMeters,
+      section.route.lengthMeters,
+    ]);
+    if (!next) break;
+    const route = createFlightRoute(
+      next.route,
+      START_SETTINGS.seed + index + 2,
+    );
+    section = { route, pose: connectFlightRoute(section, route) };
+  }
+}
+
+test("handoff waits for the final exit and a successful natural closing voice end", () => {
+  const closing = createClosingFixture();
+  const { fixture, played, playback } = closing;
+  finishNarratedCourse(closing);
+  expect(played.at(-1)).toBe(START_SETTINGS.completeVoice.url);
+  expect(fixture.module.readComplete()).toBe(false);
+  playback.ended = true;
+  playback.failed = true;
+  expect(fixture.module.readComplete()).toBe(false);
+  playback.failed = false;
+  expect(fixture.module.readComplete()).toBe(true);
+  fixture.module.deactivate();
+  expect(fixture.module.readComplete()).toBe(false);
+  fixture.module.unload();
+});
+
+function createAtmosphereFixture() {
+  let presence = 1;
+  const atmosphere: StartAudio = {
+    configureSection: () => {},
+    updateSection: () => {},
+    clearSection: () => {},
+    unload: () => {},
+    update: (frame) => {
+      presence = frame.presence ?? 1;
+    },
+  };
+  return {
+    fixture: createFixture(600, undefined, atmosphere),
+    readPresence: () => presence,
+  };
+}
+
+test("handoff presence fades every rendered cloud and reaches atmosphere once", () => {
+  const { fixture, readPresence } = createAtmosphereFixture();
+  const clouds = fixture.scene.children.filter(
+    (child) => child instanceof Points,
+  ) as Points<import("three").BufferGeometry, PointsMaterial>[];
+  expect(clouds.some((cloud) => cloud.name === "StartParticleElements")).toBe(
+    true,
+  );
+  const original = clouds.map((cloud) => cloud.material.opacity);
+  fixture.module.setPresence(0.25);
+  fixture.module.update?.(0);
+  clouds.forEach((cloud, index) => {
+    expect(cloud.material.opacity).toBeCloseTo((original[index] ?? 0) * 0.25);
+  });
+  expect(readPresence()).toBe(0.25);
+  expect(fixture.module.readComplete()).toBe(false);
+  fixture.module.setPresence(0);
+  fixture.module.update?.(0);
+  expect(clouds.every((cloud) => cloud.material.opacity === 0)).toBe(true);
+  expect(readPresence()).toBe(0);
+  fixture.module.activate();
+  fixture.module.update?.(0);
+  expect(readPresence()).toBe(1);
   fixture.module.unload();
 });

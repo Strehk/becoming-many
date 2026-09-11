@@ -14,9 +14,9 @@ scope, dependencies, acceptance criteria, and results.
   [#121](https://github.com/Strehk/becoming-many/issues/121), and
   [#123](https://github.com/Strehk/becoming-many/issues/123), coordinated by
   [#76](https://github.com/Strehk/becoming-many/issues/76).
-- Start is reduced to its standalone Air Particles environment. The previous
-  tutorial runtime, audio playback, UI state, and Show handoff are removed.
-  The full Show begins directly with its authored main schedule.
+- Audience entry now runs the procedural Start tutorial before the main Show.
+  Run owns its fade, terrain-relative arrival and shared-renderer handoff.
+  See [Start architecture](../src/modules/start/ARCHITECTURE.md) for its contracts.
 
 ## Deliberately separate work
 

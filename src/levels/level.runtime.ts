@@ -18,6 +18,7 @@ import type {
   World,
   WorldViewport,
 } from "../world/world-contract";
+import { HANDOFF_SETTINGS } from "./handoff-settings";
 import {
   type ComposedLevel,
   composeControls,
@@ -69,6 +70,13 @@ class LevelRun {
   private controls: ReturnType<typeof composeControls> | undefined;
   private playback: ShowRuntime | undefined;
   private unloading: Promise<void> | undefined;
+  private tutorial: ComposedLevel | undefined;
+  private tutorialAssets: LoadedLevelAssets | undefined;
+  private handoffElapsed: number | undefined;
+  private mainFieldOfViewDegrees = 0;
+  private readonly showListeners = new Set<
+    (show: RunningShow | undefined) => void
+  >();
   private readonly heightLimits = {
     minimumGroundClearanceMeters: undefined as number | undefined,
     maximumGroundClearanceMeters: undefined as number | undefined,
@@ -92,7 +100,9 @@ class LevelRun {
     return this.world.xr;
   }
   get show(): RunningShow | undefined {
-    return this.request.kind === "show" ? this.playback?.running : undefined;
+    return !this.tutorial && this.request.kind === "show"
+      ? this.playback?.running
+      : undefined;
   }
   readonly readGraphicsInfo = (): GraphicsInfo => this.world.readGraphicsInfo();
 
@@ -108,6 +118,7 @@ class LevelRun {
     this.world = composeWorld(surface, this.benchmark);
     const fieldOfViewDegrees =
       this.level.desktopFieldOfViewDegrees ?? this.world.camera.fov;
+    this.mainFieldOfViewDegrees = fieldOfViewDegrees;
     this.present(presentation, fieldOfViewDegrees);
     await this.loadComposition();
     this.signal.throwIfAborted();
@@ -116,15 +127,114 @@ class LevelRun {
       this.benchmark,
       this.worldSurface,
     );
-    if (this.request.kind === "show") await this.startPlayback();
+    if (this.request.kind === "show") {
+      await this.startPlayback();
+      await this.startTutorial();
+    }
     this.signal.throwIfAborted();
     this.signal.addEventListener("abort", this.onAbort, { once: true });
     this.world.start(this.updateFrame);
   }
 
+  readonly subscribeShow = (
+    listener: (show: RunningShow | undefined) => void,
+  ): (() => void) => {
+    this.showListeners.add(listener);
+    listener(this.show);
+    return () => {
+      this.showListeners.delete(listener);
+    };
+  };
+
+  private async startTutorial(): Promise<void> {
+    if (this.request.kind !== "show" || !this.request.tutorial) return;
+    const level = this.request.tutorial;
+    const assets = await loadLevelAssets(level, false, this.signal);
+    this.tutorialAssets = assets;
+    this.tutorial = await composeLevel({
+      world: this.world,
+      level,
+      assets,
+      forShow: false,
+      signal: this.signal,
+      sharedAudio: this.audio,
+    });
+    if (!this.tutorial.tutorial)
+      throw new Error("Tutorial preset needs a Start module");
+    for (const module of this.modules) this.world.modules.deactivate(module);
+    this.present(
+      level,
+      level.desktopFieldOfViewDegrees ?? this.world.camera.fov,
+    );
+    for (const module of this.tutorial.modules) {
+      this.world.modules.load(module);
+      this.world.modules.activate(module);
+    }
+  }
+
+  private updateHandoff(deltaSeconds: number): void {
+    const tutorial = this.tutorial?.tutorial;
+    if (
+      !tutorial ||
+      (this.handoffElapsed === undefined && !tutorial.readComplete())
+    )
+      return;
+    this.handoffElapsed =
+      (this.handoffElapsed ?? 0) + Math.max(0, deltaSeconds);
+    const progress = Math.min(
+      1,
+      this.handoffElapsed / HANDOFF_SETTINGS.fadeSeconds,
+    );
+    tutorial.setPresence(1 - progress * progress * (3 - 2 * progress));
+    if (progress === 1) this.finishTutorial();
+  }
+
+  private finishTutorial(): void {
+    this.releaseTutorial();
+    this.controls?.resetRig();
+    this.controls?.constrainHeight({
+      minimumGroundClearanceMeters: HANDOFF_SETTINGS.arrivalClearanceMeters,
+      maximumGroundClearanceMeters: HANDOFF_SETTINGS.arrivalClearanceMeters,
+    });
+    this.present(
+      initialLevelPresentation(this.request),
+      this.mainFieldOfViewDegrees,
+    );
+    for (const module of this.modules) this.world.modules.activate(module);
+    this.playback?.update();
+    this.playback?.running.play();
+    for (const listener of this.showListeners) listener(this.show);
+  }
+
+  private releaseTutorial(): void {
+    const tutorial = this.tutorial;
+    this.tutorial = undefined;
+    this.handoffElapsed = undefined;
+    const assets = this.tutorialAssets;
+    this.tutorialAssets = undefined;
+    const releases = [
+      ...(tutorial?.modules ?? []).map(
+        (module) => () => this.world.modules.unload(module),
+      ),
+      () => tutorial?.voice?.unload(),
+      ...assetReleases(assets),
+    ];
+    const errors: unknown[] = [];
+    for (const release of releases) {
+      try {
+        release();
+      } catch (error) {
+        errors.push(error);
+      }
+    }
+    if (errors.length)
+      throw new AggregateError(errors, "Tutorial cleanup failed");
+  }
+
   /** Reset the existing visit; replacement/calibration remains a separate operation. */
   readonly resetShowAndFlight = (): void => {
     if (this.signal.aborted) return;
+    if (this.tutorial) return;
     this.controls?.resetRig();
     this.playback?.running.resetTime();
   };
@@ -137,6 +247,7 @@ class LevelRun {
     if (this.unloading) return this.unloading;
     this.signal.removeEventListener("abort", this.onAbort);
     this.lifetime.abort();
+    this.showListeners.clear();
     this.unloading = this.endChildren();
     return this.unloading;
   };
@@ -188,7 +299,8 @@ class LevelRun {
   private readonly updateFrame = (deltaSeconds: number): void => {
     this.request.onFrame?.(deltaSeconds);
     this.updateFlight(deltaSeconds);
-    this.playback?.update();
+    if (!this.tutorial) this.playback?.update();
+    this.updateHandoff(deltaSeconds);
     this.audio?.update();
     this.updateHeightLimits();
   };
@@ -200,13 +312,20 @@ class LevelRun {
     }
     this.controls?.flight.update(
       deltaSeconds,
-      this.request.kind === "static"
-        ? this.level.flightSpeedMetersPerSecond
-        : undefined,
+      this.handoffElapsed !== undefined ? 0 : this.flightSpeed(),
     );
   }
 
+  private flightSpeed(): number | undefined {
+    if (this.request.kind === "static")
+      return this.level.flightSpeedMetersPerSecond;
+    return this.tutorial
+      ? this.request.tutorial?.flightSpeedMetersPerSecond
+      : undefined;
+  }
+
   private updateHeightLimits(): void {
+    if (this.tutorial) return;
     this.heightLimits.minimumGroundClearanceMeters = this.hasGround
       ? this.controls?.minimumGroundClearanceMeters
       : undefined;
@@ -249,27 +368,29 @@ class LevelRun {
   }
 
   private remainingReleases(): (() => unknown)[] {
-    const assets = this.assets;
-    const sources = assets
-      ? [
-          assets.vegetation,
-          assets.rocks,
-          assets.animals,
-          assets.passages?.models,
-        ]
-      : [];
     return [
+      () => this.releaseTutorial(),
       () => this.voice?.unload(),
       ...[...this.modules]
         .reverse()
         .map((module) => () => this.world?.modules.unload(module)),
       () => this.audio?.unload(),
-      ...sources.map((batch) => () => {
-        if (batch) disposeGltfAssets(batch);
-      }),
+      ...assetReleases(this.assets),
       () => this.world?.unload(),
     ];
   }
+}
+
+/** Return individual releases so one failing resource never skips the others. */
+function assetReleases(assets: LoadedLevelAssets | undefined): (() => void)[] {
+  return [
+    assets?.vegetation,
+    assets?.rocks,
+    assets?.animals,
+    assets?.passages?.models,
+  ].map((batch) => () => {
+    if (batch) disposeGltfAssets(batch);
+  });
 }
 
 type LevelPresentation = Pick<LevelPreset, "backgroundColor" | "viewDistance">;
