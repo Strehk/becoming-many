@@ -127,9 +127,8 @@ test("every exit leaves enough flight time for the next instruction cue", () => 
     const current = START_EXERCISES[index];
     const next = START_EXERCISES[index + 1];
     if (!current || !next) throw new Error("Missing lesson");
-    expect(
-      current.route.outroMeters / FLIGHT_SPEED -
-        START_TIMING.pauseAfterExerciseSeconds,
-    ).toBeGreaterThan(next.voice.instructionAtSeconds);
+    expect(current.route.outroMeters / FLIGHT_SPEED).toBeGreaterThan(
+      next.voice.instructionAtSeconds,
+    );
   }
 });

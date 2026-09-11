@@ -16,7 +16,6 @@ import type {
 import {
   START_EXERCISES,
   START_SETTINGS,
-  START_TIMING,
 } from "../../../src/modules/start/start-exercises";
 import { StreamQueue } from "../../../src/world/stream-queue";
 
@@ -302,12 +301,7 @@ test("immediate flight keeps progress while route generation is delayed", () => 
   flyRange(fixture, section, [4, section.route.exerciseEndMeters]);
   for (
     let frame = 0;
-    frame <
-    Math.ceil(
-      (START_SETTINGS.retireSeconds + START_TIMING.pauseAfterExerciseSeconds) *
-        60,
-    ) +
-      30;
+    frame < Math.ceil(START_SETTINGS.retireSeconds * 60) + 30;
     frame++
   )
     fixture.tick();
@@ -526,12 +520,6 @@ function finishNarratedCourse(
   for (let index = 0; index < START_EXERCISES.length; index++) {
     flyRange(fixture, section, [0, section.route.exerciseEndMeters]);
     expect(fixture.module.readComplete()).toBe(false);
-    for (
-      let frame = 0;
-      frame < Math.ceil(START_TIMING.pauseAfterExerciseSeconds * 60) + 2;
-      frame++
-    )
-      fixture.tick();
     const next = START_EXERCISES[index + 1];
     if (next) {
       playback.offsetSeconds = next.voice.durationSeconds;

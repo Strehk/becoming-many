@@ -4,7 +4,6 @@ import type { ExerciseDefinition } from "./start-contract";
 // The 90-second deadline starts the full closing narration; it does not cut it off.
 export const START_TIMING = {
   maximumExerciseSeconds: 90,
-  pauseAfterExerciseSeconds: 3,
   voiceSafetySeconds: 0.75,
   closingAtmosphereFadeSeconds: 6,
 };
@@ -114,7 +113,7 @@ export const START_EXERCISES = [
     route: {
       leadMeters: 0,
       straightMeters: 3,
-      outroMeters: 9,
+      outroMeters: 3,
       turnSign: 1,
       turnRadiusMeters: { from: 10, to: 10.5 },
       turnDegrees: { from: 110, to: 110 },
@@ -162,8 +161,8 @@ export const START_EXERCISES = [
     },
     route: {
       leadMeters: 0,
-      straightMeters: 3,
-      outroMeters: 12,
+      straightMeters: 9,
+      outroMeters: 6,
       turnSign: -1,
       turnRadiusMeters: { from: 10, to: 10.5 },
       turnDegrees: { from: 110, to: 110 },
@@ -178,7 +177,7 @@ export const START_EXERCISES = [
     elements: {
       showArrows: false,
       ringCount: 3,
-      firstMeters: 4,
+      firstMeters: 10,
       spacingMeters: 4.2,
       ringRadiusMeters: 3.6,
       arrowLengthMeters: 4.6,
@@ -211,8 +210,8 @@ export const START_EXERCISES = [
     route: {
       turnPlane: "vertical",
       leadMeters: 0,
-      straightMeters: 2,
-      outroMeters: 9,
+      straightMeters: 8,
+      outroMeters: 3,
       turnSign: 1,
       turnRadiusMeters: { from: 12, to: 12.5 },
       turnDegrees: { from: 24, to: 24 },
@@ -227,7 +226,7 @@ export const START_EXERCISES = [
     elements: {
       showArrows: false,
       ringCount: 3,
-      firstMeters: 3,
+      firstMeters: 9,
       spacingMeters: 4.2,
       ringRadiusMeters: 3.6,
       arrowLengthMeters: 4.6,
@@ -260,8 +259,8 @@ export const START_EXERCISES = [
     route: {
       turnPlane: "vertical",
       leadMeters: 0,
-      straightMeters: 2,
-      outroMeters: 9,
+      straightMeters: 8,
+      outroMeters: 3,
       turnSign: -1,
       turnRadiusMeters: { from: 12, to: 12.5 },
       turnDegrees: { from: 24, to: 24 },
@@ -276,7 +275,7 @@ export const START_EXERCISES = [
     elements: {
       showArrows: false,
       ringCount: 3,
-      firstMeters: 3,
+      firstMeters: 9,
       spacingMeters: 4.2,
       ringRadiusMeters: 3.6,
       arrowLengthMeters: 4.6,

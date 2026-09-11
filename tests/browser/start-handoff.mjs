@@ -46,6 +46,39 @@ try {
       context: run.audio.context,
     };
   });
+  if (process.argv.includes("--paced"))
+    await page.evaluate(() => {
+      const start = window.handoffRun.tutorial.tutorial;
+      const update = start.update;
+      window.ringPreviews = [];
+      start.update = (seconds) => {
+        update(seconds);
+        for (const [path, elements] of start.bindings) {
+          const state = start.game.readState();
+          const index =
+            start.pending?.display === path && start.pending.continuation
+              ? state.exerciseIndex + 1
+              : start.current?.display === path
+                ? state.exerciseIndex
+                : -1;
+          if (
+            index < 1 ||
+            window.ringPreviews.some((preview) => preview.index === index)
+          )
+            continue;
+          if ((start.feedback.get(elements)?.reveal.presence[0] ?? 0) < 0.05)
+            continue;
+          const center = start
+            .readPosition()
+            .clone()
+            .fromArray(elements.targets);
+          window.ringPreviews.push({
+            index,
+            distance: center.distanceTo(start.readPosition()),
+          });
+        }
+      };
+    });
   if (process.argv.includes("--abort")) {
     await page.evaluate(() =>
       window.dispatchEvent(
@@ -111,6 +144,10 @@ try {
           await page.waitForTimeout(1500);
           await page.screenshot({ path: "/tmp/start-shortened-course.png" });
         }
+        if (index === 1 && process.argv.includes("--preview")) {
+          await page.waitForTimeout(1000);
+          await page.screenshot({ path: "/tmp/start-upcoming-rings.png" });
+        }
         await fly("exerciseEndMeters");
         console.log("Completed exercise", index);
         await page.waitForFunction(
@@ -144,6 +181,13 @@ try {
         }
         await fly("lengthMeters", true);
       }
+    if (process.argv.includes("--paced")) {
+      const previews = await page.evaluate(() => window.ringPreviews);
+      console.log("Upcoming ring emergence:", previews);
+      assert.equal(previews.length, 3);
+      for (const preview of previews)
+        assert.ok(preview.distance >= 6, JSON.stringify(preview));
+    }
     assert.equal(await page.evaluate(() => !!window.handoffRun.tutorial), true);
     assert.equal(await page.evaluate(() => !!window.show), false);
     await page.screenshot({ path: "/tmp/start-handoff-before.png" });

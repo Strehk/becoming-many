@@ -9,7 +9,6 @@ interface GameSettings {
   readonly exerciseCount: number;
   readonly repeatSequence?: boolean;
   readonly retireSeconds: number;
-  readonly pauseAfterExerciseSeconds?: number;
 }
 export function createStartGame(settings: GameSettings) {
   return new StartGame(settings);
@@ -17,7 +16,7 @@ export function createStartGame(settings: GameSettings) {
 
 class StartGame {
   private state: ExerciseState = this.initialState();
-  private passedAtSeconds: number | undefined;
+  private exercisePassed = false;
   constructor(private readonly settings: GameSettings) {}
   readonly readState = (): Readonly<ExerciseState> => this.state;
   /** Deadline completion needs no further passage and never repeats the closing voice. */
@@ -29,7 +28,7 @@ class StartGame {
   };
   readonly reset = (): void => {
     this.state = this.initialState();
-    this.passedAtSeconds = undefined;
+    this.exercisePassed = false;
   };
 
   private initialState(): ExerciseState {
@@ -68,16 +67,9 @@ class StartGame {
   };
 
   private observeExercise(frame: ExerciseFrame): ExerciseAction {
-    if (frame.deviated && this.passedAtSeconds === undefined)
-      return this.recover(false);
-    if (frame.progress === "passed")
-      this.passedAtSeconds ??= this.state.elapsedSeconds;
-    if (this.passedAtSeconds === undefined || !frame.instructionEnded) return;
-    if (
-      this.state.elapsedSeconds - this.passedAtSeconds <
-      (this.settings.pauseAfterExerciseSeconds ?? 0)
-    )
-      return;
+    if (frame.deviated && !this.exercisePassed) return this.recover(false);
+    if (frame.progress === "passed") this.exercisePassed = true;
+    if (!this.exercisePassed || !frame.instructionEnded) return;
     if (
       this.settings.repeatSequence === false &&
       this.state.exerciseIndex === this.settings.exerciseCount - 1
@@ -113,7 +105,7 @@ class StartGame {
   }
 
   private enterPhase(phase: ExerciseState["phase"]): void {
-    if (phase === "flying") this.passedAtSeconds = undefined;
+    if (phase === "flying") this.exercisePassed = false;
     this.state.phase = phase;
     this.state.elapsedSeconds = 0;
   }
