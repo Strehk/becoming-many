@@ -5,31 +5,16 @@
  * Boundary: When the credits are present is the show driver's decision.
  */
 
-import {
-  type Group,
-  Mesh,
-  MeshBasicMaterial,
-  PlaneGeometry,
-  type Scene,
-} from "three";
+import { Mesh, MeshBasicMaterial, PlaneGeometry, type Scene } from "three";
 import type { EndCreditsDefinition } from "../../dramaturgy/end-credits";
 import type { WorldModule } from "../../world/module-runtime";
 import type { Viewpoint } from "../../world/viewpoint";
-import { createHeadingPanelPose } from "../heading-panel-pose";
 import { END_CREDITS_PANEL_SETTINGS } from "./end-credits-settings";
 import { drawEndCreditsTexture } from "./end-credits-texture";
 
 export interface EndCreditsPanelOptions {
   readonly scene: Scene;
   readonly viewpoint: Viewpoint;
-  /** The transform locomotion moves; its forward is the flight heading. */
-  readonly viewerRig: Group;
-  /**
-   * The comfort pitch the rendered view is raised by, so the panel can be
-   * raised onto the same axis. It is authored with the flight settings, which
-   * this module does not read for itself.
-   */
-  readonly viewPitchDegrees: number;
   readonly definition: EndCreditsDefinition;
 }
 
@@ -58,10 +43,6 @@ export function createEndCreditsPanel(
   options: EndCreditsPanelOptions,
 ): EndCreditsPanelHandle {
   const settings = END_CREDITS_PANEL_SETTINGS;
-  const pose = createHeadingPanelPose({
-    distanceMeters: settings.distanceMeters,
-    viewPitchDegrees: options.viewPitchDegrees,
-  });
   let resources: EndCreditsResources | undefined;
   let presence = 0;
 
@@ -116,16 +97,13 @@ export function createEndCreditsPanel(
       update: (): void => {
         if (!resources?.panel.visible) return;
 
-        // The viewpoint, never the camera: under the rig the camera's own
-        // position is the head's offset within it, not a world position. The
-        // rig is a direct child of the scene, so its own rotation is already
-        // its world heading.
-        pose.place(
-          options.viewpoint.worldPosition,
-          options.viewerRig.quaternion,
-        );
-        resources.panel.position.copy(pose.position);
-        resources.panel.lookAt(pose.lookTarget);
+        resources.panel.position
+          .copy(options.viewpoint.worldPosition)
+          .addScaledVector(
+            options.viewpoint.worldBodyDirection,
+            settings.distanceMeters,
+          );
+        resources.panel.lookAt(options.viewpoint.worldPosition);
       },
 
       deactivate: (): void => {

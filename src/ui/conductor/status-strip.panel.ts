@@ -1,7 +1,7 @@
 import type { M5Observation } from "../../m5/m5-contract";
 import type { XrSessionState } from "../../world/xr-contract";
 import { requireElement, writeText } from "../shared/dom";
-import type { ConductorPanel, ConductorViewState } from "./view-state";
+import type { ConductorPanel } from "./view-state";
 
 type ReadingState = "idle" | "live" | "warn";
 
@@ -19,14 +19,12 @@ export function createStatusStrip({
 }: StatusStripOptions): ConductorPanel {
   const root = requireElement(tilesParent, ".conductor__tiles", HTMLElement);
   const sound = bindTile(root, "sound");
-  const picture = bindTile(root, "picture");
   const controller = bindTile(root, "controller");
   const headset = bindTile(root, "headset");
 
   return {
     update(state): void {
       sound.write(...soundReading(state.audioState));
-      picture.write(...pictureReading(state));
       controller.write(...controllerReading(state.m5));
       headset.write(...headsetReading(state.xr));
     },
@@ -47,7 +45,7 @@ function headsetReading(xr: XrSessionState): ReadingText {
 }
 
 /**
- * An absent adapter means a benchmark build; `off` means no host is set —
+ * An absent adapter or `off` status means no host is set —
  * both read as "no device", which is a normal state, not a fault. A
  * live reply supplies steering; metadata stays in the technician drawer.
  */
@@ -55,21 +53,7 @@ function controllerReading(status: M5Observation | undefined): ReadingText {
   if (status === undefined || status.status === "off") return ["—", "idle"];
   if (status.status === "connecting") return ["Connecting", "warn"];
 
-  return (status.control?.quality ?? 0) > 0
-    ? ["OK", "live"]
-    : ["Neutral", "idle"];
-}
-
-/** The acceptance target from docs/performance.md is a stable 90 FPS. */
-const FRAME_RATE_FLOOR = 85;
-
-function pictureReading(state: ConductorViewState): ReadingText {
-  const { framesPerSecond } = state;
-  if (framesPerSecond === undefined) return ["—", "idle"];
-
-  return framesPerSecond >= FRAME_RATE_FLOOR
-    ? ["OK", "live"]
-    : ["Check", "warn"];
+  return ["OK", "live"];
 }
 
 function bindTile(root: HTMLElement, name: string): Tile {

@@ -3,7 +3,7 @@
  * Context: The device is a polled HTTP server on the station network; clients GET its state.
  * Responsibility: Own the state payload shape, the serial setup messages, and the parser
  *   that turns untrusted wire text into a typed state.
- * Boundary: Polling cadence, ControlFrame derivation, and flashing live elsewhere.
+ * Boundary: Polling cadence, flight-axis mapping, and flashing live elsewhere.
  */
 
 /**

@@ -218,11 +218,14 @@ unload. Elements add one draw call per visible section. Their small fixed pool
 uses uncullable clouds so emergence and impulse offsets cannot clip at static
 shape bounds. Individual ring feedback now follows actual forward passage. Native audio observations are injected through the Start voice contract.
 
-Ring grains reuse the existing airborne wind shader with a stable phase per grain.
-`START_SETTINGS.elementWind` controls their small horizontal and vertical drift
-and slow speed. The phase does not change across frames; no random frame jitter,
-extra CPU particle updates or additional render loop is introduced. Ambient air
-and route particles retain their existing coherent wind.
+Ring grains use `particle-wind.vert.glsl`: a smooth spatial random field with
+shared motion for neighboring grains and a small seeded individual component.
+Displacement is bounded around resting positions, so the ring cannot drift apart.
+`START_SETTINGS.elementWind` controls amplitude, individual variation, spatial
+coherence and change duration. Quintic interpolation and a wrapped noise lattice
+keep velocity continuous, including clock wrap. The material owns the wind clock;
+there are no CPU particle uploads or additional loops. The old per-grain sinusoidal
+phase override is removed; ambient air and route wind keep their original behavior.
 
 ### Directional light and passage feedback
 

@@ -53,6 +53,7 @@ function createModuleOptions(scene: Scene, viewerPosition: Vector3) {
     scene,
     viewpoint: {
       worldPosition: viewerPosition,
+      worldBodyDirection: new Vector3(0, 0, -1),
       worldDirection: new Vector3(0, 0, -1),
       worldUp: new Vector3(0, 1, 0),
       viewHalfAngleRadians: Math.PI / 4,

@@ -11,8 +11,7 @@ const request = new URLSearchParams(window.location.search);
 const selectedLevel =
   request.get("level") ?? levelNameFromPath(window.location.pathname);
 const startsStandaloneLevel =
-  (selectedLevel !== undefined && selectedLevel !== "start") ||
-  ["benchmark", "diagnostics"].some((name) => request.has(name));
+  selectedLevel !== undefined && selectedLevel !== "start";
 
 await (startsStandaloneLevel
   ? import("./standalone-level.entry")

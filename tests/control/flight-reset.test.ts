@@ -13,7 +13,7 @@ test("flight reset restores the origin and heading and is idempotent", () => {
   for (let reset = 0; reset < 2; reset += 1) {
     resetFlightPose(position, quaternion);
     expect(position.toArray()).toEqual([0, 0, 0]);
-    expect(quaternion.toArray()).toEqual([0, 0, 0, 1]);
+    expect(quaternion.angleTo(new Quaternion())).toBeCloseTo(0);
   }
 });
 
@@ -30,5 +30,5 @@ test("a flight reset leaves no previous tilt or turn response behind", () => {
   input.rightTilt = 0;
   flight.update(1);
   expect(position.toArray()).toEqual([0, 0, -5]);
-  expect(quaternion.toArray()).toEqual([0, 0, 0, 1]);
+  expect(quaternion.angleTo(new Quaternion())).toBeCloseTo(0);
 });

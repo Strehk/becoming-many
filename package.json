@@ -7,7 +7,6 @@
     "test": "bun test",
     "test:browser": "bun tests/browser/run-browser-smoke.ts",
     "observe:show": "bun tests/browser/run-show-observation.ts",
-    "benchmark": "bun tests/benchmark/run-benchmark.ts",
     "station": "bun station/station-server.ts",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",

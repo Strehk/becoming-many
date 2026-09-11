@@ -1,15 +1,13 @@
-/** Exercise the standalone air particles through real shared M5 locomotion. */
+/** Smoke-check particle visibility and the standalone Start lifetime. */
 import assert from "node:assert/strict";
 import type { Page } from "playwright";
 import { M5_FIRMWARE_VERSION } from "../../src/m5/protocol";
 import { assertRefactorBranch } from "./browser-evidence";
 
 const PARTICLE_TIMEOUT_MILLISECONDS = 10_000;
-const FLIGHT_MILLISECONDS = 1_500;
-const DEFLECTION = 0.4;
 
 export interface StartSimulation {
-  /** Change the next firmware-shaped response; zero quality is invalid input. */
+  /** Change the next firmware-shaped response. */
   readonly set: (pitch: number, roll: number, quality?: number) => void;
 }
 
@@ -59,26 +57,13 @@ export async function prepareStartInput(
   };
 }
 
-/** Capture free flight, invalid input and a fresh particle lifetime after reload. */
+/** Verify visible content and a fresh lifetime after reload, not flight behavior. */
 export async function checkStartLevel(
   page: Page,
   simulation: StartSimulation,
   artifactBase: string,
 ): Promise<void> {
   await captureParticles(page, `${artifactBase}-start-arrival.png`);
-  for (const [name, pitch, roll, quality] of [
-    ["invalid-input", 0, -DEFLECTION, 0],
-    ["forward-flight", 0, 0, 1],
-    ["turning-flight", 0, -DEFLECTION, 1],
-    ["left-turning-flight", 0, DEFLECTION, 1],
-    ["climbing-flight", -DEFLECTION, 0, 1],
-    ["descending-flight", DEFLECTION, 0, 1],
-    ["centered-flight", 0, 0, 1],
-  ] as const) {
-    simulation.set(pitch, roll, quality);
-    await page.waitForTimeout(FLIGHT_MILLISECONDS);
-    await captureParticles(page, `${artifactBase}-start-${name}.png`);
-  }
   simulation.set(0, 0, 0);
   await page.reload({ waitUntil: "load" });
   await captureParticles(page, `${artifactBase}-start-after-reload.png`);

@@ -122,7 +122,6 @@ export function createTechDrawer({
     HTMLOutputElement,
   ).textContent = M5_FIRMWARE_VERSION;
   let receivedState: M5Observation["receivedState"];
-  const frames = readOutput(root, "frames");
   const m5 = readOutput(root, "m5");
   const level = readOutput(root, "level");
   const audio = readOutput(root, "audio");
@@ -145,10 +144,6 @@ export function createTechDrawer({
           );
         });
 
-        writeText(
-          frames,
-          frameText(state.framesPerSecond, state.p95Milliseconds),
-        );
         writeText(m5, m5Text(state.m5));
         if (receivedState !== state.m5?.receivedState) {
           receivedState = state.m5?.receivedState;
@@ -171,24 +166,13 @@ function readOutput(parent: HTMLElement, name: string): HTMLOutputElement {
   return requireElement(parent, `[data-reading="${name}"]`, HTMLOutputElement);
 }
 
-function frameText(
-  framesPerSecond: number | undefined,
-  p95Milliseconds: number | undefined,
-): string {
-  if (framesPerSecond === undefined || p95Milliseconds === undefined) {
-    return "—";
-  }
-
-  return `${Math.round(framesPerSecond)} fps · ${p95Milliseconds.toFixed(1)} ms p95`;
-}
-
 /**
- * The Controller tile shows the rejection reason or live sample quality.
+ * The Controller tile shows connection freshness.
  */
 function m5Text(status: M5Observation | undefined): string {
   if (status === undefined || status.status === "off") return "—";
 
   if (status.status !== "live") return status.status.replaceAll("-", " ");
 
-  return `live · input q${(status.control?.quality ?? 0).toFixed(2)}`;
+  return "live";
 }

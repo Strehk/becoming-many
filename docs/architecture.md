@@ -94,27 +94,33 @@ rule: desktop and M5 input remain simultaneous, with no exclusive mode or
 priority policy. A later source such as a gamepad can implement the same
 contract without changing Run or the flight model.
 
-Only the desktop adapter has source-local response state: key presses reach full
-tilt immediately, while released axes return linearly to zero over 0.25 seconds
-from the supplied frame delta. Pointer-lock loss, blur, and unload neutralize it
-immediately. The M5 adapter adds no rebound and leaves its existing processing
-unchanged. This behavior runs inside the same source read and creates no timer,
-runtime, or second loop.
+Desktop keys emulate continuous body tilt at a bounded rate. Holding reaches a
+fixed tilt limit; release returns to neutral and reversal crosses through it.
+Key events only update held keys; one per-frame source read advances tilt.
+Pointer-lock loss, blur and unload clear keys and emulated tilt. The M5 runtime
+reports physical tilt directly, retaining only polling, freshness and host
+lifetime. Firmware owns normalization and calibration; the browser applies no
+smoothing, auto-neutralization or intermediate control frame to device input.
 
-Control owns the one flight model that mutates the viewer rig. Each live update
-applies constant speed along a path whose pitch is set by the combined forward
-tilt (±45 degrees); neutral tilt flies level. Side tilt sets the yaw rate.
-Circular-arc integration preserves the same held-input path across frame rates.
-Mouse and headset pose change only the camera's local view and publish no flight axes, so looking around
-cannot alter the trajectory. Run owns frame integration, active speed, and
-height limits; Composition owns source construction and wiring. World publishes
-the resulting `worldFlightPosition` and `worldFlightDirection` alongside local
-eye facts. Direction is the normalized displacement captured within the current
-frame after height limits, with rig heading as the stationary fallback. Resets
-between frames do not become flight displacement. Start guidance approximates continued steering from heading change per meter
-of actual rig movement. Its arc preview owns no flight model or loop. Show owns time, language, narration, and
-presentation policy. Content and Sound consume injected facts without reaching
-into those implementations.
+Control owns the flight model and the rig's pitch, bank and heading. Forward
+tilt pitches down; side tilt banks and turns the heading. Pitch and bank are
+bounded at ±45 degrees. The rig moves forward at constant path speed, with
+neutral tilt flying level. Mouse and headset pose remain local and cannot steer.
+During XR, Control applies heading only to the rig because physical headset
+tracking already includes body pitch and bank. Run supplies frame time, speed,
+XR state and height constraints; Composition constructs and connects sources.
+
+World publishes resulting position, actual frame displacement after height
+limits, and eye facts. It never derives body orientation from displacement.
+Between-frame resets are excluded from displacement. Desktop gaze inherits the
+rig's pitch and bank; XR adds the existing prone-posture assistance and restores
+saved desktop camera pose on exit.
+`worldBodyDirection` publishes the rendered axis before local gaze; Credits
+consumes this observation without reconstructing a heading or pitch offset.
+
+Show owns time, language, narration and presentation policy. Content and Sound
+consume injected facts without reaching into other implementations. Start guidance approximates continued steering from heading change per meter
+of actual rig movement. Its arc preview owns no flight model or loop.
 
 ## Local domain stars
 

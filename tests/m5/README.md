@@ -3,7 +3,7 @@
 `bun test tests/m5 tests/control` checks the device boundary and its consumers:
 
 - `protocol.test.ts`: untrusted HTTP parsing and normalized ranges.
-- `runtime/`: filtering, neutralization, smoothing, eligibility and exact stale
+- `runtime/`: direct axis propagation, host lifetime, cancellation and exact stale
   boundaries; observation versus effective steering; single-reader button
   events; host replacement, late responses, failed polls and permanent unload.
 - `setup/`: typed serial replies, secret redaction, actual stream cancellation,

@@ -255,9 +255,9 @@ test("audio owners recover gesture resume and await complete disposal", async ()
       droneOrgan: withOrgan ? createShowOrgan() : undefined,
     });
     const { PIECE_SCHEDULE } = await import("./src/dramaturgy/piece-schedule.ts");
-    const { SHOW_LEVEL_STATES } = await import("./src/dramaturgy/show-levels.ts");
+    const { LEVEL_CATALOG } = await import("./src/levels/level-catalog.ts");
     const show = await createShowRuntime(
-      { schedule: PIECE_SCHEDULE, language: "en", states: SHOW_LEVEL_STATES },
+      { schedule: PIECE_SCHEDULE, language: "en", states: LEVEL_CATALOG },
       { world: { camera: { updateProjectionMatrix() {} }, renderer: { setClearColor() {} } },
         reach: { gates: new Map(), senses: {}, worldFades: {} },
         worldSurface: {},
@@ -302,7 +302,7 @@ test("audio owners recover gesture resume and await complete disposal", async ()
     releaseOrgan(); showNative.release(); await showFailure;
     const contextCount = contexts.length;
     const invalidStart = createShowRuntime(
-      { schedule: { ...PIECE_SCHEDULE, durationSeconds: -1 }, language: "en", states: SHOW_LEVEL_STATES },
+      { schedule: { ...PIECE_SCHEDULE, durationSeconds: -1 }, language: "en", states: LEVEL_CATALOG },
       { world: {},
         reach: {},
         worldSurface: {},

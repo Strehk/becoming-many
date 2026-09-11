@@ -11,10 +11,15 @@ import type {
   ParticleLight,
   ParticleLightFrame,
   ParticleLightSettings,
+  ParticleWindSettings,
   VolumeSettings,
 } from "./particle-contract";
 import grainShader from "./particle-grain.frag.glsl?raw";
 import grainVertex from "./particle-grain.vert.glsl?raw";
+import windVertex from "./particle-wind.vert.glsl?raw";
+
+// Match the wrapped noise lattice so long-running wind has no clock discontinuity.
+const WIND_CYCLE_CELLS = 256;
 
 // 1. Shared volume distribution: dense center with a sparse, translucent dust envelope
 /** Mutate owned particle geometry; local shape samples remain independent of this material treatment. */
@@ -79,7 +84,8 @@ function createRandom(seed: number): () => number {
   };
 }
 
-interface LightOptions {
+interface ElementEffects {
+  readonly wind: ParticleWindSettings;
   readonly settings: ParticleLightSettings;
   readonly animation: ParticleLight;
   readonly retirement: ElementRetirement;
@@ -91,9 +97,9 @@ interface LightOptions {
 export function createVolumeMaterial(
   material: PathParticleMaterial,
   settings: VolumeSettings,
-  light: LightOptions,
+  light: ElementEffects,
 ): PathParticleMaterial {
-  const uniforms = createVolumeUniforms(settings, light.settings);
+  const uniforms = createVolumeUniforms(settings, light);
   const points = material.pointsMaterial;
   const compileBase = points.onBeforeCompile.bind(points);
   const baseKey = points.customProgramCacheKey();
@@ -113,17 +119,29 @@ export function createVolumeMaterial(
     shader.fragmentShader = patchVolumeFragment(shader.fragmentShader);
   };
   points.customProgramCacheKey = () =>
-    `${baseKey}:particle-volume-directional-light-wind-v12:${light.settings.capacity}`;
+    `${baseKey}:particle-volume-directional-light-spatial-wind-v13:${light.settings.capacity}`;
   return {
     pointsMaterial: points,
     update(seconds) {
       material.update(seconds);
-      updateLightUniforms(
-        light.animation.update(seconds),
-        uniforms.elementEffects.value,
-      );
+      updateElementEffects(uniforms, light, seconds);
     },
   };
+}
+
+function updateElementEffects(
+  uniforms: ReturnType<typeof createVolumeUniforms>,
+  effects: ElementEffects,
+  seconds: number,
+): void {
+  uniforms.elementWindTime.value =
+    (uniforms.elementWindTime.value +
+      Math.max(0, seconds) / effects.wind.changeSeconds) %
+    WIND_CYCLE_CELLS;
+  updateLightUniforms(
+    effects.animation.update(seconds),
+    uniforms.elementEffects.value,
+  );
 }
 
 function updateLightUniforms(
@@ -138,9 +156,15 @@ function updateLightUniforms(
 // Fixed uniform storage: update one record per element instead of every grain.
 function createVolumeUniforms(
   settings: VolumeSettings,
-  light: ParticleLightSettings,
+  effects: ElementEffects,
 ) {
+  const light = effects.settings;
   return {
+    elementWindTime: { value: 0 },
+    elementWindPeriod: { value: WIND_CYCLE_CELLS },
+    elementWindAmplitude: { value: effects.wind.amplitudeMeters },
+    elementWindIndividual: { value: effects.wind.individualAmplitudeMeters },
+    elementWindCoherence: { value: effects.wind.coherenceMeters },
     elementEffects: {
       value: Array.from({ length: light.capacity }, () => new Vector2(-1, 0)),
     },
@@ -158,7 +182,10 @@ function createVolumeUniforms(
 
 function patchVolumeVertex(source: string): string {
   return source
-    .replace("#include <common>", `#include <common>\n${grainVertex}`)
+    .replace(
+      "#include <common>",
+      `#include <common>\n${grainVertex}\n${windVertex}`,
+    )
     .replace(
       "#include <begin_vertex>",
       `#include <begin_vertex>
@@ -168,7 +195,7 @@ function patchVolumeVertex(source: string): string {
     )
     .replace(
       "transformed = animateAirParticle(transformed);",
-      "transformed = animateAirParticle(transformed, seed * 6.28318530718);",
+      "transformed += sampleElementWind(transformed, seed);",
     )
     .replace(
       "gl_PointSize = size * pathParticleSize;",

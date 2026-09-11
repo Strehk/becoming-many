@@ -1,9 +1,8 @@
-import { FrameMetricsSampler } from "../diagnostics/frame-metrics";
 import { resolveNarrationLanguage } from "../dramaturgy/narration-catalog";
 import { PIECE_SCHEDULE } from "../dramaturgy/piece-schedule";
-import { SHOW_LEVEL_STATES } from "../dramaturgy/show-levels";
 import { level as connectionsLevel } from "../levels/connections.level";
 import { startLevel } from "../levels/level.runtime";
+import { LEVEL_CATALOG } from "../levels/level-catalog";
 import type { Run } from "../levels/run-contract";
 /** Resolve browser inputs, start one Run and connect the operator UI. */
 import { mountConductorPage } from "../ui/conductor/conductor.page";
@@ -32,7 +31,6 @@ try {
     ".experience-canvas",
     HTMLCanvasElement,
   );
-  const frameMetrics = new FrameMetricsSampler();
   const request = new URLSearchParams(window.location.search);
   pendingStart = startLevel(
     { canvas, viewport: stageMount },
@@ -43,9 +41,8 @@ try {
       show: {
         schedule: PIECE_SCHEDULE,
         language: resolveNarrationLanguage(request.get("language")),
-        states: SHOW_LEVEL_STATES,
+        states: LEVEL_CATALOG,
       },
-      onFrame: (deltaSeconds) => frameMetrics.add(deltaSeconds),
     },
   );
   run = await pendingStart;
@@ -63,7 +60,6 @@ try {
     run,
     m5,
     xr: run.xr,
-    frameMetrics,
     initialM5Host,
     isM5HostLocked: deployment.m5Host !== undefined,
     onM5HostChange: (host) => {

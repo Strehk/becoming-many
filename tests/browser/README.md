@@ -58,9 +58,8 @@ final/persisted Conductor pagehide. The simulated M5 never contacts hardware.
 The report records whether Conductor required a wake gesture; an already
 running audio context legitimately skips its hidden wake overlay.
 
-URLs and startup do not independently prove scene composition. The deterministic
-benchmark complements these checks with named-level reports and renderer counters;
-visual review remains necessary for intended geometry and presentation.
+URLs and startup do not independently prove scene composition. Visual review
+remains necessary for intended geometry and presentation.
 
 `smoke.json` records source identity, browser version, routes, observed renderer,
 and failures. Unexpected browser errors, failed requests and context loss fail
@@ -119,3 +118,6 @@ Keep the measured page foreground and run sequentially without other browser
 scenes, builds, tests, or GPU-heavy work. Record power/display conditions and
 uncontrolled background activity with the accepted evidence. Do not infer an
 improvement or timing tolerance from a single run.
+
+The Start smoke check verifies particle visibility and reload lifetime only.
+It does not establish flight-control correctness or comfortable motion.

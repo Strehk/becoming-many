@@ -23,8 +23,8 @@ const float AIR_PARTICLE_VERTICAL_RATE = 0.45;
 const float AIR_PARTICLE_HORIZONTAL_RATE = 0.31;
 const float AIR_PARTICLE_PHASE_SCALE = 1.7;
 
-vec3 animateAirParticle(vec3 restingPosition, float phaseOffset) {
-  float phase = dot(restingPosition, vec3(0.071, 0.113, 0.053)) + phaseOffset;
+vec3 animateAirParticle(vec3 restingPosition) {
+  float phase = dot(restingPosition, vec3(0.071, 0.113, 0.053));
   float verticalDrift = sin(
     airParticleTime * AIR_PARTICLE_VERTICAL_RATE + phase
   ) * airParticleVerticalAmplitude;
@@ -33,11 +33,6 @@ vec3 animateAirParticle(vec3 restingPosition, float phaseOffset) {
   ) * airParticleHorizontalAmplitude;
 
   return restingPosition + vec3(horizontalDrift, verticalDrift, 0.0);
-}
-
-// Ambient fields retain their coherent wind; shaped grains can supply a stable phase.
-vec3 animateAirParticle(vec3 restingPosition) {
-  return animateAirParticle(restingPosition, 0.0);
 }
 
 vec4 getAirParticleClipPosition(vec4 visibleClipPosition, vec3 viewPosition) {

@@ -87,7 +87,6 @@ button[data-armed="true"],
   .conductor > section,
   .conductor__tile,
   .flash__panel,
-  .diagnostics-overlay__card,
   .rehearsal,
   .conductor__drawer
 ) {
@@ -122,7 +121,6 @@ button[data-armed="true"],
   .conductor__tile-body,
   .conductor__chapters,
   .conductor__tiles,
-  .diagnostics-overlay__card,
   .flash__panel,
   .flash__form,
   .flash__form label
@@ -327,8 +325,7 @@ body:has(.conductor__drawer[open]) {
   stroke-width: 2px;
   pointer-events: none;
 }
-.timeline__slot,
-.diagnostics-overlay {
+.timeline__slot {
   pointer-events: none;
 }
 body:has(> .app) {
@@ -344,34 +341,10 @@ body:has(> .app) {
   height: 100%;
 }
 .rehearsal,
-.diagnostics-overlay,
 .xr-entry-button {
   position: fixed;
   z-index: 10;
   inset: 16px 16px auto;
-}
-.diagnostics-overlay {
-  display: grid;
-  gap: 8px;
-  width: min(640px, calc(100vw - 32px));
-}
-body:has(.rehearsal:not([hidden])) .diagnostics-overlay {
-  inset-block: auto 80px;
-}
-.diagnostics-overlay__metrics {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
-}
-.diagnostics-overlay__log {
-  max-height: calc(100dvh - 32px);
-  padding: 16px;
-  overflow: auto;
-  background: var(--ground);
-  border: 1px solid var(--edge);
-  font: inherit;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
 }
 .xr-entry-button {
   inset: auto auto 20px 50%;

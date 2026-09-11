@@ -67,7 +67,7 @@ interface M5Preview {
   readonly render: (observation: M5Observation | undefined) => void;
 }
 
-/** Display the accepted device sample separately from effective steering quality. */
+/** Display the accepted device sample; device quality remains diagnostic. */
 function bindPreview(root: HTMLElement): M5Preview {
   const element = requireElement(root, ".conductor__m5-preview", HTMLElement);
   const dot = requireElement(element, ".conductor__m5-dot", SVGCircleElement);
@@ -100,7 +100,7 @@ function bindPreview(root: HTMLElement): M5Preview {
       dot.setAttribute("cy", String(50 - pitch * 42));
       writeText(
         readout,
-        `P ${pitch.toFixed(2)} · R ${roll.toFixed(2)} · sample q${state.quality.toFixed(1)} · input q${(observation?.control?.quality ?? 0).toFixed(1)}`,
+        `P ${pitch.toFixed(2)} · R ${roll.toFixed(2)} · sample q${state.quality.toFixed(1)}`,
       );
     },
   };

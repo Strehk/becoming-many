@@ -13,9 +13,6 @@ production ownership structure without placing test files inside `src`.
 Use one focused subfolder per production area. Import the real implementation
 from `../src`; do not duplicate production helpers inside tests.
 
-`benchmark/` verifies the pure route and report logic and holds the browser
-benchmark runner, which `bun test` ignores because it is not a test file.
-
 `dramaturgy/` verifies show time and cue lookup, both pure; the narration
 player is DOM-bound and is not tested here.
 

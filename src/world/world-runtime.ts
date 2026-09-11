@@ -15,12 +15,7 @@ import {
 import { ModuleRuntime } from "./module-runtime";
 import { StreamQueue } from "./stream-queue";
 import { createViewerRig } from "./viewer-rig";
-import type {
-  World,
-  WorldFrame,
-  WorldOptions,
-  WorldViewport,
-} from "./world-contract";
+import type { World, WorldOptions, WorldViewport } from "./world-contract";
 import { WORLD_RUNTIME_SETTINGS } from "./world-settings";
 import { mirrorXrFrame } from "./xr-mirror";
 import { createXrSessionControl } from "./xr-session";
@@ -30,9 +25,9 @@ export function createWorld(
   { canvas, viewport }: WorldViewport,
   options: WorldOptions = {},
 ): World {
-  const { frameControl, viewPitchAssistDegrees = 0 } = options;
+  const { xrViewPitchAssistDegrees = 0 } = options;
   const scene = new Scene();
-  const viewer = createViewerRig(viewPitchAssistDegrees);
+  const viewer = createViewerRig(xrViewPitchAssistDegrees);
   // One indivisible act: `WebGLRenderer.render` skips its own camera matrix
   // update once the camera has a parent, so a rig that never reaches the scene
   // graph freezes the view with nothing raised and every test still green.
@@ -42,14 +37,11 @@ export function createWorld(
   const renderer = createWorldRenderer(canvas, lifetime.signal);
   const timer = new Timer();
   const modules = new ModuleRuntime();
-  const streamQueue = new StreamQueue(
-    WORLD_RUNTIME_SETTINGS.streamQueue,
-    frameControl?.readStreamTimeMilliseconds,
-  );
+  const streamQueue = new StreamQueue(WORLD_RUNTIME_SETTINGS.streamQueue);
 
   const xr = createXrSessionControl(renderer);
-  renderer.xr.addEventListener("sessionstart", resizeRenderer);
-  renderer.xr.addEventListener("sessionend", resizeRenderer);
+  renderer.xr.addEventListener("sessionstart", enterXr);
+  renderer.xr.addEventListener("sessionend", leaveXr);
   let resizeObserver: ResizeObserver | undefined;
   let preparation: Promise<void> | undefined;
   let stopping: Promise<void> | undefined;
@@ -65,18 +57,6 @@ export function createWorld(
     modules,
     streamQueue,
     xr,
-    renderCounters: renderer.info.render,
-    readGraphicsInfo: () => {
-      const gl = renderer.getContext();
-      const debug = gl.getExtension("WEBGL_debug_renderer_info");
-      return {
-        renderer: debug
-          ? String(gl.getParameter(debug.UNMASKED_RENDERER_WEBGL))
-          : "unknown",
-        maxTextureSize: renderer.capabilities.maxTextureSize,
-        maxVertexTextures: renderer.capabilities.maxVertexTextures,
-      };
-    },
     prepareRenderer,
     start,
     stop,
@@ -113,8 +93,8 @@ export function createWorld(
       for (const release of [
         () => renderer.setAnimationLoop(null),
         () => resizeObserver?.disconnect(),
-        () => renderer.xr.removeEventListener("sessionstart", resizeRenderer),
-        () => renderer.xr.removeEventListener("sessionend", resizeRenderer),
+        () => renderer.xr.removeEventListener("sessionstart", enterXr),
+        () => renderer.xr.removeEventListener("sessionend", leaveXr),
         () => timer.dispose(),
       ]) {
         try {
@@ -144,8 +124,6 @@ export function createWorld(
     resizeObserver ??= new ResizeObserver(resizeRenderer);
     resizeObserver.observe(viewport);
 
-    let frameIndex = 0;
-
     // Three.js owns the single loop for desktop and WebXR.
     renderer.setAnimationLoop((time) => {
       if (lifetime.signal.aborted) return;
@@ -153,9 +131,7 @@ export function createWorld(
       // Recreated content must finish first-use work before the visible frame.
       // Keep sampling the timer so preparation time never becomes a flight step.
       if (preparation) return;
-      const deltaSeconds = frameControl
-        ? frameControl.fixedDeltaSeconds
-        : timer.getDelta();
+      const deltaSeconds = timer.getDelta();
 
       viewer.beginFrame();
       updateWorld(deltaSeconds);
@@ -166,22 +142,11 @@ export function createWorld(
       // The eye carries the head pose from the previous frame, because the
       // session writes it inside `render` — centimetres against chunks tens of
       // metres wide, and the price of having exactly one update point.
-      viewer.publish();
+      viewer.publish(renderer.xr.isPresenting);
       modules.update(deltaSeconds);
       streamQueue.update();
       renderer.render(scene, camera);
       mirrorXrFrame(renderer);
-
-      if (!frameControl) return;
-
-      const frame: WorldFrame = {
-        frameIndex,
-        timeMilliseconds: time,
-        renderer,
-        streamQueue,
-      };
-      frameIndex += 1;
-      if (!frameControl.afterFrame(frame)) renderer.setAnimationLoop(null);
     });
   }
 
@@ -226,6 +191,16 @@ export function createWorld(
       preparation = undefined;
     });
     return preparation;
+  }
+
+  function enterXr(): void {
+    viewer.enterXr();
+    resizeRenderer();
+  }
+
+  function leaveXr(): void {
+    viewer.leaveXr();
+    resizeRenderer();
   }
 
   // The canvas fills its container, so the show page's full-window root and

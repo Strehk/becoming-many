@@ -1,36 +1,7 @@
-/**
- * Purpose: Hold every tunable of the M5 polling adapter and its rig profile.
- * Context: The firmware runs normalize → axis-map → calibrate on the device;
- *   the client stages configured here run per station, tuned to the physical
- *   rig — changing one changes the flight behavior.
- * Responsibility: Own the transport, auto-neutralize, and smoothing
- *   numbers in one typed place.
- * Boundary: Flight-model tuning belongs to src/control/flight-settings.ts.
- */
-
+/** Transport limits for the single-client device HTTP server. */
 export const M5_SETTINGS = {
-  // The device serves one HTTP client at a time, so the poll rate is a load
-  // budget before it is a latency choice: 167ms keeps the station under six
-  // requests a second. The firmware samples every 50ms, so every poll still
-  // reads a fresh snapshot; the cost is up to 167ms of steering latency.
+  // Under six requests per second; firmware samples every 50 milliseconds.
   pollIntervalMilliseconds: 167,
-  // No accepted poll for this long means the device is gone: steer nothing.
+  // Expire steering and abort a stalled request after one second.
   staleAfterMilliseconds: 1_000,
-  // Rig rest pose in -1..1 units. The device calibrates its own zero at the
-  // rig, so the parked rig reads true zero; the neutralizer only pins drift.
-  restPitch: 0,
-  restRoll: 0,
-  // How far the pose may wander and still count as resting.
-  restTolerance: 0.08,
-  // The rest pose must hold this long before pitch/roll are pinned to zero.
-  stableDurationMilliseconds: 5_000,
-  // A poll gap larger than this means frames were lost; the stability window
-  // restarts rather than trusting a stitched-together stillness.
-  maxFrameGapMilliseconds: 1_000,
-
-  // Per-poll easing toward the newest pose; 1 would be no smoothing at all.
-  // It is a time constant in disguise: 0.625 at the 167ms poll eases with the
-  // same ~170ms constant the 0.25-at-50ms tuning had, so a slower poll does
-  // not also slow the feel.
-  smoothingFactor: 0.625,
 } as const;

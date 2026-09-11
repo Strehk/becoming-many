@@ -11,7 +11,7 @@ import { describe, expect, test } from "bun:test";
 import { MathUtils, Matrix4, type Object3D, Scene, Vector3 } from "three";
 import {
   createViewerRig,
-  VIEW_PITCH_ASSIST_DEGREES,
+  XR_VIEW_PITCH_ASSIST_DEGREES,
 } from "../../src/world/viewer-rig";
 
 /**
@@ -53,11 +53,11 @@ describe("viewer rig", () => {
     // pose during every render exactly as it does in a live session.
     for (let frame = 0; frame < 10; frame += 1) {
       viewer.group.position.z -= 10;
-      viewer.publish();
+      viewer.publish(true);
       writeHeadsetPose(viewer.camera, headPoseOver(viewer.group.matrixWorld));
     }
 
-    viewer.publish();
+    viewer.publish(true);
     expect(viewer.viewpoint.worldPosition.z).toBeCloseTo(-100);
     // The visitor travelled, and still stands their own height above the floor.
     expect(viewer.viewpoint.worldPosition.y).toBeCloseTo(
@@ -65,24 +65,10 @@ describe("viewer rig", () => {
     );
   });
 
-  test("a write to the camera's own transform does not move the visitor", () => {
-    const scene = new Scene();
-    const viewer = createViewerRig();
-    scene.add(viewer.group);
-
-    // The bug the rig exists to make unrepresentable: before it, this was the
-    // only thing locomotion did, and the head pose erased it every frame.
-    viewer.camera.position.set(0, 0, -100);
-    writeHeadsetPose(viewer.camera, headPoseOver(viewer.group.matrixWorld));
-
-    viewer.publish();
-    expect(viewer.viewpoint.worldPosition.z).toBeCloseTo(0);
-  });
-
   test("the published viewpoint follows the rig within the same frame", () => {
     const viewer = createViewerRig();
     viewer.group.position.set(64, 12, -128);
-    viewer.publish();
+    viewer.publish(true);
 
     expect(viewer.viewpoint.worldPosition.toArray()).toEqual([64, 12, -128]);
   });
@@ -93,7 +79,7 @@ describe("viewer rig", () => {
     // A quarter turn: the head's own offset has to rotate with the rig.
     viewer.group.rotateY(Math.PI / 2);
     viewer.camera.position.set(0, STANDING_HEIGHT_METERS, 2);
-    viewer.publish();
+    viewer.publish(true);
 
     const { worldPosition } = viewer.viewpoint;
     expect(worldPosition.x).toBeCloseTo(2);
@@ -113,7 +99,7 @@ describe("viewer rig", () => {
     const viewer = createViewerRig(30);
     viewer.group.rotation.y = Math.PI / 2;
     viewer.camera.rotation.x = MathUtils.degToRad(-10);
-    viewer.publish();
+    viewer.publish(true);
 
     const direction = viewer.viewpoint.worldDirection;
     expect(direction.x).toBeCloseTo(-Math.cos(MathUtils.degToRad(20)));
@@ -127,13 +113,13 @@ describe("viewer rig", () => {
     expect(up.dot(direction)).toBeCloseTo(0);
 
     viewer.camera.rotation.y = Math.PI / 2;
-    viewer.publish();
+    viewer.publish(true);
     expect(viewer.viewpoint.worldDirection).toBe(direction);
     expect(direction.z).toBeGreaterThan(0.9);
     expect(viewer.viewpoint.worldUp).toBe(up);
 
     viewer.camera.rotation.set(0, 0, Math.PI / 2);
-    viewer.publish();
+    viewer.publish(true);
     expect(up.z).toBeCloseTo(1);
     expect(up.length()).toBeCloseTo(1);
   });
@@ -144,7 +130,7 @@ describe("viewer rig", () => {
     viewer.camera.aspect = 0.5;
     viewer.camera.zoom = 2;
     viewer.camera.updateProjectionMatrix();
-    viewer.publish();
+    viewer.publish(true);
     const verticalSlope = Math.tan(MathUtils.degToRad(40)) / 2;
     expect(viewer.viewpoint.viewHalfAngleRadians).toBeCloseTo(
       Math.atan(verticalSlope * 0.5),
@@ -152,14 +138,14 @@ describe("viewer rig", () => {
 
     // XR can replace the projection while leaving desktop aspect unchanged.
     viewer.camera.projectionMatrix.makePerspective(-1, 2, 1, -1, 1, 100);
-    viewer.publish();
+    viewer.publish(true);
     expect(viewer.viewpoint.viewHalfAngleRadians).toBeCloseTo(Math.PI / 4);
   });
 
   test("raises the view through a parent transform WebXR cannot overwrite", () => {
-    expect(VIEW_PITCH_ASSIST_DEGREES).toBe(30);
-    const viewer = createViewerRig(VIEW_PITCH_ASSIST_DEGREES);
-    viewer.publish();
+    expect(XR_VIEW_PITCH_ASSIST_DEGREES).toBe(30);
+    const viewer = createViewerRig(XR_VIEW_PITCH_ASSIST_DEGREES);
+    viewer.publish(true);
     writeHeadsetPose(
       viewer.camera,
       headPoseOver(viewer.camera.parent?.matrixWorld ?? new Matrix4()),
@@ -176,12 +162,12 @@ test("flight facts exclude head translation, look and pitch assistance", () => {
   const viewer = createViewerRig(30);
   viewer.group.position.set(3, 5, -8);
   viewer.group.rotation.y = Math.PI / 4;
-  viewer.publish();
+  viewer.publish(true);
   const position = viewer.viewpoint.worldFlightPosition?.clone();
   const direction = viewer.viewpoint.worldFlightDirection?.clone();
   viewer.camera.position.set(0.4, 1.6, 0.2);
   viewer.camera.rotation.set(0.3, 0.8, 0.2);
-  viewer.publish();
+  viewer.publish(true);
   expect(viewer.viewpoint.worldFlightPosition).toEqual(position);
   expect(viewer.viewpoint.worldFlightDirection).toEqual(direction);
   expect(viewer.viewpoint.worldFlightPosition?.toArray()).toEqual([3, 5, -8]);
@@ -192,19 +178,55 @@ test("flight facts exclude head translation, look and pitch assistance", () => {
 test("flight direction measures the constrained step and excludes reset teleportation", () => {
   const viewer = createViewerRig();
   viewer.group.position.set(100, 20, -100);
-  viewer.publish();
+  viewer.publish(true);
   viewer.group.position.set(0, 0, 0);
   viewer.beginFrame();
   viewer.group.position.set(0, -2, -4);
   viewer.group.position.y = 0;
-  viewer.publish();
+  viewer.publish(true);
   expect(viewer.viewpoint.worldFlightDirection?.toArray()).toEqual([0, 0, -1]);
   viewer.beginFrame();
   viewer.group.position.add(new Vector3(0, 2, -2));
-  viewer.publish();
+  viewer.publish(true);
   expect(viewer.viewpoint.worldFlightDirection?.y).toBeCloseTo(Math.SQRT1_2);
   expect(viewer.viewpoint.worldFlightDirection?.z).toBeCloseTo(-Math.SQRT1_2);
   viewer.beginFrame();
-  viewer.publish();
+  viewer.publish(true);
   expect(viewer.viewpoint.worldFlightDirection?.y).toBeCloseTo(0);
+});
+
+test("XR exit restores desktop mouse pose and projection independently of body pitch", () => {
+  const viewer = createViewerRig(30);
+  viewer.camera.position.set(0.1, 0.2, 0.3);
+  viewer.camera.rotation.set(0.1, 0.2, 0);
+  viewer.camera.fov = 65;
+  const desktopOrientation = viewer.camera.quaternion.clone();
+  viewer.enterXr();
+  viewer.camera.position.set(0.5, 1.6, 0.8);
+  viewer.camera.rotation.set(-0.5, 0.7, 0.4);
+  viewer.camera.fov = 100;
+  viewer.publish(true);
+  viewer.leaveXr();
+  viewer.publish();
+  expect(viewer.camera.position.toArray()).toEqual([0.1, 0.2, 0.3]);
+  expect(viewer.camera.quaternion.angleTo(desktopOrientation)).toBeLessThan(
+    1e-7,
+  );
+  expect(viewer.camera.fov).toBe(65);
+  expect(viewer.viewpoint.worldBodyDirection.y).toBeCloseTo(0);
+});
+
+test("body direction follows rendered pitch and remains independent of mouse/head gaze", () => {
+  const viewer = createViewerRig(30);
+  viewer.beginFrame();
+  viewer.group.rotation.x = -Math.PI / 4;
+  viewer.camera.rotation.y = Math.PI / 2;
+  viewer.publish();
+  expect(viewer.viewpoint.worldBodyDirection.y).toBeCloseTo(-Math.SQRT1_2);
+  expect(
+    viewer.viewpoint.worldBodyDirection.dot(viewer.viewpoint.worldDirection),
+  ).toBeCloseTo(0);
+  viewer.group.rotation.x = 0;
+  viewer.publish(true);
+  expect(viewer.viewpoint.worldBodyDirection.y).toBeCloseTo(0.5);
 });

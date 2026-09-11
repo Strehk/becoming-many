@@ -6,7 +6,7 @@ import type { ConductorPageOptions } from "../../src/ui/conductor/conductor.page
 // These assertions run during type checking; Bun does not inspect TS contracts.
 test("operator capabilities exclude consuming input and child cleanup", () => {
   expectTypeOf<NonNullable<Run["m5"]>>().toHaveProperty("setHost");
-  expectTypeOf<NonNullable<Run["m5"]>>().not.toHaveProperty("consumeFrame");
+  expectTypeOf<NonNullable<Run["m5"]>>().not.toHaveProperty("readInput");
   expectTypeOf<NonNullable<Run["m5"]>>().not.toHaveProperty("unload");
   expectTypeOf<Run["xr"]>().toHaveProperty("start");
   expectTypeOf<Run["xr"]>().not.toHaveProperty("unload");
@@ -20,7 +20,7 @@ test("operator capabilities exclude consuming input and child cleanup", () => {
   expectTypeOf<ConductorPageOptions["show"]>().not.toHaveProperty("clock");
   expectTypeOf<ConductorPageOptions["xr"]>().not.toHaveProperty("unload");
   expectTypeOf<NonNullable<ConductorPageOptions["m5"]>>().not.toHaveProperty(
-    "consumeFrame",
+    "readInput",
   );
   expectTypeOf<NonNullable<ConductorPageOptions["m5"]>>().not.toHaveProperty(
     "unload",

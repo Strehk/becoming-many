@@ -18,7 +18,8 @@ interface PresentationFade {
 export interface ShowRequest {
   readonly schedule: NarrationSchedule;
   readonly language: NarrationLanguage;
-  readonly states: Record<ShowLevelName, ShowLevelState>;
+  /** Borrow the level catalog directly; do not author a second state table. */
+  readonly states: Readonly<Record<ShowLevelName, ShowLevelState>>;
 }
 
 export interface RunningShow {

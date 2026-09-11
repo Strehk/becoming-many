@@ -9,7 +9,7 @@ status presentation and UI cleanup. It owns no Show clock or visitor policy.
 
 ## Operator layout
 
-- Top: Sound, Picture, Controller and Headset status, plus technician tools.
+- Top: Sound, Controller and Headset status, plus technician tools.
 - Main: large Play/Pause and Stop controls, EN/DE below, and the live preview
   alongside them on desktop. Narrow layouts stack controls and preview.
 - Bottom: one continuous timeline with chapter progress and chapter jump buttons.
@@ -36,7 +36,7 @@ not replace the Run. Browser reload and stored preferences belong to Entry.
 ## Public interface and retained interaction
 
 Panels draw a local view state and invoke only their needed public commands.
-`ConductorViewState` combines Show, XR, M5 and diagnostic observations for drawing. Drag preview, seek throttling, `wasPlaying`, keyboard mapping and
+`ConductorViewState` combines Show, XR and M5 observations for drawing. Drag preview, seek throttling, `wasPlaying`, keyboard mapping and
 confirmation timers are legitimate UI behavior. Schedule arithmetic remains
 in `dramaturgy`; device validity remains in M5.
 
@@ -61,7 +61,6 @@ M5 preview observes accepted samples without consuming flight button edges.
 The expandable Controller state section shows the last parsed `/state` reply
 and bundled firmware inside the drawer. It reuses the existing poll; metadata
 differences never prevent steering from the configured host.
-"Picture OK" is a browser-metric heuristic, not Windows-PCVR acceptance.
 
 ## Resources and styling
 

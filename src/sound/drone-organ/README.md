@@ -27,7 +27,7 @@ with the compass.
 - `drone-organ.ts` is the lazy follower entry. Run prepares the Tone context
   through `../spatial-audio.runtime.ts`; the organ borrows it and owns only its nodes,
   pending construction and Show-driven scheduling. Standalone levels without
-  configured audio and benchmarks allocate no audio context.
+  configured audio allocate no audio context.
 - `drone-organ-settings.ts` is the composition — the piece the organ plays,
   and the only file to retune it in.
 - `organ-runtime.ts` builds the instrument and follows the world each frame.

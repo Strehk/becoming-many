@@ -79,3 +79,9 @@ The shared DOM button lives in `src/ui/shared/xr-entry-button.ts`;
 `xr-session.ts` owns session mechanics here. Styling is in `src/ui/app.css`.
 Browser XR/resource APIs belong here; labels, buttons and DOM styling do not.
 See the [binding architecture](../../docs/architecture.md#integration-star).
+
+Desktop viewing inherits the pitch and bank set by Control on the rig. World
+never derives body orientation from displacement. XR uses physical head pose
+and prone-posture assistance; its exit restores saved desktop camera pose and
+field of view. The published
+body direction excludes local gaze, so Credits consumes it directly.

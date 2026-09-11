@@ -14,8 +14,7 @@ facts it was started with. The station window itself is the conductor page,
 which hosts the show in-process — this process carries no show traffic.
 
 It runs under Bun, not in a browser, which is why it sits here rather than in
-`src/` — the same split as the Chromium benchmark runner in `tests/benchmark/`,
-which drives `src/benchmark`. Nothing in either page's module graph imports it,
+`src/`. Nothing in either page's module graph imports it,
 so Vite never bundles it and it exports nothing.
 
 `bun run m5-sim` starts a second small Bun process from this folder: a stand-in

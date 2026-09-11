@@ -5,19 +5,13 @@
  * Boundary: Authored data and concrete world composition live in dedicated level files.
  */
 
-import type { BenchmarkRun } from "../benchmark/benchmark-run";
 import { showLevelStateAt } from "../dramaturgy/show-levels";
 import type { M5Runtime } from "../m5/m5-contract";
 import type { VoicePlayback } from "../sound/playback";
 import type { SpatialAudio } from "../sound/spatial-audio";
 import { disposeGltfAssets } from "../utils/asset-loader/gltf-assets";
 import type { WorldModule } from "../world/module-runtime";
-import type {
-  GraphicsInfo,
-  RenderCounters,
-  World,
-  WorldViewport,
-} from "../world/world-contract";
+import type { World, WorldViewport } from "../world/world-contract";
 import { HANDOFF_SETTINGS } from "./handoff-settings";
 import {
   type ComposedLevel,
@@ -58,7 +52,6 @@ class LevelRun {
   private readonly lifetime = new AbortController();
   private readonly signal: AbortSignal;
   private readonly level: LevelPreset;
-  private readonly benchmark: BenchmarkRun | undefined;
   private assets: LoadedLevelAssets | undefined;
   private world!: World;
   private worldSurface!: ComposedLevel["worldSurface"];
@@ -87,15 +80,11 @@ class LevelRun {
 
   constructor(private readonly request: LevelStartRequest) {
     this.level = request.preset;
-    this.benchmark = request.kind === "static" ? request.benchmark : undefined;
     this.signal = request.signal
       ? AbortSignal.any([request.signal, this.lifetime.signal])
       : this.lifetime.signal;
   }
 
-  get renderCounters(): RenderCounters {
-    return this.world.renderCounters;
-  }
   get xr(): Run["xr"] {
     return this.world.xr;
   }
@@ -104,7 +93,6 @@ class LevelRun {
       ? this.playback?.running
       : undefined;
   }
-  readonly readGraphicsInfo = (): GraphicsInfo => this.world.readGraphicsInfo();
 
   async start(surface: WorldViewport): Promise<void> {
     this.signal.throwIfAborted();
@@ -115,18 +103,14 @@ class LevelRun {
       this.signal,
     );
     this.signal.throwIfAborted();
-    this.world = composeWorld(surface, this.benchmark);
+    this.world = composeWorld(surface);
     const fieldOfViewDegrees =
       this.level.desktopFieldOfViewDegrees ?? this.world.camera.fov;
     this.mainFieldOfViewDegrees = fieldOfViewDegrees;
     this.present(presentation, fieldOfViewDegrees);
     await this.loadComposition();
     this.signal.throwIfAborted();
-    this.controls = composeControls(
-      this.world,
-      this.benchmark,
-      this.worldSurface,
-    );
+    this.controls = composeControls(this.world, this.worldSurface);
     if (this.request.kind === "show") {
       await this.startPlayback();
       await this.startTutorial();
@@ -297,7 +281,6 @@ class LevelRun {
   }
 
   private readonly updateFrame = (deltaSeconds: number): void => {
-    this.request.onFrame?.(deltaSeconds);
     this.updateFlight(deltaSeconds);
     if (!this.tutorial) this.playback?.update();
     this.updateHandoff(deltaSeconds);
@@ -306,13 +289,10 @@ class LevelRun {
   };
 
   private updateFlight(deltaSeconds: number): void {
-    if (this.benchmark) {
-      this.benchmark.placeViewer(this.world.viewerRig);
-      return;
-    }
     this.controls?.flight.update(
       deltaSeconds,
       this.handoffElapsed !== undefined ? 0 : this.flightSpeed(),
+      this.world.renderer.xr.isPresenting,
     );
   }
 

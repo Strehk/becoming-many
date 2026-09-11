@@ -31,14 +31,10 @@ semantic role, so a name is never recognised by comparing its text.
 lines themselves are authored in `src/dramaturgy/end-credits.ts` and handed in
 by Level Runtime, so this module never reads the schedule.
 
-`../heading-panel-pose.ts` calculates panel placement, kept pure so it is covered by
-`bun test` without a browser. The panel rides a fixed distance ahead of the
-**rig's** flattened heading — the direction of travel — at eye height and
-square to the viewer. Anchoring to the course rather than to the head is what
-lets a visitor turn to look around the panel in the headset while still flying
-toward it, instead of through one left standing in the world. A rig aimed
-straight up or down flattens to no heading at all, so the last usable one is
-kept for those frames.
+Panel placement reads World's rendered `worldBodyDirection` directly, a fixed
+distance from the eye. This shares the desktop/XR view axis while allowing
+independent mouse/head gaze. No separate heading calculation, fallback state or
+fixed comfort-pitch constant is applied here.
 
 ## Cost
 
@@ -49,6 +45,6 @@ fade-to-background rule but would also occlude the air particles still
 drifting through White World behind it. The canvas repaints at most once more
 after load, when the shipped font resolves.
 
-Level Runtime builds the panel only for a show. A requested development preset
-and the deterministic benchmark route never reach an ending, so neither creates
+Level Runtime builds the panel only for a show. Requested development presets
+never reach an ending, so none creates
 the panel or its texture.

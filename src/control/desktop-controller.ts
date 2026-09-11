@@ -58,8 +58,6 @@ export function createDesktopController(
     event.preventDefault();
     if (event.type === "keydown") pressedKeys.add(event.code);
     else pressedKeys.delete(event.code);
-    // Preserve immediate keydown response, including opposing-key cancellation.
-    readKeyboardInput(event.type === "keydown" ? 1 : 0);
   }
 
   function clearKeys(): void {
@@ -73,15 +71,6 @@ export function createDesktopController(
   }
 
   function sampleInput(deltaSeconds: number): Readonly<typeof input> {
-    const elapsedSeconds =
-      Number.isFinite(deltaSeconds) && deltaSeconds > 0 ? deltaSeconds : 0;
-    readKeyboardInput(
-      FLIGHT_SETTINGS.desktopTiltReturnPerSecond * elapsedSeconds,
-    );
-    return input;
-  }
-
-  function readKeyboardInput(maximumReturn: number): void {
     const forward = Number(
       pressedKeys.has("KeyW") || pressedKeys.has("ArrowUp"),
     );
@@ -94,10 +83,12 @@ export function createDesktopController(
     const left = Number(
       pressedKeys.has("KeyA") || pressedKeys.has("ArrowLeft"),
     );
-    input.forwardTilt =
-      forward - backward || returnToCenter(input.forwardTilt, maximumReturn);
-    input.rightTilt =
-      right - left || returnToCenter(input.rightTilt, maximumReturn);
+    const step = Number.isFinite(deltaSeconds)
+      ? Math.max(0, deltaSeconds) * FLIGHT_SETTINGS.keyboardTiltPerSecond
+      : 0;
+    input.forwardTilt = approach(input.forwardTilt, forward - backward, step);
+    input.rightTilt = approach(input.rightTilt, right - left, step);
+    return input;
   }
 
   function unload(): Promise<void> {
@@ -126,7 +117,7 @@ export function createDesktopController(
   }
 }
 
-function returnToCenter(tilt: number, maximumChange: number): number {
-  if (Math.abs(tilt) <= maximumChange) return 0;
-  return tilt - Math.sign(tilt) * maximumChange;
+/** Digital keys emulate a body's finite tilt speed, including release and reversal. */
+function approach(current: number, target: number, step: number): number {
+  return current + Math.max(-step, Math.min(step, target - current));
 }

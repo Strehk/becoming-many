@@ -321,6 +321,7 @@ function createLoadedTerrain(
   const viewerPosition = new Vector3();
   const viewpoint: Viewpoint = {
     worldPosition: viewerPosition,
+    worldBodyDirection: new Vector3(0, 0, -1),
     worldDirection: new Vector3(0, 0, -1),
     worldUp: new Vector3(0, 1, 0),
     viewHalfAngleRadians: Math.PI / 4,

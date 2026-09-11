@@ -2,7 +2,7 @@
  * Purpose: Prove the /state parser accepts firmware payloads and rejects junk.
  * Context: The payload crosses the network from a device the page cannot trust.
  * Responsibility: Cover the accept path, every rejected field, and clamping.
- * Boundary: Polling, edges, and ControlFrame derivation are not parsed here.
+ * Boundary: Polling, edges, and flight-axis mapping are not parsed here.
  */
 
 import { describe, expect, it } from "bun:test";

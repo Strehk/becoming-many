@@ -104,10 +104,6 @@
         "patterns": ["src/m5/protocol.ts"]
       },
       {
-        "name": "control-input",
-        "patterns": ["src/m5/control-frame.ts"]
-      },
-      {
         "name": "m5-runtime",
         "patterns": ["src/m5/runtime/m5.runtime.ts"]
       },
@@ -152,14 +148,6 @@
         "patterns": ["station/**"]
       },
       {
-        "name": "benchmark",
-        "patterns": ["src/benchmark/**"]
-      },
-      {
-        "name": "diagnostics",
-        "patterns": ["src/diagnostics/**"]
-      },
-      {
         "name": "entries",
         "patterns": ["src/entry/*.entry.ts", "src/entry/deployment-config.ts"]
       },
@@ -171,7 +159,6 @@
         "name": "ui",
         "patterns": [
           "src/ui/conductor/**",
-          "src/ui/diagnostics/**",
           "src/ui/rehearsal/**",
           "src/ui/shared/**"
         ]
@@ -230,17 +217,16 @@
           "world-contracts",
           "control-contracts",
           "world-mechanics"
-        ],
-        "allowTypeOnly": ["control-input"]
+        ]
       },
       {
         "from": "m5-runtime",
         "allow": ["m5-internal", "m5-protocol"],
-        "allowTypeOnly": ["control-input", "m5-contract"]
+        "allowTypeOnly": ["control-contracts", "m5-contract"]
       },
       {
         "from": "m5-internal",
-        "allow": ["m5-protocol", "control-input"],
+        "allow": ["m5-protocol"],
         "allowTypeOnly": ["m5-contract"]
       },
       {
@@ -250,10 +236,6 @@
       {
         "from": "m5-tools",
         "allow": ["m5-protocol"]
-      },
-      {
-        "from": "control-input",
-        "allow": []
       },
       {
         "from": "m5-protocol",
@@ -280,10 +262,6 @@
         "allow": []
       },
       {
-        "from": "diagnostics",
-        "allow": []
-      },
-      {
         "from": "station-backend",
         "allow": ["shared"]
       },
@@ -300,22 +278,15 @@
           "show-contract",
           "world-contracts",
           "m5-contract",
-          "shared",
-          "diagnostics"
+          "shared"
         ]
-      },
-      {
-        "from": "benchmark",
-        "allow": ["world", "world-contracts", "world-mechanics"]
       },
       {
         "from": "entries",
         "allow": [
           "ui",
           "flash",
-          "benchmark",
           "shared",
-          "diagnostics",
           "m5-setup",
           "m5-protocol",
           "presets",
@@ -339,7 +310,6 @@
           "control-contracts",
           "m5-contract",
           "sound-contracts",
-          "benchmark",
           "show-queries"
         ]
       },
@@ -367,8 +337,7 @@
           "show-contract",
           "run-contract",
           "world-mechanics"
-        ],
-        "allowTypeOnly": ["benchmark"]
+        ]
       },
       {
         "from": "show",
@@ -379,7 +348,6 @@
         "from": "run-contract",
         "allow": [],
         "allowTypeOnly": [
-          "benchmark",
           "show-queries",
           "m5-contract",
           "world-contracts",
@@ -404,13 +372,12 @@
       },
       {
         "from": "control-contracts",
-        "allow": [],
-        "allowTypeOnly": ["control-input"]
+        "allow": []
       },
       {
         "from": "m5-contract",
         "allow": [],
-        "allowTypeOnly": ["m5-protocol", "control-input"]
+        "allowTypeOnly": ["m5-protocol", "control-contracts"]
       },
       {
         "from": "sound-contracts",

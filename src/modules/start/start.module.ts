@@ -222,18 +222,14 @@ class StartModule implements StartExperience {
     reveal: Float32Array,
   ) {
     return createVolumeMaterial(
-      createPathParticleMaterial((settings) =>
-        createAirParticleMaterial({
-          ...settings,
-          motion: START_SETTINGS.elementWind,
-        }),
-      ),
+      createPathParticleMaterial(createAirParticleMaterial),
       START_SETTINGS.elementVolume,
       {
         settings: START_SETTINGS.elementLight,
         animation: light,
         retirement,
         reveal,
+        wind: START_SETTINGS.elementWind,
       },
     );
   }

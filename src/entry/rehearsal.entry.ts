@@ -4,14 +4,14 @@ import { requireElement } from "../ui/shared/dom";
  * Purpose: Bootstrap the complete Becoming Many show for rehearsal.
  * Context: The root page is the audience experience without development routes.
  * Responsibility: Start the show and mount its rehearsal and WebXR controls.
- * Boundary: Standalone levels, benchmarks, and diagnostics enter through standalone-level.entry.ts.
+ * Boundary: Standalone levels enter through standalone-level.entry.ts.
  */
 
 import { resolveNarrationLanguage } from "../dramaturgy/narration-catalog";
 import { PIECE_SCHEDULE } from "../dramaturgy/piece-schedule";
-import { SHOW_LEVEL_STATES } from "../dramaturgy/show-levels";
 import { level as connectionsLevel } from "../levels/connections.level";
 import { startLevel } from "../levels/level.runtime";
+import { LEVEL_CATALOG } from "../levels/level-catalog";
 import type { Run } from "../levels/run-contract";
 import type { RunningShow } from "../levels/show-contract";
 import { level as tutorialLevel } from "../levels/start.level";
@@ -73,7 +73,7 @@ try {
       show: {
         schedule: PIECE_SCHEDULE,
         language: resolveNarrationLanguage(request.get("language")),
-        states: SHOW_LEVEL_STATES,
+        states: LEVEL_CATALOG,
       },
     },
   );

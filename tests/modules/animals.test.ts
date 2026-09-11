@@ -68,6 +68,7 @@ test("Animals fade in when they take a visible slot", () => {
   const scene = new Scene();
   const viewpoint: Viewpoint = {
     worldPosition: new Vector3(),
+    worldBodyDirection: new Vector3(0, 0, -1),
     worldDirection: new Vector3(0, 0, -1),
     worldUp: new Vector3(0, 1, 0),
     viewHalfAngleRadians: Math.PI / 4,
@@ -122,6 +123,7 @@ test("Animals animate only the nearest bounded population", () => {
   const viewerPosition = new Vector3();
   const viewpoint: Viewpoint = {
     worldPosition: viewerPosition,
+    worldBodyDirection: new Vector3(0, 0, -1),
     worldDirection: new Vector3(0, 0, -1),
     worldUp: new Vector3(0, 1, 0),
     viewHalfAngleRadians: Math.PI / 4,
@@ -158,6 +160,7 @@ test.each([false, true])(
     const viewerPosition = new Vector3();
     const viewpoint: Viewpoint = {
       worldPosition: viewerPosition,
+      worldBodyDirection: new Vector3(0, 0, -1),
       worldDirection: new Vector3(0, 0, -1),
       worldUp: new Vector3(0, 1, 0),
       viewHalfAngleRadians: Math.PI / 4,
@@ -221,6 +224,7 @@ test("Animals reject an impossible visibility budget", () => {
       scene: new Scene(),
       viewpoint: {
         worldPosition: new Vector3(),
+        worldBodyDirection: new Vector3(0, 0, -1),
         worldDirection: new Vector3(0, 0, -1),
         worldUp: new Vector3(0, 1, 0),
         viewHalfAngleRadians: Math.PI / 4,
@@ -239,6 +243,7 @@ test("Animals occupy separate territories around the player", () => {
   const viewerPosition = new Vector3();
   const viewpoint: Viewpoint = {
     worldPosition: viewerPosition,
+    worldBodyDirection: new Vector3(0, 0, -1),
     worldDirection: new Vector3(0, 0, -1),
     worldUp: new Vector3(0, 1, 0),
     viewHalfAngleRadians: Math.PI / 4,
@@ -303,6 +308,7 @@ test("Animals lean onto an arc at a zone edge instead of pivoting", () => {
   const scene = new Scene();
   const viewpoint: Viewpoint = {
     worldPosition: new Vector3(),
+    worldBodyDirection: new Vector3(0, 0, -1),
     worldDirection: new Vector3(0, 0, -1),
     worldUp: new Vector3(0, 1, 0),
     viewHalfAngleRadians: Math.PI / 4,
@@ -477,6 +483,7 @@ function walkOnIsland(framesPerSecond: number): IslandWalk {
     scene: new Scene(),
     viewpoint: {
       worldPosition: new Vector3(),
+      worldBodyDirection: new Vector3(0, 0, -1),
       worldDirection: new Vector3(0, 0, -1),
       worldUp: new Vector3(0, 1, 0),
       viewHalfAngleRadians: Math.PI / 4,

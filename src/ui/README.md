@@ -18,8 +18,7 @@ The rehearsal transport binds the complete Show. Its schedule supplies timeline
 chapters; elapsed time, transport, and language observations use the same controls.
 Standalone presets have no Show transport.
 
-Frame metrics live outside UI in `src/diagnostics/`; the standalone-level entry
-owns the optional diagnostics overlay. Device validity stays in M5, whose
+Device validity stays in M5, whose
 `readObservation()` never consumes frame input.
 
 Icons reference individual `lucide-static` SVG assets with declarative `<use>`

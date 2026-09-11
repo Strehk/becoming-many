@@ -54,9 +54,10 @@ export const START_SETTINGS = {
     maximumDeltaSeconds: 0.05,
   },
   elementWind: {
-    horizontalAmplitudeMeters: 0.4,
-    verticalAmplitudeMeters: 0.25,
-    speedMultiplier: 1.8,
+    amplitudeMeters: 0.18,
+    individualAmplitudeMeters: 0.025,
+    coherenceMeters: 3.5,
+    changeSeconds: 4.5,
   },
   arrowVolume: { haloFraction: 0, coreRadiusMeters: 0.4 },
   elementVolume: {

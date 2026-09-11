@@ -40,9 +40,13 @@ Desktop development uses pointer-lock look and keyboard flight. W/↑ leans
 forward and descends, S/↓ leans backward and climbs, A/← leans left into a left
 turn, and D/→ leans right into a right turn. Forward/backward tilt sets a held
 flight angle up to 45 degrees at constant path speed; centered input flies level.
-Mouse and headset movement change only the local view; they do not steer. Releasing a desktop flight key eases
-that keyboard tilt back to center over 0.25 seconds; M5 keeps its existing
-response.
+Desktop keys move continuously toward the selected pitch or bank, reaching full
+tilt in half a second. Holding preserves that angle; releasing returns smoothly
+to neutral and reversing crosses through neutral. The view visibly pitches and
+banks with the body. Mouse and headset movement change only local gaze; they do
+not steer. The 30° prone-headset posture assistance applies only in XR, where
+physical tracking supplies body tilt. M5 axes pass through without browser
+smoothing or automatic neutralization.
 Keyboard and M5 can act together on the same global flight model in every
 experience.
 

@@ -9,7 +9,6 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { parseArgs } from "node:util";
 import { type Browser, chromium, type Page } from "playwright";
-import { summarizeFrameTimes } from "../../src/benchmark/benchmark-report";
 import { narrationUrl } from "../../src/dramaturgy/narration-catalog";
 import { PIECE_SCHEDULE } from "../../src/dramaturgy/piece-schedule";
 import {
@@ -22,7 +21,6 @@ import {
 const VIEWPORT = { width: 1280, height: 720 };
 const TRANSITION_LEAD_SECONDS = 2;
 const TRANSITION_DURATION_SECONDS = 10;
-const REFERENCE_FRAME_MS = 1000 / 90;
 const MAX_AUDIO_RECORDS = 100;
 const { values } = parseArgs({
   args: Bun.argv.slice(2),
@@ -216,7 +214,7 @@ async function observePlayback(page: Page, target: number, duration: number) {
     p95Milliseconds,
     p99Milliseconds,
     maxMilliseconds,
-  } = summarizeFrameTimes(observation.intervalsMs, REFERENCE_FRAME_MS);
+  } = summarizeFrameTimes(observation.intervalsMs);
   return {
     ...observation,
     frames: {
@@ -352,4 +350,19 @@ try {
     `${passed ? "PASS" : "FAIL"}: ${resolve(output, "show-observation.json")}`,
   );
   if (!passed) process.exitCode = 1;
+}
+
+/** Summarize browser observations without adding instrumentation to the game. */
+function summarizeFrameTimes(intervalsMilliseconds: readonly number[]) {
+  const sorted = [...intervalsMilliseconds].sort(
+    (first, second) => first - second,
+  );
+  const percentile = (fraction: number): number =>
+    sorted[Math.max(0, Math.ceil(sorted.length * fraction) - 1)] ?? 0;
+  return {
+    medianMilliseconds: percentile(0.5),
+    p95Milliseconds: percentile(0.95),
+    p99Milliseconds: percentile(0.99),
+    maxMilliseconds: sorted.at(-1) ?? 0,
+  };
 }

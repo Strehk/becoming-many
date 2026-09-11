@@ -6,8 +6,9 @@ export interface FlightInput {
 
 /**
  * Read one borrowed input sample in the range -1..1 per axis. Disconnected or
- * stale controllers return neutral axes. `deltaSeconds` is elapsed frame time;
- * stateful sources treat invalid values as zero. The sample lasts for this read.
+ * stale controllers return neutral axes. Physical inputs report current tilt;
+ * the keyboard advances its emulated tilt by the supplied frame time in seconds.
+ * Call once per flight frame. The borrowed sample lasts until the next read.
  */
 export interface FlightInputSource {
   readonly readInput: (deltaSeconds: number) => Readonly<FlightInput>;
@@ -16,13 +17,15 @@ export interface FlightInputSource {
 export interface FlightControl {
   /**
    * Integrate body-relative flight at a speed along the path in metres/second.
-   * Forward tilt sets a downward path angle; right tilt sets right-turn rate.
-   * Neutral flies level. Rig rotation contains yaw only: XR owns physical tilt.
-   * Invalid/nonpositive time or speed produces no movement. Samples are still read.
+   * Forward tilt pitches down; right tilt banks right and turns the heading.
+   * Neutral flies level. XR leaves physical pitch/bank to headset tracking.
+   * Invalid/nonpositive time or speed leaves the rig unchanged. Source state
+   * still advances once per valid frame.
    */
   readonly update: (
     deltaSeconds: number,
     glideSpeedMetersPerSecond?: number,
+    isPresentingXr?: boolean,
   ) => void;
 }
 

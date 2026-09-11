@@ -7,6 +7,8 @@ export interface Viewpoint {
   readonly worldFlightPosition?: Readonly<Vector3>;
   /** Actual frame displacement, normalized after height limits; rig heading at rest. */
   readonly worldFlightDirection?: Readonly<Vector3>;
+  /** Rendered body axis before local mouse/head pose, including rig tilt on desktop. */
+  readonly worldBodyDirection: Readonly<Vector3>;
   readonly worldDirection: Readonly<Vector3>;
   readonly worldUp: Readonly<Vector3>;
   readonly viewHalfAngleRadians: number;

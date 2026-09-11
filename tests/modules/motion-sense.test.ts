@@ -576,6 +576,7 @@ describe("Motion Sense module", () => {
     const viewerPosition = new Vector3();
     const viewpoint: Viewpoint = {
       worldPosition: viewerPosition,
+      worldBodyDirection: new Vector3(0, 0, -1),
       worldDirection: new Vector3(0, 0, -1),
       worldUp: new Vector3(0, 1, 0),
       viewHalfAngleRadians: Math.PI / 4,
@@ -626,6 +627,7 @@ describe("Motion Sense module", () => {
     const viewerPosition = new Vector3();
     const viewpoint: Viewpoint = {
       worldPosition: viewerPosition,
+      worldBodyDirection: new Vector3(0, 0, -1),
       worldDirection: new Vector3(0, 0, -1),
       worldUp: new Vector3(0, 1, 0),
       viewHalfAngleRadians: Math.PI / 4,
@@ -666,6 +668,7 @@ describe("Motion Sense module", () => {
     const scene = new Scene();
     const viewpoint: Viewpoint = {
       worldPosition: new Vector3(),
+      worldBodyDirection: new Vector3(0, 0, -1),
       worldDirection: new Vector3(0, 0, -1),
       worldUp: new Vector3(0, 1, 0),
       viewHalfAngleRadians: Math.PI / 4,

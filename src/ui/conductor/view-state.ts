@@ -12,10 +12,7 @@ export interface ConductorViewState {
   readonly activeLevel: ShowLevelName;
   /** Anything but "running" freezes show time while looking like a pause. */
   readonly audioState: AudioContextState;
-  /** Undefined until frames have been measured. */
-  readonly framesPerSecond?: number;
-  readonly p95Milliseconds?: number;
-  /** Undefined under a benchmark build; `status: "off"` while no host is set. */
+  /** `status: "off"` while no host is set. */
   readonly m5: M5Observation | undefined;
   /** The headset session, so every panel reads the same instant of it. */
   readonly xr: XrSessionState;

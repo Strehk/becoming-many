@@ -1,8 +1,9 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { Group, PerspectiveCamera } from "three";
+import { Euler, Group, type PerspectiveCamera, Quaternion } from "three";
 import type { DesktopController } from "../../src/control/control-contract";
 import { createDesktopController } from "../../src/control/desktop-controller";
 import { createFlightControl } from "../../src/control/flight-control";
+import { createViewerRig } from "../../src/world/viewer-rig";
 
 /** Model pointer-lock events around real Three.js controls without rendering. */
 class PointerLockDocument extends EventTarget {
@@ -40,6 +41,7 @@ let originalWindow: PropertyDescriptor | undefined;
 let keyboard: EventTarget;
 let canvas: PointerLockCanvas;
 let camera: PerspectiveCamera;
+let viewer: ReturnType<typeof createViewerRig>;
 let controls: DesktopController;
 
 beforeEach(() => {
@@ -50,7 +52,8 @@ beforeEach(() => {
     value: keyboard,
   });
   canvas = new PointerLockCanvas();
-  camera = new PerspectiveCamera();
+  viewer = createViewerRig(30);
+  camera = viewer.camera;
   controls = createDesktopController(camera, canvas as unknown as HTMLElement);
 });
 
@@ -75,7 +78,7 @@ describe("desktop flight control", () => {
       expect(key("keydown", code).defaultPrevented).toBe(false);
       expect(key("keyup", code).defaultPrevented).toBe(false);
     }
-    expect(controls.readInput(0)).toEqual({ forwardTilt: 0, rightTilt: 0 });
+    expect(controls.readInput(1)).toEqual({ forwardTilt: 0, rightTilt: 0 });
   });
 
   test.each([
@@ -90,78 +93,84 @@ describe("desktop flight control", () => {
   ] as const)("maps %s to semantic flight input", (code, expected) => {
     canvas.grantLock();
     expect(key("keydown", code).defaultPrevented).toBe(true);
-    expect(controls.readInput(0)).toEqual(expected);
+    expect(controls.readInput(1)).toEqual(expected);
     expect(key("keyup", code).defaultPrevented).toBe(true);
     expect(controls.readInput(1)).toEqual({ forwardTilt: 0, rightTilt: 0 });
   });
-
-  test.each(["KeyS", "ArrowDown"])(
-    "%s raises the rig above its neutral flight height",
-    (code) => {
-      const viewerRig = new Group();
-      const flight = createFlightControl(viewerRig, [controls]);
-      const deltaSeconds = 0.1;
-      canvas.grantLock();
-      key("keydown", code);
-
-      flight.update(deltaSeconds);
-
-      expect(viewerRig.position.y).toBeGreaterThan(0);
-    },
-  );
 
   test("keeps aliases held and cancels opposing keys", () => {
     canvas.grantLock();
     key("keydown", "KeyW");
     key("keydown", "ArrowUp");
     key("keyup", "KeyW");
-    expect(controls.readInput(0).forwardTilt).toBe(1);
+    expect(controls.readInput(1).forwardTilt).toBe(1);
     key("keydown", "KeyS");
-    expect(controls.readInput(0).forwardTilt).toBe(0);
+    expect(controls.readInput(1).forwardTilt).toBe(0);
     key("keyup", "ArrowUp");
-    expect(controls.readInput(0).forwardTilt).toBe(-1);
+    expect(controls.readInput(1).forwardTilt).toBe(-1);
     key("keyup", "KeyS");
-    expect(controls.readInput(0.25).forwardTilt).toBe(0);
+    expect(controls.readInput(1).forwardTilt).toBe(0);
   });
 
-  test("returns released tilt monotonically to exact center", () => {
+  test("key repeat never advances or interrupts the other axis", () => {
     canvas.grantLock();
     key("keydown", "KeyW");
-    key("keydown", "KeyD");
+    controls.readInput(1);
     key("keyup", "KeyW");
-    key("keyup", "KeyD");
-
-    const released = controls.readInput(0);
-    const firstForward = released.forwardTilt;
-    const firstRight = released.rightTilt;
-    const second = controls.readInput(0.1);
-    const secondForward = second.forwardTilt;
-    const secondRight = second.rightTilt;
-    const third = controls.readInput(0.1);
-    const thirdForward = third.forwardTilt;
-    const thirdRight = third.rightTilt;
-
-    expect(firstForward).toBe(1);
-    expect(firstRight).toBe(1);
-    expect(secondForward).toBeGreaterThan(0);
-    expect(secondForward).toBeLessThan(firstForward);
-    expect(secondRight).toBeGreaterThan(0);
-    expect(secondRight).toBeLessThan(firstRight);
-    expect(thirdForward).toBeLessThan(secondForward);
-    expect(thirdRight).toBeLessThan(secondRight);
-    expect(controls.readInput(1)).toEqual({ forwardTilt: 0, rightTilt: 0 });
+    const returning = controls.readInput(1 / 60).forwardTilt;
+    expect(returning).toBeGreaterThan(0);
+    key("keydown", "KeyD");
+    key("keydown", "KeyD");
+    expect(controls.readInput(0).forwardTilt).toBe(returning);
+    expect(controls.readInput(1 / 60).forwardTilt).toBeLessThan(returning);
   });
 
-  test("ignores invalid frame deltas and centers after a large finite step", () => {
-    canvas.grantLock();
-    key("keydown", "KeyS");
-    key("keyup", "KeyS");
+  test.each([
+    ["pitch", "KeyW", "KeyS", "x", -1],
+    ["bank", "KeyD", "KeyA", "z", -1],
+  ] as const)(
+    "%s remains continuous through press, hold, release and reversal",
+    (_name, press, reverse, axis, sign) => {
+      const flight = createFlightControl(viewer.group, [controls]);
+      const orientation = new Quaternion();
+      const angles = new Euler(0, 0, 0, "YXZ");
+      const frame = (): number => {
+        viewer.beginFrame();
+        flight.update(1 / 60);
+        viewer.publish();
+        viewer.camera.getWorldQuaternion(orientation);
+        return angles.setFromQuaternion(orientation, "YXZ")[axis];
+      };
+      canvas.grantLock();
+      key("keydown", press);
+      let previous = frame();
+      expect(previous * sign).toBeGreaterThan(0);
+      expect(Math.abs(previous)).toBeLessThan(Math.PI / 36);
+      for (let index = 0; index < 60; index++) previous = frame();
+      const held = previous;
+      expect(Math.abs(held)).toBeGreaterThan(Math.PI / 18);
+      expect(Math.abs(held)).toBeLessThan(Math.PI / 3);
+      expect(frame()).toBeCloseTo(held);
+      if (axis === "z") expect(viewer.viewpoint.worldUp.y).toBeLessThan(0.99);
+      else expect(viewer.group.position.y).toBeLessThan(0);
 
-    expect(controls.readInput(Number.NaN).forwardTilt).toBe(-1);
-    expect(controls.readInput(-1).forwardTilt).toBe(-1);
-    expect(controls.readInput(Number.POSITIVE_INFINITY).forwardTilt).toBe(-1);
-    expect(controls.readInput(10).forwardTilt).toBe(0);
-  });
+      key("keyup", press);
+      let released = frame();
+      expect(Math.abs(released)).toBeLessThan(Math.abs(held));
+      expect(Math.abs(released)).toBeGreaterThan(0);
+      expect(Math.abs(released - held)).toBeLessThan(Math.PI / 36);
+      key("keydown", reverse);
+      for (let index = 0; index < 90; index++) {
+        const next = frame();
+        expect(Math.abs(next - released)).toBeLessThan(Math.PI / 36);
+        released = next;
+      }
+      expect(released * sign).toBeLessThan(0);
+      key("keyup", reverse);
+      for (let index = 0; index < 60; index++) frame();
+      expect(frame()).toBeCloseTo(0);
+    },
+  );
 
   test("keeps mouse look local and out of the flight path", () => {
     const viewerRig = new Group();
@@ -179,7 +188,7 @@ describe("desktop flight control", () => {
     expect(camera.rotation.y).not.toBeCloseTo(0);
     flight.update(1);
 
-    expect(viewerRig.quaternion.toArray()).toEqual([0, 0, 0, 1]);
+    expect(viewerRig.quaternion.angleTo(new Quaternion())).toBeCloseTo(0);
     expect(viewerRig.position.x).toBeCloseTo(0);
     expect(viewerRig.position.z).toBeLessThan(0);
   });
@@ -188,14 +197,14 @@ describe("desktop flight control", () => {
     canvas.grantLock();
     key("keydown", "KeyW");
     keyboard.dispatchEvent(new Event("blur"));
-    expect(controls.readInput(0)).toEqual({ forwardTilt: 0, rightTilt: 0 });
+    expect(controls.readInput(1)).toEqual({ forwardTilt: 0, rightTilt: 0 });
     key("keydown", "KeyD");
     canvas.ownerDocument.exitPointerLock();
-    expect(controls.readInput(0)).toEqual({ forwardTilt: 0, rightTilt: 0 });
+    expect(controls.readInput(1)).toEqual({ forwardTilt: 0, rightTilt: 0 });
     canvas.grantLock();
     key("keydown", "KeyS");
     await controls.unload();
-    expect(controls.readInput(0)).toEqual({ forwardTilt: 0, rightTilt: 0 });
+    expect(controls.readInput(1)).toEqual({ forwardTilt: 0, rightTilt: 0 });
   });
 
   test("unloads once and releases a late pointer-lock grant", async () => {
@@ -212,6 +221,6 @@ describe("desktop flight control", () => {
     canvas.dispatchEvent(new Event("click"));
     expect(canvas.requestCount).toBe(1);
     expect(key("keydown", "KeyW").defaultPrevented).toBe(false);
-    expect(controls.readInput(0)).toEqual({ forwardTilt: 0, rightTilt: 0 });
+    expect(controls.readInput(1)).toEqual({ forwardTilt: 0, rightTilt: 0 });
   });
 });

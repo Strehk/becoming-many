@@ -158,6 +158,14 @@ export interface ElementRetirement {
   readonly isFinished: () => boolean;
 }
 
+// 6. Bounded spatial wind around each grain's resting position
+export interface ParticleWindSettings {
+  readonly amplitudeMeters: number;
+  readonly individualAmplitudeMeters: number;
+  readonly coherenceMeters: number;
+  readonly changeSeconds: number;
+}
+
 /** Bounded reveal observations; retirement independently multiplies this presence. */
 export interface ElementReveal {
   readonly presence: Float32Array;

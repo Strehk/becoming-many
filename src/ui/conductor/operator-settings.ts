@@ -14,8 +14,4 @@ export const CONDUCTOR_SETTINGS = {
   // first press. Long enough to confirm deliberately, short enough that a
   // stray click expires on its own.
   confirmMilliseconds: 3_000,
-
-  // How often the frame metrics are re-read for the status strip. Reading
-  // them sorts a ring buffer, which is documented as not-per-frame work.
-  metricsIntervalMilliseconds: 500,
 } as const;

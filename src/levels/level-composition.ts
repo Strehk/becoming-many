@@ -8,8 +8,6 @@ import { createStartAudio } from "../modules/start/audio/start-audio";
  */
 
 import { type Matrix4, Vector3 } from "three";
-import type { BenchmarkRun } from "../benchmark/benchmark-run";
-import type { FlightInputSource } from "../control/control-contract";
 import { createDesktopController } from "../control/desktop-controller";
 import { createFlightControl } from "../control/flight-control";
 import type { FlightHeightLimits } from "../control/flight-pose";
@@ -18,7 +16,6 @@ import {
   resetFlightPose,
 } from "../control/flight-pose";
 import { FLIGHT_SETTINGS } from "../control/flight-settings";
-import { createM5Controller } from "../control/m5-controller";
 import { END_CREDITS } from "../dramaturgy/end-credits";
 import { ORGAN_SCORE } from "../dramaturgy/organ-score";
 import { PIECE_PASSAGES } from "../dramaturgy/piece-schedule";
@@ -96,7 +93,7 @@ import type {
   UnlitMaterialEffect,
 } from "../utils/asset-loader/material-effect";
 import type { WorldModule } from "../world/module-runtime";
-import { VIEW_PITCH_ASSIST_DEGREES } from "../world/viewer-rig";
+import { XR_VIEW_PITCH_ASSIST_DEGREES } from "../world/viewer-rig";
 import type {
   World,
   WorldContext,
@@ -199,14 +196,12 @@ export async function composeLevel({
     // materials skip the extra fragment mix entirely.
     const structureFade = forShow ? createWorldFade() : undefined;
     const animalsFade = forShow ? createWorldFade() : undefined;
-    // The credits close a show. A development preset and the benchmark route
-    // never reach an ending, so neither builds the panel or its texture.
+    // The credits close a show. Development presets never reach an ending,
+    // so they do not build the panel or its texture.
     const endCredits = forShow
       ? createEndCreditsPanel({
           scene: world.scene,
           viewpoint: world.viewpoint,
-          viewerRig: world.viewerRig,
-          viewPitchDegrees: VIEW_PITCH_ASSIST_DEGREES,
           definition: END_CREDITS,
         })
       : undefined;
@@ -782,40 +777,30 @@ export async function loadLevelAssets(
 }
 
 /** Construct the renderer with the experience's fixed parent pitch assistance. */
-export function composeWorld(
-  surface: WorldViewport,
-  benchmark?: BenchmarkRun,
-): World {
+export function composeWorld(surface: WorldViewport): World {
   return createWorld(surface, {
-    frameControl: benchmark,
-    viewPitchAssistDegrees: VIEW_PITCH_ASSIST_DEGREES,
+    xrViewPitchAssistDegrees: XR_VIEW_PITCH_ASSIST_DEGREES,
   });
 }
 
 /** Bind input owners to the rig and release unpublished resources after failure. */
 export function composeControls(
   world: World,
-  benchmark: BenchmarkRun | undefined,
   surface: Pick<WorldSurface, "groundYAt">,
 ) {
-  const m5 = benchmark ? undefined : createM5Runtime();
+  const m5 = createM5Runtime();
   let desktop: ReturnType<typeof createDesktopController> | undefined;
   try {
-    desktop = benchmark
-      ? undefined
-      : createDesktopController(world.camera, world.renderer.domElement);
-    const sources: FlightInputSource[] = [];
-    if (m5) sources.push(createM5Controller(m5));
-    if (desktop) sources.push(desktop);
+    desktop = createDesktopController(world.camera, world.renderer.domElement);
     return {
       ...composeRigCommands(world, surface.groundYAt),
       m5,
       desktop,
-      flight: createFlightControl(world.viewerRig, sources),
+      flight: createFlightControl(world.viewerRig, [m5, desktop]),
     };
   } catch (error) {
     void desktop?.unload();
-    m5?.unload();
+    m5.unload();
     throw error;
   }
 }

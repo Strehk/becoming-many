@@ -11,10 +11,6 @@ import volume2Icon from "lucide-static/icons/volume-2.svg?no-inline";
 import wrenchIcon from "lucide-static/icons/wrench.svg?no-inline";
 import xIcon from "lucide-static/icons/x.svg?no-inline";
 
-import type {
-  FrameMetrics,
-  FrameMetricsSampler,
-} from "../../diagnostics/frame-metrics";
 import { NARRATION_LANGUAGES } from "../../dramaturgy/narration-catalog";
 import type { NarrationSchedule } from "../../dramaturgy/narration-schedule";
 import type { Run } from "../../levels/run-contract";
@@ -24,7 +20,6 @@ import { requireElement } from "../shared/dom";
 import { resolveConductorKey } from "./keyboard-shortcuts";
 import { createLanguagePanel } from "./language.panel";
 import { createM5Panel } from "./m5.panel";
-import { CONDUCTOR_SETTINGS } from "./operator-settings";
 import { createShowTimeline } from "./show-timeline.panel";
 import { createStatusStrip } from "./status-strip.panel";
 import { createTechDrawer } from "./technician-drawer.panel";
@@ -54,7 +49,6 @@ export interface ConductorPageOptions {
   readonly run: Pick<Run, "resetFlight" | "resetShowAndFlight">;
   readonly xr: Run["xr"];
   readonly m5: Pick<NonNullable<Run["m5"]>, "readObservation"> | undefined;
-  readonly frameMetrics: Pick<FrameMetricsSampler, "read">;
   readonly initialM5Host: string;
   readonly isM5HostLocked: boolean;
   readonly onM5HostChange: (host: string) => void;
@@ -70,7 +64,6 @@ export function mountConductorPage({
   run,
   xr,
   m5,
-  frameMetrics,
   initialM5Host,
   isM5HostLocked,
   onM5HostChange,
@@ -232,18 +225,8 @@ export function mountConductorPage({
       { signal },
     );
 
-    let metrics: FrameMetrics | undefined;
-    let metricsReadAtMilliseconds = 0;
     function draw(): void {
       const sample = show.sample();
-      const now = performance.now();
-      if (
-        now - metricsReadAtMilliseconds >=
-        CONDUCTOR_SETTINGS.metricsIntervalMilliseconds
-      ) {
-        metricsReadAtMilliseconds = now;
-        metrics = frameMetrics.read();
-      }
       const state: ConductorViewState = {
         showTimeSeconds: scrubSeconds ?? sample.timeSeconds,
         isPlaying: sample.isPlaying,
@@ -251,8 +234,6 @@ export function mountConductorPage({
         language: show.readLanguage(),
         activeLevel: show.readActiveLevel(),
         audioState: show.readAudioState(),
-        framesPerSecond: metrics?.framesPerSecond,
-        p95Milliseconds: metrics?.p95Milliseconds,
         m5: m5?.readObservation(),
         xr: xrState,
       };

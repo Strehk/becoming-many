@@ -24,16 +24,16 @@ white-world → scent → echo → motion → thermal → magnetic → connectio
 ```
 
 `diagnostic.level.ts` and `visual-integration.level.ts` are diagnostic/integration presets,
-not narrative states. The Diagnostic preset uses Grass Clipmap; the browser diagnostics UI
-is an explicit standalone URL option.
+not narrative states. The Diagnostic preset uses Grass Clipmap.
 
 ## Catalog and Entries
 
-`level-catalog.ts` names standalone presets. The Show uses the Connections
+`level-catalog.ts` names the original level recipes for standalone runs and Show. The Show uses the Connections
 preset for its once-prepared world; changing these module parameters affects both
-runs. `show-levels.ts` owns the presentation states the running Show can change. The bare `src/entry/rehearsal.entry.ts` route starts that show; `?level=<name>` and
+runs. `show-levels.ts` reads presentation values and sense targets directly from those
+same recipes. It owns transition calculations, not another configuration table. The bare `src/entry/rehearsal.entry.ts` route starts that show; `?level=<name>` and
 matching path names enter through `src/entry/standalone-level.entry.ts` and select one
-development preset. Standalone presets and benchmarks remain showless.
+development preset. Standalone presets remain showless.
 
 An unknown requested name warns and falls back to Connections. That fallback is
 for explicit development selection, not the behavior of the bare show route.
@@ -50,17 +50,15 @@ frame coordination. It:
 - connects ordered M5 and desktop sources to the shared two-axis contract;
 - asks the one global flight model to apply continuous thrust and combined tilt
   on each live frame, for Start, standalone levels, and the complete Show;
-- passes frame delta to entry-owned diagnostics before input/Show work;
 - delegates optional show time, narration, transitions, sense fades, and the
   drone organ's per-frame contract to `show.runtime.ts`;
 - starts the World loop only after preparation and returns the narrow
   `Run` command/query surface currently used by pages.
 
-Its local frame handles benchmark placement or live input, Show updates and
+Its local frame handles live input, Show updates and
 height limits in order. Run supplies the active flight speed and limits, while
 Composition only wires sources. World then publishes the resulting rig and eye
-facts, updates modules and streaming, renders, and reports the finished
-benchmark frame.
+facts, updates modules and streaming, and renders.
 Flight reset restores rig orientation/position;
 the complete fresh-visitor operation remains a separate gate.
 

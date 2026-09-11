@@ -326,6 +326,7 @@ test("one show fade dims both layers of the sense at once", () => {
   const viewerPosition = new Vector3();
   const viewpoint: Viewpoint = {
     worldPosition: viewerPosition,
+    worldBodyDirection: new Vector3(0, 0, -1),
     worldDirection: new Vector3(0, 0, -1),
     worldUp: new Vector3(0, 1, 0),
     viewHalfAngleRadians: Math.PI / 4,
@@ -402,6 +403,7 @@ describe("Scent Particles streaming", () => {
         scene,
         viewpoint: {
           worldPosition,
+          worldBodyDirection: new Vector3(0, 0, -1),
           worldDirection: new Vector3(0, 0, -1),
           worldUp: new Vector3(0, 1, 0),
           viewHalfAngleRadians: Math.PI / 4,
@@ -486,6 +488,7 @@ describe("Scent Particles streaming", () => {
     const viewerPosition = new Vector3();
     const viewpoint: Viewpoint = {
       worldPosition: viewerPosition,
+      worldBodyDirection: new Vector3(0, 0, -1),
       worldDirection: new Vector3(0, 0, -1),
       worldUp: new Vector3(0, 1, 0),
       viewHalfAngleRadians: Math.PI / 4,
@@ -557,6 +560,7 @@ describe("Scent Particles streaming", () => {
     const viewerPosition = new Vector3();
     const viewpoint: Viewpoint = {
       worldPosition: viewerPosition,
+      worldBodyDirection: new Vector3(0, 0, -1),
       worldDirection: new Vector3(0, 0, -1),
       worldUp: new Vector3(0, 1, 0),
       viewHalfAngleRadians: Math.PI / 4,
@@ -604,6 +608,7 @@ describe("Scent Particles wind", () => {
     const viewerPosition = new Vector3();
     const viewpoint: Viewpoint = {
       worldPosition: viewerPosition,
+      worldBodyDirection: new Vector3(0, 0, -1),
       worldDirection: new Vector3(0, 0, -1),
       worldUp: new Vector3(0, 1, 0),
       viewHalfAngleRadians: Math.PI / 4,

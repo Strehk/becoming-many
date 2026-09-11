@@ -1200,7 +1200,7 @@ async function checkTechnicianControls(page: Page): Promise<void> {
   quality = 0;
   await page
     .locator(".conductor__m5-readout")
-    .filter({ hasText: /sample q0\.0 · input q1\.0/ })
+    .filter({ hasText: /sample q0\.0/ })
     .waitFor();
   // Parsed configured-host input remains accepted even when reported quality is zero.
   assert.equal(
