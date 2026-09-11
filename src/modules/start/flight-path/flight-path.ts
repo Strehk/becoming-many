@@ -17,6 +17,12 @@ interface FlightPathOptions {
   readonly createMaterial: () => PathParticleMaterial;
 }
 
+interface PathReveal {
+  readonly fadeSeconds?: number;
+  /** Carry the predecessor's revealed feather across a connected seam. */
+  readonly incomingMeters?: number;
+}
+
 /** Own one reusable display slot. The center chooses when and where to show a route. */
 export function createFlightPath(options: FlightPathOptions) {
   return new FlightPath(options);
@@ -27,7 +33,11 @@ class FlightPath implements WorldModule {
   private cloud: Points<BufferGeometry, PointsMaterial> | undefined;
   private material: PathParticleMaterial | undefined;
   private frontMeters = 0;
+  private incomingMeters = 0;
   private routeEndMeters = 0;
+  readonly readContinuationMeters = (): number =>
+    Math.max(0, this.frontMeters - this.routeEndMeters);
+  // Ring emergence keeps its authored clock, independent of the inherited seam.
   readonly readRevealMeters = (): number =>
     this.options.growth
       ? this.frontMeters - this.options.growth.softEdgeMeters
@@ -76,20 +86,21 @@ class FlightPath implements WorldModule {
   readonly show = (
     geometry: BufferGeometry,
     pose: ExercisePose,
-    revealSeconds = 0,
+    reveal: PathReveal = {},
   ): void => {
     if (!this.cloud)
       throw new Error("Load the flight path before showing geometry");
     this.cloud.geometry.dispose();
     this.cloud.geometry = geometry;
+    this.incomingMeters = reveal.incomingMeters ?? 0;
     this.resetGrowth(geometry);
     this.cloud.position.copy(pose.position);
     this.cloud.position.y -= this.options.belowFlightMeters;
     this.cloud.rotation.y = pose.yawRadians;
-    this.revealDuration = revealSeconds;
+    this.revealDuration = reveal.fadeSeconds ?? 0;
     this.revealElapsed = 0;
     this.cloud.material.opacity =
-      revealSeconds > 0
+      this.revealDuration > 0
         ? 0
         : (this.options.opacity ?? 1) * (this.options.readPresence?.() ?? 1);
     this.cloud.visible = true;
@@ -107,7 +118,7 @@ class FlightPath implements WorldModule {
         )
       : 0;
     this.frontMeters = 0;
-    this.material?.setRevealMeters?.(0);
+    this.material?.setRevealMeters?.(this.incomingMeters);
   }
 
   // 4. GPU wind and retirement fade
@@ -125,7 +136,7 @@ class FlightPath implements WorldModule {
         this.frontMeters +
           Math.max(0, deltaSeconds) * this.options.growth.speedMetersPerSecond,
       );
-      this.material?.setRevealMeters?.(this.frontMeters);
+      this.material?.setRevealMeters?.(this.frontMeters + this.incomingMeters);
     }
     this.material?.update(deltaSeconds);
     if (!this.cloud) return;

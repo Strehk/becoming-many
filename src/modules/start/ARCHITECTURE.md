@@ -370,6 +370,13 @@ releases sources. At normal speed the timeout path therefore reaches Show after
 roughly 106 seconds: 90 seconds of tutorial, 13.86 seconds of closing speech,
 and 2.5 seconds of handoff.
 
+Connected path displays inherit the predecessor's revealed feather at their
+shared endpoint. Only the rendered front receives this offset; ring growth keeps
+its original authored clock. New course entries reset the inherited offset.
+Path wind is sampled in world space and converted back through each path's yaw,
+so adjoining sections share both position and drift at their seam. Route lengths,
+flight speed, native cues and ring timing remain independent of this rendering.
+
 `START_SETTINGS.pathGrowth` controls the forward reveal speed (12 m/s) and soft
 leading edge (3 m). A route-distance shader reveals prepared geometry without
 allocating particles per frame. `elementReveal` controls ring growth speed and a

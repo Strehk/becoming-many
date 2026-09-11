@@ -46,6 +46,24 @@ try {
       context: run.audio.context,
     };
   });
+  if (process.argv.includes("--seams"))
+    await page.evaluate(() => {
+      const start = window.handoffRun.tutorial.tutorial;
+      const begin = start.beginPreparedSection.bind(start);
+      window.pathSeams = [];
+      start.beginPreparedSection = (connected) => {
+        if (connected)
+          window.pathSeams.push({
+            index: start.game.readState().exerciseIndex,
+            previousEnd: start.current.route.lengthMeters,
+            previousFront: start.current.display.readRevealMeters(),
+            nextFront: start.pending.display.readRevealMeters(),
+            inheritedFront: start.pending.display.incomingMeters,
+            nextLength: start.pending.section.route.lengthMeters,
+          });
+        begin(connected);
+      };
+    });
   if (process.argv.includes("--paced"))
     await page.evaluate(() => {
       const start = window.handoffRun.tutorial.tutorial;
@@ -145,8 +163,19 @@ try {
           await page.screenshot({ path: "/tmp/start-shortened-course.png" });
         }
         if (index === 1 && process.argv.includes("--preview")) {
-          await page.waitForTimeout(1000);
+          await page.waitForFunction(() => {
+            const start = window.handoffRun.tutorial.tutorial;
+            const elements = start.bindings.get(start.current.display);
+            return (
+              (start.feedback.get(elements)?.reveal.presence[0] ?? 0) >= 0.3
+            );
+          });
           await page.screenshot({ path: "/tmp/start-upcoming-rings.png" });
+          if (process.argv.includes("--preview-only")) {
+            await browser.close();
+            console.log("Upcoming ring preview captured at visible emergence.");
+            process.exit(0);
+          }
         }
         await fly("exerciseEndMeters");
         console.log("Completed exercise", index);
@@ -181,6 +210,12 @@ try {
         }
         await fly("lengthMeters", true);
       }
+    if (process.argv.includes("--seams")) {
+      const seams = await page.evaluate(() => window.pathSeams);
+      console.log("Path seam state:", seams);
+      assert.equal(seams.length, 3);
+      for (const seam of seams) assert.ok(seam.inheritedFront >= 2.99);
+    }
     if (process.argv.includes("--paced")) {
       const previews = await page.evaluate(() => window.ringPreviews);
       console.log("Upcoming ring emergence:", previews);

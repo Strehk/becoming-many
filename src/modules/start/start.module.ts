@@ -520,7 +520,9 @@ class StartModule implements StartExperience {
       if (previous && !previous.isRevealed()) return;
       const display = this.availableDisplay();
       if (!display) return;
-      display.show(pending.generation.takeGeometry(), pending.section.pose);
+      display.show(pending.generation.takeGeometry(), pending.section.pose, {
+        incomingMeters: previous?.readContinuationMeters() ?? 0,
+      });
       pending.display = display;
       if (!pending.continuation) this.observeEntry(display);
     }
@@ -608,7 +610,9 @@ class StartModule implements StartExperience {
       },
       exercise.particles,
     );
-    display.show(geometry, pose, recovery ? START_SETTINGS.revealSeconds : 0);
+    display.show(geometry, pose, {
+      fadeSeconds: recovery ? START_SETTINGS.revealSeconds : 0,
+    });
     this.entry = { route, pose, display };
     this.course.begin(this.entry);
     return true;

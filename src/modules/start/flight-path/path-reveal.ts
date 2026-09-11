@@ -15,7 +15,7 @@ export function createPathRevealMaterial(
     shader.vertexShader = patchVertex(shader.vertexShader);
     shader.fragmentShader = patchFragment(shader.fragmentShader);
   };
-  base.pointsMaterial.customProgramCacheKey = () => `${key}:growing-route-v1`;
+  base.pointsMaterial.customProgramCacheKey = () => `${key}:growing-route-v2`;
   return {
     ...base,
     setRevealMeters: (meters) => {
@@ -25,15 +25,25 @@ export function createPathRevealMaterial(
 }
 
 function patchVertex(source: string): string {
-  return source
-    .replace(
-      "#include <common>",
-      "#include <common>\nattribute float routeDistance; varying float pathDistance;",
-    )
-    .replace(
-      "#include <begin_vertex>",
-      "#include <begin_vertex>\npathDistance = routeDistance;",
-    );
+  return (
+    source
+      // Path poses contain translation and yaw only. Convert world wind back to local axes.
+      .replace(
+        "transformed = animateAirParticle(transformed);",
+        `vec3 restingWorld = (modelMatrix * vec4(transformed, 1.0)).xyz;
+      vec3 worldWind = animateAirParticle(restingWorld) - restingWorld;
+      transformed += vec3(dot(modelMatrix[0].xyz, worldWind),
+        dot(modelMatrix[1].xyz, worldWind), dot(modelMatrix[2].xyz, worldWind));`,
+      )
+      .replace(
+        "#include <common>",
+        "#include <common>\nattribute float routeDistance; varying float pathDistance;",
+      )
+      .replace(
+        "#include <begin_vertex>",
+        "#include <begin_vertex>\npathDistance = routeDistance;",
+      )
+  );
 }
 
 function patchFragment(source: string): string {

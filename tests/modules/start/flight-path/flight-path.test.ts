@@ -1,6 +1,7 @@
 import { expect, test } from "bun:test";
 import {
   BufferGeometry,
+  Float32BufferAttribute,
   type Points,
   PointsMaterial,
   Scene,
@@ -20,6 +21,50 @@ function createDisplay() {
   module.activate();
   return { scene, module, material };
 }
+
+function createGrowingDisplay() {
+  let renderedFront = 0;
+  const module = createFlightPath({
+    scene: new Scene(),
+    belowFlightMeters: 0.5,
+    growth: { speedMetersPerSecond: 12, softEdgeMeters: 3 },
+    createMaterial: () => ({
+      pointsMaterial: new PointsMaterial(),
+      update: () => {},
+      setRevealMeters: (front) => {
+        renderedFront = front;
+      },
+    }),
+  });
+  module.load();
+  const geometry = () =>
+    new BufferGeometry().setAttribute(
+      "routeDistance",
+      new Float32BufferAttribute([0, 10], 1),
+    );
+  return { module, geometry, readFront: () => renderedFront };
+}
+
+test("a joined trail inherits the seam feather without advancing the ring clock", () => {
+  const previous = createGrowingDisplay();
+  const next = createGrowingDisplay();
+  const pose = { position: new Vector3(), yawRadians: 0 };
+  previous.module.show(previous.geometry(), pose);
+  previous.module.update(2);
+  next.module.show(next.geometry(), pose, {
+    incomingMeters: previous.module.readContinuationMeters(),
+  });
+  expect(next.readFront()).toBe(previous.readFront() - 10);
+  expect(next.readFront()).toBe(3);
+  expect(next.module.readRevealMeters()).toBe(-3);
+  next.module.update(0.1);
+  expect(next.readFront()).toBeCloseTo(4.2);
+  expect(next.module.readRevealMeters()).toBeCloseTo(-1.8);
+  next.module.show(next.geometry(), pose);
+  expect(next.readFront()).toBe(0);
+  previous.module.unload();
+  next.module.unload();
+});
 
 test("presentation waits for an explicit show and copies its fixed pose", () => {
   const { scene, module } = createDisplay();
