@@ -64,6 +64,8 @@ class LevelRun {
   private playback: ShowRuntime | undefined;
   private unloading: Promise<void> | undefined;
   private tutorial: ComposedLevel | undefined;
+  private tutorialRestart: Promise<void> | undefined;
+  private tutorialChunkCount = 0;
   private staticTutorial: ComposedLevel["tutorial"];
   private skipTarget: { timeSeconds: number; playing: boolean } | undefined;
   private tutorialAssets: LoadedLevelAssets | undefined;
@@ -91,7 +93,10 @@ class LevelRun {
     return this.world.xr;
   }
   get show(): RunningShow | undefined {
-    return !this.tutorial && this.request.kind === "show"
+    return !this.signal.aborted &&
+      !this.tutorial &&
+      !this.tutorialRestart &&
+      this.request.kind === "show"
       ? this.playback?.running
       : undefined;
   }
@@ -139,6 +144,12 @@ class LevelRun {
 
   readonly readTutorial: Run["readTutorial"] = () => {
     if (this.signal.aborted) return undefined;
+    if (this.tutorialRestart && !this.tutorial)
+      return {
+        completedChunks: 0,
+        totalChunks: this.tutorialChunkCount,
+        phase: "loading",
+      };
     const progress = (
       this.tutorial?.tutorial ?? this.staticTutorial
     )?.readProgress();
@@ -179,15 +190,24 @@ class LevelRun {
       signal: this.signal,
       sharedAudio: this.audio,
     });
-    if (!this.tutorial.tutorial)
+    this.activateTutorial(this.tutorial, level);
+  }
+
+  private activateTutorial(
+    composition: ComposedLevel,
+    level: LevelPreset,
+  ): void {
+    for (const module of composition.modules) this.world.modules.load(module);
+    this.signal.throwIfAborted();
+    if (!composition.tutorial)
       throw new Error("Tutorial preset needs a Start module");
+    this.tutorialChunkCount = composition.tutorial.readProgress().totalChunks;
     for (const module of this.modules) this.world.modules.deactivate(module);
     this.present(
       level,
       level.desktopFieldOfViewDegrees ?? this.world.camera.fov,
     );
-    for (const module of this.tutorial.modules) {
-      this.world.modules.load(module);
+    for (const module of composition.modules) {
       this.world.modules.activate(module);
     }
   }
@@ -255,13 +275,40 @@ class LevelRun {
       throw new AggregateError(errors, "Tutorial cleanup failed");
   }
 
-  /** Reset the existing visit; replacement/calibration remains a separate operation. */
+  /** Restart training in this Run; renderer, XR, controls and shared audio survive. */
   readonly resetShowAndFlight = (): void => {
-    if (this.signal.aborted) return;
-    if (this.tutorial) return;
+    if (this.signal.aborted || this.tutorialRestart) return;
     this.controls?.resetRig();
     this.playback?.running.resetTime();
+    this.playback?.update();
+    if (this.request.kind !== "show" || !this.request.tutorial) return;
+    this.releaseTutorial();
+    for (const module of this.modules) this.world.modules.deactivate(module);
+    this.present(
+      this.request.tutorial,
+      this.request.tutorial.desktopFieldOfViewDegrees ??
+        this.mainFieldOfViewDegrees,
+    );
+    const restart = this.startTutorial();
+    this.tutorialRestart = restart;
+    for (const listener of this.showListeners) listener(undefined);
+    void this.finishRestart(restart);
   };
+
+  private async finishRestart(restart: Promise<void>): Promise<void> {
+    try {
+      await restart;
+    } catch (error) {
+      if (!this.signal.aborted) console.error("Tutorial restart failed", error);
+      try {
+        await this.unload();
+      } catch (cleanupError) {
+        console.error("Tutorial restart cleanup failed", cleanupError);
+      }
+    } finally {
+      this.tutorialRestart = undefined;
+    }
+  }
 
   readonly resetFlight = (): void => {
     this.controls?.resetRig();
@@ -324,7 +371,7 @@ class LevelRun {
   private readonly updateFrame = (deltaSeconds: number): void => {
     if (this.signal.aborted) return;
     this.updateFlight(deltaSeconds);
-    if (!this.tutorial) this.playback?.update();
+    if (!this.tutorial && !this.tutorialRestart) this.playback?.update();
     this.updateHandoff(deltaSeconds);
     this.audio?.update();
     this.updateHeightLimits();
@@ -333,7 +380,8 @@ class LevelRun {
   private updateFlight(deltaSeconds: number): void {
     this.controls?.flight.update(
       deltaSeconds,
-      this.handoffElapsed !== undefined && !this.skipTarget
+      this.tutorialRestart ||
+        (this.handoffElapsed !== undefined && !this.skipTarget)
         ? 0
         : this.flightSpeed(),
       this.world.renderer.xr.isPresenting,
@@ -349,7 +397,7 @@ class LevelRun {
   }
 
   private updateHeightLimits(): void {
-    if (this.tutorial) return;
+    if (this.tutorial || this.tutorialRestart) return;
     this.heightLimits.minimumGroundClearanceMeters = this.hasGround
       ? this.controls?.minimumGroundClearanceMeters
       : undefined;
@@ -373,6 +421,7 @@ class LevelRun {
   private async endChildren(): Promise<void> {
     const owners = [this.controls?.desktop, this.m5, this.playback];
     const results = await Promise.allSettled([
+      this.tutorialRestart?.catch(() => undefined),
       (async () => this.world?.stop())(),
       ...owners.map(async (owner) => {
         await owner?.unload();

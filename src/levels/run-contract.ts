@@ -8,7 +8,7 @@ import type { RunningShow, ShowRequest } from "./show-contract";
 export interface TutorialObservation {
   readonly completedChunks: number;
   readonly totalChunks: number;
-  readonly phase: "active" | "closing" | "transition";
+  readonly phase: "loading" | "active" | "closing" | "transition";
 }
 
 /** One experience lifetime, with commands and observations for its entry/UI. */
@@ -32,7 +32,10 @@ export interface Run {
    * The visitor's local head pose remains owned by pointer look or the headset.
    */
   readonly resetFlight: () => void;
-  /** Rewind, reset the flight rig and hold; this does not replace the Run. */
+  /** Restart from the tutorial when configured; otherwise rewind Show and hold.
+   * Resets flight without replacing renderer/XR/audio. Repeated calls while loading
+   * coalesce; ended runs ignore the command. Startup failure ends the Run.
+   */
   readonly resetShowAndFlight: () => void;
 
   /**

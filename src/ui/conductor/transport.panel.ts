@@ -50,6 +50,7 @@ export function createTransportPanel({
     ".conductor__stop-button",
     HTMLButtonElement,
   );
+  stopButton.disabled = false;
   stopButton.addEventListener("click", run.resetShowAndFlight, { signal });
   let renderedPlaying: boolean | undefined;
 
@@ -57,7 +58,6 @@ export function createTransportPanel({
     update(state): void {
       const available = !!readShow();
       transportButton.disabled = !available;
-      stopButton.disabled = !available;
       if (renderedPlaying === state.isPlaying) return;
       renderedPlaying = state.isPlaying;
       transportButton.dataset.playing = String(state.isPlaying);

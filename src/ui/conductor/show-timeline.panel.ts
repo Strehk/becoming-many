@@ -122,6 +122,7 @@ export function createShowTimeline({
       )
     : undefined;
   if (tutorialSlot && tutorialButton) {
+    tutorialButton.dataset.tutorial = "";
     tutorialSlot.dataset.tutorialBlock = "";
     tutorialSlot.setAttribute("x", "0%");
     tutorialSlot.setAttribute("width", `${TUTORIAL_TRACK_FRACTION * 100}%`);
@@ -134,7 +135,9 @@ export function createShowTimeline({
       ".conductor__chapter-time",
       HTMLElement,
     ).textContent = "Chunks";
-    tutorialButton.disabled = true;
+    tutorialButton.addEventListener("click", () => run?.resetShowAndFlight(), {
+      signal,
+    });
     track.insertBefore(tutorialSlot, playhead);
     buttons.append(tutorialButton);
   }

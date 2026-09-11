@@ -116,7 +116,9 @@ export function mountRehearsalTransport({
   if (tutorialButton) {
     tutorialButton.dataset.tutorial = "";
     tutorialButton.textContent = "Tutorial";
-    tutorialButton.disabled = true;
+    tutorialButton.addEventListener("click", () => run?.resetShowAndFlight(), {
+      signal,
+    });
     sections.append(tutorialButton);
   }
 

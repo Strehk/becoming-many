@@ -9,7 +9,12 @@ assertRefactorBranch();
 const baseUrl = process.argv[2] ?? "http://127.0.0.1:4180";
 const browser = await chromium.launch({
   headless: true,
-  args: ["--autoplay-policy=no-user-gesture-required"],
+  args: [
+    "--autoplay-policy=no-user-gesture-required",
+    ...(process.platform === "darwin"
+      ? ["--use-angle=metal", "--enable-gpu"]
+      : []),
+  ],
 });
 try {
   const routes =
@@ -18,6 +23,7 @@ try {
       : ["/conductor.html", "/", "/start"];
   for (const path of routes) await verifyRoute(path);
   await verifyCancelledSkip();
+  await verifyCancelledRestart();
 } finally {
   await browser.close();
 }
@@ -26,6 +32,7 @@ async function openRun(path) {
   const page = await browser.newPage({
     viewport: { width: 1280, height: 800 },
   });
+  page.setDefaultTimeout(30000);
   const errors = collectBrowserErrors(page);
   await page.route("**/src/levels/level.runtime.ts*", async (route) => {
     const response = await route.fetch();
@@ -59,7 +66,7 @@ async function verifyRoute(path) {
     if (conductor)
       assert.equal(
         await page.locator(".conductor__stop-button").isDisabled(),
-        true,
+        false,
       );
     assert.equal(await page.evaluate(() => !!window.show), false);
     await page.evaluate(() => {
@@ -84,7 +91,10 @@ async function verifyRoute(path) {
           ? "/tmp/web-tutorial-timeline.png"
           : "/tmp/start-tutorial-timeline.png",
     });
+    console.log(`Tutorial loaded ${path}`);
     await verifySkipAndTransport(page, track, conductor);
+    console.log(`Transport passed ${path}`);
+    await verifyTutorialRestart(page, conductor);
     await page.evaluate(() =>
       window.dispatchEvent(
         new PageTransitionEvent("pagehide", { persisted: false }),
@@ -96,6 +106,9 @@ async function verifyRoute(path) {
     assert.equal(await page.evaluate(() => window.show === undefined), true);
     assert.deepEqual(unexpectedErrors(errors), []);
     console.log(`Tutorial timeline ${path}: passed`);
+  } catch (error) {
+    console.error("Browser errors:", errors);
+    throw error;
   } finally {
     await page.close();
   }
@@ -136,8 +149,8 @@ async function verifySkipAndTransport(page, track, conductor) {
   const chapters = timelineChapters(PIECE_SCHEDULE);
   const buttons = page.locator(
     conductor
-      ? ".conductor__chapters button:not(:disabled)"
-      : "[data-sections] button:not(:disabled)",
+      ? ".conductor__chapters button:not(:disabled):not([data-tutorial])"
+      : "[data-sections] button:not(:disabled):not([data-tutorial])",
   );
   await buttons.nth(2).click();
   assert.ok(
@@ -279,4 +292,107 @@ async function verifyTimelineKeys(page) {
     await page.evaluate(() => window.show.sample().timeSeconds),
     PIECE_SCHEDULE.durationSeconds,
   );
+}
+
+async function verifyTutorialRestart(page, conductor) {
+  const restart = page.locator(
+    conductor ? ".conductor__stop-button" : "[data-tutorial]",
+  );
+  await page.evaluate(() => {
+    window.previousTutorial = window.timelineRun.tutorial;
+    window.initialAudio = window.timelineRun.audio;
+  });
+  await restart.click();
+  console.log("Restart requested");
+  await assertRestartedTutorial(page);
+  const tutorialButton = page.locator("button[data-tutorial]");
+  await tutorialButton.click();
+  await assertRestartedTutorial(page);
+  await page.evaluate(() => {
+    const run = window.timelineRun;
+    window.previousTutorial = run.tutorial;
+    run.skipTutorial(90);
+  });
+  await restart.click();
+  await assertRestartedTutorial(page);
+  await page.evaluate(() => {
+    window.previousTutorial = window.timelineRun.tutorial;
+  });
+  await restart.evaluate((button) => {
+    button.click();
+    button.click();
+    button.click();
+  });
+  await assertRestartedTutorial(page);
+  await page.screenshot({
+    path: conductor
+      ? "/tmp/conductor-tutorial-restarted.png"
+      : "/tmp/web-tutorial-restarted.png",
+  });
+  console.log(
+    "Tutorial restart: main show, tutorial, transition and repeated clicks passed",
+  );
+}
+
+async function assertRestartedTutorial(page) {
+  await page.waitForFunction(
+    () => {
+      const run = window.timelineRun;
+      return (
+        run.readTutorial()?.phase === "active" &&
+        run.tutorial !== window.previousTutorial
+      );
+    },
+    null,
+    { timeout: 120000 },
+  );
+  const observation = await page.evaluate(() => {
+    const run = window.timelineRun;
+    return {
+      completed: run.readTutorial().completedChunks,
+      showUnavailable: window.show === undefined && run.show === undefined,
+      renderer: run.world.renderer === window.initialRenderer,
+      audio: run.audio === window.initialAudio,
+      playing: run.playback.running.sample().isPlaying,
+      seconds: run.playback.running.sample().timeSeconds,
+    };
+  });
+  assert.deepEqual(observation, {
+    completed: 0,
+    showUnavailable: true,
+    renderer: true,
+    audio: true,
+    playing: false,
+    seconds: 0,
+  });
+  await page.waitForFunction(() =>
+    document.body.textContent.includes("Tutorial 0/4"),
+  );
+}
+
+async function verifyCancelledRestart() {
+  const { page, errors } = await openRun("/conductor.html");
+  try {
+    await page.evaluate(() => {
+      const run = window.timelineRun;
+      run.resetShowAndFlight();
+      window.dispatchEvent(
+        new PageTransitionEvent("pagehide", { persisted: false }),
+      );
+    });
+    await page.waitForFunction(
+      () => window.timelineRun.audio.context.state === "closed",
+    );
+    await page.waitForTimeout(1000);
+    assert.equal(
+      await page.evaluate(
+        () => !!window.show || !!window.timelineRun.readTutorial(),
+      ),
+      false,
+    );
+    assert.deepEqual(unexpectedErrors(errors), []);
+    console.log("Tutorial restart cancellation: passed");
+  } finally {
+    await page.close();
+  }
 }

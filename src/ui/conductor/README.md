@@ -30,7 +30,7 @@ readable disabled labels provide contrast without a separate styling system.
 applies its initial M5 host, mounts the page and connects page exit to cleanup.
 `conductor.page.ts` mounts panels against narrow Show/Run/M5/XR capabilities.
 Show owns playback/language; Run owns experience lifetime and the current
-`resetShowAndFlight` operation (rewind, reset flight, hold). That operation does
+`resetShowAndFlight` operation (rewind, reset flight, restart the tutorial). That operation does
 not replace the Run. Browser reload and stored preferences belong to Entry.
 
 ## Public interface and retained interaction
@@ -40,9 +40,10 @@ Panels draw a local view state and invoke only their needed public commands.
 confirmation timers are legitimate UI behavior. Schedule arithmetic remains
 in `dramaturgy`; device validity remains in M5.
 
-Play/Pause toggles playback. Stop immediately rewinds, resets flight and pauses
-through Run; the selected language is retained. The timeline is the only time
-display. Language changes preserve playback and show position. Language selection sits below transport; the canvas stays in the main
+Play/Pause toggles main Show playback. Stop rewinds the main Show, resets flight
+and restarts the tutorial through Run, including during training or its transition.
+The Tutorial chapter invokes the same command. The selected main Show language
+is retained. The timeline is the only time display. Language changes preserve playback and show position. Language selection sits below transport; the canvas stays in the main
 surface when technician tools open or close. The timeline exposes its position
 as a keyboard-accessible slider: arrow keys seek by five seconds (thirty with
 Shift), Home and End jump to the bounds. Its geometry follows Show time directly.
