@@ -61,9 +61,14 @@ import type {
   StartExperience,
   StartVoice,
 } from "./start-contract";
-import { START_EXERCISES, START_SETTINGS } from "./start-exercises";
+import {
+  START_EXERCISES,
+  START_SETTINGS,
+  START_TIMING,
+} from "./start-exercises";
 import { createStartGame } from "./start-game.runtime";
 import { samplePathPresence, sampleWorldPresence } from "./start-sequence";
+import { StartTiming } from "./start-timing";
 
 // 1. Local star: all concrete connections and the fixed display pool live here
 interface StartModuleOptions extends AirParticlesModuleOptions {
@@ -101,6 +106,7 @@ class StartModule implements StartExperience {
   private readonly generationKey = {};
   private readonly noFlightDirection = new Vector3();
   private readonly game: ReturnType<typeof createStartGame>;
+  private readonly timing = new StartTiming(START_TIMING);
   private readonly paths: readonly Display[];
   private readonly elements: readonly ElementDisplay[];
   private readonly bindings = new Map<Display, ElementDisplay>();
@@ -253,6 +259,7 @@ class StartModule implements StartExperience {
       passage.reset([], this.readPosition());
     this.cancelPending();
     this.game.reset();
+    this.timing.reset();
     this.current = undefined;
     this.bindings.clear();
     this.retiringPaths.clear();
@@ -307,7 +314,7 @@ class StartModule implements StartExperience {
     if (errors.length) throw new AggregateError(errors, "Start cleanup failed");
   };
 
-  /** Completion requires both the final flight exit and the closing recording's natural end. */
+  /** Passage or the deadline ends exercises; the closing recording must finish naturally. */
   readonly readComplete = (): boolean => {
     const voice = this.options.voice?.read();
     return (
@@ -328,6 +335,10 @@ class StartModule implements StartExperience {
   // 3. One coherent observation, followed by one engine decision
   readonly update = (deltaSeconds: number): void => {
     if (!this.active) return;
+    this.timing.update(
+      deltaSeconds,
+      this.options.voice?.read().offsetSeconds ?? 0,
+    );
     this.updateOpening();
     this.updateRetiredPaths();
     this.resumeRecovery();
@@ -367,6 +378,12 @@ class StartModule implements StartExperience {
   }
 
   private observeFlight(deltaSeconds: number): ExerciseAction {
+    const voice = this.options.voice?.read();
+    if (this.timing.expired() && voice && (voice.ended || voice.failed)) {
+      this.cancelPending();
+      this.recoveryEntryNeeded = false;
+      return this.game.finishExercises();
+    }
     const position = this.readPosition();
     return this.game.update({
       deltaSeconds,
@@ -390,8 +407,7 @@ class StartModule implements StartExperience {
   private applyAction(action: ExerciseAction): void {
     if (action === "show") this.beginPreparedSection(false);
     if (action === "prepare-next") {
-      this.playInstruction(false, true);
-      this.prepareSection(true);
+      if (this.playInstruction(false, true)) this.prepareSection(true);
     }
     if (action === "complete")
       this.options.voice?.play(START_SETTINGS.completeVoice, 0);
@@ -673,7 +689,7 @@ class StartModule implements StartExperience {
     const voice = this.options.voice?.read();
     atmosphere.update({
       active: this.active,
-      presence: this.presence,
+      presence: this.presence * this.readAtmospherePresence(),
       speaking: !!voice && !voice.ended && !voice.failed,
     });
     this.elements.forEach((display, slot) => {
@@ -699,6 +715,14 @@ class StartModule implements StartExperience {
     this.elements.forEach((_, slot) => {
       this.options.atmosphere?.clearSection(slot);
     });
+  }
+
+  // Let source gains fade during the closing voice, leaving time for reverb tails.
+  private readAtmospherePresence(): number {
+    const phase = this.game.readState().phase;
+    if (phase !== "closing" && phase !== "complete") return 1;
+    const offset = this.options.voice?.read().offsetSeconds ?? 0;
+    return Math.max(0, 1 - offset / START_TIMING.closingAtmosphereFadeSeconds);
   }
 
   private createRingTargets(
@@ -786,14 +810,18 @@ class StartModule implements StartExperience {
     );
   }
 
-  private playInstruction(retry: boolean, successor = false): void {
+  private playInstruction(retry: boolean, successor = false): boolean {
     const voice = this.options.voice;
-    if (!voice) return;
+    if (!voice) return true;
     // Keep unfinished orientation intact during an early deviation.
-    if (retry && !voice.read().ended) return;
+    if (retry && !voice.read().ended) return true;
     const index = this.game.readState().exerciseIndex + Number(successor);
     const cue = START_EXERCISES[index]?.voice;
-    if (cue) voice.play(cue, retry ? cue.instructionAtSeconds : 0);
+    if (!cue) return false;
+    const offset = retry ? cue.instructionAtSeconds : 0;
+    if (!this.timing.canPlay(cue.durationSeconds - offset)) return false;
+    voice.play(cue, offset);
+    return true;
   }
 
   private readPosition(): Readonly<Vector3> {

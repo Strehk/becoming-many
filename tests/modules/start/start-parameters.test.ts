@@ -1,9 +1,17 @@
 import { expect, test } from "bun:test";
 import { Vector3 } from "three";
+import { level } from "../../../src/levels/start.level";
 import { createFlightRoute } from "../../../src/modules/start/flight-path/flight-route";
 import { placeElements } from "../../../src/modules/start/particle-elements/element-placement";
 import type { ExerciseDefinition } from "../../../src/modules/start/start-contract";
-import { START_EXERCISES } from "../../../src/modules/start/start-exercises";
+import {
+  START_EXERCISES,
+  START_TIMING,
+} from "../../../src/modules/start/start-exercises";
+
+const FLIGHT_SPEED = level.flightSpeedMetersPerSecond;
+if (FLIGHT_SPEED === undefined)
+  throw new Error("Tutorial pacing requires explicit flight speed");
 
 for (const exercise of START_EXERCISES as readonly ExerciseDefinition[]) {
   test(`${exercise.id}: every seed follows the authored direction and places the authored number of spaced rings`, () => {
@@ -46,7 +54,7 @@ test("authored count and spacing are exact, incompatible combinations fail expli
       ...exercise.elements,
       ringCount: 3,
       firstMeters: route.exerciseStartMeters,
-      spacingMeters: 12,
+      spacingMeters: 5,
     }),
   ).toHaveLength(3);
   expect(
@@ -98,41 +106,29 @@ test("vertical lessons stay forward, respect pitch and finish level with correct
   }
 });
 
-test("compact course tightens spacing by fifteen percent and increases only later curvature", () => {
-  const previous = [
-    { spacing: 5.6, radii: [16.6041, 18.0944] },
-    { spacing: 7, radii: [17.5102, 19.1758] },
-    { spacing: 7, radii: [32.9774, 33.9289] },
-    { spacing: 7, radii: [32.9774, 33.9289] },
-  ];
-  START_EXERCISES.forEach((exercise, index) => {
-    const before = previous[index];
-    if (!before) throw new Error("Missing comparison course");
-    expect(exercise.elements.spacingMeters).toBeCloseTo(before.spacing * 0.85);
-    [
-      exercise.route.turnRadiusMeters.from,
-      exercise.route.turnRadiusMeters.to,
-    ].forEach((radius, end) => {
-      const oldRadius = before.radii[end];
-      if (!oldRadius) throw new Error("Missing comparison radius");
-      const difference =
-        ((exercise.elements.spacingMeters / radius -
-          before.spacing / oldRadius) *
-          180) /
-        Math.PI;
-      expect(difference).toBeCloseTo(index === 0 ? 0 : 4, 3);
-    });
-  });
-  expect(
-    START_EXERCISES[0].route.outroMeters +
-      START_EXERCISES[1].route.straightMeters,
-  ).toBe(13);
-  expect(
-    START_EXERCISES[1].route.outroMeters +
-      START_EXERCISES[2].route.straightMeters,
-  ).toBe(18);
-  expect(
-    START_EXERCISES[2].route.outroMeters +
-      START_EXERCISES[3].route.straightMeters,
-  ).toBe(18);
+test("direct flight stays near its pacing target while retaining all four lessons", () => {
+  // Use the actual level speed; the opening line captures the rig at its cue.
+  for (let seed = 0; seed < 20; seed++) {
+    const meters = START_EXERCISES.reduce<number>(
+      (total, exercise) =>
+        total + createFlightRoute(exercise.route, seed).lengthMeters,
+      START_EXERCISES[0].sequence.approachMeters,
+    );
+    const seconds =
+      START_EXERCISES[0].sequence.pathAtSeconds + meters / FLIGHT_SPEED;
+    expect(seconds).toBeGreaterThan(50);
+    expect(seconds).toBeLessThan(70);
+  }
+  expect(START_TIMING.maximumExerciseSeconds).toBeGreaterThan(70);
+});
+
+test("every exit leaves enough flight time for the next instruction cue", () => {
+  for (let index = 0; index < START_EXERCISES.length - 1; index++) {
+    const current = START_EXERCISES[index];
+    const next = START_EXERCISES[index + 1];
+    if (!current || !next) throw new Error("Missing lesson");
+    expect(current.route.outroMeters / FLIGHT_SPEED).toBeGreaterThan(
+      next.voice.instructionAtSeconds,
+    );
+  }
 });

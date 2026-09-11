@@ -19,6 +19,13 @@ class StartGame {
   private exercisePassed = false;
   constructor(private readonly settings: GameSettings) {}
   readonly readState = (): Readonly<ExerciseState> => this.state;
+  /** Deadline completion needs no further passage and never repeats the closing voice. */
+  readonly finishExercises = (): ExerciseAction => {
+    const phase = this.state.phase;
+    if (phase === "complete") return;
+    this.enterPhase("complete");
+    return phase === "closing" ? undefined : "complete";
+  };
   readonly reset = (): void => {
     this.state = this.initialState();
     this.exercisePassed = false;

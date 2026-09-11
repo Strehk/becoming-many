@@ -1,5 +1,13 @@
 import type { ExerciseDefinition } from "./start-contract";
 
+// 0. Tutorial timing. Route lengths below target roughly 60 seconds at 2 m/s.
+// The 90-second deadline starts the full closing narration; it does not cut it off.
+export const START_TIMING = {
+  maximumExerciseSeconds: 90,
+  voiceSafetySeconds: 0.75,
+  closingAtmosphereFadeSeconds: 6,
+};
+
 // 1. Shared demo and presentation settings
 export const START_SETTINGS = {
   demonstrationCueSeconds: 2,
@@ -85,8 +93,8 @@ export const START_SETTINGS = {
 
 // 2. Exercise sequence
 // Speech order is right, left, climb, descent. Praise requires prior success.
-// All lengths are meters. Compact spacing preserves the opening turn per ring.
-// Later exercises add four degrees per ring interval; vertical arcs return to level.
+// All lengths are meters. Tune arc radius, angle, entry and exit per exercise.
+// Three rings per exercise keep the route compact; vertical arcs return to level.
 // Speech cues and flight speed remain independent of presentation growth.
 export const START_EXERCISES = [
   {
@@ -105,9 +113,9 @@ export const START_EXERCISES = [
     route: {
       leadMeters: 0,
       straightMeters: 3,
-      outroMeters: 9,
+      outroMeters: 3,
       turnSign: 1,
-      turnRadiusMeters: { from: 14.1135, to: 15.3802 },
+      turnRadiusMeters: { from: 10, to: 10.5 },
       turnDegrees: { from: 110, to: 110 },
     },
     particles: {
@@ -121,8 +129,8 @@ export const START_EXERCISES = [
       showArrows: false,
       entryArrow: { distanceMeters: 10, aboveMeters: 1.8, sideMeters: -5 },
       ringCount: 3,
-      firstMeters: 18,
-      spacingMeters: 4.76,
+      firstMeters: 13,
+      spacingMeters: 4.2,
       ringRadiusMeters: 3.6,
       arrowLengthMeters: 4.8,
       arrowOffsetMeters: 7,
@@ -138,7 +146,7 @@ export const START_EXERCISES = [
     },
     progress: {
       checkpointSpacingMeters: 2,
-      toleranceMeters: 10.2,
+      toleranceMeters: 3,
       extraTravelMeters: 7,
       maximumStepMeters: 3,
     },
@@ -153,11 +161,11 @@ export const START_EXERCISES = [
     },
     route: {
       leadMeters: 0,
-      straightMeters: 4,
-      outroMeters: 12,
+      straightMeters: 3,
+      outroMeters: 6,
       turnSign: -1,
-      turnRadiusMeters: { from: 12.67089, to: 13.68267 },
-      turnDegrees: { from: 140, to: 140 },
+      turnRadiusMeters: { from: 10, to: 10.5 },
+      turnDegrees: { from: 110, to: 110 },
     },
     particles: {
       densityPerMeter: { from: 40, to: 68 },
@@ -168,9 +176,9 @@ export const START_EXERCISES = [
     },
     elements: {
       showArrows: false,
-      ringCount: 6,
+      ringCount: 3,
       firstMeters: 4,
-      spacingMeters: 5.95,
+      spacingMeters: 4.2,
       ringRadiusMeters: 3.6,
       arrowLengthMeters: 4.6,
       arrowOffsetMeters: 7,
@@ -186,7 +194,7 @@ export const START_EXERCISES = [
     },
     progress: {
       checkpointSpacingMeters: 2,
-      toleranceMeters: 12,
+      toleranceMeters: 3,
       extraTravelMeters: 7,
       maximumStepMeters: 3,
     },
@@ -202,11 +210,11 @@ export const START_EXERCISES = [
     route: {
       turnPlane: "vertical",
       leadMeters: 0,
-      straightMeters: 6,
-      outroMeters: 12,
+      straightMeters: 2,
+      outroMeters: 3,
       turnSign: 1,
-      turnRadiusMeters: { from: 21.09333, to: 21.54806 },
-      turnDegrees: { from: 42, to: 42 },
+      turnRadiusMeters: { from: 12, to: 12.5 },
+      turnDegrees: { from: 24, to: 24 },
     },
     particles: {
       densityPerMeter: { from: 40, to: 68 },
@@ -217,9 +225,9 @@ export const START_EXERCISES = [
     },
     elements: {
       showArrows: false,
-      ringCount: 6,
-      firstMeters: 6,
-      spacingMeters: 5.95,
+      ringCount: 3,
+      firstMeters: 3,
+      spacingMeters: 4.2,
       ringRadiusMeters: 3.6,
       arrowLengthMeters: 4.6,
       arrowOffsetMeters: 7,
@@ -235,7 +243,7 @@ export const START_EXERCISES = [
     },
     progress: {
       checkpointSpacingMeters: 2,
-      toleranceMeters: 12,
+      toleranceMeters: 3,
       extraTravelMeters: 7,
       maximumStepMeters: 3,
     },
@@ -251,11 +259,11 @@ export const START_EXERCISES = [
     route: {
       turnPlane: "vertical",
       leadMeters: 0,
-      straightMeters: 6,
-      outroMeters: 12,
+      straightMeters: 2,
+      outroMeters: 3,
       turnSign: -1,
-      turnRadiusMeters: { from: 21.09333, to: 21.54806 },
-      turnDegrees: { from: 42, to: 42 },
+      turnRadiusMeters: { from: 12, to: 12.5 },
+      turnDegrees: { from: 24, to: 24 },
     },
     particles: {
       densityPerMeter: { from: 40, to: 68 },
@@ -266,9 +274,9 @@ export const START_EXERCISES = [
     },
     elements: {
       showArrows: false,
-      ringCount: 6,
-      firstMeters: 6,
-      spacingMeters: 5.95,
+      ringCount: 3,
+      firstMeters: 3,
+      spacingMeters: 4.2,
       ringRadiusMeters: 3.6,
       arrowLengthMeters: 4.6,
       arrowOffsetMeters: 7,
@@ -284,7 +292,7 @@ export const START_EXERCISES = [
     },
     progress: {
       checkpointSpacingMeters: 2,
-      toleranceMeters: 12,
+      toleranceMeters: 3,
       extraTravelMeters: 7,
       maximumStepMeters: 3,
     },

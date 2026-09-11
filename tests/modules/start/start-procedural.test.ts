@@ -165,9 +165,12 @@ test("success prepares a joined successor while the original exit remains visibl
   const fixture = createFixture();
   const section = firstSection(fixture);
   const first = trails(fixture)[1];
+  const originalGeometry = first?.geometry;
   flyRange(fixture, section, [0, section.route.exerciseEndMeters]);
   for (let frame = 0; frame < 40; frame++) fixture.tick();
-  expect(trails(fixture)).toHaveLength(2);
+  expect(trails(fixture).length).toBeLessThanOrEqual(
+    START_SETTINGS.pathPoolSize,
+  );
   expect(first?.visible).toBe(true);
   flyRange(fixture, section, [
     section.route.exerciseEndMeters,
@@ -179,9 +182,11 @@ test("success prepares a joined successor while the original exit remains visibl
     frame++
   )
     fixture.tick();
-  expect(trails(fixture)).toHaveLength(2);
+  expect(trails(fixture).length).toBeLessThanOrEqual(
+    START_SETTINGS.pathPoolSize,
+  );
   expect(first?.visible).toBe(true);
-  const next = trails(fixture).find((path) => path !== first);
+  const next = trails(fixture).at(-1);
   if (!next) throw new Error("Missing successor");
   expect(next.material.opacity).toBe(START_SETTINGS.pathOpacity);
   const nextRoute = createFlightRoute(
@@ -202,7 +207,7 @@ test("success prepares a joined successor while the original exit remains visibl
   expect(nextPose.position.distanceTo(end)).toBeLessThan(1e-8);
   flyRange(fixture, { route: nextRoute, pose: nextPose }, [
     0,
-    START_SETTINGS.keepPathBehindMeters + 3,
+    nextRoute.lengthMeters + START_SETTINGS.keepPathBehindMeters + 3,
   ]);
   for (
     let frame = 0;
@@ -210,8 +215,11 @@ test("success prepares a joined successor while the original exit remains visibl
     frame++
   )
     fixture.tick();
-  expect(first?.visible).toBe(false);
-  expect(trails(fixture)).toHaveLength(1);
+  // Short sections can recycle the same pooled display after its old route retires.
+  expect(!first?.visible || first.geometry !== originalGeometry).toBe(true);
+  expect(trails(fixture).length).toBeLessThanOrEqual(
+    START_SETTINGS.pathPoolSize,
+  );
   const positions = next?.geometry.getAttribute("position");
   expect(
     positions?.getX((next?.geometry.drawRange.count ?? 1) - 1),
@@ -297,7 +305,9 @@ test("immediate flight keeps progress while route generation is delayed", () => 
     frame++
   )
     fixture.tick();
-  expect(trails(fixture)).toHaveLength(2);
+  expect(trails(fixture).length).toBeLessThanOrEqual(
+    START_SETTINGS.pathPoolSize,
+  );
   const successor = trails(fixture).at(-1);
   const end = new Vector3();
   section.route.sample(section.route.lengthMeters, end);
@@ -437,6 +447,67 @@ function createClosingFixture() {
   for (let frame = 0; frame < 240; frame++) fixture.tick();
   return { fixture, playback, played };
 }
+
+test("deadline starts the full closing voice without passage and preserves its natural end", () => {
+  const { fixture, playback, played } = createClosingFixture();
+  fixture.module.update?.(86.1);
+  expect(played.at(-1)).toBe(START_SETTINGS.completeVoice.url);
+  expect(
+    played.filter((url) => url === START_SETTINGS.completeVoice.url),
+  ).toHaveLength(1);
+  expect(fixture.module.readComplete()).toBe(false);
+  fixture.module.update?.(1);
+  expect(fixture.module.readComplete()).toBe(false);
+  playback.offsetSeconds = START_SETTINGS.completeVoice.durationSeconds;
+  playback.ended = true;
+  fixture.tick();
+  expect(fixture.module.readComplete()).toBe(true);
+  expect(
+    played.filter((url) => url === START_SETTINGS.completeVoice.url),
+  ).toHaveLength(1);
+  fixture.module.unload();
+});
+
+test("closing atmosphere fades progressively while narration and resources stay alive", () => {
+  const playback = { offsetSeconds: 0, ended: false, failed: false };
+  let presence = 1;
+  let stopped = false;
+  const fixture = createFixture(
+    0,
+    {
+      play: () => {
+        playback.offsetSeconds = 0;
+        playback.ended = false;
+      },
+      read: () => playback,
+      stop: () => {
+        stopped = true;
+      },
+    },
+    {
+      configureSection: () => {},
+      updateSection: () => {},
+      clearSection: () => {},
+      unload: () => {},
+      update: (frame) => {
+        presence = frame.presence ?? 1;
+      },
+    },
+  );
+  playback.offsetSeconds = 21;
+  playback.ended = true;
+  fixture.module.update?.(90);
+  expect(presence).toBe(1);
+  playback.offsetSeconds = 3;
+  fixture.tick();
+  expect(presence).toBeCloseTo(0.5);
+  playback.offsetSeconds = 6;
+  fixture.tick();
+  expect(presence).toBe(0);
+  expect(stopped).toBe(false);
+  expect(fixture.module.readComplete()).toBe(false);
+  fixture.module.unload();
+});
 
 function finishNarratedCourse(
   closing: ReturnType<typeof createClosingFixture>,

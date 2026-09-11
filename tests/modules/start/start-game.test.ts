@@ -12,6 +12,28 @@ const FRAME: ExerciseFrame = {
   deviated: false,
 };
 
+test("deadline finishes an unpassed course once, without requiring the exit", () => {
+  const game = createStartGame({ exerciseCount: 4, retireSeconds: 1 });
+  game.update(FRAME);
+  game.update({ ...FRAME, deviated: true });
+  expect(game.finishExercises()).toBe("complete");
+  expect(game.readState().phase).toBe("complete");
+  expect(game.finishExercises()).toBeUndefined();
+  expect(game.update(FRAME)).toBeUndefined();
+});
+
+test("deadline releases a missed final exit without restarting the closing recording", () => {
+  const game = createStartGame({
+    exerciseCount: 1,
+    retireSeconds: 1,
+    repeatSequence: false,
+  });
+  game.update(FRAME);
+  expect(game.update({ ...FRAME, progress: "passed" })).toBe("complete");
+  expect(game.finishExercises()).toBeUndefined();
+  expect(game.readState().phase).toBe("complete");
+});
+
 test("success prepares the next section but does not retire or advance at the exercise end", () => {
   const game = createStartGame({ exerciseCount: 2, retireSeconds: 1 });
   expect(game.update({ ...FRAME, prepared: false })).toBeUndefined();

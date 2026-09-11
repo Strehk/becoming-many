@@ -17,6 +17,7 @@ route for that definition. A separate chunk engine is unnecessary for the MVP.
 | `start.module.ts` | Construct leaves, pass observations and decisions, own their lifecycle. |
 | `start-contract.ts` | Exercise definitions, poses, progress, and engine contracts. |
 | `start-exercises.ts` | One literal list of exercises and shared presentation settings. No functions. |
+| `start-timing.ts` | Narration-started deadline and admission of complete recordings. |
 | `start-game.runtime.ts` | Current exercise, attempt identity, phase, retry, and completion decisions. |
 | `flight-path/flight-route.ts` | Generate and sample a route from geometric parameters and a seed. |
 | `flight-path/flight-course.ts` | Own the bounded course tail; every appended section connects to that tail. |
@@ -140,26 +141,26 @@ approach preserves the turn distance at the later spoken instruction. Black room
 begin their separate 3.2 s fade at "Raum", 13.36 s. These markers come from the
 existing word alignment and remain adjustable. The continuous right curve is
 prepared with the approach; rings and the entry signpost wait until 19.30 s.
-Rings emerge progressively over 2 s each. The first gate is 18 m into the chunk;
-three gates at 4.76 m intervals mark the bend. The open-stroke signpost stands
+Rings emerge progressively over 2 s each. The first gate is 13 m into the chunk;
+three gates at 4.2 m intervals mark the bend. The open-stroke signpost stands
 at route meter 10, 5 m left of the route and 1.8 m above it, pointing at that gate.
 Its particle core is compact with no diffuse halo; ring appearance is unchanged. Initial placement therefore does not depend on loading or autoplay
-wait duration. The transition into the left lesson uses a 9 m exit and a 4 m entry;
-later lessons use 6 m entries. The actual media
+wait duration. The transition into the left lesson uses a 3 m exit and a 3 m entry;
+later lessons use 2 m entries. The actual media
 cue releases the prepared path and rings. Success plus native speech end starts
 the next recording during the existing exit. Success remains earned if the player
 deviates while the spoken tail finishes. A successor cannot activate before its
 cue. Retry playback begins at the instruction marker, without preceding praise;
 an unfinished introduction remains intact during early recovery. Four successes
 play the closing recording once. Final rings retain behind-only retirement.
-`StartExperience.readComplete()` becomes true only after the final route exit and
-the closing recording's natural end; playback failure never completes Start. Run
+`StartExperience.readComplete()` requires the final route exit (or the exercise
+deadline) and the closing recording's natural end; playback failure never completes Start. Run
 owns the transition and supplies `setPresence()` for a shared room, path, ring
 and atmosphere fade. This multiplier is separate from spoken visual cues and
 per-ring reveal/retirement. Start does not import Show or move the player.
 
-Horizontal routes turn 110 degrees right and 120 degrees left. Vertical routes use two opposite circular arcs
-with a maximum 32-degree pitch and level entry/exit tangents. This preserves the
+Horizontal routes turn 110 degrees right and left. Vertical routes use two opposite circular arcs
+with a maximum 24-degree pitch and level entry/exit tangents. This preserves the
 existing yaw-only chunk placement contract while changing altitude. Rings sample
 the same position and tangent in either plane. The route does not move the player
 or bypass the level's height limits.
@@ -325,13 +326,13 @@ disable variation; a fixed seed reproduces varied routes.
 
 | Parameter | Meaning | Current value |
 | --- | --- | --- |
-| `route.turnDegrees` | Horizontal heading change or vertical peak pitch, in degrees | 110 right / 120 left / 32 vertical |
+| `route.turnDegrees` | Horizontal heading change or vertical peak pitch, in degrees | 110 horizontal / 24 vertical |
 | `route.turnSign` | Left/down (-1), right/up (+1) | Per lesson |
-| `route.turnRadiusMeters` | Curve radius; smaller is tighter | 16.60–19.18 m horizontal / 32.98–33.93 m vertical |
-| `route.straightMeters` / `outroMeters` | Ring-free entry and exit | 3–6 / 9–12 m |
-| `elements.ringCount` | Exact authored ring count, 0–12 | 3 right, 6 others |
-| `elements.spacingMeters` | Distance along the route between rings | 4.76 m right, 5.95 m others |
-| `elements.firstMeters` | First ring route distance, clamped to exercise start | 12 m |
+| `route.turnRadiusMeters` | Curve radius; smaller is tighter | 10–10.5 m horizontal / 12–12.5 m vertical |
+| `route.straightMeters` / `outroMeters` | Ring-free entry and exit | 2–3 / 3–6 m |
+| `elements.ringCount` | Exact authored ring count, 0–12 | 3 per exercise |
+| `elements.spacingMeters` | Distance along the route between rings | 4.2 m |
+| `elements.firstMeters` | First ring route distance, clamped to exercise start | 13 m right, 4 m left, 3 m vertical |
 | `elements.ringRadiusMeters` | Ring opening geometry radius | 3.6 m |
 | `particles` | Density, color, size and scatter ranges | Existing particle palette |
 | `deviation` / `progress` | Recovery corridor and forward-passage tolerance | 12 m corridor |
@@ -340,11 +341,31 @@ Ring count, spacing and route dimensions must agree. The last ring must fit
 inside the curved exercise: radius × angle in radians for horizontal turns,
 twice that length for the two-arc vertical profile. Invalid
 combinations fail before rendering instead of silently truncating the ring count.
-Six-ring sections span 29.75 m. All authored counts fit the configured arc lengths.
-Ring spacing is another 15% shorter. The opening preserves its angular spacing;
-later exercises add four degrees per ring interval. Horizontal turns span 110°
-and 140°; vertical profiles rise or descend through 42° before returning level.
-Native spoken-word markers and flight speed remain intact.
+Three-ring sections span 8.4 m. The complete direct route targets approximately
+60 seconds at the unchanged 2 m/s flight speed, including the opening approach.
+Native spoken-word markers and soft reveal envelopes remain intact. The left
+section reserves a 6 m exit for the longer climb instruction; every connector
+must provide at least the next spoken cue in travel time.
+
+### Timing and automatic completion
+
+`START_TIMING` at the top of `start-exercises.ts` owns the adjustable deadline
+(`maximumExerciseSeconds: 90`), recording admission margin (`voiceSafetySeconds:
+0.75`), and closing atmosphere fade (`closingAtmosphereFadeSeconds: 6`). The
+60-second flight duration is a design guideline controlled by route lengths and
+ring placements below, not a second timer or an automatic speed adjustment.
+
+The clock begins when the first recording advances, excludes loading, and never
+resets on recovery. At the deadline, Start ends the exercise requirement and
+plays the unchanged closing recording once, even if no route was completed.
+New lesson recordings must fit before the deadline. If delayed media has not
+naturally ended, its tail takes priority over cutting speech off. No new course
+is generated during closing, and no teleport is required to earn completion.
+Existing geometry stays visible until Run's normal fade. Atmosphere fades over
+six seconds during the closing voice, allowing its reverb to decay before Run
+releases sources. At normal speed the timeout path therefore reaches Show after
+roughly 106 seconds: 90 seconds of tutorial, 13.86 seconds of closing speech,
+and 2.5 seconds of handoff.
 
 `START_SETTINGS.pathGrowth` controls the forward reveal speed (12 m/s) and soft
 leading edge (3 m). A route-distance shader reveals prepared geometry without

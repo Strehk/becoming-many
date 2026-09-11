@@ -60,7 +60,14 @@ test("only sustained travel outside the corridor requests recovery", () => {
       }),
     ).toBe(false);
   let outside = false;
-  for (let x = 5.5; x <= 25; x += 0.5)
+  for (
+    let x = 5.5;
+    x <=
+    route.lengthMeters +
+      START_EXERCISES[0].deviation.distanceMeters +
+      START_EXERCISES[0].deviation.outsideTravelMeters;
+    x += 0.5
+  )
     outside = deviation.update(new Vector3(x, 0, 0), {
       ...view,
       worldPosition: new Vector3(x, 0, 0),

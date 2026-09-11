@@ -17,18 +17,18 @@ await page.route("**/src/levels/level.runtime.ts*", async (route) => {
   );
   await route.fulfill({ response, body });
 });
-await page.addInitScript(() => {
+await page.addInitScript((realTime) => {
   const NativeAudio = window.Audio;
   window.testClips = [];
   window.Audio = class extends NativeAudio {
     constructor() {
       super();
-      this.defaultPlaybackRate = 8;
-      this.playbackRate = 8;
+      this.defaultPlaybackRate = realTime ? 1 : 8;
+      this.playbackRate = realTime ? 1 : 8;
       window.testClips.push(this);
     }
   };
-});
+}, process.argv.includes("--timeout") || process.argv.includes("--paced"));
 try {
   await page.goto(
     process.argv.includes("--abort")
@@ -71,45 +71,79 @@ try {
     );
   } else {
     assert.equal(await page.evaluate(() => !!window.show), false);
-    for (let index = 0; index < 4; index++) {
+    if (process.argv.includes("--timeout")) {
       await page.waitForFunction(
-        (index) => {
-          const start = window.handoffRun.tutorial?.tutorial;
-          return (
-            start?.game.readState().exerciseIndex === index &&
-            start?.game.readState().phase === "flying"
-          );
-        },
-        index,
-        { timeout: 40000 },
-      );
-      await fly("exerciseEndMeters");
-      console.log("Completed exercise", index);
-      await page.waitForFunction(
-        (index) => {
-          const state = window.handoffRun.tutorial.tutorial.game.readState();
-          return state.phase === (index === 3 ? "closing" : "outro");
-        },
-        index,
-        { timeout: 15000 },
-      );
-      if (index === 3) {
-        await page.waitForFunction(() =>
+        () =>
           window.testClips.some(
             (clip) =>
-              clip.src.endsWith("complete.wav") &&
-              clip.currentTime > 0.02 &&
-              !clip.paused,
+              clip.src.endsWith("complete.wav") && clip.currentTime > 0.02,
           ),
+        null,
+        { timeout: 120000 },
+      );
+      const timing = await page.evaluate(() => {
+        const start = window.handoffRun.tutorial.tutorial;
+        window.testClips
+          .find((clip) => clip.src.endsWith("complete.wav"))
+          .pause();
+        return {
+          elapsed: start.timing.elapsedSeconds,
+          exercise: start.game.readState().exerciseIndex,
+        };
+      });
+      assert.ok(timing.elapsed >= 90 && timing.elapsed < 92);
+      assert.equal(timing.exercise, 0);
+      console.log("Automatic closing without completing a lesson:", timing);
+    } else
+      for (let index = 0; index < 4; index++) {
+        await page.waitForFunction(
+          (index) => {
+            const start = window.handoffRun.tutorial?.tutorial;
+            return (
+              start?.game.readState().exerciseIndex === index &&
+              start?.game.readState().phase === "flying"
+            );
+          },
+          index,
+          { timeout: 40000 },
         );
-        await page.evaluate(() =>
-          window.testClips
-            .find((clip) => clip.src.endsWith("complete.wav"))
-            .pause(),
+        if (index === 0) {
+          await page.waitForTimeout(1500);
+          await page.screenshot({ path: "/tmp/start-shortened-course.png" });
+        }
+        await fly("exerciseEndMeters");
+        console.log("Completed exercise", index);
+        await page.waitForFunction(
+          (index) => {
+            const state = window.handoffRun.tutorial.tutorial.game.readState();
+            return state.phase === (index === 3 ? "closing" : "outro");
+          },
+          index,
+          { timeout: 15000 },
         );
+        if (index === 3) {
+          console.log(
+            "Course flight seconds:",
+            await page.evaluate(
+              () => window.handoffRun.tutorial.tutorial.timing.elapsedSeconds,
+            ),
+          );
+          await page.waitForFunction(() =>
+            window.testClips.some(
+              (clip) =>
+                clip.src.endsWith("complete.wav") &&
+                clip.currentTime > 0.02 &&
+                !clip.paused,
+            ),
+          );
+          await page.evaluate(() =>
+            window.testClips
+              .find((clip) => clip.src.endsWith("complete.wav"))
+              .pause(),
+          );
+        }
+        await fly("lengthMeters", true);
       }
-      await fly("lengthMeters", true);
-    }
     assert.equal(await page.evaluate(() => !!window.handoffRun.tutorial), true);
     assert.equal(await page.evaluate(() => !!window.show), false);
     await page.screenshot({ path: "/tmp/start-handoff-before.png" });
@@ -191,16 +225,36 @@ try {
 
 async function fly(endKey, fromExercise = false) {
   await page.evaluate(
-    async ({ endKey, fromExercise }) => {
+    async ({ endKey, fromExercise, paced }) => {
       const run = window.handoffRun;
       const start = run.tutorial.tutorial;
       const section = start.current;
       const position = run.world.viewerRig.position;
-      const origin = fromExercise ? section.route.exerciseEndMeters : -1;
+      let origin = fromExercise ? section.route.exerciseEndMeters : -1;
+      if (paced && !fromExercise) {
+        let closest = Infinity;
+        const candidate = position.clone();
+        for (
+          let distance = 0;
+          distance <= section.route.exerciseEndMeters;
+          distance += 0.1
+        ) {
+          section.route.sample(distance, candidate);
+          candidate
+            .applyAxisAngle(run.world.scene.up, section.pose.yawRadians)
+            .add(section.pose.position);
+          const separation = candidate.distanceToSquared(position);
+          if (separation >= closest) continue;
+          closest = separation;
+          origin = distance;
+        }
+      }
+      let previousTime = performance.now();
+      let stepMeters = 0.03;
       for (
         let distance = origin;
         distance <= section.route[endKey] + 0.4;
-        distance += 0.3
+        distance += paced ? stepMeters : 0.3
       ) {
         section.route.sample(distance, position);
         position
@@ -214,8 +268,11 @@ async function fly(endKey, fromExercise = false) {
           direction,
         );
         await new Promise((resolve) => requestAnimationFrame(resolve));
+        const now = performance.now();
+        stepMeters = Math.min(0.5, ((now - previousTime) / 1000) * 2);
+        previousTime = now;
       }
     },
-    { endKey, fromExercise },
+    { endKey, fromExercise, paced: process.argv.includes("--paced") },
   );
 }
