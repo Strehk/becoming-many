@@ -64,6 +64,8 @@ class LevelRun {
   private playback: ShowRuntime | undefined;
   private unloading: Promise<void> | undefined;
   private tutorial: ComposedLevel | undefined;
+  private staticTutorial: ComposedLevel["tutorial"];
+  private skipTarget: { timeSeconds: number; playing: boolean } | undefined;
   private tutorialAssets: LoadedLevelAssets | undefined;
   private handoffElapsed: number | undefined;
   private mainFieldOfViewDegrees = 0;
@@ -130,6 +132,40 @@ class LevelRun {
     };
   };
 
+  readonly readAudioState = (): AudioContextState => {
+    if (this.signal.aborted) return "closed";
+    return this.show?.readAudioState() ?? this.audio?.context.state ?? "closed";
+  };
+
+  readonly readTutorial: Run["readTutorial"] = () => {
+    if (this.signal.aborted) return undefined;
+    const progress = (
+      this.tutorial?.tutorial ?? this.staticTutorial
+    )?.readProgress();
+    if (!progress) return undefined;
+    return {
+      ...progress,
+      phase: this.handoffElapsed === undefined ? progress.phase : "transition",
+    };
+  };
+
+  readonly skipTutorial: Run["skipTutorial"] = (
+    timeSeconds,
+    playing = true,
+  ) => {
+    if (this.signal.aborted || !this.tutorial || this.request.kind !== "show")
+      return;
+    if (!Number.isFinite(timeSeconds)) return;
+    this.skipTarget = {
+      timeSeconds: Math.max(
+        0,
+        Math.min(this.request.show.schedule.durationSeconds, timeSeconds),
+      ),
+      playing,
+    };
+    this.handoffElapsed ??= 0;
+  };
+
   private async startTutorial(): Promise<void> {
     if (this.request.kind !== "show" || !this.request.tutorial) return;
     const level = this.request.tutorial;
@@ -174,6 +210,7 @@ class LevelRun {
   }
 
   private finishTutorial(): void {
+    const target = this.skipTarget;
     this.releaseTutorial();
     this.controls?.resetRig();
     this.controls?.constrainHeight({
@@ -185,14 +222,17 @@ class LevelRun {
       this.mainFieldOfViewDegrees,
     );
     for (const module of this.modules) this.world.modules.activate(module);
+    if (target) this.playback?.running.seekTo(target.timeSeconds);
     this.playback?.update();
-    this.playback?.running.play();
+    if (target?.playing !== false) this.playback?.running.play();
+    else this.playback?.running.pause();
     for (const listener of this.showListeners) listener(this.show);
   }
 
   private releaseTutorial(): void {
     const tutorial = this.tutorial;
     this.tutorial = undefined;
+    this.skipTarget = undefined;
     this.handoffElapsed = undefined;
     const assets = this.tutorialAssets;
     this.tutorialAssets = undefined;
@@ -245,6 +285,7 @@ class LevelRun {
       forShow: this.request.kind === "show",
       signal: this.signal,
     });
+    this.staticTutorial = composition.tutorial;
     this.voice = composition.voice;
     this.audio = composition.audio;
     this.modules = [...composition.modules];
@@ -281,6 +322,7 @@ class LevelRun {
   }
 
   private readonly updateFrame = (deltaSeconds: number): void => {
+    if (this.signal.aborted) return;
     this.updateFlight(deltaSeconds);
     if (!this.tutorial) this.playback?.update();
     this.updateHandoff(deltaSeconds);
@@ -291,7 +333,9 @@ class LevelRun {
   private updateFlight(deltaSeconds: number): void {
     this.controls?.flight.update(
       deltaSeconds,
-      this.handoffElapsed !== undefined ? 0 : this.flightSpeed(),
+      this.handoffElapsed !== undefined && !this.skipTarget
+        ? 0
+        : this.flightSpeed(),
       this.world.renderer.xr.isPresenting,
     );
   }

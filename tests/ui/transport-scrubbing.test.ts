@@ -138,3 +138,41 @@ describe("shared transport scrubbing", () => {
     expect(playback).toEqual(["pause", "play"]);
   });
 });
+
+test("tutorial block ignores scrubs, main click skips, then the same binding scrubs Show", () => {
+  const track = new PointerTrack();
+  const lifetime = new AbortController();
+  const seeks: number[] = [];
+  const skips: number[] = [];
+  const playback: string[] = [];
+  let available = false;
+  const show = {
+    sample: () => ({ isPlaying: true, timeSeconds: 0, timeScale: 1 }),
+    pause: () => playback.push("pause"),
+    play: () => playback.push("play"),
+    seekTo: (seconds: number) => seeks.push(seconds),
+  };
+  attachScrubbing({
+    track: track as unknown as SVGSVGElement,
+    readDurationSeconds: () => 100,
+    readShow: () => (available ? show : undefined),
+    mapFraction: (fraction) =>
+      fraction < 0.12 ? undefined : ((fraction - 0.12) / 0.88) * 100,
+    onUnavailableSeek: (seconds) => skips.push(seconds),
+    onScrubChange: () => {},
+    signal: lifetime.signal,
+  });
+  track.pointer("pointerdown", 6);
+  expect(skips).toEqual([]);
+  track.pointer("pointerdown", 56);
+  expect(skips[0]).toBeCloseTo(50);
+  expect(track.captured).toBeUndefined();
+  expect(playback).toEqual([]);
+  available = true;
+  track.pointer("pointerdown", 56);
+  track.pointer("pointerup", 100);
+  expect(seeks[0]).toBeCloseTo(50);
+  expect(seeks[1]).toBe(100);
+  expect(playback).toEqual(["pause", "play"]);
+  lifetime.abort();
+});

@@ -15,3 +15,12 @@ export function requireElement<T extends Element>(
 export function writeText(element: Element, text: string): void {
   if (element.textContent !== text) element.textContent = text;
 }
+
+/** Avoid unchanged attribute mutations in sampled SVG and accessible UI. */
+export function writeAttribute(
+  element: Element,
+  name: string,
+  text: string,
+): void {
+  if (element.getAttribute(name) !== text) element.setAttribute(name, text);
+}

@@ -128,16 +128,22 @@ Each substantial domain repeats the same pattern: one domain owner connects
 specialised components, while those components do not import one another.
 
 Start owns procedural lessons, particle presentation and tutorial atmosphere through
-its local star. It exposes only completion and a presentation-presence input to
-Run; it never imports Show or Control. Completion requires both the last course
-exit and the naturally completed closing voice.
+its local star. It exposes completion, earned-lesson progress and a presentation-presence
+input to Run; it never imports Show or Control. Natural completion requires the
+course exit (or deadline), completed closing voice and white-room presentation.
+The operator may explicitly skip training through Run; that command fades its
+visuals and audio, retires its resources and selects a main Show position.
 
 For the audience route, Run prepares the main composition and then deactivates it
 while Start is active. Both borrow the same spatial-audio owner. Run fades Start,
 releases its sources, resets the existing flight rig to a terrain-relative arrival,
 reactivates the main composition and starts Show. The renderer, XR session and
 controls survive this transition. Show transport becomes available only afterward.
-Conductor continues to provide direct Show rehearsal.
+Conductor starts with the same optional tutorial and retains main Show rehearsal.
+Both PC and Conductor timelines use shared UI projection and pointer gestures:
+Start is a fixed visual block with earned chunk counts, never a seekable time
+segment. Main positions retain their actual Show seconds. Entry mounts each UI
+once; Show availability changes its observations without rebuilding the bar.
 
 ## Owners and lifetime
 

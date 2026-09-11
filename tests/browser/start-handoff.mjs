@@ -40,6 +40,9 @@ try {
   });
   await page.evaluate(() => {
     const run = window.handoffRun;
+    window.initialTimelineChapter = document.querySelector(
+      "[data-sections] button:last-child",
+    );
     window.originalOwners = {
       renderer: run.world.renderer,
       xr: run.xr,
@@ -187,6 +190,12 @@ try {
           index,
           { timeout: 15000 },
         );
+        assert.equal(
+          await page.evaluate(
+            () => window.handoffRun.readTutorial().completedChunks,
+          ),
+          index + 1,
+        );
         if (index === 3) {
           console.log(
             "Course flight seconds:",
@@ -258,6 +267,9 @@ try {
       const run = window.handoffRun;
       const position = run.world.viewerRig.position;
       return {
+        timelinePreserved:
+          document.querySelector("[data-sections] button:last-child") ===
+          window.initialTimelineChapter,
         renderer: run.world.renderer === window.originalOwners.renderer,
         xr: run.xr === window.originalOwners.xr,
         context: run.audio.context === window.originalOwners.context,
@@ -286,6 +298,7 @@ try {
     assert.equal(result.tutorialAudio, 0);
     await page.waitForTimeout(7000);
     await page.screenshot({ path: "/tmp/start-handoff-main.png" });
+    assert.equal(result.timelinePreserved, true);
     console.log("Handoff:", result);
     console.log("Show:", await page.evaluate(() => window.show.sample()));
     await page.evaluate(async () => {

@@ -39,6 +39,10 @@ either `bun run check` or `bun run build`; build already includes type checking.
 | Shared architecture boundary | Relevant tests, build, lint, Fallow, and one negative boundary probe |
 | Physical acceptance | Exact installation hardware; record unavailable evidence as open |
 
+With a development server on port 4180, `bun run test:tutorial-ui` exercises
+the tutorial block, operator skip, main transport and cancellation on Conductor,
+the audience page and its `/start` alias. It captures screenshots under `/tmp`.
+
 Run broad suites, full shows, and extended browser checks only when the changed
 boundary or issue acceptance requires them. Never weaken a test, suppress a
 finding, or update a benchmark reference merely to obtain a pass.

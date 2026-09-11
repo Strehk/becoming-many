@@ -17,7 +17,11 @@ import type { Run } from "../../levels/run-contract";
 import type { RunningShow } from "../../levels/show-contract";
 import type { XrSessionState } from "../../world/xr-contract";
 import { requireElement } from "../shared/dom";
-import { resolveConductorKey } from "./keyboard-shortcuts";
+import type { TimelineRun } from "../shared/tutorial-timeline";
+import {
+  type ConductorAction,
+  resolveConductorKey,
+} from "./keyboard-shortcuts";
 import { createLanguagePanel } from "./language.panel";
 import { createM5Panel } from "./m5.panel";
 import { createShowTimeline } from "./show-timeline.panel";
@@ -31,7 +35,7 @@ export interface ConductorPageOptions {
   readonly container: HTMLElement;
   readonly schedule: NarrationSchedule;
   readonly stationName: string | undefined;
-  readonly show: Pick<
+  readonly show?: Pick<
     RunningShow,
     | "sample"
     | "play"
@@ -46,7 +50,10 @@ export interface ConductorPageOptions {
     | "readActiveLevel"
     | "readAudioState"
   >;
-  readonly run: Pick<Run, "resetFlight" | "resetShowAndFlight">;
+  readonly run: Pick<Run, "resetFlight" | "resetShowAndFlight"> &
+    Partial<
+      Pick<Run, "show" | "readTutorial" | "skipTutorial" | "readAudioState">
+    >;
   readonly xr: Run["xr"];
   readonly m5: Pick<NonNullable<Run["m5"]>, "readObservation"> | undefined;
   readonly initialM5Host: string;
@@ -60,7 +67,7 @@ export function mountConductorPage({
   container: page,
   schedule,
   stationName,
-  show,
+  show: initialShow,
   run,
   xr,
   m5,
@@ -69,6 +76,7 @@ export function mountConductorPage({
   onM5HostChange,
   reloadPage,
 }: ConductorPageOptions): () => void {
+  const readShow = () => run.show ?? initialShow;
   const lifetime = new AbortController();
   const { signal } = lifetime;
   let animationFrame = 0;
@@ -133,7 +141,7 @@ export function mountConductorPage({
         ".conductor__tech-button",
         HTMLButtonElement,
       ),
-      show,
+      readShow,
       run,
       reloadPage,
       xr,
@@ -141,11 +149,15 @@ export function mountConductorPage({
     });
     const panels: readonly ConductorPanel[] = [
       statusStrip,
-      createTransportPanel({ parent: page, show, run, signal }),
+      createTransportPanel({ parent: page, readShow, run, signal }),
       createShowTimeline({
         parent: page,
         schedule,
-        show,
+        run:
+          run.readTutorial && run.skipTutorial
+            ? (run as TimelineRun)
+            : undefined,
+        readShow,
         signal,
         onScrubChange: (seconds) => {
           scrubSeconds = seconds;
@@ -153,7 +165,7 @@ export function mountConductorPage({
       }),
       createLanguagePanel({
         parent: page,
-        show,
+        readShow,
         signal,
       }),
       createM5Panel({
@@ -167,73 +179,92 @@ export function mountConductorPage({
       createWakeOverlay(page, stationName),
     ];
 
-    window.addEventListener(
-      "keydown",
-      (event) => {
-        if (
-          event.defaultPrevented ||
-          document.pointerLockElement ||
-          page.querySelector(".conductor__drawer[open]")
-        )
-          return;
-        const target = event.target;
-        if (
-          event.code === "Space" &&
-          target instanceof Element &&
-          target.closest("button, a[href], summary")
-        )
-          return;
-        const action = resolveConductorKey({
-          code: event.code,
-          isShiftHeld: event.shiftKey,
-          isModifierHeld: event.ctrlKey || event.altKey || event.metaKey,
-          isTypingTarget:
-            target instanceof HTMLElement &&
-            (target.matches("input, textarea, select") ||
-              target.isContentEditable),
-        });
-        if (!action) return;
-        event.preventDefault();
-        switch (action.kind) {
-          case "toggleTransport":
-            startHeadset();
-            show.togglePlayback();
-            break;
-          case "seekBy":
-            show.seekBy(action.offsetSeconds);
-            break;
-          case "jumpToCue": {
-            const cue = schedule.narration[action.cueIndex];
-            if (cue) show.seekTo(cue.atSeconds);
-            break;
-          }
-          case "resetShow":
-            show.resetTime();
-            break;
-          case "resetFlight":
-            run.resetFlight();
-            break;
-          case "toggleLanguage": {
-            const next = NARRATION_LANGUAGES.find(
-              (language) => language !== show.readLanguage(),
-            );
-            if (next) show.setLanguage(next);
-            break;
-          }
+    function acceptsShortcut(event: KeyboardEvent): boolean {
+      if (event.defaultPrevented || document.pointerLockElement) return false;
+      if (page.querySelector(".conductor__drawer[open]")) return false;
+      const target = event.target;
+      return !(
+        event.code === "Space" &&
+        target instanceof Element &&
+        target.closest("button, a[href], summary")
+      );
+    }
+
+    function executeAction(action: ConductorAction): void {
+      if (action.kind === "resetFlight") {
+        run.resetFlight();
+        return;
+      }
+      const show = readShow();
+      if (action.kind === "jumpToCue") {
+        const cue = schedule.narration[action.cueIndex];
+        if (!cue) return;
+        if (show) show.seekTo(cue.atSeconds);
+        else run.skipTutorial?.(cue.atSeconds);
+        return;
+      }
+      if (!show) return;
+      executeShowAction(action, show);
+    }
+
+    function executeShowAction(
+      action: Exclude<ConductorAction, { kind: "resetFlight" | "jumpToCue" }>,
+      show: NonNullable<ReturnType<typeof readShow>>,
+    ): void {
+      switch (action.kind) {
+        case "toggleTransport":
+          startHeadset();
+          show.togglePlayback();
+          break;
+        case "seekBy":
+          show.seekBy(action.offsetSeconds);
+          break;
+        case "resetShow":
+          show.resetTime();
+          break;
+        case "toggleLanguage": {
+          const next = NARRATION_LANGUAGES.find(
+            (language) => language !== show.readLanguage(),
+          );
+          if (next) show.setLanguage(next);
+          break;
         }
-      },
-      { signal },
-    );
+      }
+    }
+
+    function handleShortcut(event: KeyboardEvent): void {
+      if (!acceptsShortcut(event)) return;
+      const target = event.target;
+      const action = resolveConductorKey({
+        code: event.code,
+        isShiftHeld: event.shiftKey,
+        isModifierHeld: event.ctrlKey || event.altKey || event.metaKey,
+        isTypingTarget:
+          target instanceof HTMLElement &&
+          (target.matches("input, textarea, select") ||
+            target.isContentEditable),
+      });
+      if (!action) return;
+      event.preventDefault();
+      executeAction(action);
+    }
+    window.addEventListener("keydown", handleShortcut, { signal });
 
     function draw(): void {
-      const sample = show.sample();
+      const show = readShow();
+      const sample = show?.sample() ?? {
+        timeSeconds: 0,
+        isPlaying: false,
+        timeScale: 1,
+      };
       const state: ConductorViewState = {
         showTimeSeconds: scrubSeconds ?? sample.timeSeconds,
         isPlaying: sample.isPlaying,
         timeScale: sample.timeScale,
-        language: show.readLanguage(),
-        activeLevel: show.readActiveLevel(),
-        audioState: show.readAudioState(),
+        language: show?.readLanguage() ?? "en",
+        activeLevel: show?.readActiveLevel() ?? "tutorial",
+        audioState:
+          run.readAudioState?.() ?? show?.readAudioState() ?? "suspended",
         m5: m5?.readObservation(),
         xr: xrState,
       };

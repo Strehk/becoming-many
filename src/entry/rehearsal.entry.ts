@@ -79,23 +79,19 @@ try {
   );
   lifetime.signal.throwIfAborted();
 
-  let unmountTransport: (() => void) | undefined;
+  const unmountTransport = mountRehearsalTransport({
+    container: document.body,
+    schedule: PIECE_SCHEDULE,
+    run: level,
+  });
   const unsubscribeShow = level.subscribeShow((show) => {
     window.show = show;
-    unmountTransport?.();
-    unmountTransport = show
-      ? mountRehearsalTransport({
-          container: document.body,
-          schedule: PIECE_SCHEDULE,
-          show,
-        })
-      : undefined;
   });
   lifetime.signal.addEventListener(
     "abort",
     () => {
       unsubscribeShow();
-      unmountTransport?.();
+      unmountTransport();
       delete window.show;
     },
     { once: true },

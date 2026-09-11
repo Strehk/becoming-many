@@ -6,6 +6,7 @@ class Media extends EventTarget {
   currentTime = 0;
   readyState = 1;
   preload = "";
+  volume = 1;
   ended = false;
   error: object | null = null;
   pauses = 0;
@@ -100,4 +101,27 @@ test("late metadata applies the requested seek, stop invalidates pending play", 
   gestures.dispatchEvent(new Event("pointerdown"));
   expect(audio.starts).toBe(1);
   expect(audio.src).toBe("");
+});
+
+test("presence fades without interrupting playback and survives clip changes", async () => {
+  const { audio, voice } = fixture();
+  voice.play({ url: "/first.wav" }, 0);
+  await settle();
+  audio.currentTime = 3;
+  const pauses = audio.pauses;
+  voice.setPresence(0.4);
+  expect(audio.volume).toBe(0.4);
+  expect(audio.pauses).toBe(pauses);
+  expect(voice.read().offsetSeconds).toBe(3);
+  voice.play({ url: "/next.wav" }, 0);
+  expect(audio.volume).toBe(0.4);
+  voice.setPresence(2);
+  expect(audio.volume).toBe(1);
+  voice.setPresence(-1);
+  expect(audio.volume).toBe(0);
+  voice.setPresence(Number.NaN);
+  expect(audio.volume).toBe(0);
+  voice.unload();
+  voice.setPresence(1);
+  expect(audio.volume).toBe(0);
 });

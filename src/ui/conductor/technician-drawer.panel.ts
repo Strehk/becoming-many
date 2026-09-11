@@ -13,7 +13,10 @@ export interface TechDrawerOptions {
   readonly parent: HTMLElement;
   readonly trigger: HTMLButtonElement;
   readonly signal: AbortSignal;
-  readonly show: Pick<RunningShow, "setTimeScale" | "resetTime">;
+  readonly show?: Pick<RunningShow, "setTimeScale" | "resetTime">;
+  readonly readShow?: () =>
+    | Pick<RunningShow, "setTimeScale" | "resetTime">
+    | undefined;
   readonly run: Pick<Run, "resetFlight">;
   readonly reloadPage: () => void;
   readonly xr: Pick<XrSessionControl, "start" | "stop">;
@@ -30,6 +33,7 @@ export function createTechDrawer({
   trigger,
   signal,
   show,
+  readShow = () => show,
   run,
   reloadPage,
   xr,
@@ -89,9 +93,13 @@ export function createTechDrawer({
       `[data-time-scale="${timeScale}"]`,
       HTMLButtonElement,
     );
-    button.addEventListener("click", () => show.setTimeScale(timeScale), {
-      signal,
-    });
+    button.addEventListener(
+      "click",
+      () => readShow()?.setTimeScale(timeScale),
+      {
+        signal,
+      },
+    );
     return button;
   });
   const resetShow = requireElement(
@@ -99,7 +107,9 @@ export function createTechDrawer({
     "[data-reset-show]",
     HTMLButtonElement,
   );
-  resetShow.addEventListener("click", show.resetTime, { signal });
+  resetShow.addEventListener("click", () => readShow()?.resetTime(), {
+    signal,
+  });
   requireElement(
     root,
     "[data-reset-flight]",
@@ -131,13 +141,16 @@ export function createTechDrawer({
     m5Parent,
     panel: {
       update(state): void {
+        const available = !!readShow();
         isSessionActive = state.xr.isSessionActive;
         const view = resolveStreamButton(state.xr);
         writeText(streamLabel, view.label);
         streamButton.disabled = !view.isEnabled;
         streamButton.dataset.streaming = String(isSessionActive);
 
+        resetShow.disabled = !available;
         rateButtons.forEach((button, index) => {
+          button.disabled = !available;
           button.setAttribute(
             "aria-pressed",
             String(CONDUCTOR_SETTINGS.timeScales[index] === state.timeScale),
@@ -156,7 +169,7 @@ export function createTechDrawer({
         }
         writeText(level, state.activeLevel);
         writeText(audio, state.audioState);
-        writeText(language, state.language.toUpperCase());
+        writeText(language, available ? state.language.toUpperCase() : "—");
       },
     },
   };

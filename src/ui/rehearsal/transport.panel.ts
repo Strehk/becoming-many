@@ -8,11 +8,19 @@ import type { RunningShow } from "../../levels/show-contract";
 import { requireElement, writeText } from "../shared/dom";
 import { cueDisplayName, formatShowTime } from "../shared/show-time-format";
 import { attachScrubbing } from "../shared/transport-scrubbing";
+import {
+  showTrackFraction,
+  type TimelineRun,
+  TUTORIAL_TRACK_FRACTION,
+  trackShowSeconds,
+  tutorialReadout,
+} from "../shared/tutorial-timeline";
 
 export interface RehearsalTransportOptions {
   readonly container: HTMLElement;
   readonly schedule: NarrationSchedule;
-  readonly show: Pick<
+  readonly run?: TimelineRun;
+  readonly show?: Pick<
     RunningShow,
     | "sample"
     | "togglePlayback"
@@ -34,8 +42,16 @@ const PLAYHEAD_DECIMALS = 1;
 export function mountRehearsalTransport({
   container,
   schedule,
-  show,
+  show: initialShow,
+  run,
 }: RehearsalTransportOptions): () => void {
+  const readShow = () => run?.show ?? initialShow;
+  const hasTutorial = !!run?.readTutorial();
+  const seek = (seconds: number) => {
+    const show = readShow();
+    if (show) show.seekTo(seconds);
+    else run?.skipTutorial(seconds);
+  };
   const lifetime = new AbortController();
   const { signal } = lifetime;
   const durationSeconds = schedule.durationSeconds;
@@ -47,6 +63,15 @@ export function mountRehearsalTransport({
   );
   const readout = requireElement(bar, "[data-readout]", HTMLOutputElement);
   const track = requireElement(bar, "[data-track]", SVGSVGElement);
+  const tutorialBlock = requireElement(
+    track,
+    "[data-tutorial-block]",
+    SVGRectElement,
+  );
+  tutorialBlock.setAttribute(
+    "width",
+    `${hasTutorial ? TUTORIAL_TRACK_FRACTION * 100 : 0}%`,
+  );
   const playhead = requireElement(track, "[data-playhead]", SVGLineElement);
   const sections = requireElement(bar, "[data-sections]", HTMLElement);
   const sectionTemplate = requireElement(
@@ -75,35 +100,52 @@ export function mountRehearsalTransport({
     button.textContent = cueDisplayName(chapter.cueId);
     const tickContent = document.importNode(tickTemplate.content, true);
     const tick = requireElement(tickContent, "line", SVGLineElement);
-    const position = `${toPercent(startSeconds, durationSeconds)}%`;
+    const position = `${showTrackFraction(startSeconds, durationSeconds, hasTutorial) * 100}%`;
     tick.setAttribute("x1", position);
     tick.setAttribute("x2", position);
     return { chapter, button, tick };
   });
 
+  const tutorialButton = hasTutorial
+    ? requireElement(
+        document.importNode(sectionTemplate.content, true),
+        "button",
+        HTMLButtonElement,
+      )
+    : undefined;
+  if (tutorialButton) {
+    tutorialButton.dataset.tutorial = "";
+    tutorialButton.textContent = "Tutorial";
+    tutorialButton.disabled = true;
+    sections.append(tutorialButton);
+  }
+
   for (const { language, button } of languageButtons) {
-    button.addEventListener("click", () => show.setLanguage(language), {
+    button.addEventListener("click", () => readShow()?.setLanguage(language), {
       signal,
     });
   }
   for (const view of chapters) {
     const { button, tick } = view;
-    button.addEventListener(
-      "click",
-      () => show.seekTo(view.chapter.startSeconds),
-      {
-        signal,
-      },
-    );
+    button.addEventListener("click", () => seek(view.chapter.startSeconds), {
+      signal,
+    });
     sections.append(button);
     track.append(tick);
   }
-  transportButton.addEventListener("click", show.togglePlayback, { signal });
+  transportButton.addEventListener(
+    "click",
+    () => readShow()?.togglePlayback(),
+    { signal },
+  );
   let scrubSeconds: number | undefined;
   attachScrubbing({
     track,
     readDurationSeconds: () => durationSeconds,
-    show,
+    readShow,
+    mapFraction: (fraction) =>
+      trackShowSeconds(fraction, durationSeconds, hasTutorial),
+    onUnavailableSeek: seek,
     signal,
     onScrubChange: (seconds) => {
       scrubSeconds = seconds;
@@ -113,33 +155,49 @@ export function mountRehearsalTransport({
   let renderedPlayheadLeft: string | undefined;
   let renderedLanguage: NarrationLanguage | undefined;
 
-  function draw(): void {
-    const sample = show.sample();
-    const showTimeSeconds = scrubSeconds ?? sample.timeSeconds;
-    if (renderedPlaying !== sample.isPlaying) {
-      renderedPlaying = sample.isPlaying;
-      transportButton.textContent = sample.isPlaying ? "Hold" : "Play";
+  function updateControls(
+    show: ReturnType<typeof readShow>,
+    isPlaying: boolean,
+  ): void {
+    transportButton.disabled = !show;
+    for (const { button } of languageButtons) button.disabled = !show;
+    if (renderedPlaying !== isPlaying) {
+      renderedPlaying = isPlaying;
+      transportButton.textContent = isPlaying ? "Hold" : "Play";
     }
+    const language = show?.readLanguage();
+    if (renderedLanguage === language) return;
+    renderedLanguage = language;
+    for (const entry of languageButtons) {
+      entry.button.setAttribute(
+        "aria-pressed",
+        String(entry.language === language),
+      );
+    }
+  }
+
+  function updateProgress(
+    showTimeSeconds: number,
+    tutorial: ReturnType<TimelineRun["readTutorial"]>,
+  ): void {
     writeText(
       readout,
-      `${formatShowTime(showTimeSeconds)} / ${formatShowTime(durationSeconds)}`,
+      tutorial
+        ? tutorialReadout(tutorial)
+        : `${formatShowTime(showTimeSeconds)} / ${formatShowTime(durationSeconds)}`,
     );
-    const position = `${toPercent(showTimeSeconds, durationSeconds).toFixed(PLAYHEAD_DECIMALS)}%`;
-    if (renderedPlayheadLeft !== position) {
-      renderedPlayheadLeft = position;
-      playhead.setAttribute("x1", position);
-      playhead.setAttribute("x2", position);
-    }
-    const language = show.readLanguage();
-    if (renderedLanguage !== language) {
-      renderedLanguage = language;
-      for (const entry of languageButtons) {
-        entry.button.setAttribute(
-          "aria-pressed",
-          String(entry.language === language),
-        );
-      }
-    }
+    const position = `${(tutorial ? 0 : showTrackFraction(showTimeSeconds, durationSeconds, hasTutorial) * 100).toFixed(PLAYHEAD_DECIMALS)}%`;
+    if (renderedPlayheadLeft === position) return;
+    renderedPlayheadLeft = position;
+    playhead.setAttribute("x1", position);
+    playhead.setAttribute("x2", position);
+  }
+
+  function draw(): void {
+    const show = readShow();
+    const sample = show?.sample() ?? { timeSeconds: 0, isPlaying: false };
+    updateControls(show, sample.isPlaying);
+    updateProgress(scrubSeconds ?? sample.timeSeconds, run?.readTutorial());
     animationFrame = requestAnimationFrame(draw);
   }
 
@@ -154,10 +212,8 @@ export function mountRehearsalTransport({
       button.remove();
       tick.remove();
     }
+    tutorialButton?.remove();
+    tutorialBlock.setAttribute("width", "0%");
     bar.hidden = true;
   };
-}
-
-function toPercent(seconds: number, durationSeconds: number): number {
-  return durationSeconds > 0 ? (seconds / durationSeconds) * 100 : 0;
 }

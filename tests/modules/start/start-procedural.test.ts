@@ -321,16 +321,23 @@ test("native speech offset gates the right course and failure never releases rin
   const calls: { cue: ExerciseVoiceCue; offset: number }[] = [];
   const playback = { offsetSeconds: 0, ended: false, failed: false };
   let stops = 0;
+  let presence = 1;
   const voice: StartVoice = {
     play: (cue, offset) => {
       calls.push({ cue, offset });
     },
     read: () => playback,
+    setPresence: (next) => {
+      presence = next;
+    },
     stop: () => {
       stops++;
     },
   };
   const fixture = createFixture(180, voice);
+  fixture.module.setPresence(0.4);
+  expect(presence).toBe(0.4);
+  fixture.module.setPresence(1);
   expect(calls[0]?.cue.url).toEndWith("introduction-right.wav");
   expect(trails(fixture)).toHaveLength(0);
   playback.offsetSeconds = 6.38;
@@ -383,6 +390,7 @@ test("flying straight cannot earn the narrated right turn", () => {
       played.push(cue.url);
     },
     read: () => playback,
+    setPresence: () => {},
     stop: () => {},
   });
   playback.offsetSeconds = 14;
@@ -411,6 +419,7 @@ test("following the right arc earns the next voice only after the current voice 
       playback.ended = false;
     },
     read: () => playback,
+    setPresence: () => {},
     stop: () => {},
   });
   playback.offsetSeconds = 14;
@@ -440,6 +449,7 @@ function createClosingFixture() {
       playback.ended = false;
     },
     read: () => playback,
+    setPresence: () => {},
     stop: () => {},
   });
   playback.offsetSeconds = START_EXERCISES[0].voice.durationSeconds;
@@ -480,6 +490,9 @@ test("closing atmosphere fades progressively while narration and resources stay 
         playback.ended = false;
       },
       read: () => playback,
+      setPresence: (next) => {
+        presence = next;
+      },
       stop: () => {
         stopped = true;
       },

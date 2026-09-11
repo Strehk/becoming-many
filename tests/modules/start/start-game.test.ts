@@ -140,3 +140,45 @@ test("earned passage survives deviation while the spoken tail finishes", () => {
   ).toBeUndefined();
   expect(game.update({ ...FRAME, deviated: true })).toBe("prepare-next");
 });
+
+test("progress counts passed chunks once and preserves them through recovery", () => {
+  const game = createStartGame({
+    exerciseCount: 2,
+    retireSeconds: 1,
+    repeatSequence: false,
+  });
+  expect(game.readProgress()).toEqual({
+    completedChunks: 0,
+    totalChunks: 2,
+    phase: "active",
+  });
+  game.update(FRAME);
+  game.update({ ...FRAME, progress: "passed", instructionEnded: false });
+  game.update({ ...FRAME, progress: "passed", instructionEnded: false });
+  expect(game.readProgress().completedChunks).toBe(1);
+  game.update(FRAME);
+  game.update({ ...FRAME, deviated: true });
+  expect(game.readProgress().completedChunks).toBe(1);
+  game.update({ ...FRAME, deltaSeconds: 1 });
+  game.update(FRAME);
+  game.update({ ...FRAME, progress: "passed" });
+  expect(game.readProgress()).toEqual({
+    completedChunks: 2,
+    totalChunks: 2,
+    phase: "closing",
+  });
+  game.update({ ...FRAME, reachedEnd: true });
+  expect(game.readProgress().phase).toBe("closing");
+  game.reset();
+  expect(game.readProgress().completedChunks).toBe(0);
+});
+
+test("deadline completion never awards unpassed chunks", () => {
+  const game = createStartGame({ exerciseCount: 4, retireSeconds: 1 });
+  game.finishExercises();
+  expect(game.readProgress()).toEqual({
+    completedChunks: 0,
+    totalChunks: 4,
+    phase: "closing",
+  });
+});

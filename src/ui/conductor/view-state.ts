@@ -9,7 +9,7 @@ export interface ConductorViewState {
   readonly isPlaying: boolean;
   readonly timeScale: number;
   readonly language: NarrationLanguage;
-  readonly activeLevel: ShowLevelName;
+  readonly activeLevel: ShowLevelName | "tutorial";
   /** Anything but "running" freezes show time while looking like a pause. */
   readonly audioState: AudioContextState;
   /** `status: "off"` while no host is set. */

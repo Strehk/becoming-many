@@ -14,6 +14,7 @@ scope, dependencies, acceptance criteria, and results.
   [#121](https://github.com/Strehk/becoming-many/issues/121), and
   [#123](https://github.com/Strehk/becoming-many/issues/123), coordinated by
   [#76](https://github.com/Strehk/becoming-many/issues/76).
+- Tutorial timeline integration: [#128](https://github.com/Strehk/becoming-many/issues/128).
 - Audience entry now runs the procedural Start tutorial before the main Show.
   Run owns its fade, terrain-relative arrival and shared-renderer handoff.
   See [Start architecture](../src/modules/start/ARCHITECTURE.md) for its contracts.

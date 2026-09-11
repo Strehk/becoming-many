@@ -4,6 +4,7 @@ import { level as connectionsLevel } from "../levels/connections.level";
 import { startLevel } from "../levels/level.runtime";
 import { LEVEL_CATALOG } from "../levels/level-catalog";
 import type { Run } from "../levels/run-contract";
+import { level as tutorialLevel } from "../levels/start.level";
 /** Resolve browser inputs, start one Run and connect the operator UI. */
 import { mountConductorPage } from "../ui/conductor/conductor.page";
 import { requireElement } from "../ui/shared/dom";
@@ -17,6 +18,7 @@ const lifetime = new AbortController();
 let run: Run | undefined;
 let pendingStart: Promise<Run> | undefined;
 let unmountUi: (() => void) | undefined;
+let unsubscribeShow: (() => void) | undefined;
 let unloading: Promise<void> | undefined;
 window.addEventListener("pagehide", onPageHide);
 
@@ -38,6 +40,7 @@ try {
       signal: lifetime.signal,
       kind: "show",
       preset: connectionsLevel,
+      tutorial: tutorialLevel,
       show: {
         schedule: PIECE_SCHEDULE,
         language: resolveNarrationLanguage(request.get("language")),
@@ -48,8 +51,9 @@ try {
   run = await pendingStart;
   lifetime.signal.throwIfAborted();
   const { show, m5 } = run;
-  if (!show) throw new Error("The conductor requires a Show");
-  window.show = show;
+  unsubscribeShow = run.subscribeShow((activeShow) => {
+    window.show = activeShow;
+  });
   const initialM5Host = deployment.m5Host ?? readStoredM5Host();
   if (initialM5Host) m5?.setHost(initialM5Host);
   unmountUi = mountConductorPage({
@@ -102,6 +106,7 @@ function unload(): Promise<void> {
   if (unloading) return unloading;
   window.removeEventListener("pagehide", onPageHide);
   lifetime.abort();
+  unsubscribeShow?.();
   if (window.show === run?.show) delete window.show;
   unmountUi?.();
   unloading = (async () => {

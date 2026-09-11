@@ -66,6 +66,8 @@ export interface VoicePlayback {
     readonly ended: boolean;
     readonly failed: boolean;
   };
+  /** Caller-driven linear gain in 0..1; persists across clip changes. Invalid input mutes. */
+  readonly setPresence: (presence: number) => void;
   readonly stop: () => void;
   readonly unload: () => void;
 }

@@ -6,7 +6,8 @@ import type { ConductorPanel } from "./view-state";
 export interface TransportPanelOptions {
   readonly parent: HTMLElement;
   readonly signal: AbortSignal;
-  readonly show: Pick<RunningShow, "togglePlayback">;
+  readonly show?: Pick<RunningShow, "togglePlayback">;
+  readonly readShow?: () => Pick<RunningShow, "togglePlayback"> | undefined;
   readonly run: Pick<Run, "resetShowAndFlight">;
 }
 
@@ -15,6 +16,7 @@ export function createTransportPanel({
   parent,
   signal,
   show,
+  readShow = () => show,
   run,
 }: TransportPanelOptions): ConductorPanel {
   const root = requireElement(parent, ".conductor__transport", HTMLElement);
@@ -38,16 +40,24 @@ export function createTransportPanel({
     "[data-pause-icon]",
     HTMLElement,
   );
-  transportButton.addEventListener("click", show.togglePlayback, { signal });
-  requireElement(
+  transportButton.addEventListener(
+    "click",
+    () => readShow()?.togglePlayback(),
+    { signal },
+  );
+  const stopButton = requireElement(
     root,
     ".conductor__stop-button",
     HTMLButtonElement,
-  ).addEventListener("click", run.resetShowAndFlight, { signal });
+  );
+  stopButton.addEventListener("click", run.resetShowAndFlight, { signal });
   let renderedPlaying: boolean | undefined;
 
   return {
     update(state): void {
+      const available = !!readShow();
+      transportButton.disabled = !available;
+      stopButton.disabled = !available;
       if (renderedPlaying === state.isPlaying) return;
       renderedPlaying = state.isPlaying;
       transportButton.dataset.playing = String(state.isPlaying);

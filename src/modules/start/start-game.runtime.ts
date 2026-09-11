@@ -17,8 +17,17 @@ export function createStartGame(settings: GameSettings) {
 class StartGame {
   private state: ExerciseState = this.initialState();
   private exercisePassed = false;
+  private completedChunks = 0;
   constructor(private readonly settings: GameSettings) {}
   readonly readState = (): Readonly<ExerciseState> => this.state;
+  readonly readProgress = () => ({
+    completedChunks: this.completedChunks,
+    totalChunks: this.settings.exerciseCount,
+    phase:
+      this.state.phase === "closing" || this.state.phase === "complete"
+        ? ("closing" as const)
+        : ("active" as const),
+  });
   /** Deadline completion needs no further passage and never repeats the closing voice. */
   readonly finishExercises = (): ExerciseAction => {
     const phase = this.state.phase;
@@ -28,6 +37,7 @@ class StartGame {
   };
   readonly reset = (): void => {
     this.state = this.initialState();
+    this.completedChunks = 0;
     this.exercisePassed = false;
   };
 
@@ -68,7 +78,13 @@ class StartGame {
 
   private observeExercise(frame: ExerciseFrame): ExerciseAction {
     if (frame.deviated && !this.exercisePassed) return this.recover(false);
-    if (frame.progress === "passed") this.exercisePassed = true;
+    if (frame.progress === "passed" && !this.exercisePassed) {
+      this.exercisePassed = true;
+      this.completedChunks = Math.min(
+        this.settings.exerciseCount,
+        this.completedChunks + 1,
+      );
+    }
     if (!this.exercisePassed || !frame.instructionEnded) return;
     if (
       this.settings.repeatSequence === false &&

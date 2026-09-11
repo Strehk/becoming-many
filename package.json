@@ -6,6 +6,7 @@
     "dev": "vite",
     "test": "bun test",
     "test:browser": "bun tests/browser/run-browser-smoke.ts",
+    "test:tutorial-ui": "bun tests/browser/tutorial-timeline.mjs",
     "observe:show": "bun tests/browser/run-show-observation.ts",
     "station": "bun station/station-server.ts",
     "build": "tsc --noEmit && vite build",

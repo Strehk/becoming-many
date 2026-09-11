@@ -66,6 +66,7 @@ export interface StartVoice {
     readonly failed: boolean;
   };
   readonly stop: () => void;
+  readonly setPresence: (presence: number) => void;
 }
 
 // 2. World placement and movement observations
@@ -137,6 +138,12 @@ export type ExerciseAction =
 /** Run owns the handoff; Start reports natural completion and accepts its visual/audio fade. */
 export interface StartExperience extends WorldModule {
   readonly readComplete: () => boolean;
+  /** Fresh snapshot; only successfully passed lessons count, never deadline completion. */
+  readonly readProgress: () => {
+    readonly completedChunks: number;
+    readonly totalChunks: number;
+    readonly phase: "active" | "closing";
+  };
   /** Unit presence, applied once to all Start visuals and atmosphere. */
   readonly setPresence: (presence: number) => void;
 }

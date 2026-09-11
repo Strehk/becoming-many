@@ -274,7 +274,7 @@ class StartModule implements StartExperience {
     this.pathPresence = this.worldPresence;
     this.openingNeeded = true;
     this.active = true;
-    this.presence = 1;
+    this.setPresence(1);
     this.closing = { course: 1, world: 1, ready: false };
     for (const module of this.modules) this.runtime.activate(module);
     this.playInstruction(false);
@@ -332,10 +332,13 @@ class StartModule implements StartExperience {
     );
   };
 
+  readonly readProgress = () => this.game.readProgress();
+
   readonly setPresence = (presence: number): void => {
     this.presence = Number.isFinite(presence)
       ? Math.max(0, Math.min(1, presence))
       : 0;
+    this.options.voice?.setPresence(this.presence);
   };
 
   // 3. One coherent observation, followed by one engine decision

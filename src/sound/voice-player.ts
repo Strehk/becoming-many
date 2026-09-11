@@ -96,6 +96,14 @@ class VoicePlayer implements VoicePlayback {
     return this.observation;
   };
 
+  /** Fade the native source without seeking, pausing or changing its timing. */
+  readonly setPresence = (presence: number): void => {
+    if (this.unloaded) return;
+    this.audio.volume = Number.isFinite(presence)
+      ? Math.max(0, Math.min(1, presence))
+      : 0;
+  };
+
   // 3. Complete, idempotent cancellation includes listeners and native loading.
   readonly stop = (): void => {
     this.revision++;
