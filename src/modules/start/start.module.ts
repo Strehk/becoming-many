@@ -52,6 +52,7 @@ import {
   createAirParticlesModule,
 } from "./point-cloud/point-cloud.module";
 import { createAirParticleMaterial } from "./point-cloud/point-cloud-material";
+import { sampleClosingPresence } from "./start-closing";
 import type {
   ExerciseAction,
   ExerciseDefinition,
@@ -131,6 +132,7 @@ class StartModule implements StartExperience {
   private active = false;
   private worldPresence = 1;
   private presence = 1;
+  private closing = { course: 1, world: 1, ready: false };
   private pathPresence = 1;
   private openingNeeded = false;
 
@@ -154,7 +156,8 @@ class StartModule implements StartExperience {
         belowFlightMeters: START_SETTINGS.belowFlightMeters,
         opacity: START_SETTINGS.pathOpacity,
         growth: START_SETTINGS.pathGrowth,
-        readPresence: () => this.pathPresence * this.presence,
+        readPresence: () =>
+          this.pathPresence * this.presence * this.closing.course,
         createMaterial: () =>
           createPathRevealMaterial(
             createPathParticleMaterial(createAirParticleMaterial),
@@ -168,7 +171,8 @@ class StartModule implements StartExperience {
     return [
       createAirParticlesModule({
         ...this.options,
-        readPresence: () => this.worldPresence * this.presence,
+        readPresence: () =>
+          this.worldPresence * this.presence * this.closing.world,
       }),
       ...this.paths,
       ...this.elements,
@@ -201,7 +205,7 @@ class StartModule implements StartExperience {
       animation: createParticleAnimation(START_SETTINGS.elementAnimation),
       simulation: createParticleSimulation(START_SETTINGS.elementSimulation),
       readPosition: () => this.readPosition(),
-      readPresence: () => this.presence,
+      readPresence: () => this.presence * this.closing.course,
       createGeometry: this.createElementGeometry,
       createMaterial: () =>
         this.createElementMaterial(light, retirement, reveal.presence),
@@ -271,6 +275,7 @@ class StartModule implements StartExperience {
     this.openingNeeded = true;
     this.active = true;
     this.presence = 1;
+    this.closing = { course: 1, world: 1, ready: false };
     for (const module of this.modules) this.runtime.activate(module);
     this.playInstruction(false);
     this.updateOpening();
@@ -322,6 +327,7 @@ class StartModule implements StartExperience {
       this.game.readState().phase === "complete" &&
       !!voice &&
       voice.ended &&
+      this.closing.ready &&
       !voice.failed
     );
   };
@@ -348,9 +354,20 @@ class StartModule implements StartExperience {
     this.applyAction(this.observeFlight(deltaSeconds));
     for (const { light, passage } of this.feedback.values())
       for (const index of passage.update(position)) light.pass(index);
+    this.updateClosing();
     this.runtime.update(deltaSeconds);
     this.updateAtmosphere();
   };
+
+  // Closing visuals disappear while flight and narration continue normally.
+  private updateClosing(): void {
+    const phase = this.game.readState().phase;
+    if (phase !== "closing" && phase !== "complete") return;
+    this.closing = sampleClosingPresence(
+      this.options.voice?.read().offsetSeconds ?? 0,
+      START_TIMING,
+    );
+  }
 
   // Capture the moving player after "Anfang"; the surrounding room has its own cue.
   private updateOpening(): void {

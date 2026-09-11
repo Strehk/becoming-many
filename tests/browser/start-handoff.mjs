@@ -229,6 +229,26 @@ try {
     await page.evaluate(() =>
       window.testClips.find((clip) => clip.src.endsWith("complete.wav")).play(),
     );
+    await page.waitForFunction(() => {
+      const start = window.handoffRun.tutorial?.tutorial;
+      return start?.closing.ready;
+    });
+    const closing = await page.evaluate(() => {
+      const run = window.handoffRun;
+      return {
+        ...run.tutorial.tutorial.closing,
+        handoffStarted: run.handoffElapsed !== undefined,
+        voiceEnded: window.testClips.find((clip) =>
+          clip.src.endsWith("complete.wav"),
+        ).ended,
+      };
+    });
+    assert.equal(closing.course, 0);
+    assert.equal(closing.world, 0);
+    assert.equal(closing.handoffStarted, false);
+    assert.equal(closing.voiceEnded, false);
+    console.log("White room while closing voice continues:", closing);
+    await page.screenshot({ path: "/tmp/start-handoff-white.png" });
     await page.waitForFunction(
       () => !!window.show && !window.handoffRun.tutorial,
       null,

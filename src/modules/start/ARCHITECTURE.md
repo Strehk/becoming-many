@@ -419,3 +419,15 @@ placement, negative detuning, audible stereo output, ducking and final disposal:
 
 Atmosphere levels in `audio/audio-settings.ts` are raised by 4 dB across pulse,
 clicking, base and pad. Speech ducking and all fade durations remain unchanged.
+
+### White-room closing sequence
+
+`start-closing.ts` samples sequential smooth fades from closing narration time.
+`START_TIMING` centrally configures the course fade (3 seconds), the following
+room-particle fade (3 seconds), and a minimum white hold (2 seconds). The course
+includes the blue path and remaining ring/arrow particles. Flight and particle
+animation continue throughout these fades. Completion requires the white hold
+and natural voice completion; Run therefore stops flight and changes the scene
+only after all tutorial visuals are invisible. Its existing 2.5-second transition
+adds a quiet white interval before Show. Atmosphere keeps its independent fade
+and reverb decay during the closing voice.

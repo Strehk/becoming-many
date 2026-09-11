@@ -6,6 +6,9 @@ export const START_TIMING = {
   maximumExerciseSeconds: 90,
   voiceSafetySeconds: 0.75,
   closingAtmosphereFadeSeconds: 6,
+  closingPathFadeSeconds: 3,
+  closingWorldFadeSeconds: 3,
+  closingWhiteHoldSeconds: 2,
 };
 
 // 1. Shared demo and presentation settings

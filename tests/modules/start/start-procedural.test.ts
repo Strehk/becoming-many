@@ -549,6 +549,9 @@ test("handoff waits for the final exit and a successful natural closing voice en
   playback.failed = true;
   expect(fixture.module.readComplete()).toBe(false);
   playback.failed = false;
+  expect(fixture.module.readComplete()).toBe(false);
+  playback.offsetSeconds = START_SETTINGS.completeVoice.durationSeconds;
+  fixture.tick();
   expect(fixture.module.readComplete()).toBe(true);
   fixture.module.deactivate();
   expect(fixture.module.readComplete()).toBe(false);
