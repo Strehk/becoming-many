@@ -24,6 +24,7 @@ class VoicePlayer implements VoicePlayback {
   private started = false;
   private blocked = false;
   private unloaded = false;
+  private paused = false;
   private seekSeconds: number | undefined;
 
   constructor(private readonly options: VoiceOptions) {
@@ -60,7 +61,7 @@ class VoicePlayer implements VoicePlayback {
   };
 
   private start(): void {
-    if (!this.requested || this.pending || this.unloaded) return;
+    if (!this.requested || this.pending || this.unloaded || this.paused) return;
     const revision = this.revision;
     this.pending = true;
     this.blocked = false;
@@ -83,6 +84,34 @@ class VoicePlayer implements VoicePlayback {
 
   private readonly retryBlocked = (): void => {
     if (this.blocked) this.start();
+  };
+
+  /** Invalidate pending promises without discarding the selected clip or offset. */
+  readonly setPaused = (paused: boolean): void => {
+    if (this.unloaded) return;
+    if (this.paused === paused) {
+      if (!paused && this.blocked) this.start();
+      return;
+    }
+    this.paused = paused;
+    if (!paused) {
+      if (!this.audio.ended) this.start();
+      return;
+    }
+    this.revision++;
+    this.pending = false;
+    this.audio.pause();
+  };
+
+  readonly readStatus: VoicePlayback["readStatus"] = () => {
+    if (this.unloaded) return "ended";
+    if (this.paused) return "paused";
+    if (this.blocked) return "blocked";
+    if (this.read().failed) return "error";
+    if (!this.requested || this.audio.ended) return "ended";
+    return this.pending || !this.started || this.audio.readyState < 3
+      ? "loading"
+      : "playing";
   };
 
   readonly read = () => {

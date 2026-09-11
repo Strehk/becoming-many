@@ -66,6 +66,11 @@ heading match the previous last point and heading, including local entry offsets
 `particle-generation.ts` generates four meters per StreamQueue step using an
 injected particle factory. The center enqueues work on the existing World queue,
 retries queue admission if full, and invalidates obsolete jobs on reset/unload.
+Run can hold Start through `setPaused`: native speech retains its offset,
+lesson/visual updates stop and atmosphere sources become silent. `readPlayback`
+reports held, buffering, blocked and failed speech to Run. Pause never deactivates
+or resets the lesson; Stop prepares a fresh paused tutorial through Run.
+
 Prepared successor lines grow forward after the previous reveal front reaches the seam.
 Generation stays independent of presentation; regular connections preserve position and tangent.
 

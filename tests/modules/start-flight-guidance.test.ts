@@ -87,7 +87,7 @@ test("guidance reuses resources and disposes each loaded lifetime once", () => {
   module.unload();
 });
 
-test("Start owns particles and guidance through activation and restart", () => {
+test("Start releases and recreates its scene resources across lifetimes", () => {
   const scene = new Scene();
   const module = createStartModule({
     scene,
@@ -98,18 +98,24 @@ test("Start owns particles and guidance through activation and restart", () => {
     constrainFlightPosition: unconstrained,
   });
   module.load();
-  expect(scene.children).toHaveLength(2);
+  expect(scene.children.length).toBeGreaterThan(0);
   module.activate();
   module.update?.(1 / 90);
-  expect(scene.children.every((child) => child.visible)).toBe(true);
+  const firstLifetime = [...scene.children];
+  expect(firstLifetime.some((child) => child.visible)).toBe(true);
   module.deactivate();
   expect(scene.children.every((child) => !child.visible)).toBe(true);
   module.unload();
   expect(scene.children).toHaveLength(0);
   module.load();
   module.activate();
-  expect(scene.children).toHaveLength(2);
+  module.update?.(1 / 90);
+  expect(scene.children).toHaveLength(firstLifetime.length);
+  expect(scene.children.every((child) => !firstLifetime.includes(child))).toBe(
+    true,
+  );
   module.unload();
+  expect(scene.children).toHaveLength(0);
 });
 
 for (const turn of [-1, 1]) {

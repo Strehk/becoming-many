@@ -1,5 +1,6 @@
 import type { NarrationLanguage } from "../../dramaturgy/narration-catalog";
 import type { ShowLevelName } from "../../dramaturgy/narration-schedule";
+import type { RunPlayback } from "../../levels/run-contract";
 import type { M5Observation } from "../../m5/m5-contract";
 import type { XrSessionState } from "../../world/xr-contract";
 
@@ -7,6 +8,7 @@ import type { XrSessionState } from "../../world/xr-contract";
 export interface ConductorViewState {
   readonly showTimeSeconds: number;
   readonly isPlaying: boolean;
+  readonly playback: RunPlayback;
   readonly timeScale: number;
   readonly language: NarrationLanguage;
   readonly activeLevel: ShowLevelName | "tutorial";

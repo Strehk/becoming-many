@@ -39,6 +39,7 @@ try {
     {
       signal: lifetime.signal,
       kind: "show",
+      initiallyPaused: true,
       preset: connectionsLevel,
       tutorial: tutorialLevel,
       show: {

@@ -62,7 +62,11 @@ async function verifyRoute(path) {
     const transport = page.locator(
       conductor ? ".conductor__transport-button" : "[data-transport]",
     );
-    assert.equal(await transport.isDisabled(), true);
+    await page.waitForFunction(() =>
+      ["playing", "paused"].includes(window.timelineRun.readPlayback()),
+    );
+    assert.equal(await transport.isDisabled(), false);
+    await verifyTutorialPlayback(page, conductor);
     if (conductor)
       assert.equal(
         await page.locator(".conductor__stop-button").isDisabled(),
@@ -95,6 +99,7 @@ async function verifyRoute(path) {
     await verifySkipAndTransport(page, track, conductor);
     console.log(`Transport passed ${path}`);
     await verifyTutorialRestart(page, conductor);
+    if (conductor) await verifyFailedRestart(page, errors);
     await page.evaluate(() =>
       window.dispatchEvent(
         new PageTransitionEvent("pagehide", { persisted: false }),
@@ -112,6 +117,104 @@ async function verifyRoute(path) {
   } finally {
     await page.close();
   }
+}
+
+async function verifyTutorialPlayback(page, conductor) {
+  const button = page.locator(
+    conductor ? ".conductor__transport-button" : "[data-transport]",
+  );
+  if (conductor) {
+    assert.equal(
+      await page.evaluate(() => window.timelineRun.readPlayback()),
+      "paused",
+    );
+    await assertTutorialHeld(page);
+    assert.equal(
+      await page.locator("button[data-tutorial]").getAttribute("aria-pressed"),
+      "true",
+    );
+    await button.click();
+  }
+  await page.waitForFunction(
+    () => window.timelineRun.readPlayback() === "playing",
+  );
+  await page.waitForFunction(
+    () => window.timelineRun.tutorial.voice.read().offsetSeconds > 0.3,
+  );
+  await button.click();
+  await page.waitForFunction(
+    () => window.timelineRun.readPlayback() === "paused",
+  );
+  await assertTutorialHeld(page);
+  await button.click();
+  await page.waitForFunction(
+    () => window.timelineRun.readPlayback() === "playing",
+  );
+}
+
+async function assertTutorialHeld(page) {
+  const sample = () =>
+    page.evaluate(() => {
+      const run = window.timelineRun;
+      return {
+        position: run.world.viewerRig.position.toArray(),
+        voice: run.tutorial.voice.read().offsetSeconds,
+        phase: run.tutorial.tutorial.game.readState().phase,
+        elapsed: run.tutorial.tutorial.timing.elapsedSeconds,
+      };
+    });
+  const before = await sample();
+  await page.waitForTimeout(750);
+  assert.deepEqual(
+    await sample(),
+    before,
+    "Paused tutorial holds flight, voice and lesson time",
+  );
+}
+
+async function verifyFailedRestart(page, errors) {
+  const errorStart = errors.length;
+  const pattern = "**/audio/tutorial/atmosphere/pad.wav";
+  await page.route(pattern, (route) =>
+    route.fulfill({ status: 503, body: "Unavailable" }),
+  );
+  await page.locator(".conductor__stop-button").click();
+  await page.waitForFunction(
+    () => window.timelineRun.readPlayback() === "error",
+  );
+  await page.waitForFunction(() =>
+    document
+      .querySelector("[data-timeline-readout]")
+      .textContent.includes("Error"),
+  );
+  assert.equal(
+    await page.evaluate(() => window.timelineRun.audio.context.state),
+    "running",
+  );
+  assert.equal(
+    await page.evaluate(
+      () => window.timelineRun.world.renderer === window.initialRenderer,
+    ),
+    true,
+  );
+  const failures = errors.splice(errorStart);
+  assert.ok(failures.some((error) => /Tutorial restart failed/.test(error)));
+  assert.ok(failures.some((error) => /^HTTP 503: .*pad.wav$/.test(error)));
+  assert.deepEqual(
+    unexpectedErrors(failures).filter(
+      (error) => !/Tutorial restart failed|503/.test(error),
+    ),
+    [],
+  );
+  await page.unroute(pattern);
+  await page.locator(".conductor__transport-button").click();
+  await page.waitForFunction(
+    () => window.timelineRun.readPlayback() === "paused",
+  );
+  await assertTutorialHeld(page);
+  console.log(
+    "Failed tutorial restart remains visible and retryable without ending shared owners",
+  );
 }
 
 async function verifySkipAndTransport(page, track, conductor) {
@@ -218,6 +321,7 @@ async function verifyProgressDisplay(page, conductor) {
       completedChunks: 2,
       totalChunks: 4,
       phase: "active",
+      playback: "playing",
     });
   });
   await page.waitForFunction(() =>
@@ -350,6 +454,7 @@ async function assertRestartedTutorial(page) {
     const run = window.timelineRun;
     return {
       completed: run.readTutorial().completedChunks,
+      playback: run.readPlayback(),
       showUnavailable: window.show === undefined && run.show === undefined,
       renderer: run.world.renderer === window.initialRenderer,
       audio: run.audio === window.initialAudio,
@@ -359,6 +464,7 @@ async function assertRestartedTutorial(page) {
   });
   assert.deepEqual(observation, {
     completed: 0,
+    playback: "paused",
     showUnavailable: true,
     renderer: true,
     audio: true,
@@ -368,6 +474,7 @@ async function assertRestartedTutorial(page) {
   await page.waitForFunction(() =>
     document.body.textContent.includes("Tutorial 0/4"),
   );
+  await assertTutorialHeld(page);
 }
 
 async function verifyCancelledRestart() {

@@ -2,7 +2,12 @@ import type { Run } from "../../levels/run-contract";
 
 export type TimelineRun = Pick<
   Run,
-  "show" | "readTutorial" | "skipTutorial" | "resetShowAndFlight"
+  | "show"
+  | "readTutorial"
+  | "skipTutorial"
+  | "resetShowAndFlight"
+  | "readPlayback"
+  | "togglePlayback"
 >;
 
 /** Tutorial occupies a fixed visual block, never an invented duration. */
@@ -30,13 +35,21 @@ export function trackShowSeconds(
 export function tutorialReadout(
   progress: NonNullable<ReturnType<Run["readTutorial"]>>,
 ): string {
-  const suffix =
-    progress.phase === "loading"
-      ? " · Loading"
-      : progress.phase === "active"
-        ? ""
-        : progress.phase === "closing"
-          ? " · Closing"
-          : " · Transition";
+  const status = {
+    playing: "Running",
+    paused: "Paused · Press Play",
+    loading: "Loading",
+    buffering: "Waiting for audio",
+    blocked: "Waiting for audio · Press Play",
+    error: "Error · Press Stop to retry",
+    ended: "Ended",
+  }[progress.playback];
+  const phase =
+    progress.phase === "closing"
+      ? " · Closing"
+      : progress.phase === "transition"
+        ? " · Transition"
+        : "";
+  const suffix = ` · ${status}${phase}`;
   return `Tutorial ${progress.completedChunks}/${progress.totalChunks}${suffix}`;
 }

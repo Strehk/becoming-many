@@ -139,12 +139,17 @@ while Start is active. Both borrow the same spatial-audio owner. Run fades Start
 releases its sources, resets the existing flight rig to a terrain-relative arrival,
 reactivates the main composition and starts Show. The renderer, XR session and
 controls survive this transition. Show transport becomes available only afterward.
-Conductor starts with the same optional tutorial and retains main Show rehearsal.
+Conductor prepares the same optional tutorial and waits for Play. Audience entry
+retains automatic playback. Run exposes playback across tutorial and main Show;
+Pause holds tutorial lesson time, speech and flight without removing resources.
 Stop and the Tutorial chapter restart training through Run, including during a
 handoff. Run rewinds and holds main Show, releases the previous tutorial, and
-constructs a fresh tutorial while keeping renderer, XR, controls and shared audio.
+constructs a fresh, paused tutorial while keeping renderer, XR, controls and shared
+audio. Play resumes it. Restart failures expose a retryable error and retain those
+shared owners; they do not end the experience.
 Repeated restart requests coalesce while loading; unloading waits for construction
-before releasing borrowed resources.
+before releasing borrowed resources. Operator status uses bounded UI polling,
+independent of desktop animation callbacks during immersive XR.
 Both PC and Conductor timelines use shared UI projection and pointer gestures:
 Start is a fixed visual block with earned chunk counts, never a seekable time
 segment. Main positions retain their actual Show seconds. Entry mounts each UI

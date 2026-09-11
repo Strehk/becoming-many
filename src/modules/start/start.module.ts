@@ -138,6 +138,7 @@ class StartModule implements StartExperience {
   private current: ActiveSection | undefined;
   private pending: PendingSection | undefined;
   private active = false;
+  private paused = false;
   private worldPresence = 1;
   private presence = 1;
   private closing = { course: 1, world: 1, ready: false };
@@ -359,6 +360,20 @@ class StartModule implements StartExperience {
 
   readonly readProgress = () => this.game.readProgress();
 
+  readonly setPaused = (paused: boolean): void => {
+    this.paused = paused;
+    this.options.voice?.setPaused(paused);
+    if (paused)
+      this.options.atmosphere?.update({ active: false, speaking: false });
+  };
+
+  readonly readPlayback: StartExperience["readPlayback"] = () => {
+    if (this.paused || !this.active) return "paused";
+    const status = this.options.voice?.readStatus();
+    if (status === "loading") return "buffering";
+    return !status || status === "ended" ? "playing" : status;
+  };
+
   readonly setPresence = (presence: number): void => {
     this.presence = Number.isFinite(presence)
       ? Math.max(0, Math.min(1, presence))
@@ -368,7 +383,10 @@ class StartModule implements StartExperience {
 
   // 3. One coherent observation, followed by one engine decision
   readonly update = (deltaSeconds: number): void => {
-    if (!this.active) return;
+    if (this.readPlayback() !== "playing") {
+      this.options.atmosphere?.update({ active: false, speaking: false });
+      return;
+    }
     this.timing.update(
       deltaSeconds,
       this.options.voice?.read().offsetSeconds ?? 0,

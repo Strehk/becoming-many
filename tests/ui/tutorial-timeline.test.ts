@@ -19,10 +19,20 @@ describe("tutorial timeline projection", () => {
 
   test("reports completed chunks and closing without inferred elapsed time", () => {
     expect(
-      tutorialReadout({ completedChunks: 2, totalChunks: 6, phase: "active" }),
-    ).toBe("Tutorial 2/6");
+      tutorialReadout({
+        completedChunks: 2,
+        totalChunks: 6,
+        phase: "active",
+        playback: "playing",
+      }),
+    ).toBe("Tutorial 2/6 · Running");
     expect(
-      tutorialReadout({ completedChunks: 6, totalChunks: 6, phase: "closing" }),
-    ).toBe("Tutorial 6/6 · Closing");
+      tutorialReadout({
+        completedChunks: 6,
+        totalChunks: 6,
+        phase: "closing",
+        playback: "playing",
+      }),
+    ).toBe("Tutorial 6/6 · Running · Closing");
   });
 });

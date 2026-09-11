@@ -39,6 +39,36 @@ const settle = async () => {
   await Promise.resolve();
 };
 
+test("pause preserves native offset and cannot be undone by gestures or late play", async () => {
+  const { audio, gestures, voice } = fixture();
+  audio.readyState = 4;
+  voice.setPaused(true);
+  voice.play({ url: "/voice.wav" }, 0);
+  expect(audio.starts).toBe(0);
+  voice.setPaused(false);
+  await settle();
+  audio.currentTime = 7;
+  voice.setPaused(true);
+  expect(voice.readStatus()).toBe("paused");
+  expect(voice.read().offsetSeconds).toBe(7);
+  gestures.dispatchEvent(new Event("pointerdown"));
+  expect(audio.starts).toBe(1);
+  const pending = Promise.withResolvers<void>();
+  audio.nextPlay = () => pending.promise;
+  voice.setPaused(false);
+  voice.setPaused(true);
+  pending.resolve();
+  await settle();
+  expect(voice.readStatus()).toBe("paused");
+  expect(audio.currentTime).toBe(7);
+  audio.nextPlay = () => Promise.resolve();
+  voice.setPaused(false);
+  await settle();
+  expect(voice.readStatus()).toBe("playing");
+  expect(voice.read().offsetSeconds).toBe(7);
+  voice.unload();
+});
+
 test("native offset and natural end are distinct from playback failure", async () => {
   const { audio, voice } = fixture();
   voice.play({ url: "/voice.wav" }, 1.14);

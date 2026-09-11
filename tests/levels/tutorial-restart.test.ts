@@ -26,6 +26,8 @@ test("Run restarts tutorial across phases and owns pending restart cleanup", asy
           tutorial: tutorial ? {
             readProgress: () => ({completedChunks:0,totalChunks:4,phase:"active"}),
             readComplete: () => false, setPresence() {},
+            setPaused(value){module.paused=value;},
+            readPlayback:()=>module.paused ? "paused" : "playing",
           } : undefined,
           voice: {unload(){module.voiceEnded=true;}},
         };
@@ -34,6 +36,8 @@ test("Run restarts tutorial across phases and owns pending restart cleanup", asy
       const tutorialLanguages = [];
       const running = {
         readLanguage: () => language,
+        sample:()=>({timeSeconds:showTime,isPlaying:playing}),
+        togglePlayback(){playing=!playing;},
         resetTime(){showTime=0;playing=false;}, seekTo(time){showTime=time;},
         play(){playing=true;}, pause(){playing=false;},
       };
@@ -121,6 +125,11 @@ test("Run restarts tutorial across phases and owns pending restart cleanup", asy
       gate=undefined;
       assert.equal(run.readTutorial().phase,"active");
       assert.equal(run.readTutorial().completedChunks,0);
+      assert.equal(run.readPlayback(),"paused");
+      run.togglePlayback();
+      assert.equal(run.readPlayback(),"playing");
+      run.togglePlayback();
+      assert.equal(run.readPlayback(),"paused");
       assert.equal(worlds.length,1);
       assert.equal(audioOwners.length,1);
       assert.equal(audioOwners[0].context.state,"running");
@@ -163,17 +172,26 @@ test("Run restarts tutorial across phases and owns pending restart cleanup", asy
       const reported=[];
       const report=console.error;
       console.error=(message)=>reported.push(message);
-      worlds.at(-1).failEnd=true;
+
       failed.resetShowAndFlight();
       await tick();
       gate.reject(new Error("tutorial construction failed"));
       await tick();
       await tick();
       console.error=report;
-      assert.deepEqual(reported,["Tutorial restart failed","Tutorial restart cleanup failed"]);
-      assert.equal(failed.readAudioState(),"closed");
-      assert.equal(worlds.at(-1).ends,1);
+      assert.deepEqual(reported,["Tutorial restart failed"]);
+      assert.equal(failed.readAudioState(),"running");
+      assert.equal(worlds.at(-1).ends,undefined);
+      assert.equal(failed.readPlayback(),"error");
+      assert.equal(failed.readTutorial().phase,"error");
       assert.equal(failed.show,undefined);
+      gate=undefined;
+      failed.togglePlayback();
+      await tick();
+      assert.equal(failed.readPlayback(),"paused");
+      failed.togglePlayback();
+      assert.equal(failed.readPlayback(),"playing");
+      await failed.unload();
     `,
     ],
     { stdout: "pipe", stderr: "pipe" },

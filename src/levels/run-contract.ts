@@ -4,15 +4,28 @@ import type { XrSessionControl } from "../world/xr-contract";
 import type { LevelPreset } from "./level-preset";
 import type { RunningShow, ShowRequest } from "./show-contract";
 
+/** Run transport spans tutorial and main Show; loading and failures are never playback. */
+export type RunPlayback =
+  | "playing"
+  | "paused"
+  | "loading"
+  | "buffering"
+  | "blocked"
+  | "error"
+  | "ended";
+
 /** A fresh snapshot of earned lessons; tutorial time is deliberately not seekable. */
 export interface TutorialObservation {
   readonly completedChunks: number;
   readonly totalChunks: number;
-  readonly phase: "loading" | "active" | "closing" | "transition";
+  readonly phase: "loading" | "active" | "closing" | "transition" | "error";
+  readonly playback: RunPlayback;
 }
 
 /** One experience lifetime, with commands and observations for its entry/UI. */
 export interface Run {
+  readonly readPlayback: () => RunPlayback;
+  readonly togglePlayback: () => void;
   readonly unload: () => Promise<void>;
   readonly show: RunningShow | undefined;
   /** Current audio owner state; closed after unload starts. */
@@ -32,9 +45,9 @@ export interface Run {
    * The visitor's local head pose remains owned by pointer look or the headset.
    */
   readonly resetFlight: () => void;
-  /** Restart from the tutorial when configured; otherwise rewind Show and hold.
+  /** Reset to the tutorial and hold until Play; otherwise rewind Show and hold.
    * Resets flight without replacing renderer/XR/audio. Repeated calls while loading
-   * coalesce; ended runs ignore the command. Startup failure ends the Run.
+   * coalesce; ended runs ignore the command. Restart failure remains retryable.
    */
   readonly resetShowAndFlight: () => void;
 
@@ -59,6 +72,8 @@ export interface StaticLevelRequest extends CommonLevelRequest {
 }
 
 export interface ShowLevelRequest extends CommonLevelRequest {
+  /** Operator entry waits for Play; audience entry retains automatic tutorial playback. */
+  readonly initiallyPaused?: boolean;
   readonly kind: "show";
   readonly show: ShowRequest;
   /** Optional guided entry before the prepared main show. */

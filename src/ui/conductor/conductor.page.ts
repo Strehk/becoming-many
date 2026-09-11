@@ -24,6 +24,7 @@ import {
 } from "./keyboard-shortcuts";
 import { createLanguagePanel } from "./language.panel";
 import { createM5Panel } from "./m5.panel";
+import { CONDUCTOR_SETTINGS } from "./operator-settings";
 import { createShowTimeline } from "./show-timeline.panel";
 import { createStatusStrip } from "./status-strip.panel";
 import { createTechDrawer } from "./technician-drawer.panel";
@@ -50,7 +51,10 @@ export interface ConductorPageOptions {
     | "readActiveLevel"
     | "readAudioState"
   >;
-  readonly run: Pick<Run, "resetFlight" | "resetShowAndFlight"> &
+  readonly run: Pick<
+    Run,
+    "resetFlight" | "resetShowAndFlight" | "readPlayback" | "togglePlayback"
+  > &
     Partial<
       Pick<Run, "show" | "readTutorial" | "skipTutorial" | "readAudioState">
     >;
@@ -79,7 +83,7 @@ export function mountConductorPage({
   const readShow = () => run.show ?? initialShow;
   const lifetime = new AbortController();
   const { signal } = lifetime;
-  let animationFrame = 0;
+  let observationTimer: ReturnType<typeof setInterval> | undefined;
   let unsubscribeXr: (() => void) | undefined;
 
   try {
@@ -123,7 +127,9 @@ export function mountConductorPage({
       (event) => {
         if (
           event.target instanceof Element &&
-          event.target.closest(".conductor__drawer, .conductor__tech-button")
+          event.target.closest(
+            ".conductor__drawer, .conductor__tech-button, .conductor__stop-button, [data-tutorial]",
+          )
         )
           return;
         startHeadset();
@@ -149,7 +155,7 @@ export function mountConductorPage({
     });
     const panels: readonly ConductorPanel[] = [
       statusStrip,
-      createTransportPanel({ parent: page, readShow, run, signal }),
+      createTransportPanel({ parent: page, run, signal }),
       createShowTimeline({
         parent: page,
         schedule,
@@ -191,6 +197,15 @@ export function mountConductorPage({
     }
 
     function executeAction(action: ConductorAction): void {
+      if (action.kind === "toggleTransport") {
+        startHeadset();
+        run.togglePlayback();
+        return;
+      }
+      if (action.kind === "resetShow") {
+        run.resetShowAndFlight();
+        return;
+      }
       if (action.kind === "resetFlight") {
         run.resetFlight();
         return;
@@ -208,19 +223,15 @@ export function mountConductorPage({
     }
 
     function executeShowAction(
-      action: Exclude<ConductorAction, { kind: "resetFlight" | "jumpToCue" }>,
+      action: Exclude<
+        ConductorAction,
+        { kind: "resetFlight" | "jumpToCue" | "toggleTransport" | "resetShow" }
+      >,
       show: NonNullable<ReturnType<typeof readShow>>,
     ): void {
       switch (action.kind) {
-        case "toggleTransport":
-          startHeadset();
-          show.togglePlayback();
-          break;
         case "seekBy":
           show.seekBy(action.offsetSeconds);
-          break;
-        case "resetShow":
-          show.resetTime();
           break;
         case "toggleLanguage": {
           const next = NARRATION_LANGUAGES.find(
@@ -259,7 +270,8 @@ export function mountConductorPage({
       };
       const state: ConductorViewState = {
         showTimeSeconds: scrubSeconds ?? sample.timeSeconds,
-        isPlaying: sample.isPlaying,
+        isPlaying: run.readPlayback() === "playing",
+        playback: run.readPlayback(),
         timeScale: sample.timeScale,
         language: show?.readLanguage() ?? "en",
         activeLevel: show?.readActiveLevel() ?? "tutorial",
@@ -269,9 +281,13 @@ export function mountConductorPage({
         xr: xrState,
       };
       for (const panel of panels) panel.update(state);
-      animationFrame = requestAnimationFrame(draw);
     }
     draw();
+    // Operator observations must not depend on the desktop animation clock during XR.
+    observationTimer = setInterval(
+      draw,
+      CONDUCTOR_SETTINGS.observationIntervalMilliseconds,
+    );
     page.inert = false;
     return unmount;
   } catch (error) {
@@ -282,7 +298,7 @@ export function mountConductorPage({
   function unmount(): void {
     page.inert = true;
     lifetime.abort();
-    cancelAnimationFrame(animationFrame);
+    clearInterval(observationTimer);
     unsubscribeXr?.();
   }
 }

@@ -56,6 +56,15 @@ export interface AudioTimebase {
 
 /** One native speech source. Selection belongs to the caller; Sound owns its lifetime. */
 export interface VoicePlayback {
+  /** Hold/resume the selected clip at its native offset, including pending starts. */
+  readonly setPaused: (paused: boolean) => void;
+  readonly readStatus: () =>
+    | "playing"
+    | "paused"
+    | "loading"
+    | "blocked"
+    | "error"
+    | "ended";
   readonly play: (
     recording: { readonly url: string },
     offsetSeconds: number,

@@ -59,6 +59,14 @@ export interface ExerciseVoiceCue {
  * Offsets are native media seconds. Failure must never count as natural completion.
  */
 export interface StartVoice {
+  readonly setPaused: (paused: boolean) => void;
+  readonly readStatus: () =>
+    | "playing"
+    | "paused"
+    | "loading"
+    | "blocked"
+    | "error"
+    | "ended";
   readonly play: (cue: ExerciseVoiceCue, offsetSeconds: number) => void;
   readonly read: () => {
     readonly offsetSeconds: number;
@@ -137,6 +145,14 @@ export type ExerciseAction =
 
 /** Run owns the handoff; Start reports natural completion and accepts its visual/audio fade. */
 export interface StartExperience extends WorldModule {
+  /** Hold lesson time, motion-driven progress and sound without discarding resources. */
+  readonly setPaused: (paused: boolean) => void;
+  readonly readPlayback: () =>
+    | "playing"
+    | "paused"
+    | "buffering"
+    | "blocked"
+    | "error";
   readonly readComplete: () => boolean;
   /** Fresh snapshot; only successfully passed lessons count, never deadline completion. */
   readonly readProgress: () => {

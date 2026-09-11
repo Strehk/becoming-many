@@ -1,22 +1,17 @@
 import type { Run } from "../../levels/run-contract";
-import type { RunningShow } from "../../levels/show-contract";
-import { requireElement } from "../shared/dom";
+import { requireElement, writeAttribute, writeText } from "../shared/dom";
 import type { ConductorPanel } from "./view-state";
 
 export interface TransportPanelOptions {
   readonly parent: HTMLElement;
   readonly signal: AbortSignal;
-  readonly show?: Pick<RunningShow, "togglePlayback">;
-  readonly readShow?: () => Pick<RunningShow, "togglePlayback"> | undefined;
-  readonly run: Pick<Run, "resetShowAndFlight">;
+  readonly run: Pick<Run, "resetShowAndFlight" | "togglePlayback">;
 }
 
 /** Bind playback and immediate time/position reset to their existing owners. */
 export function createTransportPanel({
   parent,
   signal,
-  show,
-  readShow = () => show,
   run,
 }: TransportPanelOptions): ConductorPanel {
   const root = requireElement(parent, ".conductor__transport", HTMLElement);
@@ -40,11 +35,7 @@ export function createTransportPanel({
     "[data-pause-icon]",
     HTMLElement,
   );
-  transportButton.addEventListener(
-    "click",
-    () => readShow()?.togglePlayback(),
-    { signal },
-  );
+  transportButton.addEventListener("click", run.togglePlayback, { signal });
   const stopButton = requireElement(
     root,
     ".conductor__stop-button",
@@ -52,18 +43,21 @@ export function createTransportPanel({
   );
   stopButton.disabled = false;
   stopButton.addEventListener("click", run.resetShowAndFlight, { signal });
-  let renderedPlaying: boolean | undefined;
 
   return {
     update(state): void {
-      const available = !!readShow();
-      transportButton.disabled = !available;
-      if (renderedPlaying === state.isPlaying) return;
-      renderedPlaying = state.isPlaying;
-      transportButton.dataset.playing = String(state.isPlaying);
-      playIcon.hidden = state.isPlaying;
-      pauseIcon.hidden = !state.isPlaying;
-      transportLabel.textContent = state.isPlaying ? "Pause" : "Play";
+      transportButton.disabled =
+        state.playback === "loading" || state.playback === "ended";
+      stopButton.disabled =
+        state.playback === "loading" || state.playback === "ended";
+      writeAttribute(transportButton, "data-playing", String(state.isPlaying));
+      const canPause = state.isPlaying || state.playback === "buffering";
+      playIcon.hidden = canPause;
+      pauseIcon.hidden = !canPause;
+      writeText(
+        transportLabel,
+        state.playback === "error" ? "Retry" : canPause ? "Pause" : "Play",
+      );
     },
   };
 }

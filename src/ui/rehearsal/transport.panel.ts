@@ -137,7 +137,7 @@ export function mountRehearsalTransport({
   }
   transportButton.addEventListener(
     "click",
-    () => readShow()?.togglePlayback(),
+    () => (run ? run.togglePlayback() : readShow()?.togglePlayback()),
     { signal },
   );
   let scrubSeconds: number | undefined;
@@ -161,7 +161,10 @@ export function mountRehearsalTransport({
     show: ReturnType<typeof readShow>,
     isPlaying: boolean,
   ): void {
-    transportButton.disabled = !show;
+    const playback = run?.readPlayback();
+    transportButton.disabled = playback
+      ? playback === "loading" || playback === "ended"
+      : !show;
     for (const { button } of languageButtons) button.disabled = !show;
     if (renderedPlaying !== isPlaying) {
       renderedPlaying = isPlaying;
@@ -198,7 +201,10 @@ export function mountRehearsalTransport({
   function draw(): void {
     const show = readShow();
     const sample = show?.sample() ?? { timeSeconds: 0, isPlaying: false };
-    updateControls(show, sample.isPlaying);
+    updateControls(
+      show,
+      run ? run.readPlayback() === "playing" : sample.isPlaying,
+    );
     updateProgress(scrubSeconds ?? sample.timeSeconds, run?.readTutorial());
     animationFrame = requestAnimationFrame(draw);
   }

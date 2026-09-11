@@ -332,6 +332,8 @@ test.each([
         calls.push({ cue, offset });
       },
       read: () => playback,
+      setPaused: () => {},
+      readStatus: () => "playing",
       setPresence: (next) => {
         presence = next;
       },
@@ -400,6 +402,8 @@ test("flying straight cannot earn the narrated right turn", () => {
       played.push(cue.url);
     },
     read: () => playback,
+    setPaused: () => {},
+    readStatus: () => "playing",
     setPresence: () => {},
     stop: () => {},
   });
@@ -429,6 +433,8 @@ test("following the right arc earns the next voice only after the current voice 
       playback.ended = false;
     },
     read: () => playback,
+    setPaused: () => {},
+    readStatus: () => "playing",
     setPresence: () => {},
     stop: () => {},
   });
@@ -459,6 +465,8 @@ function createClosingFixture() {
       playback.ended = false;
     },
     read: () => playback,
+    setPaused: () => {},
+    readStatus: () => "playing",
     setPresence: () => {},
     stop: () => {},
   });
@@ -500,6 +508,8 @@ test("closing atmosphere fades progressively while narration and resources stay 
         playback.ended = false;
       },
       read: () => playback,
+      setPaused: () => {},
+      readStatus: () => "playing",
       setPresence: (next) => {
         presence = next;
       },

@@ -237,6 +237,8 @@ export function createShowTimeline({
   }
 
   function updateChapters(showTimeSeconds: number, isTutorial: boolean): void {
+    if (tutorialButton)
+      writeAttribute(tutorialButton, "aria-pressed", String(isTutorial));
     if (tutorialSlot)
       writeAttribute(tutorialSlot, "data-current", String(isTutorial));
     for (const view of chapters) {

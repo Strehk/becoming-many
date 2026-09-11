@@ -1,4 +1,6 @@
 export const CONDUCTOR_SETTINGS = {
+  // Bounded operator observations also run while desktop animation callbacks stall in XR.
+  observationIntervalMilliseconds: 100,
   // How far an arrow key moves the show. Small enough to place a word, large
   // enough that holding the key crosses a section.
   nudgeSeconds: 5,
