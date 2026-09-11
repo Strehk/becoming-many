@@ -1,6 +1,8 @@
 export const CONDUCTOR_SETTINGS = {
   // Bounded operator observations also run while desktop animation callbacks stall in XR.
   observationIntervalMilliseconds: 100,
+  // Retry transient XR failures without flooding the browser or streaming runtime.
+  headsetRetryMilliseconds: 2_000,
   // How far an arrow key moves the show. Small enough to place a word, large
   // enough that holding the key crosses a section.
   nudgeSeconds: 5,

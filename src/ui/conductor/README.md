@@ -9,14 +9,15 @@ status presentation and UI cleanup. It owns no Show clock or visitor policy.
 
 ## Operator layout
 
-- Top: Sound, Controller and Headset status, plus technician tools.
+- Top: Sound, Controller and Headset status, the Picture button, and technician tools.
 - Main: large Play/Pause and Stop controls, EN/DE below, and the live preview
   alongside them on desktop. Narrow layouts stack controls and preview.
 - Bottom: one continuous timeline with chapter progress and chapter jump buttons.
   There is no separate elapsed-time display.
 
-Status combines an icon, readable text and color. Icons stay visible regardless
-of device connection; a dash is a status value, not a missing icon. The M5Stick
+Status combines an icon, readable text and color. Headset status explicitly shows
+Checking, VR unavailable, Ready or Streaming. Icons stay visible regardless
+of device connection. The M5Stick
 uses Lucide's rectangular `smartphone` glyph with a small button. Icons are
 individual SVG assets from the installed package, bound to declared SVG elements.
 
@@ -53,13 +54,18 @@ Shift), Home and End jump to the bounds. Its geometry follows Show time directly
 
 Technician tools use a native modal dialog: focus stays inside, Escape closes it
 and focus returns to the opener. Global show shortcuts are inactive while it is
-open. The language panel owns only language controls; the drawer owns its
-headset control, speed, resets and diagnostic readouts.
+open. The language panel owns only language controls; the drawer owns speed, resets and diagnostic readouts.
 
 The wake overlay displays suspended audio; Audio owns its user-activation
-listeners. Operator clicks other than Stop/Tutorial and the playback shortcut request available XR
-by default, within the browser-required user activation. Explicit headset start/stop
-remains in technician tools. During XR World copies the rendered left eye to the desktop canvas within the
+listeners. Picture intent starts enabled. The main Picture button displays actual session state
+and allows explicit start/stop. The headset panel uses the existing bounded observation
+tick to request available XR and recover unexpected session ends. Transient failures
+retry every two seconds; browser permission failures wait for an operator click or
+playback shortcut and display "Picture: click to retry". Explicit picture-off suppresses
+automatic starts until the Picture button enables them again. UI cleanup stops retries.
+WebXR cannot guarantee activation without a user gesture or detect every native
+streaming fault while a session remains active. PICO/SteamVR transport recovery must
+be verified on Windows. Battery telemetry is tracked separately in #131. During XR World copies the rendered left eye to the desktop canvas within the
 same frame, capped at 1280 × 720; no second scene render is added.
 M5 preview observes accepted samples without consuming flight button edges.
 The expandable Controller state section shows the last parsed `/state` reply
@@ -76,6 +82,13 @@ All authored styling lives in `src/ui/app.css` under the
 The [binding architecture](../../../docs/architecture.md#integration-star)
 owns dependencies and placement; GitHub issues own order.
 The full visitor restart and XR/calibration operation remain #9/#46.
+
+## Verification
+
+`bun tests/browser/headset-picture.mjs` exercises the real Conductor against a
+simulated XR contract: user activation, unexpected end, explicit off, transient
+retry spacing, reconnect and UI cleanup. Run Vite on port 4180 first, or pass
+the base URL as the first argument.
 
 ## Verification record
 

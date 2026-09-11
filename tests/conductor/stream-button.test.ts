@@ -15,13 +15,13 @@ describe("resolveStreamButton", () => {
         availability: "available",
         isSessionActive: false,
       }),
-    ).toEqual({ label: "Start headset picture", isEnabled: true });
+    ).toEqual({ label: "Picture Off", isEnabled: true });
   });
 
   test("offers the stop while a session runs", () => {
     expect(
       resolveStreamButton({ availability: "available", isSessionActive: true }),
-    ).toEqual({ label: "Stop headset picture", isEnabled: true });
+    ).toEqual({ label: "Picture On", isEnabled: true });
   });
 
   test("keeps the stop even if availability drops mid-session", () => {
@@ -30,7 +30,7 @@ describe("resolveStreamButton", () => {
         availability: "unsupported",
         isSessionActive: true,
       }),
-    ).toEqual({ label: "Stop headset picture", isEnabled: true });
+    ).toEqual({ label: "Picture On", isEnabled: true });
   });
 
   test("disables itself without a runtime", () => {
@@ -39,12 +39,12 @@ describe("resolveStreamButton", () => {
         availability: "unsupported",
         isSessionActive: false,
       }),
-    ).toEqual({ label: "No headset connected", isEnabled: false });
+    ).toEqual({ label: "Picture unavailable", isEnabled: false });
   });
 
   test("reads as unavailable while the support check is still out", () => {
     expect(
       resolveStreamButton({ availability: "unknown", isSessionActive: false }),
-    ).toEqual({ label: "No headset connected", isEnabled: false });
+    ).toEqual({ label: "Picture unavailable", isEnabled: false });
   });
 });

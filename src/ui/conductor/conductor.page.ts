@@ -18,6 +18,7 @@ import type { RunningShow } from "../../levels/show-contract";
 import type { XrSessionState } from "../../world/xr-contract";
 import { requireElement } from "../shared/dom";
 import type { TimelineRun } from "../shared/tutorial-timeline";
+import { createHeadsetPanel } from "./headset.panel";
 import {
   type ConductorAction,
   resolveConductorKey,
@@ -112,27 +113,18 @@ export function mountConductorPage({
     unsubscribeXr = xr.subscribe((state) => {
       xrState = state;
     });
-    // Immersive XR requires user activation; normal operation enables it by default.
-    function startHeadset(): void {
-      if (xrState.availability !== "available" || xrState.isSessionActive)
-        return;
-      void xr
-        .start()
-        .catch((reason: unknown) =>
-          console.warn("The headset session request failed.", reason),
-        );
-    }
+    const headset = createHeadsetPanel({ parent: masthead, xr, signal });
     page.addEventListener(
       "click",
       (event) => {
         if (
           event.target instanceof Element &&
           event.target.closest(
-            ".conductor__drawer, .conductor__tech-button, .conductor__stop-button, [data-tutorial]",
+            ".conductor__drawer, .conductor__tech-button, .conductor__stream-button",
           )
         )
           return;
-        startHeadset();
+        headset.requestFromGesture();
       },
       { signal },
     );
@@ -150,11 +142,11 @@ export function mountConductorPage({
       readShow,
       run,
       reloadPage,
-      xr,
       signal,
     });
     const panels: readonly ConductorPanel[] = [
       statusStrip,
+      headset,
       createTransportPanel({ parent: page, run, signal }),
       createShowTimeline({
         parent: page,
@@ -198,7 +190,7 @@ export function mountConductorPage({
 
     function executeAction(action: ConductorAction): void {
       if (action.kind === "toggleTransport") {
-        startHeadset();
+        headset.requestFromGesture();
         run.togglePlayback();
         return;
       }

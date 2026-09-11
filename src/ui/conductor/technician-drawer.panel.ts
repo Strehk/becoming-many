@@ -2,10 +2,8 @@ import type { Run } from "../../levels/run-contract";
 import type { RunningShow } from "../../levels/show-contract";
 import type { M5Observation } from "../../m5/m5-contract";
 import { M5_FIRMWARE_VERSION } from "../../m5/protocol";
-import type { XrSessionControl } from "../../world/xr-contract";
 import { requireElement, writeText } from "../shared/dom";
 import { bindConfirmation } from "./confirmation";
-import { resolveStreamButton } from "./headset-button-state";
 import { CONDUCTOR_SETTINGS } from "./operator-settings";
 import type { ConductorPanel } from "./view-state";
 
@@ -19,7 +17,6 @@ export interface TechDrawerOptions {
     | undefined;
   readonly run: Pick<Run, "resetFlight">;
   readonly reloadPage: () => void;
-  readonly xr: Pick<XrSessionControl, "start" | "stop">;
 }
 
 export interface TechDrawer {
@@ -36,7 +33,6 @@ export function createTechDrawer({
   readShow = () => show,
   run,
   reloadPage,
-  xr,
 }: TechDrawerOptions): TechDrawer {
   const root = requireElement(parent, ".conductor__drawer", HTMLDialogElement);
   const closeButton = requireElement(
@@ -65,27 +61,6 @@ export function createTechDrawer({
     { signal },
   );
   signal.addEventListener("abort", close, { once: true });
-  let isSessionActive = false;
-  const streamButton = requireElement(
-    root,
-    ".conductor__stream-button",
-    HTMLButtonElement,
-  );
-  const streamLabel = requireElement(
-    streamButton,
-    "[data-headset-label]",
-    HTMLElement,
-  );
-  streamButton.addEventListener(
-    "click",
-    () => {
-      const request = isSessionActive ? xr.stop() : xr.start();
-      request.catch((reason) =>
-        console.warn("The headset session request failed.", reason),
-      );
-    },
-    { signal },
-  );
   const m5Parent = requireElement(root, "[data-m5-parent]", HTMLElement);
   const rateButtons = CONDUCTOR_SETTINGS.timeScales.map((timeScale) => {
     const button = requireElement(
@@ -142,12 +117,6 @@ export function createTechDrawer({
     panel: {
       update(state): void {
         const available = !!readShow();
-        isSessionActive = state.xr.isSessionActive;
-        const view = resolveStreamButton(state.xr);
-        writeText(streamLabel, view.label);
-        streamButton.disabled = !view.isEnabled;
-        streamButton.dataset.streaming = String(isSessionActive);
-
         resetShow.disabled = !available;
         rateButtons.forEach((button, index) => {
           button.disabled = !available;

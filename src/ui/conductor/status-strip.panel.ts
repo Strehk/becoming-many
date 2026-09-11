@@ -41,7 +41,10 @@ function soundReading(audioState: AudioContextState): ReadingText {
 function headsetReading(xr: XrSessionState): ReadingText {
   if (xr.isSessionActive) return ["Streaming", "live"];
 
-  return xr.availability === "available" ? ["Ready", "idle"] : ["—", "idle"];
+  if (xr.availability === "unknown") return ["Checking", "idle"];
+  return xr.availability === "available"
+    ? ["Ready", "idle"]
+    : ["VR unavailable", "warn"];
 }
 
 /**

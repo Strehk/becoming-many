@@ -399,6 +399,9 @@ body:has(> .app) {
   }
 }
 @media (width < 540px) {
+  .conductor__tile-value {
+    font-size: 16px;
+  }
   .conductor__tech-button {
     align-self: start;
   }
