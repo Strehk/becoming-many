@@ -1,14 +1,14 @@
 import type { StartAudioSettings } from "./audio-contract";
 
-/** Spatial accents raised by 20% amplitude (+1.583625 dB), retaining speech ducking. */
+/** Spatial FX raised twice by 20%; pad raised by 20% then 15%, retaining speech ducking. */
 export const START_AUDIO_SETTINGS: StartAudioSettings = {
   sectionCapacity: 4,
   ringCapacity: 24,
-  pulseDb: -28.416375,
-  clickingDb: -42.416375,
-  baseDb: -37.416375,
-  padDb: -32.416375,
-  padSpeakingDb: -44.416375,
+  pulseDb: -26.83275,
+  clickingDb: -40.83275,
+  baseDb: -35.83275,
+  padDb: -31.202418,
+  padSpeakingDb: -43.202418,
   fadeSeconds: 0.6,
   clickingSources: 3,
   minimumDetuneCents: -2400,
