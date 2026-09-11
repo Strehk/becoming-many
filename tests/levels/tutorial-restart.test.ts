@@ -30,8 +30,10 @@ test("Run restarts tutorial across phases and owns pending restart cleanup", asy
           voice: {unload(){module.voiceEnded=true;}},
         };
       };
-      let showTime = 0, playing = false;
+      let showTime = 0, playing = false, language = "en";
+      const tutorialLanguages = [];
       const running = {
+        readLanguage: () => language,
         resetTime(){showTime=0;playing=false;}, seekTo(time){showTime=time;},
         play(){playing=true;}, pause(){playing=false;},
       };
@@ -53,7 +55,8 @@ test("Run restarts tutorial across phases and owns pending restart cleanup", asy
         },
         composeControls: () => ({ resetRig(){resetCount++;},
           flight:{update(){}}, constrainHeight(){} }),
-        composeLevel: async ({level}) => {
+        composeLevel: async ({level, language}) => {
+          if(level.tutorial) tutorialLanguages.push(language);
           if(level.tutorial && gate) await gate.promise;
           return createComposition(level.tutorial);
         },
@@ -71,6 +74,7 @@ test("Run restarts tutorial across phases and owns pending restart cleanup", asy
       const { startLevel } = await import("./src/levels/level.runtime.ts");
       const request = {kind:"show",preset:{},tutorial:{tutorial:true},show:{schedule:{durationSeconds:900}}};
       const run = await startLevel({}, request);
+      assert.deepEqual(tutorialLanguages, ["en"]);
       const availability = [];
       run.subscribeShow(show => availability.push(!!show));
       assert.equal(run.show,undefined);
@@ -80,6 +84,7 @@ test("Run restarts tutorial across phases and owns pending restart cleanup", asy
       run.skipTutorial(120);
       frame(0.5);
       assert.equal(run.readTutorial().phase,"transition");
+      language = "de";
       run.resetShowAndFlight();
       assert.equal(firstTutorial.ends,1);
       assert.equal(firstTutorial.voiceEnded,true);
@@ -89,6 +94,7 @@ test("Run restarts tutorial across phases and owns pending restart cleanup", asy
       frame(4);
       assert.equal(run.show,undefined,"old skip cannot finish a fresh tutorial");
       assert.equal(tutorialLoads,2);
+      assert.deepEqual(tutorialLanguages, ["en", "de"]);
 
       run.skipTutorial(120);
       frame(3);

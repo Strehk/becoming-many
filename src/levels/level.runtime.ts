@@ -189,6 +189,8 @@ class LevelRun {
       forShow: false,
       signal: this.signal,
       sharedAudio: this.audio,
+      language:
+        this.playback?.running.readLanguage() ?? this.request.show.language,
     });
     this.activateTutorial(this.tutorial, level);
   }
@@ -330,6 +332,10 @@ class LevelRun {
       level: this.level,
       assets: this.assets,
       forShow: this.request.kind === "show",
+      language:
+        this.request.kind === "show"
+          ? this.request.show.language
+          : this.request.language,
       signal: this.signal,
     });
     this.staticTutorial = composition.tutorial;

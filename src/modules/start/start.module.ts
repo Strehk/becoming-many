@@ -52,6 +52,10 @@ import {
   createAirParticlesModule,
 } from "./point-cloud/point-cloud.module";
 import { createAirParticleMaterial } from "./point-cloud/point-cloud-material";
+import {
+  ENGLISH_START_OPENING,
+  ENGLISH_START_VOICES,
+} from "./start-audio-cues";
 import { sampleClosingPresence } from "./start-closing";
 import type {
   ExerciseAction,
@@ -73,6 +77,8 @@ import { StartTiming } from "./start-timing";
 
 // 1. Local star: all concrete connections and the fixed display pool live here
 interface StartModuleOptions extends AirParticlesModuleOptions {
+  /** Session language supplied by Composition; direct visual demos retain German defaults. */
+  readonly language?: "en" | "de";
   readonly voice?: StartVoice;
   readonly atmosphere?: StartAudio;
   readonly guidance: FlightGuidanceParameters;
@@ -103,6 +109,8 @@ export function createStartModule(
 
 // 2. Lifetime and borrowed streaming resources
 class StartModule implements StartExperience {
+  private readonly exercises: readonly ExerciseDefinition[];
+  private readonly completeVoice: ExerciseDefinition["voice"];
   private readonly runtime = new ModuleRuntime();
   private readonly generationKey = {};
   private readonly noFlightDirection = new Vector3();
@@ -137,8 +145,15 @@ class StartModule implements StartExperience {
   private openingNeeded = false;
 
   constructor(private readonly options: StartModuleOptions) {
+    this.exercises = START_EXERCISES.map((exercise) =>
+      this.localizeExercise(exercise),
+    );
+    this.completeVoice =
+      options.language === "en"
+        ? ENGLISH_START_VOICES.complete
+        : START_SETTINGS.completeVoice;
     this.game = createStartGame({
-      exerciseCount: START_EXERCISES.length,
+      exerciseCount: this.exercises.length,
       repeatSequence: !options.voice,
       retireSeconds: START_SETTINGS.retireSeconds,
     });
@@ -147,6 +162,16 @@ class StartModule implements StartExperience {
       this.createElements(),
     );
     this.modules = this.createModules();
+  }
+
+  private localizeExercise(exercise: ExerciseDefinition): ExerciseDefinition {
+    if (this.options.language !== "en") return exercise;
+    return {
+      ...exercise,
+      voice: ENGLISH_START_VOICES[exercise.id],
+      sequence:
+        exercise.id === "right" ? ENGLISH_START_OPENING : exercise.sequence,
+    };
   }
 
   private createPaths(): Display[] {
@@ -374,7 +399,8 @@ class StartModule implements StartExperience {
 
   // Capture the moving player after "Anfang"; the surrounding room has its own cue.
   private updateOpening(): void {
-    const first = START_EXERCISES[0];
+    const first = this.exercises[0];
+    if (!first) throw new Error("Missing Start opening exercise");
     if (
       this.options.voice &&
       (this.worldPresence < 1 || this.pathPresence < 1)
@@ -429,8 +455,7 @@ class StartModule implements StartExperience {
     if (action === "prepare-next") {
       if (this.playInstruction(false, true)) this.prepareSection(true);
     }
-    if (action === "complete")
-      this.options.voice?.play(START_SETTINGS.completeVoice, 0);
+    if (action === "complete") this.options.voice?.play(this.completeVoice, 0);
     if (action === "finish" && this.current)
       this.retireElements(this.current.display);
     if (action === "advance") this.beginPreparedSection(true);
@@ -442,8 +467,8 @@ class StartModule implements StartExperience {
     this.cancelPending();
     const state = this.game.readState();
     const index =
-      (state.exerciseIndex + Number(continuation)) % START_EXERCISES.length;
-    const exercise = START_EXERCISES[index];
+      (state.exerciseIndex + Number(continuation)) % this.exercises.length;
+    const exercise = this.exercises[index];
     if (!exercise) return;
     const attempt = state.attempt + Number(continuation);
     const route = createFlightRoute(
@@ -608,7 +633,7 @@ class StartModule implements StartExperience {
   // 6. Start immediately on a short line; recovery first offers an approach ahead.
   private showEntry(recovery: boolean): boolean {
     const display = this.availableDisplay();
-    const exercise = START_EXERCISES[this.game.readState().exerciseIndex];
+    const exercise = this.exercises[this.game.readState().exerciseIndex];
     if (!display || !exercise) return false;
     const direction =
       this.options.viewpoint.worldFlightDirection ?? this.noFlightDirection;
@@ -779,7 +804,7 @@ class StartModule implements StartExperience {
     entry?: PlacedRoute,
   ): ActiveSection {
     if (entry) section = prependFlightEntry(entry, section);
-    const exercise = START_EXERCISES[this.game.readState().exerciseIndex];
+    const exercise = this.exercises[this.game.readState().exerciseIndex];
     if (!exercise) throw new Error("Unknown Start exercise");
     const exerciseRoute = {
       ...section.route,
@@ -808,7 +833,7 @@ class StartModule implements StartExperience {
     if (!this.options.voice) return this.instructionReleased();
     const state = this.game.readState();
     const exercise: ExerciseDefinition | undefined =
-      START_EXERCISES[state.exerciseIndex + Number(state.phase === "outro")];
+      this.exercises[state.exerciseIndex + Number(state.phase === "outro")];
     const cue =
       exercise?.sequence.pathAtSeconds ?? exercise?.voice.instructionAtSeconds;
     const playback = this.options.voice.read();
@@ -825,7 +850,7 @@ class StartModule implements StartExperience {
         state.phase === "outro"
       );
     const index = state.exerciseIndex + Number(state.phase === "outro");
-    const cue = START_EXERCISES[index]?.voice;
+    const cue = this.exercises[index]?.voice;
     const playback = this.options.voice.read();
     return (
       !!cue &&
@@ -840,7 +865,7 @@ class StartModule implements StartExperience {
     // Keep unfinished orientation intact during an early deviation.
     if (retry && !voice.read().ended) return true;
     const index = this.game.readState().exerciseIndex + Number(successor);
-    const cue = START_EXERCISES[index]?.voice;
+    const cue = this.exercises[index]?.voice;
     if (!cue) return false;
     const offset = retry ? cue.instructionAtSeconds : 0;
     if (!this.timing.canPlay(cue.durationSeconds - offset)) return false;

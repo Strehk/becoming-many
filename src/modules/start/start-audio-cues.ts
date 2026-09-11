@@ -1,22 +1,41 @@
-// 1. Verified recording inventory
-// Executable cue settings belong to each exercise in start-exercises.ts.
-// Current WAV hashes match docs/direction/start-audio-transcript.md and the
-// original word-alignment output. DE and EN files are byte-identical German speech.
-// Files: 48 kHz stereo float32 PCM. Durations are measured from shipped bytes.
+/** English recording cues and opening staging; Start owns selection and playback.
+ * German defaults remain in start-exercises.ts. Word alignment is approximate;
+ * provenance and measured durations are documented in start-audio-transcript.md.
+ */
+import type { ExerciseVoiceCue, StartSequence } from "./start-contract";
 
-// 2. Recording-local instruction offsets
-// introduction-right.wav: 20.725729 s; right instruction at 19.30 s.
-// left.wav:                2.735417 s; left instruction at 1.14 s.
-// up.wav:                  4.334896 s; backward lean / climb at 2.66 s.
-// down.wav:                2.552583 s; forward lean / descent at 1.04 s.
-// complete.wav:           13.861479 s; no new directional instruction.
-// Offsets are approximate word-alignment markers, not sample-exact boundaries.
-// Independent silence analysis supports their location, not exact word timing.
+export const ENGLISH_START_VOICES = {
+  right: {
+    url: "/audio/tutorial/en/introduction-right.wav",
+    durationSeconds: 18.174938,
+    instructionAtSeconds: 17.16,
+  },
+  left: {
+    url: "/audio/tutorial/en/left.wav",
+    durationSeconds: 3.002396,
+    instructionAtSeconds: 1.36,
+  },
+  up: {
+    url: "/audio/tutorial/en/up.wav",
+    durationSeconds: 3.507542,
+    instructionAtSeconds: 2.38,
+  },
+  down: {
+    url: "/audio/tutorial/en/down.wav",
+    durationSeconds: 2.102063,
+    instructionAtSeconds: 0.66,
+  },
+  complete: {
+    url: "/audio/tutorial/en/complete.wav",
+    durationSeconds: 13.297396,
+    instructionAtSeconds: 0,
+  },
+} as const satisfies Record<string, ExerciseVoiceCue>;
 
-// 3. Semantic playback contract
-// Native media offset releases the associated course. Frame time cannot replace
-// playback progress. Failure is distinct from natural end and releases nothing.
-// Praise belongs to the preceding earned success. Retries start at the current
-// instruction offset, omitting praise and the long orientation introduction.
-// Closing follows four earned successes; its direction recap creates no lessons.
-// The optional room cue at 13.12 s is not used for another visual effect.
+// At 2 m/s, preserve the German approach's remaining distance at the turn cue.
+export const ENGLISH_START_OPENING = {
+  approachMeters: 18.48,
+  pathAtSeconds: 8,
+  pathFadeSeconds: 3.2,
+  worldReveal: { atSeconds: 12.94, fadeSeconds: 3.2 },
+} as const satisfies StartSequence;

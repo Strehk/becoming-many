@@ -26,7 +26,7 @@ export interface ProgressParameters {
   readonly maximumStepMeters: number;
 }
 export interface ExerciseDefinition {
-  readonly id: string;
+  readonly id: "right" | "left" | "up" | "down";
   readonly voice: ExerciseVoiceCue;
   readonly sequence: StartSequence;
   readonly route: RouteParameters;

@@ -75,7 +75,7 @@ const ENTRY_READY_FRAMES =
 function createFixture(
   warmFrames = ENTRY_READY_FRAMES,
   voice?: StartVoice,
-  atmosphere?: StartAudio,
+  options: { atmosphere?: StartAudio; language?: "en" | "de" } = {},
 ) {
   const scene = new Scene();
   const viewpoint = createViewpoint();
@@ -84,7 +84,7 @@ function createFixture(
     scene,
     viewpoint,
     voice,
-    atmosphere,
+    ...options,
     parameters: PRESENTATION.particles,
     guidance: PRESENTATION.guidance,
     streamQueue: queue,
@@ -317,70 +317,80 @@ test("immediate flight keeps progress while route generation is delayed", () => 
   fixture.module.unload();
 });
 
-test("native speech offset gates the right course and failure never releases rings", () => {
-  const calls: { cue: ExerciseVoiceCue; offset: number }[] = [];
-  const playback = { offsetSeconds: 0, ended: false, failed: false };
-  let stops = 0;
-  let presence = 1;
-  const voice: StartVoice = {
-    play: (cue, offset) => {
-      calls.push({ cue, offset });
-    },
-    read: () => playback,
-    setPresence: (next) => {
-      presence = next;
-    },
-    stop: () => {
-      stops++;
-    },
-  };
-  const fixture = createFixture(180, voice);
-  fixture.module.setPresence(0.4);
-  expect(presence).toBe(0.4);
-  fixture.module.setPresence(1);
-  expect(calls[0]?.cue.url).toEndWith("introduction-right.wav");
-  expect(trails(fixture)).toHaveLength(0);
-  playback.offsetSeconds = 6.38;
-  fixture.tick();
-  expect(trails(fixture)).toHaveLength(0);
-  playback.offsetSeconds = 7.98;
-  for (let frame = 0; frame < 30; frame++) fixture.tick();
-  expect(trails(fixture)).toHaveLength(1);
-  for (let frame = 0; frame < ENTRY_READY_FRAMES; frame++) fixture.tick();
-  expect(trails(fixture)).toHaveLength(2);
-  expect(
-    fixture.scene.getObjectByName("StartParticleElements"),
-  ).toBeUndefined();
-  expect(trails(fixture)[0]?.material.opacity).toBeCloseTo(
-    START_SETTINGS.pathOpacity * 0.5,
-  );
-  playback.offsetSeconds = 13.36;
-  fixture.tick();
-  expect(trails(fixture)[0]?.material.opacity).toBeCloseTo(
-    START_SETTINGS.pathOpacity,
-  );
-  playback.offsetSeconds = 19.29;
-  fixture.tick();
-  expect(trails(fixture)).toHaveLength(2);
-  expect(
-    fixture.scene.getObjectByName("StartParticleElements"),
-  ).toBeUndefined();
-  playback.offsetSeconds = 19.3;
-  playback.failed = true;
-  fixture.tick();
-  expect(trails(fixture)).toHaveLength(2);
-  expect(
-    fixture.scene.getObjectByName("StartParticleElements"),
-  ).toBeUndefined();
-  playback.failed = false;
-  fixture.tick();
-  expect(trails(fixture)).toHaveLength(2);
-  expect(fixture.scene.getObjectByName("StartParticleElements")).toBeDefined();
-  fixture.module.deactivate();
-  expect(stops).toBe(1);
-  fixture.module.unload();
-  expect(fixture.scene.children).toHaveLength(0);
-});
+test.each([
+  { language: "de" as const, path: 6.38, room: 13.36, instruction: 19.3 },
+  { language: "en" as const, path: 8, room: 12.94, instruction: 17.16 },
+])(
+  "$language native speech gates the course and failure never releases rings",
+  ({ language, path, room, instruction }) => {
+    const calls: { cue: ExerciseVoiceCue; offset: number }[] = [];
+    const playback = { offsetSeconds: 0, ended: false, failed: false };
+    let stops = 0;
+    let presence = 1;
+    const voice: StartVoice = {
+      play: (cue, offset) => {
+        calls.push({ cue, offset });
+      },
+      read: () => playback,
+      setPresence: (next) => {
+        presence = next;
+      },
+      stop: () => {
+        stops++;
+      },
+    };
+    const fixture = createFixture(180, voice, { language });
+    fixture.module.setPresence(0.4);
+    expect(presence).toBe(0.4);
+    fixture.module.setPresence(1);
+    expect(calls[0]?.cue.url).toBe(
+      `/audio/tutorial/${language}/introduction-right.wav`,
+    );
+    expect(trails(fixture)).toHaveLength(0);
+    playback.offsetSeconds = path;
+    fixture.tick();
+    expect(trails(fixture)).toHaveLength(0);
+    playback.offsetSeconds = path + 1.6;
+    for (let frame = 0; frame < 30; frame++) fixture.tick();
+    expect(trails(fixture)).toHaveLength(1);
+    for (let frame = 0; frame < ENTRY_READY_FRAMES; frame++) fixture.tick();
+    expect(trails(fixture)).toHaveLength(2);
+    expect(
+      fixture.scene.getObjectByName("StartParticleElements"),
+    ).toBeUndefined();
+    expect(trails(fixture)[0]?.material.opacity).toBeCloseTo(
+      START_SETTINGS.pathOpacity * 0.5,
+    );
+    playback.offsetSeconds = room;
+    fixture.tick();
+    expect(trails(fixture)[0]?.material.opacity).toBeCloseTo(
+      START_SETTINGS.pathOpacity,
+    );
+    playback.offsetSeconds = instruction - 0.01;
+    fixture.tick();
+    expect(trails(fixture)).toHaveLength(2);
+    expect(
+      fixture.scene.getObjectByName("StartParticleElements"),
+    ).toBeUndefined();
+    playback.offsetSeconds = instruction;
+    playback.failed = true;
+    fixture.tick();
+    expect(trails(fixture)).toHaveLength(2);
+    expect(
+      fixture.scene.getObjectByName("StartParticleElements"),
+    ).toBeUndefined();
+    playback.failed = false;
+    fixture.tick();
+    expect(trails(fixture)).toHaveLength(2);
+    expect(
+      fixture.scene.getObjectByName("StartParticleElements"),
+    ).toBeDefined();
+    fixture.module.deactivate();
+    expect(stops).toBe(1);
+    fixture.module.unload();
+    expect(fixture.scene.children).toHaveLength(0);
+  },
+);
 
 test("flying straight cannot earn the narrated right turn", () => {
   const played: string[] = [];
@@ -498,12 +508,14 @@ test("closing atmosphere fades progressively while narration and resources stay 
       },
     },
     {
-      configureSection: () => {},
-      updateSection: () => {},
-      clearSection: () => {},
-      unload: () => {},
-      update: (frame) => {
-        presence = frame.presence ?? 1;
+      atmosphere: {
+        configureSection: () => {},
+        updateSection: () => {},
+        clearSection: () => {},
+        unload: () => {},
+        update: (frame) => {
+          presence = frame.presence ?? 1;
+        },
       },
     },
   );
@@ -583,7 +595,7 @@ function createAtmosphereFixture() {
     },
   };
   return {
-    fixture: createFixture(600, undefined, atmosphere),
+    fixture: createFixture(600, undefined, { atmosphere }),
     readPresence: () => presence,
   };
 }

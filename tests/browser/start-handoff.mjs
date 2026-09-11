@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import { chromium } from "playwright";
 
+const language = process.argv.includes("--de") ? "de" : "en";
+
 // Browser-only access to existing owners; production receives no debug commands.
 const browser = await chromium.launch({
   headless: true,
@@ -20,7 +22,13 @@ await page.route("**/src/levels/level.runtime.ts*", async (route) => {
 await page.addInitScript((realTime) => {
   const NativeAudio = window.Audio;
   window.testClips = [];
+  window.playedTutorialUrls = [];
   window.Audio = class extends NativeAudio {
+    play() {
+      if (this.src.includes("/tutorial/"))
+        window.playedTutorialUrls.push(this.src);
+      return super.play();
+    }
     constructor() {
       super();
       this.defaultPlaybackRate = realTime ? 1 : 8;
@@ -32,8 +40,8 @@ await page.addInitScript((realTime) => {
 try {
   await page.goto(
     process.argv.includes("--abort")
-      ? "http://127.0.0.1:4180/"
-      : "http://127.0.0.1:4180/start",
+      ? `http://127.0.0.1:4180/?language=${language}`
+      : `http://127.0.0.1:4180/start?language=${language}`,
   );
   await page.waitForFunction(() => window.handoffRun?.tutorial, {
     timeout: 120000,
@@ -299,6 +307,25 @@ try {
     await page.waitForTimeout(7000);
     await page.screenshot({ path: "/tmp/start-handoff-main.png" });
     assert.equal(result.timelinePreserved, true);
+    const recordings = await page.evaluate(() => window.playedTutorialUrls);
+    assert.ok(
+      recordings.every((url) => url.includes(`/tutorial/${language}/`)),
+    );
+    if (!process.argv.includes("--timeout"))
+      assert.deepEqual(
+        [...new Set(recordings.map((url) => url.split("/").at(-1)))],
+        [
+          "introduction-right.wav",
+          "left.wav",
+          "up.wav",
+          "down.wav",
+          "complete.wav",
+        ],
+      );
+    assert.equal(
+      await page.evaluate(() => window.show.readLanguage()),
+      language,
+    );
     console.log("Handoff:", result);
     console.log("Show:", await page.evaluate(() => window.show.sample()));
     await page.evaluate(async () => {

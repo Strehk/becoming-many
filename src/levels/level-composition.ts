@@ -128,6 +128,7 @@ export interface LoadedLevelAssets {
 }
 
 interface LevelCompositionOptions {
+  readonly language?: "en" | "de";
   readonly world: Pick<
     WorldContext,
     "scene" | "camera" | "viewerRig" | "viewpoint" | "streamQueue"
@@ -150,6 +151,7 @@ export interface ComposedLevel {
 }
 
 export async function composeLevel({
+  language = "en",
   world,
   level,
   assets,
@@ -506,6 +508,7 @@ export async function composeLevel({
       voice = createVoicePlayer({ gestures: window });
     if (!level.flightGuidance) return createAirParticlesModule(options);
     tutorial = createStartModule({
+      language,
       voice,
       atmosphere,
       ...options,

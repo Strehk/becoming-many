@@ -116,8 +116,12 @@ exercise repeats; a completed exercise remains earned when leaving its exit.
 
 The authored order is right, left, climb, descent. Each exercise owns its recording
 URL, measured duration and approximate word-aligned instruction offset. Current
-German WAVs match the transcript hashes; the EN copies contain identical German
-speech. `start-audio-cues.ts` records the analysis provenance and timing limits.
+German WAVs match the transcript hashes; English WAVs contain the delivered English
+recordings. `start-audio-cues.ts` owns English voice cues and opening staging;
+`start-exercises.ts` retains German defaults and shared course settings. Start
+selects its exercise data once at construction from Composition's session language.
+Run supplies Show's current language (including tutorial restarts) or the standalone
+request language. Browser entries default to English; `?language=de` selects German.
 
 `StartVoice` is an injected playback capability. Start selects the lesson; a Sound
 owner must supply native offset, natural end and failure separately. The engine
@@ -135,11 +139,14 @@ Each exercise has a typed `sequence` contract: `approachMeters`, optional
 use recording-local seconds. Start retains their presence across later recordings;
 renderers receive only opacity observations.
 
-The opening stays white until the end of "Anfang" at 6.38 s. The blue approach
+In German, the opening stays white until the end of "Anfang" at 6.38 s. The blue approach
 then fades in over 3.2 s, anchored to the actual player. Its 26 m ring-free
 approach preserves the turn distance at the later spoken instruction. Black room particles
 begin their separate 3.2 s fade at "Raum", 13.36 s. These markers come from the
-existing word alignment and remain adjustable. The continuous right curve is
+existing word alignment and remain adjustable. In English the path begins at
+8.00 s, the room at 12.94 s, and the right instruction at 17.16 s. The English
+approach is 18.48 m to preserve the remaining turn distance at that earlier cue;
+fade durations and subsequent route geometry are shared. The continuous right curve is
 prepared with the approach; rings and the entry signpost wait until 19.30 s.
 Rings emerge progressively over 2 s each. The first gate is 13 m into the chunk;
 three gates at 4.2 m intervals mark the bend. The open-stroke signpost stands
