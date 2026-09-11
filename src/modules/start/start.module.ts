@@ -139,6 +139,7 @@ class StartModule implements StartExperience {
       exerciseCount: START_EXERCISES.length,
       repeatSequence: !options.voice,
       retireSeconds: START_SETTINGS.retireSeconds,
+      pauseAfterExerciseSeconds: START_TIMING.pauseAfterExerciseSeconds,
     });
     this.paths = this.createPaths();
     this.elements = Array.from({ length: START_SETTINGS.elementPoolSize }, () =>

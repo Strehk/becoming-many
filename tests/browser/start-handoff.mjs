@@ -231,12 +231,12 @@ async function fly(endKey, fromExercise = false) {
       const section = start.current;
       const position = run.world.viewerRig.position;
       let origin = fromExercise ? section.route.exerciseEndMeters : -1;
-      if (paced && !fromExercise) {
+      if (paced) {
         let closest = Infinity;
         const candidate = position.clone();
         for (
           let distance = 0;
-          distance <= section.route.exerciseEndMeters;
+          distance <= section.route[endKey];
           distance += 0.1
         ) {
           section.route.sample(distance, candidate);

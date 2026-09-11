@@ -4,6 +4,7 @@ import type { ExerciseDefinition } from "./start-contract";
 // The 90-second deadline starts the full closing narration; it does not cut it off.
 export const START_TIMING = {
   maximumExerciseSeconds: 90,
+  pauseAfterExerciseSeconds: 3,
   voiceSafetySeconds: 0.75,
   closingAtmosphereFadeSeconds: 6,
 };
@@ -113,7 +114,7 @@ export const START_EXERCISES = [
     route: {
       leadMeters: 0,
       straightMeters: 3,
-      outroMeters: 3,
+      outroMeters: 9,
       turnSign: 1,
       turnRadiusMeters: { from: 10, to: 10.5 },
       turnDegrees: { from: 110, to: 110 },
@@ -162,7 +163,7 @@ export const START_EXERCISES = [
     route: {
       leadMeters: 0,
       straightMeters: 3,
-      outroMeters: 6,
+      outroMeters: 12,
       turnSign: -1,
       turnRadiusMeters: { from: 10, to: 10.5 },
       turnDegrees: { from: 110, to: 110 },
@@ -211,7 +212,7 @@ export const START_EXERCISES = [
       turnPlane: "vertical",
       leadMeters: 0,
       straightMeters: 2,
-      outroMeters: 3,
+      outroMeters: 9,
       turnSign: 1,
       turnRadiusMeters: { from: 12, to: 12.5 },
       turnDegrees: { from: 24, to: 24 },
@@ -260,7 +261,7 @@ export const START_EXERCISES = [
       turnPlane: "vertical",
       leadMeters: 0,
       straightMeters: 2,
-      outroMeters: 3,
+      outroMeters: 9,
       turnSign: -1,
       turnRadiusMeters: { from: 12, to: 12.5 },
       turnDegrees: { from: 24, to: 24 },

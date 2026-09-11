@@ -12,6 +12,22 @@ const FRAME: ExerciseFrame = {
   deviated: false,
 };
 
+test("earned exercise keeps three quiet seconds before the next narration and rings", () => {
+  const game = createStartGame({
+    exerciseCount: 4,
+    retireSeconds: 1,
+    pauseAfterExerciseSeconds: 3,
+  });
+  game.update(FRAME);
+  expect(
+    game.update({ ...FRAME, progress: "passed", deltaSeconds: 0 }),
+  ).toBeUndefined();
+  expect(
+    game.update({ ...FRAME, deltaSeconds: 2.9, deviated: true }),
+  ).toBeUndefined();
+  expect(game.update({ ...FRAME, deltaSeconds: 0.11 })).toBe("prepare-next");
+});
+
 test("deadline finishes an unpassed course once, without requiring the exit", () => {
   const game = createStartGame({ exerciseCount: 4, retireSeconds: 1 });
   game.update(FRAME);

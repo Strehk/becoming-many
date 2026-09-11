@@ -145,7 +145,7 @@ Rings emerge progressively over 2 s each. The first gate is 13 m into the chunk;
 three gates at 4.2 m intervals mark the bend. The open-stroke signpost stands
 at route meter 10, 5 m left of the route and 1.8 m above it, pointing at that gate.
 Its particle core is compact with no diffuse halo; ring appearance is unchanged. Initial placement therefore does not depend on loading or autoplay
-wait duration. The transition into the left lesson uses a 3 m exit and a 3 m entry;
+wait duration. The transition into the left lesson uses a 9 m exit and a 3 m entry;
 later lessons use 2 m entries. The actual media
 cue releases the prepared path and rings. Success plus native speech end starts
 the next recording during the existing exit. Success remains earned if the player
@@ -329,7 +329,7 @@ disable variation; a fixed seed reproduces varied routes.
 | `route.turnDegrees` | Horizontal heading change or vertical peak pitch, in degrees | 110 horizontal / 24 vertical |
 | `route.turnSign` | Left/down (-1), right/up (+1) | Per lesson |
 | `route.turnRadiusMeters` | Curve radius; smaller is tighter | 10–10.5 m horizontal / 12–12.5 m vertical |
-| `route.straightMeters` / `outroMeters` | Ring-free entry and exit | 2–3 / 3–6 m |
+| `route.straightMeters` / `outroMeters` | Ring-free entry and exit | 2–3 / 9–12 m |
 | `elements.ringCount` | Exact authored ring count, 0–12 | 3 per exercise |
 | `elements.spacingMeters` | Distance along the route between rings | 4.2 m |
 | `elements.firstMeters` | First ring route distance, clamped to exercise start | 13 m right, 4 m left, 3 m vertical |
@@ -342,15 +342,16 @@ inside the curved exercise: radius × angle in radians for horizontal turns,
 twice that length for the two-arc vertical profile. Invalid
 combinations fail before rendering instead of silently truncating the ring count.
 Three-ring sections span 8.4 m. The complete direct route targets approximately
-60 seconds at the unchanged 2 m/s flight speed, including the opening approach.
+60 seconds of direct flight at the unchanged 2 m/s speed, plus the authored
+three-second breathing space after each exercise.
 Native spoken-word markers and soft reveal envelopes remain intact. The left
-section reserves a 6 m exit for the longer climb instruction; every connector
+section reserves a 12 m exit for the longer climb instruction; every connector
 must provide at least the next spoken cue in travel time.
 
 ### Timing and automatic completion
 
 `START_TIMING` at the top of `start-exercises.ts` owns the adjustable deadline
-(`maximumExerciseSeconds: 90`), recording admission margin (`voiceSafetySeconds:
+(`maximumExerciseSeconds: 90`), post-exercise pause (`pauseAfterExerciseSeconds: 3`), recording admission margin (`voiceSafetySeconds:
 0.75`), and closing atmosphere fade (`closingAtmosphereFadeSeconds: 6`). The
 60-second flight duration is a design guideline controlled by route lengths and
 ring placements below, not a second timer or an automatic speed adjustment.
@@ -406,3 +407,6 @@ The atmosphere applies handoff presence once to every source gain, including
 the background pad. Native voice remains the foreground source. Browser verification checks source
 placement, negative detuning, audible stereo output, ducking and final disposal:
 `node tests/browser/start-atmosphere.mjs` with the development server on port 4180.
+
+Atmosphere levels in `audio/audio-settings.ts` are raised by 4 dB across pulse,
+clicking, base and pad. Speech ducking and all fade durations remain unchanged.
