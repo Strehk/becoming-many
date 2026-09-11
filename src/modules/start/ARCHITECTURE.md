@@ -25,7 +25,7 @@ route for that definition. A separate chunk engine is unnecessary for the MVP.
 | `flight-path/flight-deviation.ts` | Observe sustained movement outside the route corridor. |
 | `flight-path/flight-recovery.ts` | Compute a fresh approach from actual position and flight direction. |
 | `flight-path/particle-generation.ts` | Own bounded incremental particle work and cancellation. |
-| `flight-path/flight-progress.ts` | Observe ordered passage along the route using actual rig movement. |
+| `particle-elements/ring-passage.ts` | Share generous ring-crossing observations between feedback and lesson progress. |
 | `flight-path/flight-path.ts` | Own the visible particle trail, anchoring, fade, and resource disposal. |
 | `flight-path/path-particles.ts` | Generate particle attributes and material variation for a supplied route. |
 | `flight-path/particle-contract.ts` | Public particle ranges, sampled route, and material contracts. |
@@ -56,9 +56,9 @@ path generation, ring placement and progression. Storage contains only the tail,
 not an accumulating history. Clearing the course invalidates its old root.
 
 Each route has a straight entry (`straightMeters`), a curved exercise, and a
-straight tangent exit (`outroMeters`). The current default is a 12 m entry and
-24 m exit. Ordered passage to `exerciseEndMeters` earns success; the player then
-continues through the exit while the successor is prepared. The visible route
+straight tangent exit (`outroMeters`). Authored entries span 3–9 m and exits 3–6 m. The first two ring crossings earn success and immediately start the successor
+recording and preparation. Activation waits only for prepared visuals and the
+spoken cue, not the old section exit. The visible route
 never moves after placement.
 
 `flight-connection.ts` computes only the successor pose. Its first point and
@@ -88,8 +88,8 @@ follows travel pitch and gently levels before the first exercise. The first ring
 is another 12 m into that exercise chunk. Progress starts immediately, independently
 of streaming completion. The same approach sampler is reused for recovery.
 
-Rings occupy only `[exerciseStartMeters, exerciseEndMeters]`. A chunk's 24 m exit
-and its successor's 12 m entry therefore form a ring-free connection. Rendering
+Rings occupy only `[exerciseStartMeters, exerciseEndMeters]`. A chunk's exit
+and its successor's entry therefore form a ring-free connection. Rendering
 and progression sample the same fixed route; joining never depends on the
 player's position at the moment of transition.
 
@@ -101,10 +101,11 @@ outside travel, a heading difference of at least 0.87 radians from the forward
 route target, and the exercise ring area outside the camera view. A conservative
 6 m padding protects visible ring edges. Parallel offsets, returning toward the
 route, gaze alone and reset displacements do not trigger a course replacement. The approach to a fresh entry is included in the corridor.
-Looking away or standing still never triggers recovery. Ordered progression also
-uses ordered forward checkpoint-plane crossings with lateral corridor tolerance.
-The final plane must be crossed: wider tolerance cannot finish a chunk early.
-A missed checkpoint never independently requests recovery.
+Looking away or standing still never triggers recovery. Ring feedback and lesson success share one forward plane-crossing observer.
+Both of the first two rings must be crossed; the third ring is optional. The
+opening radius plus 2.95 m padding gives a 6 m acceptance radius, centered on
+the visible ring, including its 0.5 m downward presentation offset. Hidden
+route checkpoints no longer gate lesson success or the next section.
 
 `flight-recovery.ts` calculates only a new pose. At reveal time it captures the
 latest rig position and actual travel direction to place an approach 6 m ahead.
@@ -159,13 +160,13 @@ at route meter 10, 5 m left of the route and 1.8 m above it, pointing at that ga
 Its particle core is compact with no diffuse halo; ring appearance is unchanged. Initial placement therefore does not depend on loading or autoplay
 wait duration. The transition into the left lesson uses a 3 m exit and a 9 m entry;
 later lessons use 8 m entries. The actual media
-cue releases the prepared path and rings. Success plus native speech end starts
-the next recording during the existing exit. Success remains earned if the player
+cue releases the prepared path and rings. The second required ring starts
+the next recording immediately, even if the previous spoken tail is unfinished. Success remains earned if the player
 deviates while the spoken tail finishes. A successor cannot activate before its
 cue. Retry playback begins at the instruction marker, without preceding praise;
 an unfinished introduction remains intact during early recovery. Four successes
 play the closing recording once. Final rings retain behind-only retirement.
-`StartExperience.readComplete()` requires the final route exit (or the exercise
+`StartExperience.readComplete()` requires the final ring goal (or the exercise
 deadline) and the closing recording's natural end; playback failure never completes Start. Run
 owns the transition and supplies `setPresence()` for a shared room, path, ring
 and atmosphere fade. This multiplier is separate from spoken visual cues and
@@ -243,14 +244,14 @@ phase override is removed; ambient air and route wind keep their original behavi
 ### Directional light and passage feedback
 
 - `ring-passage.ts` intersects real movement segments with world-space ring planes.
-  Only forward crossings inside the clear opening emit an element index, once.
+  Only forward crossings within the opening plus configured padding emit an element index, once.
   Reverse movement, misses and position discontinuities do not produce success.
 - `particle-light.ts` owns a bounded timeline per element: a repeating forward
   sweep, a stronger single success sweep. Passage never retires an individual ring. It knows
   neither ring geometry nor exercise completion.
 - `particle-grain.vert.glsl` applies the same normalized local forward coordinate
   to all forms. Arrows illuminate from tail to tip; rings illuminate across their
-  depth. All rings remain until the full section, including its exit, is completed.
+  depth. Section retirement begins when the successor activates.
   Normal retirement fades only while each complete ring bound is behind actual
   flight direction. Abandoned-course retirement fades every ring over the same
   duration as its path, regardless of direction.

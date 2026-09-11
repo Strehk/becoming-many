@@ -54,7 +54,12 @@ export const START_SETTINGS = {
     color: 0xfb5f16,
   },
   elementRetirement: { capacity: 24, dissolveSeconds: 1.2, clearanceMeters: 2 },
-  elementPassage: { maximumStepMeters: 3 },
+  // Accept near-edge rig crossings, including the particle rim.
+  elementPassage: {
+    maximumStepMeters: 3,
+    paddingMeters: 2.95,
+    requiredRings: 2,
+  },
   elementSimulation: {
     radiusMeters: 5.2,
     impulse: 4,

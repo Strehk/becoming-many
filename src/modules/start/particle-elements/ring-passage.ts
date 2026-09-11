@@ -3,8 +3,11 @@ import type { RingPassage, RingTarget } from "./particle-contract";
 
 // 1. World-space movement only: no camera, rendering or exercise progression
 /** Detect swept forward crossings inside openings; discontinuous movement is ignored. */
-export function createRingPassage(maximumStepMeters: number): RingPassage {
-  return new RingPassageObserver(maximumStepMeters);
+export function createRingPassage(
+  maximumStepMeters: number,
+  paddingMeters = 0,
+): RingPassage {
+  return new RingPassageObserver(maximumStepMeters, paddingMeters);
 }
 class RingPassageObserver implements RingPassage {
   private rings: RingTarget[] = [];
@@ -13,7 +16,19 @@ class RingPassageObserver implements RingPassage {
   private readonly crossing = new Vector3();
   private readonly passed = new Set<number>();
   private readonly events: number[] = [];
-  constructor(private readonly maximumStepMeters: number) {}
+  constructor(
+    private readonly maximumStepMeters: number,
+    private readonly paddingMeters: number,
+  ) {}
+
+  readonly readPassed = (count: number): boolean => {
+    if (count <= 0 || this.rings.length < count) return false;
+    for (let index = 0; index < count; index++) {
+      const ring = this.rings[index];
+      if (!ring || !this.passed.has(ring.elementIndex)) return false;
+    }
+    return true;
+  };
 
   readonly reset = (
     rings: readonly RingTarget[],
@@ -57,7 +72,8 @@ class RingPassageObserver implements RingPassage {
       -before / (after - before),
     );
     return (
-      this.crossing.distanceToSquared(ring.center) <= ring.radiusMeters ** 2
+      this.crossing.distanceToSquared(ring.center) <=
+      (ring.radiusMeters + this.paddingMeters) ** 2
     );
   }
 }

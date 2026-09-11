@@ -13,7 +13,6 @@ import {
   prependFlightEntry,
 } from "./flight-path/flight-entry";
 import { createFlightPath } from "./flight-path/flight-path";
-import { createFlightProgress } from "./flight-path/flight-progress";
 import { placeFlightRecovery } from "./flight-path/flight-recovery";
 import { createFlightRoute } from "./flight-path/flight-route";
 import type { PathParticleParameters } from "./flight-path/particle-contract";
@@ -96,8 +95,6 @@ interface PendingSection {
 }
 interface ActiveSection extends PlacedRoute {
   readonly display: Display;
-  readonly exerciseProgress: ReturnType<typeof createFlightProgress>;
-  readonly exitProgress: ReturnType<typeof createFlightProgress>;
   readonly deviation: ReturnType<typeof createFlightDeviation>;
 }
 
@@ -245,6 +242,7 @@ class StartModule implements StartExperience {
       light: createParticleLight(START_SETTINGS.elementLight),
       passage: createRingPassage(
         START_SETTINGS.elementPassage.maximumStepMeters,
+        START_SETTINGS.elementPassage.paddingMeters,
       ),
       retirement: createElementRetirement(START_SETTINGS.elementRetirement),
       reveal: createElementReveal(START_SETTINGS.elementReveal),
@@ -397,9 +395,9 @@ class StartModule implements StartExperience {
     this.enqueuePending();
     this.publishPreparedPath();
     const position = this.readPosition();
-    this.applyAction(this.observeFlight(deltaSeconds));
     for (const { light, passage } of this.feedback.values())
       for (const index of passage.update(position)) light.pass(index);
+    this.applyAction(this.observeFlight(deltaSeconds));
     this.updateClosing();
     this.runtime.update(deltaSeconds);
     this.updateAtmosphere();
@@ -449,10 +447,11 @@ class StartModule implements StartExperience {
       return this.game.finishExercises();
     }
     const position = this.readPosition();
+    const passed = this.readRingProgress();
     return this.game.update({
       deltaSeconds,
-      progress: this.current?.exerciseProgress.update(position) ?? "pending",
-      reachedEnd: this.current?.exitProgress.update(position) === "passed",
+      progress: passed ? "passed" : "pending",
+      reachedEnd: passed,
       deviated:
         this.current?.deviation.update(position, this.options.viewpoint) ??
         false,
@@ -705,7 +704,19 @@ class StartModule implements StartExperience {
     this.prepareSection(false);
   }
 
-  // Visual passage feedback is independent of the exercise progression observer.
+  private readRingProgress(): boolean {
+    if (!this.current) return false;
+    const elements = this.bindings.get(this.current.display);
+    if (!elements) return false;
+    return (
+      this.feedback
+        .get(elements)
+        ?.passage.readPassed(START_SETTINGS.elementPassage.requiredRings) ??
+      false
+    );
+  }
+
+  // One passage observer owns both ring feedback and earned exercise progress.
   private showElements(
     display: Display,
     sources: readonly ElementSource[],
@@ -824,26 +835,12 @@ class StartModule implements StartExperience {
     if (entry) section = prependFlightEntry(entry, section);
     const exercise = this.exercises[this.game.readState().exerciseIndex];
     if (!exercise) throw new Error("Unknown Start exercise");
-    const exerciseRoute = {
-      ...section.route,
-      lengthMeters: section.route.exerciseEndMeters,
-    };
-    const exerciseProgress = createFlightProgress(
-      { route: exerciseRoute, pose: section.pose },
-      exercise.progress,
-      this.readPosition(),
-    );
-    const exitProgress = createFlightProgress(
-      section,
-      exercise.progress,
-      this.readPosition(),
-    );
     const deviation = createFlightDeviation(
       section,
       this.readPosition(),
       exercise.deviation,
     );
-    return { ...section, display, exerciseProgress, exitProgress, deviation };
+    return { ...section, display, deviation };
   }
 
   // 7. Native speech facts gate visuals; elapsed frame time is only the silent demo fallback.

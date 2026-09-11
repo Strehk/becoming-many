@@ -50,7 +50,7 @@ class StartGame {
     };
   }
 
-  // 2. Success prepares the successor while the player traverses the exit area
+  // 2. The ring goal starts the successor immediately; preparation and its cue gate activation.
   readonly update = (frame: ExerciseFrame): ExerciseAction => {
     this.state.elapsedSeconds += Math.max(0, frame.deltaSeconds);
     switch (this.state.phase) {
@@ -85,7 +85,7 @@ class StartGame {
         this.completedChunks + 1,
       );
     }
-    if (!this.exercisePassed || !frame.instructionEnded) return;
+    if (!this.exercisePassed) return;
     if (
       this.settings.repeatSequence === false &&
       this.state.exerciseIndex === this.settings.exerciseCount - 1
@@ -99,8 +99,7 @@ class StartGame {
 
   private observeExit(frame: ExerciseFrame): ExerciseAction {
     if (frame.deviated) return this.recover(true);
-    if (!frame.reachedEnd || !frame.prepared || !frame.instructionReleased)
-      return;
+    if (!frame.prepared || !frame.instructionReleased) return;
     this.advanceExercise();
     this.enterPhase("flying");
     return "advance";

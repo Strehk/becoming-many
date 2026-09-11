@@ -120,6 +120,8 @@ export interface RingTarget {
   readonly radiusMeters: number;
 }
 export interface RingPassage {
+  /** True after each of the first count rings has been crossed; reset clears it. */
+  readonly readPassed: (count: number) => boolean;
   /** Owns a snapshot; reset clears passage history and seeds the movement segment. */
   readonly reset: (
     rings: readonly RingTarget[],
