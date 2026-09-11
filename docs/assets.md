@@ -10,6 +10,7 @@ files, intermediate exports, and design documents stay outside `public/`.
 | `public/models/rocks/` | Rock GLBs and selectable packs |
 | `public/routes/animal-passages/` | Authored passage tracks |
 | `public/audio/narration/{en,de}/` | Cue-named narration recordings |
+| `public/audio/tutorial/{en,de}/` | Spoken training recordings |
 | `public/audio/granular/` | Approved granular source derivatives and provenance |
 | `public/fonts/rubik/` | Credit font, licence, and provenance |
 | `public/firmware/m5-controller/` | Merged firmware image and Flash manifest |
@@ -22,6 +23,14 @@ resolved.
 Use English lowercase kebab-case names. Use `-pack` for files containing several
 selectable objects and two-digit suffixes for variants. Narration file stems
 match cue IDs; route files use `-route`.
+
+## Speech loudness
+
+Narration and tutorial speech use offline two-pass FFmpeg loudness normalization
+targeting -16 LUFS, -2 dBTP and 11 LU loudness range. Verify the encoded output
+within 1 LU of the loudness target and below -1 dBTP, including MP3 overshoot.
+Preserve recording duration, sample rate and channel count so authored cues stay
+aligned. No additional runtime gain or processing is required.
 
 ## GLB material contract
 

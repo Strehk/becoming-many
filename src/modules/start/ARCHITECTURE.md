@@ -417,8 +417,8 @@ visual clock. Arrows have no sound sources.
 
 Each ring has a central pulse and three granular click sources on its rim,
 randomly detuned from zero to two octaves down. Each section has three unpitched,
-offset granular heads at its midpoint. The looping pad drops from -38 dB to
--50 dB during speech. Positional attenuation feeds one shared hall and limiter;
+offset granular heads at its midpoint. The looping pad drops from approximately
+-32.42 dB to -44.42 dB during speech. Positional attenuation feeds one shared hall and limiter;
 no dry path bypasses distance attenuation. Sources stop and dispose with their
 section. Four section slots bound their lifetime.
 
@@ -430,8 +430,9 @@ the background pad. Native voice remains the foreground source. Browser verifica
 placement, negative detuning, audible stereo output, ducking and final disposal:
 `node tests/browser/start-atmosphere.mjs` with the development server on port 4180.
 
-Atmosphere levels in `audio/audio-settings.ts` are raised by 4 dB across pulse,
-clicking, base and pad. Speech ducking and all fade durations remain unchanged.
+Atmosphere levels in `audio/audio-settings.ts` include a 20% amplitude increase
+(+1.583625 dB) across pulse, clicking, base and both pad levels. Speech ducking
+remains 12 dB and all fade durations remain unchanged.
 
 ### White-room closing sequence
 

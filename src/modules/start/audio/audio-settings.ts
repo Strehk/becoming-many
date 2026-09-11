@@ -1,14 +1,14 @@
 import type { StartAudioSettings } from "./audio-contract";
 
-/** Quiet spatial accents; the narrator remains the foreground voice. */
+/** Spatial accents raised by 20% amplitude (+1.583625 dB), retaining speech ducking. */
 export const START_AUDIO_SETTINGS: StartAudioSettings = {
   sectionCapacity: 4,
   ringCapacity: 24,
-  pulseDb: -30,
-  clickingDb: -44,
-  baseDb: -39,
-  padDb: -34,
-  padSpeakingDb: -46,
+  pulseDb: -28.416375,
+  clickingDb: -42.416375,
+  baseDb: -37.416375,
+  padDb: -32.416375,
+  padSpeakingDb: -44.416375,
   fadeSeconds: 0.6,
   clickingSources: 3,
   minimumDetuneCents: -2400,
