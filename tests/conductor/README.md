@@ -13,9 +13,12 @@ before touching the DOM is:
 `conductor-keys.test.ts` covers the key map, including the presses the page
 must leave alone: browser shortcuts and anything typed into a field.
 Show commands are exercised at their owner by the existing isolated Show/audio
-lifetime test in `tests/sound/drone-organ-composition.test.ts`. Production browser
-checks exercise transport, language, drag/release/cancel and time/flight reset.
-The reset remains a soft reset, not full visitor-lifecycle acceptance under #9.
+lifetime test in `tests/sound/drone-organ-composition.test.ts`. Browser checks
+exercise transport, language, drag/release/cancel and time/flight reset. The
+[live-language suite](../browser/README.md#live-language-regression) also exercises
+the initially paused tutorial, delayed/failed speech, rapid selection and cleanup.
+Stop restarts the tutorial on the same Run; language replacement never restarts
+it. Neither check establishes full visitor-lifecycle acceptance under #9.
 `stream-button.test.ts` covers the whole availability × session matrix behind
 the headset button's one label. `time-format.test.ts` covers the readouts an
 operator scans mid-show, chapter names included.

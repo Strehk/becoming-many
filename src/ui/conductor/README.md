@@ -37,7 +37,10 @@ not replace the Run. Browser reload and stored preferences belong to Entry.
 ## Public interface and retained interaction
 
 Panels draw a local view state and invoke only their needed public commands.
-`ConductorViewState` combines Show, XR and M5 observations for drawing. Drag preview, seek throttling, `wasPlaying`, keyboard mapping and
+`ConductorViewState` combines Run, Show, XR and M5 observations for drawing.
+Language commands and observations use Run directly; panels use one dynamic
+source for main Show capabilities without saved fallback handles.
+Drag preview, seek throttling, `wasPlaying`, keyboard mapping and
 confirmation timers are legitimate UI behavior. Schedule arithmetic remains
 in `dramaturgy`; device validity remains in M5.
 
@@ -49,7 +52,10 @@ blocked audio and retryable errors; the Tutorial chapter is marked while active.
 The Tutorial chapter invokes the same command. The selected main Show language
 is retained. The timeline is the only time display. Language is available before
 Play, throughout training and in the main Show. Changes replace speech in place,
-preserving playback, course progress and show position. Language selection sits below transport; the canvas stays in the main
+preserving playback, course progress and show position. The selected button
+reports the requested language; old speech may remain audible while a new file
+loads or if replacement fails. `L` toggles language under the same shortcut
+rules as transport. Language selection sits below transport; the canvas stays in the main
 surface when technician tools open or close. The timeline exposes its position
 as a keyboard-accessible slider: arrow keys seek by five seconds (thirty with
 Shift), Home and End jump to the bounds. Its geometry follows Show time directly.
@@ -86,6 +92,12 @@ owns dependencies and placement; GitHub issues own order.
 The full visitor restart and XR/calibration operation remain #9/#46.
 
 ## Verification
+
+`bun run test:language` exercises Conductor and Audience language selection with
+real native media, delayed/failed replacement, rapid input and lifetime checks.
+The `course` case earns all four lessons and switches during successor speech
+and closing. Commands and evidence limits are in the
+[browser verification guide](../../../tests/browser/README.md#live-language-regression).
 
 `bun tests/browser/headset-picture.mjs` exercises the real Conductor against a
 simulated XR contract: user activation, unexpected end, explicit off, transient

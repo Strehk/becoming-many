@@ -124,12 +124,44 @@ It does not establish flight-control correctness or comfortable motion.
 
 ## Live language regression
 
-With the development server on port 4180, run `bun run test:language`.
-The check uses real native media on Conductor and Audience, with deliberate delayed
-and failed replacement requests. It covers initial selection, live switching,
-rapid/repeated commands, pause during loading, reveal continuity, skip, Stop and
-unload. Screenshots and a machine-readable result are written to
-`/tmp/becoming-many-language-report` by default. A second argument overrides the
-base URL; a third overrides the output directory. Optional trailing case names
-(`conductor`, `audience`, `course`) select a targeted rerun. The harness disables
-Vite HMR to prevent source edits from interrupting an observed session.
+This focused harness requires Vite's development source endpoints, rather than
+the built Station or preview server. Start it separately:
+
+```sh
+bun run dev --host 127.0.0.1 --port 4180
+```
+
+Run all cases, or pass a base URL, output directory and trailing case names:
+
+```sh
+bun run test:language
+bun run test:language http://127.0.0.1:4180 /tmp/language-check conductor
+bun run test:language http://127.0.0.1:4180 /tmp/language-check audience course
+```
+
+| Case | Coverage |
+| --- | --- |
+| `conductor` | Selection before Play; live/paused EN/DE and `L`; rapid, same-language and reversed choices; delayed/failed media; pause during loading; reveal continuity; skip; main Show audio and unchanged clock; Stop; unload during replacement |
+| `audience` | The same live Run capability on `/`, retained owners and complete media cleanup |
+| `course` | Rig movement along the real course earns all four lessons; switches during successor/closing speech preserve progress and fades; natural handoff retains language and releases tutorial media |
+
+The browser is headless Chromium at 1280 × 800 with autoplay enabled. Shipped
+recordings use real native media; intercepted requests deliberately delay or fail
+replacement loading. Test-only access observes existing owners and drives the
+course rig; production exposes no additional commands. The harness disables
+Vite HMR so source edits cannot reload an observed session.
+
+The default output is `/tmp/becoming-many-language-report`. Each successful
+invocation writes `browser-results.json`, or `browser-results-<cases>.json` for a
+targeted run, plus numbered PNG screenshots. Existing output files can be
+overwritten; choose a new directory to retain separate evidence. The script does
+not generate the task's narrative report or resource comparison. Keep concise
+results in the owning issue, with the relevant revision and local artifacts.
+
+Assertions observe media source, native time, readiness and playback state;
+screenshots show UI and rendering, not audible quality. The autoplay-enabled run
+does not exercise permission denial; deterministic Sound tests cover blocked play
+promises and gesture retry. Slow native seeks are likewise unit-tested. These
+checks do not establish acoustic intelligibility, physical headset behavior or
+the Windows-PCVR 90-Hz target. The broader tutorial timeline suite separately
+checks `/start`, restart failure/retry and cancellation.

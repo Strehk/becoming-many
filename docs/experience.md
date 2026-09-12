@@ -56,5 +56,8 @@ and narration; UI only sends commands and displays observations.
 
 English and German narration share one typed schedule. The audio timebase is
 show-time authority, so suspended audio does not silently advance the piece.
+Language can change while training or Show continues. It changes speech without
+restarting the experience or clearing earned lessons; the previous recording
+continues until its replacement is ready. Paused playback remains paused.
 Exact visitor replacement, calibration, physical comfort, and installation
 acceptance remain issue-owned work.

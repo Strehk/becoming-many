@@ -7,9 +7,22 @@ Boundary: Audio graphs and media elements are verified in the browser.
 
 # Sound Tests
 
-The audio graph itself cannot be built here — Tone.js, the `AudioContext`, and
-the narration elements all need a browser — so these suites cover the parts of
-the drone organ that decide *what* the graph is asked to do.
+These suites use deterministic media and context fixtures to exercise playback
+and resource ownership, plus the pure decisions driving the drone organ. Real
+decoding, native media events and audio output still require browser evidence.
+
+`voice-player.test.ts` checks mapped cue time, gesture retries, pause/resume,
+delayed and failed replacements, rapid/reverted selection, bounded slow seeks,
+natural completion and stale results after stop/unload.
+`narration-player.test.ts` checks Show-clock following, exact held seeks,
+bounded playback attempts and replacement without interrupting the old source.
+It includes unequal recording lengths and slow-seek convergence.
+
+Start's [recording tests](../modules/start/start-recording.test.ts) protect
+spoken-marker correspondence; its [procedural tests](../modules/start/start-procedural.test.ts)
+protect progress, geometry and presentation during live changes. The
+[browser language suite](../browser/README.md#live-language-regression) verifies
+the same path with shipped recordings and deliberate network failures.
 
 `drone-organ-composition.test.ts` locks the composed piece against the score it
 plays under: exactly one layer exists for every voice the score names, and

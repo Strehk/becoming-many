@@ -30,11 +30,14 @@ unmodulated live followers; it never cancels scheduled music controls. Existing
 accepts the main recordings selected by Show, with measured durations. Changing
 language retains unchanged cue/URL elements and keeps the audible clip until its
 silent replacement is ready. At most one outgoing clip survives the prepared set;
-failed replacement does not stop current speech. Show
-supplies the selected cue and offset, including pause and language-repeat behavior.
-Unchanged Hold frames write neither native time nor rate. The player remembers
-only the last applied held seek and one pending/rejected native play attempt;
-Show remains the sole clock. A rejected start waits for Pause → Play or a new
+failed replacement does not stop current speech. Show supplies the selected cue
+and its unchanged schedule offset. A shorter outgoing recording is never sought
+past its own duration or restarted while the longer replacement loads.
+Replacement positioning is bounded to an initial seek and one final alignment;
+slow native seeks cannot indefinitely chase advancing Show time.
+Unchanged Hold frames write neither native time nor rate. Per-clip state retains
+the last held seek, one pending/rejected play attempt and bounded replacement
+positioning. Show remains the sole clock. A rejected start waits for Pause → Play or a new
 cue intent, rather than allocating another promise per frame. Pause, cue changes
 and unload invalidate stale requests; metadata arrival still applies the exact
 current scrub target.
@@ -88,20 +91,34 @@ trimmed or transcoded. Direct listening was unavailable in this session.
 | [atmosphere-source-11.mp3](../../public/audio/granular/atmosphere-source-11.mp3) | 3:49 | -13.8 LUFS |
 
 The original source files and prepared mono excerpts remain available as authored
-assets. The current Start level uses no audio; these recordings have no active
-runtime consumer. Selection and listening remain future content work.
+assets. The current tutorial uses the prepared sources under
+`public/audio/tutorial/atmosphere/`; its spatial playback and gain ownership are
+documented in [Start architecture](../modules/start/ARCHITECTURE.md#quiet-spatial-atmosphere).
 
-## Standalone tutorial voice
+## Tutorial voice
 
 `voice-player.ts` owns one active native audio element and at most one silent
-replacement for Start. Level Composition
-injects its public `VoicePlayback` capability; Run owns cleanup. Start selects
-recordings and instruction offsets. Optional spoken-marker maps translate native
-seconds onto the initial cue timeline without changing playback rate. Native playback reports timing and
-natural completion. Failure never masquerades as completion. Autoplay denial
-retries on a pointer/key gesture; stop/unload invalidate pending promises and
+replacement for Start. Level Composition injects its public `VoicePlayback`
+capability for both audience/Conductor training and standalone Start; Run owns
+cleanup. Start selects recordings and instruction offsets. Optional spoken-marker
+maps translate native seconds onto the initial cue timeline without changing
+playback rate. `play` selects a new cue; `replace` changes only its recording.
+`read` returns borrowed, nondecreasing cue seconds during usable playback within
+that selection, plus natural completion and failure separately. Failure never
+masquerades as completion. Autoplay denial retries on a pointer/key gesture;
+stop/unload invalidate pending promises and
 unload releases gesture listeners and the media source. There is no second clock.
 Main Show narration retains its clock-following player and EN/DE recordings.
 The tutorial ships separate German and English recordings. Language replacement
-preserves the active source until loading, seeking and playback succeed; newer
-selection, clip changes and cleanup discard obsolete replacements.
+preserves the active source until loading, seeking and playback succeed. A paused
+replacement stays paused and needs no playback start. Preparation permits one
+initial seek and one final alignment, so slow seeks still finish. Newer selection,
+clip changes and cleanup discard obsolete replacements. If the original ends
+naturally before replacement is ready, the candidate is discarded rather than
+replaying the completed cue; the next cue uses the current language. Gain survives
+replacement, including the tutorial handoff fade.
+
+Pure Sound contracts may be imported as types by Start; Sound implementations
+remain Composition dependencies. Unit coverage lives in
+[Sound tests](../../tests/sound/README.md), with real media checks in
+[browser verification](../../tests/browser/README.md#live-language-regression).

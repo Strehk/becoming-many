@@ -42,8 +42,8 @@ declare global {
   }
 }
 
-// Runtime request, not authored configuration: the rehearsal page only lets a
-// run arm its narration language. Standalone requests use their own entry.
+// Resolve the initial language from this request; the mounted UI can change it live.
+// Standalone requests use their own entry.
 const lifetime = new AbortController();
 window.addEventListener("pagehide", (event) => {
   if (!event.persisted) lifetime.abort();

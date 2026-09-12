@@ -43,6 +43,13 @@ With a development server on port 4180, `bun run test:tutorial-ui` exercises
 the tutorial block, operator skip, main transport and cancellation on Conductor,
 the audience page and its `/start` alias. It captures screenshots under `/tmp`.
 
+For language or native speech replacement changes, `bun run test:language`
+checks live and paused selection, delayed/failed media, rapid changes, earned
+lessons, closing and cleanup. It also requires the Vite development server;
+see [browser verification](../tests/browser/README.md#live-language-regression)
+for targeted cases, output paths and limits. Use this affected-interaction
+check alongside focused Sound/Start tests, rather than replaying a full Show.
+
 Run broad suites, full shows, and extended browser checks only when the changed
 boundary or issue acceptance requires them. Never weaken a test, suppress a
 finding, or update a benchmark reference merely to obtain a pass.

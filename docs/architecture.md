@@ -123,9 +123,14 @@ independently of main transport availability and connects changes to Start.
 Sound prepares one silent replacement while current speech continues; neither
 language selection nor delayed replacement restarts or pauses the experience.
 Start maps native spoken markers to its initial cue timeline, preserving course,
-progress and presentation. Content and Sound consume injected facts without reaching
-into other implementations. Start guidance approximates continued steering from heading change per meter
-of actual rig movement. Its arc preview owns no flight model or loop.
+progress and presentation. The requested language may differ from the audible
+source while replacement is pending or fails. Sound retains the usable source;
+UI does not infer a second language state from media readiness. Main Show keeps
+its shared schedule offsets; static runs retain their request language.
+Content and Sound consume injected facts without reaching into other
+implementations. Start guidance approximates continued steering from heading
+change per meter of actual rig movement. Its arc preview owns no flight model
+or loop.
 
 ## Local domain stars
 

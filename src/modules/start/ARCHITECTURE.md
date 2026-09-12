@@ -18,6 +18,7 @@ route for that definition. A separate chunk engine is unnecessary for the MVP.
 | `start-contract.ts` | Exercise definitions, poses, progress, and engine contracts. |
 | `start-exercises.ts` | One literal list of exercises and shared presentation settings. No functions. |
 | `start-timing.ts` | Narration-started deadline and admission of complete recordings. |
+| `start-recording.ts` | Select translated recordings and align their spoken markers with the initial course's cue time. |
 | `start-game.runtime.ts` | Current exercise, attempt identity, phase, retry, and completion decisions. |
 | `flight-path/flight-route.ts` | Generate and sample a route from geometric parameters and a seed. |
 | `flight-path/flight-course.ts` | Own the bounded course tail; every appended section connects to that tail. |
@@ -135,8 +136,16 @@ stop or unload. Failed replacements leave the current source usable.
 Standalone runs retain their request language. Browser entries default to English;
 `?language=de` selects German.
 
+The current cue identity belongs to Start, including the successor already
+speaking during `outro` and the closing recording. There is no second selected
+language state in Start. Marker maps include opening path and room fade boundaries,
+instruction onset and recording end; closing retains its configured fade and white
+hold boundaries. Interpolation changes observed cue time, never playback rate.
+The initial EN/DE course tuning remains fixed for its lifetime: switching a
+recording does not regenerate paths or change the approach length.
+
 `StartVoice` is an injected playback capability. Start selects the lesson; a Sound
-owner must supply native offset, natural end and failure separately. The engine
+owner supplies the mapped cue offset, natural end and failure separately. The engine
 never starts media or creates geometry. No audio element or second clock lives in
 Start. Without this capability, the standalone visual demo still uses its explicit
 two-second fallback and loops. Level Composition supplies `sound/voice-player.ts` for standalone Start. Run
@@ -149,7 +158,8 @@ while audio is blocked. The main Show keeps its existing narration player.
 
 Each exercise has a typed `sequence` contract: `approachMeters`, optional
 `pathAtSeconds` / `pathFadeSeconds`, and `worldReveal`. Both visual envelopes
-use recording-local seconds. Start retains their presence across later recordings;
+use the initial recording's cue seconds, even after a language change. Start
+retains their presence across later recordings;
 renderers receive only opacity observations.
 
 In German, the opening stays white until the end of "Anfang" at 6.38 s. The blue approach

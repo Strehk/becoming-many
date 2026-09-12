@@ -27,6 +27,21 @@ The exact server contract and Docker modes are documented beside their owner in
 commands are documented in [watchdog/README.md](../watchdog/README.md). Kiosk
 flags and limitations live in [KIOSK.md](../KIOSK.md).
 
+## Operator playback and language
+
+Conductor waits for Play with the tutorial prepared. EN/DE is available before
+Play, during training and in the main Show. Language changes replace speech in
+place; they do not restart training, pause playback or reset flight and progress.
+An already paused experience stays paused. Stop explicitly prepares a fresh
+paused tutorial and retains the selected language.
+
+The selected button represents the requested language. While its file loads,
+the previous recording continues; a failed replacement leaves that recording
+usable until its natural end. A language change therefore need not be audible
+immediately. Native playback state does not establish intelligibility or headset
+audio quality. UI details belong in the
+[Conductor documentation](../src/ui/conductor/README.md).
+
 ## Development and local station
 
 ```sh

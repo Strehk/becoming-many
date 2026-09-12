@@ -56,7 +56,9 @@ export interface AudioTimebase {
   readonly unload: () => Promise<void>;
 }
 
-/** Anchors map stable caller cue seconds to native recording seconds. */
+/** Caller-owned corresponding markers, increasing in both time domains from an implicit zero.
+ * Maps stable cue seconds to native seconds; omission uses native time unchanged.
+ */
 export interface VoiceRecording {
   readonly url: string;
   readonly timeMap?: readonly {
@@ -65,7 +67,7 @@ export interface VoiceRecording {
   }[];
 }
 
-/** One native speech source. Selection belongs to the caller; Sound owns its lifetime. */
+/** One active native source and at most one silent replacement, both owned by Sound. */
 export interface VoicePlayback {
   /** Hold/resume the selected clip at its native offset, including pending starts. */
   readonly setPaused: (paused: boolean) => void;
@@ -76,8 +78,11 @@ export interface VoicePlayback {
     | "blocked"
     | "error"
     | "ended";
+  /** Select a new cue at a finite nonnegative cue offset; invalidate prior playback/replacement. */
   readonly play: (recording: VoiceRecording, offsetSeconds: number) => void;
-  /** Stage one replacement while current speech continues; latest request wins. */
+  /** Replace only the recording at the current cue position, retaining pause and gain.
+   * Latest request wins; failure retains usable speech, natural end cancels replacement.
+   */
   readonly replace: (recording: VoiceRecording) => void;
   /** Borrowed observation in caller cue seconds. Failure never reports natural completion. */
   readonly read: () => {

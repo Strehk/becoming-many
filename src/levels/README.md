@@ -81,8 +81,10 @@ transition.
 
 ## UI boundary and resources
 
-Run owns experience startup, frame coordination and complete end; Show owns
-transport and language. Browser Entry chooses requests and connects a Run to
+Run owns experience startup, transport, frame coordination and complete end;
+Show owns main playback and language. Run exposes `readLanguage` and
+`setLanguage` independently of the main Show handle, which remains unavailable
+during training. Browser Entry chooses requests and connects a Run to
 UI. Page/panel code receives narrow public capabilities under the
 [Development guide](../../docs/development.md).
 
@@ -102,5 +104,13 @@ The same renderer, listener and XR session remain active throughout.
 
 Start exposes completion and presentation presence through its public contract.
 Composition connects resources; Run owns the handoff. Main modules stay inactive
-during the tutorial. `subscribeShow` lets the audience entry mount transport only
-when Show becomes available. Conductor retains direct main-show rehearsal.
+during the tutorial. Entry mounts transport once; `subscribeShow` reports main
+Show availability without remounting UI. Conductor prepares the same tutorial
+but waits for Play; audience entry starts automatically.
+
+Language changes update Show and refresh Start's current recording through its
+injected language query. They never invoke the restart path. Start retains the
+initial course and cue timeline while Sound replaces native speech. A tutorial
+constructed by Stop reads the current language, including changes made while
+its assets load. `ShowLevelRequest` carries language only in `show.language`;
+the separate `StaticLevelRequest.language` selects a fixed standalone language.
