@@ -1,20 +1,18 @@
 import { NARRATION_LANGUAGES } from "../../dramaturgy/narration-catalog";
-import type { RunningShow } from "../../levels/show-contract";
+import type { Run } from "../../levels/run-contract";
 import { requireElement } from "../shared/dom";
 import type { ConductorPanel } from "./view-state";
 
 export interface LanguagePanelOptions {
   readonly parent: HTMLElement;
   readonly signal: AbortSignal;
-  readonly show?: Pick<RunningShow, "setLanguage">;
-  readonly readShow?: () => Pick<RunningShow, "setLanguage"> | undefined;
+  readonly run: Pick<Run, "setLanguage">;
 }
 
 export function createLanguagePanel({
   parent,
   signal,
-  show,
-  readShow = () => show,
+  run,
 }: LanguagePanelOptions): ConductorPanel {
   const root = requireElement(parent, ".conductor__language", HTMLElement);
   const languageButtons = NARRATION_LANGUAGES.map((language) => {
@@ -23,7 +21,7 @@ export function createLanguagePanel({
       `[data-language="${language}"]`,
       HTMLButtonElement,
     );
-    button.addEventListener("click", () => readShow()?.setLanguage(language), {
+    button.addEventListener("click", () => run.setLanguage(language), {
       signal,
     });
     return button;
@@ -31,8 +29,8 @@ export function createLanguagePanel({
 
   return {
     update(state): void {
-      const available = !!readShow();
       const { language } = state;
+      const available = language !== undefined;
 
       languageButtons.forEach((button, index) => {
         button.disabled = !available;

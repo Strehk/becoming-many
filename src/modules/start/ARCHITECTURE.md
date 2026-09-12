@@ -126,8 +126,14 @@ German WAVs match the transcript hashes; English WAVs contain the delivered Engl
 recordings. `start-audio-cues.ts` owns English voice cues and opening staging;
 `start-exercises.ts` retains German defaults and shared course settings. Start
 selects its exercise data once at construction from Composition's session language.
-Run supplies Show's current language (including tutorial restarts) or the standalone
-request language. Browser entries default to English; `?language=de` selects German.
+Run injects Show's current language and asks Start to refresh the current recording
+when it changes. `start-recording.ts` aligns translated spoken markers with the
+initial exercise's cue seconds; geometry, earned progress, reveal envelopes and
+pause state survive live changes. Sound retains the old native source while one
+replacement loads and seeks, discards obsolete candidates, and releases both on
+stop or unload. Failed replacements leave the current source usable.
+Standalone runs retain their request language. Browser entries default to English;
+`?language=de` selects German.
 
 `StartVoice` is an injected playback capability. Start selects the lesson; a Sound
 owner must supply native offset, natural end and failure separately. The engine
@@ -135,7 +141,8 @@ never starts media or creates geometry. No audio element or second clock lives i
 Start. Without this capability, the standalone visual demo still uses its explicit
 two-second fallback and loops. Level Composition supplies `sound/voice-player.ts` for standalone Start. Run
 owns its cleanup, including partial startup; the Start module only stops its
-borrowed player when deactivated. The player owns one native audio element and
+borrowed player when deactivated. The player owns one active native audio element,
+plus at most one silent replacement during language changes, and
 retries autoplay denial on pointer/key gestures. Its native offset is hidden
 until playback starts, preventing a requested retry seek from releasing a cue
 while audio is blocked. The main Show keeps its existing narration player.

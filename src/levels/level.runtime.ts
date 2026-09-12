@@ -142,6 +142,19 @@ class LevelRun {
     };
   };
 
+  readonly readLanguage: Run["readLanguage"] = () => {
+    if (this.signal.aborted) return undefined;
+    return this.request.kind === "show"
+      ? (this.playback?.running.readLanguage() ?? this.request.show.language)
+      : (this.request.language ?? "en");
+  };
+
+  readonly setLanguage: Run["setLanguage"] = (language) => {
+    if (this.signal.aborted || this.request.kind !== "show") return;
+    this.playback?.running.setLanguage(language);
+    this.tutorial?.tutorial?.refreshLanguage();
+  };
+
   readonly readAudioState = (): AudioContextState => {
     if (this.signal.aborted) return "closed";
     return this.show?.readAudioState() ?? this.audio?.context.state ?? "closed";
@@ -224,6 +237,7 @@ class LevelRun {
       forShow: false,
       signal: this.signal,
       sharedAudio: this.audio,
+      readLanguage: this.readLanguage,
       language:
         this.playback?.running.readLanguage() ?? this.request.show.language,
     });

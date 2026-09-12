@@ -1,4 +1,5 @@
 import type { Vector3 } from "three";
+import type { VoicePlayback, VoiceRecording } from "../../sound/playback";
 import type { WorldModule } from "../../world/module-runtime";
 import type {
   FlightRoute,
@@ -49,32 +50,18 @@ export interface StartSequence {
 }
 
 /** Recording-local seconds; cue markers come from approximate word alignment. */
-export interface ExerciseVoiceCue {
+export interface ExerciseVoiceCue extends VoiceRecording {
   readonly url: string;
   readonly durationSeconds: number;
   readonly instructionAtSeconds: number;
 }
 
 /** Injected playback capability. Sound owns media and cleanup; Start owns lesson selection.
- * Offsets are native media seconds. Failure must never count as natural completion.
+ * Offsets follow the initial course cue timeline across translated recordings.
+ * Failure must never count as natural completion.
  */
-export interface StartVoice {
-  readonly setPaused: (paused: boolean) => void;
-  readonly readStatus: () =>
-    | "playing"
-    | "paused"
-    | "loading"
-    | "blocked"
-    | "error"
-    | "ended";
+export interface StartVoice extends Omit<VoicePlayback, "unload" | "play"> {
   readonly play: (cue: ExerciseVoiceCue, offsetSeconds: number) => void;
-  readonly read: () => {
-    readonly offsetSeconds: number;
-    readonly ended: boolean;
-    readonly failed: boolean;
-  };
-  readonly stop: () => void;
-  readonly setPresence: (presence: number) => void;
 }
 
 // 2. World placement and movement observations
@@ -145,6 +132,8 @@ export type ExerciseAction =
 
 /** Run owns the handoff; Start reports natural completion and accepts its visual/audio fade. */
 export interface StartExperience extends WorldModule {
+  /** Refresh only selected speech from the injected session language. */
+  readonly refreshLanguage: () => void;
   /** Hold lesson time, motion-driven progress and sound without discarding resources. */
   readonly setPaused: (paused: boolean) => void;
   readonly readPlayback: () =>

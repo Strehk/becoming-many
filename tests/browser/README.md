@@ -121,3 +121,15 @@ improvement or timing tolerance from a single run.
 
 The Start smoke check verifies particle visibility and reload lifetime only.
 It does not establish flight-control correctness or comfortable motion.
+
+## Live language regression
+
+With the development server on port 4180, run `bun run test:language`.
+The check uses real native media on Conductor and Audience, with deliberate delayed
+and failed replacement requests. It covers initial selection, live switching,
+rapid/repeated commands, pause during loading, reveal continuity, skip, Stop and
+unload. Screenshots and a machine-readable result are written to
+`/tmp/becoming-many-language-report` by default. A second argument overrides the
+base URL; a third overrides the output directory. Optional trailing case names
+(`conductor`, `audience`, `course`) select a targeted rerun. The harness disables
+Vite HMR to prevent source edits from interrupting an observed session.

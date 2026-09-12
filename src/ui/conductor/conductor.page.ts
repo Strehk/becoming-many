@@ -14,10 +14,8 @@ import xIcon from "lucide-static/icons/x.svg?no-inline";
 import { NARRATION_LANGUAGES } from "../../dramaturgy/narration-catalog";
 import type { NarrationSchedule } from "../../dramaturgy/narration-schedule";
 import type { Run } from "../../levels/run-contract";
-import type { RunningShow } from "../../levels/show-contract";
 import type { XrSessionState } from "../../world/xr-contract";
 import { requireElement } from "../shared/dom";
-import type { TimelineRun } from "../shared/tutorial-timeline";
 import { createHeadsetPanel } from "./headset.panel";
 import {
   type ConductorAction,
@@ -37,28 +35,19 @@ export interface ConductorPageOptions {
   readonly container: HTMLElement;
   readonly schedule: NarrationSchedule;
   readonly stationName: string | undefined;
-  readonly show?: Pick<
-    RunningShow,
-    | "sample"
-    | "play"
-    | "pause"
-    | "togglePlayback"
-    | "seekTo"
-    | "seekBy"
-    | "setTimeScale"
-    | "resetTime"
-    | "setLanguage"
-    | "readLanguage"
-    | "readActiveLevel"
-    | "readAudioState"
-  >;
   readonly run: Pick<
     Run,
-    "resetFlight" | "resetShowAndFlight" | "readPlayback" | "togglePlayback"
-  > &
-    Partial<
-      Pick<Run, "show" | "readTutorial" | "skipTutorial" | "readAudioState">
-    >;
+    | "show"
+    | "resetFlight"
+    | "resetShowAndFlight"
+    | "readPlayback"
+    | "togglePlayback"
+    | "readTutorial"
+    | "skipTutorial"
+    | "readAudioState"
+    | "readLanguage"
+    | "setLanguage"
+  >;
   readonly xr: Run["xr"];
   readonly m5: Pick<NonNullable<Run["m5"]>, "readObservation"> | undefined;
   readonly initialM5Host: string;
@@ -72,7 +61,6 @@ export function mountConductorPage({
   container: page,
   schedule,
   stationName,
-  show: initialShow,
   run,
   xr,
   m5,
@@ -81,7 +69,6 @@ export function mountConductorPage({
   onM5HostChange,
   reloadPage,
 }: ConductorPageOptions): () => void {
-  const readShow = () => run.show ?? initialShow;
   const lifetime = new AbortController();
   const { signal } = lifetime;
   let observationTimer: ReturnType<typeof setInterval> | undefined;
@@ -139,7 +126,6 @@ export function mountConductorPage({
         ".conductor__tech-button",
         HTMLButtonElement,
       ),
-      readShow,
       run,
       reloadPage,
       signal,
@@ -151,11 +137,7 @@ export function mountConductorPage({
       createShowTimeline({
         parent: page,
         schedule,
-        run:
-          run.readTutorial && run.skipTutorial
-            ? (run as TimelineRun)
-            : undefined,
-        readShow,
+        run,
         signal,
         onScrubChange: (seconds) => {
           scrubSeconds = seconds;
@@ -163,7 +145,7 @@ export function mountConductorPage({
       }),
       createLanguagePanel({
         parent: page,
-        readShow,
+        run,
         signal,
       }),
       createM5Panel({
@@ -202,37 +184,24 @@ export function mountConductorPage({
         run.resetFlight();
         return;
       }
-      const show = readShow();
+      if (action.kind === "toggleLanguage") {
+        const current = run.readLanguage();
+        if (!current) return;
+        const next = NARRATION_LANGUAGES.find(
+          (language) => language !== current,
+        );
+        if (next) run.setLanguage(next);
+        return;
+      }
+      const show = run.show;
       if (action.kind === "jumpToCue") {
         const cue = schedule.narration[action.cueIndex];
         if (!cue) return;
         if (show) show.seekTo(cue.atSeconds);
-        else run.skipTutorial?.(cue.atSeconds);
+        else run.skipTutorial(cue.atSeconds);
         return;
       }
-      if (!show) return;
-      executeShowAction(action, show);
-    }
-
-    function executeShowAction(
-      action: Exclude<
-        ConductorAction,
-        { kind: "resetFlight" | "jumpToCue" | "toggleTransport" | "resetShow" }
-      >,
-      show: NonNullable<ReturnType<typeof readShow>>,
-    ): void {
-      switch (action.kind) {
-        case "seekBy":
-          show.seekBy(action.offsetSeconds);
-          break;
-        case "toggleLanguage": {
-          const next = NARRATION_LANGUAGES.find(
-            (language) => language !== show.readLanguage(),
-          );
-          if (next) show.setLanguage(next);
-          break;
-        }
-      }
+      show?.seekBy(action.offsetSeconds);
     }
 
     function handleShortcut(event: KeyboardEvent): void {
@@ -254,21 +223,21 @@ export function mountConductorPage({
     window.addEventListener("keydown", handleShortcut, { signal });
 
     function draw(): void {
-      const show = readShow();
+      const show = run.show;
       const sample = show?.sample() ?? {
         timeSeconds: 0,
         isPlaying: false,
         timeScale: 1,
       };
+      const playback = run.readPlayback();
       const state: ConductorViewState = {
         showTimeSeconds: scrubSeconds ?? sample.timeSeconds,
-        isPlaying: run.readPlayback() === "playing",
-        playback: run.readPlayback(),
+        isPlaying: playback === "playing",
+        playback,
         timeScale: sample.timeScale,
-        language: show?.readLanguage() ?? "en",
+        language: run.readLanguage(),
         activeLevel: show?.readActiveLevel() ?? "tutorial",
-        audioState:
-          run.readAudioState?.() ?? show?.readAudioState() ?? "suspended",
+        audioState: run.readAudioState(),
         m5: m5?.readObservation(),
         xr: xrState,
       };

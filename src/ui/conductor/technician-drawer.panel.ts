@@ -1,5 +1,4 @@
 import type { Run } from "../../levels/run-contract";
-import type { RunningShow } from "../../levels/show-contract";
 import type { M5Observation } from "../../m5/m5-contract";
 import { M5_FIRMWARE_VERSION } from "../../m5/protocol";
 import { requireElement, writeText } from "../shared/dom";
@@ -11,11 +10,7 @@ export interface TechDrawerOptions {
   readonly parent: HTMLElement;
   readonly trigger: HTMLButtonElement;
   readonly signal: AbortSignal;
-  readonly show?: Pick<RunningShow, "setTimeScale" | "resetTime">;
-  readonly readShow?: () =>
-    | Pick<RunningShow, "setTimeScale" | "resetTime">
-    | undefined;
-  readonly run: Pick<Run, "resetFlight">;
+  readonly run: Pick<Run, "show" | "resetFlight">;
   readonly reloadPage: () => void;
 }
 
@@ -29,8 +24,6 @@ export function createTechDrawer({
   parent,
   trigger,
   signal,
-  show,
-  readShow = () => show,
   run,
   reloadPage,
 }: TechDrawerOptions): TechDrawer {
@@ -68,13 +61,9 @@ export function createTechDrawer({
       `[data-time-scale="${timeScale}"]`,
       HTMLButtonElement,
     );
-    button.addEventListener(
-      "click",
-      () => readShow()?.setTimeScale(timeScale),
-      {
-        signal,
-      },
-    );
+    button.addEventListener("click", () => run.show?.setTimeScale(timeScale), {
+      signal,
+    });
     return button;
   });
   const resetShow = requireElement(
@@ -82,7 +71,7 @@ export function createTechDrawer({
     "[data-reset-show]",
     HTMLButtonElement,
   );
-  resetShow.addEventListener("click", () => readShow()?.resetTime(), {
+  resetShow.addEventListener("click", () => run.show?.resetTime(), {
     signal,
   });
   requireElement(
@@ -116,7 +105,7 @@ export function createTechDrawer({
     m5Parent,
     panel: {
       update(state): void {
-        const available = !!readShow();
+        const available = !!run.show;
         resetShow.disabled = !available;
         rateButtons.forEach((button, index) => {
           button.disabled = !available;
@@ -138,7 +127,7 @@ export function createTechDrawer({
         }
         writeText(level, state.activeLevel);
         writeText(audio, state.audioState);
-        writeText(language, available ? state.language.toUpperCase() : "—");
+        writeText(language, state.language?.toUpperCase() ?? "—");
       },
     },
   };

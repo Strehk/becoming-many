@@ -44,7 +44,7 @@ function mount(playing = true, readDurationSeconds = () => 100) {
   attachScrubbing({
     track: track as unknown as SVGSVGElement,
     readDurationSeconds,
-    show: {
+    readShow: () => ({
       sample: () => ({
         isPlaying: playing,
         timeSeconds: 0,
@@ -53,7 +53,7 @@ function mount(playing = true, readDurationSeconds = () => 100) {
       pause: () => playback.push("pause"),
       play: () => playback.push("play"),
       seekTo: (seconds) => seeks.push(seconds),
-    },
+    }),
     onScrubChange: (seconds) => previews.push(seconds),
     signal: lifetime.signal,
   });

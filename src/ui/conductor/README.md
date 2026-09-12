@@ -47,7 +47,9 @@ main Show, resets flight and prepares a paused tutorial, including during traini
 or its transition. The readout distinguishes running, paused, loading, buffering,
 blocked audio and retryable errors; the Tutorial chapter is marked while active.
 The Tutorial chapter invokes the same command. The selected main Show language
-is retained. The timeline is the only time display. Language changes preserve playback and show position. Language selection sits below transport; the canvas stays in the main
+is retained. The timeline is the only time display. Language is available before
+Play, throughout training and in the main Show. Changes replace speech in place,
+preserving playback, course progress and show position. Language selection sits below transport; the canvas stays in the main
 surface when technician tools open or close. The timeline exposes its position
 as a keyboard-accessible slider: arrow keys seek by five seconds (thirty with
 Shift), Home and End jump to the bounds. Its geometry follows Show time directly.

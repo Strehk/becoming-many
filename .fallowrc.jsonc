@@ -190,7 +190,8 @@
           "show-queries",
           "world-contracts",
           "world-mechanics"
-        ]
+        ],
+        "allowTypeOnly": ["sound-contracts"]
       },
       {
         "from": "module-contracts",

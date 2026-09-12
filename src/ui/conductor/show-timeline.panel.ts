@@ -3,7 +3,7 @@ import {
   type TimelineChapter,
   timelineChapters,
 } from "../../dramaturgy/schedule-layout";
-import type { RunningShow } from "../../levels/show-contract";
+import type { Run } from "../../levels/run-contract";
 import { requireElement, writeAttribute, writeText } from "../shared/dom";
 import { cueDisplayName, formatShowTime } from "../shared/show-time-format";
 import { attachScrubbing } from "../shared/transport-scrubbing";
@@ -17,15 +17,14 @@ import {
 import { CONDUCTOR_SETTINGS } from "./operator-settings";
 import type { ConductorPanel } from "./view-state";
 
-type TimelineShow = Pick<RunningShow, "sample" | "play" | "pause" | "seekTo">;
-
 export interface ShowTimelineOptions {
   readonly parent: HTMLElement;
   readonly signal: AbortSignal;
   readonly schedule: NarrationSchedule;
-  readonly show?: TimelineShow;
-  readonly run?: TimelineRun;
-  readonly readShow?: () => TimelineShow | undefined;
+  readonly run: Pick<
+    Run,
+    "show" | "readTutorial" | "skipTutorial" | "resetShowAndFlight"
+  >;
   /** Reports the operator's own position, or undefined when the drag ends. */
   readonly onScrubChange: (showTimeSeconds: number | undefined) => void;
 }
@@ -41,16 +40,15 @@ export function createShowTimeline({
   parent,
   signal,
   schedule,
-  show,
   run,
-  readShow = () => run?.show ?? show,
   onScrubChange,
 }: ShowTimelineOptions): ConductorPanel {
-  const hasTutorial = !!run?.readTutorial();
+  const readShow = () => run.show;
+  const hasTutorial = !!run.readTutorial();
   const seek = (seconds: number) => {
     const available = readShow();
     if (available) available.seekTo(seconds);
-    else run?.skipTutorial(seconds);
+    else run.skipTutorial(seconds);
   };
   const durationSeconds = schedule.durationSeconds;
   const root = requireElement(parent, ".conductor__timeline", HTMLElement);
@@ -135,7 +133,7 @@ export function createShowTimeline({
       ".conductor__chapter-time",
       HTMLElement,
     ).textContent = "Chunks";
-    tutorialButton.addEventListener("click", () => run?.resetShowAndFlight(), {
+    tutorialButton.addEventListener("click", () => run.resetShowAndFlight(), {
       signal,
     });
     track.insertBefore(tutorialSlot, playhead);
@@ -263,7 +261,7 @@ export function createShowTimeline({
 
   return {
     update(state): void {
-      const tutorial = run?.readTutorial();
+      const tutorial = run.readTutorial();
       updatePosition(state.showTimeSeconds, tutorial);
       updateChapters(state.showTimeSeconds, !!tutorial);
     },

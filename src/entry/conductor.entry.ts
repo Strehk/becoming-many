@@ -51,7 +51,7 @@ try {
   );
   run = await pendingStart;
   lifetime.signal.throwIfAborted();
-  const { show, m5 } = run;
+  const { m5 } = run;
   unsubscribeShow = run.subscribeShow((activeShow) => {
     window.show = activeShow;
   });
@@ -61,7 +61,6 @@ try {
     container,
     schedule: PIECE_SCHEDULE,
     stationName: deployment.stationName,
-    show,
     run,
     m5,
     xr: run.xr,

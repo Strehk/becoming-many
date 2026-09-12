@@ -75,7 +75,11 @@ const ENTRY_READY_FRAMES =
 function createFixture(
   warmFrames = ENTRY_READY_FRAMES,
   voice?: StartVoice,
-  options: { atmosphere?: StartAudio; language?: "en" | "de" } = {},
+  options: {
+    atmosphere?: StartAudio;
+    language?: "en" | "de";
+    readLanguage?: () => "en" | "de";
+  } = {},
 ) {
   const scene = new Scene();
   const viewpoint = createViewpoint();
@@ -332,6 +336,7 @@ test.each([
         calls.push({ cue, offset });
       },
       read: () => playback,
+      replace: () => {},
       setPaused: () => {},
       readStatus: () => "playing",
       setPresence: (next) => {
@@ -402,6 +407,7 @@ test("flying straight cannot earn the narrated right turn", () => {
       played.push(cue.url);
     },
     read: () => playback,
+    replace: () => {},
     setPaused: () => {},
     readStatus: () => "playing",
     setPresence: () => {},
@@ -423,7 +429,7 @@ test("flying straight cannot earn the narrated right turn", () => {
   fixture.module.unload();
 });
 
-test("following the right arc earns the next voice only after the current voice ends", () => {
+test("passing the right turn starts its successor immediately without waiting for speech", () => {
   const played: string[] = [];
   const playback = { offsetSeconds: 0, ended: false, failed: false };
   const fixture = createFixture(0, {
@@ -433,6 +439,7 @@ test("following the right arc earns the next voice only after the current voice 
       playback.ended = false;
     },
     read: () => playback,
+    replace: () => {},
     setPaused: () => {},
     readStatus: () => "playing",
     setPresence: () => {},
@@ -447,7 +454,9 @@ test("following the right arc earns the next voice only after the current voice 
     START_EXERCISES[0].sequence.approachMeters,
   );
   flyRange(fixture, section, [0, section.route.exerciseEndMeters]);
-  expect(played).toHaveLength(1);
+  expect(played).toHaveLength(2);
+  expect(played[1]).toEndWith("left.wav");
+  expect(fixture.module.readProgress().completedChunks).toBe(1);
   playback.ended = true;
   for (let frame = 0; frame < 240; frame++) fixture.tick();
   expect(played[1]).toEndWith("left.wav");
@@ -465,6 +474,7 @@ function createClosingFixture() {
       playback.ended = false;
     },
     read: () => playback,
+    replace: () => {},
     setPaused: () => {},
     readStatus: () => "playing",
     setPresence: () => {},
@@ -508,6 +518,7 @@ test("closing atmosphere fades progressively while narration and resources stay 
         playback.ended = false;
       },
       read: () => playback,
+      replace: () => {},
       setPaused: () => {},
       readStatus: () => "playing",
       setPresence: (next) => {
@@ -633,5 +644,36 @@ test("handoff presence fades every rendered cloud and reaches atmosphere once", 
   fixture.module.activate();
   fixture.module.update?.(0);
   expect(readPresence()).toBe(1);
+  fixture.module.unload();
+});
+
+test("live language replacement preserves tutorial progress, position and geometry", () => {
+  let language: "en" | "de" = "en";
+  const replacements: { readonly url: string }[] = [];
+  const voice: StartVoice = {
+    play: () => {},
+    replace: (recording) => replacements.push(recording),
+    read: () => ({ offsetSeconds: 17.5, ended: false, failed: false }),
+    readStatus: () => "playing",
+    setPaused: () => {},
+    setPresence: () => {},
+    stop: () => {},
+  };
+  const fixture = createFixture(180, voice, {
+    language,
+    readLanguage: () => language,
+  });
+  const progress = fixture.module.readProgress();
+  const position = fixture.viewpoint.worldPosition.clone();
+  const children = [...fixture.scene.children];
+  language = "de";
+  fixture.module.refreshLanguage();
+  expect(replacements.at(-1)?.url).toBe(
+    "/audio/tutorial/de/introduction-right.wav",
+  );
+  expect(fixture.module.readProgress()).toEqual(progress);
+  expect(fixture.viewpoint.worldPosition).toEqual(position);
+  expect(fixture.scene.children).toEqual(children);
+  expect(fixture.module.readPlayback()).toBe("playing");
   fixture.module.unload();
 });

@@ -79,11 +79,12 @@ test("each world component appears only in its intended levels", () => {
   }
 });
 
-test("Start contains only the airborne particle environment", () => {
+test("Start contains the airborne particle environment and tutorial flight guidance", () => {
   expect(Object.keys(LEVEL_CATALOG.start).sort()).toEqual([
     "airParticles",
     "backgroundColor",
     "desktopFieldOfViewDegrees",
+    "flightGuidance",
     "flightSpeedMetersPerSecond",
     "maximumGroundClearanceMeters",
     "viewDistance",

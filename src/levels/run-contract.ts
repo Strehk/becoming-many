@@ -26,6 +26,10 @@ export interface TutorialObservation {
 export interface Run {
   readonly readPlayback: () => RunPlayback;
   readonly togglePlayback: () => void;
+  /** Current session language, available during tutorial and absent after unload. */
+  readonly readLanguage: () => NarrationLanguage | undefined;
+  /** Replace speech in place; preserve playback, progress and flight. Static runs ignore it. */
+  readonly setLanguage: (language: NarrationLanguage) => void;
   readonly unload: () => Promise<void>;
   readonly show: RunningShow | undefined;
   /** Current audio owner state; closed after unload starts. */
@@ -64,11 +68,11 @@ export interface Run {
 interface CommonLevelRequest {
   readonly signal?: AbortSignal;
   readonly preset: LevelPreset;
-  readonly language?: NarrationLanguage;
 }
 
 export interface StaticLevelRequest extends CommonLevelRequest {
   readonly kind: "static";
+  readonly language?: NarrationLanguage;
 }
 
 export interface ShowLevelRequest extends CommonLevelRequest {

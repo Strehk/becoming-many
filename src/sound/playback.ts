@@ -19,7 +19,9 @@ export interface NarrationPlayer {
   readonly readOffsetSeconds: (cueId: string) => number | undefined;
   /** Native completion or terminal playback failure, never a clock estimate. */
   readonly readHasEnded: (cueId: string) => boolean;
-  /** Replace the prepared clip set, retaining unchanged recordings without reloading. */
+  /** Replace prepared clips; retain current speech until its replacement can play.
+   * Unchanged recordings are reused. A failed replacement leaves current speech audible.
+   */
   readonly setRecordings: (recordings: readonly NarrationRecording[]) => void;
   readonly unload: () => void;
 }
@@ -54,6 +56,15 @@ export interface AudioTimebase {
   readonly unload: () => Promise<void>;
 }
 
+/** Anchors map stable caller cue seconds to native recording seconds. */
+export interface VoiceRecording {
+  readonly url: string;
+  readonly timeMap?: readonly {
+    readonly offsetSeconds: number;
+    readonly nativeSeconds: number;
+  }[];
+}
+
 /** One native speech source. Selection belongs to the caller; Sound owns its lifetime. */
 export interface VoicePlayback {
   /** Hold/resume the selected clip at its native offset, including pending starts. */
@@ -65,11 +76,10 @@ export interface VoicePlayback {
     | "blocked"
     | "error"
     | "ended";
-  readonly play: (
-    recording: { readonly url: string },
-    offsetSeconds: number,
-  ) => void;
-  /** Borrowed observation, refreshed on read. Failed/blocked playback never reports an end. */
+  readonly play: (recording: VoiceRecording, offsetSeconds: number) => void;
+  /** Stage one replacement while current speech continues; latest request wins. */
+  readonly replace: (recording: VoiceRecording) => void;
+  /** Borrowed observation in caller cue seconds. Failure never reports natural completion. */
   readonly read: () => {
     readonly offsetSeconds: number;
     readonly ended: boolean;

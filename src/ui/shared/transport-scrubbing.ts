@@ -3,8 +3,7 @@ import type { RunningShow } from "../../levels/show-contract";
 interface ScrubbingOptions {
   readonly track: SVGSVGElement;
   readonly readDurationSeconds: () => number;
-  readonly show?: Pick<RunningShow, "sample" | "play" | "pause" | "seekTo">;
-  readonly readShow?: () =>
+  readonly readShow: () =>
     | Pick<RunningShow, "sample" | "play" | "pause" | "seekTo">
     | undefined;
   readonly mapFraction?: (fraction: number) => number | undefined;
@@ -23,8 +22,7 @@ const SCRUB_INTERVAL_MILLISECONDS = 1_000 / 20;
 export function attachScrubbing({
   track,
   readDurationSeconds,
-  show: initialShow,
-  readShow = () => initialShow,
+  readShow,
   mapFraction,
   onUnavailableSeek,
   onScrubChange,

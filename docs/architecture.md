@@ -118,8 +118,13 @@ saved desktop camera pose on exit.
 `worldBodyDirection` publishes the rendered axis before local gaze; Credits
 consumes this observation without reconstructing a heading or pitch offset.
 
-Show owns time, language, narration and presentation policy. Content and Sound
-consume injected facts without reaching into other implementations. Start guidance approximates continued steering from heading change per meter
+Show owns time, language, narration and presentation policy. Run exposes language
+independently of main transport availability and connects changes to Start.
+Sound prepares one silent replacement while current speech continues; neither
+language selection nor delayed replacement restarts or pauses the experience.
+Start maps native spoken markers to its initial cue timeline, preserving course,
+progress and presentation. Content and Sound consume injected facts without reaching
+into other implementations. Start guidance approximates continued steering from heading change per meter
 of actual rig movement. Its arc preview owns no flight model or loop.
 
 ## Local domain stars

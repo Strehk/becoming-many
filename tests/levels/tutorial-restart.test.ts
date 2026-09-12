@@ -26,6 +26,7 @@ test("Run restarts tutorial across phases and owns pending restart cleanup", asy
           tutorial: tutorial ? {
             readProgress: () => ({completedChunks:0,totalChunks:4,phase:"active"}),
             readComplete: () => false, setPresence() {},
+            refreshLanguage() {module.language=language;},
             setPaused(value){module.paused=value;},
             readPlayback:()=>module.paused ? "paused" : "playing",
           } : undefined,
@@ -36,6 +37,7 @@ test("Run restarts tutorial across phases and owns pending restart cleanup", asy
       const tutorialLanguages = [];
       const running = {
         readLanguage: () => language,
+        setLanguage(next){language=next;},
         sample:()=>({timeSeconds:showTime,isPlaying:playing}),
         togglePlayback(){playing=!playing;},
         resetTime(){showTime=0;playing=false;}, seekTo(time){showTime=time;},
@@ -88,7 +90,14 @@ test("Run restarts tutorial across phases and owns pending restart cleanup", asy
       run.skipTutorial(120);
       frame(0.5);
       assert.equal(run.readTutorial().phase,"transition");
-      language = "de";
+      const loadsBeforeLanguage = tutorialLoads;
+      const progressBeforeLanguage = run.readTutorial();
+      run.setLanguage("de");
+      assert.equal(run.readLanguage(),"de");
+      assert.equal(tutorialLoads,loadsBeforeLanguage,"language never rebuilds the tutorial");
+      assert.deepEqual(run.readTutorial(),progressBeforeLanguage);
+      assert.equal(firstTutorial.active,true);
+      assert.equal(firstTutorial.language,"de");
       run.resetShowAndFlight();
       assert.equal(firstTutorial.ends,1);
       assert.equal(firstTutorial.voiceEnded,true);
@@ -144,6 +153,7 @@ test("Run restarts tutorial across phases and owns pending restart cleanup", asy
       assert.equal(ended,false,"unload awaits late composition before releasing shared owners");
       assert.equal(run.show,undefined);
       assert.equal(run.readTutorial(),undefined);
+      assert.equal(run.readLanguage(),undefined);
       gate.resolve();
       await ending;
       await tick();
@@ -161,6 +171,10 @@ test("Run restarts tutorial across phases and owns pending restart cleanup", asy
       gate=undefined;
       const plain = await startLevel({}, {...request,tutorial:undefined});
       running.seekTo(80);running.play();
+      plain.setLanguage("en");
+      assert.equal(plain.readLanguage(),"en");
+      assert.equal(showTime,80,"language retains main Show time");
+      assert.equal(playing,true,"language retains main playback");
       plain.resetShowAndFlight();
       assert.equal(plain.show,running,"shows without a tutorial retain normal rewind behavior");
       assert.equal(showTime,0);assert.equal(playing,false);

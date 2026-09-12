@@ -1,5 +1,141 @@
 import { expect, test } from "bun:test";
 
+test("language replacement keeps the audible source until ready and discards obsolete intent", async () => {
+  const probe = Bun.spawn(
+    [
+      process.execPath,
+      "-e",
+      `
+    import assert from "node:assert/strict";
+    const media = [];
+    class Audio {
+      currentTime = 0; playbackRate = 1; paused = true; ended = false;
+      readyState = 0; seeking = false; muted = false; error = null;
+      plays = 0; pauses = 0; nextPlay = () => Promise.resolve();
+      constructor(src) { this.src = src; media.push(this); }
+      play() { this.plays++; this.paused = false; return this.nextPlay(); }
+      pause() { this.pauses++; this.paused = true; }
+      removeAttribute() { this.src = ""; }
+      load() {}
+    }
+    globalThis.Audio = Audio;
+    globalThis.HTMLMediaElement = { HAVE_METADATA: 1, HAVE_CURRENT_DATA: 2 };
+    const { createNarrationPlayer } = await import("./src/sound/narration-player.ts");
+    const recordings = language => [{ cueId: "opening", url: "/" + language + ".wav", durationSeconds: 30 }];
+    const player = createNarrationPlayer({ recordings: recordings("en") });
+    const follow = (seconds, playing = true) => player.follow({
+      position: { cueId: "opening", offsetSeconds: seconds }, isPlaying: playing, timeScale: 1,
+    });
+    const english = media[0]; english.readyState = 4;
+    follow(4); await Promise.resolve();
+    const pauses = english.pauses;
+    player.setRecordings(recordings("de"));
+    const german = media.at(-1);
+    assert.equal(english.pauses, pauses, "selecting language must not pause the current source");
+    follow(5);
+    assert.equal(player.readIsPlaying(), true);
+    assert.equal(player.readOffsetSeconds("opening"), 5);
+    assert.equal(german.muted, true, "candidate must stay silent while pending");
+    await Promise.resolve();
+    german.readyState = 4; german.seeking = true;
+    follow(6);
+    assert.equal(english.paused, false, "metadata alone cannot end the current source");
+    german.seeking = false;
+    follow(6);
+    assert.equal(english.src, "");
+    assert.equal(german.muted, false);
+    assert.equal(player.readOffsetSeconds("opening"), 6);
+
+    player.setRecordings(recordings("en"));
+    const obsolete = media.at(-1);
+    let resolvePlay;
+    obsolete.nextPlay = () => new Promise(resolve => { resolvePlay = resolve; });
+    follow(7);
+    player.setRecordings(recordings("de"));
+    resolvePlay(); await Promise.resolve(); follow(8);
+    assert.equal(obsolete.src, "");
+    assert.equal(obsolete.paused, true);
+    assert.equal(german.paused, false);
+    assert.equal(media.at(-1), obsolete, "returning to the active language reuses its media");
+
+    player.setRecordings(recordings("en"));
+    const held = media.at(-1); held.readyState = 4;
+    follow(8, false);
+    assert.equal(held.paused, true);
+    assert.equal(held.currentTime, 8);
+    assert.equal(held.plays, 0, "a held language switch must not start audio");
+    assert.equal(german.src, "");
+    follow(8); await Promise.resolve();
+    player.setRecordings(recordings("de"));
+    const failed = media.at(-1); failed.readyState = 4;
+    failed.nextPlay = () => Promise.reject(new Error("unavailable"));
+    console.warn = () => {};
+    follow(9); await Promise.resolve(); follow(10);
+    assert.equal(held.paused, false, "a failed replacement cannot stop existing speech");
+    assert.equal(player.readIsPlaying(), true);
+    assert.equal(player.readHasEnded("opening"), false);
+    follow(10, false);
+    failed.nextPlay = () => Promise.resolve();
+    follow(10); await Promise.resolve(); follow(11);
+    assert.equal(failed.muted, false);
+
+    player.setRecordings(recordings("en"));
+    const cancelled = media.at(-1);
+    cancelled.nextPlay = () => new Promise(resolve => { resolvePlay = resolve; });
+    follow(12);
+    player.unload(); resolvePlay(); await Promise.resolve();
+    assert.ok(media.every(clip => clip.src === "" && clip.paused));
+    assert.equal(player.readIsPlaying(), false);
+
+    const unequal = createNarrationPlayer({ recordings: [{
+      cueId: "opening", url: "/short.wav", durationSeconds: 10,
+    }] });
+    const short = media.at(-1); short.readyState = 4;
+    const advance = seconds => unequal.follow({
+      position: { cueId: "opening", offsetSeconds: seconds }, isPlaying: true, timeScale: 1,
+    });
+    advance(9); await Promise.resolve();
+    unequal.setRecordings([{ cueId: "opening", url: "/long.wav", durationSeconds: 15 }]);
+    short.currentTime = 10; short.ended = short.paused = true;
+    const playsAtEnd = short.plays;
+    advance(11); advance(12);
+    assert.equal(short.plays, playsAtEnd, "a shorter retained recording cannot restart after its natural end");
+    assert.equal(short.currentTime, 10, "a retained source cannot be sought beyond its own duration");
+    unequal.unload();
+
+    const slow = createNarrationPlayer({ recordings: recordings("en") });
+    const original = media.at(-1); original.readyState = 4;
+    const tick = seconds => slow.follow({
+      position: { cueId: "opening", offsetSeconds: seconds }, isPlaying: true, timeScale: 1,
+    });
+    tick(3); await Promise.resolve();
+    slow.setRecordings(recordings("de"));
+    const candidate = media.at(-1); candidate.readyState = 4;
+    let position = 0, seeks = 0, remainingSeekFrames = 0;
+    Object.defineProperty(candidate, "currentTime", {
+      get: () => position,
+      set: seconds => { position = seconds; seeks++; remainingSeekFrames = 4; candidate.seeking = true; },
+    });
+    for (let frame = 0; frame < 10; frame++) {
+      if (remainingSeekFrames && --remainingSeekFrames === 0) candidate.seeking = false;
+      if (!candidate.seeking && !candidate.paused) position += 0.1;
+      original.currentTime = 3 + frame * 0.1;
+      tick(3 + frame * 0.1);
+      await Promise.resolve();
+      if (!candidate.muted) break;
+    }
+    assert.ok(seeks <= 2, "400ms native seeks cannot be restarted by frame drift correction");
+    assert.equal(candidate.muted, false, "bounded preparation eventually promotes the replacement");
+    assert.equal(original.src, "");
+    slow.unload();
+  `,
+    ],
+    { stdout: "pipe", stderr: "pipe" },
+  );
+  expect(await new Response(probe.stderr).text()).toBe("");
+  expect(await probe.exited).toBe(0);
+});
+
 test("narration writes changed native intent once and bounds rejected or pending play attempts", async () => {
   const probe = Bun.spawn(
     [

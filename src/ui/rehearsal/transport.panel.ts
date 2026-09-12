@@ -4,7 +4,7 @@ import {
 } from "../../dramaturgy/narration-catalog";
 import type { NarrationSchedule } from "../../dramaturgy/narration-schedule";
 import { timelineChapters } from "../../dramaturgy/schedule-layout";
-import type { RunningShow } from "../../levels/show-contract";
+import type { Run } from "../../levels/run-contract";
 import { requireElement, writeText } from "../shared/dom";
 import { cueDisplayName, formatShowTime } from "../shared/show-time-format";
 import { attachScrubbing } from "../shared/transport-scrubbing";
@@ -19,17 +19,7 @@ import {
 export interface RehearsalTransportOptions {
   readonly container: HTMLElement;
   readonly schedule: NarrationSchedule;
-  readonly run?: TimelineRun;
-  readonly show?: Pick<
-    RunningShow,
-    | "sample"
-    | "togglePlayback"
-    | "play"
-    | "pause"
-    | "seekTo"
-    | "readLanguage"
-    | "setLanguage"
-  >;
+  readonly run: TimelineRun & Pick<Run, "readLanguage" | "setLanguage">;
 }
 
 // A tenth of a percent is finer than the track displays; cache writes at that precision.
@@ -42,15 +32,14 @@ const PLAYHEAD_DECIMALS = 1;
 export function mountRehearsalTransport({
   container,
   schedule,
-  show: initialShow,
   run,
 }: RehearsalTransportOptions): () => void {
-  const readShow = () => run?.show ?? initialShow;
-  const hasTutorial = !!run?.readTutorial();
+  const readShow = () => run.show;
+  const hasTutorial = !!run.readTutorial();
   const seek = (seconds: number) => {
     const show = readShow();
     if (show) show.seekTo(seconds);
-    else run?.skipTutorial(seconds);
+    else run.skipTutorial(seconds);
   };
   const lifetime = new AbortController();
   const { signal } = lifetime;
@@ -116,14 +105,14 @@ export function mountRehearsalTransport({
   if (tutorialButton) {
     tutorialButton.dataset.tutorial = "";
     tutorialButton.textContent = "Tutorial";
-    tutorialButton.addEventListener("click", () => run?.resetShowAndFlight(), {
+    tutorialButton.addEventListener("click", () => run.resetShowAndFlight(), {
       signal,
     });
     sections.append(tutorialButton);
   }
 
   for (const { language, button } of languageButtons) {
-    button.addEventListener("click", () => readShow()?.setLanguage(language), {
+    button.addEventListener("click", () => run.setLanguage(language), {
       signal,
     });
   }
@@ -135,11 +124,7 @@ export function mountRehearsalTransport({
     sections.append(button);
     track.append(tick);
   }
-  transportButton.addEventListener(
-    "click",
-    () => (run ? run.togglePlayback() : readShow()?.togglePlayback()),
-    { signal },
-  );
+  transportButton.addEventListener("click", run.togglePlayback, { signal });
   let scrubSeconds: number | undefined;
   attachScrubbing({
     track,
@@ -157,20 +142,17 @@ export function mountRehearsalTransport({
   let renderedPlayheadLeft: string | undefined;
   let renderedLanguage: NarrationLanguage | undefined;
 
-  function updateControls(
-    show: ReturnType<typeof readShow>,
-    isPlaying: boolean,
-  ): void {
-    const playback = run?.readPlayback();
-    transportButton.disabled = playback
-      ? playback === "loading" || playback === "ended"
-      : !show;
-    for (const { button } of languageButtons) button.disabled = !show;
+  function updateControls(): void {
+    const playback = run.readPlayback();
+    const isPlaying = playback === "playing";
+    const language = run.readLanguage();
+    transportButton.disabled = playback === "loading" || playback === "ended";
+    for (const { button } of languageButtons)
+      button.disabled = language === undefined;
     if (renderedPlaying !== isPlaying) {
       renderedPlaying = isPlaying;
       transportButton.textContent = isPlaying ? "Hold" : "Play";
     }
-    const language = show?.readLanguage();
     if (renderedLanguage === language) return;
     renderedLanguage = language;
     for (const entry of languageButtons) {
@@ -201,11 +183,8 @@ export function mountRehearsalTransport({
   function draw(): void {
     const show = readShow();
     const sample = show?.sample() ?? { timeSeconds: 0, isPlaying: false };
-    updateControls(
-      show,
-      run ? run.readPlayback() === "playing" : sample.isPlaying,
-    );
-    updateProgress(scrubSeconds ?? sample.timeSeconds, run?.readTutorial());
+    updateControls();
+    updateProgress(scrubSeconds ?? sample.timeSeconds, run.readTutorial());
     animationFrame = requestAnimationFrame(draw);
   }
 

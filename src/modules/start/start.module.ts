@@ -71,13 +71,15 @@ import {
   START_TIMING,
 } from "./start-exercises";
 import { createStartGame } from "./start-game.runtime";
+import { createStartRecording, type StartCue } from "./start-recording";
 import { samplePathPresence, sampleWorldPresence } from "./start-sequence";
 import { StartTiming } from "./start-timing";
 
 // 1. Local star: all concrete connections and the fixed display pool live here
 interface StartModuleOptions extends AirParticlesModuleOptions {
-  /** Session language supplied by Composition; direct visual demos retain German defaults. */
+  /** Initial course staging supplied by Composition; direct visual demos default to German. */
   readonly language?: "en" | "de";
+  readonly readLanguage?: () => "en" | "de" | undefined;
   readonly voice?: StartVoice;
   readonly atmosphere?: StartAudio;
   readonly guidance: FlightGuidanceParameters;
@@ -107,7 +109,7 @@ export function createStartModule(
 // 2. Lifetime and borrowed streaming resources
 class StartModule implements StartExperience {
   private readonly exercises: readonly ExerciseDefinition[];
-  private readonly completeVoice: ExerciseDefinition["voice"];
+  private currentVoice: StartCue | undefined;
   private readonly runtime = new ModuleRuntime();
   private readonly generationKey = {};
   private readonly noFlightDirection = new Vector3();
@@ -146,10 +148,6 @@ class StartModule implements StartExperience {
     this.exercises = START_EXERCISES.map((exercise) =>
       this.localizeExercise(exercise),
     );
-    this.completeVoice =
-      options.language === "en"
-        ? ENGLISH_START_VOICES.complete
-        : START_SETTINGS.completeVoice;
     this.game = createStartGame({
       exerciseCount: this.exercises.length,
       repeatSequence: !options.voice,
@@ -305,31 +303,11 @@ class StartModule implements StartExperience {
     this.updateOpening();
   };
   readonly deactivate = (): void => {
-    this.active = false;
-    this.stopAtmosphere();
-    this.options.voice?.stop();
-    this.bindings.clear();
-    this.retiringPaths.clear();
-    this.course.clear();
-    this.entry = undefined;
-    this.recoveryEntryNeeded = false;
-    for (const { passage } of this.feedback.values())
-      passage.reset([], this.readPosition());
-    this.cancelPending();
+    this.stopCourse();
     for (const module of this.modules) this.runtime.deactivate(module);
   };
   readonly unload = (): void => {
-    this.active = false;
-    this.stopAtmosphere();
-    this.options.voice?.stop();
-    this.bindings.clear();
-    this.retiringPaths.clear();
-    this.course.clear();
-    this.entry = undefined;
-    this.recoveryEntryNeeded = false;
-    for (const { passage } of this.feedback.values())
-      passage.reset([], this.readPosition());
-    this.cancelPending();
+    this.stopCourse();
     this.current = undefined;
     const errors: unknown[] = [];
     for (const module of this.modules) {
@@ -342,6 +320,21 @@ class StartModule implements StartExperience {
     this.options.atmosphere?.unload();
     if (errors.length) throw new AggregateError(errors, "Start cleanup failed");
   };
+
+  private stopCourse(): void {
+    this.active = false;
+    this.stopAtmosphere();
+    this.currentVoice = undefined;
+    this.options.voice?.stop();
+    this.bindings.clear();
+    this.retiringPaths.clear();
+    this.course.clear();
+    this.entry = undefined;
+    this.recoveryEntryNeeded = false;
+    for (const { passage } of this.feedback.values())
+      passage.reset([], this.readPosition());
+    this.cancelPending();
+  }
 
   /** Passage or the deadline ends exercises; the closing recording must finish naturally. */
   readonly readComplete = (): boolean => {
@@ -472,7 +465,7 @@ class StartModule implements StartExperience {
     if (action === "prepare-next") {
       if (this.playInstruction(false, true)) this.prepareSection(true);
     }
-    if (action === "complete") this.options.voice?.play(this.completeVoice, 0);
+    if (action === "complete") this.playVoice("complete", 0);
     if (action === "finish" && this.current)
       this.retireElements(this.current.display);
     if (action === "advance") this.beginPreparedSection(true);
@@ -880,12 +873,33 @@ class StartModule implements StartExperience {
     // Keep unfinished orientation intact during an early deviation.
     if (retry && !voice.read().ended) return true;
     const index = this.game.readState().exerciseIndex + Number(successor);
-    const cue = this.exercises[index]?.voice;
-    if (!cue) return false;
+    const exercise = this.exercises[index];
+    if (!exercise) return false;
+    const cue = exercise.voice;
     const offset = retry ? cue.instructionAtSeconds : 0;
     if (!this.timing.canPlay(cue.durationSeconds - offset)) return false;
-    voice.play(cue, offset);
+    this.playVoice(exercise.id, offset);
     return true;
+  }
+
+  /** Sound swaps only speech; course, reveal gates and exercise state retain their lifetime. */
+  readonly refreshLanguage = (): void => {
+    if (!this.currentVoice) return;
+    this.options.voice?.replace(this.readRecording(this.currentVoice));
+  };
+
+  private readRecording(cue: StartCue): ExerciseDefinition["voice"] {
+    const initial = this.options.language ?? "de";
+    return createStartRecording(
+      cue,
+      initial,
+      this.options.readLanguage?.() ?? initial,
+    );
+  }
+
+  private playVoice(cue: StartCue, offsetSeconds: number): void {
+    this.currentVoice = cue;
+    this.options.voice?.play(this.readRecording(cue), offsetSeconds);
   }
 
   private readPosition(): Readonly<Vector3> {

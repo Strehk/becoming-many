@@ -26,9 +26,11 @@ histories. `audio-parameter.ts` applies this only to exclusively owned,
 unmodulated live followers; it never cancels scheduled music controls. Existing
 80 ms target smoothing, listener ramp timing and Three placement remain in place.
 
-`narration-player.ts` remains the single media playback implementation. It
+`narration-player.ts` owns clock-following main Show speech. It
 accepts the main recordings selected by Show, with measured durations. Changing
-language retains unchanged cue/URL elements and releases replaced clips. Show
+language retains unchanged cue/URL elements and keeps the audible clip until its
+silent replacement is ready. At most one outgoing clip survives the prepared set;
+failed replacement does not stop current speech. Show
 supplies the selected cue and offset, including pause and language-repeat behavior.
 Unchanged Hold frames write neither native time nor rate. The player remembers
 only the last applied held seek and one pending/rejected native play attempt;
@@ -91,11 +93,15 @@ runtime consumer. Selection and listening remain future content work.
 
 ## Standalone tutorial voice
 
-`voice-player.ts` owns one native audio element for Start. Level Composition
+`voice-player.ts` owns one active native audio element and at most one silent
+replacement for Start. Level Composition
 injects its public `VoicePlayback` capability; Run owns cleanup. Start selects
-recordings and instruction offsets, while native playback reports timing and
+recordings and instruction offsets. Optional spoken-marker maps translate native
+seconds onto the initial cue timeline without changing playback rate. Native playback reports timing and
 natural completion. Failure never masquerades as completion. Autoplay denial
 retries on a pointer/key gesture; stop/unload invalidate pending promises and
 unload releases gesture listeners and the media source. There is no second clock.
 Main Show narration retains its clock-following player and EN/DE recordings.
-Tutorial DE and EN asset copies currently both contain German speech.
+The tutorial ships separate German and English recordings. Language replacement
+preserves the active source until loading, seeking and playback succeed; newer
+selection, clip changes and cleanup discard obsolete replacements.
