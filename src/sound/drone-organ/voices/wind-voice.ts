@@ -7,7 +7,8 @@
  * Boundary: Level, room send, and cutoff belong to the layer.
  */
 
-import { Filter, Gain, LFO, Noise, PolySynth, Synth } from "tone";
+import { Filter, Gain, LFO, Noise } from "tone";
+import { createHeldOscillators } from "./held-oscillators";
 import type { OrganVoice, VoiceContext } from "./organ-voice";
 import { createScaleWalk } from "./scale-walk";
 
@@ -36,17 +37,17 @@ export function createWindVoice(
   const gust = new LFO(0.08, 300, 900).start();
   gust.connect(band.frequency);
 
-  const pad = new PolySynth(Synth, {
-    oscillator: { type: "sine" },
+  const pad = createHeldOscillators({
+    type: "sine",
+    polyphony: 4,
     envelope: { attack: 2.5, decay: 1, sustain: 0.6, release: 6 },
-    volume: -12,
+    volumeDecibels: -12,
   });
-  pad.maxPolyphony = 4;
-  pad.connect(bus);
+  pad.output.connect(bus);
 
   gust.frequency.rampTo(0.02 + settings.gustRate * 0.9, 0.2);
   band.Q.rampTo(0.3 + settings.sharpness * 10, 0.1);
-  pad.volume.rampTo(-30 + settings.padLevel * 24, 0.1);
+  pad.output.volume.rampTo(-30 + settings.padLevel * 24, 0.1);
   gust.amplitude.rampTo(settings.gustDepth, 0.2);
 
   // A step every two beats, each note held a whole bar.
@@ -69,7 +70,8 @@ export function createWindVoice(
     },
 
     dispose: (): void => {
-      for (const node of [noise, band, noiseLevel, gust, pad]) node.dispose();
+      pad.dispose();
+      for (const node of [noise, band, noiseLevel, gust]) node.dispose();
     },
   };
 }

@@ -2,13 +2,21 @@
  * Purpose: A locked bass sequence that slowly rewrites itself.
  * Context: The thermal world's ground line — recognizable enough to be
  *   remembered, restless enough never to settle.
- * Responsibility: Build the mono synth, its room, and the looping sequence.
+ * Responsibility: Build the bass body, its room, and the looping sequence.
  * Boundary: Level, room send, and cutoff belong to the layer.
  */
 
-import { type Gain, MonoSynth } from "tone";
+import {
+  AmplitudeEnvelope,
+  Filter,
+  FrequencyEnvelope,
+  type Gain,
+  Oscillator,
+  Volume,
+} from "tone";
 import { createEchoRoom, type EchoRoomSettings } from "./echo-room";
 import { createLoopingSequence } from "./looping-sequence";
+import type { MelodyInstrument } from "./melody-instrument";
 import type { OrganVoice, VoiceContext } from "./organ-voice";
 
 export interface BassLoopSettings {
@@ -26,24 +34,46 @@ export function createBassLoopVoice(
   context: VoiceContext,
   settings: BassLoopSettings,
 ): OrganVoice {
-  const bass = new MonoSynth({
-    oscillator: { type: settings.wood < 0.5 ? "square" : "sawtooth" },
-    filter: { Q: 3, type: "lowpass", rolloff: -24 },
-    envelope: { attack: 0.005, decay: 0.25, sustain: 0.35, release: 0.3 },
-    filterEnvelope: {
-      attack: 0.005,
-      decay: 0.14,
-      sustain: 0.3,
-      release: 0.4,
-      baseFrequency: 110,
-      octaves: 2.5,
-    },
-    volume: -9,
+  // A mono synth built from parts that live as long as the voice: one
+  // oscillator, started with the first note and only ever gated after it, so
+  // no note leaves a native oscillator behind in the audio graph.
+  const oscillator = new Oscillator({
+    type: settings.wood < 0.5 ? "square" : "sawtooth",
   });
+  const filter = new Filter({ type: "lowpass", rolloff: -24, Q: 3 });
+  const envelope = new AmplitudeEnvelope({
+    attack: 0.005,
+    decay: 0.25,
+    sustain: 0.35,
+    release: 0.3,
+  });
+  const filterEnvelope = new FrequencyEnvelope({
+    attack: 0.005,
+    decay: 0.04 + settings.pluck * 0.5,
+    sustain: 0.3,
+    release: 0.4,
+    baseFrequency: 110,
+    octaves: 2.5,
+    exponent: 2,
+  });
+  const output = new Volume(-9);
+  oscillator.chain(filter, envelope, output);
+  filterEnvelope.connect(filter.frequency);
   const room = createEchoRoom(bus, settings.room);
-  bass.connect(room.input);
+  output.connect(room.input);
 
-  bass.filterEnvelope.decay = 0.04 + settings.pluck * 0.5;
+  let running = false;
+  const bass: MelodyInstrument = {
+    triggerAttackRelease(frequencyHertz, duration, time, velocity): void {
+      if (!running) {
+        oscillator.start(time);
+        running = true;
+      }
+      oscillator.frequency.setValueAtTime(frequencyHertz, time);
+      envelope.triggerAttackRelease(duration, time, velocity);
+      filterEnvelope.triggerAttackRelease(duration, time);
+    },
+  };
 
   // Eighth notes: two steps to the beat.
   const sequence = createLoopingSequence(context, {
@@ -61,13 +91,21 @@ export function createBassLoopVoice(
   return {
     setPad: (x, y): void => {
       // Bite is the filter envelope reaching further and resonating harder.
-      bass.filterEnvelope.octaves = 1 + x * 4;
-      bass.filter.Q.rampTo(0.5 + x * 9, 0.1);
+      filterEnvelope.octaves = 1 + x * 4;
+      filter.Q.rampTo(0.5 + x * 9, 0.1);
       sequence.setBaseOctave(Math.round(y * 2));
     },
 
     dispose: (): void => {
-      bass.dispose();
+      for (const node of [
+        oscillator,
+        filter,
+        envelope,
+        filterEnvelope,
+        output,
+      ]) {
+        node.dispose();
+      }
       room.dispose();
     },
   };

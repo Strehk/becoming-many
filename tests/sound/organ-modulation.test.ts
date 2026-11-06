@@ -20,7 +20,7 @@ function poseAt(y: number, yawRadians = 0): ListenerPose {
 describe("readOrganSignal", () => {
   test("reads height as the climb above the ground under the visitor", () => {
     expect(readOrganSignal("altitude", poseAt(10), 10)).toBe(0);
-    expect(readOrganSignal("altitude", poseAt(34), 10)).toBeCloseTo(0.5, 6);
+    expect(readOrganSignal("altitude", poseAt(22), 10)).toBeCloseTo(0.5, 6);
   });
 
   test("saturates height rather than running past its control", () => {

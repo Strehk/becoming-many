@@ -7,8 +7,9 @@
  * Boundary: Level, room send, cutoff, and placement belong to the layer.
  */
 
-import { Filter, Frequency, Gain, Noise, PolySynth, Synth } from "tone";
+import { Filter, Frequency, Gain, Noise } from "tone";
 import { createChordCycle } from "./chord-cycle";
+import { createHeldOscillators } from "./held-oscillators";
 import type { OrganVoice, VoiceContext } from "./organ-voice";
 
 /** How long a chord change holds its swell, and how far its notes fan out. */
@@ -30,14 +31,14 @@ export function createChoirVoice(
   settings: ChoirVoiceSettings,
 ): OrganVoice {
   const { pulseSeconds } = context.harmony;
-  const pad = new PolySynth(Synth, {
-    oscillator: { type: "sine" },
+  const pad = createHeldOscillators({
+    type: "sine",
+    polyphony: 12,
     envelope: { attack: 2.2, decay: 1, sustain: 0.7, release: 6 },
-    volume: -14,
+    volumeDecibels: -14,
   });
-  pad.maxPolyphony = 12;
   const lowPass = new Filter(2500, "lowpass");
-  pad.chain(lowPass, bus);
+  pad.output.chain(lowPass, bus);
 
   const breath = new Noise("pink").start();
   const breathBand = new Filter(900, "bandpass");
@@ -76,12 +77,13 @@ export function createChoirVoice(
     setPad: (x, y): void => {
       // Softness is the envelope itself: the slower it opens and closes, the
       // less the chord is sung and the more it simply appears.
-      pad.set({ envelope: { attack: 0.4 + x * 4.5, release: 3 + x * 6 } });
+      pad.setEnvelope({ attack: 0.4 + x * 4.5, release: 3 + x * 6 });
       cycle.setBaseOctave(1 + Math.round(y * 2));
     },
 
     dispose: (): void => {
-      for (const node of [pad, lowPass, breath, breathBand, breathLevel]) {
+      pad.dispose();
+      for (const node of [lowPass, breath, breathBand, breathLevel]) {
         node.dispose();
       }
     },

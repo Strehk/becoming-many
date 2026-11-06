@@ -23,7 +23,7 @@ export interface ListenerPose {
 export type OrganSignalName = "altitude" | "north";
 
 /** Height above ground that reads as fully high; above it the signal saturates. */
-const ALTITUDE_RANGE_METERS = 48;
+const ALTITUDE_RANGE_METERS = 24;
 
 export function readOrganSignal(
   name: OrganSignalName,

@@ -10,7 +10,7 @@ import type { LevelPreset } from "./level-preset";
 export const level: LevelPreset = {
   backgroundColor: 0xf7f7f7,
   viewDistance: 128,
-  maximumGroundClearanceMeters: 40,
+  maximumGroundClearanceMeters: 20,
   airParticles: {
     density: {
       particlesPerChunk: 270,

@@ -6,8 +6,9 @@
  * Boundary: Level, room send, and cutoff belong to the layer.
  */
 
-import { Filter, type Gain, MembraneSynth, NoiseSynth } from "tone";
+import { Filter, type Gain, NoiseSynth } from "tone";
 import { createEchoRoom, type EchoRoomSettings } from "./echo-room";
+import { createHeldOscillators } from "./held-oscillators";
 import type { OrganVoice, VoiceContext } from "./organ-voice";
 
 /** Call spacing at the pad's extremes: far apart, or standing close in. */
@@ -32,12 +33,18 @@ export function createSonarVoice(
   const callSeconds = context.harmony.pulseSeconds / 8;
   // The call is an edge rather than a note: nothing to hold on to, so what
   // the ear follows is the return.
-  const ping = new MembraneSynth({
-    pitchDecay: 0.012,
-    octaves: 3,
-    oscillator: { type: "triangle" },
-    envelope: { attack: 0.001, decay: 0.07, sustain: 0 },
-    volume: -6,
+  const ping = createHeldOscillators({
+    type: "triangle",
+    polyphony: 1,
+    envelope: {
+      attack: 0.001,
+      attackCurve: "exponential",
+      decay: 0.07,
+      sustain: 0,
+      release: 1.4,
+    },
+    volumeDecibels: -6,
+    pitchDrop: { ratio: 3, seconds: 0.012 },
   });
   const click = new NoiseSynth({
     noise: { type: "white" },
@@ -51,7 +58,7 @@ export function createSonarVoice(
     delay: 0, // The pad sets it before the first call sounds.
     repeats: settings.returns,
   });
-  ping.connect(room.input);
+  ping.output.connect(room.input);
   click.chain(clickBand, room.input);
 
   const callHertz = 70 + settings.callTone * 500;
@@ -71,7 +78,8 @@ export function createSonarVoice(
 
     dispose: (): void => {
       room.dispose();
-      for (const node of [ping, click, clickBand]) node.dispose();
+      ping.dispose();
+      for (const node of [click, clickBand]) node.dispose();
     },
   };
 }

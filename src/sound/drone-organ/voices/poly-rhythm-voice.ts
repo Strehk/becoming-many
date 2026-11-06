@@ -7,8 +7,9 @@
  * Boundary: Level, room send, and cutoff belong to the layer.
  */
 
-import { Filter, type Gain, MembraneSynth, NoiseSynth } from "tone";
+import { Filter, type Gain, NoiseSynth } from "tone";
 import { createEchoRoom, type EchoRoomSettings } from "./echo-room";
+import { createHeldOscillators } from "./held-oscillators";
 import type { OrganVoice, VoiceContext } from "./organ-voice";
 
 /** Step counts the three voices spread apart to at full spread. */
@@ -59,11 +60,18 @@ export function createPolyRhythmVoice(
 ): OrganVoice {
   const { pulseSeconds } = context.harmony;
   const room = createEchoRoom(bus, settings.room);
-  const low = new MembraneSynth({
-    pitchDecay: 0.04,
-    octaves: 5,
-    envelope: { attack: 0.001, decay: 0.3, sustain: 0 },
-    volume: -6,
+  const low = createHeldOscillators({
+    type: "sine",
+    polyphony: 1,
+    envelope: {
+      attack: 0.001,
+      attackCurve: "exponential",
+      decay: 0.3,
+      sustain: 0,
+      release: 1.4,
+    },
+    volumeDecibels: -6,
+    pitchDrop: { ratio: 5, seconds: 0.04 },
   });
   const middle = new NoiseSynth({
     noise: { type: "pink" },
@@ -80,7 +88,7 @@ export function createPolyRhythmVoice(
   const highBand = new Filter(6000, "bandpass");
   highBand.Q.value = 3;
 
-  low.connect(room.input);
+  low.output.connect(room.input);
   middle.chain(middleBand, room.input);
   high.chain(highBand, room.input);
 
@@ -137,7 +145,7 @@ export function createPolyRhythmVoice(
     }
   });
 
-  low.volume.rampTo(-40 + settings.lowVoice * 38, 0.1);
+  low.output.volume.rampTo(-40 + settings.lowVoice * 38, 0.1);
   middle.volume.rampTo(-46 + settings.middleVoice * 36, 0.1);
   high.volume.rampTo(-50 + settings.highVoice * 36, 0.1);
   middleBand.frequency.rampTo(300 + settings.middleColour * 3000, 0.1);
@@ -151,7 +159,8 @@ export function createPolyRhythmVoice(
 
     dispose: (): void => {
       room.dispose();
-      for (const node of [low, middle, middleBand, high, highBand]) {
+      low.dispose();
+      for (const node of [middle, middleBand, high, highBand]) {
         node.dispose();
       }
     },

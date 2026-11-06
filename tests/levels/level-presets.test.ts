@@ -33,8 +33,27 @@ const invalidVegetation: WorldComposition = {
 };
 void invalidVegetation;
 
-test("every level authors the current terrain-relative flight ceiling", () => {
-  for (const preset of Object.values(LEVEL_CATALOG)) {
+test("show levels keep visitors close above the treetops", () => {
+  const showLevels = [
+    whiteWorld,
+    scentLevel,
+    echoLevel,
+    motionLevel,
+    thermalLevel,
+    magneticLevel,
+    connectionsLevel,
+  ];
+  for (const preset of showLevels) {
+    expect(preset.maximumGroundClearanceMeters).toBe(20);
+  }
+});
+
+test("the tutorial and development levels keep the open flight ceiling", () => {
+  for (const preset of [
+    LEVEL_CATALOG.start,
+    diagnosticLevel,
+    visualIntegrationLevel,
+  ]) {
     expect(preset.maximumGroundClearanceMeters).toBe(40);
   }
 });
