@@ -374,3 +374,72 @@
   font-variant-numeric: tabular-nums;
   color: var(--bm-muted);
 }
+
+/* 7. The title the particles form: invisible until the set type takes over */
+.bm-title {
+  position: fixed;
+  z-index: 1;
+  margin: 0;
+  font-weight: 700;
+  line-height: 1.02;
+  text-transform: uppercase;
+  color: var(--bm-ink);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.9s var(--bm-ease);
+}
+
+.bm-title.is-set {
+  opacity: 1;
+}
+
+/* 8. Loading readout: the percentage and the sense being prepared */
+.load__percent {
+  margin: 0;
+  font-weight: 300;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+.load__unit {
+  margin-left: 0.08em;
+  font-size: 0.45em;
+  font-weight: 400;
+  vertical-align: 0.95em;
+  letter-spacing: 0;
+}
+
+.load__sense {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+}
+
+.load__line {
+  margin: 0;
+  max-width: 34ch;
+  min-height: 3em;
+  font-size: clamp(14px, 1.5vw, 17px);
+  font-weight: 400;
+  line-height: 1.5;
+  color: rgb(5 7 12 / 0.62);
+}
+
+.load__readout {
+  transition: opacity 0.6s var(--bm-ease);
+}
+
+:root[data-loaded="true"] .load__readout {
+  opacity: 0;
+}
+
+.load__enter {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+}

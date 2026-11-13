@@ -1,5 +1,5 @@
 /**
- * Purpose: Run the shared start-menu behaviour behind all ten prototypes.
+ * Purpose: Run the shared start-menu behaviour behind every prototype.
  * Context: Every variant needs the same working flow so they can be compared on
  *   look and feel alone: loading, continue, menu, settings, credits, the choice
  *   of desktop, VR or phone, and a launch hand-off.
@@ -11,6 +11,7 @@
  */
 
 import { createInput } from "./input.js";
+import { createMenuSound } from "./menu-sound.js";
 import { VARIANTS } from "./variants.js";
 
 // 1. Audience-facing copy. German is the default language of the installation.
@@ -31,14 +32,40 @@ const COPY = {
     continue: "Klicken, um fortzufahren",
     continueTouch: "Tippen, um fortzufahren",
     hold: "Gedrückt halten, um zu beginnen",
+    // The senses in the order the show introduces them.
     stages: [
-      "Gelände wird geformt",
-      "Pflanzen wachsen",
-      "Düfte steigen auf",
-      "Tiere erwachen",
-      "Stimmen werden geladen",
+      {
+        sense: "Luft",
+        line: "Die weiße Welt bekommt Gewicht. Noch ist nichts zu sehen als sie.",
+      },
+      {
+        sense: "Geruch",
+        line: "Pflanzen verströmen ihre Signaturen, jede Familie riecht anders.",
+      },
+      {
+        sense: "Echoortung",
+        line: "Rufe gehen hinaus. Was zurückkommt, ist Entfernung.",
+      },
+      {
+        sense: "Bewegungssinn",
+        line: "Was sich bewegt, hinterlässt eine Spur. Was still steht, verschwindet.",
+      },
+      {
+        sense: "Thermische Wahrnehmung",
+        line: "Wärme scheint durch die kalte Welt: Körper, Steine, Wasser.",
+      },
+      {
+        sense: "Magnetfeld",
+        line: "Der Himmel bekommt eine Richtung. Norden wird spürbar.",
+      },
+      {
+        sense: "Verbindungen",
+        line: "Unter dem Boden knüpft sich ein Netz aus Wurzeln und Pilzfäden.",
+      },
     ],
-    stageDone: "Bereit",
+    stageDone: { sense: "Becoming Many", line: "" },
+    enter: "Klicken, um einzutreten",
+    enterTouch: "Tippen, um einzutreten",
     modes: "Wie möchtest du eintreten?",
     desktop: "Desktop",
     desktopHint: "Maus und Tastatur",
@@ -93,13 +120,38 @@ const COPY = {
     continueTouch: "Tap to continue",
     hold: "Press and hold to begin",
     stages: [
-      "Shaping the terrain",
-      "Growing the plants",
-      "Raising the scents",
-      "Waking the animals",
-      "Loading the voices",
+      {
+        sense: "Air",
+        line: "The white world gains weight. Nothing to see yet but the air.",
+      },
+      {
+        sense: "Scent",
+        line: "Plants give off their signatures; every family smells different.",
+      },
+      {
+        sense: "Echolocation",
+        line: "Calls go out. What comes back is distance.",
+      },
+      {
+        sense: "Motion",
+        line: "What moves leaves a trace. What stands still disappears.",
+      },
+      {
+        sense: "Thermal perception",
+        line: "Warmth shines through the cold world: bodies, stones, water.",
+      },
+      {
+        sense: "Magnetic field",
+        line: "The sky takes on a direction. North becomes something felt.",
+      },
+      {
+        sense: "Connections",
+        line: "Under the ground a web of roots and fungal threads is knotted.",
+      },
     ],
-    stageDone: "Ready",
+    stageDone: { sense: "Becoming Many", line: "" },
+    enter: "Click to enter",
+    enterTouch: "Tap to enter",
     modes: "How would you like to enter?",
     desktop: "Desktop",
     desktopHint: "Mouse and keyboard",
@@ -359,46 +411,6 @@ function buildChrome(slug) {
   });
 }
 
-// 3. Sound: soft sine blips, scaled by the volume setting
-function createSound(getVolume) {
-  let context;
-  const unlock = () => {
-    if (!context) {
-      const AudioContextType = window.AudioContext ?? window.webkitAudioContext;
-      if (AudioContextType) context = new AudioContextType();
-    }
-    if (context?.state === "suspended") context.resume();
-  };
-  const tone = (frequency, duration, gain, delay = 0) => {
-    const volume = getVolume() / 100;
-    if (!context || volume <= 0) return;
-    const start = context.currentTime + delay;
-    const oscillator = context.createOscillator();
-    const envelope = context.createGain();
-    oscillator.type = "sine";
-    oscillator.frequency.setValueAtTime(frequency, start);
-    envelope.gain.setValueAtTime(0, start);
-    envelope.gain.linearRampToValueAtTime(gain * volume, start + 0.012);
-    envelope.gain.exponentialRampToValueAtTime(0.0001, start + duration);
-    oscillator.connect(envelope).connect(context.destination);
-    oscillator.start(start);
-    oscillator.stop(start + duration + 0.02);
-  };
-  return {
-    unlock,
-    hover: () => tone(880, 0.12, 0.025),
-    select: () => {
-      tone(587, 0.35, 0.05);
-      tone(880, 0.5, 0.04, 0.07);
-    },
-    ready: () => {
-      tone(440, 0.9, 0.04);
-      tone(659, 1.1, 0.03, 0.12);
-      tone(988, 1.4, 0.02, 0.24);
-    },
-  };
-}
-
 // 4. Simulated loading with natural stalls
 function loadingCurve(seconds) {
   const keys = [[0, 0]];
@@ -438,6 +450,8 @@ function loadingCurve(seconds) {
 /**
  * options.slug: the variant folder name (for the switcher).
  * options.loadSeconds: how long the simulated load takes.
+ * options.beforeReady(): optional async hook awaited when loading reaches
+ *   100 %, before the continue gesture is offered (the title forming).
  * options.beforeAction(action, mode): optional async hook awaited before a
  *   screen change, so a variant can play its own transition first.
  */
@@ -448,7 +462,7 @@ export function createMenuFlow(options = {}) {
   const settings = readSettings();
   const input = createInput();
   input.invert = settings.invert;
-  const sound = createSound(() => settings.volume);
+  const sound = createMenuSound(() => settings.volume);
   const coarsePointer = window.matchMedia("(pointer: coarse)").matches;
   const loadSeconds = options.loadSeconds ?? 6.5;
   const curve = loadingCurve(loadSeconds);
@@ -460,6 +474,9 @@ export function createMenuFlow(options = {}) {
     hovered: null,
     settings,
     input,
+    sound,
+    stage: 0,
+    skipped: params.has("skip"),
     availability: { desktop: "ready", vr: "checking", gyro: "checking" },
     launch: { mode: null, status: null },
     get quality() {
@@ -521,6 +538,9 @@ export function createMenuFlow(options = {}) {
     for (const node of document.querySelectorAll("[data-i18n-continue]")) {
       node.textContent = flow.t(coarsePointer ? "continueTouch" : "continue");
     }
+    for (const node of document.querySelectorAll("[data-i18n-enter]")) {
+      node.textContent = flow.t(coarsePointer ? "enterTouch" : "enter");
+    }
     renderStage();
     renderAvailability();
     renderLaunch();
@@ -557,6 +577,7 @@ export function createMenuFlow(options = {}) {
     writeSettings(settings);
     renderSettings();
     if (key === "language") applyLanguage();
+    if (key === "volume") sound.setVolume(value);
     emit("settings", settings, key);
   }
 
@@ -570,7 +591,7 @@ export function createMenuFlow(options = {}) {
     if (control.dataset.value !== undefined)
       updateSetting(key, control.dataset.value);
     else updateSetting(key, !settings[key]);
-    sound.hover();
+    sound.hover("setting");
   });
   document.addEventListener("input", (event) => {
     const control = event.target;
@@ -583,7 +604,7 @@ export function createMenuFlow(options = {}) {
       event.target instanceof HTMLInputElement &&
       event.target.dataset.setting
     )
-      sound.hover();
+      sound.hover("setting");
   });
 
   // 5b. Availability of the three ways in
@@ -661,7 +682,7 @@ export function createMenuFlow(options = {}) {
     flow.hovered = key;
     root.dataset.hovered = key ?? "";
     renderHint();
-    if (key) sound.hover();
+    if (key) sound.hover(key);
     emit("hover", key);
   }
 
@@ -744,7 +765,7 @@ export function createMenuFlow(options = {}) {
     if (action === "mode" && mode === "gyro" && gyroNeedsPermission) {
       permission = DeviceOrientationEvent.requestPermission();
     }
-    sound.select();
+    sound.select(mode ?? action);
     emit("select", action, mode);
     if (options.beforeAction) await options.beforeAction(action, mode);
     if (action === "start") go("modes");
@@ -842,15 +863,26 @@ export function createMenuFlow(options = {}) {
     // The click that ends this press must not land on a freshly shown button.
     ignoreClicksUntil = performance.now() + 450;
     sound.unlock();
-    sound.ready();
+    // The context may need a moment after the gesture before it sounds.
+    const welcome = () => {
+      if (!sound.ready) {
+        window.setTimeout(welcome, 60);
+        return;
+      }
+      sound.wind(true);
+      sound.arrive();
+    };
+    welcome();
     go("menu");
   };
   window.addEventListener("pointerdown", (event) => {
+    sound.unlock();
     if (event.target instanceof Element && event.target.closest(".bm-chrome"))
       return;
     continueAfterLoad();
   });
   window.addEventListener("keydown", (event) => {
+    sound.unlock();
     if (flow.screen === "loading") {
       if (!["[", "]", "r", "R", "h", "H"].includes(event.key))
         continueAfterLoad();
@@ -884,15 +916,55 @@ export function createMenuFlow(options = {}) {
   });
 
   // 5f. Loading
+  // A sense stays named for at least minStageSeconds, so a jump in the
+  // loading never skips one; the shown percentage waits for it.
+  const minStageMs = (options.minStageSeconds ?? 0) * 1000;
+  const stageCount = COPY.de.stages.length;
+  let shownIndex = 0;
+  let shownAt = performance.now();
+  let rawProgress = 0;
+  function advanceStage() {
+    const real = Math.min(Math.floor(rawProgress * stageCount), stageCount - 1);
+    if (!minStageMs) {
+      shownIndex = real;
+      return;
+    }
+    const now = performance.now();
+    if (real > shownIndex && now - shownAt >= minStageMs) {
+      shownIndex += 1;
+      shownAt = now;
+    }
+  }
+  const stagesDone = () =>
+    !minStageMs ||
+    (shownIndex >= stageCount - 1 && performance.now() - shownAt >= minStageMs);
+
   function renderStage() {
     const stages = flow.t("stages");
-    const index = Math.min(
-      Math.floor(flow.progress * stages.length),
-      stages.length - 1,
-    );
-    const text = flow.ready ? flow.t("stageDone") : stages[index];
+    const index = shownIndex;
+    const done = flow.progress >= 1;
+    const stage = done ? flow.t("stageDone") : stages[index];
     for (const node of document.querySelectorAll("[data-progress-stage]"))
-      node.textContent = text;
+      node.textContent = stage.sense;
+    for (const node of document.querySelectorAll("[data-progress-line]"))
+      node.textContent = stage.line;
+    const key = done ? stages.length : index;
+    if (key !== flow.stage) {
+      flow.stage = key;
+      for (const node of document.querySelectorAll(
+        "[data-progress-stage], [data-progress-line]",
+      )) {
+        node.animate(
+          [
+            { opacity: 0, transform: "translateY(6px)" },
+            { opacity: 1, transform: "none" },
+          ],
+          { duration: 700, easing: "cubic-bezier(0.22, 1, 0.36, 1)" },
+        );
+      }
+      root.dataset.stage = String(key);
+      emit("stage", key);
+    }
   }
 
   function startLoading() {
@@ -900,13 +972,14 @@ export function createMenuFlow(options = {}) {
     const fontsReady = document.fonts.ready;
     const step = async () => {
       const elapsed = (performance.now() - started) / 1000;
-      flow.progress = curve(elapsed);
+      rawProgress = curve(elapsed);
+      advanceStage();
+      flow.progress = stagesDone()
+        ? rawProgress
+        : Math.min(rawProgress, (shownIndex + 1) / stageCount - 0.001);
       root.style.setProperty("--progress", flow.progress.toFixed(4));
       for (const node of document.querySelectorAll("[data-progress-value]")) {
-        node.textContent = String(Math.round(flow.progress * 100)).padStart(
-          2,
-          "0",
-        );
+        node.textContent = String(Math.floor(flow.progress * 100));
       }
       renderStage();
       emit("progress", flow.progress);
@@ -915,6 +988,9 @@ export function createMenuFlow(options = {}) {
         return;
       }
       await fontsReady;
+      root.dataset.loaded = "true";
+      emit("loaded");
+      if (options.beforeReady) await options.beforeReady();
       flow.ready = true;
       root.dataset.ready = "true";
       renderStage();
@@ -931,11 +1007,14 @@ export function createMenuFlow(options = {}) {
     flow.ready = true;
     root.dataset.ready = "true";
     root.style.setProperty("--progress", "1");
-    window.setTimeout(() => {
+    document.fonts.ready.then(() => {
+      root.dataset.loaded = "true";
+      renderStage();
       emit("progress", 1);
+      emit("loaded");
       emit("ready");
       go("menu");
-    }, 0);
+    });
   } else {
     go("loading");
     startLoading();

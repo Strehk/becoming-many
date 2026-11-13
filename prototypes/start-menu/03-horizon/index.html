@@ -7,7 +7,7 @@
       content="width=device-width, initial-scale=1, viewport-fit=cover"
     >
     <meta name="theme-color" content="#ffffff">
-    <title>Depth · Becoming Many</title>
+    <title>Horizon · Becoming Many</title>
     <link rel="icon" href="../shared/favicon.svg" type="image/svg+xml">
     <link rel="stylesheet" href="../shared/base.css">
     <link rel="stylesheet" href="../shared/screens.css">
@@ -16,48 +16,50 @@
   <body>
     <canvas class="bm-canvas" data-canvas></canvas>
 
-    <section data-screen="loading">
-      <p class="anchor anchor--loading" data-anchor="loading">
-        <span class="readout"><span data-progress-stage></span></span>
-        <span class="anchor__value"><span data-progress-value>00</span> %</span>
-        <span
-          class="readout readout--ink"
-          data-continue
-          data-i18n-continue
-        ></span>
-      </p>
+    <h1 class="bm-title" data-title>Becoming Many</h1>
+
+    <section class="screen load" data-screen="loading">
+      <div class="load__readout">
+        <p class="load__percent">
+          <span data-progress-value>0</span><span class="load__unit">%</span>
+        </p>
+        <div class="load__text">
+          <p class="load__sense" data-progress-stage></p>
+          <p class="load__line" data-progress-line></p>
+        </div>
+      </div>
+      <p class="load__enter" data-continue data-i18n-enter></p>
     </section>
 
-    <section data-screen="menu">
-      <h1 class="title anchor" data-anchor="title">Becoming Many</h1>
-      <button
-        type="button"
-        class="item item--primary anchor"
-        data-anchor="start"
-        data-action="start"
-        data-i18n="begin"
-      >
-        Beginnen
-      </button>
-      <button
-        type="button"
-        class="item anchor"
-        data-anchor="settings"
-        data-action="settings"
-        data-i18n="settings"
-      >
-        Einstellungen
-      </button>
-      <button
-        type="button"
-        class="item anchor"
-        data-anchor="credits"
-        data-action="credits"
-        data-i18n="credits"
-      >
-        Credits
-      </button>
-      <p class="hint anchor-hint" data-hint></p>
+    <section class="screen menu" data-screen="menu">
+      <p class="lede menu__lede" data-i18n="lede"></p>
+      <nav class="list">
+        <button
+          type="button"
+          class="item item--primary"
+          data-action="start"
+          data-i18n="begin"
+        >
+          Beginnen
+        </button>
+        <button
+          type="button"
+          class="item"
+          data-action="settings"
+          data-i18n="settings"
+        >
+          Einstellungen
+        </button>
+        <button
+          type="button"
+          class="item"
+          data-action="credits"
+          data-i18n="credits"
+        >
+          Credits
+        </button>
+      </nav>
+      <p class="hint" data-hint></p>
     </section>
 
     <section class="screen glow" data-screen="settings">

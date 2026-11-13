@@ -7,7 +7,7 @@
       content="width=device-width, initial-scale=1, viewport-fit=cover"
     >
     <meta name="theme-color" content="#ffffff">
-    <title>Beta Glide · Becoming Many</title>
+    <title>Senses · Becoming Many</title>
     <link rel="icon" href="../shared/favicon.svg" type="image/svg+xml">
     <link rel="stylesheet" href="../shared/base.css">
     <link rel="stylesheet" href="../shared/screens.css">
@@ -16,25 +16,24 @@
   <body>
     <canvas class="bm-canvas" data-canvas></canvas>
 
-    <section class="screen side" data-screen="loading">
-      <div class="head">
-        <h1 class="title">Becoming<br>Many</h1>
-        <p class="lede" data-i18n="lede"></p>
+    <h1 class="bm-title" data-title>Becoming Many</h1>
+
+    <section class="screen load" data-screen="loading">
+      <div class="load__readout">
+        <p class="load__percent">
+          <span data-progress-value>0</span><span class="load__unit">%</span>
+        </p>
+        <div class="load__text">
+          <p class="load__sense" data-progress-stage></p>
+          <p class="load__line" data-progress-line></p>
+        </div>
       </div>
-      <div class="progress">
-        <p class="readout"><span data-progress-stage></span></p>
-        <div class="line" aria-hidden="true"></div>
-        <p class="readout"><span data-progress-value>00</span> %</p>
-      </div>
-      <p class="gate gate--pulse" data-continue data-i18n-gate></p>
+      <p class="load__enter" data-continue data-i18n-enter></p>
     </section>
 
-    <section class="screen side" data-screen="menu">
-      <div class="head">
-        <h1 class="title">Becoming<br>Many</h1>
-        <p class="lede" data-i18n="lede"></p>
-      </div>
-      <nav class="list">
+    <section class="screen menu" data-screen="menu">
+      <p class="lede menu__lede" data-i18n="lede"></p>
+      <nav class="list list--row">
         <button
           type="button"
           class="item item--primary"

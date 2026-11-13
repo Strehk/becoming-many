@@ -33,6 +33,19 @@ const approach = (current, target, rate, dt) =>
   current + (target - current) * (1 - Math.exp(-rate * dt));
 
 /**
+ * On a desktop screen the show's 7.5 cm squares read as dust; the menu draws
+ * them larger there. Phones and headsets keep the authored size.
+ */
+export const DESKTOP_PARTICLE_SCALE = 1.8;
+export const particleScale = () =>
+  window.matchMedia("(pointer: fine)").matches ? DESKTOP_PARTICLE_SCALE : 1;
+
+/** The air particles' authored size in metres, after the desktop scale. */
+export const airParticleSize = () =>
+  whiteWorld.airParticles.appearance.sizeMeters * particleScale();
+export const AIR_PARTICLE_COLOR = whiteWorld.airParticles.appearance.color;
+
+/**
  * Options: veil (initial presence, 0..1), speed (m/s), pixelRatio (cap).
  * Returns handles for the variant to steer and a per-frame hook.
  */
@@ -48,6 +61,8 @@ export function createAirWorld(canvas, options = {}) {
   const camera = new PerspectiveCamera();
   camera.far = whiteWorld.viewDistance;
   camera.rotation.order = "YXZ";
+  // In the scene so camera-locked children (the title swarm) render.
+  scene.add(camera);
 
   const viewpoint = {
     worldPosition: new Vector3(),
@@ -61,7 +76,13 @@ export function createAirWorld(canvas, options = {}) {
   const air = createAirParticlesModule({
     scene,
     viewpoint,
-    parameters: whiteWorld.airParticles,
+    parameters: {
+      ...whiteWorld.airParticles,
+      appearance: {
+        ...whiteWorld.airParticles.appearance,
+        sizeMeters: airParticleSize(),
+      },
+    },
     streamQueue,
   });
   const veil = createWhiteVeil({ scene, viewpoint });
@@ -71,8 +92,12 @@ export function createAirWorld(canvas, options = {}) {
     targetSpeed: options.speed ?? 0,
     yaw: 0,
     pitch: 0,
+    roll: 0,
     targetYaw: 0,
     targetPitch: 0,
+    targetRoll: 0,
+    heading: 0,
+    turnRate: 0,
     offsetX: 0,
     offsetY: 0,
     targetOffsetX: 0,
@@ -118,6 +143,8 @@ export function createAirWorld(canvas, options = {}) {
     state.speed = approach(state.speed, state.targetSpeed, 1.2, dt);
     state.yaw = approach(state.yaw, state.targetYaw, 3, dt);
     state.pitch = approach(state.pitch, state.targetPitch, 3, dt);
+    state.roll = approach(state.roll, state.targetRoll, 2, dt);
+    state.heading += state.turnRate * scaled;
     // The veil moves linearly, like Run lifting it over veilLiftSeconds.
     const step = state.veilRate * dt;
     state.veil += Math.max(
@@ -128,7 +155,7 @@ export function createAirWorld(canvas, options = {}) {
 
     state.offsetX = approach(state.offsetX, state.targetOffsetX, 2.5, dt);
     state.offsetY = approach(state.offsetY, state.targetOffsetY, 2.5, dt);
-    camera.rotation.set(state.pitch, state.yaw, 0);
+    camera.rotation.set(state.pitch, state.heading + state.yaw, state.roll);
     camera.getWorldDirection(forward);
     base.addScaledVector(forward, state.speed * scaled);
     right.crossVectors(forward, camera.up).normalize();
@@ -142,6 +169,7 @@ export function createAirWorld(canvas, options = {}) {
     viewpoint.worldBodyDirection.copy(forward);
 
     for (const hook of frameHooks) hook(dt, now / 1000);
+    camera.updateMatrixWorld();
     air.update(scaled);
     veil.module.update(scaled);
     streamQueue.update();
@@ -152,7 +180,11 @@ export function createAirWorld(canvas, options = {}) {
 
   return {
     camera,
+    scene,
     renderer,
+    get speed() {
+      return state.speed;
+    },
     get veil() {
       return state.veil;
     },
@@ -161,9 +193,14 @@ export function createAirWorld(canvas, options = {}) {
       state.targetSpeed = metersPerSecond;
     },
     /** Look offset in radians; eased toward. */
-    setLook(yaw, pitch) {
+    setLook(yaw, pitch, roll = 0) {
       state.targetYaw = yaw;
       state.targetPitch = pitch;
+      state.targetRoll = roll;
+    },
+    /** Turning rate of the heading in radians per second: real, slow steering. */
+    setTurnRate(radiansPerSecond) {
+      state.turnRate = radiansPerSecond;
     },
     /** Sideways and vertical head offset in metres; gives true parallax. */
     setOffset(x, y) {
@@ -200,6 +237,32 @@ export function bindWorldSettings(world, menu) {
   };
   apply();
   menu.on("settings", apply);
+}
+
+/**
+ * Already flying, not yet steering: the visitor glides at a calm pace and the
+ * pointer (or the phone's tilt) bends the heading only slightly, with a small
+ * bank into the turn.
+ */
+export const MENU_GLIDE_METERS_PER_SECOND = GLIDE_METERS_PER_SECOND * 0.4;
+const MAX_TURN_RADIANS_PER_SECOND = 0.09;
+
+export function bindFlight(world, menu, options = {}) {
+  const speed = options.speed ?? MENU_GLIDE_METERS_PER_SECOND;
+  world.setSpeed(speed);
+  world.onFrame((dt) => {
+    menu.input.update(dt);
+    const x = menu.input.x;
+    const y = menu.input.y;
+    if (menu.screen === "launch") {
+      world.setTurnRate(0);
+      world.setLook(0, 0, 0);
+      return;
+    }
+    world.setTurnRate(-x * MAX_TURN_RADIANS_PER_SECOND);
+    world.setLook(-x * 0.035, -y * 0.05, -x * 0.04);
+  });
+  return { speed };
 }
 
 /**

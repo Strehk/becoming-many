@@ -1,5 +1,5 @@
 /*
- * Purpose: Shared foundation for the ten start-menu prototypes.
+ * Purpose: Shared foundation for the start-menu prototypes.
  * Responsibility: Rubik (the end-credits typeface), screen switching, the
  *   generated settings / modes / credits blocks, and the prototype switcher.
  * Boundary: Each variant restyles everything here through its own tokens.
