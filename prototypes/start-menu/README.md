@@ -1,9 +1,9 @@
 # Start menu study
 
-Thirteen working loading screens and start menus for Becoming Many, so one
+Ten working loading screens and start menus for Becoming Many, so one
 direction can be chosen before anything enters the application. 01-03 draw
-their figures with particles of their own; 04-13 borrow the White World's own
-air particles for everything. 10-13 are the latest round.
+their figures with particles of their own; 04-10 borrow the White World's own
+air particles for everything. 07-10 are the latest round.
 
 ## Constraints
 
@@ -75,7 +75,7 @@ moving like a loading sign (a spinner of dust, a murmuration, a figure eight)
 for as long as loading takes, so a load of one second reads as well as one of
 twenty; loading is paced to at least 3.4 s. One line under it says what
 reality is still putting together ("Bäume werden gepflanzt …"). The pointer is
-a normal pointer; a click flings a handful of particles out of its tip in
+a normal pointer; a click flings a few particles out of its tip in
 every direction. They are borrowed from air out of sight, so nothing appears
 from nowhere, and they fly home out of sight again. The centred menu has no
 walking marker: a hovered entry only darkens. The way in (Desktop, VR
@@ -90,17 +90,11 @@ the people, with their websites and GitHub profiles; the cooperation with the
 Futurium and HTW Berlin; and the open-source repository. In 07-09 they stand
 under the menu's own title, which stays in place for them.
 
-## The latest loaders (10-13)
+## The spinner (10)
 
-Same menu, pointer and credits as 07-09; only loading differs.
-
-- 10 Percent: nothing but the percentage, written in air particles. The number
-  holds at least 0.6 s so it can be read, and each change flows the same
-  particles into the new digits. At 100 % the number flies into the title.
-- 11 Denser, 12 Rising, 13 Letters: loading builds the title itself. Its places
-  fill at random (the word grows denser out of a few dots), from the baseline
-  up, or letter by letter. When loading completes, it inks into the set type in
-  the order it filled.
+Same menu, pointer and credits as 07-09, but loading shows a plain ring
+without particles and one line under it. The particles appear only when
+loading completes, gathering out of the air into the title.
 
 ## Test switches
 
@@ -124,7 +118,6 @@ sentence. `?load=<seconds>` in the address does the same for one page.
 | `shared/air-title.js`, `shared/air-ink.js` | Air into the title and the ink morph into the set type. |
 | `shared/air-cursor.js` | Swarm, wake and trail pointers made of air (04-06). |
 | `shared/air-burst.js` | A click flings particles out of the pointer (07-09). |
-| `shared/air-digits.js` | The percentage written in air particles (10). |
 | `shared/version.js` | The latest GitHub release under the title (07-09). |
 | `shared/air-loaders.js` | Wafting loading figures: circling, flock, endless (07-09). |
 | `shared/air-variant.js` | Wiring shared by 04-09. |

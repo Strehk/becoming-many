@@ -1,7 +1,7 @@
 /**
  * Purpose: Let a click fling particles out of the pointer.
- * Context: The pointer stays a normal pointer. A click throws a handful of
- *   particles outward from its tip in every direction, the way the swarm
+ * Context: The pointer stays a normal pointer. A click throws a few
+ *   few particles outward from its tip in every direction, the way the swarm
  *   pointer scattered when it left the screen. They are not new: they are
  *   borrowed from air out of sight (so nobody sees them leave), flung, and
  *   fly back home out of sight again.
@@ -14,7 +14,8 @@ import { easeOutCubic, hash } from "./air-borrow.js";
 
 export function createAirBurst({ borrow, menu, count }) {
   const finePointer = window.matchMedia("(pointer: fine)").matches;
-  const amount = count ?? (finePointer ? 38 : 26);
+  // A few, so a click answers without pulling the eye away.
+  const amount = count ?? (finePointer ? 12 : 9);
   const fixed = (proxy, out) => {
     out.world = true;
     out.x = proxy.data.wx;
@@ -62,7 +63,7 @@ export function createAirBurst({ borrow, menu, count }) {
       proxy.y = point.y;
       proxy.z = point.z;
       const angle = hash(salt, 4) * Math.PI * 2;
-      const reach = (finePointer ? 110 : 80) + hash(salt, 5) ** 1.6 * 340;
+      const reach = (finePointer ? 70 : 50) + hash(salt, 5) ** 1.6 * 200;
       borrow.localAt(
         x + Math.cos(angle) * reach,
         y + Math.sin(angle) * reach,

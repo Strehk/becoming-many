@@ -66,9 +66,7 @@ export function createAirTitle({
 
   let pixels = titleParticlePixels(title);
   let points = { xs: [], ys: [], count: 0, step: 4 };
-  let state = "air"; // air | growing | gathering | set | plain
-  // When loading builds the title itself, the order its places fill in.
-  let growOrder = null;
+  let state = "air"; // air | gathering | set | plain
   let generation = 0;
   let timeline = null;
 
@@ -88,97 +86,6 @@ export function createAirTitle({
     pixels = titleParticlePixels(title);
     ink.measure();
     points = ink.sample(countFor());
-    if (growOrder) points = ordered(points, growOrder);
-  }
-
-  /** The same points, sorted into the order loading fills them. */
-  function ordered(source, order) {
-    const letters = ink.letters;
-    const letterOf = (x) => {
-      let best = 0;
-      let distance = Number.POSITIVE_INFINITY;
-      letters.forEach((letter, index) => {
-        const d = Math.abs((letter.left + letter.right) / 2 - x);
-        if (d < distance) {
-          distance = d;
-          best = index;
-        }
-      });
-      return best;
-    };
-    const key = (index) => {
-      const x = source.xs[index];
-      const y = source.ys[index];
-      if (order === "rise") return -y + hash(index, 52) * source.step * 4;
-      if (order === "letters") return letterOf(x) + hash(index, 53) * 0.98;
-      return hash(index, 51);
-    };
-    const keys = Array.from({ length: source.count }, (_, index) => [
-      key(index),
-      index,
-    ]).sort((a, b) => a[0] - b[0]);
-    return {
-      xs: keys.map(([, index]) => source.xs[index]),
-      ys: keys.map(([, index]) => source.ys[index]),
-      count: source.count,
-      step: source.step,
-    };
-  }
-
-  /**
-   * Loading builds the title itself: its places fill with particles in the
-   * given order (random: denser and denser; rise: from the baseline up;
-   * letters: one letter after another). growTo(share) follows the loading.
-   */
-  async function beginGrowing(order = "random") {
-    growOrder = order;
-    await document.fonts.ready;
-    measure();
-    shape.depth = borrow.depthForPixels(pixels);
-    figure.reshape(shape);
-    state = "growing";
-  }
-
-  function growTo(share) {
-    if (state !== "growing") return;
-    figure.fill(Math.round(points.count * Math.min(1, share)), {
-      keepVisible: 0.3,
-      travel: 1.25,
-      centre: { x: 0, y: 0, z: -shape.depth },
-    });
-  }
-
-  /** The grown title inks itself in the order it filled. */
-  async function finishGrowing(run) {
-    figure.fill(points.count, {
-      keepVisible: 0.3,
-      travel: 0.9,
-      centre: { x: 0, y: 0, z: -shape.depth },
-    });
-    const count = figure.count;
-    const now = borrow.view.now;
-    const landing = new Float32Array(points.count).fill(
-      Number.POSITIVE_INFINITY,
-    );
-    figure.members.forEach((proxy, index) => {
-      proxy.hidden = false;
-      const lands = proxy.flying ? proxy.start + proxy.duration : now;
-      landing[index] = Math.max(
-        lands,
-        now + 0.7 * (index / Math.max(count, 1)),
-      );
-    });
-    state = "gathering";
-    timeline = {
-      run,
-      kind: "gather",
-      landing,
-      grow: new Float32Array(points.count),
-      visible: new Uint8Array(points.count),
-      end: Math.max(...landing.subarray(0, count)) + holdSeconds + growSeconds,
-    };
-    ink.show(true);
-    while (run === generation && state === "gathering") await wait(0.05);
   }
 
   const shape = {
@@ -211,10 +118,6 @@ export function createAirTitle({
    */
   async function gather({ from, stagger = 1.1, travel = travelSeconds } = {}) {
     const run = ++generation;
-    if (state === "growing") {
-      growOrder = null;
-      return finishGrowing(run);
-    }
     await document.fonts.ready;
     measure();
     shape.depth = borrow.depthForPixels(pixels);
@@ -386,8 +289,6 @@ export function createAirTitle({
   shape.depth = borrow.depthForPixels(pixels);
   return {
     gather,
-    beginGrowing,
-    growTo,
     dissolve,
     setAtOnce,
     figure,

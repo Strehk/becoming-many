@@ -1,0 +1,111 @@
+/* Spinner: a plain loading ring, no particles, one line under it; when
+   loading completes the air gathers into the title. */
+
+:root {
+  --title-top: 30vh;
+}
+
+.bm-title {
+  top: var(--title-top);
+  left: 0;
+  right: 0;
+  padding: 0 16px;
+  text-align: center;
+  font-size: clamp(34px, 7.6vw, 104px);
+  letter-spacing: 0.1em;
+}
+
+.load {
+  display: block;
+  padding: 0;
+}
+
+.load__spinner {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 40px;
+  height: 40px;
+  transform: translate(-50%, -50%);
+  transition: opacity 0.5s var(--bm-ease);
+}
+
+.load__spinner svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  animation: spinner-turn 1.6s linear infinite;
+}
+
+.load__spinner circle {
+  fill: none;
+  stroke: #202126;
+  stroke-width: 1.5;
+}
+
+.load__spinner-track {
+  opacity: 0.12;
+}
+
+/* The arc grows and shrinks while it turns, like a breath. */
+.load__spinner-arc {
+  stroke-linecap: round;
+  stroke-dasharray: 1 126;
+  transform-origin: center;
+  animation: spinner-breathe 1.6s ease-in-out infinite;
+}
+
+@keyframes spinner-turn {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes spinner-breathe {
+  0% {
+    stroke-dasharray: 1 126;
+    stroke-dashoffset: 0;
+  }
+
+  50% {
+    stroke-dasharray: 70 126;
+    stroke-dashoffset: -20;
+  }
+
+  100% {
+    stroke-dasharray: 1 126;
+    stroke-dashoffset: -125;
+  }
+}
+
+[data-loaded="true"] .load__spinner {
+  opacity: 0;
+}
+
+.load__readout {
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  top: calc(50% + 48px);
+}
+
+.load__enter {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(var(--title-bottom, 50vh) + clamp(28px, 6vh, 56px));
+  text-align: center;
+}
+
+.menu {
+  place-content: start center;
+  padding-top: calc(var(--title-bottom, 40vh) + clamp(14px, 3vh, 28px));
+  gap: clamp(18px, 3.4vh, 34px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .load__spinner svg,
+  .load__spinner-arc {
+    animation-duration: 4s;
+  }
+}

@@ -7,7 +7,7 @@
       content="width=device-width, initial-scale=1, viewport-fit=cover"
     >
     <meta name="theme-color" content="#ffffff">
-    <title>Rising · Becoming Many</title>
+    <title>Spinner · Becoming Many</title>
     <link rel="icon" href="../shared/favicon.svg" type="image/svg+xml">
     <link rel="stylesheet" href="../shared/base.css">
     <link rel="stylesheet" href="../shared/screens.css">
@@ -19,6 +19,12 @@
     <h1 class="bm-title" data-title>Becoming Many</h1>
 
     <section class="screen load" data-screen="loading">
+      <div class="load__spinner" role="progressbar" aria-label="Lädt">
+        <svg viewBox="0 0 48 48" aria-hidden="true">
+          <circle class="load__spinner-track" cx="24" cy="24" r="20"></circle>
+          <circle class="load__spinner-arc" cx="24" cy="24" r="20"></circle>
+        </svg>
+      </div>
       <div class="load__readout">
         <p class="load__building" data-building-line aria-live="polite"></p>
       </div>
