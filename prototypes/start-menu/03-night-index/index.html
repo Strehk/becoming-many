@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8">
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    >
+    <meta name="theme-color" content="#0b0918">
+    <title>Night Index · Becoming Many</title>
+    <link rel="icon" href="../shared/favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="../shared/base.css">
+    <link rel="stylesheet" href="../shared/screens.css">
+    <link rel="stylesheet" href="./style.css">
+  </head>
+  <body>
+    <canvas class="bm-canvas" data-canvas></canvas>
+    <p class="brand">BECOMING MANY</p>
+
+    <section class="screen" data-screen="loading">
+      <p class="count"><span data-progress-value>00</span></p>
+      <p class="stage" data-progress-stage></p>
+      <p class="continue" data-continue data-i18n-continue></p>
+    </section>
+
+    <section class="screen" data-screen="menu">
+      <nav class="index">
+        <button type="button" class="index__item" data-action="start">
+          <span class="index__number">01</span><span data-i18n="begin"></span>
+        </button>
+        <button type="button" class="index__item" data-action="settings">
+          <span class="index__number">02</span
+          ><span data-i18n="settings"></span>
+        </button>
+        <button type="button" class="index__item" data-action="credits">
+          <span class="index__number">03</span><span data-i18n="credits"></span>
+        </button>
+      </nav>
+    </section>
+
+    <section class="screen" data-screen="settings">
+      <h2 class="heading">
+        <span class="index__number">02</span><span data-i18n="settings"></span>
+      </h2>
+      <div class="panel" data-settings-slot></div>
+      <button
+        type="button"
+        class="back"
+        data-action="back"
+        data-i18n="back"
+      ></button>
+    </section>
+
+    <section class="screen" data-screen="credits">
+      <h2 class="heading">
+        <span class="index__number">03</span><span data-i18n="credits"></span>
+      </h2>
+      <div data-credits-slot></div>
+      <button
+        type="button"
+        class="back"
+        data-action="back"
+        data-i18n="back"
+      ></button>
+    </section>
+
+    <section class="screen" data-screen="modes">
+      <h2 class="heading">
+        <span class="index__number">01</span><span data-i18n="modes"></span>
+      </h2>
+      <div data-modes-slot></div>
+      <button
+        type="button"
+        class="back"
+        data-action="back"
+        data-i18n="back"
+      ></button>
+    </section>
+
+    <section class="screen" data-screen="launch">
+      <p class="launch__mode" data-launch-title></p>
+      <p class="launch__text" data-launch-text></p>
+      <p class="launch__gyro" data-gyro-readout></p>
+      <p class="launch__note" data-launch-note></p>
+      <button
+        type="button"
+        class="back"
+        data-action="menu"
+        data-i18n="backToMenu"
+      ></button>
+    </section>
+
+    <script type="module" src="./main.js"></script>
+  </body>
+</html>

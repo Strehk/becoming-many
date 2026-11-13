@@ -1,0 +1,71 @@
+/* Rings: the tutorial's dust-grain rings are the loading bar and the menu. */
+
+.core {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  transform: translate(-50%, -50%);
+  text-align: center;
+}
+
+.core__value {
+  margin: 0;
+  font-size: clamp(56px, 9vw, 120px);
+  font-weight: 300;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.core__stage {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--bm-muted);
+}
+
+.continue--bottom {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: clamp(24px, 8vh, 72px);
+  margin: 0;
+  text-align: center;
+}
+
+.title {
+  position: absolute;
+  top: clamp(24px, 9vh, 90px);
+  left: 0;
+  right: 0;
+  margin: 0;
+  font-size: clamp(28px, 4.2vw, 56px);
+  text-align: center;
+  letter-spacing: 0.02em;
+}
+
+.ring-label {
+  position: absolute;
+  padding: 10px 14px;
+  transform: translate(-50%, -50%);
+  font-size: clamp(17px, 1.9vw, 24px);
+  font-weight: 700;
+  white-space: nowrap;
+  color: var(--bm-ink);
+  transition:
+    color 0.3s,
+    transform 0.5s var(--bm-ease);
+}
+
+.ring-label:hover,
+.ring-label:focus-visible {
+  color: var(--bm-accent);
+  transform: translate(-50%, -50%) scale(1.08);
+  outline: none;
+}
+
+.panel {
+  background: rgb(255 255 255 / 0.84);
+}

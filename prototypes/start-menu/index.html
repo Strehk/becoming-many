@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    >
+    <meta name="theme-color" content="#ffffff">
+    <title>Start Menu Study · Becoming Many</title>
+    <link rel="icon" href="./shared/favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="./shared/base.css">
+    <style>
+    html,
+    body {
+      overflow: auto;
+      height: auto;
+    }
+
+    .page {
+      max-width: 1240px;
+      margin: 0 auto;
+      padding: clamp(28px, 6vw, 72px) 16px 80px;
+    }
+
+    .intro {
+      display: grid;
+      gap: 14px;
+      max-width: 760px;
+      margin-bottom: clamp(32px, 6vw, 64px);
+    }
+
+    .intro h1 {
+      margin: 0;
+      font-size: clamp(40px, 7vw, 88px);
+      line-height: 0.95;
+      letter-spacing: -0.02em;
+    }
+
+    .intro p {
+      margin: 0;
+      font-size: 17px;
+      font-weight: 400;
+      line-height: 1.5;
+      color: #4a4d55;
+    }
+
+    .intro kbd {
+      padding: 1px 6px;
+      border: 1px solid var(--bm-line);
+      border-radius: 5px;
+      font:
+        500 13px Rubik,
+        system-ui,
+        sans-serif;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));
+      gap: 22px;
+    }
+
+    .card {
+      display: grid;
+      grid-template-rows: auto 1fr;
+      overflow: hidden;
+      border: 1px solid var(--bm-line);
+      border-radius: 18px;
+      color: inherit;
+      text-decoration: none;
+      background: #fff;
+      transition:
+        transform 0.4s var(--bm-ease),
+        box-shadow 0.4s var(--bm-ease);
+    }
+
+    .card:hover,
+    .card:focus-visible {
+      transform: translateY(-4px);
+      box-shadow: 0 18px 40px rgb(0 0 0 / 0.08);
+    }
+
+    .card__thumb {
+      display: block;
+      width: 100%;
+      aspect-ratio: 16 / 10;
+      object-fit: cover;
+      background: #f2f2f2;
+      border-bottom: 1px solid var(--bm-line);
+    }
+
+    .card__body {
+      display: grid;
+      align-content: start;
+      gap: 10px;
+      padding: 18px 20px 20px;
+    }
+
+    .card__head {
+      display: flex;
+      align-items: baseline;
+      gap: 12px;
+    }
+
+    .card__number {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--bm-muted);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .card__name {
+      margin: 0;
+      font-size: 24px;
+    }
+
+    .card__tone {
+      margin-left: auto;
+      padding: 3px 9px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      background: #f0f0f0;
+      color: #555;
+    }
+
+    .card__tone[data-tone="experimental"] {
+      background: color-mix(in srgb, var(--bm-accent) 14%, transparent);
+      color: #c2440c;
+    }
+
+    .card__tone[data-tone="hybrid"] {
+      background: color-mix(in srgb, var(--bm-teal) 14%, transparent);
+      color: var(--bm-teal);
+    }
+
+    .card__note {
+      margin: 0;
+      font-size: 15px;
+      font-weight: 400;
+      line-height: 1.5;
+      color: #4a4d55;
+    }
+
+    .card__palette {
+      display: flex;
+      gap: 6px;
+      margin-top: 4px;
+    }
+
+    .card__palette span {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.12);
+    }
+    </style>
+  </head>
+  <body>
+    <main class="page">
+      <header class="intro">
+        <h1>Becoming Many<br>Start Menu Study</h1>
+        <p>
+          Ten loading screens and start menus, from conventional to
+          experimental, built from the particles of the piece's opening (White
+          World, air motes, the teal flight path, dust-grain rings) and its
+          finale (scent signatures, the connection web), set in Rubik like the
+          end credits.
+        </p>
+        <p>
+          Every variant is fully working: loading, settings (saved across
+          variants), credits, and the choice of desktop, VR headset or phone
+          with real WebXR detection and motion-sensor access. Inside a variant:
+          <kbd>[</kbd> <kbd>]</kbd> switch,
+          <kbd>R</kbd>
+          restart, <kbd>H</kbd> hide the switcher, <kbd>Esc</kbd> back. Add
+          <code>?skip</code>
+          to jump past loading.
+        </p>
+      </header>
+      <div class="grid" data-grid></div>
+    </main>
+    <template data-card>
+      <a class="card" href="./">
+        <img class="card__thumb" alt="" loading="lazy">
+        <div class="card__body">
+          <div class="card__head">
+            <span class="card__number"></span>
+            <h2 class="card__name">Variant</h2>
+            <span class="card__tone"></span>
+          </div>
+          <p class="card__note"></p>
+          <div class="card__palette"></div>
+        </div>
+      </a>
+    </template>
+    <script type="module">
+    import { VARIANTS } from "./shared/variants.js";
+
+    const grid = document.querySelector("[data-grid]");
+    const template = document.querySelector("[data-card]");
+    VARIANTS.forEach((variant, index) => {
+      const card = template.content.firstElementChild.cloneNode(true);
+      card.href = `./${variant.slug}/`;
+      const thumb = card.querySelector(".card__thumb");
+      thumb.src = `./shared/thumbs/${variant.slug}.jpg`;
+      thumb.addEventListener("error", () => thumb.removeAttribute("src"));
+      card.querySelector(".card__number").textContent = String(
+        index + 1,
+      ).padStart(2, "0");
+      card.querySelector(".card__name").textContent = variant.name;
+      const tone = card.querySelector(".card__tone");
+      tone.textContent = variant.tone;
+      tone.dataset.tone = variant.tone;
+      card.querySelector(".card__note").textContent = variant.note;
+      const palette = card.querySelector(".card__palette");
+      for (const color of variant.palette) {
+        const swatch = document.createElement("span");
+        swatch.style.background = `#${color.toString(16).padStart(6, "0")}`;
+        palette.append(swatch);
+      }
+      grid.append(card);
+    });
+    </script>
+  </body>
+</html>

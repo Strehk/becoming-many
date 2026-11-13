@@ -1,0 +1,131 @@
+/* One to Many: a single grain divides into the swarm; press and hold to begin. */
+
+.corner {
+  position: absolute;
+  margin: 0;
+  font-size: 14px;
+  letter-spacing: 0.04em;
+}
+
+.corner--left {
+  top: clamp(18px, 4vh, 36px);
+  left: clamp(18px, 4vw, 44px);
+  letter-spacing: 0.24em;
+}
+
+.corner--right {
+  top: clamp(18px, 4vh, 36px);
+  right: clamp(18px, 4vw, 44px);
+  display: flex;
+  gap: 14px;
+  font-weight: 500;
+  color: var(--bm-muted);
+}
+
+.corner__value {
+  font-weight: 700;
+  color: var(--bm-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.corner--bottom {
+  left: 0;
+  right: 0;
+  bottom: clamp(60px, 9vh, 90px);
+  text-align: center;
+}
+
+.corner--links {
+  display: flex;
+  justify-content: center;
+  gap: 28px;
+}
+
+.link {
+  padding: 8px 6px;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--bm-muted);
+}
+
+.link:hover,
+.link:focus-visible {
+  color: var(--bm-ink);
+}
+
+.hold {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 6px;
+  width: clamp(150px, 22vmin, 220px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+  --hold: 0;
+}
+
+.hold__ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: conic-gradient(
+    var(--bm-accent) calc(var(--hold) * 360deg),
+    rgb(32 33 38 / 0.12) 0
+  );
+  mask: radial-gradient(
+    farthest-side,
+    transparent calc(100% - 3px),
+    #000 calc(100% - 2px)
+  );
+  -webkit-mask: radial-gradient(
+    farthest-side,
+    transparent calc(100% - 3px),
+    #000 calc(100% - 2px)
+  );
+}
+
+.hold__label {
+  font-size: clamp(22px, 3vw, 32px);
+  font-weight: 700;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.85);
+}
+
+.hold__hint {
+  max-width: 14ch;
+  font-size: 12px;
+  font-weight: 500;
+  text-align: center;
+  color: var(--bm-ink);
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.85);
+}
+
+.hold:focus-visible {
+  outline-offset: 8px;
+}
+
+.panel {
+  background: rgb(255 255 255 / 0.86);
+}
+
+.panel--credits {
+  padding: 40px 32px;
+}
+
+.bm-credit--title {
+  margin-bottom: 40px;
+}
+
+.bm-mode {
+  background: rgb(255 255 255 / 0.55);
+}

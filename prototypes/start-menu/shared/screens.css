@@ -1,0 +1,71 @@
+/*
+ * Purpose: Default layout for the secondary screens (settings, credits, modes,
+ *   launch) that most variants share; each variant overrides what it restyles.
+ */
+
+.screen {
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 28px;
+  padding: 32px 20px;
+  text-align: center;
+}
+
+.continue {
+  margin: 24px 0 0;
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.heading {
+  margin: 0 0 8px;
+  font-size: clamp(26px, 3.4vw, 40px);
+}
+
+.panel {
+  width: min(460px, 88vw);
+  padding: 8px 24px 12px;
+  border-radius: 20px;
+  background: rgb(255 255 255 / 0.78);
+  backdrop-filter: blur(8px);
+  text-align: left;
+}
+
+.back {
+  margin-top: 8px;
+  padding: 10px 18px;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--bm-muted);
+}
+
+.back:hover {
+  color: var(--bm-ink);
+}
+
+.launch__mode {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--bm-accent);
+}
+
+.launch__text {
+  max-width: 28ch;
+  margin: 0;
+  font-size: clamp(22px, 3vw, 34px);
+  line-height: 1.25;
+}
+
+.launch__note,
+.launch__gyro {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--bm-muted);
+}
