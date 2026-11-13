@@ -183,53 +183,36 @@ export function createAirTitle({
     const left = Math.min(...points.xs);
     const span = Math.max(Math.max(...points.xs) - left, 1);
     const landing = new Float32Array(count);
-    // With a spinner, the air sets off at once from outside and the spinner
-    // opens later, so both land together. Only the ink keeps a short wave
-    // from left to right.
-    const together = figure.members.some((proxy) => proxy.data.spread);
     figure.members.forEach((proxy, index) => {
       proxy.hidden = false;
       const along = (points.xs[index] - left) / span;
-      if (together) {
-        const quick = travel * 0.72;
-        const opens = proxy.data.spread;
-        proxy.data.spread = false;
-        if (opens) {
-          // The spinner keeps turning while the air flies in from far away,
-          // then opens late and fast enough to land with it.
-          const loader = loaderTargets.get(proxy);
-          const hold = (held, out, now) => {
-            const keep = held.data.index;
-            held.data.index = held.data.spinIndex;
-            loader(held, out, now);
-            held.data.index = keep;
-            return out;
-          };
-          borrow.send(proxy, hold, { duration: 0.001 });
-          const leave = quick * (0.5 + 0.08 * hash(index, 18));
-          const duration = quick * (0.92 + 0.08 * hash(index, 12)) - leave;
-          landing[index] = Math.max(
-            start + leave + duration,
-            start + quick * 0.9 + 0.35 * along,
-          );
-          window.setTimeout(() => {
-            if (run !== generation) return;
-            figure.fly(proxy, { duration, bend: 0.1 });
-          }, leave * 1000);
-          return;
-        }
-        const delay = 0.06 * hash(index, 11);
-        const duration = quick * (0.85 + 0.15 * hash(index, 12));
-        landing[index] = Math.max(
-          start + delay + duration,
-          start + quick * 0.9 + 0.35 * along,
-        );
-        figure.fly(proxy, { delay, duration, bend: 0.2 });
-        return;
-      }
       const delay = stagger * (0.78 * along + 0.22 * hash(index, 11));
       const duration = travel * (0.82 + 0.18 * hash(index, 12));
       landing[index] = start + delay + duration;
+      if (proxy.data.spread) {
+        // A spinner keeps turning while the air is on its way, and opens only
+        // halfway through, so each of its particles lands together with the
+        // air beside it, at the same moment as before.
+        proxy.data.spread = false;
+        const loader = loaderTargets.get(proxy);
+        const hold = (held, out, now) => {
+          const keep = held.data.index;
+          held.data.index = held.data.spinIndex;
+          loader(held, out, now);
+          held.data.index = keep;
+          return out;
+        };
+        borrow.send(proxy, hold, { duration: 0.001 });
+        const leave = delay + duration * (0.5 + 0.08 * hash(index, 18));
+        window.setTimeout(() => {
+          if (run !== generation) return;
+          figure.fly(proxy, {
+            duration: landing[index] - borrow.view.now,
+            bend: 0.1,
+          });
+        }, leave * 1000);
+        return;
+      }
       figure.fly(proxy, { delay, duration, bend: 0.2 });
     });
     state = "gathering";
