@@ -351,7 +351,7 @@ input:focus-visible {
 .bm-credit--title {
   font-size: clamp(36px, 5.1vw, 78px);
   letter-spacing: 0.01em;
-  margin-bottom: clamp(48px, 9vh, 110px);
+  margin-bottom: clamp(32px, 6vh, 80px);
 }
 
 .bm-credit--role {
@@ -362,6 +362,51 @@ input:focus-visible {
 .bm-credit--name {
   font-size: clamp(18px, 2.45vw, 38px);
   line-height: 1.75;
+}
+
+/* Where to find the people, the partners and the code. */
+.bm-credit--links,
+.bm-credit--partners {
+  margin-top: -0.2em;
+  margin-bottom: clamp(6px, 1.2vh, 14px);
+  font-size: clamp(12px, 1.1vw, 14px);
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  color: var(--bm-muted);
+}
+
+.bm-credit--partners {
+  margin-top: 0;
+  font-size: clamp(16px, 1.9vw, 26px);
+  font-weight: 700;
+  letter-spacing: 0;
+  color: inherit;
+}
+
+.bm-credit--with {
+  margin-top: clamp(22px, 4.5vh, 48px);
+}
+
+.bm-credit--open {
+  margin-top: clamp(22px, 4.5vh, 48px);
+  margin-bottom: 6px;
+  font-size: clamp(13px, 1.3vw, 16px);
+  font-weight: 500;
+}
+
+.bm-credit__link {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.2em;
+  text-decoration-color: rgb(5 7 12 / 0.25);
+  transition: text-decoration-color 160ms ease;
+}
+
+.bm-credit__link:hover,
+.bm-credit__link:focus-visible {
+  text-decoration-color: currentColor;
+  outline: none;
 }
 
 /* 5. Launch hand-off */

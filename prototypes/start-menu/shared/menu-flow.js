@@ -109,6 +109,9 @@ const COPY = {
     on: "An",
     off: "Aus",
     creditsRole: "A Project By",
+    creditsWith: "In Kooperation mit",
+    creditsOpen: "Becoming Many ist jetzt ein Open-Source-Projekt.",
+    creditsCode: "Zum Quellcode auf GitHub",
     launchDesktop:
       "Bewege die Maus, um dich umzusehen. Mit W A S D fliegst du.",
     launchVr: "Setz die Brille auf und tritt in die weiße Welt.",
@@ -213,6 +216,9 @@ const COPY = {
     on: "On",
     off: "Off",
     creditsRole: "A Project By",
+    creditsWith: "In cooperation with",
+    creditsOpen: "Becoming Many is now an open-source project.",
+    creditsCode: "The source on GitHub",
     launchDesktop: "Move the mouse to look around. Fly with W A S D.",
     launchVr: "Put on the headset and step into the white world.",
     launchVrMissing:
@@ -227,8 +233,29 @@ const COPY = {
   },
 };
 
-/** The closing credits exactly as the piece authors them. */
-const CREDITS = ["Erasmus Schmidt", "Tade Strehk", "Eddie Huesmann"];
+/** The closing credits as the piece authors them, with where to find people. */
+const CREDITS = [
+  {
+    name: "Erasmus Schmidt",
+    links: [
+      ["erasmus-schmidt.de", "https://erasmus-schmidt.de"],
+      ["GitHub", "https://github.com/E-Mus"],
+    ],
+  },
+  {
+    name: "Tade Strehk",
+    links: [
+      ["strehk.eu", "https://strehk.eu"],
+      ["GitHub", "https://github.com/Strehk"],
+    ],
+  },
+  { name: "Eddie Huesmann", links: [] },
+];
+const PARTNERS = [
+  ["Futurium", "https://futurium.de"],
+  ["HTW Berlin", "https://www.htw-berlin.de"],
+];
+export const REPOSITORY_URL = "https://github.com/Strehk/becoming-many";
 
 const STORAGE_KEY = "becoming-many-menu-settings";
 const DEFAULT_SETTINGS = {
@@ -389,6 +416,25 @@ function buildModes(slot) {
   slot.replaceChildren(list);
 }
 
+function link(label, href, className) {
+  const anchor = element("a", className, {
+    href,
+    target: "_blank",
+    rel: "noopener",
+  });
+  anchor.textContent = label;
+  return anchor;
+}
+
+function linkLine(links, className) {
+  const line = element("p", className);
+  links.forEach(([label, href], index) => {
+    if (index > 0) line.append(" · ");
+    line.append(link(label, href, "bm-credit__link"));
+  });
+  return line;
+}
+
 function buildCredits(slot) {
   const list = element("div", "bm-credits");
   const title = element("p", "bm-credit bm-credit--title");
@@ -397,11 +443,25 @@ function buildCredits(slot) {
     "data-i18n": "creditsRole",
   });
   list.append(title, role);
-  for (const name of CREDITS) {
+  for (const person of CREDITS) {
     const line = element("p", "bm-credit bm-credit--name");
-    line.textContent = name;
+    line.textContent = person.name;
     list.append(line);
+    if (person.links.length)
+      list.append(linkLine(person.links, "bm-credit bm-credit--links"));
   }
+  const withRole = element("p", "bm-credit bm-credit--role bm-credit--with", {
+    "data-i18n": "creditsWith",
+  });
+  list.append(withRole, linkLine(PARTNERS, "bm-credit bm-credit--partners"));
+  const open = element("p", "bm-credit bm-credit--open", {
+    "data-i18n": "creditsOpen",
+  });
+  const code = element("p", "bm-credit bm-credit--links");
+  const repository = link("", REPOSITORY_URL, "bm-credit__link");
+  repository.dataset.i18n = "creditsCode";
+  code.append(repository);
+  list.append(open, code);
   slot.replaceChildren(list);
 }
 

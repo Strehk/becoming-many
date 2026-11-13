@@ -490,3 +490,69 @@
   color: var(--bm-muted);
   text-align: center;
 }
+
+/* The release under the title, in place of a subtitle (07-09). */
+.menu__version {
+  margin-top: -6px;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  font-variant-numeric: tabular-nums;
+  color: var(--bm-muted);
+  text-decoration: none;
+  text-shadow: var(--bm-halo);
+}
+
+.menu__version:hover,
+.menu__version:focus-visible {
+  color: var(--bm-ink);
+  outline: none;
+}
+
+/* The way in, as three equal columns: a centred list cannot carry a status
+   beside each entry without leaning, so each choice stands on its own axis
+   with its icon, its name and its status underneath (07-09). */
+.plain-marker .bm-modes {
+  flex-direction: row;
+  align-items: stretch;
+  justify-content: center;
+  gap: clamp(8px, 3vw, 44px);
+}
+
+.plain-marker .bm-mode {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 12px;
+  width: clamp(150px, 16vw, 210px);
+  padding: 22px 12px 18px;
+}
+
+.plain-marker .bm-mode__icon {
+  display: block;
+  height: 30px;
+  opacity: 0.85;
+}
+
+.plain-marker .bm-mode__status {
+  letter-spacing: 0.18em;
+}
+
+@media (max-width: 640px) {
+  .plain-marker .bm-modes {
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+  }
+
+  .plain-marker .bm-mode {
+    width: min(280px, 80vw);
+    padding: 12px;
+    gap: 6px;
+  }
+
+  .plain-marker .bm-mode__icon {
+    display: none;
+  }
+}

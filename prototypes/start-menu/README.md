@@ -75,11 +75,19 @@ moving like a loading sign (a spinner of dust, a murmuration, a figure eight)
 for as long as loading takes, so a load of one second reads as well as one of
 twenty; loading is paced to at least 3.4 s. One line under it says what
 reality is still putting together ("Bäume werden gepflanzt …"). The pointer is
-a normal pointer; a click anywhere scatters the air around it outward and
-toward the eye, and the particles drift home. The centred menu has no walking
-marker: a hovered entry only darkens. The menu carries four times the White
-World's air density on desktop (2.2 on phones) so the middle distance is
-never empty; this applies to every variant.
+a normal pointer; a click flings a handful of particles out of its tip in
+every direction. They are borrowed from air out of sight, so nothing appears
+from nowhere, and they fly home out of sight again. The centred menu has no
+walking marker: a hovered entry only darkens. The way in (Desktop, VR
+headset, Phone) stands as three equal columns, each with its icon, name and
+status underneath, stacked on phones. Under the title stands the latest
+GitHub release, linked to its notes, instead of a subtitle. The menu carries
+four times the White World's air density on desktop (2.2 on phones) so the
+middle distance is never empty; this applies to every variant.
+
+The credits (all variants) link Erasmus Schmidt's and Tade Strehk's websites
+and GitHub profiles, name the cooperation with the Futurium and HTW Berlin,
+and point to the open-source repository.
 
 ## Structure
 
@@ -94,7 +102,8 @@ never empty; this applies to every variant.
 | `shared/air-figure.js` | A figure of borrowed air: recruit, reshape, hand over, release. |
 | `shared/air-title.js`, `shared/air-ink.js` | Air into the title and the ink morph into the set type. |
 | `shared/air-cursor.js` | Swarm, wake and trail pointers made of air (04-06). |
-| `shared/air-burst.js` | A click scatters the air around it (07-09). |
+| `shared/air-burst.js` | A click flings particles out of the pointer (07-09). |
+| `shared/version.js` | The latest GitHub release under the title (07-09). |
 | `shared/air-loaders.js` | Wafting loading figures: circling, flock, endless (07-09). |
 | `shared/air-variant.js` | Wiring shared by 04-09. |
 | `shared/menu-sound.js` | Wind, sonar and hall from the drone organ's composition. |

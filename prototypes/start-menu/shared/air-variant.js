@@ -19,6 +19,7 @@ import {
   MENU_GLIDE_METERS_PER_SECOND,
 } from "./air-world.js";
 import { createMenuFlow } from "./menu-flow.js";
+import { showVersion } from "./version.js";
 
 export function startAirVariant({
   slug,
@@ -31,6 +32,7 @@ export function startAirVariant({
   gather = { stagger: 1.0, travel: 1.9 },
 }) {
   if (plainMarker) document.documentElement.classList.add("plain-marker");
+  showVersion();
   const phone = window.matchMedia("(pointer: coarse)").matches;
   const variant = { phone, loading: null };
   const menu = createMenuFlow({

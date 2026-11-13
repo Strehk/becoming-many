@@ -45,18 +45,18 @@ export const VARIANTS = [
     slug: "07-circling",
     name: "Circling",
     tone: "centred, air, no %",
-    note: "The air gathers within a second into a spinner of dust that circles for as long as loading takes, then writes the title. Lines tell what reality is still building. A click scatters the air.",
+    note: "The air gathers within a second into a spinner of dust that circles for as long as loading takes, then writes the title. Lines tell what reality is still building. A click flings particles out of the pointer.",
   },
   {
     slug: "08-flock",
     name: "Flock",
     tone: "centred, air, no %",
-    note: "The air gathers into a murmuration that stretches, folds and turns while loading, then writes the title. Lines tell what reality is still building. A click scatters the air.",
+    note: "The air gathers into a murmuration that stretches, folds and turns while loading, then writes the title. Lines tell what reality is still building. A click flings particles out of the pointer.",
   },
   {
     slug: "09-endless",
     name: "Endless",
     tone: "centred, air, no %",
-    note: "The air streams along a figure eight that twists in depth while loading, then writes the title. Lines tell what reality is still building. A click scatters the air.",
+    note: "The air streams along a figure eight that twists in depth while loading, then writes the title. Lines tell what reality is still building. A click flings particles out of the pointer.",
   },
 ];
