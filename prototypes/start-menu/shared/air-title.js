@@ -121,6 +121,7 @@ export function createAirTitle({
     await document.fonts.ready;
     measure();
     shape.depth = borrow.depthForPixels(pixels);
+    const adopted = from ? from.count : 0;
     if (from) figure.adopt(from);
     figure.reshape(shape, { stagger: 0, travel: 0.001 });
     const wanted = points.count;
@@ -135,17 +136,39 @@ export function createAirTitle({
     const count = points.count;
 
     // Members sorted by where they are now, slots by x: left goes left.
-    const byMember = figure.members
-      .map((proxy, index) => [screenX(proxy), index])
-      .sort((a, b) => a[0] - b[0])
-      .map((entry) => entry[1]);
+    const byX = (indices) =>
+      indices
+        .map((index) => [screenX(figure.members[index]), index])
+        .sort((a, b) => a[0] - b[0])
+        .map((entry) => entry[1]);
     const bySlot = Array.from(
       { length: points.count },
       (_, index) => index,
     ).sort((a, b) => points.xs[a] - points.xs[b]);
     const order = new Array(count);
-    for (let rank = 0; rank < count; rank += 1)
-      order[bySlot[rank]] = byMember[rank];
+    const all = Array.from({ length: count }, (_, index) => index);
+    const spinner = Math.min(adopted, count);
+    if (spinner > 0 && spinner < count * 0.5) {
+      // A small loading figure (a spinner) spreads over the whole word
+      // instead of filling the letters it happens to sit in front of; the
+      // air from around takes the places in between.
+      const takenRanks = new Set();
+      for (const index of all.slice(0, spinner))
+        figure.members[index].data.spread = true;
+      byX(all.slice(0, spinner)).forEach((member, k) => {
+        const rank = Math.floor(((k + 0.5) * count) / spinner);
+        takenRanks.add(rank);
+        order[bySlot[rank]] = member;
+      });
+      const freeRanks = all.filter((rank) => !takenRanks.has(rank));
+      byX(all.slice(spinner)).forEach((member, k) => {
+        order[bySlot[freeRanks[k]]] = member;
+      });
+    } else {
+      const members = byX(all);
+      for (let rank = 0; rank < count; rank += 1)
+        order[bySlot[rank]] = members[rank];
+    }
     figure.reorder(order);
 
     const start = borrow.view.now;
@@ -158,6 +181,16 @@ export function createAirTitle({
       const delay = stagger * (0.78 * along + 0.22 * hash(index, 11));
       const duration = travel * (0.82 + 0.18 * hash(index, 12));
       landing[index] = start + delay + duration;
+      if (proxy.data.spread) {
+        // The spinner bursts out at once and spreads over the word; the ink
+        // still follows the writing from left to right.
+        proxy.data.spread = false;
+        const quick = travel * (0.7 + 0.15 * hash(index, 17));
+        const leave = 0.1 * hash(index, 18);
+        figure.fly(proxy, { delay: leave, duration: quick, bend: 0.12 });
+        landing[index] = Math.max(start + leave + quick, landing[index]);
+        return;
+      }
       figure.fly(proxy, { delay, duration, bend: 0.2 });
     });
     state = "gathering";
