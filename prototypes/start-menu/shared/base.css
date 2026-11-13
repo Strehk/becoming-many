@@ -339,67 +339,75 @@ input:focus-visible {
 .bm-credits {
   display: grid;
   justify-items: center;
+  gap: clamp(36px, 7vh, 72px);
   text-align: center;
-  font-weight: 700;
 }
 
-.bm-credit {
+.bm-credits__title {
   margin: 0;
-  line-height: 1.1;
-}
-
-.bm-credit--title {
   font-size: clamp(36px, 5.1vw, 78px);
+  font-weight: 700;
+  line-height: 1.02;
   letter-spacing: 0.01em;
-  margin-bottom: clamp(32px, 6vh, 80px);
 }
 
-.bm-credit--role {
-  font-size: clamp(15px, 1.95vw, 30px);
-  margin-bottom: clamp(10px, 1.6vh, 20px);
+/* Three columns, each on its own centre line, aligned at the top. */
+.bm-credits__grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: start;
+  gap: clamp(24px, 4vw, 64px);
+  width: min(980px, 92vw);
 }
 
-.bm-credit--name {
-  font-size: clamp(18px, 2.45vw, 38px);
-  line-height: 1.75;
+.bm-credits__group {
+  display: grid;
+  justify-items: center;
+  gap: 18px;
 }
 
-/* Where to find the people, the partners and the code. */
-.bm-credit--links,
-.bm-credit--partners {
-  margin-top: -0.2em;
-  margin-bottom: clamp(6px, 1.2vh, 14px);
-  font-size: clamp(12px, 1.1vw, 14px);
-  font-weight: 500;
-  letter-spacing: 0.06em;
+.bm-credits__label {
+  margin: 0 0 4px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
   color: var(--bm-muted);
 }
 
-.bm-credit--partners {
-  margin-top: 0;
-  font-size: clamp(16px, 1.9vw, 26px);
-  font-weight: 700;
-  letter-spacing: 0;
+.bm-credits__entry {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+}
+
+.bm-credits__name {
+  margin: 0;
+  font-size: clamp(17px, 1.7vw, 22px);
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.bm-credits__links,
+.bm-credits__text {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.5;
+  color: var(--bm-muted);
+}
+
+.bm-credits__text {
+  max-width: 24ch;
   color: inherit;
-}
-
-.bm-credit--with {
-  margin-top: clamp(22px, 4.5vh, 48px);
-}
-
-.bm-credit--open {
-  margin-top: clamp(22px, 4.5vh, 48px);
-  margin-bottom: 6px;
-  font-size: clamp(13px, 1.3vw, 16px);
-  font-weight: 500;
 }
 
 .bm-credit__link {
   color: inherit;
   text-decoration: underline;
   text-decoration-thickness: 1px;
-  text-underline-offset: 0.2em;
-  text-decoration-color: rgb(5 7 12 / 0.25);
+  text-underline-offset: 0.22em;
+  text-decoration-color: rgb(5 7 12 / 0.22);
   transition: text-decoration-color 160ms ease;
 }
 
@@ -407,6 +415,17 @@ input:focus-visible {
 .bm-credit__link:focus-visible {
   text-decoration-color: currentColor;
   outline: none;
+}
+
+@media (max-width: 640px) {
+  .bm-credits__grid {
+    grid-template-columns: 1fr;
+    gap: 30px;
+  }
+
+  .bm-credits__group {
+    gap: 12px;
+  }
 }
 
 /* 5. Launch hand-off */

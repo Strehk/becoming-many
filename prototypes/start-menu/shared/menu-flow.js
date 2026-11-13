@@ -108,10 +108,11 @@ const COPY = {
     reducedMotion: "Weniger Bewegung",
     on: "An",
     off: "Aus",
-    creditsRole: "A Project By",
+    creditsRole: "Ein Projekt von",
     creditsWith: "In Kooperation mit",
     creditsOpen: "Becoming Many ist jetzt ein Open-Source-Projekt.",
-    creditsCode: "Zum Quellcode auf GitHub",
+    creditsCode: "Quellcode auf GitHub",
+    creditsOpenLabel: "Open Source",
     launchDesktop:
       "Bewege die Maus, um dich umzusehen. Mit W A S D fliegst du.",
     launchVr: "Setz die Brille auf und tritt in die weiße Welt.",
@@ -218,7 +219,8 @@ const COPY = {
     creditsRole: "A Project By",
     creditsWith: "In cooperation with",
     creditsOpen: "Becoming Many is now an open-source project.",
-    creditsCode: "The source on GitHub",
+    creditsCode: "Source on GitHub",
+    creditsOpenLabel: "Open Source",
     launchDesktop: "Move the mouse to look around. Fly with W A S D.",
     launchVr: "Put on the headset and step into the white world.",
     launchVrMissing:
@@ -435,33 +437,52 @@ function linkLine(links, className) {
   return line;
 }
 
+/** One column of the credits: a small label over its entries. */
+function creditGroup(labelKey) {
+  const group = element("section", "bm-credits__group");
+  const label = element("h3", "bm-credits__label", { "data-i18n": labelKey });
+  group.append(label);
+  return group;
+}
+
 function buildCredits(slot) {
   const list = element("div", "bm-credits");
-  const title = element("p", "bm-credit bm-credit--title");
+  const title = element("p", "bm-credits__title");
   title.textContent = "BECOMING MANY";
-  const role = element("p", "bm-credit bm-credit--role", {
-    "data-i18n": "creditsRole",
-  });
-  list.append(title, role);
+  const grid = element("div", "bm-credits__grid");
+
+  const people = creditGroup("creditsRole");
   for (const person of CREDITS) {
-    const line = element("p", "bm-credit bm-credit--name");
-    line.textContent = person.name;
-    list.append(line);
+    const entry = element("div", "bm-credits__entry");
+    const name = element("p", "bm-credits__name");
+    name.textContent = person.name;
+    entry.append(name);
     if (person.links.length)
-      list.append(linkLine(person.links, "bm-credit bm-credit--links"));
+      entry.append(linkLine(person.links, "bm-credits__links"));
+    people.append(entry);
   }
-  const withRole = element("p", "bm-credit bm-credit--role bm-credit--with", {
-    "data-i18n": "creditsWith",
-  });
-  list.append(withRole, linkLine(PARTNERS, "bm-credit bm-credit--partners"));
-  const open = element("p", "bm-credit bm-credit--open", {
-    "data-i18n": "creditsOpen",
-  });
-  const code = element("p", "bm-credit bm-credit--links");
+
+  const partners = creditGroup("creditsWith");
+  for (const [label, href] of PARTNERS) {
+    const entry = element("div", "bm-credits__entry");
+    const name = element("p", "bm-credits__name");
+    name.append(link(label, href, "bm-credit__link"));
+    entry.append(name);
+    partners.append(entry);
+  }
+
+  const open = creditGroup("creditsOpenLabel");
+  const entry = element("div", "bm-credits__entry");
+  const text = element("p", "bm-credits__text", { "data-i18n": "creditsOpen" });
+  const code = element("p", "bm-credits__links");
   const repository = link("", REPOSITORY_URL, "bm-credit__link");
   repository.dataset.i18n = "creditsCode";
   code.append(repository);
-  list.append(open, code);
+  entry.append(text, code);
+  open.append(entry);
+
+  grid.append(people, partners, open);
+  list.append(title, grid);
   slot.replaceChildren(list);
 }
 

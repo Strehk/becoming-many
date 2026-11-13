@@ -29,6 +29,7 @@ export function startAirVariant({
   stageHoldSeconds = 2.2,
   buildingSeconds,
   plainMarker = false,
+  titleScreens = ["loading", "menu"],
   gather = { stagger: 1.0, travel: 1.9 },
 }) {
   if (plainMarker) document.documentElement.classList.add("plain-marker");
@@ -55,6 +56,7 @@ export function startAirVariant({
     borrow,
     title: document.querySelector("[data-title]"),
     maxCount: phone ? 950 : 1700,
+    timing: { screens: titleScreens },
   });
   // "burst": a normal pointer, and a click scatters the air around it.
   if (cursor === "burst") createAirBurst({ borrow, menu });

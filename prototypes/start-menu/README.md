@@ -56,8 +56,8 @@ a sign is not drawn in front of the world, it is a passing order inside it.
 - The title writes itself from left to right. Each particle, once landed,
   swells into ink until the dots merge into the exact Rubik glyphs; then the
   set type takes over without a fade. The title keeps the air's colour, and its
-  particles stay borrowed while it stands. Leaving the menu shrinks the type
-  back into particles, which fly home.
+  particles stay borrowed while it stands. Leaving the menu bursts the type at
+  once into its particles, which are thrown outward and fly home.
 - Loading never runs faster than 0-100 % in 2.6 s, and a sense stays named at
   least 2.2 s without holding the percentage back, so a quick load names fewer
   senses instead of flashing. Try `?load=1` to simulate a fast connection.
@@ -85,9 +85,10 @@ GitHub release, linked to its notes, instead of a subtitle. The menu carries
 four times the White World's air density on desktop (2.2 on phones) so the
 middle distance is never empty; this applies to every variant.
 
-The credits (all variants) link Erasmus Schmidt's and Tade Strehk's websites
-and GitHub profiles, name the cooperation with the Futurium and HTW Berlin,
-and point to the open-source repository.
+The credits (all variants) stand in three columns, each with a small label:
+the people, with their websites and GitHub profiles; the cooperation with the
+Futurium and HTW Berlin; and the open-source repository. In 07-09 they stand
+under the menu's own title, which stays in place for them.
 
 ## Structure
 

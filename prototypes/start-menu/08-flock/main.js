@@ -16,5 +16,7 @@ const variant = startAirVariant({
   buildingSeconds: 1.7,
   cursor: "burst",
   plainMarker: true,
+  // The credits stand under the same title.
+  titleScreens: ["loading", "menu", "credits"],
 });
 runLoader(variant, flock);

@@ -4,10 +4,10 @@
  *   more from the air around) fly into the strokes of the title, writing it
  *   from left to right. Each particle, once landed, swells into ink until the
  *   dots merge into the exact Rubik glyphs. The particles stay borrowed while
- *   the title stands: the title is made of them. Leaving the menu reverses it,
- *   and they fly home.
+ *   the title stands: the title is made of them. Leaving the menu bursts the
+ *   type back into them at once; they are thrown outward and fly home.
  * Responsibility: Size the title's particle count, assign landing places,
- *   drive the ink, dissolve, and mark --title-bottom for the layout.
+ *   drive the ink, burst it on leaving, and mark --title-bottom.
  * Boundary: The loading figure before the gather belongs to the variant.
  */
 
@@ -62,7 +62,6 @@ export function createAirTitle({
   const travelSeconds = timing.travelSeconds ?? 2.1;
   const holdSeconds = timing.holdSeconds ?? 0.22;
   const growSeconds = timing.growSeconds ?? 0.95;
-  const shrinkSeconds = timing.shrinkSeconds ?? 0.55;
   const titleScreens = timing.screens ?? ["loading", "menu"];
 
   let pixels = titleParticlePixels(title);
@@ -197,78 +196,68 @@ export function createAirTitle({
     }
   }
 
-  /** The type shrinks back into particles, which fly home. */
+  // Leaving: the type bursts at once into the particles it is made of, which
+  // are thrown outward from the word and then fly home. No fade: the moment
+  // you press, the title answers.
+  const easeOutExpo = (u) => (u >= 1 ? 1 : 1 - 2 ** (-10 * u));
+  const thrown = (proxy, out) => {
+    out.world = true;
+    out.x = proxy.data.wx;
+    out.y = proxy.data.wy;
+    out.z = proxy.data.wz;
+    return out;
+  };
+  const here = { x: 0, y: 0, z: 0 };
+  const seen = { sx: 0, sy: 0, depth: 0 };
   function dissolve() {
-    const run = ++generation;
-    if (state === "plain") {
-      title.classList.remove("is-set");
-      state = "air";
-      return;
-    }
-    if (state === "gathering" || state === "dissolving") {
-      // Interrupted: every particle shows again and goes home.
-      for (const proxy of figure.members) proxy.hidden = false;
-      figure.release({ duration: 2.2 });
-      ink.clear();
-      ink.show(false);
-      title.classList.remove("is-set");
-      state = "air";
-      timeline = null;
-      return;
-    }
-    if (state !== "set") return;
-    state = "dissolving";
+    generation += 1;
+    timeline = null;
     title.classList.remove("is-set");
-    ink.show(true);
-    const count = figure.count;
-    const left = Math.min(...points.xs);
-    const span = Math.max(Math.max(...points.xs) - left, 1);
-    const start = borrow.view.now;
-    const begin = new Float32Array(count);
-    for (let index = 0; index < count; index += 1) {
-      const along = (points.xs[index] - left) / span;
-      begin[index] = start + 0.35 * along + 0.1 * hash(index, 14);
-    }
-    timeline = {
-      run,
-      kind: "dissolve",
-      begin,
-      grow: new Float32Array(count).fill(1),
-      visible: new Uint8Array(count).fill(1),
-      end: Math.max(...begin) + shrinkSeconds,
-    };
-  }
-
-  function drawDissolve(now) {
-    const { begin, grow, visible } = timeline;
-    const members = figure.members;
-    for (let index = 0; index < members.length; index += 1) {
-      if (!visible[index]) continue;
-      const u = clamp01((now - begin[index]) / shrinkSeconds);
-      grow[index] = 1 - easeInOutCubic(u);
-      if (u >= 1) {
-        visible[index] = 0;
-        const proxy = members[index];
-        proxy.hidden = false;
-      }
-    }
-    ink.draw(points, grow, visible, pixels, points.step * 1.15);
-    if (now >= timeline.end) {
-      // Back to particles: they leave the strokes and fly home.
-      ink.clear();
-      ink.show(false);
-      figure.members.forEach((proxy, index) => {
-        proxy.hidden = false;
-        borrow.release(proxy, {
-          delay: 0.05 + hash(index, 15) * 0.5,
-          duration: 2.2 + hash(index, 16) * 1.2,
-          bend: 0.22,
-        });
-      });
-      figure.forget();
+    ink.clear();
+    ink.show(false);
+    if (state === "plain" || figure.count === 0) {
       state = "air";
-      timeline = null;
+      return;
     }
+    state = "air";
+    const box = title.getBoundingClientRect();
+    const cx = box.left + box.width / 2;
+    const cy = box.top + box.height / 2;
+    figure.members.forEach((proxy, index) => {
+      proxy.hidden = false;
+      borrow.toLocal(proxy.x, proxy.y, proxy.z, here);
+      borrow.screenOf(here, seen);
+      // Outward from the word's centre, flattened so the burst spreads wide.
+      let dx = (seen.sx - cx) / (box.width / 2 || 1);
+      let dy = (seen.sy - cy) / (box.height / 2 || 1);
+      const angle = hash(index, 31) * Math.PI * 2;
+      dx += Math.cos(angle) * 0.7;
+      dy += Math.sin(angle) * 0.7;
+      const norm = Math.hypot(dx, dy) || 1;
+      const reach = 120 + hash(index, 32) ** 1.5 * 520;
+      borrow.localAt(
+        seen.sx + (dx / norm) * reach,
+        seen.sy + (dy / norm) * reach * 0.8,
+        seen.depth * (0.55 + hash(index, 33) * 1.1),
+        here,
+      );
+      borrow.toWorld(here.x, here.y, here.z, here);
+      proxy.data.wx = here.x;
+      proxy.data.wy = here.y;
+      proxy.data.wz = here.z;
+      borrow.send(proxy, thrown, {
+        duration: 0.7 + hash(index, 34) * 0.5,
+        ease: easeOutExpo,
+        bend: 0.06,
+        onArrive: (arrived) =>
+          borrow.release(arrived, {
+            delay: hash(index, 35) * 0.4,
+            duration: 2.2 + hash(index, 36) * 1.2,
+            bend: 0.18,
+          }),
+      });
+    });
+    figure.forget();
   }
 
   borrow.onUpdate(() => {
@@ -277,9 +266,7 @@ export function createAirTitle({
       timeline = null;
       return;
     }
-    const now = borrow.view.now;
-    if (timeline.kind === "gather") drawGather(now);
-    else drawDissolve(now);
+    drawGather(borrow.view.now);
   });
 
   /** Set the title without particles (?skip). */
