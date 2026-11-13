@@ -1,9 +1,9 @@
 # Start menu study
 
-Nine working loading screens and start menus for Becoming Many, so one
+Thirteen working loading screens and start menus for Becoming Many, so one
 direction can be chosen before anything enters the application. 01-03 draw
-their figures with particles of their own; 04-09 borrow the White World's own
-air particles for everything. 07-09 are the latest round.
+their figures with particles of their own; 04-13 borrow the White World's own
+air particles for everything. 10-13 are the latest round.
 
 ## Constraints
 
@@ -90,6 +90,26 @@ the people, with their websites and GitHub profiles; the cooperation with the
 Futurium and HTW Berlin; and the open-source repository. In 07-09 they stand
 under the menu's own title, which stays in place for them.
 
+## The latest loaders (10-13)
+
+Same menu, pointer and credits as 07-09; only loading differs.
+
+- 10 Percent: nothing but the percentage, written in air particles. The number
+  holds at least 0.6 s so it can be read, and each change flows the same
+  particles into the new digits. At 100 % the number flies into the title.
+- 11 Denser, 12 Rising, 13 Letters: loading builds the title itself. Its places
+  fill at random (the word grows denser out of a few dots), from the baseline
+  up, or letter by letter. When loading completes, it inks into the set type in
+  the order it filled.
+
+## Test switches
+
+The variant bar (bottom right; `H` hides it) has two switches, remembered
+across variants: the simulated load time (normal, or 0.5 to 16 s; loading is
+still paced so it never takes less than about 3.4 s) and the credits layout:
+columns, a single-column roll, a colophon with labels on the left, or one
+sentence. `?load=<seconds>` in the address does the same for one page.
+
 ## Structure
 
 | Path | Responsibility |
@@ -104,6 +124,7 @@ under the menu's own title, which stays in place for them.
 | `shared/air-title.js`, `shared/air-ink.js` | Air into the title and the ink morph into the set type. |
 | `shared/air-cursor.js` | Swarm, wake and trail pointers made of air (04-06). |
 | `shared/air-burst.js` | A click flings particles out of the pointer (07-09). |
+| `shared/air-digits.js` | The percentage written in air particles (10). |
 | `shared/version.js` | The latest GitHub release under the title (07-09). |
 | `shared/air-loaders.js` | Wafting loading figures: circling, flock, endless (07-09). |
 | `shared/air-variant.js` | Wiring shared by 04-09. |

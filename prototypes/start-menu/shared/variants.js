@@ -59,4 +59,28 @@ export const VARIANTS = [
     tone: "centred, air, no %",
     note: "The air streams along a figure eight that twists in depth while loading, then writes the title. Lines tell what reality is still building. A click flings particles out of the pointer.",
   },
+  {
+    slug: "10-percent",
+    name: "Percent",
+    tone: "centred, air, % only",
+    note: "Nothing but the percentage, written in air particles; every change flows the same particles into the new digits. At 100 % the number flies into the title.",
+  },
+  {
+    slug: "11-denser",
+    name: "Denser",
+    tone: "centred, air, title",
+    note: "Loading builds the title itself: its places fill at random, so the word grows denser out of a few dots, then inks into the type.",
+  },
+  {
+    slug: "12-rising",
+    name: "Rising",
+    tone: "centred, air, title",
+    note: "Loading fills the title from its baseline up, like a vessel filling with air, then it inks into the type.",
+  },
+  {
+    slug: "13-letters",
+    name: "Letters",
+    tone: "centred, air, title",
+    note: "Loading forms the title letter by letter, from B to Y, then it inks into the type.",
+  },
 ];

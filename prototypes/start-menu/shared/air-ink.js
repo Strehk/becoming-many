@@ -22,6 +22,7 @@ function drawTitle(context, element, box, pad, scale) {
   const ascent = context.measureText("Mg").fontBoundingBoxAscent;
   const upper = style.textTransform === "uppercase";
   const range = document.createRange();
+  const letters = [];
   const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
   for (let node = walker.nextNode(); node; node = walker.nextNode()) {
     const text = node.textContent ?? "";
@@ -32,6 +33,7 @@ function drawTitle(context, element, box, pad, scale) {
       range.setEnd(node, index + 1);
       const rect = range.getClientRects()[0];
       if (!rect) continue;
+      letters.push({ left: rect.left, right: rect.right, top: rect.top });
       context.fillText(
         char,
         rect.left - box.left + pad,
@@ -39,6 +41,7 @@ function drawTitle(context, element, box, pad, scale) {
       );
     }
   }
+  return letters;
 }
 
 export function createInk(element) {
@@ -53,6 +56,7 @@ export function createInk(element) {
   let box = element.getBoundingClientRect();
   let scale = 1;
   let ink = null;
+  let letters = [];
 
   /** Re-render the mask at the title's current place and size. */
   function measure() {
@@ -69,7 +73,7 @@ export function createInk(element) {
     canvas.style.width = `${width}px`;
     canvas.style.height = `${height}px`;
     maskContext.clearRect(0, 0, mask.width, mask.height);
-    drawTitle(maskContext, element, box, pad, scale);
+    letters = drawTitle(maskContext, element, box, pad, scale);
     ink = maskContext.getImageData(0, 0, mask.width, mask.height).data;
   }
 
@@ -194,6 +198,10 @@ export function createInk(element) {
   return {
     canvas,
     measure,
+    /** Screen rects of the title's letters, in reading order. */
+    get letters() {
+      return letters;
+    },
     sample,
     area,
     draw,

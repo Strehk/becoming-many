@@ -482,8 +482,150 @@ function buildCredits(slot) {
   open.append(entry);
 
   grid.append(people, partners, open);
-  list.append(title, grid);
+  list.append(title, grid, creditSentence("de"), creditSentence("en"));
   slot.replaceChildren(list);
+}
+
+/** The same credits as one sentence (layout "sentence"), per language. */
+function creditSentence(language) {
+  const sentence = element("div", "bm-credits__sentence", { lang: language });
+  const text = element("p", "bm-credits__prose");
+  const [erasmus, tade, eddie] = CREDITS;
+  const person = (entry) =>
+    entry.links.length
+      ? link(entry.name, entry.links[0][1], "bm-credit__link")
+      : entry.name;
+  const [futurium, htw] = PARTNERS.map(([label, href]) =>
+    link(label, href, "bm-credit__link"),
+  );
+  const code = link(
+    language === "de"
+      ? "der Quellcode liegt auf GitHub"
+      : "the code is on GitHub",
+    REPOSITORY_URL,
+    "bm-credit__link",
+  );
+  if (language === "de")
+    text.append(
+      "Becoming Many ist ein Projekt von ",
+      person(erasmus),
+      ", ",
+      person(tade),
+      " und ",
+      person(eddie),
+      ", entstanden in Kooperation mit dem ",
+      futurium,
+      " und der ",
+      htw,
+      ". Es ist jetzt Open Source: ",
+      code,
+      ".",
+    );
+  else
+    text.append(
+      "Becoming Many is a project by ",
+      person(erasmus),
+      ", ",
+      person(tade),
+      " and ",
+      person(eddie),
+      ", made in cooperation with the ",
+      futurium,
+      " and ",
+      htw,
+      ". It is now open source: ",
+      code,
+      ".",
+    );
+  const profiles = linkLine(
+    CREDITS.flatMap((entry) =>
+      entry.links
+        .filter(([label]) => label === "GitHub")
+        .map(([, href]) => [`GitHub ${href.split("/").pop()}`, href]),
+    ),
+    "bm-credits__links",
+  );
+  sentence.append(text, profiles);
+  return sentence;
+}
+
+// Test switches in the variant bar: a simulated load time and the credits
+// layout, both remembered across variants.
+const TEST_KEY = "becoming-many-menu-test";
+export const CREDITS_LAYOUTS = [
+  ["columns", "Spalten"],
+  ["roll", "Abspann"],
+  ["colophon", "Kolophon"],
+  ["sentence", "Satz"],
+];
+const LOAD_CHOICES = [0, 0.5, 1, 2, 4, 8, 16];
+
+export function readTest() {
+  try {
+    return JSON.parse(localStorage.getItem(TEST_KEY) ?? "{}");
+  } catch {
+    return {};
+  }
+}
+
+function writeTest(change) {
+  try {
+    localStorage.setItem(
+      TEST_KEY,
+      JSON.stringify({ ...readTest(), ...change }),
+    );
+  } catch {
+    // Not remembered; the switch still applies to this page.
+  }
+}
+
+export function applyCreditsLayout(layout = readTest().credits) {
+  const known = CREDITS_LAYOUTS.some(([key]) => key === layout);
+  document.documentElement.dataset.credits = known ? layout : "columns";
+}
+
+function testSelect(title, options, value, onChange) {
+  const select = element("select", "bm-chrome__select", {
+    title,
+    "aria-label": title,
+  });
+  for (const [key, text] of options) {
+    const option = element("option", "", { value: String(key) });
+    option.textContent = text;
+    select.append(option);
+  }
+  select.value = String(value);
+  select.addEventListener("change", () => onChange(select.value));
+  return select;
+}
+
+function testControls() {
+  const test = readTest();
+  const load = testSelect(
+    "Ladezeit (Test)",
+    LOAD_CHOICES.map((seconds) => [
+      seconds,
+      seconds ? `Laden ${seconds} s` : "Laden normal",
+    ]),
+    test.load ?? 0,
+    (value) => {
+      writeTest({ load: Number(value) });
+      const url = new URL(window.location.href);
+      url.searchParams.delete("load");
+      url.searchParams.delete("skip");
+      window.location.href = url.toString();
+    },
+  );
+  const credits = testSelect(
+    "Credits-Layout (Test)",
+    CREDITS_LAYOUTS.map(([key, text]) => [key, `Credits: ${text}`]),
+    document.documentElement.dataset.credits ?? "columns",
+    (value) => {
+      writeTest({ credits: value });
+      applyCreditsLayout(value);
+    },
+  );
+  return [load, credits];
 }
 
 function buildChrome(slug) {
@@ -518,10 +660,14 @@ function buildChrome(slug) {
   });
   restart.textContent = "↻";
   restart.addEventListener("click", () => window.location.reload());
-  nav.append(home, back, label, forward, restart);
+  nav.append(home, back, label, forward, restart, ...testControls());
   document.body.append(nav);
   window.addEventListener("keydown", (event) => {
-    if (event.target instanceof HTMLInputElement) return;
+    if (
+      event.target instanceof HTMLInputElement ||
+      event.target instanceof HTMLSelectElement
+    )
+      return;
     if (event.key === "[") window.location.href = `../${previous.slug}/`;
     if (event.key === "]") window.location.href = `../${next.slug}/`;
     if (event.key === "r" || event.key === "R") window.location.reload();
@@ -590,9 +736,12 @@ export function createMenuFlow(options = {}) {
   input.invert = settings.invert;
   const sound = createMenuSound(() => settings.volume);
   const coarsePointer = window.matchMedia("(pointer: coarse)").matches;
-  // ?load=<seconds> simulates a faster or slower connection.
+  // ?load=<seconds> or the bar's load switch simulates another connection.
   const loadSeconds =
-    Number(params.get("load")) || (options.loadSeconds ?? 6.5);
+    Number(params.get("load")) ||
+    readTest().load ||
+    (options.loadSeconds ?? 6.5);
+  applyCreditsLayout();
   const curve = loadingCurve(loadSeconds);
 
   const flow = {
@@ -1010,6 +1159,7 @@ export function createMenuFlow(options = {}) {
     continueAfterLoad();
   });
   window.addEventListener("keydown", (event) => {
+    if (event.target instanceof HTMLSelectElement) return;
     sound.unlock();
     if (flow.screen === "loading") {
       if (!["[", "]", "r", "R", "h", "H"].includes(event.key))

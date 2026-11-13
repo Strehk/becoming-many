@@ -90,6 +90,8 @@ export function createAirBurst({ borrow, menu, count }) {
 
   window.addEventListener("pointerdown", (event) => {
     if (menu.screen === "launch") return;
+    if (event.target instanceof Element && event.target.closest(".bm-chrome"))
+      return;
     fling(event.clientX, event.clientY);
   });
   return { fling };

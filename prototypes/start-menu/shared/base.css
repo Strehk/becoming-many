@@ -417,10 +417,105 @@ input:focus-visible {
   outline: none;
 }
 
+.bm-credits__sentence {
+  display: none;
+  justify-items: center;
+  gap: 18px;
+}
+
+.bm-credits__prose {
+  max-width: 34ch;
+  margin: 0;
+  font-size: clamp(19px, 2.3vw, 30px);
+  font-weight: 500;
+  line-height: 1.5;
+}
+
+/* Credits layouts, switched from the variant bar (data-credits on html). */
+[data-credits="sentence"] .bm-credits__grid {
+  display: none;
+}
+
+:root[data-credits="sentence"][lang="de"] .bm-credits__sentence[lang="de"],
+:root[data-credits="sentence"][lang="en"] .bm-credits__sentence[lang="en"] {
+  display: grid;
+}
+
+/* Roll: one column like end credits, the names carrying the weight. */
+[data-credits="roll"] .bm-credits__grid {
+  grid-template-columns: 1fr;
+  width: min(560px, 92vw);
+  gap: clamp(20px, 3.2vh, 34px);
+}
+
+[data-credits="roll"] .bm-credits__name {
+  font-size: clamp(20px, 2.1vw, 28px);
+  font-weight: 700;
+}
+
+[data-credits="roll"] .bm-credits__group {
+  gap: 8px;
+}
+
+[data-credits="roll"] .bm-credits__entry {
+  gap: 2px;
+}
+
+/* Colophon: labels on the left, entries on the right, one shared edge. */
+[data-credits="colophon"] .bm-credits__grid {
+  grid-template-columns: 1fr;
+  width: min(640px, 92vw);
+  gap: clamp(20px, 3.4vh, 34px);
+  text-align: left;
+}
+
+[data-credits="colophon"] .bm-credits__group {
+  grid-template-columns: 11rem 1fr;
+  justify-items: start;
+  align-items: baseline;
+  column-gap: 28px;
+  row-gap: 10px;
+}
+
+[data-credits="colophon"] .bm-credits__label {
+  grid-row: 1 / span 3;
+  justify-self: end;
+  margin: 0;
+  text-align: right;
+}
+
+[data-credits="colophon"] .bm-credits__entry {
+  grid-column: 2;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-items: start;
+  gap: 4px 14px;
+}
+
+[data-credits="colophon"] .bm-credits__text {
+  flex-basis: 100%;
+  max-width: none;
+}
+
 @media (max-width: 640px) {
   .bm-credits__grid {
     grid-template-columns: 1fr;
     gap: 30px;
+  }
+
+  [data-credits="colophon"] .bm-credits__group {
+    grid-template-columns: 1fr;
+  }
+
+  [data-credits="colophon"] .bm-credits__label {
+    grid-row: auto;
+    justify-self: start;
+    text-align: left;
+  }
+
+  [data-credits="colophon"] .bm-credits__entry {
+    grid-column: 1;
   }
 
   .bm-credits__group {
@@ -476,6 +571,18 @@ input:focus-visible {
 
 .bm-chrome__link:hover {
   background: rgb(32 33 38 / 0.08);
+}
+
+.bm-chrome__select {
+  height: 28px;
+  margin-left: 4px;
+  padding: 0 8px;
+  border: 1px solid rgb(32 33 38 / 0.14);
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 12px;
 }
 
 .bm-chrome__label {

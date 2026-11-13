@@ -566,5 +566,6 @@
 .plain-marker [data-screen="credits"] {
   place-content: start center;
   padding-top: calc(var(--title-bottom, 40vh) + clamp(28px, 6vh, 64px));
+  padding-bottom: 72px;
   overflow-y: auto;
 }

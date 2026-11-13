@@ -184,6 +184,13 @@ export function createMenuSound(getVolume) {
   };
 
   const callSeconds = ORGAN_SCORE.pulseSeconds / 8;
+  // Tone refuses two starts at the same instant on one voice; a hover and a
+  // click in the same moment would otherwise throw.
+  let lastStart = 0;
+  const startTime = (lead) => {
+    lastStart = Math.max(now() + lead, lastStart + 0.012);
+    return lastStart;
+  };
 
   return {
     /** Call inside a user gesture; builds the graph once the context runs. */
@@ -210,7 +217,7 @@ export function createMenuSound(getVolume) {
     hover(key) {
       if (!graph) return;
       const voicing = HOVER_VOICING[key] ?? HOVER_VOICING.setting;
-      const time = now() + 0.01;
+      const time = startTime(0.01);
       // Close walls only: a late return would read as a second hover.
       graph.echo.setDelay(voicing.wall * 0.3);
       graph.ping.triggerAttackRelease(
@@ -225,7 +232,7 @@ export function createMenuSound(getVolume) {
     select(key) {
       if (!graph) return;
       const voicing = HOVER_VOICING[key] ?? HOVER_VOICING.setting;
-      const time = now() + 0.01;
+      const time = startTime(0.01);
       graph.ping.triggerAttackRelease(
         degreeHertz(voicing.degree - 5),
         callSeconds,
@@ -243,7 +250,7 @@ export function createMenuSound(getVolume) {
     /** Arriving: the scale's chord held in the hall, as the title forms. */
     arrive() {
       if (!graph) return;
-      const time = now() + 0.02;
+      const time = startTime(0.02);
       [0, 2, 3, 4].forEach((degree, index) => {
         graph.chord.triggerAttackRelease(
           degreeHertz(degree, 2),
