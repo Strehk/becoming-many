@@ -34,8 +34,8 @@
   --bm-ink: #202126;
   --bm-muted: #899096;
   --bm-line: rgb(32 33 38 / 0.14);
-  --bm-accent: #fb5f16;
-  --bm-teal: #2c858d;
+  --bm-accent: #202126;
+  --bm-teal: #202126;
   --bm-fade: 0.7s;
   --bm-ease: cubic-bezier(0.22, 1, 0.36, 1);
   color-scheme: light;

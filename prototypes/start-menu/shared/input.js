@@ -1,12 +1,14 @@
 /**
  * Purpose: Give every prototype one smoothed look direction from mouse, touch or gyro.
  * Context: The menu's mode choice can grant motion-sensor access; once it does,
- *   the particles follow the phone's tilt exactly like they follow the mouse.
+ *   the view follows the phone's tilt exactly like it follows the mouse.
  * Responsibility: Track the pointer in pixels and a normalised -1..1 look offset.
  * Boundary: Permission requests belong to the menu flow; this only listens.
  */
 
-import { approach, clamp } from "./particles.js";
+const clamp = (value, low, high) => Math.min(high, Math.max(low, value));
+const approach = (current, target, rate, dt) =>
+  current + (target - current) * (1 - Math.exp(-rate * dt));
 
 export function createInput() {
   const state = {
@@ -18,7 +20,6 @@ export function createInput() {
     y: 0,
     targetX: 0,
     targetY: 0,
-    down: false,
     pointerActive: false,
     gyroActive: false,
     invert: false,
@@ -32,12 +33,6 @@ export function createInput() {
     if (state.gyroActive) return;
     state.targetX = (event.clientX / window.innerWidth) * 2 - 1;
     state.targetY = (event.clientY / window.innerHeight) * 2 - 1;
-  });
-  window.addEventListener("pointerdown", () => {
-    state.down = true;
-  });
-  window.addEventListener("pointerup", () => {
-    state.down = false;
   });
   document.addEventListener("pointerleave", () => {
     state.pointerActive = false;

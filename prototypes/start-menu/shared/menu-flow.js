@@ -17,6 +17,12 @@ import { VARIANTS } from "./variants.js";
 const COPY = {
   de: {
     menu: "Menü",
+    lede: "Eine immersive Reise durch nicht-menschliche Wahrnehmung",
+    hintBegin:
+      "Danach wählst du, wie du eintrittst: Desktop, VR-Brille oder Handy.",
+    hintSettings: "Sprache, Ton, Grafik und Steuerung.",
+    hintCredits: "Wer Becoming Many gemacht hat.",
+    continueGate: "Enter drücken oder klicken, um fortzufahren",
     begin: "Beginnen",
     settings: "Einstellungen",
     credits: "Credits",
@@ -39,7 +45,7 @@ const COPY = {
     vr: "VR-Brille",
     vrHint: "WebXR-Headset",
     gyro: "Handy",
-    gyroHint: "Bewegungssensor",
+    gyroHint: "Neigen statt Maus: der Bewegungssensor steuert",
     statusReady: "Bereit",
     statusChecking: "Wird geprüft …",
     statusMissing: "Nicht erkannt",
@@ -73,6 +79,11 @@ const COPY = {
   },
   en: {
     menu: "Menu",
+    lede: "An Immersive Journey Through Non-Human Perception",
+    hintBegin: "Then choose how to enter: desktop, VR headset or phone.",
+    hintSettings: "Language, sound, graphics and controls.",
+    hintCredits: "Who made Becoming Many.",
+    continueGate: "Press Enter or click to continue",
     begin: "Begin",
     settings: "Settings",
     credits: "Credits",
@@ -95,7 +106,7 @@ const COPY = {
     vr: "VR headset",
     vrHint: "WebXR headset",
     gyro: "Phone",
-    gyroHint: "Motion sensor",
+    gyroHint: "Tilt instead of mouse: the motion sensor steers",
     statusReady: "Ready",
     statusChecking: "Checking …",
     statusMissing: "Not detected",
@@ -501,6 +512,12 @@ export function createMenuFlow(options = {}) {
       const value = flow.t(node.dataset.i18n);
       if (typeof value === "string") node.textContent = value;
     }
+    for (const node of document.querySelectorAll("[data-i18n-gate]")) {
+      node.textContent = flow.t(
+        coarsePointer ? "continueTouch" : "continueGate",
+      );
+    }
+    renderHint();
     for (const node of document.querySelectorAll("[data-i18n-continue]")) {
       node.textContent = flow.t(coarsePointer ? "continueTouch" : "continue");
     }
@@ -643,8 +660,24 @@ export function createMenuFlow(options = {}) {
     if (flow.hovered === key) return;
     flow.hovered = key;
     root.dataset.hovered = key ?? "";
+    renderHint();
     if (key) sound.hover();
     emit("hover", key);
+  }
+
+  /** The old menu's note line: the pointed entry explains itself. */
+  function renderHint() {
+    const hintKey = {
+      start: "hintBegin",
+      settings: "hintSettings",
+      credits: "hintCredits",
+      desktop: "desktopHint",
+      vr: "vrHint",
+      gyro: "gyroHint",
+    }[flow.hovered];
+    for (const node of document.querySelectorAll("[data-hint]")) {
+      node.textContent = hintKey ? flow.t(hintKey) : "";
+    }
   }
 
   // 5d. Launch

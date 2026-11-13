@@ -127,35 +127,12 @@
       color: #555;
     }
 
-    .card__tone[data-tone="experimental"] {
-      background: color-mix(in srgb, var(--bm-accent) 14%, transparent);
-      color: #c2440c;
-    }
-
-    .card__tone[data-tone="hybrid"] {
-      background: color-mix(in srgb, var(--bm-teal) 14%, transparent);
-      color: var(--bm-teal);
-    }
-
     .card__note {
       margin: 0;
       font-size: 15px;
       font-weight: 400;
       line-height: 1.5;
       color: #4a4d55;
-    }
-
-    .card__palette {
-      display: flex;
-      gap: 6px;
-      margin-top: 4px;
-    }
-
-    .card__palette span {
-      width: 14px;
-      height: 14px;
-      border-radius: 50%;
-      box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.12);
     }
     </style>
   </head>
@@ -164,16 +141,16 @@
       <header class="intro">
         <h1>Becoming Many<br>Start Menu Study</h1>
         <p>
-          Ten loading screens and start menus, from conventional to
-          experimental, built from the particles of the piece's opening (White
-          World, air motes, the teal flight path, dust-grain rings) and its
-          finale (scent signatures, the connection web), set in Rubik like the
-          end credits.
+          Six loading screens and start menus without colour, set in Rubik like
+          the end credits. Behind every one runs the real White World: the
+          show's own Air Particles module, level recipe, White Veil and stream
+          queue, not an imitation. Three follow the earlier beta menu, three try
+          something new.
         </p>
         <p>
-          Every variant is fully working: loading, settings (saved across
+          Every variant works end to end: loading, settings (saved across
           variants), credits, and the choice of desktop, VR headset or phone
-          with real WebXR detection and motion-sensor access. Inside a variant:
+          with WebXR detection and motion-sensor access. Inside a variant:
           <kbd>[</kbd> <kbd>]</kbd> switch,
           <kbd>R</kbd>
           restart, <kbd>H</kbd> hide the switcher, <kbd>Esc</kbd> back. Add
@@ -193,7 +170,6 @@
             <span class="card__tone"></span>
           </div>
           <p class="card__note"></p>
-          <div class="card__palette"></div>
         </div>
       </a>
     </template>
@@ -214,14 +190,7 @@
       card.querySelector(".card__name").textContent = variant.name;
       const tone = card.querySelector(".card__tone");
       tone.textContent = variant.tone;
-      tone.dataset.tone = variant.tone;
       card.querySelector(".card__note").textContent = variant.note;
-      const palette = card.querySelector(".card__palette");
-      for (const color of variant.palette) {
-        const swatch = document.createElement("span");
-        swatch.style.background = `#${color.toString(16).padStart(6, "0")}`;
-        palette.append(swatch);
-      }
       grid.append(card);
     });
     </script>
