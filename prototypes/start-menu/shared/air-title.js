@@ -175,25 +175,36 @@ export function createAirTitle({
     const left = Math.min(...points.xs);
     const span = Math.max(Math.max(...points.xs) - left, 1);
     const landing = new Float32Array(count);
+    // With a spinner, everything moves at once: the spinner opens across the
+    // word in the same instant the air sets off from outside. Only the ink
+    // keeps a short wave from left to right.
+    const together = figure.members.some((proxy) => proxy.data.spread);
+    const easeOut = (u) => 1 - (1 - u) ** 3;
     figure.members.forEach((proxy, index) => {
       proxy.hidden = false;
       const along = (points.xs[index] - left) / span;
-      const delay = stagger * (0.78 * along + 0.22 * hash(index, 11));
-      const duration = travel * (0.82 + 0.18 * hash(index, 12));
-      landing[index] = start + delay + duration;
-      if (proxy.data.spread) {
-        // The spinner opens at once and spreads over the word while the air
-        // from outside flies in: each of its particles takes as long as the
-        // air landing beside it, so they arrive together.
+      if (together) {
+        const quick = travel * 0.72;
+        const delay = 0.06 * hash(index, 11);
+        const duration = quick * (0.85 + 0.15 * hash(index, 12));
+        const opens = proxy.data.spread;
         proxy.data.spread = false;
-        const leave = 0.06 * hash(index, 18);
+        landing[index] = Math.max(
+          start + delay + duration,
+          start + quick * 0.9 + 0.35 * along,
+        );
         figure.fly(proxy, {
-          delay: leave,
-          duration: delay + duration - leave,
-          bend: 0.12,
+          delay,
+          duration,
+          bend: opens ? 0.1 : 0.2,
+          // The spinner bursts open at once; the far air eases in.
+          ease: opens ? easeOut : undefined,
         });
         return;
       }
+      const delay = stagger * (0.78 * along + 0.22 * hash(index, 11));
+      const duration = travel * (0.82 + 0.18 * hash(index, 12));
+      landing[index] = start + delay + duration;
       figure.fly(proxy, { delay, duration, bend: 0.2 });
     });
     state = "gathering";
