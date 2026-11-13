@@ -182,13 +182,16 @@ export function createAirTitle({
       const duration = travel * (0.82 + 0.18 * hash(index, 12));
       landing[index] = start + delay + duration;
       if (proxy.data.spread) {
-        // The spinner bursts out at once and spreads over the word; the ink
-        // still follows the writing from left to right.
+        // The spinner opens at once and spreads over the word while the air
+        // from outside flies in: each of its particles takes as long as the
+        // air landing beside it, so they arrive together.
         proxy.data.spread = false;
-        const quick = travel * (0.7 + 0.15 * hash(index, 17));
-        const leave = 0.1 * hash(index, 18);
-        figure.fly(proxy, { delay: leave, duration: quick, bend: 0.12 });
-        landing[index] = Math.max(start + leave + quick, landing[index]);
+        const leave = 0.06 * hash(index, 18);
+        figure.fly(proxy, {
+          delay: leave,
+          duration: delay + duration - leave,
+          bend: 0.12,
+        });
         return;
       }
       figure.fly(proxy, { delay, duration, bend: 0.2 });
