@@ -449,7 +449,12 @@ function loadingCurve(seconds) {
 // 5. The flow
 /**
  * options.slug: the variant folder name (for the switcher).
- * options.loadSeconds: how long the simulated load takes.
+ * options.loadSeconds: how long the simulated load takes (?load= overrides).
+ * options.paceSeconds: the shown percentage never runs faster than 0-100 % in
+ *   this time, so a quick load still reads as a gesture, not a flash.
+ * options.stageHoldSeconds: a sense stays named at least this long; unlike
+ *   minStageSeconds it never holds the percentage back, so a quick load
+ *   simply names fewer senses.
  * options.beforeReady(): optional async hook awaited when loading reaches
  *   100 %, before the continue gesture is offered (the title forming).
  * options.beforeAction(action, mode): optional async hook awaited before a
@@ -464,7 +469,9 @@ export function createMenuFlow(options = {}) {
   input.invert = settings.invert;
   const sound = createMenuSound(() => settings.volume);
   const coarsePointer = window.matchMedia("(pointer: coarse)").matches;
-  const loadSeconds = options.loadSeconds ?? 6.5;
+  // ?load=<seconds> simulates a faster or slower connection.
+  const loadSeconds =
+    Number(params.get("load")) || (options.loadSeconds ?? 6.5);
   const curve = loadingCurve(loadSeconds);
 
   const flow = {
@@ -919,11 +926,25 @@ export function createMenuFlow(options = {}) {
   // A sense stays named for at least minStageSeconds, so a jump in the
   // loading never skips one; the shown percentage waits for it.
   const minStageMs = (options.minStageSeconds ?? 0) * 1000;
+  const holdMs = (options.stageHoldSeconds ?? 0) * 1000;
+  const paceSeconds = options.paceSeconds ?? 0;
   const stageCount = COPY.de.stages.length;
   let shownIndex = 0;
   let shownAt = performance.now();
   let rawProgress = 0;
   function advanceStage() {
+    if (holdMs) {
+      const real = Math.min(
+        Math.floor(flow.progress * stageCount),
+        stageCount - 1,
+      );
+      const now = performance.now();
+      if (real > shownIndex && now - shownAt >= holdMs) {
+        shownIndex += 1;
+        shownAt = now;
+      }
+      return;
+    }
     const real = Math.min(Math.floor(rawProgress * stageCount), stageCount - 1);
     if (!minStageMs) {
       shownIndex = real;
@@ -970,13 +991,26 @@ export function createMenuFlow(options = {}) {
   function startLoading() {
     const started = performance.now();
     const fontsReady = document.fonts.ready;
+    let previous = started;
     const step = async () => {
-      const elapsed = (performance.now() - started) / 1000;
+      const now = performance.now();
+      const elapsed = (now - started) / 1000;
+      const dt = Math.min((now - previous) / 1000, 0.1);
+      previous = now;
       rawProgress = curve(elapsed);
-      advanceStage();
-      flow.progress = stagesDone()
-        ? rawProgress
-        : Math.min(rawProgress, (shownIndex + 1) / stageCount - 0.001);
+      if (paceSeconds) {
+        // Ease toward the real value, never faster than the pace allows.
+        const gap = Math.max(rawProgress - flow.progress, 0);
+        const eased = gap * (1 - Math.exp(-4 * dt)) + 0.12 * dt;
+        flow.progress += Math.min(eased, gap, dt / paceSeconds);
+        if (rawProgress >= 1 && 1 - flow.progress < 0.002) flow.progress = 1;
+        advanceStage();
+      } else {
+        advanceStage();
+        flow.progress = stagesDone()
+          ? rawProgress
+          : Math.min(rawProgress, (shownIndex + 1) / stageCount - 0.001);
+      }
       root.style.setProperty("--progress", flow.progress.toFixed(4));
       for (const node of document.querySelectorAll("[data-progress-value]")) {
         node.textContent = String(Math.floor(flow.progress * 100));

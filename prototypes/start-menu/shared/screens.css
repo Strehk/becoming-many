@@ -443,3 +443,24 @@
   letter-spacing: 0.24em;
   text-transform: uppercase;
 }
+
+/* 9. Air titles (04-06): the type takes over from the ink at once, without a
+   fade; the ink canvas sits exactly over it. The title is made of air, so it
+   keeps the air particles' colour. */
+.air-title .bm-title {
+  color: #202126;
+  transition: none;
+}
+
+.bm-ink {
+  position: fixed;
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* The pointer is drawn by the air itself on screens with a mouse. */
+.air-cursor,
+.air-cursor * {
+  /* biome-ignore lint/complexity/noImportantStyles: every control sets its own pointer cursor */
+  cursor: none !important;
+}

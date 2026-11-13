@@ -1,0 +1,64 @@
+/* Trace: flush left on one margin; the loading line lies low across it. */
+
+:root {
+  --edge: clamp(20px, 6vw, 88px);
+  --horizon: 68vh;
+  --title-top: 24vh;
+}
+
+.bm-title {
+  top: var(--title-top);
+  left: var(--edge);
+  right: var(--edge);
+  text-align: left;
+  font-size: clamp(36px, 8.4vw, 120px);
+  letter-spacing: 0.06em;
+}
+
+.load {
+  display: block;
+  padding: 0;
+}
+
+.load__percent {
+  position: absolute;
+  top: calc(var(--horizon) + 22px);
+  left: calc(var(--edge) + (100vw - 2 * var(--edge)) * var(--progress, 0));
+  transform: translateX(calc(-100% * var(--progress, 0)));
+  font-size: clamp(28px, 3.4vw, 44px);
+  font-weight: 400;
+}
+
+.load__text {
+  justify-items: start;
+  text-align: left;
+  position: absolute;
+  left: var(--edge);
+  bottom: calc(100vh - var(--horizon) + 26px);
+  display: grid;
+  gap: 10px;
+}
+
+.load__enter {
+  position: absolute;
+  left: var(--edge);
+  top: calc(var(--title-bottom, 40vh) + clamp(28px, 6vh, 56px));
+}
+
+.menu {
+  place-content: start;
+  justify-items: start;
+  padding: calc(var(--title-bottom, 40vh) + clamp(14px, 3vh, 30px)) var(--edge)
+    0;
+  text-align: left;
+  gap: clamp(18px, 3.4vh, 34px);
+}
+
+.menu .list {
+  align-items: flex-start;
+  margin-left: -44px;
+}
+
+.menu .hint {
+  text-align: left;
+}

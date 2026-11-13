@@ -97,16 +97,18 @@ export function createMenuSound(getVolume) {
     windLevel.connect(windSend);
     windSend.connect(hall);
 
-    // The sonar: the call, its click, and the echo room it measures.
+    // The sonar: the call, its click, and the wall it measures. A hover is a
+    // single dry call with one faint return, no hall and no repeats, so one
+    // hover never sounds like several.
     const sonarBus = new Gain(SONAR.volume * 1.6);
     sonarBus.connect(master);
-    const sonarSend = new Gain(SONAR.roomSend * 0.5);
-    sonarBus.connect(sonarSend);
-    sonarSend.connect(hall);
     const echo = createEchoRoom(sonarBus, {
       ...SONAR.voice.room,
-      delay: 0.3,
-      repeats: SONAR.voice.returns * 0.8,
+      delay: 0.2,
+      repeats: 0,
+      echoMix: SONAR.voice.room.echoMix * 0.22,
+      reverbMix: SONAR.voice.room.reverbMix * 0.08,
+      roomSize: 0.1,
     });
     const ping = createHeldOscillators({
       type: "triangle",
@@ -114,9 +116,9 @@ export function createMenuSound(getVolume) {
       envelope: {
         attack: 0.001,
         attackCurve: "exponential",
-        decay: 0.07,
+        decay: 0.06,
         sustain: 0,
-        release: 1.4,
+        release: 0.12,
       },
       volumeDecibels: -8,
       pitchDrop: { ratio: 3, seconds: 0.012 },
@@ -124,7 +126,7 @@ export function createMenuSound(getVolume) {
     ping.output.connect(echo.input);
     const click = new NoiseSynth({
       noise: { type: "white" },
-      envelope: { attack: 0.0005, decay: 0.016, sustain: 0 },
+      envelope: { attack: 0.0005, decay: 0.014, sustain: 0 },
       volume: -18,
     });
     const clickBand = new Filter(700 + SONAR.voice.edge * 7000, "bandpass");
@@ -143,10 +145,13 @@ export function createMenuSound(getVolume) {
     const swell = createHeldOscillators({
       type: "sine",
       polyphony: 3,
-      envelope: { attack: 0.25, decay: 0.6, sustain: 0.4, release: 3 },
-      volumeDecibels: -12,
+      envelope: { attack: 0.25, decay: 0.6, sustain: 0.4, release: 1.6 },
+      volumeDecibels: -15,
     });
-    swell.output.connect(hall);
+    // Choosing keeps only a little of the hall.
+    const swellSend = new Gain(0.35);
+    swell.output.connect(swellSend);
+    swellSend.connect(hall);
     swell.output.connect(master);
 
     return {
@@ -201,12 +206,13 @@ export function createMenuSound(getVolume) {
       graph.windOn = on;
       graph.windLevel.gain.rampTo(on ? graph.windTarget : 0, on ? 4 : 1.5);
     },
-    /** A sonar call on the control's degree, echoing at its distance. */
+    /** A dry sonar call on the control's degree; its one return sits at the control's distance. */
     hover(key) {
       if (!graph) return;
       const voicing = HOVER_VOICING[key] ?? HOVER_VOICING.setting;
       const time = now() + 0.01;
-      graph.echo.setDelay(voicing.wall);
+      // Close walls only: a late return would read as a second hover.
+      graph.echo.setDelay(voicing.wall * 0.3);
       graph.ping.triggerAttackRelease(
         degreeHertz(voicing.degree),
         callSeconds,

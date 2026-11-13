@@ -23,4 +23,22 @@ export const VARIANTS = [
     tone: "flush left",
     note: "A horizon of particles grows from the left with the percentage riding on its tip. At 100 % it lifts and becomes the title, set flush left.",
   },
+  {
+    slug: "04-gather",
+    name: "Gather",
+    tone: "centred, air",
+    note: "The air itself gathers into a turning globe that builds with the percentage, then writes the title and inks into the type. The pointer is a swarm that catches particles.",
+  },
+  {
+    slug: "05-senses-air",
+    name: "Senses in the air",
+    tone: "centred, air",
+    note: "The air in front of you takes the shape of each sense as it loads, then writes the title. The pointer is a ring of air; the dust parts around it, and a click sends a sonar pulse.",
+  },
+  {
+    slug: "06-trace",
+    name: "Trace",
+    tone: "flush left, air",
+    note: "A line of air grows with the percentage and writes the title from left to right. The pointer leaves a trace rooted in the space and underlines entries with air.",
+  },
 ];

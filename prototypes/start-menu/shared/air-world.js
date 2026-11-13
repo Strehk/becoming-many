@@ -44,6 +44,14 @@ export const particleScale = () =>
 export const airParticleSize = () =>
   whiteWorld.airParticles.appearance.sizeMeters * particleScale();
 export const AIR_PARTICLE_COLOR = whiteWorld.airParticles.appearance.color;
+/** The air recipe as the menu draws it, desktop scale included. */
+export const airParticleRecipe = () => ({
+  ...whiteWorld.airParticles,
+  appearance: {
+    ...whiteWorld.airParticles.appearance,
+    sizeMeters: airParticleSize(),
+  },
+});
 
 /**
  * Options: veil (initial presence, 0..1), speed (m/s), pixelRatio (cap).
@@ -76,13 +84,7 @@ export function createAirWorld(canvas, options = {}) {
   const air = createAirParticlesModule({
     scene,
     viewpoint,
-    parameters: {
-      ...whiteWorld.airParticles,
-      appearance: {
-        ...whiteWorld.airParticles.appearance,
-        sizeMeters: airParticleSize(),
-      },
-    },
+    parameters: airParticleRecipe(),
     streamQueue,
   });
   const veil = createWhiteVeil({ scene, viewpoint });
@@ -168,7 +170,7 @@ export function createAirWorld(canvas, options = {}) {
     viewpoint.worldDirection.copy(forward);
     viewpoint.worldBodyDirection.copy(forward);
 
-    for (const hook of frameHooks) hook(dt, now / 1000);
+    for (const hook of frameHooks) hook(dt, now / 1000, scaled);
     camera.updateMatrixWorld();
     air.update(scaled);
     veil.module.update(scaled);
