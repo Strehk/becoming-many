@@ -76,7 +76,9 @@ for as long as loading takes, so a load of one second reads as well as one of
 twenty; loading is paced to at least 3.4 s. One line under it says what
 reality is still putting together ("Bäume werden gepflanzt …"). The pointer is
 a normal pointer; a click flings a few particles out of its tip in
-every direction. They are borrowed from air out of sight, so nothing appears
+every direction, with a sound to match: a short breath of air opening
+outward and a scatter of tiny grains flying off to either side. They are
+borrowed from air out of sight, so nothing appears
 from nowhere, and they fly home out of sight again. The centred menu has no
 walking marker: a hovered entry only darkens. The way in (Desktop, VR
 headset, Phone) stands as three equal columns, each with its icon, name and
@@ -101,8 +103,9 @@ loading completes, gathering out of the air into the title.
 Like 10, but the spinner itself, a little larger, is made of a hundred or
 so borrowed air particles: the plain ring's breathing arc (11), a ring of ten clusters whose
 lit one swells and leans toward the eye (12), or three small rings turning in
-tilted planes (13). When loading completes, they join the air that writes
-the title.
+tilted planes (13). When loading completes, the air sets off from outside
+while the spinner keeps turning; the spinner opens late, spreads over the
+whole word and lands together with the air.
 
 ## Test switches
 

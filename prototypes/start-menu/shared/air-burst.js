@@ -93,6 +93,7 @@ export function createAirBurst({ borrow, menu, count }) {
     if (menu.screen === "launch") return;
     if (event.target instanceof Element && event.target.closest(".bm-chrome"))
       return;
+    menu.sound?.scatter(amount);
     fling(event.clientX, event.clientY);
   });
   return { fling };

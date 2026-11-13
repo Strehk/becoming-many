@@ -19,6 +19,7 @@ import {
   Noise,
   NoiseSynth,
   now,
+  Panner,
   Reverb,
   start,
   Volume,
@@ -154,7 +155,33 @@ export function createMenuSound(getVolume) {
     swellSend.connect(hall);
     swell.output.connect(master);
 
+    // A click that flings particles: a short breath of air opening outward
+    // and a scatter of tiny grains flying off to either side.
+    const puff = new NoiseSynth({
+      noise: { type: "pink" },
+      envelope: { attack: 0.004, decay: 0.2, sustain: 0 },
+      volume: -20,
+    });
+    const puffBand = new Filter(2200, "bandpass");
+    puffBand.Q.value = 0.8;
+    puff.chain(puffBand, master);
+    const puffSend = new Gain(0.12);
+    puffBand.connect(puffSend);
+    puffSend.connect(hall);
+    const grains = new NoiseSynth({
+      noise: { type: "white" },
+      envelope: { attack: 0.0004, decay: 0.009, sustain: 0 },
+      volume: -21,
+    });
+    const grainBand = new Filter(5200, "highpass");
+    const grainPan = new Panner(0);
+    grains.chain(grainBand, grainPan, master);
+
     return {
+      puff,
+      puffBand,
+      grains,
+      grainPan,
       master,
       noise,
       gust,
@@ -227,6 +254,27 @@ export function createMenuSound(getVolume) {
         0.7,
       );
       graph.click.triggerAttackRelease(0.02, time, SONAR.voice.click);
+    },
+    /** Particles flung from a click: a breath outward and grains flying off. */
+    scatter(count = 10) {
+      if (!graph) return;
+      const time = startTime(0.005);
+      graph.puffBand.frequency.cancelScheduledValues(time);
+      graph.puffBand.frequency.setValueAtTime(3200, time);
+      graph.puffBand.frequency.exponentialRampToValueAtTime(700, time + 0.22);
+      graph.puff.triggerAttackRelease(0.05, time, 0.55);
+      let at = time + 0.012;
+      const grains = Math.min(count, 12);
+      for (let n = 0; n < grains; n += 1) {
+        at += 0.008 + Math.random() * 0.024;
+        graph.grainPan.pan.setValueAtTime(Math.random() * 1.6 - 0.8, at);
+        graph.grains.triggerAttackRelease(
+          0.006,
+          at,
+          0.7 * (1 - n / grains) + 0.1,
+        );
+      }
+      lastStart = Math.max(lastStart, at);
     },
     /** Choosing: the call an octave down, and the root and fifth swelling under it. */
     select(key) {
