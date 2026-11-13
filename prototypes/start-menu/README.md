@@ -98,8 +98,8 @@ loading completes, gathering out of the air into the title.
 
 ## Particle spinners (11-13)
 
-Like 10, but the spinner itself is made of a few dozen borrowed air
-particles: the plain ring's breathing arc (11), a ring of ten clusters whose
+Like 10, but the spinner itself, a little larger, is made of a hundred or
+so borrowed air particles: the plain ring's breathing arc (11), a ring of ten clusters whose
 lit one swells and leans toward the eye (12), or three small rings turning in
 tilted planes (13). When loading completes, they join the air that writes
 the title.

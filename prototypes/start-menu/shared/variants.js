@@ -69,7 +69,7 @@ export const VARIANTS = [
     slug: "11-ring",
     name: "Ring",
     tone: "centred, particle spinner",
-    note: "The plain ring's breathing arc, drawn by a few dozen air particles. They join the title when loading completes.",
+    note: "The plain ring's breathing arc, drawn by about a hundred air particles. They join the title when loading completes.",
   },
   {
     slug: "12-dots",

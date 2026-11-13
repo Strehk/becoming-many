@@ -101,10 +101,10 @@ export function endless(borrow, depth) {
   };
 }
 
-// Small spinners, the size of a plain loading ring, made of a few dozen
-// particles (11-13).
+// Spinners made of about a hundred particles, a little larger than a plain
+// loading ring (11-13).
 const SPIN_SECONDS = 1.6;
-const spinRadius = (view) => Math.max(22, Math.min(34, size(view) * 0.038));
+const spinRadius = (view) => Math.max(40, Math.min(66, size(view) * 0.072));
 
 /** Ring: the plain spinner's breathing arc, drawn by particles along it. */
 export function ringSpinner(borrow, depth) {
@@ -120,7 +120,7 @@ export function ringSpinner(borrow, depth) {
       const start = t * (TAU / SPIN_SECONDS) + cycle * TAU * 0.8;
       const u = hash(index, 1);
       const angle = start - u * span * TAU - Math.PI / 2;
-      const r = radius + (hash(index, 2) - 0.5) * 2.4;
+      const r = radius + (hash(index, 2) - 0.5) * 3.6;
       out.x = Math.cos(angle) * r;
       out.y = Math.sin(angle) * r;
       out.depth = (hash(index, 3) - 0.5) * 0.6;
@@ -141,7 +141,7 @@ export function dotsSpinner(borrow, depth) {
       // leans toward the eye, so its particles grow.
       const phase = (dot / DOTS - t / (SPIN_SECONDS * 0.8)) % 1;
       const lit = Math.max(0, Math.cos(((phase + 1) % 1) * TAU)) ** 4;
-      const spread = 1.6 + lit * 3.4;
+      const spread = (1.6 + lit * 3.4) * (radius / 28);
       const a = hash(index, 4) * TAU + t * 2;
       const r = Math.sqrt(hash(index, 5)) * spread;
       out.x = Math.cos(angle) * radius + Math.cos(a) * r;

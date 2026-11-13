@@ -18,4 +18,4 @@ const variant = startAirVariant({
   plainMarker: true,
   titleScreens: ["loading", "menu", "credits"],
 });
-runLoader(variant, orbitSpinner, { count: 120, phoneCount: 84 });
+runLoader(variant, orbitSpinner, { count: 210, phoneCount: 140 });

@@ -2,7 +2,7 @@
    menu without the walking marker. */
 
 :root {
-  --below: 34px;
+  --below: clamp(48px, 8.4vmin, 78px);
   --title-top: 30vh;
 }
 

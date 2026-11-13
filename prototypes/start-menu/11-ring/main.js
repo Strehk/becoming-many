@@ -1,6 +1,6 @@
 /**
- * Ring: a small spinner made of air: the plain loading ring's breathing arc, drawn by a few
- * dozen air particles. One line
+ * Ring: a small spinner made of air: the plain loading ring's breathing arc, drawn by about a hundred
+ * air particles. One line
  * under it says what reality is still putting together. When loading
  * completes, its particles join the air that writes the title. A click
  * flings a few particles out of the pointer.
@@ -18,4 +18,4 @@ const variant = startAirVariant({
   plainMarker: true,
   titleScreens: ["loading", "menu", "credits"],
 });
-runLoader(variant, ringSpinner, { count: 72, phoneCount: 54 });
+runLoader(variant, ringSpinner, { count: 130, phoneCount: 90 });
