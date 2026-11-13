@@ -464,3 +464,29 @@
   /* biome-ignore lint/complexity/noImportantStyles: every control sets its own pointer cursor */
   cursor: none !important;
 }
+
+/* 10. Centred menus without the walking marker (07-09): a dash in front of a
+   centred line throws it off its axis, so the hovered entry only darkens. */
+.plain-marker .item::before,
+.plain-marker .bm-mode::before,
+.plain-marker .back::before {
+  display: none;
+}
+
+.plain-marker .item:hover,
+.plain-marker .item:focus-visible,
+.plain-marker .bm-mode:hover,
+.plain-marker .bm-mode:focus-visible,
+.plain-marker .back:hover,
+.plain-marker .back:focus-visible {
+  transform: none;
+}
+
+.load__building {
+  margin: 0;
+  font-size: clamp(14px, 1.5vw, 17px);
+  font-weight: 400;
+  line-height: 1.5;
+  color: var(--bm-muted);
+  text-align: center;
+}

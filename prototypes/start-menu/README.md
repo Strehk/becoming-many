@@ -1,9 +1,9 @@
 # Start menu study
 
-Six working loading screens and start menus for Becoming Many, so one
+Nine working loading screens and start menus for Becoming Many, so one
 direction can be chosen before anything enters the application. 01-03 draw
-their figures with particles of their own; 04-06 borrow the White World's own
-air particles for everything.
+their figures with particles of their own; 04-09 borrow the White World's own
+air particles for everything. 07-09 are the latest round.
 
 ## Constraints
 
@@ -67,6 +67,20 @@ a sign is not drawn in front of the world, it is a passing order inside it.
   and underlines the hovered entry with air. On phones these appear while a
   finger touches.
 
+## The wafting variants (07-09)
+
+Built on 04 after feedback: the loading figure never builds and shows no
+percentage. The air gathers within half a second into a figure that keeps
+moving like a loading sign (a spinner of dust, a murmuration, a figure eight)
+for as long as loading takes, so a load of one second reads as well as one of
+twenty; loading is paced to at least 3.4 s. One line under it says what
+reality is still putting together ("Bäume werden gepflanzt …"). The pointer is
+a normal pointer; a click anywhere scatters the air around it outward and
+toward the eye, and the particles drift home. The centred menu has no walking
+marker: a hovered entry only darkens. The menu carries four times the White
+World's air density on desktop (2.2 on phones) so the middle distance is
+never empty; this applies to every variant.
+
 ## Structure
 
 | Path | Responsibility |
@@ -79,8 +93,10 @@ a sign is not drawn in front of the world, it is a passing order inside it.
 | `shared/air-borrow.js` | Borrowing air particles: stand-ins, flights, giving them back. |
 | `shared/air-figure.js` | A figure of borrowed air: recruit, reshape, hand over, release. |
 | `shared/air-title.js`, `shared/air-ink.js` | Air into the title and the ink morph into the set type. |
-| `shared/air-cursor.js` | Swarm, wake and trail pointers made of air. |
-| `shared/air-variant.js` | Wiring shared by 04-06. |
+| `shared/air-cursor.js` | Swarm, wake and trail pointers made of air (04-06). |
+| `shared/air-burst.js` | A click scatters the air around it (07-09). |
+| `shared/air-loaders.js` | Wafting loading figures: circling, flock, endless (07-09). |
+| `shared/air-variant.js` | Wiring shared by 04-09. |
 | `shared/menu-sound.js` | Wind, sonar and hall from the drone organ's composition. |
 | `shared/menu-flow.js` | Screens, loading and senses copy (DE/EN), settings, mode detection, keyboard, switcher. |
 | `shared/input.js` | Smoothed look offset from mouse, touch or gyro. |

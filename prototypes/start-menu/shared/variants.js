@@ -41,4 +41,22 @@ export const VARIANTS = [
     tone: "flush left, air",
     note: "A line of air grows with the percentage and writes the title from left to right. The pointer leaves a trace rooted in the space and underlines entries with air.",
   },
+  {
+    slug: "07-circling",
+    name: "Circling",
+    tone: "centred, air, no %",
+    note: "The air gathers within a second into a spinner of dust that circles for as long as loading takes, then writes the title. Lines tell what reality is still building. A click scatters the air.",
+  },
+  {
+    slug: "08-flock",
+    name: "Flock",
+    tone: "centred, air, no %",
+    note: "The air gathers into a murmuration that stretches, folds and turns while loading, then writes the title. Lines tell what reality is still building. A click scatters the air.",
+  },
+  {
+    slug: "09-endless",
+    name: "Endless",
+    tone: "centred, air, no %",
+    note: "The air streams along a figure eight that twists in depth while loading, then writes the title. Lines tell what reality is still building. A click scatters the air.",
+  },
 ];

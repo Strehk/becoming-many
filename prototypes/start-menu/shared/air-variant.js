@@ -8,6 +8,7 @@
  */
 
 import { createAirBorrow } from "./air-borrow.js";
+import { createAirBurst } from "./air-burst.js";
 import { createAirCursor } from "./air-cursor.js";
 import { createAirTitle } from "./air-title.js";
 import {
@@ -25,8 +26,11 @@ export function startAirVariant({
   cursor,
   paceSeconds = 2.6,
   stageHoldSeconds = 2.2,
+  buildingSeconds,
+  plainMarker = false,
   gather = { stagger: 1.0, travel: 1.9 },
 }) {
+  if (plainMarker) document.documentElement.classList.add("plain-marker");
   const phone = window.matchMedia("(pointer: coarse)").matches;
   const variant = { phone, loading: null };
   const menu = createMenuFlow({
@@ -34,6 +38,7 @@ export function startAirVariant({
     loadSeconds,
     paceSeconds,
     stageHoldSeconds,
+    buildingSeconds,
     beforeReady: () =>
       variant.title.gather({ from: variant.loading, ...gather }),
   });
@@ -42,14 +47,16 @@ export function startAirVariant({
   bindFlight(world, menu);
   bindLaunch(world, menu, { speed: MENU_GLIDE_METERS_PER_SECOND, veil: 0 });
   // Created before the first frame renders, so it can read the drift clock.
-  const borrow = createAirBorrow(world, { capacity: phone ? 1800 : 2900 });
+  const borrow = createAirBorrow(world, { capacity: phone ? 2600 : 4800 });
   const title = createAirTitle({
     menu,
     borrow,
     title: document.querySelector("[data-title]"),
     maxCount: phone ? 950 : 1700,
   });
-  createAirCursor({ borrow, menu, mode: cursor });
+  // "burst": a normal pointer, and a click scatters the air around it.
+  if (cursor === "burst") createAirBurst({ borrow, menu });
+  else createAirCursor({ borrow, menu, mode: cursor });
   if (menu.skipped) menu.on("ready", () => title.setAtOnce());
   Object.assign(variant, { menu, world, borrow, title });
   // For measuring in the console and in automated checks.

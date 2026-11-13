@@ -191,6 +191,7 @@ export function createAirBorrow(world, { capacity = 2600 } = {}) {
     const array = airPositions.array;
     const visible = airVisible.array;
     const max2 = maxMeters * maxMeters;
+    const reject2 = (maxMeters + 1) * (maxMeters + 1);
     const halfW = view.width / 2;
     const halfH = view.height / 2;
     let count = 0;
@@ -199,6 +200,11 @@ export function createAirBorrow(world, { capacity = 2600 } = {}) {
       const hx = array[index * 3];
       const hy = array[index * 3 + 1];
       const hz = array[index * 3 + 2];
+      // Cheap reject before the drift and the matrix: too far from the eye.
+      const ex = hx - m[12];
+      const ey = hy - m[13];
+      const ez = hz - m[14];
+      if (ex * ex + ey * ey + ez * ez > reject2) continue;
       const d = driftAt(hx, hy, hz);
       const x = hx + d.x;
       const y = hy + d.y;

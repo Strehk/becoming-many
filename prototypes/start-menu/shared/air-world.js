@@ -44,9 +44,25 @@ export const particleScale = () =>
 export const airParticleSize = () =>
   whiteWorld.airParticles.appearance.sizeMeters * particleScale();
 export const AIR_PARTICLE_COLOR = whiteWorld.airParticles.appearance.color;
-/** The air recipe as the menu draws it, desktop scale included. */
+/**
+ * The menu stands still in the white for a long time, so it carries more air
+ * than the show: four times the authored density on desktop, a little over
+ * twice on phones, so the middle distance is never empty.
+ */
+export const MENU_DENSITY_SCALE = { desktop: 4, phone: 2.2 };
+const densityScale = () =>
+  window.matchMedia("(pointer: fine)").matches
+    ? MENU_DENSITY_SCALE.desktop
+    : MENU_DENSITY_SCALE.phone;
+
+/** The air recipe as the menu draws it, desktop scale and density included. */
 export const airParticleRecipe = () => ({
   ...whiteWorld.airParticles,
+  density: {
+    particlesPerChunk: Math.round(
+      whiteWorld.airParticles.density.particlesPerChunk * densityScale(),
+    ),
+  },
   appearance: {
     ...whiteWorld.airParticles.appearance,
     sizeMeters: airParticleSize(),

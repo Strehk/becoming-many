@@ -32,6 +32,25 @@ const COPY = {
     continue: "Klicken, um fortzufahren",
     continueTouch: "Tippen, um fortzufahren",
     hold: "Gedrückt halten, um zu beginnen",
+    // Loading as if reality still had to be put together (07-09).
+    building: [
+      "Luft wird angerührt",
+      "Bäume werden gepflanzt",
+      "Tiere werden freigelassen",
+      "Text wird geübt",
+      "Geschichte wird ausgedacht",
+      "Gerüche werden verteilt",
+      "Echos werden ausprobiert",
+      "Norden wird festgelegt",
+      "Wärme wird ausgelegt",
+      "Pilzfäden werden verknüpft",
+      "Wind wird gestimmt",
+      "Fledermäuse werden geweckt",
+      "Wurzeln werden verlegt",
+      "Himmel wird geweißt",
+      "Boden wird angewärmt",
+      "Partikel werden gezählt",
+    ],
     // The senses in the order the show introduces them.
     stages: [
       {
@@ -119,6 +138,24 @@ const COPY = {
     continue: "Click to continue",
     continueTouch: "Tap to continue",
     hold: "Press and hold to begin",
+    building: [
+      "Stirring the air",
+      "Planting the trees",
+      "Releasing the animals",
+      "Rehearsing the lines",
+      "Making up the story",
+      "Spreading the scents",
+      "Testing the echoes",
+      "Deciding where north is",
+      "Laying out the warmth",
+      "Knotting the fungal threads",
+      "Tuning the wind",
+      "Waking the bats",
+      "Laying the roots",
+      "Whitewashing the sky",
+      "Warming the ground",
+      "Counting the particles",
+    ],
     stages: [
       {
         sense: "Air",
@@ -452,6 +489,9 @@ function loadingCurve(seconds) {
  * options.loadSeconds: how long the simulated load takes (?load= overrides).
  * options.paceSeconds: the shown percentage never runs faster than 0-100 % in
  *   this time, so a quick load still reads as a gesture, not a flash.
+ * options.buildingSeconds: when set, [data-building-line] cycles through the
+ *   "building" lines at this interval while loading, as if reality were
+ *   still being put together; no percentage needed.
  * options.stageHoldSeconds: a sense stays named at least this long; unlike
  *   minStageSeconds it never holds the percentage back, so a quick load
  *   simply names fewer senses.
@@ -988,7 +1028,34 @@ export function createMenuFlow(options = {}) {
     }
   }
 
+  // Reality being put together: one line after another, until loaded.
+  function startBuilding() {
+    const seconds = options.buildingSeconds;
+    if (!seconds) return;
+    let index = 0;
+    const show = () => {
+      const lines = flow.t("building");
+      for (const node of document.querySelectorAll("[data-building-line]")) {
+        node.textContent = `${lines[index % lines.length]} …`;
+        node.animate(
+          [
+            { opacity: 0, transform: "translateY(5px)" },
+            { opacity: 1, transform: "none" },
+          ],
+          { duration: 600, easing: "cubic-bezier(0.22, 1, 0.36, 1)" },
+        );
+      }
+      index += 1;
+    };
+    show();
+    const timer = window.setInterval(() => {
+      if (root.dataset.loaded === "true") window.clearInterval(timer);
+      else show();
+    }, seconds * 1000);
+  }
+
   function startLoading() {
+    startBuilding();
     const started = performance.now();
     const fontsReady = document.fonts.ready;
     let previous = started;
