@@ -65,4 +65,22 @@ export const VARIANTS = [
     tone: "centred, plain ring",
     note: "A plain loading ring without particles and one line about what reality is still building. When loading completes, the air gathers into the title.",
   },
+  {
+    slug: "11-ring",
+    name: "Ring",
+    tone: "centred, particle spinner",
+    note: "The plain ring's breathing arc, drawn by a few dozen air particles. They join the title when loading completes.",
+  },
+  {
+    slug: "12-dots",
+    name: "Dots",
+    tone: "centred, particle spinner",
+    note: "Ten small clusters of air in a ring; the lit one swells and leans toward the eye as it runs round.",
+  },
+  {
+    slug: "13-orbit",
+    name: "Orbit",
+    tone: "centred, particle spinner",
+    note: "Three small rings of air turning in tilted planes, each with a head and a thinning tail.",
+  },
 ];

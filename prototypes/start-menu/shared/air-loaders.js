@@ -101,15 +101,99 @@ export function endless(borrow, depth) {
   };
 }
 
+// Small spinners, the size of a plain loading ring, made of a few dozen
+// particles (11-13).
+const SPIN_SECONDS = 1.6;
+const spinRadius = (view) => Math.max(22, Math.min(34, size(view) * 0.038));
+
+/** Ring: the plain spinner's breathing arc, drawn by particles along it. */
+export function ringSpinner(borrow, depth) {
+  return {
+    depth,
+    at(index, t, out) {
+      const radius = spinRadius(borrow.view);
+      const cycle = (t / SPIN_SECONDS) % 1;
+      // The arc grows to about two thirds of the ring and shrinks again
+      // while the whole turns, like the CSS ring of 10.
+      const breath = 0.5 - 0.5 * Math.cos(cycle * TAU);
+      const span = 0.05 + 0.62 * breath;
+      const start = t * (TAU / SPIN_SECONDS) + cycle * TAU * 0.8;
+      const u = hash(index, 1);
+      const angle = start - u * span * TAU - Math.PI / 2;
+      const r = radius + (hash(index, 2) - 0.5) * 2.4;
+      out.x = Math.cos(angle) * r;
+      out.y = Math.sin(angle) * r;
+      out.depth = (hash(index, 3) - 0.5) * 0.6;
+    },
+  };
+}
+
+/** Dots: a ring of small clusters; the lit one comes forward and turns. */
+export function dotsSpinner(borrow, depth) {
+  const DOTS = 10;
+  return {
+    depth,
+    at(index, t, out) {
+      const radius = spinRadius(borrow.view);
+      const dot = index % DOTS;
+      const angle = (dot / DOTS) * TAU - Math.PI / 2;
+      // A wave runs round the ring; where it is, the cluster swells and
+      // leans toward the eye, so its particles grow.
+      const phase = (dot / DOTS - t / (SPIN_SECONDS * 0.8)) % 1;
+      const lit = Math.max(0, Math.cos(((phase + 1) % 1) * TAU)) ** 4;
+      const spread = 1.6 + lit * 3.4;
+      const a = hash(index, 4) * TAU + t * 2;
+      const r = Math.sqrt(hash(index, 5)) * spread;
+      out.x = Math.cos(angle) * radius + Math.cos(a) * r;
+      out.y = Math.sin(angle) * radius + Math.sin(a) * r;
+      out.depth = -lit * depth * 0.32;
+    },
+  };
+}
+
+/** Orbit: three small rings of particles turning in tilted planes. */
+export function orbitSpinner(borrow, depth) {
+  return {
+    depth,
+    at(index, t, out) {
+      const view = borrow.view;
+      const radius = spinRadius(view) * 1.15 * borrow.metersPerPixel(depth);
+      const ring = index % 3;
+      const u = hash(index, 6);
+      // Each ring has a head and a thinning tail, so its turning reads.
+      const angle = TAU * (t * 0.55 * (ring % 2 ? -1 : 1) - u * u * 0.75);
+      let x = Math.cos(angle) * radius;
+      let y = Math.sin(angle) * radius;
+      let z = 0;
+      // Tilt the ring's plane, each ring by its own angle, all slowly turning.
+      const tilt = 1.1;
+      const spin = (ring / 3) * TAU + t * 0.35;
+      const yz = y * Math.cos(tilt);
+      z = y * Math.sin(tilt);
+      y = yz;
+      const cx = x * Math.cos(spin) - y * Math.sin(spin);
+      const cy = x * Math.sin(spin) + y * Math.cos(spin);
+      x = cx;
+      y = cy;
+      out.local = true;
+      out.x = x;
+      out.y = y;
+      out.z = -depth + z;
+    },
+  };
+}
+
 /**
  * Recruit the loading figure quickly and keep it wafting until loading ends;
  * the title adopts its members.
  */
-export function runLoader(variant, makeShape) {
+export function runLoader(variant, makeShape, options = {}) {
   const { borrow, menu, title } = variant;
   const figure = createFigure(borrow, { owner: "loading" });
   variant.loading = figure;
-  const count = variant.phone ? 420 : 760;
+  const count = variant.phone
+    ? (options.phoneCount ?? 420)
+    : (options.count ?? 760);
   const shape = makeShape(borrow, title.shape.depth);
   figure.reshape(shape);
   let loaded = menu.skipped;
