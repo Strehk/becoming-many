@@ -45,6 +45,7 @@ export function createAirTitle({
   title,
   maxCount = 1600,
   timing = {},
+  sound,
 }) {
   const root = document.documentElement;
   root.classList.add("air-title");
@@ -224,6 +225,19 @@ export function createAirTitle({
       visible: new Uint8Array(count),
       end: Math.max(...landing) + holdSeconds + growSeconds,
     };
+    // The sound follows the landings: a sample of them, panned by place.
+    if (sound) {
+      const now = borrow.view.now;
+      const picks = [];
+      const stride = Math.max(1, Math.floor(count / 56));
+      for (let index = 0; index < count; index += stride)
+        picks.push({
+          at: landing[index] - now,
+          pan: ((points.xs[index] - left) / span) * 2 - 1,
+        });
+      picks.sort((a, b) => a.at - b.at);
+      sound.assemble(picks, timeline.end - now);
+    }
     ink.show(true);
     while (run === generation && state === "gathering") await wait(0.05);
   }

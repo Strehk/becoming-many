@@ -58,6 +58,10 @@ a sign is not drawn in front of the world, it is a passing order inside it.
   set type takes over without a fade. The title keeps the air's colour, and its
   particles stay borrowed while it stands. Leaving the menu bursts the type at
   once into its particles, which are thrown outward and fly home.
+- The assembling has its own sound: grains landing from left to right as the
+  particles do, a breath of air drawing together under them, and root and
+  fifth settling in the organ's hall when the type stands. Like all sound it
+  needs a first click or key; a click during loading is enough.
 - Loading never runs faster than 0-100 % in 2.6 s, and a sense stays named at
   least 2.2 s without holding the percentage back, so a quick load names fewer
   senses instead of flashing. Try `?load=1` to simulate a fast connection.

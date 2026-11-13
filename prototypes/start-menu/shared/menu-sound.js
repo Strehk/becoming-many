@@ -20,7 +20,9 @@ import {
   NoiseSynth,
   now,
   Panner,
+  PolySynth,
   Reverb,
+  Synth,
   start,
   Volume,
 } from "tone";
@@ -178,6 +180,7 @@ export function createMenuSound(getVolume) {
     grains.chain(grainBand, grainPan, master);
 
     return {
+      hall,
       puff,
       puffBand,
       grains,
@@ -275,6 +278,81 @@ export function createMenuSound(getVolume) {
         );
       }
       lastStart = Math.max(lastStart, at);
+    },
+    /**
+     * The title assembling: grains landing from left to right as the
+     * particles do, a breath of air drawing together under them, and the
+     * root and fifth settling in the hall when the type takes over.
+     * landings: seconds from now, each with a pan (-1 left .. 1 right);
+     * settle: seconds from now until the type stands.
+     */
+    assemble(landings, settle) {
+      if (!graph) return;
+      const t0 = now() + 0.02;
+      const nodes = [];
+      const keep = (node) => {
+        nodes.push(node);
+        return node;
+      };
+      // Each call gets its own short-lived voices, so a regather never
+      // collides with notes already scheduled.
+      const pan = keep(new Panner(0));
+      const band = keep(new Filter(6000, "highpass"));
+      const grains = keep(
+        new NoiseSynth({
+          noise: { type: "white" },
+          envelope: { attack: 0.0004, decay: 0.012, sustain: 0 },
+          volume: -27,
+        }),
+      );
+      grains.chain(band, pan, graph.master);
+      let last = 0;
+      for (const landing of landings) {
+        const at = Math.max(t0 + landing.at, last + 0.006);
+        last = at;
+        pan.pan.setValueAtTime(landing.pan * 0.85, at);
+        grains.triggerAttackRelease(0.008, at, 0.35 + Math.random() * 0.4);
+      }
+      // Air drawing together: a band of noise narrowing and rising.
+      const air = keep(new Noise("pink"));
+      const airBand = keep(new Filter(500, "bandpass"));
+      airBand.Q.value = 1.2;
+      const airLevel = keep(new Gain(0));
+      air.chain(airBand, airLevel, graph.master);
+      const airSend = keep(new Gain(0.25));
+      airLevel.connect(airSend);
+      airSend.connect(graph.hall);
+      airBand.frequency.setValueAtTime(500, t0);
+      airBand.frequency.exponentialRampToValueAtTime(2600, t0 + settle);
+      airLevel.gain.setValueAtTime(0, t0);
+      airLevel.gain.linearRampToValueAtTime(0.06, t0 + settle * 0.7);
+      airLevel.gain.linearRampToValueAtTime(0, t0 + settle + 0.4);
+      air.start(t0);
+      air.stop(t0 + settle + 0.5);
+      // The type stands: root and fifth, softly, in the organ's hall.
+      const tone = keep(
+        new PolySynth(Synth, {
+          oscillator: { type: "sine" },
+          envelope: { attack: 0.5, decay: 0.8, sustain: 0.3, release: 2.6 },
+          volume: -21,
+        }),
+      );
+      const toneSend = keep(new Gain(0.5));
+      tone.connect(graph.master);
+      tone.connect(toneSend);
+      toneSend.connect(graph.hall);
+      tone.triggerAttackRelease(
+        [degreeHertz(0, 1), degreeHertz(3, 1), degreeHertz(0, 2)],
+        1.4,
+        t0 + Math.max(settle - 0.5, 0),
+        0.5,
+      );
+      window.setTimeout(
+        () => {
+          for (const node of nodes) node.dispose();
+        },
+        (settle + 5) * 1000,
+      );
     },
     /** Choosing: the call an octave down, and the root and fifth swelling under it. */
     select(key) {

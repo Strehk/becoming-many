@@ -57,6 +57,7 @@ export function startAirVariant({
     title: document.querySelector("[data-title]"),
     maxCount: phone ? 950 : 1700,
     timing: { screens: titleScreens },
+    sound: menu.sound,
   });
   // "burst": a normal pointer, and a click scatters the air around it.
   if (cursor === "burst") createAirBurst({ borrow, menu });
