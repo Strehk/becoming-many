@@ -164,7 +164,7 @@ export function createMenuSound(getVolume) {
     const puff = new NoiseSynth({
       noise: { type: "pink" },
       envelope: { attack: 0.004, decay: 0.2, sustain: 0 },
-      volume: -20,
+      volume: -14,
     });
     const puffBand = new Filter(2200, "bandpass");
     puffBand.Q.value = 0.8;
@@ -175,7 +175,7 @@ export function createMenuSound(getVolume) {
     const grains = new NoiseSynth({
       noise: { type: "white" },
       envelope: { attack: 0.0004, decay: 0.009, sustain: 0 },
-      volume: -21,
+      volume: -15,
     });
     const grainBand = new Filter(5200, "highpass");
     const grainPan = new Panner(0);
