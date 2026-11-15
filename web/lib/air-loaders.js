@@ -72,10 +72,12 @@ export function runLoader(variant, makeShape, options = {}) {
     if (loaded) return;
     if (started < 0) started = now;
     shape.depth = title.shape.depth;
-    const share = Math.min(1, (now - started) / 0.4);
+    // In place (taking over a drawn stand-in) every particle appears at its
+    // dot at once; otherwise the air gathers within moments.
+    const share = options.instant ? 1 : Math.min(1, (now - started) / 0.4);
     figure.fill(Math.round(count * share), {
       keepVisible: 0.3,
-      travel: 0.9,
+      travel: options.instant ? 0.001 : 0.9,
       centre: { x: 0, y: 0, z: -shape.depth },
     });
   });

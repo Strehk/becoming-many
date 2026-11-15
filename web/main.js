@@ -100,8 +100,10 @@ variant.menu = menu;
 const earlySpinner = startEarlySpinner({
   count: phone ? 140 : 210,
   round: menu.settings.quality === "high",
-  skip: false,
+  title: document.querySelector("[data-title]"),
 });
+// When the title begins to form, nothing may linger on the canvas.
+menu.on("loaded", () => earlySpinner.fadeOut());
 window.__air = variant;
 // "To the menu" arrives with ?skip; a later reload should load in full again.
 // Back from the experience: the menu waits for the title to form.
@@ -553,16 +555,22 @@ async function startExperience() {
     if (standing) root.dataset.endingCredits = "";
     else if (menu.screen !== "settings") delete root.dataset.endingCredits;
   });
-  if (!menu.skipped) {
-    runLoader(variant, orbitSpinner, { count: 210, phoneCount: 140 });
-    earlySpinner.handOver();
-  }
+  // The particle spinner forms right on the drawn one, dot by dot.
+  if (!menu.skipped)
+    runLoader(variant, orbitSpinner, {
+      count: 210,
+      phoneCount: 140,
+      instant: true,
+    });
   applySettings();
   // The world fades in over the white page once it has drawn.
   await new Promise((resolve) =>
     requestAnimationFrame(() => requestAnimationFrame(resolve)),
   );
   viewport.dataset.live = "";
+  // Once the world's canvas has faded in (app.css), the particles take over.
+  if (!menu.skipped)
+    window.setTimeout(() => earlySpinner.handOver(variant.loading), 1300);
   // Back from the experience there is no loading screen, but the title forms
   // from the air as always, and the menu appears under it once it stands.
   if (menu.skipped) {
