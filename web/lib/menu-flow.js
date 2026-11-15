@@ -147,13 +147,9 @@ const COPY = {
     resume: "Weiter",
     exitToMenu: "Zum Menü",
     jumpTo: "Springen zu",
-    introSoundLabel: "Ton",
     introSound:
       "Mach den Ton an und hör am besten mit Kopfhörern – für das immersivste Erlebnis.",
-    introKeysLabel: "Steuerung",
     introKeys: "Flieg mit W A S D oder den Pfeiltasten.",
-    introEsc: "Esc öffnet die Einstellungen.",
-    introCameraLabel: "Steuerung mit der Kamera",
     introCamera:
       "Breite die Arme aus wie Flügel. Neig sie zur Seite für Kurven, heb sie zum Steigen, senk sie zum Sinken.",
     introCameraRest: "Arme runter: Du gleitest geradeaus.",
@@ -170,7 +166,6 @@ const COPY = {
       "Dreh dein Handy wie ein Lenkrad für Kurven. Kipp es vor und zurück zum Sinken und Steigen.",
     introTiltTurn:
       "Dreh dich mit dem Handy um dich selbst, um die Richtung zu wählen. Kipp es vor und zurück zum Sinken und Steigen.",
-    introGear: "Das Zahnrad oben rechts öffnet die Einstellungen.",
     or: "oder",
   },
   en: {
@@ -299,13 +294,9 @@ const COPY = {
     resume: "Continue",
     exitToMenu: "To the menu",
     jumpTo: "Jump to",
-    introSoundLabel: "Sound",
     introSound:
       "Turn your sound on and listen with headphones for the most immersive experience.",
-    introKeysLabel: "Controls",
     introKeys: "Fly with W A S D or the arrow keys.",
-    introEsc: "Esc opens the settings.",
-    introCameraLabel: "Camera controls",
     introCamera:
       "Spread your arms like wings. Tilt them to turn, raise them to climb, lower them to sink.",
     introCameraRest: "Arms down: you glide straight on.",
@@ -322,7 +313,6 @@ const COPY = {
       "Turn your phone like a steering wheel to curve. Tip it forward and back to sink and climb.",
     introTiltTurn:
       "Turn around with your phone to choose your direction. Tip it forward and back to sink and climb.",
-    introGear: "The gear at the top right opens the settings.",
     or: "or",
   },
 };
