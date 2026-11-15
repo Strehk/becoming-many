@@ -147,9 +147,9 @@ const COPY = {
     resume: "Weiter",
     exitToMenu: "Zum Menü",
     jumpTo: "Springen zu",
-    introSoundLabel: "Kopfhörer",
+    introSoundLabel: "Ton",
     introSound:
-      "Am schönsten erlebst du Becoming Many mit Kopfhörern: Dann klingt die Welt rings um dich.",
+      "Mach den Ton an und hör am besten mit Kopfhörern – für das immersivste Erlebnis.",
     introKeysLabel: "Steuerung",
     introKeys: "Flieg mit W A S D oder den Pfeiltasten.",
     introEsc: "Esc öffnet die Einstellungen.",
@@ -299,9 +299,9 @@ const COPY = {
     resume: "Continue",
     exitToMenu: "To the menu",
     jumpTo: "Jump to",
-    introSoundLabel: "Headphones",
+    introSoundLabel: "Sound",
     introSound:
-      "Becoming Many is best experienced with headphones: the world then sounds all around you.",
+      "Turn your sound on and listen with headphones for the most immersive experience.",
     introKeysLabel: "Controls",
     introKeys: "Fly with W A S D or the arrow keys.",
     introEsc: "Esc opens the settings.",
