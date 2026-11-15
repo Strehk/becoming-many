@@ -292,13 +292,13 @@ for (const button of document.querySelectorAll("[data-camera-toggle]"))
       // The choice then lasts for this visit.
     }
   });
-// The toggles' accessible names follow the language.
-function labelCameraToggles() {
+// Icon buttons and landmarks: their accessible names follow the language.
+function labelControls() {
   for (const node of document.querySelectorAll("[data-i18n-label]"))
     node.setAttribute("aria-label", menu.t(node.dataset.i18nLabel));
 }
-labelCameraToggles();
-menu.on("settings", labelCameraToggles);
+labelControls();
+menu.on("settings", labelControls);
 
 /** Start or stop the camera to match the setting, once inside the piece. */
 function syncCamera() {

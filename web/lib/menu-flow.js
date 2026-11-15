@@ -13,7 +13,7 @@
 import { createInput } from "./input.js";
 import { createMenuSound } from "./menu-sound.js";
 
-// 1. Audience-facing copy. German is the default language of the installation.
+// 1. Audience-facing copy, in German and English (the web release's default).
 const COPY = {
   de: {
     menu: "Menü",
@@ -123,6 +123,7 @@ const COPY = {
     creditsOpenLabel: "Open Source",
     creditsVisitLabel: "Im Futurium erleben",
     imprint: "Impressum",
+    legal: "Rechtliches",
     privacy: "Datenschutz",
     creditsVisit:
       "Entstanden für das Futurium in Berlin: In der Ausstellung „Geborgte Sinne“ fliegst du das Stück mit deinem Körpergewicht auf dem ICAROS-Flugsimulator, rund 15 Minuten. Nur mit gebuchtem Zeitfenster.",
@@ -277,6 +278,7 @@ const COPY = {
     creditsOpenLabel: "Open Source",
     creditsVisitLabel: "Experience it at the Futurium",
     imprint: "Legal notice",
+    legal: "Legal",
     privacy: "Privacy",
     creditsVisit:
       "Made for the Futurium in Berlin: in the exhibition “Borrowed Senses” you fly the piece with your body weight on the ICAROS flight simulator, for about 15 minutes. Booked time slot required.",
@@ -359,7 +361,8 @@ export const REPOSITORY_URL = "https://github.com/Strehk/becoming-many";
 
 const STORAGE_KEY = "becoming-many-menu-settings";
 const DEFAULT_SETTINGS = {
-  language: "de",
+  // The web release opens in English; the installation keeps German.
+  language: "en",
   volume: 70,
   subtitles: true,
   quality: "high",
