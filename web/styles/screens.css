@@ -647,6 +647,34 @@
   flex-wrap: wrap;
 }
 
+.bm-seg__option[hidden] {
+  display: none;
+}
+
+/* The device's recommended way: a small word under its button. */
+.bm-setting--explained .bm-seg {
+  row-gap: 22px;
+  padding-bottom: 14px;
+}
+
+.bm-seg__option[data-recommended] {
+  position: relative;
+}
+
+.bm-seg__option[data-recommended]::after {
+  content: attr(data-tag);
+  position: absolute;
+  left: 50%;
+  top: calc(100% + 5px);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--bm-muted);
+  transform: translateX(-50%);
+}
+
 .bm-setting__about {
   min-height: 2.9em;
   margin: 0;

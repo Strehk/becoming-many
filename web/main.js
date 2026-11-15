@@ -37,7 +37,6 @@ const root = document.documentElement;
 const phone = window.matchMedia("(pointer: coarse)").matches;
 const finePointer = window.matchMedia("(pointer: fine)").matches;
 root.classList.add("plain-marker");
-root.dataset.device = phone ? "phone" : "desktop";
 showVersion();
 
 const experience = Promise.all([
@@ -77,6 +76,7 @@ const menu = createMenuFlow({
     "control",
     "autopilot",
     "fullscreen",
+    "device",
   ],
   copy: {
     de: {
@@ -354,10 +354,8 @@ function endTouch() {
 window.addEventListener(
   "pointerdown",
   (event) => {
-    // A finger, or the mouse when touch is the chosen way.
-    const finger =
-      event.pointerType === "touch" ||
-      (menu.settings.control === "touch" && event.button === 0);
+    // A finger, or the mouse's main button: whatever points steers.
+    const finger = event.pointerType === "touch" || event.button === 0;
     if (!finger || touch.id !== null) return;
     if (!flying() || !touchSteers() || intro) return;
     const target = event.target instanceof Element ? event.target : null;
@@ -924,7 +922,7 @@ function applySettings(_settings, key) {
     if (settings.autopilot) resetTakeover();
     else handOver();
   }
-  if (key === "control") {
+  if (key === "control" || key === "device") {
     // Chosen in the menu already: the model loads in the background now.
     if (settings.control === "camera") camera.preload();
     // The phone ways ask for the motion sensor inside this very click.

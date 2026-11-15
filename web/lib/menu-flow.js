@@ -114,6 +114,13 @@ const COPY = {
     controlKeys: "Tastatur",
     controlCamera: "Kamera",
     controlTouch: "Touch",
+    device: "Gerät",
+    deviceAuto: "Automatisch",
+    deviceComputer: "Computer",
+    devicePhone: "Handy",
+    aboutDevice:
+      "Nur umstellen, wenn dein Gerät falsch erkannt wurde. Danach passen Steuerung und Einstieg.",
+    recommended: "Empfohlen",
     aboutKeys: "Flieg mit W A S D oder den Pfeiltasten.",
     aboutCamera:
       "Deine Arme sind Flügel vor der Webcam: neigen für Kurven, heben zum Steigen, senken zum Sinken.",
@@ -296,6 +303,13 @@ const COPY = {
     controlKeys: "Keyboard",
     controlCamera: "Camera",
     controlTouch: "Touch",
+    device: "Device",
+    deviceAuto: "Automatic",
+    deviceComputer: "Computer",
+    devicePhone: "Phone",
+    aboutDevice:
+      "Only change this if your device was detected wrongly. Controls and ways in follow.",
+    recommended: "Recommended",
     aboutKeys: "Fly with W A S D or the arrow keys.",
     aboutCamera:
       "Your arms are wings in front of the webcam: tilt them to turn, raise them to climb, lower them to sink.",
@@ -423,6 +437,7 @@ const DEFAULT_SETTINGS = {
   invert: false,
   autopilot: false,
   fullscreen: true,
+  device: "auto",
   control: "keys",
   reducedMotion: false,
 };
@@ -430,6 +445,16 @@ const QUALITY_SCALE = { low: 0.4, mid: 0.7, high: 1 };
 
 /** Every way to steer outside a headset, in the settings' order. */
 export const CONTROLS = ["keys", "camera", "wheel", "turn", "touch"];
+/** The ways each kind of device offers, and the one it recommends. */
+const DEVICE_CONTROLS = {
+  desktop: ["keys", "camera", "touch"],
+  phone: ["wheel", "turn", "touch"],
+};
+const RECOMMENDED_CONTROL = { desktop: "keys", phone: "wheel" };
+/** A phone, as the browser describes itself: touch first, no fine pointer. */
+const DETECTED_PHONE =
+  window.matchMedia("(pointer: coarse)").matches &&
+  navigator.maxTouchPoints > 0;
 
 function readSettings() {
   let stored = {};
@@ -441,7 +466,9 @@ function readSettings() {
   const settings = { ...DEFAULT_SETTINGS, ...stored };
   // One setting steers now; a phone starts with the wheel, and an earlier
   // phone choice (360°) carries over.
-  const phone = window.matchMedia("(pointer: coarse)").matches;
+  const phone =
+    stored.device === "phone" ||
+    (stored.device !== "desktop" && DETECTED_PHONE);
   if (!stored.controlChosen) {
     settings.control = phone
       ? stored.steering === "turn"
@@ -451,8 +478,9 @@ function readSettings() {
         ? stored.control
         : "keys";
   }
-  if (!CONTROLS.includes(settings.control))
-    settings.control = phone ? "wheel" : "keys";
+  const own = phone ? "phone" : "desktop";
+  if (!DEVICE_CONTROLS[own].includes(settings.control))
+    settings.control = RECOMMENDED_CONTROL[own];
   delete settings.steering;
   return settings;
 }
@@ -591,6 +619,15 @@ function buildSettings(slot) {
     ),
     toggle("autopilot"),
     toggle("fullscreen"),
+    segmented(
+      "device",
+      [
+        ["auto", "deviceAuto"],
+        ["desktop", "deviceComputer"],
+        ["phone", "devicePhone"],
+      ],
+      true,
+    ),
     toggle("reducedMotion"),
   );
   slot.replaceChildren(list);
@@ -797,6 +834,12 @@ export function createMenuFlow(options = {}) {
     get quality() {
       return QUALITY_SCALE[settings.quality] ?? 1;
     },
+    /** Whether this is treated as a phone: detected, or set in the settings. */
+    get isPhone() {
+      return settings.device === "auto"
+        ? DETECTED_PHONE
+        : settings.device === "phone";
+    },
     get motion() {
       return settings.reducedMotion ? 0.3 : 1;
     },
@@ -882,10 +925,11 @@ export function createMenuFlow(options = {}) {
     touch: "aboutTouch",
   };
   function renderAbout(key, value) {
+    const copyKey = key === "device" ? "aboutDevice" : ABOUT[value];
     for (const node of document.querySelectorAll(
       `[data-setting-about="${key}"]`,
     ))
-      node.textContent = ABOUT[value] ? flow.t(ABOUT[value]) : "";
+      node.textContent = copyKey ? flow.t(copyKey) : "";
   }
   // On a screen with a pointer the sentence follows the option pointed at,
   // like the menu's hint line; it returns to the chosen one on leaving.
@@ -908,6 +952,30 @@ export function createMenuFlow(options = {}) {
 
   function renderSettings() {
     renderAbout("control", settings.control);
+    renderAbout("device", settings.device);
+    // The controls show the device's own ways, its recommended one marked;
+    // "automatic" names what the device was taken for.
+    const device = flow.isPhone ? "phone" : "desktop";
+    for (const option of document.querySelectorAll(
+      '[data-setting="control"]',
+    )) {
+      option.hidden = !DEVICE_CONTROLS[device].includes(option.dataset.value);
+      option.toggleAttribute(
+        "data-recommended",
+        option.dataset.value === RECOMMENDED_CONTROL[device],
+      );
+      option.dataset.tag = flow.t("recommended");
+    }
+    for (const option of document.querySelectorAll(
+      '[data-setting="device"][data-value="auto"]',
+    )) {
+      // Written here, with what was detected, not by the language pass.
+      option.removeAttribute("data-i18n");
+      option.textContent = `${flow.t("deviceAuto")} (${flow.t(
+        DETECTED_PHONE ? "devicePhone" : "deviceComputer",
+      )})`;
+    }
+    root.dataset.device = device;
     for (const control of document.querySelectorAll("[data-setting]")) {
       const key = control.dataset.setting;
       const value = settings[key];
@@ -936,6 +1004,13 @@ export function createMenuFlow(options = {}) {
     settings[key] = value;
     // A chosen way of steering is kept, whatever the device is taken for.
     if (key === "control") settings.controlChosen = true;
+    if (key === "device") {
+      // Another device: its own controls, unless the chosen one fits it.
+      const device = flow.isPhone ? "phone" : "desktop";
+      if (!DEVICE_CONTROLS[device].includes(settings.control))
+        settings.control = RECOMMENDED_CONTROL[device];
+      computeAvailability();
+    }
     input.invert = settings.invert;
     writeSettings(settings);
     renderSettings();
@@ -980,18 +1055,21 @@ export function createMenuFlow(options = {}) {
   const gyroPossible =
     typeof DeviceOrientationEvent !== "undefined" &&
     navigator.maxTouchPoints > 0;
-  // A phone offers only the phone; a computer offers everything else.
-  const onPhone = coarsePointer && navigator.maxTouchPoints > 0;
-  if (onPhone) flow.availability.desktop = "notOnPhone";
-  flow.availability.gyro = !gyroPossible
-    ? "phoneOnly"
-    : gyroNeedsPermission
-      ? "permission"
-      : "ready";
-
-  if (onPhone) {
-    flow.availability.vr = "notOnPhone";
-  } else checkVr();
+  // A phone offers only the phone; a computer offers everything else. The
+  // device is the detected one unless the settings say otherwise.
+  function computeAvailability() {
+    const onPhone = flow.isPhone;
+    flow.availability.desktop = onPhone ? "notOnPhone" : "ready";
+    // A phone without the sensor still flies, by touch.
+    flow.availability.gyro = !onPhone
+      ? "phoneOnly"
+      : gyroPossible && gyroNeedsPermission
+        ? "permission"
+        : "ready";
+    if (onPhone) flow.availability.vr = "notOnPhone";
+    else checkVr();
+    renderAvailability();
+  }
 
   /** Ask the browser for a headset; again later, once one is connected. */
   function checkVr() {
@@ -1010,6 +1088,7 @@ export function createMenuFlow(options = {}) {
       });
   }
   flow.recheckVr = checkVr;
+  computeAvailability();
   /** Change a setting as its control would (the page's own choices). */
   flow.set = (key, value) => updateSetting(key, value);
 
@@ -1028,12 +1107,10 @@ export function createMenuFlow(options = {}) {
       node.dataset.status = status;
       const button = node.closest("[data-mode]");
       button?.setAttribute("data-available", String(status === "ready"));
-      // A way in this kind of device seems not to take is greyed out, but
-      // stays possible: the detection can be wrong.
-      button?.toggleAttribute(
-        "data-unsuited",
-        status === "phoneOnly" || status === "notOnPhone",
-      );
+      // A way in this device does not take is greyed out; if the device was
+      // taken for the wrong one, the settings' "device" switches it.
+      if (button)
+        button.disabled = status === "phoneOnly" || status === "notOnPhone";
     }
   }
 
