@@ -91,12 +91,9 @@ const menu = createMenuFlow({
   ready: runReady,
   beforeReady: () =>
     variant.title.gather({ from: variant.loading, stagger: 1.0, travel: 1.9 }),
-  // Leaving the experience starts the page afresh, straight at the menu.
-  onExit: () => {
-    const url = new URL(window.location.href);
-    url.searchParams.set("skip", "");
-    window.location.href = url.toString();
-  },
+  // Leaving the experience returns to the menu in the same page, so
+  // fullscreen and the loaded world stay.
+  onExit: () => returnToMenu(),
 });
 variant.menu = menu;
 // The spinner shows at once; the world's particles take over once it loads.
@@ -794,7 +791,9 @@ function startIntro(withCards) {
     run.togglePlayback();
     // The menu's wind carries on under the piece's opening silence and gives
     // way to it, so the wind is there before the voice.
-    window.setTimeout(() => menu.sound.release(7), 2500);
+    window.setTimeout(() => {
+      if (menu.inShow) menu.sound.release(7);
+    }, 2500);
   };
   const finish = () => {
     intro = null;
@@ -910,6 +909,45 @@ function offerVr() {
 
 // 4. Settings pause the experience; leaving them resumes it.
 let pausedBySettings = false;
+
+/**
+ * From the experience back to the menu without reloading: the Run returns
+ * to its prelude (the Show at its start, holding, the ground stepping back),
+ * flight and its helpers reset, the menu's sounds and wind come back, and
+ * the title forms over the menu again.
+ */
+function returnToMenu() {
+  if (!run || !menu.inShow) return;
+  run.returnToPrelude(MENU_GLIDE_METERS_PER_SECOND);
+  intro = null;
+  for (const card of document.querySelectorAll(".app-intro"))
+    delete card.dataset.state;
+  menu.inShow = false;
+  entering = false;
+  pausedBySettings = false;
+  delete root.dataset.inShow;
+  delete root.dataset.flightMode;
+  delete root.dataset.endingCredits;
+  delete root.dataset.handover;
+  flightMode = "desktop";
+  camera.stop();
+  pressed.clear();
+  Object.assign(keys, {
+    lateral: 0,
+    vertical: 0,
+    yawRate: 0,
+    pitchRate: 0,
+    pitch: 0,
+  });
+  tilt.side = 0;
+  tilt.forward = 0;
+  neutral = null;
+  headingStart = null;
+  resetTakeover();
+  menu.sound.revive();
+  menu.sound.wind(true);
+  menu.go("menu");
+}
 menu.on("screen", (screen) => {
   if (!run || !menu.inShow) return;
   if (screen === "settings") {

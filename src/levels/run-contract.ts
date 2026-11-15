@@ -69,6 +69,13 @@ export interface Run {
    * start. Ignored once the Show has played or without a prelude.
    */
   readonly setPreludeGlide: (metersPerSecond: number) => void;
+  /**
+   * Back to the prelude, for a page that returns to its menu without
+   * reloading: the Show resets to its start and holds, the drawn ground
+   * steps back, and the glide continues at the given speed. Ignored
+   * without a prelude.
+   */
+  readonly returnToPrelude: (glideMetersPerSecond: number) => void;
   readonly readPlayback: () => RunPlayback;
   readonly togglePlayback: () => void;
   /** Current session language, available during tutorial and absent after unload. */

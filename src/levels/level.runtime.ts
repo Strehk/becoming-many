@@ -143,6 +143,16 @@ class LevelRun {
     };
   }
 
+  readonly returnToPrelude: Run["returnToPrelude"] = (glideMetersPerSecond) => {
+    if (this.request.kind !== "show" || !this.request.prelude) return;
+    this.show?.resetTime();
+    this.preludeActive = true;
+    this.preludeGlide = Math.max(0, glideMetersPerSecond);
+    this.groundPresence = 0;
+    for (const module of this.groundModules)
+      this.world.modules.deactivate(module);
+  };
+
   private readonly readGroundPresence = (): number => this.groundPresence;
 
   readonly setPreludeGlide: Run["setPreludeGlide"] = (metersPerSecond) => {
