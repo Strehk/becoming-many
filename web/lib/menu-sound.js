@@ -105,7 +105,7 @@ export function createMenuSound(getVolume) {
     // The sonar: the call, its click, and the wall it measures. A hover is a
     // single dry call with one faint return, no hall and no repeats, so one
     // hover never sounds like several.
-    const sonarBus = new Gain(SONAR.volume * 1.6);
+    const sonarBus = new Gain(SONAR.volume);
     sonarBus.connect(master);
     const echo = createEchoRoom(sonarBus, {
       ...SONAR.voice.room,
@@ -382,8 +382,8 @@ export function createMenuSound(getVolume) {
       // Swell as they leave, thin out as they land.
       level.gain.setValueAtTime(0, t0);
       // The narrow band keeps little of the noise; the level makes up for it.
-      level.gain.linearRampToValueAtTime(0.4, t0 + 0.35);
-      level.gain.linearRampToValueAtTime(0.22, t0 + seconds * 0.55);
+      level.gain.linearRampToValueAtTime(0.55, t0 + 0.35);
+      level.gain.linearRampToValueAtTime(0.3, t0 + seconds * 0.55);
       level.gain.linearRampToValueAtTime(0, end);
       // The swarm moves off and the body of air sinks as it spreads.
       body.frequency.setValueAtTime(1900, t0);
