@@ -239,10 +239,10 @@ export function createAirTitle({
           pan: ((points.xs[index] - left) / span) * 2 - 1,
         });
       picks.sort((a, b) => a.at - b.at);
-      // The closing tone rings as the word reads: when four in five
-      // particles have landed, not when the last ink has grown.
+      // The closing tone rings as the word reads: a moment after nine in
+      // ten particles have landed, not when the last ink has grown.
       const sorted = Array.from(landing).sort((a, b) => a - b);
-      const reads = sorted[Math.floor(sorted.length * 0.8)] - now;
+      const reads = sorted[Math.floor(sorted.length * 0.9)] - now + 0.15;
       sound.assemble(picks, timeline.end - now, reads);
     }
     ink.show(true);
