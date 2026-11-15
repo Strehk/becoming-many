@@ -9,7 +9,8 @@
  *   the build ship only the public files the site loads and move
  *   root-relative public paths in scripts under the base.
  * Boundary: Only the web release; the installation keeps vite.config.ts.
- *   PAGES_BASE overrides the build's base (default /becoming-many/).
+ *   PAGES_BASE overrides the build's base (default /becoming-many/), and
+ *   SITE_URL the address in the share preview.
  */
 
 import { cpSync } from "node:fs";
@@ -37,7 +38,20 @@ function copyShippedPublic(outDir) {
         cpSync(resolve(repository, "public", folder), resolve(outDir, folder), {
           recursive: true,
         });
+      // The page's own files that keep their names (the share image).
+      cpSync(resolve(here, "static"), outDir, { recursive: true });
     },
+  };
+}
+
+/** The address the site is shared under, for its share preview. */
+const SITE_URL =
+  process.env.SITE_URL ?? "https://e-mus.github.io/becoming-many/";
+
+function siteUrl() {
+  return {
+    name: "site-url",
+    transformIndexHtml: (html) => html.replaceAll("%SITE_URL%", SITE_URL),
   };
 }
 
@@ -69,7 +83,7 @@ export default defineConfig(({ command, isPreview }) => {
     // Serving offers all of public/; the build copies only what ships.
     publicDir: building ? false : resolve(repository, "public"),
     server: { fs: { allow: [repository] } },
-    plugins: [publicPathsUnderBase(base), copyShippedPublic(outDir)],
+    plugins: [publicPathsUnderBase(base), copyShippedPublic(outDir), siteUrl()],
     build: {
       outDir,
       emptyOutDir: true,
