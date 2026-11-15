@@ -382,8 +382,8 @@ export function createMenuSound(getVolume) {
       // Swell as they leave, thin out as they land.
       level.gain.setValueAtTime(0, t0);
       // The narrow band keeps little of the noise; the level makes up for it.
-      level.gain.linearRampToValueAtTime(0.95, t0 + 0.35);
-      level.gain.linearRampToValueAtTime(0.55, t0 + seconds * 0.55);
+      level.gain.linearRampToValueAtTime(0.4, t0 + 0.35);
+      level.gain.linearRampToValueAtTime(0.22, t0 + seconds * 0.55);
       level.gain.linearRampToValueAtTime(0, end);
       // The swarm moves off and the body of air sinks as it spreads.
       body.frequency.setValueAtTime(1900, t0);

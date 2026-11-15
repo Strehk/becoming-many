@@ -50,6 +50,8 @@ const experience = Promise.all([
 
 /** @type {import("../src/levels/run-contract").Run | undefined} */
 let run;
+/** Seconds of quiet between the narrator's last word and the end title. */
+const ENDING_PAUSE_SECONDS = 4;
 /** @type {ReturnType<typeof createAutopilot> | undefined} */
 let autopilot;
 const variant = { phone, loading: null };
@@ -470,7 +472,7 @@ async function startExperience() {
     { LEVEL_CATALOG },
     { PIECE_SCHEDULE, PIECE_PASSAGES },
     { level: connectionsLevel },
-    { resolveNarrationLanguage },
+    { resolveNarrationLanguage, narrationDurationSeconds },
     { endCreditsPresenceAt },
   ] = await experience;
   viewport.hidden = false;
@@ -523,10 +525,26 @@ async function startExperience() {
   // The piece's end credits: on a screen the title forms from the air, as
   // large as in the menu, with the credits under it, fixed to the screen. A
   // headset keeps the world's own credits panel.
+  // The title comes only once the narrator has finished and a breath has
+  // passed; the show's clock stops at its end, so the breath is counted in
+  // real seconds.
+  const lastCue = PIECE_SCHEDULE.narration.at(-1);
+  let quietSince = null;
   run.stage.onFrame(() => {
     if (!menu.inShow || flightMode === "vr" || !run.show) return;
+    const seconds = run.show.sample().timeSeconds;
+    const voiceEnds = Math.min(
+      lastCue.atSeconds +
+        narrationDurationSeconds(lastCue.cueId, run.readLanguage() ?? "de"),
+      PIECE_SCHEDULE.durationSeconds,
+    );
+    const over =
+      seconds >= voiceEnds - 0.05 &&
+      endCreditsPresenceAt(PIECE_SCHEDULE, seconds) > 0;
+    if (over) quietSince ??= performance.now();
+    else quietSince = null;
     const ended =
-      endCreditsPresenceAt(PIECE_SCHEDULE, run.show.sample().timeSeconds) > 0;
+      over && performance.now() - quietSince > ENDING_PAUSE_SECONDS * 1000;
     if (ended && menu.screen === "show") {
       // The title forms with its sounds, as at the beginning.
       menu.sound.revive();

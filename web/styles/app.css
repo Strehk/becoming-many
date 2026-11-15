@@ -773,7 +773,7 @@ section.legal {
    links fade in slowly once it stands. */
 section[data-screen="ending"] > * {
   opacity: 0;
-  transition: opacity 3.4s ease-in-out 2.2s;
+  transition: opacity 3.4s ease-in-out 0.5s;
 }
 
 :root[data-ending-credits] section[data-screen="ending"] > * {
@@ -785,5 +785,5 @@ section[data-screen="ending"] > * {
 }
 
 .legal-links {
-  transition: opacity 3.4s ease-in-out 2.2s;
+  transition: opacity 3.4s ease-in-out 0.5s;
 }
