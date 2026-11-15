@@ -348,6 +348,66 @@ export function createMenuSound(getVolume) {
      * The title bursting into its particles: the click's sound, larger. A
      * deeper, longer breath and a wide spray of grains that thins out.
      */
+    /**
+     * The burst's particles flying home: the motion sense's wing beat (the
+     * organ's insect voice), a band of noise opened and closed by a fast
+     * triangle flap whose rate gusts, swelling as they leave and thinning out
+     * as they settle, drifting across the stereo field.
+     * delay and seconds: when the flight home starts and how long it lasts.
+     */
+    flutter(delay = 0.8, seconds = 3) {
+      if (!graph) return;
+      const t0 = now() + Math.max(0.01, delay);
+      const end = t0 + seconds;
+      const nodes = [];
+      const keep = (node) => {
+        nodes.push(node);
+        return node;
+      };
+      const noise = keep(new Noise("pink"));
+      // The insect voice: Q from its sharpness, body from its pad.
+      const body = keep(new Filter(1550, "bandpass"));
+      body.Q.value = 5.3;
+      const beat = keep(new Gain(0));
+      const flap = keep(
+        new LFO({ frequency: 18, min: 0.09, max: 1, type: "triangle" }),
+      );
+      flap.connect(beat.gain);
+      const level = keep(new Gain(0));
+      const pan = keep(new Panner(0));
+      const send = keep(new Gain(0.25));
+      noise.chain(body, beat, level, pan, graph.master);
+      level.connect(send);
+      send.connect(graph.hall);
+      // Swell as they leave, thin out as they land.
+      level.gain.setValueAtTime(0, t0);
+      // The narrow band keeps little of the noise; the level makes up for it.
+      level.gain.linearRampToValueAtTime(2.4, t0 + 0.35);
+      level.gain.linearRampToValueAtTime(1.4, t0 + seconds * 0.55);
+      level.gain.linearRampToValueAtTime(0, end);
+      // The swarm moves off and the body of air sinks as it spreads.
+      body.frequency.setValueAtTime(1900, t0);
+      body.frequency.exponentialRampToValueAtTime(900, end);
+      const side = Math.random() < 0.5 ? -1 : 1;
+      pan.pan.setValueAtTime(side * 0.2, t0);
+      pan.pan.linearRampToValueAtTime(-side * 0.55, end);
+      // Gusts: the flap rate re-diced every 0.42 s, as in the organ.
+      for (let at = t0; at < end; at += 0.42)
+        flap.frequency.linearRampToValueAtTime(
+          Math.max(6, 18 * (1 + (Math.random() * 2 - 1) * 0.32)),
+          at + 0.18,
+        );
+      noise.start(t0);
+      flap.start(t0);
+      noise.stop(end + 0.1);
+      flap.stop(end + 0.1);
+      window.setTimeout(
+        () => {
+          for (const node of nodes) node.dispose();
+        },
+        (delay + seconds + 1) * 1000,
+      );
+    },
     burst(count = 40) {
       if (!graph) return;
       const t0 = now() + 0.01;
@@ -420,7 +480,7 @@ export function createMenuSound(getVolume) {
         new NoiseSynth({
           noise: { type: "white" },
           envelope: { attack: 0.0004, decay: 0.012, sustain: 0 },
-          volume: -21,
+          volume: -12,
         }),
       );
       grains.chain(band, pan, graph.master);
@@ -443,7 +503,7 @@ export function createMenuSound(getVolume) {
       airBand.frequency.setValueAtTime(500, t0);
       airBand.frequency.exponentialRampToValueAtTime(2600, t0 + settle);
       airLevel.gain.setValueAtTime(0, t0);
-      airLevel.gain.linearRampToValueAtTime(0.11, t0 + settle * 0.7);
+      airLevel.gain.linearRampToValueAtTime(0.3, t0 + settle * 0.7);
       airLevel.gain.linearRampToValueAtTime(0, t0 + settle + 0.4);
       air.start(t0);
       air.stop(t0 + settle + 0.5);
@@ -453,7 +513,7 @@ export function createMenuSound(getVolume) {
         new PolySynth(Synth, {
           oscillator: { type: "sine" },
           envelope: { attack: 0.8, decay: 0.8, sustain: 0.25, release: 2.2 },
-          volume: -29,
+          volume: -23,
         }),
       );
       const toneSend = keep(new Gain(0.35));

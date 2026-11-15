@@ -292,8 +292,10 @@ export function createAirTitle({
       return;
     }
     state = "air";
-    // The burst sounds like a click's scatter, only larger.
+    // The burst sounds like a click's scatter, only larger; then the air
+    // flies home with the motion sense's wing beat.
     sound?.burst(figure.count);
+    sound?.flutter(0.75, 3.4);
     const box = title.getBoundingClientRect();
     const cx = box.left + box.width / 2;
     const cy = box.top + box.height / 2;
