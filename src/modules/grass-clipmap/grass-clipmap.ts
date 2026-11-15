@@ -41,6 +41,8 @@ export interface GrassClipmapModuleOptions {
 
   /** Sense responses the composition root patches into the blade material. */
   readonly effects?: readonly UnlitMaterialEffect[];
+  /** Blade height share, 0 to 1; absent keeps the authored height. */
+  readonly readGrowth?: () => number;
 }
 
 interface GrassClipmapResources {
@@ -121,6 +123,7 @@ function updateGrassClipmap(
   const cameraZ = viewpoint.worldPosition.z;
 
   resources.field.advanceWind(deltaSeconds);
+  if (options.readGrowth) resources.field.setGrowth(options.readGrowth());
   resources.field.updateFrustum(frustumCamera);
   resources.field.followCamera(cameraX, cameraZ);
   // Detail and allocation follow the distance every frame, not only when the

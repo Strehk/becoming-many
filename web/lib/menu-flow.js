@@ -1,0 +1,1352 @@
+/**
+ * Purpose: Run the start menu of the web release.
+ * Context: Loading, continue, menu, settings, credits, the choice of desktop,
+ *   VR or phone, and the hand-off into the experience.
+ * Responsibility: Screen state, paced loading, persisted settings, language,
+ *   VR and motion-sensor detection, sound feedback, keyboard navigation, and
+ *   the generated settings, modes and credits blocks.
+ * Boundary: The page (web/main.js) owns the experience and the particles; it
+ *   listens to the events emitted here and may delay an action with
+ *   `beforeAction`.
+ */
+
+import { createInput } from "./input.js";
+import { createMenuSound } from "./menu-sound.js";
+
+// 1. Audience-facing copy. German is the default language of the installation.
+const COPY = {
+  de: {
+    menu: "Menü",
+    lede: "Eine immersive Reise durch nicht-menschliche Wahrnehmung",
+    hintBegin:
+      "Danach wählst du, wie du eintrittst: Desktop, VR-Brille oder Handy.",
+    hintSettings: "Sprache, Ton, Grafik und Steuerung.",
+    hintCredits: "Wer Becoming Many gemacht hat.",
+    continueGate: "Enter drücken oder klicken, um fortzufahren",
+    begin: "Starten",
+    settings: "Einstellungen",
+    credits: "Credits",
+    back: "Zurück",
+    loading: "Lädt",
+    continue: "Klicken, um fortzufahren",
+    continueTouch: "Tippen, um fortzufahren",
+    hold: "Gedrückt halten, um zu beginnen",
+    // Loading as if reality still had to be put together (07-09).
+    building: [
+      "Luft wird angerührt",
+      "Bäume werden gepflanzt",
+      "Tiere werden freigelassen",
+      "Text wird geübt",
+      "Geschichte wird ausgedacht",
+      "Gerüche werden verteilt",
+      "Echos werden ausprobiert",
+      "Norden wird festgelegt",
+      "Wärme wird ausgelegt",
+      "Pilzfäden werden verknüpft",
+      "Wind wird gestimmt",
+      "Fledermäuse werden geweckt",
+      "Wurzeln werden verlegt",
+      "Himmel wird geweißt",
+      "Boden wird angewärmt",
+      "Partikel werden gezählt",
+    ],
+    // The senses in the order the show introduces them.
+    stages: [
+      {
+        sense: "Luft",
+        line: "Die weiße Welt bekommt Gewicht. Noch ist nichts zu sehen als sie.",
+      },
+      {
+        sense: "Geruch",
+        line: "Pflanzen verströmen ihre Signaturen, jede Familie riecht anders.",
+      },
+      {
+        sense: "Echoortung",
+        line: "Rufe gehen hinaus. Was zurückkommt, ist Entfernung.",
+      },
+      {
+        sense: "Bewegungssinn",
+        line: "Was sich bewegt, hinterlässt eine Spur. Was still steht, verschwindet.",
+      },
+      {
+        sense: "Thermische Wahrnehmung",
+        line: "Wärme scheint durch die kalte Welt: Körper, Steine, Wasser.",
+      },
+      {
+        sense: "Magnetfeld",
+        line: "Der Himmel bekommt eine Richtung. Norden wird spürbar.",
+      },
+      {
+        sense: "Verbindungen",
+        line: "Unter dem Boden knüpft sich ein Netz aus Wurzeln und Pilzfäden.",
+      },
+    ],
+    stageDone: { sense: "Becoming Many", line: "" },
+    enter: "Klicken, um einzutreten",
+    enterTouch: "Tippen, um einzutreten",
+    modes: "Wie möchtest du eintreten?",
+    desktop: "Desktop",
+    desktopHint: "Maus und Tastatur",
+    vr: "VR-Brille",
+    vrHint: "WebXR-Headset",
+    gyro: "Handy",
+    gyroHint: "Neigen statt Maus: der Bewegungssensor steuert",
+    statusReady: "Bereit",
+    statusChecking: "Wird geprüft …",
+    statusMissing: "Nicht erkannt",
+    statusPermission: "Erlaubnis nötig",
+    statusPhoneOnly: "Nur auf dem Handy",
+    statusNotOnPhone: "Nicht auf dem Handy",
+    language: "Sprache",
+    volume: "Lautstärke",
+    subtitles: "Untertitel",
+    quality: "Grafik",
+    low: "Niedrig",
+    mid: "Mittel",
+    high: "Hoch",
+    invert: "Blick umkehren",
+    steering: "Lenken",
+    steeringWheel: "Lenkrad",
+    steeringTurn: "360°",
+    autopilot: "Autopilot",
+    fullscreen: "Vollbild",
+    control: "Steuerung",
+    controlKeys: "Tastatur",
+    controlCamera: "Kamera",
+    reducedMotion: "Weniger Bewegung",
+    on: "An",
+    off: "Aus",
+    creditsRole: "Ein Projekt von",
+    creditsWith: "In Kooperation mit",
+    creditsOpen: "Becoming Many ist jetzt ein Open-Source-Projekt.",
+    creditsCode: "Quellcode auf GitHub",
+    creditsOpenLabel: "Open Source",
+    creditsVisitLabel: "Im Futurium erleben",
+    imprint: "Impressum",
+    privacy: "Datenschutz",
+    creditsVisit:
+      "Entstanden für das Futurium in Berlin: In der Ausstellung „Geborgte Sinne“ fliegst du das Stück mit deinem Körpergewicht auf dem ICAROS-Flugsimulator, rund 15 Minuten. Nur mit gebuchtem Zeitfenster.",
+    creditsVisitLink: "Zeitfenster buchen",
+    launchDesktop:
+      "Bewege die Maus, um dich umzusehen. Mit W A S D fliegst du.",
+    launchVr: "Setz die Brille auf und tritt in die weiße Welt.",
+    launchVrMissing:
+      "Kein VR-Headset gefunden. Öffne diese Seite im Browser deiner Brille.",
+    launchGyro:
+      "Halte das Handy vor dich und neige es. Die Partikel folgen dir.",
+    launchGyroDenied:
+      "Der Zugriff auf den Bewegungssensor wurde nicht erlaubt.",
+    launchGyroMissing:
+      "Dieses Gerät meldet keinen Bewegungssensor. Öffne die Seite auf dem Handy.",
+    backToMenu: "Zurück zum Menü",
+    // The app page (the menu in front of the real experience).
+    launchStarting: "Einen Moment, die Welt wird übergeben\u00a0…",
+    launchVrReady: "Setz die VR-Brille auf und tritt ein.",
+    vrEnter: "In VR eintreten",
+    resume: "Weiter",
+    exitToMenu: "Zum Menü",
+    jumpTo: "Springen zu",
+    introSoundLabel: "Kopfhörer",
+    introSound:
+      "Am schönsten erlebst du Becoming Many mit Kopfhörern: Dann klingt die Welt rings um dich.",
+    introKeysLabel: "Steuerung",
+    introKeys: "Flieg mit W A S D oder den Pfeiltasten.",
+    introEsc: "Esc öffnet die Einstellungen.",
+    introCameraLabel: "Steuerung mit der Kamera",
+    introCamera:
+      "Breite die Arme aus wie Flügel. Neig sie zur Seite für Kurven, heb sie zum Steigen, senk sie zum Sinken.",
+    introCameraRest: "Arme runter: Du gleitest geradeaus.",
+    cameraStarting: "Kamera startet …",
+    cameraHide: "Kamerabild ausblenden",
+    cameraShow: "Kamerabild zeigen",
+    poseLeft: "Links",
+    poseStraight: "Gerade",
+    poseRight: "Rechts",
+    poseUp: "Steigen",
+    poseDown: "Sinken",
+    cameraDenied: "Keine Kamera – du fliegst mit der Tastatur.",
+    introTilt:
+      "Dreh dein Handy wie ein Lenkrad für Kurven. Kipp es vor und zurück zum Sinken und Steigen.",
+    introTiltTurn:
+      "Dreh dich mit dem Handy um dich selbst, um die Richtung zu wählen. Kipp es vor und zurück zum Sinken und Steigen.",
+    introGear: "Das Zahnrad oben rechts öffnet die Einstellungen.",
+    or: "oder",
+  },
+  en: {
+    menu: "Menu",
+    lede: "An Immersive Journey Through Non-Human Perception",
+    hintBegin: "Then choose how to enter: desktop, VR headset or phone.",
+    hintSettings: "Language, sound, graphics and controls.",
+    hintCredits: "Who made Becoming Many.",
+    continueGate: "Press Enter or click to continue",
+    begin: "Start",
+    settings: "Settings",
+    credits: "Credits",
+    back: "Back",
+    loading: "Loading",
+    continue: "Click to continue",
+    continueTouch: "Tap to continue",
+    hold: "Press and hold to begin",
+    building: [
+      "Stirring the air",
+      "Planting the trees",
+      "Releasing the animals",
+      "Rehearsing the lines",
+      "Making up the story",
+      "Spreading the scents",
+      "Testing the echoes",
+      "Deciding where north is",
+      "Laying out the warmth",
+      "Knotting the fungal threads",
+      "Tuning the wind",
+      "Waking the bats",
+      "Laying the roots",
+      "Whitewashing the sky",
+      "Warming the ground",
+      "Counting the particles",
+    ],
+    stages: [
+      {
+        sense: "Air",
+        line: "The white world gains weight. Nothing to see yet but the air.",
+      },
+      {
+        sense: "Scent",
+        line: "Plants give off their signatures; every family smells different.",
+      },
+      {
+        sense: "Echolocation",
+        line: "Calls go out. What comes back is distance.",
+      },
+      {
+        sense: "Motion",
+        line: "What moves leaves a trace. What stands still disappears.",
+      },
+      {
+        sense: "Thermal perception",
+        line: "Warmth shines through the cold world: bodies, stones, water.",
+      },
+      {
+        sense: "Magnetic field",
+        line: "The sky takes on a direction. North becomes something felt.",
+      },
+      {
+        sense: "Connections",
+        line: "Under the ground a web of roots and fungal threads is knotted.",
+      },
+    ],
+    stageDone: { sense: "Becoming Many", line: "" },
+    enter: "Click to enter",
+    enterTouch: "Tap to enter",
+    modes: "How would you like to enter?",
+    desktop: "Desktop",
+    desktopHint: "Mouse and keyboard",
+    vr: "VR headset",
+    vrHint: "WebXR headset",
+    gyro: "Phone",
+    gyroHint: "Tilt instead of mouse: the motion sensor steers",
+    statusReady: "Ready",
+    statusChecking: "Checking …",
+    statusMissing: "Not detected",
+    statusPermission: "Needs permission",
+    statusPhoneOnly: "Phone only",
+    statusNotOnPhone: "Not on a phone",
+    language: "Language",
+    volume: "Volume",
+    subtitles: "Subtitles",
+    quality: "Graphics",
+    low: "Low",
+    mid: "Medium",
+    high: "High",
+    invert: "Invert look",
+    steering: "Steering",
+    steeringWheel: "Wheel",
+    steeringTurn: "360°",
+    autopilot: "Autopilot",
+    fullscreen: "Fullscreen",
+    control: "Controls",
+    controlKeys: "Keyboard",
+    controlCamera: "Camera",
+    reducedMotion: "Reduce motion",
+    on: "On",
+    off: "Off",
+    creditsRole: "A Project By",
+    creditsWith: "In cooperation with",
+    creditsOpen: "Becoming Many is now an open-source project.",
+    creditsCode: "Source on GitHub",
+    creditsOpenLabel: "Open Source",
+    creditsVisitLabel: "Experience it at the Futurium",
+    imprint: "Legal notice",
+    privacy: "Privacy",
+    creditsVisit:
+      "Made for the Futurium in Berlin: in the exhibition “Borrowed Senses” you fly the piece with your body weight on the ICAROS flight simulator, for about 15 minutes. Booked time slot required.",
+    creditsVisitLink: "Book a time slot",
+    launchDesktop: "Move the mouse to look around. Fly with W A S D.",
+    launchVr: "Put on the headset and step into the white world.",
+    launchVrMissing:
+      "No VR headset found. Open this page in your headset's browser.",
+    launchGyro:
+      "Hold the phone in front of you and tilt it. The particles follow you.",
+    launchGyroDenied: "Access to the motion sensor was not granted.",
+    launchGyroMissing:
+      "This device reports no motion sensor. Open the page on a phone.",
+    backToMenu: "Back to menu",
+    launchStarting: "One moment, the world is being handed over\u00a0…",
+    launchVrReady: "Put on the headset and step in.",
+    vrEnter: "Enter VR",
+    resume: "Continue",
+    exitToMenu: "To the menu",
+    jumpTo: "Jump to",
+    introSoundLabel: "Headphones",
+    introSound:
+      "Becoming Many is best experienced with headphones: the world then sounds all around you.",
+    introKeysLabel: "Controls",
+    introKeys: "Fly with W A S D or the arrow keys.",
+    introEsc: "Esc opens the settings.",
+    introCameraLabel: "Camera controls",
+    introCamera:
+      "Spread your arms like wings. Tilt them to turn, raise them to climb, lower them to sink.",
+    introCameraRest: "Arms down: you glide straight on.",
+    cameraStarting: "Starting the camera …",
+    cameraHide: "Hide the camera image",
+    cameraShow: "Show the camera image",
+    poseLeft: "Left",
+    poseStraight: "Straight",
+    poseRight: "Right",
+    poseUp: "Climb",
+    poseDown: "Sink",
+    cameraDenied: "No camera – you fly with the keys.",
+    introTilt:
+      "Turn your phone like a steering wheel to curve. Tip it forward and back to sink and climb.",
+    introTiltTurn:
+      "Turn around with your phone to choose your direction. Tip it forward and back to sink and climb.",
+    introGear: "The gear at the top right opens the settings.",
+    or: "or",
+  },
+};
+
+/** The closing credits as the piece authors them, with where to find people. */
+const CREDITS = [
+  {
+    name: "Erasmus Schmidt",
+    links: [
+      ["erasmus-schmidt.de", "https://erasmus-schmidt.de"],
+      ["GitHub", "https://github.com/E-Mus"],
+    ],
+  },
+  {
+    name: "Tade Strehk",
+    links: [
+      ["strehk.eu", "https://strehk.eu"],
+      ["GitHub", "https://github.com/Strehk"],
+    ],
+  },
+  {
+    name: "Eddie Huesmann",
+    links: [["eddiehuesmann.com", "https://www.eddiehuesmann.com"]],
+  },
+];
+/** Where the piece runs as an installation, per language. */
+const VISIT_URL = {
+  de: "https://futurium.de/geborgte-sinne",
+  en: "https://futurium.de/en/borrowed-senses",
+};
+const PARTNERS = [
+  ["Futurium", "https://futurium.de"],
+  ["HTW Berlin", "https://www.htw-berlin.de"],
+];
+export const REPOSITORY_URL = "https://github.com/Strehk/becoming-many";
+
+const STORAGE_KEY = "becoming-many-menu-settings";
+const DEFAULT_SETTINGS = {
+  language: "de",
+  volume: 70,
+  subtitles: true,
+  quality: "high",
+  invert: false,
+  steering: "wheel",
+  autopilot: false,
+  fullscreen: true,
+  control: "keys",
+  reducedMotion: false,
+};
+const QUALITY_SCALE = { low: 0.4, mid: 0.7, high: 1 };
+
+function readSettings() {
+  try {
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "{}");
+    return { ...DEFAULT_SETTINGS, ...stored };
+  } catch {
+    return { ...DEFAULT_SETTINGS };
+  }
+}
+
+function writeSettings(settings) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+  } catch {
+    // Private windows may refuse storage; settings then last for this visit.
+  }
+}
+
+// 2. Small DOM builders for the generated blocks
+function element(tag, className, attributes = {}) {
+  const node = document.createElement(tag);
+  if (className) node.className = className;
+  for (const [key, value] of Object.entries(attributes))
+    node.setAttribute(key, value);
+  return node;
+}
+
+const ICONS = {
+  desktop: ["M4 5h16v11H4z", "M9 20h6", "M12 16v4"],
+  vr: [
+    "M3 8.5C3 7.7 3.7 7 4.5 7h15c.8 0 1.5.7 1.5 1.5V15c0 .8-.7 1.5-1.5 1.5h-4l-2-2.5h-3l-2 2.5h-4C3.7 16.5 3 15.8 3 15z",
+  ],
+  gyro: [
+    "M8 3h8v18H8z",
+    "M11 18h2",
+    "M4 9a9 9 0 0 0 0 6",
+    "M20 9a9 9 0 0 1 0 6",
+  ],
+};
+
+function icon(name) {
+  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  svg.setAttribute("viewBox", "0 0 24 24");
+  svg.setAttribute("aria-hidden", "true");
+  svg.classList.add("bm-icon");
+  for (const d of ICONS[name]) {
+    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    path.setAttribute("d", d);
+    svg.append(path);
+  }
+  return svg;
+}
+
+function buildSettings(slot) {
+  const list = element("div", "bm-settings");
+  const segmented = (key, options) => {
+    const row = element("div", "bm-setting", { "data-setting-row": key });
+    const label = element("span", "bm-setting__label", { "data-i18n": key });
+    const group = element("div", "bm-seg", { role: "group" });
+    for (const [value, copyKey, literal] of options) {
+      const button = element("button", "bm-seg__option", {
+        type: "button",
+        "data-setting": key,
+        "data-value": value,
+      });
+      if (literal) button.textContent = literal;
+      else button.setAttribute("data-i18n", copyKey);
+      group.append(button);
+    }
+    row.append(label, group);
+    return row;
+  };
+  const toggle = (key) => {
+    const row = element("div", "bm-setting", { "data-setting-row": key });
+    const label = element("span", "bm-setting__label", { "data-i18n": key });
+    const button = element("button", "bm-switch", {
+      type: "button",
+      role: "switch",
+      "data-setting": key,
+    });
+    const knob = element("span", "bm-switch__knob");
+    const text = element("span", "bm-switch__text");
+    button.append(knob, text);
+    row.append(label, button);
+    return row;
+  };
+  const range = (key) => {
+    const row = element("div", "bm-setting", { "data-setting-row": key });
+    const label = element("label", "bm-setting__label", {
+      "data-i18n": key,
+      for: `bm-${key}`,
+    });
+    const wrap = element("div", "bm-range");
+    const input = element("input", "bm-range__input", {
+      id: `bm-${key}`,
+      type: "range",
+      min: "0",
+      max: "100",
+      step: "5",
+      "data-setting": key,
+    });
+    const output = element("output", "bm-range__value", {
+      "data-setting-output": key,
+    });
+    wrap.append(input, output);
+    row.append(label, wrap);
+    return row;
+  };
+  list.append(
+    segmented("language", [
+      ["de", null, "DE"],
+      ["en", null, "EN"],
+    ]),
+    range("volume"),
+    toggle("subtitles"),
+    segmented("quality", [
+      ["low", "low"],
+      ["mid", "mid"],
+      ["high", "high"],
+    ]),
+    toggle("invert"),
+    segmented("steering", [
+      ["wheel", "steeringWheel"],
+      ["turn", "steeringTurn"],
+    ]),
+    toggle("autopilot"),
+    segmented("control", [
+      ["keys", "controlKeys"],
+      ["camera", "controlCamera"],
+    ]),
+    toggle("fullscreen"),
+    toggle("reducedMotion"),
+  );
+  slot.replaceChildren(list);
+}
+
+function buildModes(slot) {
+  const list = element("div", "bm-modes");
+  for (const mode of ["desktop", "vr", "gyro"]) {
+    const button = element("button", "bm-mode", {
+      type: "button",
+      "data-action": "mode",
+      "data-mode": mode,
+    });
+    const iconWrap = element("span", "bm-mode__icon");
+    iconWrap.append(icon(mode));
+    const label = element("span", "bm-mode__label", { "data-i18n": mode });
+    const hint = element("span", "bm-mode__hint", {
+      "data-i18n": `${mode}Hint`,
+    });
+    const status = element("span", "bm-mode__status", {
+      "data-mode-status": mode,
+    });
+    button.append(iconWrap, label, hint, status);
+    list.append(button);
+  }
+  slot.replaceChildren(list);
+}
+
+function link(label, href, className) {
+  const anchor = element("a", className, {
+    href,
+    target: "_blank",
+    rel: "noopener",
+  });
+  anchor.textContent = label;
+  return anchor;
+}
+
+function linkLine(links, className) {
+  const line = element("p", className);
+  links.forEach(([label, href], index) => {
+    if (index > 0) line.append(" · ");
+    line.append(link(label, href, "bm-credit__link"));
+  });
+  return line;
+}
+
+/** One column of the credits: a small label over its entries. */
+function creditGroup(labelKey) {
+  const group = element("section", "bm-credits__group");
+  const label = element("h3", "bm-credits__label", { "data-i18n": labelKey });
+  group.append(label);
+  return group;
+}
+
+function buildCredits(slot) {
+  const list = element("div", "bm-credits");
+  const title = element("p", "bm-credits__title");
+  title.textContent = "BECOMING MANY";
+  const grid = element("div", "bm-credits__grid");
+
+  const people = creditGroup("creditsRole");
+  for (const person of CREDITS) {
+    const entry = element("div", "bm-credits__entry");
+    const name = element("p", "bm-credits__name");
+    name.textContent = person.name;
+    entry.append(name);
+    if (person.links.length)
+      entry.append(linkLine(person.links, "bm-credits__links"));
+    people.append(entry);
+  }
+
+  const partners = creditGroup("creditsWith");
+  for (const [label, href] of PARTNERS) {
+    const entry = element("div", "bm-credits__entry");
+    const name = element("p", "bm-credits__name");
+    name.append(link(label, href, "bm-credit__link"));
+    entry.append(name);
+    partners.append(entry);
+  }
+
+  const open = creditGroup("creditsOpenLabel");
+  const entry = element("div", "bm-credits__entry");
+  const text = element("p", "bm-credits__text", { "data-i18n": "creditsOpen" });
+  const code = element("p", "bm-credits__links");
+  const repository = link("", REPOSITORY_URL, "bm-credit__link");
+  repository.dataset.i18n = "creditsCode";
+  code.append(repository);
+  entry.append(text, code);
+  open.append(entry);
+
+  // Under the partners: where to fly the piece for real, at the Futurium.
+  partners.append(creditVisit());
+  grid.append(people, partners, open);
+  list.append(title, grid);
+  slot.replaceChildren(list);
+}
+
+/** Where to fly it for real: the installation at the Futurium, with tickets. */
+function creditVisit() {
+  const visit = element("div", "bm-credits__entry bm-credits__visit");
+  const text = element("p", "bm-credits__text", {
+    "data-i18n": "creditsVisit",
+  });
+  const links = element("p", "bm-credits__visit-links");
+  for (const [language, href] of Object.entries(VISIT_URL)) {
+    const anchor = link("", href, "bm-credits__visit-link");
+    anchor.lang = language;
+    anchor.dataset.i18n = "creditsVisitLink";
+    links.append(anchor);
+  }
+  visit.append(text, links);
+  return visit;
+}
+
+// 4. Simulated loading with natural stalls
+function loadingCurve(seconds) {
+  const keys = [[0, 0]];
+  let seed = 7;
+  const random = () => {
+    seed = (seed * 16807) % 2147483647;
+    return seed / 2147483647;
+  };
+  const steps = 9;
+  for (let i = 1; i < steps; i += 1) {
+    keys.push([
+      (i / steps) * seconds * (0.85 + random() * 0.3),
+      i / steps + (random() - 0.5) * 0.06,
+    ]);
+  }
+  keys.push([seconds, 1]);
+  keys.sort((a, b) => a[0] - b[0]);
+  return (time) => {
+    if (time >= seconds) return 1;
+    for (let i = 1; i < keys.length; i += 1) {
+      const [t1, v1] = keys[i];
+      const [t0, v0] = keys[i - 1];
+      if (time <= t1) {
+        const local = (time - t0) / Math.max(t1 - t0, 0.001);
+        const eased = local < 0.35 ? 0 : (local - 0.35) / 0.65;
+        return Math.max(
+          0,
+          Math.min(1, v0 + (v1 - v0) * eased * eased * (3 - 2 * eased)),
+        );
+      }
+    }
+    return 1;
+  };
+}
+
+// 5. The flow
+/**
+ * options.loadSeconds: how long the simulated load takes (?load= overrides).
+ * options.paceSeconds: the shown percentage never runs faster than 0-100 % in
+ *   this time, so a quick load still reads as a gesture, not a flash.
+ * options.buildingSeconds: when set, [data-building-line] cycles through the
+ *   "building" lines at this interval while loading, as if reality were
+ *   still being put together; no percentage needed.
+ * options.stageHoldSeconds: a sense stays named at least this long; unlike
+ *   minStageSeconds it never holds the percentage back, so a quick load
+ *   simply names fewer senses.
+ * options.beforeReady(): optional async hook awaited when loading reaches
+ *   100 %, before the continue gesture is offered (the title forming).
+ * options.modes: the ways in to offer (default: desktop, vr, gyro).
+ * options.ready: a promise for real work; loading holds below 100 % until it
+ *   settles.
+ * options.copy: per-language overrides of the copy, e.g. { de: { key } }.
+ * options.selectSound: false silences the tone played when a choice changes
+ *   the screen (hover and click sounds stay).
+ * options.settingKeys: the settings rows to keep (default: all).
+ * options.onExit(): called by an [data-action="exit"] control.
+ * options.beforeAction(action, mode): optional async hook awaited before a
+ *   screen change, so the page can play its own transition first.
+ */
+export function createMenuFlow(options = {}) {
+  const root = document.documentElement;
+  const params = new URLSearchParams(window.location.search);
+  const listeners = {};
+  const settings = readSettings();
+  const input = createInput();
+  input.invert = settings.invert;
+  const sound = createMenuSound(() => settings.volume);
+  const coarsePointer = window.matchMedia("(pointer: coarse)").matches;
+  // ?load=<seconds> or the bar's load switch simulates another connection.
+  const loadSeconds =
+    Number(params.get("load")) || (options.loadSeconds ?? 6.5);
+  const curve = loadingCurve(loadSeconds);
+
+  const flow = {
+    screen: "",
+    progress: 0,
+    ready: false,
+    hovered: null,
+    settings,
+    input,
+    sound,
+    stage: 0,
+    // True once the real experience runs behind the menu's screens.
+    inShow: false,
+    escapeGuardUntil: 0,
+    skipped: params.has("skip"),
+    availability: { desktop: "ready", vr: "checking", gyro: "checking" },
+    launch: { mode: null, status: null },
+    get quality() {
+      return QUALITY_SCALE[settings.quality] ?? 1;
+    },
+    get motion() {
+      return settings.reducedMotion ? 0.3 : 1;
+    },
+    t(key) {
+      return (
+        options.copy?.[settings.language]?.[key] ??
+        COPY[settings.language]?.[key] ??
+        COPY.de[key] ??
+        key
+      );
+    },
+    on(event, handler) {
+      if (!listeners[event]) listeners[event] = [];
+      listeners[event].push(handler);
+      return flow;
+    },
+    go,
+    /** Centre of the visible control for an action or mode key, in CSS pixels. */
+    anchor(key) {
+      const scope = `[data-screen~="${flow.screen}"]`;
+      const node = document.querySelector(
+        `${scope} [data-mode="${key}"], ${scope} [data-action="${key}"]`,
+      );
+      if (!node) return null;
+      const rect = node.getBoundingClientRect();
+      return {
+        x: rect.left + rect.width / 2,
+        y: rect.top + rect.height / 2,
+        rect,
+      };
+    },
+  };
+
+  const emit = (event, ...args) => {
+    for (const handler of listeners[event] ?? []) handler(...args);
+  };
+
+  // 5a. Language and generated blocks
+  for (const slot of document.querySelectorAll("[data-settings-slot]"))
+    buildSettings(slot);
+  for (const slot of document.querySelectorAll("[data-modes-slot]"))
+    buildModes(slot);
+  // A page may offer only the settings it can honour.
+  if (options.settingKeys)
+    for (const node of document.querySelectorAll("[data-setting-row]"))
+      if (!options.settingKeys.includes(node.dataset.settingRow)) node.remove();
+  // A page may offer only some ways in (the app: desktop and VR).
+  if (options.modes)
+    for (const node of document.querySelectorAll("[data-mode]"))
+      if (!options.modes.includes(node.dataset.mode)) node.remove();
+  for (const slot of document.querySelectorAll("[data-credits-slot]"))
+    buildCredits(slot);
+
+  function applyLanguage() {
+    root.lang = settings.language;
+    for (const node of document.querySelectorAll("[data-i18n]")) {
+      const value = flow.t(node.dataset.i18n);
+      if (typeof value === "string") node.textContent = value;
+    }
+    for (const node of document.querySelectorAll("[data-i18n-gate]")) {
+      node.textContent = flow.t(
+        coarsePointer ? "continueTouch" : "continueGate",
+      );
+    }
+    renderHint();
+    for (const node of document.querySelectorAll("[data-i18n-continue]")) {
+      node.textContent = flow.t(coarsePointer ? "continueTouch" : "continue");
+    }
+    for (const node of document.querySelectorAll("[data-i18n-enter]")) {
+      node.textContent = flow.t(coarsePointer ? "enterTouch" : "enter");
+    }
+    renderStage();
+    renderAvailability();
+    renderLaunch();
+  }
+
+  function renderSettings() {
+    for (const control of document.querySelectorAll("[data-setting]")) {
+      const key = control.dataset.setting;
+      const value = settings[key];
+      if (control.classList.contains("bm-seg__option")) {
+        control.setAttribute(
+          "aria-pressed",
+          String(control.dataset.value === value),
+        );
+      } else if (control.getAttribute("role") === "switch") {
+        control.setAttribute("aria-checked", String(Boolean(value)));
+        const text = control.querySelector(".bm-switch__text");
+        if (text) text.textContent = flow.t(value ? "on" : "off");
+      } else if (control instanceof HTMLInputElement) {
+        control.value = String(value);
+        control.style.setProperty("--value", `${value}%`);
+      }
+    }
+    for (const output of document.querySelectorAll("[data-setting-output]")) {
+      output.textContent = String(settings[output.dataset.settingOutput]);
+    }
+    root.dataset.quality = settings.quality;
+    root.dataset.reducedMotion = String(settings.reducedMotion);
+  }
+
+  function updateSetting(key, value) {
+    settings[key] = value;
+    input.invert = settings.invert;
+    writeSettings(settings);
+    renderSettings();
+    if (key === "language") applyLanguage();
+    if (key === "volume") sound.setVolume(value);
+    emit("settings", settings, key);
+  }
+
+  document.addEventListener("click", (event) => {
+    const control =
+      event.target instanceof Element
+        ? event.target.closest("[data-setting]")
+        : null;
+    if (!control || control instanceof HTMLInputElement) return;
+    const key = control.dataset.setting;
+    if (control.dataset.value !== undefined)
+      updateSetting(key, control.dataset.value);
+    else updateSetting(key, !settings[key]);
+    sound.hover("setting");
+  });
+  document.addEventListener("input", (event) => {
+    const control = event.target;
+    if (!(control instanceof HTMLInputElement) || !control.dataset.setting)
+      return;
+    updateSetting(control.dataset.setting, Number(control.value));
+  });
+  document.addEventListener("change", (event) => {
+    if (
+      event.target instanceof HTMLInputElement &&
+      event.target.dataset.setting
+    )
+      sound.hover("setting");
+  });
+
+  // 5b. Availability of the three ways in
+  const gyroNeedsPermission =
+    typeof DeviceOrientationEvent !== "undefined" &&
+    typeof DeviceOrientationEvent.requestPermission === "function";
+  const gyroPossible =
+    typeof DeviceOrientationEvent !== "undefined" &&
+    navigator.maxTouchPoints > 0;
+  // A phone offers only the phone; a computer offers everything else.
+  const onPhone = coarsePointer && navigator.maxTouchPoints > 0;
+  if (onPhone) flow.availability.desktop = "notOnPhone";
+  flow.availability.gyro = !gyroPossible
+    ? "phoneOnly"
+    : gyroNeedsPermission
+      ? "permission"
+      : "ready";
+
+  if (onPhone) {
+    flow.availability.vr = "notOnPhone";
+  } else if (navigator.xr?.isSessionSupported) {
+    navigator.xr
+      .isSessionSupported("immersive-vr")
+      .then((supported) => {
+        flow.availability.vr = supported ? "ready" : "missing";
+      })
+      .catch(() => {
+        flow.availability.vr = "missing";
+      })
+      .finally(() => {
+        renderAvailability();
+        emit("availability", flow.availability);
+      });
+  } else {
+    flow.availability.vr = "missing";
+  }
+
+  function renderAvailability() {
+    const copyKey = {
+      ready: "statusReady",
+      checking: "statusChecking",
+      missing: "statusMissing",
+      permission: "statusPermission",
+      phoneOnly: "statusPhoneOnly",
+      notOnPhone: "statusNotOnPhone",
+    };
+    for (const node of document.querySelectorAll("[data-mode-status]")) {
+      const status = flow.availability[node.dataset.modeStatus];
+      node.textContent = flow.t(copyKey[status]);
+      node.dataset.status = status;
+      const button = node.closest("[data-mode]");
+      button?.setAttribute("data-available", String(status === "ready"));
+      // A way in this kind of device can never take is greyed out.
+      if (button)
+        button.disabled = status === "phoneOnly" || status === "notOnPhone";
+    }
+  }
+
+  // 5c. Screens
+  // Legal pages return to wherever they were opened from.
+  const LEGAL_SCREENS = ["imprint", "privacy"];
+  function go(screen) {
+    if (screen === flow.screen) return;
+    const previous = flow.screen;
+    if (LEGAL_SCREENS.includes(screen) && !LEGAL_SCREENS.includes(previous))
+      flow.returnTo = previous;
+    flow.screen = screen;
+    root.dataset.screen = screen;
+    for (const node of document.querySelectorAll("[data-screen]")) {
+      const active = node.dataset.screen.split(" ").includes(screen);
+      node.classList.toggle("is-active", active);
+      node.inert = !active;
+      node.setAttribute("aria-hidden", String(!active));
+    }
+    setHover(null);
+    emit("screen", screen, previous);
+    const focusTarget = document.querySelector(
+      `[data-screen~="${screen}"] [data-autofocus], [data-screen~="${screen}"] [data-action]`,
+    );
+    if (focusTarget instanceof HTMLElement && !coarsePointer) {
+      window.setTimeout(() => focusTarget.focus({ preventScroll: true }), 60);
+    }
+  }
+
+  function setHover(key) {
+    if (flow.hovered === key) return;
+    flow.hovered = key;
+    root.dataset.hovered = key ?? "";
+    renderHint();
+    if (key) sound.hover(key);
+    emit("hover", key);
+  }
+
+  /** The old menu's note line: the pointed entry explains itself. */
+  function renderHint() {
+    const hintKey = {
+      start: "hintBegin",
+      settings: "hintSettings",
+      credits: "hintCredits",
+      desktop: "desktopHint",
+      vr: "vrHint",
+      gyro: "gyroHint",
+    }[flow.hovered];
+    for (const node of document.querySelectorAll("[data-hint]")) {
+      node.textContent = hintKey ? flow.t(hintKey) : "";
+    }
+  }
+
+  // 5d. Launch
+  function launch(mode, permission) {
+    flow.launch = { mode, status: "pending" };
+    renderLaunch();
+    const settle = (status) => {
+      flow.launch = { mode, status };
+      renderLaunch();
+      emit("launch", mode, status);
+    };
+    if (mode === "desktop") settle("ready");
+    else if (mode === "vr")
+      settle(flow.availability.vr === "ready" ? "ready" : "missing");
+    else if (permission) {
+      permission
+        .then((answer) => settle(answer === "granted" ? "ready" : "denied"))
+        .catch(() => settle("denied"));
+    } else settle(flow.availability.gyro === "ready" ? "ready" : "missing");
+  }
+
+  function renderLaunch() {
+    const { mode, status } = flow.launch;
+    root.dataset.launchMode = mode ?? "";
+    root.dataset.launchStatus = status ?? "";
+    if (!mode) return;
+    const textKey = {
+      desktop: { ready: "launchDesktop" },
+      vr: { ready: "launchVr", missing: "launchVrMissing" },
+      gyro: {
+        ready: "launchGyro",
+        missing: "launchGyroMissing",
+        denied: "launchGyroDenied",
+      },
+    }[mode][status];
+    for (const node of document.querySelectorAll("[data-launch-title]"))
+      node.textContent = flow.t(mode);
+    for (const node of document.querySelectorAll("[data-launch-text]")) {
+      node.textContent = textKey ? flow.t(textKey) : "";
+    }
+  }
+
+  function renderGyroReadout() {
+    const nodes = document.querySelectorAll("[data-gyro-readout]");
+    if (nodes.length > 0 && flow.launch.mode === "gyro") {
+      const { alpha, beta, gamma } = input.orientation;
+      const text = input.gyroActive
+        ? `α ${alpha.toFixed(0)}°  β ${beta.toFixed(0)}°  γ ${gamma.toFixed(0)}°`
+        : "α –  β –  γ –";
+      for (const node of nodes) node.textContent = text;
+    }
+    window.setTimeout(renderGyroReadout, 120);
+  }
+  renderGyroReadout();
+
+  // 5e. Actions
+  async function perform(action, mode) {
+    sound.unlock();
+    // A motion-permission prompt must be requested inside the gesture itself.
+    let permission;
+    if (action === "mode" && mode === "gyro" && gyroNeedsPermission) {
+      permission = DeviceOrientationEvent.requestPermission();
+    }
+    if (options.selectSound !== false) sound.select(mode ?? action);
+    emit("select", action, mode);
+    if (options.beforeAction) await options.beforeAction(action, mode);
+    if (action === "start") go("modes");
+    else if (action === "settings") go("settings");
+    else if (action === "credits") go("credits");
+    else if (action === "imprint" || action === "privacy") go(action);
+    else if (action === "return") go(flow.returnTo ?? "menu");
+    else if (action === "back" || action === "menu")
+      go(flow.inShow ? "show" : "menu");
+    else if (action === "exit") options.onExit?.();
+    else if (action === "mode") {
+      launch(mode, permission);
+      go("launch");
+    }
+  }
+
+  function actionKey(node) {
+    return node.dataset.mode ?? node.dataset.action;
+  }
+
+  document.addEventListener("click", (event) => {
+    const node =
+      event.target instanceof Element
+        ? event.target.closest("[data-action]")
+        : null;
+    if (!node || node.closest("[inert]")) return;
+    if (performance.now() < ignoreClicksUntil) return;
+    if (node.dataset.hold && event.detail !== 0) return; // pointer holds trigger themselves
+    perform(node.dataset.action, node.dataset.mode);
+  });
+
+  // Press-and-hold actions: --hold runs 0..1 on the element while pressed.
+  document.addEventListener("pointerdown", (event) => {
+    const node =
+      event.target instanceof Element
+        ? event.target.closest("[data-hold]")
+        : null;
+    if (!(node instanceof HTMLElement) || node.closest("[inert]")) return;
+    sound.unlock();
+    const duration = Number(node.dataset.hold) || 1200;
+    const started = performance.now();
+    let frame = 0;
+    const release = () => {
+      cancelAnimationFrame(frame);
+      node.style.setProperty("--hold", "0");
+      emit("hold", 0);
+      window.removeEventListener("pointerup", release);
+      window.removeEventListener("pointercancel", release);
+    };
+    const step = (now) => {
+      const progress = Math.min((now - started) / duration, 1);
+      node.style.setProperty("--hold", String(progress));
+      emit("hold", progress);
+      if (progress >= 1) {
+        release();
+        perform(node.dataset.action, node.dataset.mode);
+        return;
+      }
+      frame = requestAnimationFrame(step);
+    };
+    window.addEventListener("pointerup", release);
+    window.addEventListener("pointercancel", release);
+    frame = requestAnimationFrame(step);
+  });
+
+  const hoverFrom = (event) => {
+    const node =
+      event.target instanceof Element
+        ? event.target.closest("[data-action]")
+        : null;
+    if (node && !node.closest("[inert]")) setHover(actionKey(node));
+  };
+  document.addEventListener("pointerover", hoverFrom);
+  document.addEventListener("focusin", hoverFrom);
+  document.addEventListener("pointerout", (event) => {
+    const node =
+      event.target instanceof Element
+        ? event.target.closest("[data-action]")
+        : null;
+    const into =
+      event.relatedTarget instanceof Element
+        ? event.relatedTarget.closest("[data-action]")
+        : null;
+    if (node && node !== into && document.activeElement !== node)
+      setHover(null);
+  });
+  document.addEventListener("focusout", () => {
+    window.setTimeout(() => {
+      const active = document.activeElement;
+      if (!(active instanceof Element) || !active.closest("[data-action]"))
+        setHover(null);
+    }, 0);
+  });
+
+  // Continue after loading, and keyboard navigation everywhere else.
+  let ignoreClicksUntil = 0;
+  const continueAfterLoad = () => {
+    if (flow.screen !== "loading" || !flow.ready) return;
+    // The click that ends this press must not land on a freshly shown button.
+    ignoreClicksUntil = performance.now() + 450;
+    sound.unlock();
+    // The context may need a moment after the gesture before it sounds.
+    const welcome = () => {
+      if (!sound.ready) {
+        window.setTimeout(welcome, 60);
+        return;
+      }
+      sound.wind(true);
+      sound.arrive();
+    };
+    welcome();
+    go("menu");
+  };
+  window.addEventListener("pointerdown", () => {
+    sound.unlock();
+    continueAfterLoad();
+  });
+  window.addEventListener("keydown", (event) => {
+    if (event.target instanceof HTMLSelectElement) return;
+    sound.unlock();
+    if (flow.screen === "loading") {
+      if (!["[", "]", "r", "R", "h", "H"].includes(event.key))
+        continueAfterLoad();
+      return;
+    }
+    if (event.key === "Escape") {
+      // Inside the experience Esc opens the settings and closes them again.
+      // The Esc that ended pointer lock already opened them (escapeGuardUntil).
+      if (LEGAL_SCREENS.includes(flow.screen)) go(flow.returnTo ?? "menu");
+      else if (flow.inShow) {
+        if (performance.now() < flow.escapeGuardUntil) return;
+        go(
+          flow.screen === "show" || flow.screen === "ending"
+            ? "settings"
+            : "show",
+        );
+      } else if (flow.screen === "launch") go("modes");
+      else if (flow.screen !== "menu") go("menu");
+      return;
+    }
+    const arrows = ["ArrowDown", "ArrowUp", "ArrowLeft", "ArrowRight"];
+    if (!arrows.includes(event.key) || event.target instanceof HTMLInputElement)
+      return;
+    // Inside the experience the arrows belong to flight, not to the gear.
+    if (flow.screen === "show") return;
+    const focusables = [
+      ...document.querySelectorAll(
+        `[data-screen~="${flow.screen}"] [data-action], [data-screen~="${flow.screen}"] [data-setting]`,
+      ),
+    ].filter(
+      (node) => node instanceof HTMLElement && node.offsetParent !== null,
+    );
+    if (focusables.length === 0) return;
+    event.preventDefault();
+    const current = focusables.indexOf(document.activeElement);
+    const forward = event.key === "ArrowDown" || event.key === "ArrowRight";
+    const next =
+      current < 0
+        ? 0
+        : (current + (forward ? 1 : -1) + focusables.length) %
+          focusables.length;
+    focusables[next].focus();
+  });
+
+  // 5f. Loading
+  // A sense stays named for at least minStageSeconds, so a jump in the
+  // loading never skips one; the shown percentage waits for it.
+  const minStageMs = (options.minStageSeconds ?? 0) * 1000;
+  const holdMs = (options.stageHoldSeconds ?? 0) * 1000;
+  const paceSeconds = options.paceSeconds ?? 0;
+  const stageCount = COPY.de.stages.length;
+  let shownIndex = 0;
+  let shownAt = performance.now();
+  let rawProgress = 0;
+  function advanceStage() {
+    if (holdMs) {
+      const real = Math.min(
+        Math.floor(flow.progress * stageCount),
+        stageCount - 1,
+      );
+      const now = performance.now();
+      if (real > shownIndex && now - shownAt >= holdMs) {
+        shownIndex += 1;
+        shownAt = now;
+      }
+      return;
+    }
+    const real = Math.min(Math.floor(rawProgress * stageCount), stageCount - 1);
+    if (!minStageMs) {
+      shownIndex = real;
+      return;
+    }
+    const now = performance.now();
+    if (real > shownIndex && now - shownAt >= minStageMs) {
+      shownIndex += 1;
+      shownAt = now;
+    }
+  }
+  const stagesDone = () =>
+    !minStageMs ||
+    (shownIndex >= stageCount - 1 && performance.now() - shownAt >= minStageMs);
+
+  function renderStage() {
+    const stages = flow.t("stages");
+    const index = shownIndex;
+    const done = flow.progress >= 1;
+    const stage = done ? flow.t("stageDone") : stages[index];
+    for (const node of document.querySelectorAll("[data-progress-stage]"))
+      node.textContent = stage.sense;
+    for (const node of document.querySelectorAll("[data-progress-line]"))
+      node.textContent = stage.line;
+    const key = done ? stages.length : index;
+    if (key !== flow.stage) {
+      flow.stage = key;
+      for (const node of document.querySelectorAll(
+        "[data-progress-stage], [data-progress-line]",
+      )) {
+        node.animate(
+          [
+            { opacity: 0, transform: "translateY(6px)" },
+            { opacity: 1, transform: "none" },
+          ],
+          { duration: 700, easing: "cubic-bezier(0.22, 1, 0.36, 1)" },
+        );
+      }
+      root.dataset.stage = String(key);
+      emit("stage", key);
+    }
+  }
+
+  // Reality being put together: one line after another, until loaded.
+  function startBuilding() {
+    const seconds = options.buildingSeconds;
+    if (!seconds) return;
+    let index = 0;
+    const show = () => {
+      const lines = flow.t("building");
+      for (const node of document.querySelectorAll("[data-building-line]")) {
+        node.textContent = `${lines[index % lines.length]}\u00a0…`;
+        node.animate(
+          [
+            { opacity: 0, transform: "translateY(5px)" },
+            { opacity: 1, transform: "none" },
+          ],
+          { duration: 600, easing: "cubic-bezier(0.22, 1, 0.36, 1)" },
+        );
+      }
+      index += 1;
+    };
+    show();
+    const timer = window.setInterval(() => {
+      if (root.dataset.loaded === "true") window.clearInterval(timer);
+      else show();
+    }, seconds * 1000);
+  }
+
+  let readyDone = !options.ready;
+  options.ready?.then(
+    () => {
+      readyDone = true;
+    },
+    () => {
+      readyDone = true;
+    },
+  );
+
+  function startLoading() {
+    startBuilding();
+    const started = performance.now();
+    const fontsReady = document.fonts.ready;
+    let previous = started;
+    const step = async () => {
+      const now = performance.now();
+      const elapsed = (now - started) / 1000;
+      const dt = Math.min((now - previous) / 1000, 0.1);
+      previous = now;
+      rawProgress = curve(elapsed);
+      // Real work to wait for (the app's experience code): hold short of 100.
+      if (!readyDone) rawProgress = Math.min(rawProgress, 0.92);
+      if (paceSeconds) {
+        // Ease toward the real value, never faster than the pace allows.
+        const gap = Math.max(rawProgress - flow.progress, 0);
+        const eased = gap * (1 - Math.exp(-4 * dt)) + 0.12 * dt;
+        flow.progress += Math.min(eased, gap, dt / paceSeconds);
+        if (rawProgress >= 1 && 1 - flow.progress < 0.002) flow.progress = 1;
+        advanceStage();
+      } else {
+        advanceStage();
+        flow.progress = stagesDone()
+          ? rawProgress
+          : Math.min(rawProgress, (shownIndex + 1) / stageCount - 0.001);
+      }
+      root.style.setProperty("--progress", flow.progress.toFixed(4));
+      for (const node of document.querySelectorAll("[data-progress-value]")) {
+        node.textContent = String(Math.floor(flow.progress * 100));
+      }
+      renderStage();
+      emit("progress", flow.progress);
+      if (flow.progress < 1) {
+        requestAnimationFrame(step);
+        return;
+      }
+      await fontsReady;
+      root.dataset.loaded = "true";
+      emit("loaded");
+      if (options.beforeReady) await options.beforeReady();
+      flow.ready = true;
+      root.dataset.ready = "true";
+      renderStage();
+      emit("ready");
+    };
+    requestAnimationFrame(step);
+  }
+
+  // 5g. Start
+  renderSettings();
+  applyLanguage();
+  if (params.has("skip")) {
+    flow.progress = 1;
+    flow.ready = true;
+    root.dataset.ready = "true";
+    root.style.setProperty("--progress", "1");
+    document.fonts.ready.then(() => {
+      root.dataset.loaded = "true";
+      renderStage();
+      emit("progress", 1);
+      emit("loaded");
+      emit("ready");
+      go("menu");
+    });
+  } else {
+    go("loading");
+    startLoading();
+  }
+
+  return flow;
+}

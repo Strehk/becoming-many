@@ -1,5 +1,7 @@
+import type { FlightInputSource } from "../control/control-contract";
 import { START_AUDIO_SETTINGS } from "../modules/start/audio/audio-settings";
 import { createStartAudio } from "../modules/start/audio/start-audio";
+import type { ParticlePresentation } from "./run-contract";
 /**
  * Purpose: Construct the concrete module graph for one authored world.
  * Context: Level Runtime needs configured resources without knowing content-module details.
@@ -61,7 +63,10 @@ import {
   type ScentParticlesParameters,
 } from "../modules/scent-particles/scent-particles";
 import { createSnakesModule } from "../modules/snakes/snakes";
-import { createAirParticlesModule } from "../modules/start/point-cloud/point-cloud.module";
+import {
+  type AirParticlesModule,
+  createAirParticlesModule,
+} from "../modules/start/point-cloud/point-cloud.module";
 import { createStartModule } from "../modules/start/start.module";
 import type { StartExperience } from "../modules/start/start-contract";
 import { createGroundOccluder } from "../modules/terrain/ground-occluder";
@@ -151,6 +156,10 @@ interface LevelCompositionOptions {
   readonly passages?: PassageSchedule;
   readonly signal?: AbortSignal;
   readonly sharedAudio?: SpatialAudio;
+  /** Presentation multipliers on the authored particle fields. */
+  readonly particles?: ParticlePresentation;
+  /** 1 hides air below the surface (authored); a prelude starts lower. */
+  readonly readGroundPresence?: () => number;
 }
 
 export interface ComposedLevel {
@@ -161,6 +170,13 @@ export interface ComposedLevel {
   readonly modules: readonly WorldModule[];
   readonly reach: ShowWorldReach;
   readonly hasGround: boolean;
+  /**
+   * Always-on modules that draw the ground (grass); a prelude holds them back
+   * so the air fills the whole view until the piece begins.
+   */
+  readonly groundModules: readonly WorldModule[];
+  /** Square or round air particles, a presentation choice of the page. */
+  readonly setAirParticleShape: (shape: "square" | "circle") => void;
 }
 
 export async function composeLevel({
@@ -173,6 +189,8 @@ export async function composeLevel({
   passages: passageSchedule,
   signal = new AbortController().signal,
   sharedAudio,
+  particles,
+  readGroundPresence,
 }: LevelCompositionOptions): Promise<ComposedLevel> {
   const worldSurface = createWorldSurface(
     WORLD_SURFACE_SETTINGS,
@@ -183,6 +201,8 @@ export async function composeLevel({
   let audio: SpatialAudio | undefined;
   let atmosphere: Awaited<ReturnType<typeof createStartAudio>> | undefined;
   const modules: WorldModule[] = [];
+  const groundModules: WorldModule[] = [];
+  let airModule: AirParticlesModule | undefined;
   const createdModules = new Set<WorldModule>();
   const gates = new Map<ShowSense, WorldModule[]>();
   const add = (
@@ -287,7 +307,9 @@ export async function composeLevel({
     );
     add(undefined, createAirParticles());
     add("scent", scent?.module);
-    add(undefined, createGrassClipmap(echoDepth, thermal, structureFade));
+    const grass = createGrassClipmap(echoDepth, thermal, structureFade);
+    add(undefined, grass);
+    if (grass) groundModules.push(grass);
     add("echo", createVegetation(echoDepth, thermal, structureFade));
     add("echo", createRocks(echoDepth, thermal, structureFade));
     add("thermal", createSnakes(echoDepth, structureFade));
@@ -308,6 +330,8 @@ export async function composeLevel({
       tutorial,
       audio,
       modules,
+      groundModules,
+      setAirParticleShape: (shape) => airModule?.setShape(shape),
       hasGround: level.invisibleGround === true || hasVisibleSurface(level),
       reach: {
         gates,
@@ -511,8 +535,22 @@ export async function composeLevel({
   }
 
   function createAirParticles(): WorldModule | undefined {
-    const parameters = level.airParticles;
-    if (!parameters) return undefined;
+    const authored = level.airParticles;
+    if (!authored) return undefined;
+    const parameters = particles
+      ? {
+          ...authored,
+          density: {
+            particlesPerChunk: Math.round(
+              authored.density.particlesPerChunk * particles.airDensity,
+            ),
+          },
+          appearance: {
+            ...authored.appearance,
+            sizeMeters: authored.appearance.sizeMeters * particles.airSize,
+          },
+        }
+      : authored;
 
     const surfaceYAt = hasVisibleSurface(level)
       ? worldSurface.surfaceYAt
@@ -524,6 +562,7 @@ export async function composeLevel({
       parameters,
       streamQueue: world.streamQueue,
       surfaceYAt,
+      readGroundPresence,
     };
     const heightLimits = {
       minimumGroundClearanceMeters:
@@ -534,7 +573,10 @@ export async function composeLevel({
     };
     if (level.flightGuidance && !forShow)
       voice = createVoicePlayer({ gestures: window });
-    if (!level.flightGuidance) return createAirParticlesModule(options);
+    if (!level.flightGuidance) {
+      airModule = createAirParticlesModule(options);
+      return airModule;
+    }
     tutorial = createStartModule({
       language,
       readLanguage,
@@ -557,8 +599,11 @@ export async function composeLevel({
    * grows, rendered or not, and from the animals it carries.
    */
   function createScentParticles(): ScentParticlesModuleHandle | undefined {
-    const parameters = level.scentParticles;
-    if (!parameters) return undefined;
+    const authored = level.scentParticles;
+    if (!authored) return undefined;
+    const parameters = particles
+      ? scaleScentParticles(authored, particles)
+      : authored;
 
     const plantPreset = level.vegetation ?? level.invisibleVegetation;
     const hasAnimals = Boolean(level.animals && parameters.animals);
@@ -595,6 +640,8 @@ export async function composeLevel({
       surfaceSettings: WORLD_SURFACE_SETTINGS,
       // The field fades into the level haze wherever no sense covers it.
       fogColor: level.backgroundColor,
+      // After a prelude the grass grows back with the ground.
+      readGrowth: readGroundPresence,
       // Grass takes its own heat response, not vegetation's. It grows out of
       // the ground and holds the ground's temperature; carrying the bushes'
       // values made a whole meadow read as one flat hot surface.
@@ -876,6 +923,7 @@ export function composeVeil(world: World) {
 export function composeControls(
   world: World,
   surface: Pick<WorldSurface, "groundYAt">,
+  extraInputs: readonly FlightInputSource[] = [],
 ) {
   const m5 = createM5Runtime();
   let desktop: ReturnType<typeof createDesktopController> | undefined;
@@ -885,7 +933,11 @@ export function composeControls(
       ...composeRigCommands(world, surface.groundYAt),
       m5,
       desktop,
-      flight: createFlightControl(world.viewerRig, [m5, desktop]),
+      flight: createFlightControl(world.viewerRig, [
+        m5,
+        desktop,
+        ...extraInputs,
+      ]),
     };
   } catch (error) {
     void desktop?.unload();
@@ -975,4 +1027,30 @@ async function releaseUnpublishedSound(
   if (errors.length > 1)
     throw new AggregateError(errors, "Sound construction and cleanup failed");
   throw failure;
+}
+
+/** More and larger scent particles for a presentation that asks for them. */
+function scaleScentParticles(
+  authored: ScentParticlesParameters,
+  particles: ParticlePresentation,
+): ScentParticlesParameters {
+  const plants = Object.fromEntries(
+    Object.entries(authored.plants).map(([group, signature]) => [
+      group,
+      {
+        ...signature,
+        particlesPerPlant: Math.round(
+          signature.particlesPerPlant * particles.scentDensity,
+        ),
+      },
+    ]),
+  ) as ScentParticlesParameters["plants"];
+  return {
+    ...authored,
+    plants,
+    appearance: {
+      ...authored.appearance,
+      sizeMeters: authored.appearance.sizeMeters * particles.scentSize,
+    },
+  };
 }

@@ -61,6 +61,8 @@ export interface GrassClipmapField {
   readonly selectDetail: (cameraX: number, cameraZ: number) => void;
   readonly updateFrustum: (camera: PerspectiveCamera) => void;
   readonly advanceWind: (deltaSeconds: number) => void;
+  /** Blade height as a share of the authored height, 0 (flat) to 1. */
+  readonly setGrowth: (growth: number) => void;
   readonly publishHeightWindow: () => void;
   readonly dispose: () => void;
 }
@@ -176,6 +178,13 @@ export function createGrassClipmapField(
       shared.uGrassWindDirection.value.set(wind.directionX, wind.directionZ);
       shared.uGrassWindStrength.value =
         wind.strength * GRASS_CLIPMAP_SETTINGS.wind.strengthScale;
+    },
+
+    setGrowth: (growth) => {
+      const share = Number.isFinite(growth)
+        ? Math.max(0, Math.min(1, growth))
+        : 1;
+      shared.uGrassBladeHeight.value = options.preset.bladeHeightMeters * share;
     },
 
     publishHeightWindow: () => {

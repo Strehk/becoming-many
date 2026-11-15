@@ -1,3 +1,5 @@
+import type { Group, PerspectiveCamera, Scene, WebGLRenderer } from "three";
+import type { FlightInputSource } from "../control/control-contract";
 import type { NarrationLanguage } from "../dramaturgy/narration-catalog";
 import type { M5Runtime } from "../m5/m5-contract";
 import type { XrSessionControl } from "../world/xr-contract";
@@ -22,14 +24,59 @@ export interface TutorialObservation {
   readonly playback: RunPlayback;
 }
 
+/**
+ * Visitor preferences a page may apply to a running experience. Values outside
+ * their range are clamped; invalid numbers fall back to the defaults.
+ */
+export interface RunPreferences {
+  /** Overall loudness of organ and narration, 0 (silent) to 1 (authored). */
+  readonly volume: number;
+  /** Renderer pixel ratio for the desktop view; XR keeps its own resolution. */
+  readonly renderScale: number;
+  /** Swap forward and backward tilt for keyboard and controller input. */
+  readonly invertPitch: boolean;
+  /** Round air particles instead of the authored squares (a quality choice). */
+  readonly roundParticles?: boolean;
+  /**
+   * The page draws the end credits over the screen itself; the world's
+   * credits panel then stays hidden, except in an immersive session.
+   */
+  readonly screenCredits?: boolean;
+}
+
+/**
+ * The running world as a page may borrow it for an overlay drawn in the same
+ * renderer (the web start menu). Scene, camera and renderer are read only;
+ * the page adds its own objects to `overlay` and disposes them itself.
+ */
+export interface RunStage {
+  readonly scene: Scene;
+  readonly camera: PerspectiveCamera;
+  readonly renderer: WebGLRenderer;
+  /** Rendered with the world; removed from the scene when the Run unloads. */
+  readonly overlay: Group;
+  /** Height of the ground at a world position (the page's autopilot). */
+  readonly groundYAt: (worldX: number, worldZ: number) => number;
+  /** Every frame after flight and before rendering; returns its removal. */
+  readonly onFrame: (hook: (deltaSeconds: number) => void) => () => void;
+}
+
 /** One experience lifetime, with commands and observations for its entry/UI. */
 export interface Run {
+  readonly stage: RunStage;
+  /**
+   * During a prelude, the glide speed while the Show still holds at its
+   * start. Ignored once the Show has played or without a prelude.
+   */
+  readonly setPreludeGlide: (metersPerSecond: number) => void;
   readonly readPlayback: () => RunPlayback;
   readonly togglePlayback: () => void;
   /** Current session language, available during tutorial and absent after unload. */
   readonly readLanguage: () => NarrationLanguage | undefined;
   /** Replace speech in place; preserve playback, progress and flight. Static runs ignore it. */
   readonly setLanguage: (language: NarrationLanguage) => void;
+  /** Apply visitor preferences now and to parts the Run creates later. */
+  readonly setPreferences: (preferences: RunPreferences) => void;
   readonly unload: () => Promise<void>;
   readonly show: RunningShow | undefined;
   /** Current audio owner state; closed after unload starts. */
@@ -65,9 +112,22 @@ export interface Run {
   readonly xr: Pick<XrSessionControl, "start" | "stop" | "subscribe">;
 }
 
+/**
+ * Multipliers on the authored particle look, for a presentation that wants
+ * more or larger particles than the installation (the web desktop view).
+ */
+export interface ParticlePresentation {
+  readonly airDensity: number;
+  readonly airSize: number;
+  readonly scentDensity: number;
+  readonly scentSize: number;
+}
+
 interface CommonLevelRequest {
   readonly signal?: AbortSignal;
   readonly preset: LevelPreset;
+  /** Absent: every particle field keeps its authored density and size. */
+  readonly particles?: ParticlePresentation;
 }
 
 export interface StaticLevelRequest extends CommonLevelRequest {
@@ -82,6 +142,15 @@ export interface ShowLevelRequest extends CommonLevelRequest {
   readonly show: ShowRequest;
   /** Optional guided entry before the prepared main show. */
   readonly tutorial?: LevelPreset;
+  /**
+   * A page in front of the Show (the web start menu): the Show holds at its
+   * start without the white veil, the visitor already glides at the given
+   * speed, steered by the page's input, until the first Play.
+   */
+  readonly prelude?: {
+    readonly glideMetersPerSecond: number;
+    readonly input?: FlightInputSource;
+  };
 }
 
 /** Both run modes construct one preset; Show adds its timeline and live states. */

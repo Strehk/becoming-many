@@ -27,6 +27,8 @@ export interface FlightControl {
     glideSpeedMetersPerSecond?: number,
     isPresentingXr?: boolean,
   ) => void;
+  /** Swap forward and backward tilt for every source, e.g. a visitor setting. */
+  readonly setPitchInverted: (inverted: boolean) => void;
 }
 
 export interface DesktopController extends FlightInputSource {
