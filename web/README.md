@@ -26,18 +26,26 @@ Pages. The experience names its public files from the server root
   Run has started behind the menu and the narrator's first recording is in.
   Then the same particles write the title, "Becoming Many".
 - **Menu.** Start, Settings, Credits, and the legal notice and privacy
-  policy. Start leads to the choice of desktop, VR headset or phone; a way
-  the device cannot take is greyed out.
+  policy. Start leads to the choice of desktop, VR headset or phone; this
+  device's way is marked recommended and starts at once. The other device's
+  way shows how to get there (on a computer, a QR code for the phone) and
+  offers "start here" for a device taken for the wrong one; VR without a
+  headset shows how to bring one.
 - **Seamless start.** The menu draws into the experience's own world; choosing
   a way in lets the Show play around the same particles. Two cards come first
-  (headphones, then how to fly); a click skips them.
+  (headphones, then how to fly, with the device's other ways to steer to
+  switch to); a click skips them.
 - **Flight.** Desktop: W A S D or the arrow keys, or the arms as wings in
   front of the webcam (pose model in `pose/`, shipped with the page). Phone:
   turning it like a steering wheel, or turning around with it (360°). An
-  autopilot flies on its own and hands over when the visitor steers.
-- **Settings**, from the gear or Esc, pause the piece: language, volume,
-  graphics, invert look, autopilot, controls, fullscreen, and a timeline to
-  jump between chapters.
+  autopilot flies on its own and hands over when the visitor steers. Touch
+  (a finger, or the mouse) works on both, and takes over on a phone whose
+  motion sensor is missing or not allowed.
+- **Settings**, from the gear or Esc, pause the piece. Grouped as general
+  (language, volume), flight (controls with the recommended one marked,
+  invert look, autopilot) and display (graphics, fullscreen), plus a timeline
+  to jump between chapters; rows that do nothing for the chosen way are left
+  out, and the page scrolls on small screens.
 - **End.** On a screen the title forms again over the credits; a headset
   keeps the world's own credits panel.
 

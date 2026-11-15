@@ -504,8 +504,8 @@
             <span class="vr-guide__copied" data-i18n="copied"></span>
           </button>
         </div>
-        <p class="vr-guide__or" data-i18n="or"></p>
-        <div class="vr-guide__way">
+        <p class="vr-guide__or vr-guide__stream" data-i18n="or"></p>
+        <div class="vr-guide__way vr-guide__stream">
           <!-- lucide "cast", ISC licence -->
           <svg class="vr-guide__icon" viewBox="0 0 24 24" aria-hidden="true">
             <path
@@ -525,6 +525,30 @@
           ></button>
           <p class="vr-guide__status" data-vr-status aria-live="polite"></p>
         </div>
+      </div>
+      <!-- The other device's way: how to get there, and, should this device
+           have been taken for the wrong one, a way to start here after all. -->
+      <div class="other-device" data-other-device>
+        <div class="other-device__code" data-qr aria-hidden="true"></div>
+        <p class="vr-guide__text" data-other-text></p>
+        <button
+          type="button"
+          class="vr-guide__address"
+          data-vr-copy
+          data-i18n-label="copyAddress"
+        >
+          <span data-vr-address></span>
+          <span class="vr-guide__copied" data-i18n="copied"></span>
+        </button>
+        <p class="other-device__here">
+          <span data-other-question></span>
+          <button
+            type="button"
+            data-action="here"
+            data-other-here
+            data-i18n="hereStart"
+          ></button>
+        </p>
       </div>
       <button
         type="button"

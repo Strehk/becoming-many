@@ -86,17 +86,30 @@ const COPY = {
     enterTouch: "Tippen, um einzutreten",
     modes: "Wie möchtest du eintreten?",
     desktop: "Desktop",
-    desktopHint: "Maus und Tastatur",
+    desktopHint: "Tastatur, Webcam oder Maus",
     vr: "VR-Brille",
     vrHint: "WebXR-Headset",
     gyro: "Handy",
-    gyroHint: "Neigen statt Maus: der Bewegungssensor steuert",
+    gyroHint: "Lenkrad, 360° oder Touch",
     statusReady: "Bereit",
     statusChecking: "Wird geprüft …",
     statusMissing: "Nicht erkannt",
     statusPermission: "Erlaubnis nötig",
     statusPhoneOnly: "Nur auf dem Handy",
     statusNotOnPhone: "Nicht auf dem Handy",
+    statusOnPhone: "Auf dem Handy",
+    statusOnComputer: "Am Computer",
+    otherPhone:
+      "Scanne den Code oder öffne die Adresse auf deinem Handy. Dort lenkst du, indem du es drehst wie ein Lenkrad oder dich mit ihm umschaust wie in einem 360°-Video.",
+    otherComputer:
+      "Öffne diese Adresse am Computer. Dort fliegst du mit der Tastatur oder mit deinen Armen als Flügeln vor der Webcam.",
+    herePhone: "Du bist schon am Handy?",
+    hereComputer: "Du bist schon am Computer?",
+    hereStart: "Hier starten",
+    groupGeneral: "Allgemein",
+    groupFlight: "Fliegen",
+    groupDisplay: "Anzeige",
+    otherControls: "Andere Steuerung",
     language: "Sprache",
     volume: "Lautstärke",
     subtitles: "Untertitel",
@@ -114,12 +127,6 @@ const COPY = {
     controlKeys: "Tastatur",
     controlCamera: "Kamera",
     controlTouch: "Touch",
-    device: "Gerät",
-    deviceAuto: "Automatisch",
-    deviceComputer: "Computer",
-    devicePhone: "Handy",
-    aboutDevice:
-      "Nur umstellen, wenn dein Gerät falsch erkannt wurde. Danach passen Steuerung und Einstieg.",
     recommended: "Empfohlen",
     aboutKeys: "Flieg mit W A S D oder den Pfeiltasten.",
     aboutCamera:
@@ -202,7 +209,7 @@ const COPY = {
     introTilt:
       "Dreh dein Handy wie ein Lenkrad für Kurven. Kipp es vor und zurück zum Sinken und Steigen.",
     introTouch:
-      "Zieh mit dem Finger über den Bildschirm: zur Seite für Kurven, hoch und runter zum Steigen und Sinken.",
+      "Zieh mit dem Finger oder der Maus über den Bildschirm: zur Seite für Kurven, hoch und runter zum Steigen und Sinken.",
     introTiltTurn:
       "Schau dich mit dem Handy um wie in einem 360°-Video. Du fliegst dorthin, wohin du schaust.",
     or: "oder",
@@ -275,17 +282,30 @@ const COPY = {
     enterTouch: "Tap to enter",
     modes: "How would you like to enter?",
     desktop: "Desktop",
-    desktopHint: "Mouse and keyboard",
+    desktopHint: "Keyboard, webcam or mouse",
     vr: "VR headset",
     vrHint: "WebXR headset",
     gyro: "Phone",
-    gyroHint: "Tilt instead of mouse: the motion sensor steers",
+    gyroHint: "Wheel, 360° or touch",
     statusReady: "Ready",
     statusChecking: "Checking …",
     statusMissing: "Not detected",
     statusPermission: "Needs permission",
     statusPhoneOnly: "Phone only",
     statusNotOnPhone: "Not on a phone",
+    statusOnPhone: "On your phone",
+    statusOnComputer: "On a computer",
+    otherPhone:
+      "Scan the code or open the address on your phone. There you steer by turning it like a steering wheel, or by looking around with it as in a 360° video.",
+    otherComputer:
+      "Open this address on a computer. There you fly with the keyboard, or with your arms as wings in front of the webcam.",
+    herePhone: "Already on your phone?",
+    hereComputer: "Already on a computer?",
+    hereStart: "Start here",
+    groupGeneral: "General",
+    groupFlight: "Flight",
+    groupDisplay: "Display",
+    otherControls: "Other controls",
     language: "Language",
     volume: "Volume",
     subtitles: "Subtitles",
@@ -303,12 +323,6 @@ const COPY = {
     controlKeys: "Keyboard",
     controlCamera: "Camera",
     controlTouch: "Touch",
-    device: "Device",
-    deviceAuto: "Automatic",
-    deviceComputer: "Computer",
-    devicePhone: "Phone",
-    aboutDevice:
-      "Only change this if your device was detected wrongly. Controls and ways in follow.",
     recommended: "Recommended",
     aboutKeys: "Fly with W A S D or the arrow keys.",
     aboutCamera:
@@ -388,7 +402,7 @@ const COPY = {
     introTilt:
       "Turn your phone like a steering wheel to curve. Tip it forward and back to sink and climb.",
     introTouch:
-      "Drag your finger across the screen: sideways to turn, up and down to climb and sink.",
+      "Drag your finger or the mouse across the screen: sideways to turn, up and down to climb and sink.",
     introTiltTurn:
       "Look around with your phone, like in a 360° video. You fly wherever you look.",
     or: "or",
@@ -451,8 +465,11 @@ const DEVICE_CONTROLS = {
   phone: ["wheel", "turn", "touch"],
 };
 const RECOMMENDED_CONTROL = { desktop: "keys", phone: "wheel" };
+/** A headset's own browser (Meta Quest, Pico). */
+const IN_HEADSET = /OculusBrowser|Quest|Pico/i.test(navigator.userAgent);
 /** A phone, as the browser describes itself: touch first, no fine pointer. */
 const DETECTED_PHONE =
+  !IN_HEADSET &&
   window.matchMedia("(pointer: coarse)").matches &&
   navigator.maxTouchPoints > 0;
 
@@ -593,42 +610,54 @@ function buildSettings(slot) {
     row.append(label, wrap);
     return row;
   };
+  // Rows in small groups under a quiet heading; a group whose rows a page
+  // leaves out goes with them.
+  const group = (titleKey, ...rows) => {
+    const node = element("div", "bm-settings__group", {
+      "data-setting-group": titleKey,
+    });
+    node.append(
+      element("p", "bm-settings__heading", { "data-i18n": titleKey }),
+      ...rows,
+    );
+    return node;
+  };
   list.append(
-    segmented("language", [
-      ["de", null, "DE"],
-      ["en", null, "EN"],
-    ]),
-    range("volume"),
-    toggle("subtitles"),
-    segmented("quality", [
-      ["low", "low"],
-      ["mid", "mid"],
-      ["high", "high"],
-    ]),
-    toggle("invert"),
-    segmented(
-      "control",
-      [
-        ["keys", "controlKeys"],
-        ["camera", "controlCamera"],
-        ["wheel", "steeringWheel"],
-        ["turn", "steeringTurn"],
-        ["touch", "controlTouch"],
-      ],
-      true,
+    group(
+      "groupGeneral",
+      segmented("language", [
+        ["de", null, "DE"],
+        ["en", null, "EN"],
+      ]),
+      range("volume"),
+      toggle("subtitles"),
     ),
-    toggle("autopilot"),
-    toggle("fullscreen"),
-    segmented(
-      "device",
-      [
-        ["auto", "deviceAuto"],
-        ["desktop", "deviceComputer"],
-        ["phone", "devicePhone"],
-      ],
-      true,
+    group(
+      "groupFlight",
+      segmented(
+        "control",
+        [
+          ["keys", "controlKeys"],
+          ["camera", "controlCamera"],
+          ["wheel", "steeringWheel"],
+          ["turn", "steeringTurn"],
+          ["touch", "controlTouch"],
+        ],
+        true,
+      ),
+      toggle("invert"),
+      toggle("autopilot"),
     ),
-    toggle("reducedMotion"),
+    group(
+      "groupDisplay",
+      segmented("quality", [
+        ["low", "low"],
+        ["mid", "mid"],
+        ["high", "high"],
+      ]),
+      toggle("fullscreen"),
+      toggle("reducedMotion"),
+    ),
   );
   slot.replaceChildren(list);
 }
@@ -834,11 +863,17 @@ export function createMenuFlow(options = {}) {
     get quality() {
       return QUALITY_SCALE[settings.quality] ?? 1;
     },
-    /** Whether this is treated as a phone: detected, or set in the settings. */
+    /** Whether this is treated as a phone: detected, or said by the visitor. */
     get isPhone() {
       return settings.device === "auto"
         ? DETECTED_PHONE
         : settings.device === "phone";
+    },
+    /** The way in this device is made for: a headset's own browser, a
+     * phone, or else the desktop. */
+    get recommendedMode() {
+      if (IN_HEADSET && flow.availability.vr === "ready") return "vr";
+      return flow.isPhone ? "gyro" : "desktop";
     },
     get motion() {
       return settings.reducedMotion ? 0.3 : 1;
@@ -886,6 +921,8 @@ export function createMenuFlow(options = {}) {
   if (options.settingKeys)
     for (const node of document.querySelectorAll("[data-setting-row]"))
       if (!options.settingKeys.includes(node.dataset.settingRow)) node.remove();
+  for (const node of document.querySelectorAll("[data-setting-group]"))
+    if (!node.querySelector("[data-setting-row]")) node.remove();
   // A page may offer only some ways in (the app: desktop and VR).
   if (options.modes)
     for (const node of document.querySelectorAll("[data-mode]"))
@@ -925,7 +962,7 @@ export function createMenuFlow(options = {}) {
     touch: "aboutTouch",
   };
   function renderAbout(key, value) {
-    const copyKey = key === "device" ? "aboutDevice" : ABOUT[value];
+    const copyKey = ABOUT[value];
     for (const node of document.querySelectorAll(
       `[data-setting-about="${key}"]`,
     ))
@@ -952,9 +989,7 @@ export function createMenuFlow(options = {}) {
 
   function renderSettings() {
     renderAbout("control", settings.control);
-    renderAbout("device", settings.device);
-    // The controls show the device's own ways, its recommended one marked;
-    // "automatic" names what the device was taken for.
+    // The controls show the device's own ways, its recommended one marked.
     const device = flow.isPhone ? "phone" : "desktop";
     for (const option of document.querySelectorAll(
       '[data-setting="control"]',
@@ -966,16 +1001,11 @@ export function createMenuFlow(options = {}) {
       );
       option.dataset.tag = flow.t("recommended");
     }
-    for (const option of document.querySelectorAll(
-      '[data-setting="device"][data-value="auto"]',
-    )) {
-      // Written here, with what was detected, not by the language pass.
-      option.removeAttribute("data-i18n");
-      option.textContent = `${flow.t("deviceAuto")} (${flow.t(
-        DETECTED_PHONE ? "devicePhone" : "deviceComputer",
-      )})`;
-    }
     root.dataset.device = device;
+    // Only what the chosen way can use: looking around (360°) and the arms
+    // (camera) have nothing to invert.
+    for (const row of document.querySelectorAll('[data-setting-row="invert"]'))
+      row.hidden = settings.control === "turn" || settings.control === "camera";
     for (const control of document.querySelectorAll("[data-setting]")) {
       const key = control.dataset.setting;
       const value = settings[key];
@@ -1055,18 +1085,20 @@ export function createMenuFlow(options = {}) {
   const gyroPossible =
     typeof DeviceOrientationEvent !== "undefined" &&
     navigator.maxTouchPoints > 0;
-  // A phone offers only the phone; a computer offers everything else. The
-  // device is the detected one unless the settings say otherwise.
+  // Every way in stays open: this device's own starts at once, the other
+  // device's shows how to get there ("elsewhere"), and a headset not found
+  // shows how to bring one. The device is the detected one unless a visitor
+  // said otherwise ("start here" on the other device's way).
   function computeAvailability() {
     const onPhone = flow.isPhone;
-    flow.availability.desktop = onPhone ? "notOnPhone" : "ready";
+    flow.availability.desktop = onPhone ? "elsewhere" : "ready";
     // A phone without the sensor still flies, by touch.
     flow.availability.gyro = !onPhone
-      ? "phoneOnly"
+      ? "elsewhere"
       : gyroPossible && gyroNeedsPermission
         ? "permission"
         : "ready";
-    if (onPhone) flow.availability.vr = "notOnPhone";
+    if (onPhone) flow.availability.vr = "missing";
     else checkVr();
     renderAvailability();
   }
@@ -1098,19 +1130,25 @@ export function createMenuFlow(options = {}) {
       checking: "statusChecking",
       missing: "statusMissing",
       permission: "statusPermission",
-      phoneOnly: "statusPhoneOnly",
-      notOnPhone: "statusNotOnPhone",
     };
+    const recommended = flow.recommendedMode;
     for (const node of document.querySelectorAll("[data-mode-status]")) {
-      const status = flow.availability[node.dataset.modeStatus];
-      node.textContent = flow.t(copyKey[status]);
-      node.dataset.status = status;
+      const mode = node.dataset.modeStatus;
+      const status = flow.availability[mode];
+      // The device's own way says so; the other device's says where to go.
+      const key =
+        mode === recommended
+          ? "recommended"
+          : status === "elsewhere"
+            ? mode === "gyro"
+              ? "statusOnPhone"
+              : "statusOnComputer"
+            : copyKey[status];
+      node.textContent = flow.t(key);
+      node.dataset.status = mode === recommended ? "recommended" : status;
       const button = node.closest("[data-mode]");
       button?.setAttribute("data-available", String(status === "ready"));
-      // A way in this device does not take is greyed out; if the device was
-      // taken for the wrong one, the settings' "device" switches it.
-      if (button)
-        button.disabled = status === "phoneOnly" || status === "notOnPhone";
+      button?.toggleAttribute("data-recommended", mode === recommended);
     }
   }
 
@@ -1173,7 +1211,9 @@ export function createMenuFlow(options = {}) {
       renderLaunch();
       emit("launch", mode, status);
     };
-    if (mode === "desktop") settle("ready");
+    // The other device's way: how to get there, and a way to start here.
+    if (flow.availability[mode] === "elsewhere") settle("elsewhere");
+    else if (mode === "desktop") settle("ready");
     else if (mode === "vr")
       settle(flow.availability.vr === "ready" ? "ready" : "missing");
     else if (permission) {
@@ -1222,6 +1262,12 @@ export function createMenuFlow(options = {}) {
     sound.unlock();
     // A motion-permission prompt must be requested inside the gesture itself.
     let permission;
+    // "Start here" on the other device's way: this device is that one
+    // after all (the detection was wrong), so its way starts now.
+    if (action === "here") {
+      updateSetting("device", mode === "gyro" ? "phone" : "desktop");
+      action = "mode";
+    }
     if (action === "mode" && mode === "gyro" && gyroNeedsPermission) {
       permission = DeviceOrientationEvent.requestPermission();
     }

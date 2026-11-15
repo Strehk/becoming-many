@@ -14,6 +14,7 @@
  *   page and the installation are untouched.
  */
 
+import qrcode from "qrcode-generator";
 import { Euler, Quaternion, Vector3 } from "three";
 import { createAutopilot } from "./autopilot.js";
 import { createCameraSteering } from "./camera-steering.js";
@@ -60,6 +61,33 @@ const runReady = new Promise((resolve, reject) => {
   resolveRun = { resolve, reject };
 });
 
+// Each controls card carries the other ways to steer on this device: a tap
+// switches card and setting alike (the settings mark these buttons too).
+for (const card of document.querySelectorAll(
+  ".app-intro--keys, .app-intro--tilt, .app-intro--touch, .app-intro--camera",
+)) {
+  const options = document.createElement("div");
+  options.className = "bm-seg app-intro__switch";
+  options.setAttribute("role", "group");
+  options.dataset.i18nLabel = "otherControls";
+  for (const [value, key] of [
+    ["keys", "controlKeys"],
+    ["camera", "controlCamera"],
+    ["wheel", "steeringWheel"],
+    ["turn", "steeringTurn"],
+    ["touch", "controlTouch"],
+  ]) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "bm-seg__option";
+    button.dataset.setting = "control";
+    button.dataset.value = value;
+    button.dataset.i18n = key;
+    options.append(button);
+  }
+  card.querySelector("[data-intro-next]")?.before(options);
+}
+
 const menu = createMenuFlow({
   loadSeconds: 3,
   paceSeconds: 2.4,
@@ -76,7 +104,6 @@ const menu = createMenuFlow({
     "control",
     "autopilot",
     "fullscreen",
-    "device",
   ],
   copy: {
     de: {
@@ -863,18 +890,59 @@ const canDraw = (() => {
 const vrAddress = `${window.location.host}${window.location.pathname.replace(/index\.html$/, "")}`;
 for (const node of document.querySelectorAll("[data-vr-address]"))
   node.textContent = vrAddress;
-document
-  .querySelector("[data-vr-copy]")
-  ?.addEventListener("click", async (event) => {
-    const button = event.currentTarget;
+for (const copy of document.querySelectorAll("[data-vr-copy]"))
+  copy.addEventListener("click", async () => {
     try {
       await navigator.clipboard.writeText(`https://${vrAddress}`);
-      button.dataset.copied = "";
-      window.setTimeout(() => delete button.dataset.copied, 1600);
+      copy.dataset.copied = "";
+      window.setTimeout(() => delete copy.dataset.copied, 1600);
     } catch {
       // Without clipboard access the address stays there to read.
     }
   });
+
+// 1d. The other device's way: on a computer the phone's way shows a code to
+// scan, on a phone the computer's way the address to open there. Both end
+// in "start here", for a device taken for the wrong one.
+const qrSlot = document.querySelector("[data-qr]");
+if (qrSlot) qrSlot.append(qrCode(`https://${vrAddress}`));
+/**
+ * The address as a QR code, in the air's ink. Square modules: round dots
+ * read like the air, but scanners missed them at small sizes.
+ */
+function qrCode(text) {
+  const code = qrcode(0, "M");
+  code.addData(text);
+  code.make();
+  const count = code.getModuleCount();
+  const quiet = 2;
+  const size = count + quiet * 2;
+  let modules = "";
+  for (let row = 0; row < count; row += 1)
+    for (let col = 0; col < count; col += 1)
+      if (code.isDark(row, col))
+        modules += `M${col + quiet} ${row + quiet}h1v1h-1z`;
+  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  svg.setAttribute("viewBox", `0 0 ${size} ${size}`);
+  svg.setAttribute("shape-rendering", "crispEdges");
+  svg.innerHTML = `<rect width="${size}" height="${size}" fill="#fff"/><path d="${modules}" fill="#202126"/>`;
+  return svg;
+}
+function renderOtherDevice() {
+  const { mode, status } = menu.launch;
+  if (status !== "elsewhere") return;
+  const toPhone = mode === "gyro";
+  const text = (selector, key) => {
+    for (const node of document.querySelectorAll(selector)) {
+      node.dataset.i18n = key;
+      node.textContent = menu.t(key);
+    }
+  };
+  text("[data-other-text]", toPhone ? "otherPhone" : "otherComputer");
+  text("[data-other-question]", toPhone ? "herePhone" : "hereComputer");
+  for (const node of document.querySelectorAll("[data-other-here]"))
+    node.dataset.mode = mode;
+}
 document
   .querySelector("[data-vr-recheck]")
   ?.addEventListener("click", async () => {
@@ -923,6 +991,8 @@ function applySettings(_settings, key) {
     else handOver();
   }
   if (key === "control" || key === "device") {
+    // Chosen on the opening's controls card: that card shows instead.
+    intro?.swap();
     // Chosen in the menu already: the model loads in the background now.
     if (settings.control === "camera") camera.preload();
     // The phone ways ask for the motion sensor inside this very click.
@@ -1013,15 +1083,17 @@ document.addEventListener(
 // 3. Entering: the same world simply begins to play.
 let entering = false;
 menu.on("launch", (mode, status) => {
-  // No motion sensor, or not allowed: a phone flies by touch instead.
+  renderOtherDevice();
+  // No motion sensor, or not allowed: the phone's way flies by touch
+  // instead (a finger, or the mouse on a computer taken for a phone).
   const byTouch =
-    mode === "gyro" &&
-    (status === "denied" || status === "missing") &&
-    navigator.maxTouchPoints > 0;
+    mode === "gyro" && (status === "denied" || status === "missing");
   if ((status !== "ready" && !byTouch) || entering || !run) return;
   entering = true;
-  // Without the sensor the phone ways fall back to touch by themselves.
+  // Without the sensor the phone ways fall back to touch; the setting says
+  // so too, and choosing the wheel again asks for the sensor once more.
   if (byTouch) {
+    menu.set("control", "touch");
     begin("gyro");
     return;
   }
@@ -1065,6 +1137,10 @@ for (const node of document.querySelectorAll("[data-intro-next]")) {
 /** The controls card for this way of flying. */
 function controlsCard() {
   const control = activeControl();
+  // A silent sensor flies by touch: the card's switch (and the settings)
+  // then say touch as well; choosing the wheel again asks once more.
+  if (control === "touch" && menu.settings.control !== "touch")
+    queueMicrotask(() => menu.set("control", "touch"));
   if (control === "touch") return document.querySelector(".app-intro--touch");
   if (control === "wheel" || control === "turn")
     return document.querySelector(".app-intro--tilt");
@@ -1126,6 +1202,21 @@ function startIntro(withCards) {
       state.card.dataset.state = "in";
       left = cards[index].seconds;
     },
+    /** Another way to steer was chosen: its card takes this one's place. */
+    swap() {
+      const card = cards[index];
+      if (!card?.pick) return;
+      const next = card.pick();
+      if (next === state.card) {
+        left = card.seconds;
+        return;
+      }
+      delete state.card.dataset.state;
+      card.node = next;
+      state.card = next;
+      next.dataset.state = "in";
+      left = card.seconds;
+    },
   };
   intro = state;
   state.advance();
@@ -1154,7 +1245,12 @@ window.addEventListener(
   (event) => {
     if (!intro || menu.screen !== "show") return;
     const target = event.target instanceof Element ? event.target : null;
-    if (target?.closest(".app-gear, .app-autopilot, .app-camera")) return;
+    if (
+      target?.closest(
+        ".app-gear, .app-autopilot, .app-camera, .app-intro__switch",
+      )
+    )
+      return;
     intro.advance();
   },
   true,
@@ -1162,6 +1258,12 @@ window.addEventListener(
 window.addEventListener("keydown", (event) => {
   if (!intro || menu.screen !== "show") return;
   if (event.code === "Space" || event.code === "Enter") {
+    // A focused controls button takes the key itself.
+    if (
+      event.target instanceof Element &&
+      event.target.closest(".app-intro__switch")
+    )
+      return;
     event.preventDefault();
     intro.advance();
   }

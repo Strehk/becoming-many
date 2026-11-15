@@ -245,6 +245,80 @@
   }
 }
 
+/* On a phone the headset's own browser is the only way: nothing streams
+   from a phone. */
+:root[data-device="phone"] .vr-guide {
+  grid-template-columns: 1fr;
+}
+
+:root[data-device="phone"] .vr-guide__stream {
+  display: none;
+}
+
+/* The device's own way in stands out, its status in ink. */
+.bm-mode[data-recommended] {
+  opacity: 1;
+}
+
+.bm-mode__status[data-status="recommended"] {
+  color: var(--bm-ink);
+}
+
+/* The other device's way: on a computer a code to scan for the phone, on a
+   phone the address to open on a computer; a quiet way to start here. */
+.other-device {
+  display: none;
+  justify-items: center;
+  gap: 12px;
+  width: min(420px, 92vw);
+  text-align: center;
+}
+
+:root[data-launch-status="elsewhere"] .other-device {
+  display: grid;
+}
+
+.other-device__code {
+  display: none;
+  width: clamp(132px, 22vh, 176px);
+  margin-bottom: 6px;
+}
+
+:root[data-launch-mode="gyro"] .other-device__code {
+  display: block;
+}
+
+/* A phone shows no code to itself. */
+:root[data-device="phone"] .other-device__code {
+  display: none;
+}
+
+.other-device__code svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.other-device__here {
+  margin: 22px 0 0;
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--bm-muted);
+}
+
+.other-device__here button {
+  margin-left: 0.3em;
+  padding: 2px 0;
+  border: 0;
+  background: none;
+  color: var(--bm-ink);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
 /* While the world is handed over, nothing on the launch screen leads back. */
 :root[data-handover] [data-screen="launch"] [data-action="menu"] {
   display: none;
@@ -515,6 +589,40 @@ section.legal {
   opacity: 0;
   transform: translate(-50%, calc(-50% - 8px));
   transition-duration: 0.6s;
+}
+
+/* The other ways to steer on this device, under the controls card: the
+   settings' buttons, the recommended one marked; only the card shown
+   takes clicks. */
+.app-intro__switch {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-top: 8px;
+  padding-bottom: 14px;
+  text-shadow: none;
+}
+
+.app-intro[data-state="in"] .app-intro__switch {
+  pointer-events: auto;
+}
+
+.app-intro__switch .bm-seg__option[data-recommended] {
+  position: relative;
+}
+
+.app-intro__switch .bm-seg__option[data-recommended]::after {
+  content: attr(data-tag);
+  position: absolute;
+  left: 50%;
+  top: calc(100% + 5px);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--bm-muted);
+  transform: translateX(-50%);
 }
 
 /* "Click to continue": quiet, breathing slowly under the card. */
