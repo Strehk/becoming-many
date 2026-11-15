@@ -512,7 +512,7 @@ export function createMenuSound(getVolume) {
       const tone = keep(
         new PolySynth(Synth, {
           oscillator: { type: "sine" },
-          envelope: { attack: 0.8, decay: 0.8, sustain: 0.25, release: 2.2 },
+          envelope: { attack: 0.35, decay: 0.8, sustain: 0.25, release: 2.2 },
           volume: -23,
         }),
       );
@@ -523,7 +523,9 @@ export function createMenuSound(getVolume) {
       tone.triggerAttackRelease(
         [degreeHertz(0, 0), degreeHertz(3, 0)],
         1.4,
-        t0 + Math.max(settle - 0.5, 0),
+        // Full at the moment the type takes over (air-title.js sets it
+        // 0.15 s after settle), not after it.
+        t0 + Math.max(settle + 0.15 - 0.35, 0),
         0.5,
       );
       window.setTimeout(
