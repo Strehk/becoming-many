@@ -486,7 +486,8 @@ export function createMenuSound(getVolume) {
       grains.chain(band, pan, graph.master);
       let last = 0;
       for (const landing of landings) {
-        const at = Math.max(t0 + landing.at, last + 0.006);
+        // A touch ahead of the eye: the ear hears the landing a moment early.
+        const at = Math.max(t0 + landing.at - 0.25, t0, last + 0.006);
         last = at;
         pan.pan.setValueAtTime(landing.pan * 0.85, at);
         grains.triggerAttackRelease(0.008, at, 0.35 + Math.random() * 0.4);
@@ -501,10 +502,13 @@ export function createMenuSound(getVolume) {
       airLevel.connect(airSend);
       airSend.connect(graph.hall);
       airBand.frequency.setValueAtTime(500, t0);
-      airBand.frequency.exponentialRampToValueAtTime(2600, t0 + settle);
+      airBand.frequency.exponentialRampToValueAtTime(
+        2600,
+        t0 + Math.max(0.1, settle - 0.25),
+      );
       airLevel.gain.setValueAtTime(0, t0);
-      airLevel.gain.linearRampToValueAtTime(0.3, t0 + settle * 0.7);
-      airLevel.gain.linearRampToValueAtTime(0, t0 + settle + 0.4);
+      airLevel.gain.linearRampToValueAtTime(0.3, t0 + settle * 0.55);
+      airLevel.gain.linearRampToValueAtTime(0, t0 + settle + 0.2);
       air.start(t0);
       air.stop(t0 + settle + 0.5);
       // The type stands: root and fifth, quietly and low, in the organ's
