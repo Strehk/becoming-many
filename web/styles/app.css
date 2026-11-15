@@ -245,6 +245,762 @@
   }
 }
 
+/* While the world is handed over, nothing on the launch screen leads back. */
+:root[data-handover] [data-screen="launch"] [data-action="menu"] {
+  display: none;
+}
+
+/* Flight is keyboard only: the experience screen keeps clicks to itself, so
+   the canvas never captures the pointer and the mouse stays free. */
+
+.app-gear {
+  position: absolute;
+  top: calc(14px + env(safe-area-inset-top));
+  right: calc(14px + env(safe-area-inset-right));
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.72);
+  color: #202126;
+  cursor: pointer;
+  pointer-events: auto;
+  opacity: 0.7;
+  transition: opacity 160ms ease;
+}
+
+.app-gear:hover,
+.app-gear:focus-visible {
+  opacity: 1;
+  outline: none;
+}
+
+.app-gear svg {
+  width: 24px;
+  height: 24px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* While flying with the pointer captured, the gear steps back. */
+:root[data-pointer-locked] .app-gear {
+  opacity: 0;
+}
+
+.app-settings__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+
+/* "To the menu" only makes sense inside the experience. */
+:root:not([data-in-show]) .app-settings__exit {
+  display: none;
+}
+
+/* The piece as one line of chapters: each segment is a chapter, as long as
+   it lasts; the played part fills in ink and a playhead marks now. Hovering
+   names the chapter and the moment under the pointer; a click jumps there. */
+.app-timeline {
+  display: grid;
+  gap: 14px;
+  width: min(520px, 92vw);
+  padding-top: 6px;
+  text-align: left;
+}
+
+:root:not([data-in-show]) .app-timeline {
+  display: none;
+}
+
+.app-timeline__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.app-timeline__label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--bm-muted);
+}
+
+.app-timeline__readout {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.app-timeline__chapter {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.app-timeline__time {
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  color: var(--bm-muted);
+}
+
+.app-timeline__track {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  height: 28px;
+  cursor: pointer;
+  outline: none;
+  touch-action: none;
+}
+
+.app-timeline__segment {
+  position: relative;
+  height: 4px;
+  overflow: hidden;
+  border-radius: 2px;
+  background: rgb(32 33 38 / 0.14);
+  transition: height 160ms ease;
+}
+
+.app-timeline__segment[data-current],
+.app-timeline__segment[data-hover] {
+  height: 8px;
+}
+
+.app-timeline__fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: var(--fill, 0%);
+  background: #202126;
+}
+
+.app-timeline__playhead {
+  position: absolute;
+  top: 50%;
+  left: var(--at, 0%);
+  width: 2px;
+  height: 18px;
+  border-radius: 1px;
+  background: #202126;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.app-timeline__track:focus-visible .app-timeline__playhead {
+  box-shadow: 0 0 0 3px rgb(32 33 38 / 0.18);
+}
+
+/* Legal notice and privacy: quiet links under the credits, and two plain
+   reading pages under the title. */
+.legal-links {
+  position: fixed;
+  padding: 4px 6px;
+  border-radius: 6px;
+  background: rgb(255 255 255 / 0.82);
+  right: calc(16px + env(safe-area-inset-right));
+  bottom: calc(12px + env(safe-area-inset-bottom));
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 11px;
+  color: var(--bm-muted);
+  text-shadow: var(--bm-halo);
+}
+
+/* While flying the corner is empty; the gear leads to the settings, where
+   the links are again. */
+:root[data-screen="show"] .legal-links,
+:root[data-screen="launch"] .legal-links {
+  display: none;
+}
+
+/* The legal pages are reading pages: the title steps back for the text. */
+:root[data-screen="imprint"] .bm-title,
+:root[data-screen="privacy"] .bm-title {
+  opacity: 0;
+}
+
+.legal-links button {
+  padding: 4px 2px;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+}
+
+.legal-links button:hover,
+.legal-links button:focus-visible {
+  color: #202126;
+  outline: none;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.legal__body {
+  width: min(640px, 92vw);
+  text-align: left;
+}
+
+.legal__title {
+  margin: 0 0 18px;
+  text-align: center;
+}
+
+section.legal {
+  place-content: start center;
+  padding-top: clamp(40px, 9vh, 96px);
+  padding-bottom: 56px;
+  overflow-y: auto;
+}
+
+.legal__heading {
+  margin: 22px 0 6px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--bm-muted);
+}
+
+.legal__text {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+/* The opening cards: centred like the launch screen (a small label, one
+   sentence), each rising in, staying a while and leaving again on its own
+   or at a click. */
+.app-intro {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  display: grid;
+  justify-items: center;
+  gap: 14px;
+  width: min(560px, calc(100vw - 32px));
+  text-align: center;
+  text-shadow: var(--bm-halo);
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, calc(-50% + 12px));
+  transition:
+    opacity 0.9s var(--bm-ease),
+    transform 1s var(--bm-ease);
+}
+
+.app-intro[data-state="in"] {
+  opacity: 1;
+  transform: translate(-50%, -50%);
+}
+
+.app-intro[data-state="out"] {
+  opacity: 0;
+  transform: translate(-50%, calc(-50% - 8px));
+  transition-duration: 0.6s;
+}
+
+/* "Click to continue": quiet, breathing slowly under the card. */
+.app-intro__next {
+  margin: 10px 0 0;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--bm-muted);
+  animation: next-breathe 2.8s ease-in-out infinite;
+}
+
+@keyframes next-breathe {
+  0%,
+  100% {
+    opacity: 0.45;
+  }
+
+  50% {
+    opacity: 1;
+  }
+}
+
+.app-intro__icon {
+  width: 34px;
+  height: 34px;
+  fill: none;
+  stroke: #202126;
+  stroke-width: 1.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* One controls card per way in: keys or the camera on the desktop, tilt on
+   the phone. */
+:root[data-flight-mode="gyro"] .app-intro--keys,
+:root[data-control="camera"] .app-intro--keys,
+:root:not([data-flight-mode="gyro"]) .app-intro--tilt,
+:root[data-flight-mode="gyro"] .app-intro--camera,
+:root:not([data-control="camera"]) .app-intro--camera {
+  display: none;
+}
+
+/* The camera card's figure flies through every position in turn: straight,
+   left, straight, right, straight, climb, straight, sink. The pair of arms
+   tilts for a turn; each arm swings for climbing and sinking. */
+.app-intro__icon--figure {
+  width: 46px;
+  height: 46px;
+}
+
+.app-wings,
+.app-wing {
+  transform-origin: 12px 10px;
+  animation: 10s ease-in-out infinite;
+}
+
+.app-wings {
+  animation-name: wings-turn;
+}
+
+.app-wing--left {
+  animation-name: wing-left;
+}
+
+.app-wing--right {
+  animation-name: wing-right;
+}
+
+@keyframes wings-turn {
+  0%,
+  6%,
+  28%,
+  32%,
+  54%,
+  100% {
+    transform: rotate(0deg);
+  }
+
+  12%,
+  22% {
+    transform: rotate(-24deg);
+  }
+
+  38%,
+  48% {
+    transform: rotate(24deg);
+  }
+}
+
+@keyframes wing-left {
+  0%,
+  54%,
+  72%,
+  76%,
+  94%,
+  100% {
+    transform: rotate(0deg);
+  }
+
+  60%,
+  68% {
+    transform: rotate(38deg);
+  }
+
+  82%,
+  90% {
+    transform: rotate(-32deg);
+  }
+}
+
+@keyframes wing-right {
+  0%,
+  54%,
+  72%,
+  76%,
+  94%,
+  100% {
+    transform: rotate(0deg);
+  }
+
+  60%,
+  68% {
+    transform: rotate(-38deg);
+  }
+
+  82%,
+  90% {
+    transform: rotate(32deg);
+  }
+}
+
+/* How the desktop flies is a question only the desktop asks. */
+:root[data-device="phone"] [data-setting-row="control"] {
+  display: none;
+}
+
+/* The camera's mirror: small, grey, in the corner, only while flying with
+   the camera on the desktop; above it the five positions, the one seen now
+   in ink. A button hides both; a small camera button brings them back. */
+.app-camera {
+  position: absolute;
+  left: calc(16px + env(safe-area-inset-left));
+  bottom: calc(16px + env(safe-area-inset-bottom));
+  display: none;
+  width: 240px;
+  pointer-events: auto;
+}
+
+:root[data-control="camera"][data-flight-mode="desktop"] .app-camera {
+  display: block;
+}
+
+.app-camera__panel {
+  display: grid;
+  gap: 6px;
+}
+
+.app-camera__poses {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  padding: 8px 4px 6px;
+  border-radius: 8px;
+  background: rgb(255 255 255 / 0.72);
+}
+
+.app-pose {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  color: #202126;
+  opacity: 0.32;
+  transition: opacity 0.25s ease;
+}
+
+.app-pose[data-active] {
+  opacity: 1;
+}
+
+.app-pose svg {
+  width: 26px;
+  height: 26px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.app-pose__label {
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.app-camera__frame {
+  position: relative;
+}
+
+.app-camera__mirror {
+  display: none;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  border-radius: 8px;
+  opacity: 0.85;
+}
+
+:root[data-camera-state="ready"] .app-camera__mirror {
+  display: block;
+}
+
+.app-camera__hide,
+.app-camera__show {
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.72);
+  color: #202126;
+  cursor: pointer;
+  opacity: 0.7;
+  transition: opacity 160ms ease;
+}
+
+.app-camera__hide {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 28px;
+  height: 28px;
+}
+
+.app-camera__show {
+  width: 44px;
+  height: 44px;
+}
+
+.app-camera__hide:hover,
+.app-camera__hide:focus-visible,
+.app-camera__show:hover,
+.app-camera__show:focus-visible {
+  opacity: 1;
+  outline: none;
+}
+
+.app-camera__hide svg,
+.app-camera__show svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.app-camera__show svg {
+  width: 20px;
+  height: 20px;
+}
+
+:root[data-camera-hidden] .app-camera__panel,
+:root:not([data-camera-hidden]) .app-camera__show {
+  display: none;
+}
+
+.app-camera__note {
+  display: none;
+  margin: 0;
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: rgb(255 255 255 / 0.82);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--bm-muted);
+}
+
+:root[data-camera-state="starting"] .app-camera__note--starting,
+:root[data-camera-state="denied"] .app-camera__note--denied,
+:root[data-camera-state="failed"] .app-camera__note--denied {
+  display: block;
+}
+
+/* The autopilot's mark: beside the gear while it is on, faint while the
+   visitor steers themselves. */
+.app-autopilot {
+  position: absolute;
+  top: calc(14px + env(safe-area-inset-top));
+  right: calc(66px + env(safe-area-inset-right));
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  height: 44px;
+  padding: 0 14px 0 12px;
+  border: 0;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.72);
+  color: #202126;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  cursor: pointer;
+  pointer-events: auto;
+  opacity: 0.7;
+  transition: opacity 0.5s var(--bm-ease);
+}
+
+.app-autopilot:hover,
+.app-autopilot:focus-visible {
+  opacity: 1;
+  outline: none;
+}
+
+.app-autopilot svg {
+  width: 15px;
+  height: 15px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linejoin: round;
+}
+
+:root:not([data-autopilot]) .app-autopilot {
+  display: none;
+}
+
+:root[data-autopilot-state="manual"] .app-autopilot {
+  opacity: 0.28;
+}
+
+/* How to steer the phone is a question only a phone asks. */
+:root:not([data-device="phone"]) [data-setting-row="steering"] {
+  display: none;
+}
+
+.app-tilt {
+  animation: tilt-rock 2.4s ease-in-out infinite;
+  transform-origin: 50% 80%;
+}
+
+@keyframes tilt-rock {
+  0%,
+  100% {
+    transform: rotate(-14deg);
+  }
+
+  50% {
+    transform: rotate(14deg);
+  }
+}
+
+/* Keycaps: W A S D and the arrows, laid out as on a keyboard. */
+.app-keys {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  margin-bottom: 4px;
+}
+
+.app-keys__group {
+  display: grid;
+  grid-template-columns: repeat(3, 30px);
+  grid-template-areas:
+    ". up ."
+    "left down right";
+  gap: 4px;
+}
+
+.app-keys__or {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--bm-muted);
+}
+
+.app-key {
+  display: grid;
+  place-items: center;
+  height: 30px;
+  border: 1.5px solid #202126;
+  border-radius: 6px;
+  background: rgb(255 255 255 / 0.7);
+  font-size: 13px;
+  font-weight: 600;
+  color: #202126;
+}
+
+.app-key--up {
+  grid-area: up;
+}
+
+.app-key--left {
+  grid-area: left;
+}
+
+.app-key--down {
+  grid-area: down;
+}
+
+.app-key--right {
+  grid-area: right;
+}
+
+.app-key svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.app-keys__group--arrows .app-key--left svg {
+  transform: rotate(-90deg);
+}
+
+.app-keys__group--arrows .app-key--down svg {
+  transform: rotate(180deg);
+}
+
+.app-keys__group--arrows .app-key--right svg {
+  transform: rotate(90deg);
+}
+
+/* Without a fullscreen API (the iPhone), the setting is not offered. */
+:root[data-no-fullscreen] [data-setting-row="fullscreen"] {
+  display: none;
+}
+
+/* The piece's end credits: laid out like the credits page, under the title
+   at the menu's size, fixed to the screen. */
+.plain-marker section[data-screen="ending"] {
+  top: calc(var(--title-bottom, 40vh) + 8px);
+  place-content: start center;
+  gap: clamp(14px, 2.4vh, 24px);
+  padding-top: clamp(20px, 4vh, 48px);
+  padding-bottom: 48px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 22px);
+  mask-image: linear-gradient(to bottom, transparent 0, #000 22px);
+}
+
+/* The stand-in spinner before the world has loaded (app/early-spinner.js). */
+.early-spinner {
+  position: fixed;
+  inset: 0;
+  z-index: 2;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+/* Back from the experience, the menu waits until the title has formed. */
+:root[data-awaiting-title] section[data-screen="menu"].is-active {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* At the end the title forms first; the credits, the way back and the legal
+   links fade in slowly once it stands. */
+section[data-screen="ending"] > * {
+  opacity: 0;
+  transition: opacity 3.4s ease-in-out 0.5s;
+}
+
+:root[data-ending-credits] section[data-screen="ending"] > * {
+  opacity: 1;
+}
+
+:root[data-screen="ending"]:not([data-ending-credits]) .legal-links {
+  opacity: 0;
+}
+
+.legal-links {
+  transition: opacity 3.4s ease-in-out 0.5s;
+}
+
 /* Over the failure page the legal links stay reachable. */
 :root[data-failed] .legal-links {
   z-index: 70;
