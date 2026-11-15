@@ -551,10 +551,8 @@ section.legal {
 
 /* One controls card per way in: keys or the camera on the desktop, tilt on
    the phone. */
-:root[data-flight-mode="gyro"] .app-intro--keys,
-:root[data-control="camera"] .app-intro--keys,
-:root:not([data-flight-mode="gyro"]) .app-intro--tilt,
-:root[data-flight-mode="gyro"] .app-intro--camera,
+:root:not([data-control="keys"]) .app-intro--keys,
+:root:not([data-control="wheel"]):not([data-control="turn"]) .app-intro--tilt,
 :root:not([data-control="camera"]) .app-intro--camera {
   display: none;
 }
@@ -648,11 +646,6 @@ section.legal {
   }
 }
 
-/* How the desktop flies is a question only the desktop asks. */
-:root[data-device="phone"] [data-setting-row="control"] {
-  display: none;
-}
-
 /* The camera's mirror: small, grey, in the corner, only while flying with
    the camera on the desktop; above it the five positions, the one seen now
    in ink. A button hides both; a small camera button brings them back. */
@@ -665,7 +658,7 @@ section.legal {
   pointer-events: auto;
 }
 
-:root[data-control="camera"][data-flight-mode="desktop"] .app-camera {
+:root[data-control="camera"][data-in-show] .app-camera {
   display: block;
 }
 
@@ -851,11 +844,6 @@ section.legal {
   opacity: 0.28;
 }
 
-/* How to steer the phone is a question only a phone asks. */
-:root:not([data-device="phone"]) [data-setting-row="steering"] {
-  display: none;
-}
-
 .app-tilt {
   animation: tilt-rock 2.4s ease-in-out infinite;
   transform-origin: 50% 80%;
@@ -905,11 +893,11 @@ section.legal {
   }
 }
 
-:root[data-steering="turn"] .app-tilt {
+:root[data-control="turn"] .app-tilt {
   display: none;
 }
 
-:root[data-steering="turn"] .app-turn {
+:root[data-control="turn"] .app-turn {
   display: block;
 }
 
@@ -1161,12 +1149,8 @@ section[data-screen="ending"] > * {
   display: none;
 }
 
-:root[data-flight-mode="touch"] .app-intro--touch {
+:root[data-control="touch"] .app-intro--touch {
   display: grid;
-}
-
-:root[data-flight-mode="touch"] .app-intro--keys {
-  display: none;
 }
 
 .app-intro--touch .app-intro__icon circle:first-child {

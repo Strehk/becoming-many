@@ -622,9 +622,38 @@
   }
 }
 
-/* Ways in this device cannot take stay visible but greyed out. */
-.bm-mode:disabled {
+/* Ways in this device seems not to take are greyed out, but stay possible:
+   the detection can be wrong. */
+.bm-mode[data-unsuited] {
   opacity: 0.32;
-  cursor: default;
-  pointer-events: none;
+}
+
+.bm-mode[data-unsuited]:hover,
+.bm-mode[data-unsuited]:focus-visible {
+  opacity: 0.6;
+}
+
+/* A setting with a sentence under it (the controls): the label above, the
+   options wrapping below, what the chosen one does underneath. */
+.bm-setting--explained {
+  display: grid;
+  justify-items: start;
+  gap: 10px;
+  padding: 14px 0;
+}
+
+.bm-setting--explained .bm-seg {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.bm-setting__about {
+  min-height: 2.9em;
+  margin: 0;
+  max-width: 52ch;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.45;
+  color: var(--bm-muted);
+  text-align: left;
 }

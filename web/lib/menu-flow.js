@@ -113,6 +113,16 @@ const COPY = {
     control: "Steuerung",
     controlKeys: "Tastatur",
     controlCamera: "Kamera",
+    controlTouch: "Touch",
+    aboutKeys: "Flieg mit W A S D oder den Pfeiltasten.",
+    aboutCamera:
+      "Deine Arme sind Flügel vor der Webcam: neigen für Kurven, heben zum Steigen, senken zum Sinken.",
+    aboutWheel:
+      "Dreh das Handy wie ein Lenkrad für Kurven, kipp es vor und zurück zum Sinken und Steigen.",
+    aboutTurn:
+      "Schau dich mit dem Handy um wie in einem 360°-Video. Du fliegst, wohin du schaust.",
+    aboutTouch:
+      "Zieh mit dem Finger oder der Maus über den Bildschirm: zur Seite für Kurven, hoch und runter zum Steigen und Sinken.",
     reducedMotion: "Weniger Bewegung",
     on: "An",
     off: "Aus",
@@ -285,6 +295,16 @@ const COPY = {
     control: "Controls",
     controlKeys: "Keyboard",
     controlCamera: "Camera",
+    controlTouch: "Touch",
+    aboutKeys: "Fly with W A S D or the arrow keys.",
+    aboutCamera:
+      "Your arms are wings in front of the webcam: tilt them to turn, raise them to climb, lower them to sink.",
+    aboutWheel:
+      "Turn the phone like a steering wheel to curve, tip it forward and back to sink and climb.",
+    aboutTurn:
+      "Look around with your phone, like in a 360° video. You fly wherever you look.",
+    aboutTouch:
+      "Drag your finger or the mouse across the screen: sideways to turn, up and down to climb and sink.",
     reducedMotion: "Reduce motion",
     on: "On",
     off: "Off",
@@ -401,7 +421,6 @@ const DEFAULT_SETTINGS = {
   subtitles: true,
   quality: "high",
   invert: false,
-  steering: "wheel",
   autopilot: false,
   fullscreen: true,
   control: "keys",
@@ -409,13 +428,33 @@ const DEFAULT_SETTINGS = {
 };
 const QUALITY_SCALE = { low: 0.4, mid: 0.7, high: 1 };
 
+/** Every way to steer outside a headset, in the settings' order. */
+export const CONTROLS = ["keys", "camera", "wheel", "turn", "touch"];
+
 function readSettings() {
+  let stored = {};
   try {
-    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "{}");
-    return { ...DEFAULT_SETTINGS, ...stored };
+    stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "{}");
   } catch {
-    return { ...DEFAULT_SETTINGS };
+    // Unreadable storage starts from the defaults.
   }
+  const settings = { ...DEFAULT_SETTINGS, ...stored };
+  // One setting steers now; a phone starts with the wheel, and an earlier
+  // phone choice (360°) carries over.
+  const phone = window.matchMedia("(pointer: coarse)").matches;
+  if (!stored.controlChosen) {
+    settings.control = phone
+      ? stored.steering === "turn"
+        ? "turn"
+        : "wheel"
+      : CONTROLS.includes(stored.control)
+        ? stored.control
+        : "keys";
+  }
+  if (!CONTROLS.includes(settings.control))
+    settings.control = phone ? "wheel" : "keys";
+  delete settings.steering;
+  return settings;
 }
 
 function writeSettings(settings) {
@@ -463,8 +502,14 @@ function icon(name) {
 
 function buildSettings(slot) {
   const list = element("div", "bm-settings");
-  const segmented = (key, options) => {
-    const row = element("div", "bm-setting", { "data-setting-row": key });
+  // explained: a wide row whose chosen (or pointed-at) option is described
+  // under it, for choices that need a sentence.
+  const segmented = (key, options, explained = false) => {
+    const row = element(
+      "div",
+      explained ? "bm-setting bm-setting--explained" : "bm-setting",
+      { "data-setting-row": key },
+    );
     const label = element("span", "bm-setting__label", { "data-i18n": key });
     const group = element("div", "bm-seg", { role: "group" });
     for (const [value, copyKey, literal] of options) {
@@ -478,6 +523,10 @@ function buildSettings(slot) {
       group.append(button);
     }
     row.append(label, group);
+    if (explained)
+      row.append(
+        element("p", "bm-setting__about", { "data-setting-about": key }),
+      );
     return row;
   };
   const toggle = (key) => {
@@ -529,15 +578,18 @@ function buildSettings(slot) {
       ["high", "high"],
     ]),
     toggle("invert"),
-    segmented("steering", [
-      ["wheel", "steeringWheel"],
-      ["turn", "steeringTurn"],
-    ]),
+    segmented(
+      "control",
+      [
+        ["keys", "controlKeys"],
+        ["camera", "controlCamera"],
+        ["wheel", "steeringWheel"],
+        ["turn", "steeringTurn"],
+        ["touch", "controlTouch"],
+      ],
+      true,
+    ),
     toggle("autopilot"),
-    segmented("control", [
-      ["keys", "controlKeys"],
-      ["camera", "controlCamera"],
-    ]),
     toggle("fullscreen"),
     toggle("reducedMotion"),
   );
@@ -821,7 +873,41 @@ export function createMenuFlow(options = {}) {
     renderLaunch();
   }
 
+  /** The sentence under an explained setting: what its option does. */
+  const ABOUT = {
+    keys: "aboutKeys",
+    camera: "aboutCamera",
+    wheel: "aboutWheel",
+    turn: "aboutTurn",
+    touch: "aboutTouch",
+  };
+  function renderAbout(key, value) {
+    for (const node of document.querySelectorAll(
+      `[data-setting-about="${key}"]`,
+    ))
+      node.textContent = ABOUT[value] ? flow.t(ABOUT[value]) : "";
+  }
+  // On a screen with a pointer the sentence follows the option pointed at,
+  // like the menu's hint line; it returns to the chosen one on leaving.
+  document.addEventListener("pointerover", (event) => {
+    if (event.pointerType === "touch") return;
+    const option =
+      event.target instanceof Element
+        ? event.target.closest(".bm-setting--explained .bm-seg__option")
+        : null;
+    if (option) renderAbout(option.dataset.setting, option.dataset.value);
+  });
+  document.addEventListener("pointerout", (event) => {
+    const option =
+      event.target instanceof Element
+        ? event.target.closest(".bm-setting--explained .bm-seg__option")
+        : null;
+    if (option)
+      renderAbout(option.dataset.setting, settings[option.dataset.setting]);
+  });
+
   function renderSettings() {
+    renderAbout("control", settings.control);
     for (const control of document.querySelectorAll("[data-setting]")) {
       const key = control.dataset.setting;
       const value = settings[key];
@@ -848,10 +934,15 @@ export function createMenuFlow(options = {}) {
 
   function updateSetting(key, value) {
     settings[key] = value;
+    // A chosen way of steering is kept, whatever the device is taken for.
+    if (key === "control") settings.controlChosen = true;
     input.invert = settings.invert;
     writeSettings(settings);
     renderSettings();
-    if (key === "language") applyLanguage();
+    if (key === "language") {
+      applyLanguage();
+      renderAbout("control", settings.control);
+    }
     if (key === "volume") sound.setVolume(value);
     emit("settings", settings, key);
   }
@@ -919,6 +1010,8 @@ export function createMenuFlow(options = {}) {
       });
   }
   flow.recheckVr = checkVr;
+  /** Change a setting as its control would (the page's own choices). */
+  flow.set = (key, value) => updateSetting(key, value);
 
   function renderAvailability() {
     const copyKey = {
@@ -935,9 +1028,12 @@ export function createMenuFlow(options = {}) {
       node.dataset.status = status;
       const button = node.closest("[data-mode]");
       button?.setAttribute("data-available", String(status === "ready"));
-      // A way in this kind of device can never take is greyed out.
-      if (button)
-        button.disabled = status === "phoneOnly" || status === "notOnPhone";
+      // A way in this kind of device seems not to take is greyed out, but
+      // stays possible: the detection can be wrong.
+      button?.toggleAttribute(
+        "data-unsuited",
+        status === "phoneOnly" || status === "notOnPhone",
+      );
     }
   }
 

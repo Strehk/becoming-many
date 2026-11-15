@@ -74,10 +74,9 @@ const menu = createMenuFlow({
     "volume",
     "quality",
     "invert",
-    "steering",
+    "control",
     "autopilot",
     "fullscreen",
-    "control",
   ],
   copy: {
     de: {
@@ -294,11 +293,19 @@ const pitchOf = (q) => {
   look.forward.set(0, 0, -1).applyQuaternion(q);
   return Math.asin(Math.max(-1, Math.min(1, look.forward.y)));
 };
-const directLook = () =>
-  menu.inShow &&
-  flightMode === "gyro" &&
-  menu.settings.steering === "turn" &&
-  performance.now() - orientation.at < 1000;
+/**
+ * How the visitor steers right now: the controls setting (keys, camera,
+ * wheel, 360°, touch), whatever the device was taken for. The two phone
+ * ways need the motion sensor; while it is silent, a finger steers.
+ */
+function activeControl() {
+  if (flightMode === "vr") return "vr";
+  const chosen = menu.settings.control;
+  const sensing = performance.now() - orientation.at < 1000;
+  if ((chosen === "wheel" || chosen === "turn") && !sensing) return "touch";
+  return chosen;
+}
+const directLook = () => menu.inShow && activeControl() === "turn";
 /** Every frame after flight: set the view, note where body and view point. */
 function updateLook(camera) {
   if (!directLook()) {
@@ -337,10 +344,7 @@ const touch = { id: null, x0: 0, y0: 0, x: 0, y: 0 };
 const TOUCH_RANGE = 0.2; // Share of the shorter screen side for a full turn.
 const touchPad = document.querySelector("[data-touch-pad]");
 const touchKnob = document.querySelector("[data-touch-knob]");
-const touchSteers = () =>
-  menu.inShow &&
-  (flightMode === "touch" ||
-    (flightMode === "gyro" && performance.now() - orientation.at > 1000));
+const touchSteers = () => menu.inShow && activeControl() === "touch";
 function endTouch() {
   touch.id = null;
   touch.x = 0;
@@ -350,7 +354,11 @@ function endTouch() {
 window.addEventListener(
   "pointerdown",
   (event) => {
-    if (event.pointerType !== "touch" || touch.id !== null) return;
+    // A finger, or the mouse when touch is the chosen way.
+    const finger =
+      event.pointerType === "touch" ||
+      (menu.settings.control === "touch" && event.button === 0);
+    if (!finger || touch.id !== null) return;
     if (!flying() || !touchSteers() || intro) return;
     const target = event.target instanceof Element ? event.target : null;
     if (target?.closest(".app-gear, .app-autopilot, .app-camera")) return;
@@ -387,13 +395,15 @@ const camera = createCameraSteering({
     root.dataset.cameraState = state;
   },
 });
-const usesCamera = () =>
-  flightMode === "desktop" && menu.settings.control === "camera";
+const usesCamera = () => activeControl() === "camera";
 // The positions above the mirror: the one seen now in ink.
 const poseNodes = document.querySelectorAll("[data-pose]");
 let shownPose;
 function renderPose() {
   requestAnimationFrame(renderPose);
+  // The page's styles follow how the visitor steers right now.
+  const control = menu.inShow ? activeControl() : menu.settings.control;
+  if (root.dataset.control !== control) root.dataset.control = control;
   const pose = usesCamera() ? camera.pose : null;
   if (pose === shownPose) return;
   shownPose = pose;
@@ -468,7 +478,8 @@ function watchTakeover(sensing) {
   const winged = usesCamera() && camera.spread;
   let steering = pressed.size > 0 || winged || touch.id !== null;
   if (steering) takeover.movedAt = now;
-  if (flightMode === "gyro" && sensing) {
+  const control = activeControl();
+  if ((control === "wheel" || control === "turn") && sensing) {
     const pose = phonePose();
     if (!takeover.still) takeover.still = pose;
     else if (poseChange(pose, takeover.still) > TAKEOVER.stillDegrees) {
@@ -478,7 +489,7 @@ function watchTakeover(sensing) {
     neutral ??= pose;
     // In 360° the phone only looks around: the autopilot keeps flying.
     steering =
-      menu.settings.steering !== "turn" &&
+      control !== "turn" &&
       Math.max(
         Math.abs(pose.side - neutral.side),
         Math.abs(pose.forward - neutral.forward),
@@ -503,7 +514,7 @@ function handOver() {
   keys.yawRate = steer.rightTilt * 0.8;
   tilt.forward = -steer.forwardTilt;
   tilt.side =
-    menu.settings.steering === "turn"
+    activeControl() === "turn"
       ? steer.rightTilt
       : steer.rightTilt / GYRO.maxTurn;
   root.dataset.autopilotState = "manual";
@@ -530,11 +541,12 @@ const preludeInput = {
       watchTakeover(sensing);
       if (takeover.flying) return autopilot.steer(dt, steer);
     }
-    if (flightMode === "gyro" && sensing) {
+    const control = activeControl();
+    if (control === "wheel" || control === "turn") {
       const now = screenTilt();
       neutral ??= now;
       const smooth = ease(GYRO.tau, dt);
-      if (menu.settings.steering === "turn") {
+      if (control === "turn") {
         // 360°: the view already follows the phone directly (directLook);
         // the flight turns and pitches toward wherever the visitor looks.
         if (!flying() || look.bodyYaw === null) {
@@ -903,24 +915,29 @@ function applySettings(_settings, key) {
   // The autopilot shows as a small symbol; steering changes the card.
   if (settings.autopilot) root.dataset.autopilot = "";
   else delete root.dataset.autopilot;
-  root.dataset.steering = settings.steering;
   for (const node of document.querySelectorAll("[data-tilt-text]")) {
     node.dataset.i18n =
-      settings.steering === "turn" ? "introTiltTurn" : "introTilt";
+      settings.control === "turn" ? "introTiltTurn" : "introTilt";
     node.textContent = menu.t(node.dataset.i18n);
   }
   if (key === "autopilot") {
     if (settings.autopilot) resetTakeover();
     else handOver();
   }
-  root.dataset.control = settings.control;
   if (key === "control") {
     // Chosen in the menu already: the model loads in the background now.
     if (settings.control === "camera") camera.preload();
+    // The phone ways ask for the motion sensor inside this very click.
+    if (
+      (settings.control === "wheel" || settings.control === "turn") &&
+      typeof DeviceOrientationEvent?.requestPermission === "function"
+    )
+      DeviceOrientationEvent.requestPermission().catch(() => {});
     syncCamera();
+    // Straight on is wherever the visitor faces now.
+    look.offset = null;
+    neutral = null;
   }
-  // Switching to 360° takes the way the visitor faces now as straight on.
-  if (key === "steering") look.offset = null;
   if (!run) return;
   // High quality draws the air round, as it once was; the borrowed stand-ins
   // and the title's ink follow so nothing changes shape mid-flight.
@@ -1005,8 +1022,9 @@ menu.on("launch", (mode, status) => {
     navigator.maxTouchPoints > 0;
   if ((status !== "ready" && !byTouch) || entering || !run) return;
   entering = true;
+  // Without the sensor the phone ways fall back to touch by themselves.
   if (byTouch) {
-    begin("touch");
+    begin("gyro");
     return;
   }
   // VR must be requested inside this very click.
@@ -1048,10 +1066,11 @@ for (const node of document.querySelectorAll("[data-intro-next]")) {
 
 /** The controls card for this way of flying. */
 function controlsCard() {
-  if (flightMode === "touch")
-    return document.querySelector(".app-intro--touch");
-  if (flightMode === "gyro") return document.querySelector(".app-intro--tilt");
-  if (usesCamera()) return document.querySelector(".app-intro--camera");
+  const control = activeControl();
+  if (control === "touch") return document.querySelector(".app-intro--touch");
+  if (control === "wheel" || control === "turn")
+    return document.querySelector(".app-intro--tilt");
+  if (control === "camera") return document.querySelector(".app-intro--camera");
   return keysCard;
 }
 
@@ -1152,6 +1171,14 @@ window.addEventListener("keydown", (event) => {
 
 /** Glide up to the show's speed, show the opening, then let the piece play. */
 function begin(mode = "desktop") {
+  // The way in says which device it is: a computer's controls on the phone
+  // way (or the reverse) give way to that way's own.
+  const fits = {
+    desktop: ["keys", "camera", "touch"],
+    gyro: ["wheel", "turn", "touch"],
+  }[mode];
+  if (fits && !fits.includes(menu.settings.control))
+    menu.set("control", mode === "gyro" ? "wheel" : "keys");
   root.dataset.handover = "";
   // Nothing to read while the piece begins: the launch screen stays empty.
   for (const node of document.querySelectorAll(
@@ -1178,18 +1205,7 @@ function begin(mode = "desktop") {
     look.offset = null;
     resetTakeover();
     syncCamera();
-    if (mode === "gyro" || mode === "touch")
-      navigator.wakeLock?.request("screen").catch(() => {});
-    // A phone whose sensor stays silent flies by touch.
-    if (mode === "gyro") {
-      const askedAt = performance.now();
-      window.setTimeout(() => {
-        if (flightMode === "gyro" && orientation.at < askedAt) {
-          flightMode = "touch";
-          root.dataset.flightMode = "touch";
-        }
-      }, 1500);
-    }
+    if (mode === "gyro") navigator.wakeLock?.request("screen").catch(() => {});
     menu.go("show");
     // Keep the launch screen's controls hidden until it has faded out.
     window.setTimeout(() => delete root.dataset.handover, 1200);
