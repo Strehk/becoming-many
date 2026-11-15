@@ -1154,3 +1154,84 @@ section[data-screen="ending"] > * {
 .credits-back::before {
   display: none;
 }
+
+/* Touch steering: the card for it, the ring where a finger lands and the
+   dot that follows it; and no page gestures while flying by touch. */
+.app-intro--touch {
+  display: none;
+}
+
+:root[data-flight-mode="touch"] .app-intro--touch {
+  display: grid;
+}
+
+:root[data-flight-mode="touch"] .app-intro--keys {
+  display: none;
+}
+
+.app-intro--touch .app-intro__icon circle:first-child {
+  stroke-dasharray: 2 3;
+}
+
+.app-touch-dot {
+  fill: #202126;
+  animation: touch-dot 4s ease-in-out infinite;
+}
+
+@keyframes touch-dot {
+  0%,
+  100% {
+    transform: translate(0, 0);
+  }
+
+  15%,
+  22% {
+    transform: translate(-7px, 0);
+  }
+
+  40%,
+  47% {
+    transform: translate(7px, 0);
+  }
+
+  65%,
+  72% {
+    transform: translate(0, -7px);
+  }
+
+  85%,
+  92% {
+    transform: translate(0, 7px);
+  }
+}
+
+.touch-pad {
+  position: fixed;
+  z-index: 15;
+  width: 120px;
+  height: 120px;
+  border: 1.5px solid rgb(32 33 38 / 0.3);
+  border-radius: 50%;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+}
+
+.touch-pad[hidden] {
+  display: none;
+}
+
+.touch-pad__knob {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: rgb(32 33 38 / 0.7);
+  transform: translate(-50%, -50%);
+}
+
+:root[data-in-show] body {
+  overscroll-behavior: none;
+  touch-action: none;
+}

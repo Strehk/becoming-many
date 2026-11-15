@@ -184,6 +184,8 @@ const COPY = {
     cameraDenied: "Keine Kamera – du fliegst mit der Tastatur.",
     introTilt:
       "Dreh dein Handy wie ein Lenkrad für Kurven. Kipp es vor und zurück zum Sinken und Steigen.",
+    introTouch:
+      "Zieh mit dem Finger über den Bildschirm: zur Seite für Kurven, hoch und runter zum Steigen und Sinken.",
     introTiltTurn:
       "Schau dich mit dem Handy um wie in einem 360°-Video. Du fliegst dorthin, wohin du schaust.",
     or: "oder",
@@ -351,6 +353,8 @@ const COPY = {
     cameraDenied: "No camera – you fly with the keys.",
     introTilt:
       "Turn your phone like a steering wheel to curve. Tip it forward and back to sink and climb.",
+    introTouch:
+      "Drag your finger across the screen: sideways to turn, up and down to climb and sink.",
     introTiltTurn:
       "Look around with your phone, like in a 360° video. You fly wherever you look.",
     or: "or",

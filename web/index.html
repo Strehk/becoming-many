@@ -284,6 +284,15 @@
         <p class="launch__text" data-i18n="introTilt" data-tilt-text></p>
         <p class="app-intro__next" data-intro-next></p>
       </div>
+      <div class="app-intro app-intro--touch">
+        <!-- A finger's ring and dot, the dot drawing the four directions. -->
+        <svg class="app-intro__icon" viewBox="0 0 32 32" aria-hidden="true">
+          <circle cx="16" cy="16" r="12"></circle>
+          <circle class="app-touch-dot" cx="16" cy="16" r="3.5"></circle>
+        </svg>
+        <p class="launch__text" data-i18n="introTouch"></p>
+        <p class="app-intro__next" data-intro-next></p>
+      </div>
       <div class="app-intro app-intro--camera">
         <!-- A figure with its arms as wings, going through all five
              positions: straight, left, right, climb, sink. -->
@@ -531,6 +540,11 @@
         data-i18n="backToMenu"
       ></button>
     </section>
+
+    <!-- Touch steering: a ring where the finger landed, a dot under it. -->
+    <div class="touch-pad" data-touch-pad hidden>
+      <span class="touch-pad__knob" data-touch-knob></span>
+    </div>
 
     <!-- On a phone, pages taller than the screen keep a way back in the
          corner, where the gear sits in the experience. -->

@@ -330,6 +330,55 @@ const tilt = { side: 0, forward: 0 };
 
 const steer = { forwardTilt: 0, rightTilt: 0 };
 
+// On a phone whose motion sensor is missing or not allowed, a finger flies:
+// drag sideways to turn, up and down to climb and sink, from wherever it
+// lands; letting go eases back, as the keys do. A ring and a dot show it.
+const touch = { id: null, x0: 0, y0: 0, x: 0, y: 0 };
+const TOUCH_RANGE = 0.2; // Share of the shorter screen side for a full turn.
+const touchPad = document.querySelector("[data-touch-pad]");
+const touchKnob = document.querySelector("[data-touch-knob]");
+const touchSteers = () =>
+  menu.inShow &&
+  (flightMode === "touch" ||
+    (flightMode === "gyro" && performance.now() - orientation.at > 1000));
+function endTouch() {
+  touch.id = null;
+  touch.x = 0;
+  touch.y = 0;
+  if (touchPad) touchPad.hidden = true;
+}
+window.addEventListener(
+  "pointerdown",
+  (event) => {
+    if (event.pointerType !== "touch" || touch.id !== null) return;
+    if (!flying() || !touchSteers() || intro) return;
+    const target = event.target instanceof Element ? event.target : null;
+    if (target?.closest(".app-gear, .app-autopilot, .app-camera")) return;
+    touch.id = event.pointerId;
+    touch.x0 = event.clientX;
+    touch.y0 = event.clientY;
+    if (touchPad) {
+      touchPad.style.left = `${event.clientX}px`;
+      touchPad.style.top = `${event.clientY}px`;
+      touchKnob.style.transform = "translate(-50%, -50%)";
+      touchPad.hidden = false;
+    }
+  },
+  true,
+);
+window.addEventListener("pointermove", (event) => {
+  if (event.pointerId !== touch.id) return;
+  const range = Math.min(window.innerWidth, window.innerHeight) * TOUCH_RANGE;
+  const clamp = (value) => Math.max(-1, Math.min(1, value));
+  touch.x = clamp((event.clientX - touch.x0) / range);
+  touch.y = clamp((event.clientY - touch.y0) / range);
+  touchKnob.style.transform = `translate(calc(-50% + ${touch.x * 48}px), calc(-50% + ${touch.y * 48}px))`;
+});
+for (const type of ["pointerup", "pointercancel"])
+  window.addEventListener(type, (event) => {
+    if (event.pointerId === touch.id) endTouch();
+  });
+
 // On the desktop the body can fly instead of the keys: the arms are wings
 // in front of the webcam (a setting). Keys still steer whenever pressed.
 const camera = createCameraSteering({
@@ -417,7 +466,7 @@ const poseChange = (a, b) =>
 function watchTakeover(sensing) {
   const now = performance.now();
   const winged = usesCamera() && camera.spread;
-  let steering = pressed.size > 0 || winged;
+  let steering = pressed.size > 0 || winged || touch.id !== null;
   if (steering) takeover.movedAt = now;
   if (flightMode === "gyro" && sensing) {
     const pose = phonePose();
@@ -521,10 +570,23 @@ const preludeInput = {
       keys.pitchRate = 0;
       return steer;
     }
-    const lateral =
-      Number(held(FLIGHT_KEYS.right)) - Number(held(FLIGHT_KEYS.left));
-    const vertical =
-      Number(held(FLIGHT_KEYS.up)) - Number(held(FLIGHT_KEYS.down));
+    // Keys, or a finger dragging on a phone without its motion sensor.
+    const lateral = Math.max(
+      -1,
+      Math.min(
+        1,
+        Number(held(FLIGHT_KEYS.right)) -
+          Number(held(FLIGHT_KEYS.left)) +
+          touch.x,
+      ),
+    );
+    const vertical = Math.max(
+      -1,
+      Math.min(
+        1,
+        Number(held(FLIGHT_KEYS.up)) - Number(held(FLIGHT_KEYS.down)) - touch.y,
+      ),
+    );
     keys.lateral += (lateral - keys.lateral) * ease(KEYBOARD.keyTau, dt);
     keys.vertical += (vertical - keys.vertical) * ease(KEYBOARD.keyTau, dt);
     const turn = ease(KEYBOARD.turnTau, dt);
@@ -936,8 +998,17 @@ document.addEventListener(
 // 3. Entering: the same world simply begins to play.
 let entering = false;
 menu.on("launch", (mode, status) => {
-  if (status !== "ready" || entering || !run) return;
+  // No motion sensor, or not allowed: a phone flies by touch instead.
+  const byTouch =
+    mode === "gyro" &&
+    (status === "denied" || status === "missing") &&
+    navigator.maxTouchPoints > 0;
+  if ((status !== "ready" && !byTouch) || entering || !run) return;
   entering = true;
+  if (byTouch) {
+    begin("touch");
+    return;
+  }
   // VR must be requested inside this very click.
   if (mode === "vr") {
     run.xr.start().catch((reason) => {
@@ -977,6 +1048,8 @@ for (const node of document.querySelectorAll("[data-intro-next]")) {
 
 /** The controls card for this way of flying. */
 function controlsCard() {
+  if (flightMode === "touch")
+    return document.querySelector(".app-intro--touch");
   if (flightMode === "gyro") return document.querySelector(".app-intro--tilt");
   if (usesCamera()) return document.querySelector(".app-intro--camera");
   return keysCard;
@@ -991,7 +1064,8 @@ function startIntro(withCards) {
   const cards = withCards
     ? [
         { node: soundCard, seconds: INTRO.soundSeconds },
-        { node: controlsCard(), seconds: INTRO.controlsSeconds },
+        // Chosen when it shows: a silent sensor may have switched to touch.
+        { node: keysCard, pick: controlsCard, seconds: INTRO.controlsSeconds },
       ].filter((card) => card.node)
     : [];
   for (const { node } of cards) delete node.dataset.state;
@@ -1026,6 +1100,7 @@ function startIntro(withCards) {
     advance() {
       if (cards[index]) cards[index].node.dataset.state = "out";
       index += 1;
+      if (cards[index]?.pick) cards[index].node = cards[index].pick();
       state.card = cards[index]?.node;
       if (!state.card) {
         finish();
@@ -1103,7 +1178,18 @@ function begin(mode = "desktop") {
     look.offset = null;
     resetTakeover();
     syncCamera();
-    if (mode === "gyro") navigator.wakeLock?.request("screen").catch(() => {});
+    if (mode === "gyro" || mode === "touch")
+      navigator.wakeLock?.request("screen").catch(() => {});
+    // A phone whose sensor stays silent flies by touch.
+    if (mode === "gyro") {
+      const askedAt = performance.now();
+      window.setTimeout(() => {
+        if (flightMode === "gyro" && orientation.at < askedAt) {
+          flightMode = "touch";
+          root.dataset.flightMode = "touch";
+        }
+      }, 1500);
+    }
     menu.go("show");
     // Keep the launch screen's controls hidden until it has faded out.
     window.setTimeout(() => delete root.dataset.handover, 1200);
@@ -1151,6 +1237,7 @@ function returnToMenu() {
   flightMode = "desktop";
   camera.stop();
   pressed.clear();
+  endTouch();
   Object.assign(keys, {
     lateral: 0,
     vertical: 0,
