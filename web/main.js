@@ -626,6 +626,62 @@ function fail(reason) {
   root.dataset.failed = reason;
   renderFail();
   failNode.hidden = false;
+  driftAir(failNode.querySelector("[data-fail-air]"));
+}
+
+/**
+ * The white world's air on a plain canvas, for when the real one cannot be
+ * drawn: dots of the particles' ink drifting slowly, nearer ones larger.
+ */
+function driftAir(canvas) {
+  const context = canvas.getContext("2d");
+  if (!context) return;
+  const still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  let seed = 7;
+  const random = () => {
+    seed = (seed * 16807) % 2147483647;
+    return seed / 2147483647;
+  };
+  const dots = Array.from({ length: 420 }, () => {
+    const near = random() ** 3;
+    return {
+      x: random(),
+      y: random(),
+      size: 0.8 + near * 3.6,
+      speed: 0.004 + near * 0.012,
+      sway: random() * Math.PI * 2,
+      alpha: 0.35 + near * 0.6,
+    };
+  });
+  const draw = (now) => {
+    const ratio = Math.min(window.devicePixelRatio || 1, 2);
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+    if (canvas.width !== Math.round(width * ratio)) {
+      canvas.width = Math.round(width * ratio);
+      canvas.height = Math.round(height * ratio);
+    }
+    context.setTransform(ratio, 0, 0, ratio, 0, 0);
+    context.clearRect(0, 0, width, height);
+    context.fillStyle = "#202126";
+    const t = still ? 0 : now / 1000;
+    for (const dot of dots) {
+      const x = ((dot.x + t * dot.speed * 0.6) % 1) * width;
+      const y =
+        ((dot.y +
+          Math.sin(t * 0.2 + dot.sway) * 0.004 -
+          t * dot.speed * 0.25 +
+          1) %
+          1) *
+        height;
+      context.globalAlpha = dot.alpha;
+      context.beginPath();
+      context.arc(x, y, dot.size / 2, 0, Math.PI * 2);
+      context.fill();
+    }
+    if (!still && !failNode.hidden) requestAnimationFrame(draw);
+  };
+  requestAnimationFrame(draw);
 }
 menu.on("settings", renderFail);
 failNode
@@ -646,6 +702,18 @@ const canDraw = (() => {
 const vrAddress = `${window.location.host}${window.location.pathname.replace(/index\.html$/, "")}`;
 for (const node of document.querySelectorAll("[data-vr-address]"))
   node.textContent = vrAddress;
+document
+  .querySelector("[data-vr-copy]")
+  ?.addEventListener("click", async (event) => {
+    const button = event.currentTarget;
+    try {
+      await navigator.clipboard.writeText(`https://${vrAddress}`);
+      button.dataset.copied = "";
+      window.setTimeout(() => delete button.dataset.copied, 1600);
+    } catch {
+      // Without clipboard access the address stays there to read.
+    }
+  });
 document
   .querySelector("[data-vr-recheck]")
   ?.addEventListener("click", async () => {

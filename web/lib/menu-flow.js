@@ -133,11 +133,13 @@ const COPY = {
     launchVr: "Setz die Brille auf und tritt in die weiße Welt.",
     vrGuideHeadsetTitle: "In der Brille",
     vrGuideHeadset:
-      "Öffne diese Adresse im Browser deiner Brille (Meta Quest Browser, Pico Browser) und wähle dort VR-Brille:",
+      "Öffne diese Adresse im Browser deiner Meta Quest oder Pico und wähle dort VR-Brille.",
     vrGuideStreamTitle: "Vom Computer gestreamt",
     vrGuideStream:
-      "Verbinde die Brille mit diesem Computer, etwa über Meta Quest Link, Pico Business Streaming oder SteamVR. Lass diese Seite in Chrome oder Edge offen und prüfe erneut.",
+      "Verbinde die Brille über Meta Quest Link, Pico Business Streaming oder SteamVR mit diesem Computer und lass die Seite in Chrome oder Edge offen.",
     vrRecheck: "Erneut prüfen",
+    copied: "Kopiert",
+    copyAddress: "Adresse kopieren",
     vrRecheckNone: "Noch keine Brille verbunden.",
     failWebglTitle: "Dieser Browser kann Becoming Many nicht darstellen.",
     failWebgl:
@@ -149,7 +151,7 @@ const COPY = {
     failLost:
       "Der Browser hat die Grafik beendet, oft um Speicher zu sparen. Lade die Seite neu, um weiterzufliegen.",
     failFuturium:
-      "Oder flieg das Stück in echt: im Futurium in Berlin, mit deinem ganzen Körper auf dem ICAROS-Flugsimulator.",
+      "Flieg das Stück in echt: im Futurium in Berlin, mit deinem ganzen Körper auf dem ICAROS-Flugsimulator.",
     failReload: "Neu laden",
     launchVrMissing: "Kein VR-Headset gefunden.",
     launchGyro:
@@ -300,11 +302,13 @@ const COPY = {
     launchVr: "Put on the headset and step into the white world.",
     vrGuideHeadsetTitle: "In the headset",
     vrGuideHeadset:
-      "Open this address in your headset's browser (Meta Quest Browser, Pico Browser) and choose VR headset there:",
+      "Open this address in the browser of your Meta Quest or Pico and choose VR headset there.",
     vrGuideStreamTitle: "Streamed from your computer",
     vrGuideStream:
-      "Connect the headset to this computer, for example with Meta Quest Link, Pico Business Streaming or SteamVR. Keep this page open in Chrome or Edge and check again.",
+      "Connect the headset to this computer with Meta Quest Link, Pico Business Streaming or SteamVR, and keep this page open in Chrome or Edge.",
     vrRecheck: "Check again",
+    copied: "Copied",
+    copyAddress: "Copy address",
     vrRecheckNone: "No headset connected yet.",
     failWebglTitle: "This browser can't show Becoming Many.",
     failWebgl:
@@ -316,7 +320,7 @@ const COPY = {
     failLost:
       "The browser ended the graphics, often to save memory. Reload the page to fly on.",
     failFuturium:
-      "Or fly the piece for real: at the Futurium in Berlin, with your whole body on the ICAROS flight simulator.",
+      "Fly the piece for real: at the Futurium in Berlin, with your whole body on the ICAROS flight simulator.",
     failReload: "Reload",
     launchVrMissing: "No VR headset found.",
     launchGyro:

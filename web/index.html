@@ -49,19 +49,21 @@
     <!-- When the browser cannot run it: why, what to try, and where to fly
          it for real. -->
     <section class="app-fail" role="alert" data-fail hidden>
+      <canvas class="app-fail__air" data-fail-air aria-hidden="true"></canvas>
       <p class="app-fail__brand">Becoming Many</p>
       <p class="app-fail__title" data-fail-title></p>
       <p class="app-fail__text" data-fail-text></p>
-      <p class="app-fail__note" data-i18n="failFuturium"></p>
-      <div class="app-fail__actions">
-        <button
-          type="button"
-          class="app-fail__button"
-          data-fail-reload
-          data-i18n="failReload"
-        ></button>
+      <button
+        type="button"
+        class="item item--primary"
+        data-fail-reload
+        data-i18n="failReload"
+      ></button>
+      <div class="app-fail__futurium">
+        <p class="app-fail__label" data-i18n="creditsVisitLabel"></p>
+        <p class="app-fail__note" data-i18n="failFuturium"></p>
         <a
-          class="bm-credits__visit-link"
+          class="item"
           href="https://futurium.de/en/borrowed-senses"
           target="_blank"
           rel="noopener"
@@ -444,21 +446,45 @@
       <!-- No headset here: the two ways in, and a second look. -->
       <div class="vr-guide" data-vr-guide>
         <div class="vr-guide__way">
+          <!-- the menu's headset icon -->
+          <svg class="vr-guide__icon" viewBox="0 0 24 24" aria-hidden="true">
+            <path
+              d="M3 8.5C3 7.7 3.7 7 4.5 7h15c.8 0 1.5.7 1.5 1.5V15c0 .8-.7 1.5-1.5 1.5h-4l-2-2.5h-3l-2 2.5h-4C3.7 16.5 3 15.8 3 15z"
+            ></path>
+          </svg>
           <p class="vr-guide__title" data-i18n="vrGuideHeadsetTitle"></p>
           <p class="vr-guide__text" data-i18n="vrGuideHeadset"></p>
-          <p class="vr-guide__address" data-vr-address></p>
+          <button
+            type="button"
+            class="vr-guide__address"
+            data-vr-copy
+            data-i18n-label="copyAddress"
+          >
+            <span data-vr-address></span>
+            <span class="vr-guide__copied" data-i18n="copied"></span>
+          </button>
         </div>
+        <p class="vr-guide__or" data-i18n="or"></p>
         <div class="vr-guide__way">
+          <!-- lucide "cast", ISC licence -->
+          <svg class="vr-guide__icon" viewBox="0 0 24 24" aria-hidden="true">
+            <path
+              d="M2 8V6a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-6"
+            ></path>
+            <path d="M2 12a9 9 0 0 1 8 8"></path>
+            <path d="M2 16a5 5 0 0 1 4 4"></path>
+            <path d="M2 20h.01"></path>
+          </svg>
           <p class="vr-guide__title" data-i18n="vrGuideStreamTitle"></p>
           <p class="vr-guide__text" data-i18n="vrGuideStream"></p>
+          <button
+            type="button"
+            class="item item--primary vr-guide__check"
+            data-vr-recheck
+            data-i18n="vrRecheck"
+          ></button>
+          <p class="vr-guide__status" data-vr-status aria-live="polite"></p>
         </div>
-        <button
-          type="button"
-          class="app-fail__button"
-          data-vr-recheck
-          data-i18n="vrRecheck"
-        ></button>
-        <p class="vr-guide__status" data-vr-status aria-live="polite"></p>
       </div>
       <button
         type="button"
