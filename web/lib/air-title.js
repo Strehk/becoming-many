@@ -239,7 +239,11 @@ export function createAirTitle({
           pan: ((points.xs[index] - left) / span) * 2 - 1,
         });
       picks.sort((a, b) => a.at - b.at);
-      sound.assemble(picks, timeline.end - now);
+      // The closing tone rings as the word reads: when four in five
+      // particles have landed, not when the last ink has grown.
+      const sorted = Array.from(landing).sort((a, b) => a - b);
+      const reads = sorted[Math.floor(sorted.length * 0.8)] - now;
+      sound.assemble(picks, timeline.end - now, reads);
     }
     ink.show(true);
     while (run === generation && state === "gathering") await wait(0.05);

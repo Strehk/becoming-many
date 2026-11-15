@@ -460,11 +460,12 @@ export function createMenuSound(getVolume) {
     /**
      * The title assembling: grains landing from left to right as the
      * particles do, a breath of air drawing together under them, and the
-     * root and fifth settling in the hall when the type takes over.
+     * root and fifth settling in the hall as the word reads.
      * landings: seconds from now, each with a pan (-1 left .. 1 right);
-     * settle: seconds from now until the type stands.
+     * settle: seconds from now until the type stands;
+     * reads: seconds from now until most particles have landed.
      */
-    assemble(landings, settle) {
+    assemble(landings, settle, reads = settle) {
       if (!graph) return;
       const t0 = now() + 0.02;
       const nodes = [];
@@ -527,9 +528,9 @@ export function createMenuSound(getVolume) {
       tone.triggerAttackRelease(
         [degreeHertz(0, 0), degreeHertz(3, 0)],
         1.4,
-        // Full half a second before the type takes over (air-title.js sets
-        // it 0.15 s after settle), as the last particles land.
-        t0 + Math.max(settle + 0.15 - 0.5 - 0.35, 0),
+        // Full as the word reads (reads: seconds from now, when most of
+        // the particles have landed), well before the ink has grown.
+        t0 + Math.max(reads - 0.35, 0),
         0.5,
       );
       window.setTimeout(
