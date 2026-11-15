@@ -23,13 +23,148 @@
   transition: opacity 1.2s var(--bm-ease);
 }
 
-.app-error {
+/* When the browser cannot run the piece: a calm page of its own, with what
+   to try and where to fly it for real. The legal links stay reachable. */
+.app-fail {
   position: fixed;
-  inset: auto 16px 16px;
-  z-index: 50;
-  margin: 0;
-  font-size: 14px;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 16px;
+  padding: 24px;
   text-align: center;
+  background: #fff;
+}
+
+.app-fail[hidden] {
+  display: none;
+}
+
+.app-fail__brand {
+  margin: 0 0 8px;
+  font-size: clamp(30px, 6vw, 64px);
+  font-weight: 700;
+  line-height: 1.02;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #202126;
+}
+
+.app-fail__title {
+  max-width: 32ch;
+  margin: 0;
+  font-size: clamp(18px, 2.2vw, 24px);
+  font-weight: 600;
+}
+
+.app-fail__text,
+.app-fail__note {
+  max-width: 46ch;
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--bm-muted);
+}
+
+.app-fail__note {
+  color: #202126;
+}
+
+.app-fail__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.app-fail__button {
+  padding: 9px 14px;
+  border: 1px solid #202126;
+  background: #202126;
+  color: #fff;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.app-fail__button:hover,
+.app-fail__button:focus-visible {
+  background: #fff;
+  color: #202126;
+  outline: none;
+}
+
+:root[data-failed][data-screen="imprint"] .app-fail,
+:root[data-failed][data-screen="privacy"] .app-fail {
+  display: none;
+}
+
+.app-noscript {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-content: center;
+  margin: 0;
+  padding: 24px;
+  text-align: center;
+  font-size: 16px;
+  line-height: 1.6;
+  background: #fff;
+}
+
+/* No headset here: the two ways in, shown on the VR launch screen. */
+.vr-guide {
+  display: none;
+  gap: 18px;
+  width: min(560px, 92vw);
+  text-align: left;
+}
+
+:root[data-launch-mode="vr"][data-launch-status="missing"] .vr-guide {
+  display: grid;
+  justify-items: start;
+}
+
+.vr-guide__way {
+  display: grid;
+  gap: 6px;
+}
+
+.vr-guide__title {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--bm-muted);
+}
+
+.vr-guide__text {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+.vr-guide__address {
+  margin: 4px 0 0;
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  user-select: all;
+}
+
+.vr-guide__status {
+  min-height: 1.2em;
+  margin: 0;
+  font-size: 13px;
+  color: var(--bm-muted);
 }
 
 /* While the world is handed over, nothing on the launch screen leads back. */
@@ -786,4 +921,9 @@ section[data-screen="ending"] > * {
 
 .legal-links {
   transition: opacity 3.4s ease-in-out 0.5s;
+}
+
+/* Over the failure page the legal links stay reachable. */
+:root[data-failed] .legal-links {
+  z-index: 70;
 }

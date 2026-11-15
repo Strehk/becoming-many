@@ -131,8 +131,27 @@ const COPY = {
     launchDesktop:
       "Bewege die Maus, um dich umzusehen. Mit W A S D fliegst du.",
     launchVr: "Setz die Brille auf und tritt in die weiße Welt.",
-    launchVrMissing:
-      "Kein VR-Headset gefunden. Öffne diese Seite im Browser deiner Brille.",
+    vrGuideHeadsetTitle: "In der Brille",
+    vrGuideHeadset:
+      "Öffne diese Adresse im Browser deiner Brille (Meta Quest Browser, Pico Browser) und wähle dort VR-Brille:",
+    vrGuideStreamTitle: "Vom Computer gestreamt",
+    vrGuideStream:
+      "Verbinde die Brille mit diesem Computer, etwa über Meta Quest Link, Pico Business Streaming oder SteamVR. Lass diese Seite in Chrome oder Edge offen und prüfe erneut.",
+    vrRecheck: "Erneut prüfen",
+    vrRecheckNone: "Noch keine Brille verbunden.",
+    failWebglTitle: "Dieser Browser kann Becoming Many nicht darstellen.",
+    failWebgl:
+      "Es braucht WebGL 2, das hier fehlt oder ausgeschaltet ist. Versuch es mit einem aktuellen Chrome, Edge, Firefox oder Safari, am besten am Computer.",
+    failStartTitle: "Becoming Many konnte nicht starten.",
+    failStart:
+      "Vielleicht fehlt deinem Gerät gerade Speicher oder Grafikleistung. Lade die Seite neu, schließ andere Tabs oder versuch es mit einem anderen Browser oder Gerät.",
+    failLostTitle: "Die Grafik wurde angehalten.",
+    failLost:
+      "Der Browser hat die Grafik beendet, oft um Speicher zu sparen. Lade die Seite neu, um weiterzufliegen.",
+    failFuturium:
+      "Oder flieg das Stück in echt: im Futurium in Berlin, mit deinem ganzen Körper auf dem ICAROS-Flugsimulator.",
+    failReload: "Neu laden",
+    launchVrMissing: "Kein VR-Headset gefunden.",
     launchGyro:
       "Halte das Handy vor dich und neige es. Die Partikel folgen dir.",
     launchGyroDenied:
@@ -279,8 +298,27 @@ const COPY = {
     creditsVisitLink: "Book a time slot",
     launchDesktop: "Move the mouse to look around. Fly with W A S D.",
     launchVr: "Put on the headset and step into the white world.",
-    launchVrMissing:
-      "No VR headset found. Open this page in your headset's browser.",
+    vrGuideHeadsetTitle: "In the headset",
+    vrGuideHeadset:
+      "Open this address in your headset's browser (Meta Quest Browser, Pico Browser) and choose VR headset there:",
+    vrGuideStreamTitle: "Streamed from your computer",
+    vrGuideStream:
+      "Connect the headset to this computer, for example with Meta Quest Link, Pico Business Streaming or SteamVR. Keep this page open in Chrome or Edge and check again.",
+    vrRecheck: "Check again",
+    vrRecheckNone: "No headset connected yet.",
+    failWebglTitle: "This browser can't show Becoming Many.",
+    failWebgl:
+      "It needs WebGL 2, which is missing or switched off here. Try a current Chrome, Edge, Firefox or Safari, ideally on a computer.",
+    failStartTitle: "Becoming Many couldn't start.",
+    failStart:
+      "Your device may be short of memory or graphics power right now. Reload the page, close other tabs, or try another browser or device.",
+    failLostTitle: "The graphics stopped.",
+    failLost:
+      "The browser ended the graphics, often to save memory. Reload the page to fly on.",
+    failFuturium:
+      "Or fly the piece for real: at the Futurium in Berlin, with your whole body on the ICAROS flight simulator.",
+    failReload: "Reload",
+    launchVrMissing: "No VR headset found.",
     launchGyro:
       "Hold the phone in front of you and tilt it. The particles follow you.",
     launchGyroDenied: "Access to the motion sensor was not granted.",
@@ -337,7 +375,7 @@ const CREDITS = [
   },
 ];
 /** Where the piece runs as an installation, per language. */
-const VISIT_URL = {
+export const VISIT_URL = {
   de: "https://futurium.de/geborgte-sinne",
   en: "https://futurium.de/en/borrowed-senses",
 };
@@ -854,22 +892,25 @@ export function createMenuFlow(options = {}) {
 
   if (onPhone) {
     flow.availability.vr = "notOnPhone";
-  } else if (navigator.xr?.isSessionSupported) {
-    navigator.xr
+  } else checkVr();
+
+  /** Ask the browser for a headset; again later, once one is connected. */
+  function checkVr() {
+    if (!navigator.xr?.isSessionSupported) {
+      flow.availability.vr = "missing";
+      return Promise.resolve(false);
+    }
+    return navigator.xr
       .isSessionSupported("immersive-vr")
+      .catch(() => false)
       .then((supported) => {
         flow.availability.vr = supported ? "ready" : "missing";
-      })
-      .catch(() => {
-        flow.availability.vr = "missing";
-      })
-      .finally(() => {
         renderAvailability();
         emit("availability", flow.availability);
+        return supported;
       });
-  } else {
-    flow.availability.vr = "missing";
   }
+  flow.recheckVr = checkVr;
 
   function renderAvailability() {
     const copyKey = {

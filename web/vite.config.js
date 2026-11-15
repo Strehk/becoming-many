@@ -13,7 +13,7 @@
  *   SITE_URL the address in the share preview.
  */
 
-import { cpSync } from "node:fs";
+import { cpSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { defineConfig } from "vite";
 
@@ -38,8 +38,14 @@ function copyShippedPublic(outDir) {
         cpSync(resolve(repository, "public", folder), resolve(outDir, folder), {
           recursive: true,
         });
-      // The page's own files that keep their names (the share image).
+      // The page's own files that keep their names (the share image, the
+      // page GitHub Pages shows for a wrong address).
       cpSync(resolve(here, "static"), outDir, { recursive: true });
+      const notFound = resolve(outDir, "404.html");
+      writeFileSync(
+        notFound,
+        readFileSync(notFound, "utf8").replaceAll("%SITE_URL%", SITE_URL),
+      );
     },
   };
 }

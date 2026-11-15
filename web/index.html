@@ -46,9 +46,39 @@
     <main class="app-show" data-show-viewport hidden>
       <canvas class="app-show__canvas" data-show-canvas></canvas>
     </main>
-    <p class="app-error" role="alert" data-startup-error hidden>
-      Becoming Many could not start. Please reload the page.
-    </p>
+    <!-- When the browser cannot run it: why, what to try, and where to fly
+         it for real. -->
+    <section class="app-fail" role="alert" data-fail hidden>
+      <p class="app-fail__brand">Becoming Many</p>
+      <p class="app-fail__title" data-fail-title></p>
+      <p class="app-fail__text" data-fail-text></p>
+      <p class="app-fail__note" data-i18n="failFuturium"></p>
+      <div class="app-fail__actions">
+        <button
+          type="button"
+          class="app-fail__button"
+          data-fail-reload
+          data-i18n="failReload"
+        ></button>
+        <a
+          class="bm-credits__visit-link"
+          href="https://futurium.de/en/borrowed-senses"
+          target="_blank"
+          rel="noopener"
+          data-fail-visit
+          data-i18n="creditsVisitLink"
+          >Book a time slot</a
+        >
+      </div>
+    </section>
+    <noscript>
+      <p class="app-noscript">
+        Becoming Many needs JavaScript. Please switch it on, or use a current
+        Chrome, Edge, Firefox or Safari.<br>
+        Becoming Many braucht JavaScript. Bitte schalte es ein oder nutze einen
+        aktuellen Chrome, Edge, Firefox oder Safari.
+      </p>
+    </noscript>
 
     <h1 class="bm-title" data-title>Becoming Many</h1>
 
@@ -411,6 +441,25 @@
       <p class="launch__mode" data-launch-title></p>
       <p class="launch__text" data-launch-text></p>
       <p class="launch__gyro" data-gyro-readout></p>
+      <!-- No headset here: the two ways in, and a second look. -->
+      <div class="vr-guide" data-vr-guide>
+        <div class="vr-guide__way">
+          <p class="vr-guide__title" data-i18n="vrGuideHeadsetTitle"></p>
+          <p class="vr-guide__text" data-i18n="vrGuideHeadset"></p>
+          <p class="vr-guide__address" data-vr-address></p>
+        </div>
+        <div class="vr-guide__way">
+          <p class="vr-guide__title" data-i18n="vrGuideStreamTitle"></p>
+          <p class="vr-guide__text" data-i18n="vrGuideStream"></p>
+        </div>
+        <button
+          type="button"
+          class="app-fail__button"
+          data-vr-recheck
+          data-i18n="vrRecheck"
+        ></button>
+        <p class="vr-guide__status" data-vr-status aria-live="polite"></p>
+      </div>
       <button
         type="button"
         class="item item--primary"

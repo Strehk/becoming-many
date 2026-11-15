@@ -28,7 +28,7 @@ import {
   MENU_GLIDE_METERS_PER_SECOND,
 } from "./lib/air-world.js";
 import { renderLegal } from "./lib/legal.js";
-import { createMenuFlow } from "./lib/menu-flow.js";
+import { createMenuFlow, VISIT_URL } from "./lib/menu-flow.js";
 import { createStageWorld } from "./lib/stage-world.js";
 import { showVersion } from "./lib/version.js";
 
@@ -604,21 +604,74 @@ const voiceReady = experience
   })
   .catch(() => {});
 
-startExperience()
-  .then(() => voiceReady)
-  .then(() => {
-    // A camera already chosen earlier loads its model once the world stands.
-    if (!phone && menu.settings.control === "camera") camera.preload();
-  })
-  .then(
-    () => resolveRun.resolve(),
-    (error) => {
-      console.error(error);
-      earlySpinner.stop();
-      document.querySelector("[data-startup-error]").hidden = false;
-      resolveRun.reject(error);
-    },
+// 1b. When the browser cannot run the piece, say why, what to try, and
+// where to fly it for real (the Futurium), instead of a blank page.
+const failNode = document.querySelector("[data-fail]");
+let failed = null;
+function renderFail() {
+  if (!failed) return;
+  const key = { webgl: "Webgl", start: "Start", lost: "Lost" }[failed];
+  failNode.querySelector("[data-fail-title]").textContent = menu.t(
+    `fail${key}Title`,
   );
+  failNode.querySelector("[data-fail-text]").textContent = menu.t(`fail${key}`);
+  failNode.querySelector("[data-fail-visit]").href =
+    VISIT_URL[menu.settings.language] ?? VISIT_URL.en;
+}
+function fail(reason) {
+  if (failed || lifetime.signal.aborted) return;
+  failed = reason;
+  earlySpinner.stop();
+  camera.stop();
+  root.dataset.failed = reason;
+  renderFail();
+  failNode.hidden = false;
+}
+menu.on("settings", renderFail);
+failNode
+  .querySelector("[data-fail-reload]")
+  .addEventListener("click", () => window.location.reload());
+showCanvas.addEventListener("webglcontextlost", () => fail("lost"));
+// The experience draws with WebGL 2; without it nothing can start.
+const canDraw = (() => {
+  try {
+    return Boolean(document.createElement("canvas").getContext("webgl2"));
+  } catch {
+    return false;
+  }
+})();
+
+// 1c. No headset on this computer: the way in through the headset's own
+// browser, or streamed from here; a second look once one is connected.
+const vrAddress = `${window.location.host}${window.location.pathname.replace(/index\.html$/, "")}`;
+for (const node of document.querySelectorAll("[data-vr-address]"))
+  node.textContent = vrAddress;
+document
+  .querySelector("[data-vr-recheck]")
+  ?.addEventListener("click", async () => {
+    const status = document.querySelector("[data-vr-status]");
+    status.textContent = "";
+    const found = await menu.recheckVr();
+    if (found) menu.go("modes");
+    else status.textContent = menu.t("vrRecheckNone");
+  });
+
+if (!canDraw) fail("webgl");
+else
+  startExperience()
+    .then(() => voiceReady)
+    .then(() => {
+      // A camera already chosen earlier loads its model once the world stands.
+      if (!phone && menu.settings.control === "camera") camera.preload();
+    })
+    .then(
+      () => resolveRun.resolve(),
+      (error) => {
+        console.error(error);
+        fail("start");
+        resolveRun.reject(error);
+      },
+    );
 
 // 2. Settings map onto the Run
 const RENDER_SCALE = {
