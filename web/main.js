@@ -168,9 +168,16 @@ const GYRO = {
   maxTurn: 0.75, // Full sideways tilt turns like the keyboard's full turn.
 };
 const orientation = { alpha: 0, beta: 0, gamma: 0, at: -1e9 };
+// Some browsers (Chrome on Android) leave the turn around the vertical axis
+// out of the plain event and give it only with the compass; the 360°
+// steering needs it, so the compass fills the gap.
+let compassAlpha = null;
+window.addEventListener("deviceorientationabsolute", (event) => {
+  if (event.alpha !== null) compassAlpha = event.alpha;
+});
 window.addEventListener("deviceorientation", (event) => {
   if (event.beta === null || event.gamma === null) return;
-  orientation.alpha = event.alpha ?? 0;
+  orientation.alpha = event.alpha ?? compassAlpha ?? 0;
   orientation.beta = event.beta;
   orientation.gamma = event.gamma;
   orientation.at = performance.now();
@@ -226,11 +233,19 @@ function phoneHeading() {
     Math.sin(g),
   ];
   // The device's back (-z) and top (+y) in the earth frame (east, north).
+  // The back is where the visitor faces, and turning the phone like a wheel
+  // leaves it alone; only a phone held nearly flat, whose back points at the
+  // floor, borrows its direction from the top instead.
   const backEast = -(cg * sa * sb + ca * sg);
   const backNorth = -(sa * sg - ca * cg * sb);
   const topEast = -cb * sa;
   const topNorth = ca * cb;
-  return Math.atan2(backEast + topEast, backNorth + topNorth);
+  const level = Math.hypot(backEast, backNorth);
+  const flat = Math.min(1, Math.max(0, (0.45 - level) / 0.3));
+  return Math.atan2(
+    backEast * (1 - flat) + topEast * flat,
+    backNorth * (1 - flat) + topNorth * flat,
+  );
 }
 const wrapAngle = (angle) => Math.atan2(Math.sin(angle), Math.cos(angle));
 /** The camera's heading in the world, radians clockwise from -z. */
@@ -411,14 +426,13 @@ const preludeInput = {
       const now = screenTilt();
       neutral ??= now;
       const smooth = ease(GYRO.tau, dt);
-      const side = flying() ? shapeTilt(now.side - neutral.side) : 0;
       const forward = flying() ? shapeTilt(now.forward - neutral.forward) : 0;
-      tilt.side += (side - tilt.side) * smooth;
       tilt.forward += (forward - tilt.forward) * smooth;
       // Tilting the top away leans forward and sinks, like on the ICAROS.
       steer.forwardTilt = -tilt.forward;
       if (menu.settings.steering === "turn") {
-        // The flight turns until it faces where the visitor faces.
+        // The flight turns until it faces where the visitor faces; turning
+        // the phone like a wheel does nothing here.
         const heading = phoneHeading();
         headingStart ??= { phone: heading, flight: cameraHeading() };
         const wanted = headingStart.flight + (heading - headingStart.phone);
@@ -426,7 +440,11 @@ const preludeInput = {
         const turn = flying() ? Math.max(-1, Math.min(1, error * 2.2)) : 0;
         tilt.side += (turn - tilt.side) * smooth;
         steer.rightTilt = tilt.side;
-      } else steer.rightTilt = tilt.side * GYRO.maxTurn;
+      } else {
+        const side = flying() ? shapeTilt(now.side - neutral.side) : 0;
+        tilt.side += (side - tilt.side) * smooth;
+        steer.rightTilt = tilt.side * GYRO.maxTurn;
+      }
       return steer;
     }
     if (!flying()) pressed.clear();
@@ -760,6 +778,7 @@ function applySettings(_settings, key) {
   // The autopilot shows as a small symbol; steering changes the card.
   if (settings.autopilot) root.dataset.autopilot = "";
   else delete root.dataset.autopilot;
+  root.dataset.steering = settings.steering;
   for (const node of document.querySelectorAll("[data-tilt-text]")) {
     node.dataset.i18n =
       settings.steering === "turn" ? "introTiltTurn" : "introTilt";

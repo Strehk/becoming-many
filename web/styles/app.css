@@ -872,6 +872,47 @@ section.legal {
   }
 }
 
+/* 360°: instead of the rocking wheel, the phone turns around its upright
+   above an arc. */
+.app-turn {
+  display: none;
+  width: 44px;
+  height: 44px;
+}
+
+.app-turn__phone {
+  animation: turn-around 3.2s ease-in-out infinite;
+  transform-box: fill-box;
+  transform-origin: 50% 50%;
+}
+
+@keyframes turn-around {
+  0%,
+  100% {
+    transform: scaleX(1);
+  }
+
+  25% {
+    transform: scaleX(0.25);
+  }
+
+  50% {
+    transform: scaleX(-1);
+  }
+
+  75% {
+    transform: scaleX(-0.25);
+  }
+}
+
+:root[data-steering="turn"] .app-tilt {
+  display: none;
+}
+
+:root[data-steering="turn"] .app-turn {
+  display: block;
+}
+
 /* Keycaps: W A S D and the arrows, laid out as on a keyboard. */
 .app-keys {
   display: flex;
