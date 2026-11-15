@@ -402,25 +402,30 @@ input:focus-visible {
   color: inherit;
 }
 
+/* The line under a link is drawn as part of its own box, not as a text
+   decoration: WebKit on phones paints decorations of a scrolled, masked
+   area in the wrong place. */
 .bm-credit__link {
+  padding-bottom: 2px;
   color: inherit;
-  text-decoration: underline;
-  text-decoration-thickness: 1px;
-  text-underline-offset: 3px;
-  text-decoration-skip-ink: auto;
-  text-decoration-color: rgb(5 7 12 / 0.22);
-  transition: text-decoration-color 160ms ease;
+  text-decoration: none;
+  background-image: linear-gradient(rgb(5 7 12 / 0.22), rgb(5 7 12 / 0.22));
+  background-position: 0 100%;
+  background-repeat: no-repeat;
+  background-size: 100% 1px;
+  transition: background-image 160ms ease;
 }
 
 /* Names that are links (the partners) read as names: no line under them
    until they are pointed at. */
 .bm-credits__name .bm-credit__link {
-  text-decoration-color: transparent;
+  background-size: 0 1px;
 }
 
 .bm-credit__link:hover,
 .bm-credit__link:focus-visible {
-  text-decoration-color: currentColor;
+  background-image: linear-gradient(currentColor, currentColor);
+  background-size: 100% 1px;
   outline: none;
 }
 

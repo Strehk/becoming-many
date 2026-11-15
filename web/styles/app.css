@@ -1121,3 +1121,36 @@ section[data-screen="ending"] > * {
     transform: none;
   }
 }
+
+/* The way back under the credits: an arrow and "back to the menu" in ink,
+   so it never reads as one more heading. */
+.credits-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 6px;
+  opacity: 0.85;
+}
+
+.credits-back svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Phones: the credits scroll without the fading mask, which WebKit paints
+   unreliably while scrolling. */
+@media (max-width: 640px) {
+  .plain-marker section[data-screen="credits"] {
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+}
+
+.credits-back::before {
+  display: none;
+}
