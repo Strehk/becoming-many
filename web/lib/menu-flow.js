@@ -152,7 +152,6 @@ const COPY = {
     introKeys: "Flieg mit W A S D oder den Pfeiltasten.",
     introCamera:
       "Breite die Arme aus wie Flügel. Neig sie zur Seite für Kurven, heb sie zum Steigen, senk sie zum Sinken.",
-    introCameraRest: "Arme runter: Du gleitest geradeaus.",
     cameraStarting: "Kamera startet …",
     cameraHide: "Kamerabild ausblenden",
     cameraShow: "Kamerabild zeigen",
@@ -299,7 +298,6 @@ const COPY = {
     introKeys: "Fly with W A S D or the arrow keys.",
     introCamera:
       "Spread your arms like wings. Tilt them to turn, raise them to climb, lower them to sink.",
-    introCameraRest: "Arms down: you glide straight on.",
     cameraStarting: "Starting the camera …",
     cameraHide: "Hide the camera image",
     cameraShow: "Show the camera image",
