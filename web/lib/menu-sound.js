@@ -527,9 +527,9 @@ export function createMenuSound(getVolume) {
       tone.triggerAttackRelease(
         [degreeHertz(0, 0), degreeHertz(3, 0)],
         1.4,
-        // Full at the moment the type takes over (air-title.js sets it
-        // 0.15 s after settle), not after it.
-        t0 + Math.max(settle + 0.15 - 0.35, 0),
+        // Full half a second before the type takes over (air-title.js sets
+        // it 0.15 s after settle), as the last particles land.
+        t0 + Math.max(settle + 0.15 - 0.5 - 0.35, 0),
         0.5,
       );
       window.setTimeout(
