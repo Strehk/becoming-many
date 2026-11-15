@@ -299,6 +299,14 @@ function labelControls() {
 }
 labelControls();
 menu.on("settings", labelControls);
+// The corner arrow leads back from wherever it shows: from a legal page to
+// where it was opened, from the others to the menu (or the experience).
+const cornerBack = document.querySelector("[data-app-back]");
+menu.on("screen", (screen) => {
+  if (cornerBack)
+    cornerBack.dataset.action =
+      screen === "imprint" || screen === "privacy" ? "return" : "back";
+});
 
 /** Start or stop the camera to match the setting, once inside the piece. */
 function syncCamera() {

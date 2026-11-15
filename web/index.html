@@ -405,6 +405,21 @@
         data-action="back"
         data-i18n="back"
       ></button>
+      <!-- On a phone the legal links close the credits instead of floating
+           over them. -->
+      <nav class="legal-links legal-links--inline" aria-label="Legal">
+        <button
+          type="button"
+          data-action="imprint"
+          data-i18n="imprint"
+        ></button>
+        <span aria-hidden="true">·</span>
+        <button
+          type="button"
+          data-action="privacy"
+          data-i18n="privacy"
+        ></button>
+      </nav>
     </section>
 
     <section class="screen glow legal" data-screen="imprint">
@@ -500,6 +515,22 @@
         data-i18n="backToMenu"
       ></button>
     </section>
+
+    <!-- On a phone, pages taller than the screen keep a way back in the
+         corner, where the gear sits in the experience. -->
+    <button
+      type="button"
+      class="app-back"
+      data-action="back"
+      data-app-back
+      data-i18n-label="back"
+    >
+      <!-- lucide "arrow-left", ISC licence -->
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="m12 19-7-7 7-7"></path>
+        <path d="M19 12H5"></path>
+      </svg>
+    </button>
 
     <!-- Legal notice and privacy, one click away from every menu screen
          (inside the experience: gear, then here). -->

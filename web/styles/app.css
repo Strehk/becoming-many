@@ -1005,3 +1005,78 @@ section[data-screen="ending"] > * {
 :root[data-failed] .legal-links {
   z-index: 70;
 }
+
+/* Phones: the corner arrow back on the pages that scroll, the legal links
+   at the end of the credits rather than floating over them, and the title
+   a little higher so the pages under it have room. */
+.app-back {
+  display: none;
+}
+
+.legal-links--inline {
+  display: none;
+}
+
+@media (max-width: 640px) {
+  :root {
+    --title-top: 22vh;
+  }
+
+  :root[data-screen="credits"] .app-back,
+  :root[data-screen="settings"] .app-back,
+  :root[data-screen="imprint"] .app-back,
+  :root[data-screen="privacy"] .app-back {
+    position: fixed;
+    top: calc(14px + env(safe-area-inset-top));
+    left: calc(14px + env(safe-area-inset-left));
+    z-index: 30;
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border: 0;
+    border-radius: 999px;
+    background: rgb(255 255 255 / 0.82);
+    color: #202126;
+    cursor: pointer;
+  }
+
+  .app-back svg {
+    width: 22px;
+    height: 22px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  :root[data-screen="credits"] .legal-links:not(.legal-links--inline) {
+    display: none;
+  }
+
+  section[data-screen="credits"] .legal-links--inline {
+    position: static;
+    display: flex;
+    justify-content: center;
+    margin: 4px 0 8px;
+    background: none;
+  }
+}
+
+/* Touch screens have no hover: a tapped item must not keep its dash and its
+   shift, which would sit beside it after the tap. */
+@media (hover: none) {
+  .item::before,
+  .bm-mode::before,
+  .back::before {
+    display: none;
+  }
+
+  .item:hover,
+  .bm-mode:hover,
+  .back:hover {
+    transform: none;
+  }
+}
