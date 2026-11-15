@@ -185,7 +185,7 @@ const COPY = {
     introTilt:
       "Dreh dein Handy wie ein Lenkrad für Kurven. Kipp es vor und zurück zum Sinken und Steigen.",
     introTiltTurn:
-      "Dreh dich mit dem Handy um dich selbst, um die Richtung zu wählen. Kipp es vor und zurück zum Sinken und Steigen.",
+      "Schau dich mit dem Handy um wie in einem 360°-Video. Du fliegst dorthin, wohin du schaust.",
     or: "oder",
   },
   en: {
@@ -352,7 +352,7 @@ const COPY = {
     introTilt:
       "Turn your phone like a steering wheel to curve. Tip it forward and back to sink and climb.",
     introTiltTurn:
-      "Turn around with your phone to choose your direction. Tip it forward and back to sink and climb.",
+      "Look around with your phone, like in a 360° video. You fly wherever you look.",
     or: "or",
   },
 };

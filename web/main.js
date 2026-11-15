@@ -14,6 +14,7 @@
  *   page and the installation are untouched.
  */
 
+import { Euler, Quaternion, Vector3 } from "three";
 import { createAutopilot } from "./autopilot.js";
 import { createCameraSteering } from "./camera-steering.js";
 import { startEarlySpinner } from "./early-spinner.js";
@@ -248,10 +249,75 @@ function phoneHeading() {
   );
 }
 const wrapAngle = (angle) => Math.atan2(Math.sin(angle), Math.cos(angle));
-/** The camera's heading in the world, radians clockwise from -z. */
-function cameraHeading() {
-  const e = run.stage.camera.matrixWorld.elements;
-  return Math.atan2(-e[8], e[10]);
+
+/**
+ * 360°: the phone is a window into the world, like a 360° video. Its
+ * orientation becomes the view at once, with no delay and no bank; the
+ * flight then turns toward where the view points. The view is set against
+ * the flight body each frame, so the body's own turning never shows.
+ */
+const look = {
+  device: new Quaternion(),
+  world: new Quaternion(),
+  body: new Quaternion(),
+  euler: new Euler(),
+  turn: new Quaternion(),
+  forward: new Vector3(),
+  offset: null,
+  viewYaw: 0,
+  viewPitch: 0,
+  bodyYaw: null,
+  active: false,
+};
+const UP = new Vector3(0, 1, 0);
+const OUT_OF_SCREEN = new Vector3(0, 0, 1);
+// The phone's camera looks out of its back, not along its top.
+const BACK_VIEW = new Quaternion(-Math.sqrt(0.5), 0, 0, Math.sqrt(0.5));
+function deviceView(out) {
+  const rad = Math.PI / 180;
+  look.euler.set(
+    orientation.beta * rad,
+    orientation.alpha * rad,
+    -orientation.gamma * rad,
+    "YXZ",
+  );
+  out.setFromEuler(look.euler).multiply(BACK_VIEW);
+  const angle =
+    (window.screen.orientation?.angle ?? window.orientation ?? 0) * rad;
+  return out.multiply(look.turn.setFromAxisAngle(OUT_OF_SCREEN, -angle));
+}
+const yawOf = (q) => {
+  look.forward.set(0, 0, -1).applyQuaternion(q);
+  return Math.atan2(-look.forward.x, -look.forward.z);
+};
+const pitchOf = (q) => {
+  look.forward.set(0, 0, -1).applyQuaternion(q);
+  return Math.asin(Math.max(-1, Math.min(1, look.forward.y)));
+};
+const directLook = () =>
+  menu.inShow &&
+  flightMode === "gyro" &&
+  menu.settings.steering === "turn" &&
+  performance.now() - orientation.at < 1000;
+/** Every frame after flight: set the view, note where body and view point. */
+function updateLook(camera) {
+  if (!directLook()) {
+    if (look.active) camera.quaternion.identity();
+    look.active = false;
+    look.offset = null;
+    look.bodyYaw = null;
+    return;
+  }
+  look.active = true;
+  deviceView(look.device);
+  camera.parent.getWorldQuaternion(look.body);
+  // Straight on is wherever the flight faces when the look begins.
+  look.offset ??= yawOf(look.body) - yawOf(look.device);
+  look.world.setFromAxisAngle(UP, look.offset).multiply(look.device);
+  camera.quaternion.copy(look.body).invert().multiply(look.world);
+  look.viewYaw = yawOf(look.world);
+  look.viewPitch = pitchOf(look.world);
+  look.bodyYaw = yawOf(look.body);
 }
 
 const shapeTilt = (degrees) => {
@@ -261,8 +327,6 @@ const shapeTilt = (degrees) => {
 let flightMode = "desktop";
 let neutral = null;
 const tilt = { side: 0, forward: 0 };
-// 360° steering: the phone's heading and the flight's when the piece began.
-let headingStart = null;
 
 const steer = { forwardTilt: 0, rightTilt: 0 };
 
@@ -363,13 +427,13 @@ function watchTakeover(sensing) {
       takeover.movedAt = now;
     }
     neutral ??= pose;
-    const turned =
-      menu.settings.steering === "turn"
-        ? Math.abs(wrapDegrees(pose.heading - neutral.heading))
-        : Math.abs(pose.side - neutral.side);
+    // In 360° the phone only looks around: the autopilot keeps flying.
     steering =
-      Math.max(turned, Math.abs(pose.forward - neutral.forward)) >
-      TAKEOVER.phoneDegrees;
+      menu.settings.steering !== "turn" &&
+      Math.max(
+        Math.abs(pose.side - neutral.side),
+        Math.abs(pose.forward - neutral.forward),
+      ) > TAKEOVER.phoneDegrees;
   }
   if (takeover.flying && steering) handOver();
   else if (!takeover.flying && now - takeover.movedAt > TAKEOVER.resumeMs) {
@@ -393,11 +457,6 @@ function handOver() {
     menu.settings.steering === "turn"
       ? steer.rightTilt
       : steer.rightTilt / GYRO.maxTurn;
-  if (neutral && run)
-    headingStart = {
-      phone: (neutral.heading * Math.PI) / 180,
-      flight: cameraHeading(),
-    };
   root.dataset.autopilotState = "manual";
 }
 
@@ -426,25 +485,28 @@ const preludeInput = {
       const now = screenTilt();
       neutral ??= now;
       const smooth = ease(GYRO.tau, dt);
+      if (menu.settings.steering === "turn") {
+        // 360°: the view already follows the phone directly (directLook);
+        // the flight turns and pitches toward wherever the visitor looks.
+        if (!flying() || look.bodyYaw === null) {
+          steer.rightTilt = 0;
+          steer.forwardTilt = 0;
+          return steer;
+        }
+        const error = wrapAngle(look.viewYaw - look.bodyYaw);
+        steer.rightTilt = Math.max(-1, Math.min(1, -error * 1.8));
+        const pitch = Math.max(-1, Math.min(1, look.viewPitch / (Math.PI / 4)));
+        // Looking up climbs, whatever invert look says.
+        steer.forwardTilt = -pitch * (menu.settings.invert ? -1 : 1);
+        return steer;
+      }
       const forward = flying() ? shapeTilt(now.forward - neutral.forward) : 0;
       tilt.forward += (forward - tilt.forward) * smooth;
       // Tilting the top away leans forward and sinks, like on the ICAROS.
       steer.forwardTilt = -tilt.forward;
-      if (menu.settings.steering === "turn") {
-        // The flight turns until it faces where the visitor faces; turning
-        // the phone like a wheel does nothing here.
-        const heading = phoneHeading();
-        headingStart ??= { phone: heading, flight: cameraHeading() };
-        const wanted = headingStart.flight + (heading - headingStart.phone);
-        const error = wrapAngle(wanted - cameraHeading());
-        const turn = flying() ? Math.max(-1, Math.min(1, error * 2.2)) : 0;
-        tilt.side += (turn - tilt.side) * smooth;
-        steer.rightTilt = tilt.side;
-      } else {
-        const side = flying() ? shapeTilt(now.side - neutral.side) : 0;
-        tilt.side += (side - tilt.side) * smooth;
-        steer.rightTilt = tilt.side * GYRO.maxTurn;
-      }
+      const side = flying() ? shapeTilt(now.side - neutral.side) : 0;
+      tilt.side += (side - tilt.side) * smooth;
+      steer.rightTilt = tilt.side * GYRO.maxTurn;
       return steer;
     }
     if (!flying()) pressed.clear();
@@ -555,6 +617,7 @@ async function startExperience() {
   // real seconds.
   const lastCue = PIECE_SCHEDULE.narration.at(-1);
   let quietSince = null;
+  run.stage.onFrame(() => updateLook(run.stage.camera));
   run.stage.onFrame(() => {
     if (!menu.inShow || flightMode === "vr" || !run.show) return;
     const seconds = run.show.sample().timeSeconds;
@@ -795,7 +858,7 @@ function applySettings(_settings, key) {
     syncCamera();
   }
   // Switching to 360° takes the way the visitor faces now as straight on.
-  if (key === "steering") headingStart = null;
+  if (key === "steering") look.offset = null;
   if (!run) return;
   // High quality draws the air round, as it once was; the borrowed stand-ins
   // and the title's ink follow so nothing changes shape mid-flight.
@@ -1037,7 +1100,7 @@ function begin(mode = "desktop") {
     root.dataset.flightMode = mode;
     // The phone's neutral is however it is held when the piece begins.
     neutral = null;
-    headingStart = null;
+    look.offset = null;
     resetTakeover();
     syncCamera();
     if (mode === "gyro") navigator.wakeLock?.request("screen").catch(() => {});
@@ -1098,7 +1161,7 @@ function returnToMenu() {
   tilt.side = 0;
   tilt.forward = 0;
   neutral = null;
-  headingStart = null;
+  look.offset = null;
   resetTakeover();
   menu.sound.revive();
   menu.sound.wind(true);
