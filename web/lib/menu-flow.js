@@ -148,7 +148,7 @@ const COPY = {
     exitToMenu: "Zum Menü",
     jumpTo: "Springen zu",
     introSound:
-      "Mach den Ton an und hör am besten mit Kopfhörern – für das immersivste Erlebnis.",
+      "Mach den Ton an und hör am besten mit Kopfhörern für das immersivste Erlebnis.",
     introKeys: "Flieg mit W A S D oder den Pfeiltasten.",
     introCamera:
       "Breite die Arme aus wie Flügel. Neig sie zur Seite für Kurven, heb sie zum Steigen, senk sie zum Sinken.",
