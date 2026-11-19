@@ -184,13 +184,19 @@ const flying = () => menu.inShow && menu.screen === "show";
 /**
  * The next frame of the Run. Inside a headset session the page's own
  * requestAnimationFrame stops; only the session's frames run, and the Run's
- * frame hooks run on those as on the screen.
+ * frame hooks run on those as on the screen. One hook drains the queue once
+ * per frame (startExperience adds it): a hook added from inside a hook would
+ * run again in the same frame, since the Run's hooks are a live Set, and a
+ * callback that asks for the next frame would never let the frame end.
  */
+let frameQueue = [];
 function onNextFrame(callback) {
-  const off = run.stage.onFrame(() => {
-    off();
-    callback();
-  });
+  frameQueue.push(callback);
+}
+function runFrameQueue() {
+  const due = frameQueue;
+  frameQueue = [];
+  for (const callback of due) callback();
 }
 window.addEventListener("keydown", (event) => {
   if (!flying()) return;
@@ -766,6 +772,7 @@ async function startExperience() {
   // real seconds.
   const lastCue = PIECE_SCHEDULE.narration.at(-1);
   let quietSince = null;
+  run.stage.onFrame(runFrameQueue);
   run.stage.onFrame(() => updateLook(run.stage.camera));
   run.stage.onFrame(() => {
     if (!menu.inShow || flightMode === "vr" || !run.show) return;
