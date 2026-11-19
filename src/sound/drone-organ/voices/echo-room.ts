@@ -15,7 +15,14 @@
  *              ^-- the delay feeds it too, so echoes stand inside the room.
  */
 
-import { FeedbackDelay, Freeverb, Gain, type InputNode } from "tone";
+import {
+  FeedbackDelay,
+  Filter,
+  Freeverb,
+  Gain,
+  type InputNode,
+  Reverb,
+} from "tone";
 
 /** Normalized delay maps to this window: at the wall, or across a canyon. */
 const MIN_DELAY_SECONDS = 0.02;
@@ -27,6 +34,27 @@ const MAX_FEEDBACK = 0.88;
 /** Soft walls swallow the highs, hard ones throw everything back. */
 const MIN_DAMPENING_HERTZ = 500;
 const DAMPENING_RANGE_HERTZ = 8000;
+
+/**
+ * Freeverb's eight comb filters each run as their own AudioWorklet: script on
+ * the audio thread, eight per room. A computer carries that; a phone or a
+ * headset browser runs out of audio time and crackles. Rooms built after this
+ * call render the same tail natively instead: a convolution room of the decay
+ * the comb feedback would give, with the wall's dampening as a lowpass. The
+ * installation never calls it and keeps the composed Freeverb.
+ */
+let nativeRooms = false;
+export function preferNativeRooms(): void {
+  nativeRooms = true;
+}
+
+/** Freeverb's comb delays average about 34 ms with their stereo spread; feedback g decays 60 dB in 3·d / −log10 g. */
+const COMB_SECONDS = 0.034;
+function combDecaySeconds(feedback: number): number {
+  return Math.max(0.1, (3 * COMB_SECONDS) / -Math.log10(feedback));
+}
+/** Eight combs add up, a convolution room is normalized: this evens the level. */
+const NATIVE_ROOM_GAIN = 15;
 
 /** Every value below is 0..1, the range all of the organ's controls speak in. */
 export interface EchoRoomSettings {
@@ -62,13 +90,21 @@ export function createEchoRoom(
     maxDelay: 2,
   });
   const echoMix = new Gain(settings.echoMix);
-  const reverb = new Freeverb({
-    roomSize: 0.2 + settings.roomSize * 0.75,
-    dampening:
-      MIN_DAMPENING_HERTZ + settings.wallHardness * DAMPENING_RANGE_HERTZ,
-  });
-  reverb.wet.value = 1;
-  const reverbMix = new Gain(settings.reverbMix);
+  const roomSize = 0.2 + settings.roomSize * 0.75;
+  const dampening =
+    MIN_DAMPENING_HERTZ + settings.wallHardness * DAMPENING_RANGE_HERTZ;
+  let reverb: Freeverb | Reverb;
+  let walls: Filter | undefined;
+  if (nativeRooms) {
+    reverb = new Reverb({ decay: combDecaySeconds(roomSize), wet: 1 });
+    walls = new Filter(dampening, "lowpass");
+  } else {
+    reverb = new Freeverb({ roomSize, dampening });
+    reverb.wet.value = 1;
+  }
+  const reverbMix = new Gain(
+    settings.reverbMix * (walls ? NATIVE_ROOM_GAIN : 1),
+  );
 
   input.connect(dry);
   dry.connect(bus);
@@ -77,7 +113,8 @@ export function createEchoRoom(
   echoMix.connect(bus);
   input.connect(reverb);
   delay.connect(reverb);
-  reverb.connect(reverbMix);
+  if (walls) reverb.chain(walls, reverbMix);
+  else reverb.connect(reverbMix);
   reverbMix.connect(bus);
 
   return {
@@ -91,9 +128,8 @@ export function createEchoRoom(
     },
 
     dispose: (): void => {
-      for (const node of [input, dry, delay, echoMix, reverb, reverbMix]) {
-        node.dispose();
-      }
+      for (const node of [input, dry, delay, echoMix, reverb, walls, reverbMix])
+        node?.dispose();
     },
   };
 }

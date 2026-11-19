@@ -20,7 +20,7 @@ const THREE_POSITION_SHADER = "#include <begin_vertex>";
 const THREE_PROJECT_SHADER = "#include <project_vertex>";
 const THREE_LOG_DEPTH_VERTEX_SHADER = "#include <logdepthbuf_vertex>";
 const THREE_CLIPPING_FRAGMENT_SHADER = "#include <clipping_planes_fragment>";
-const MATERIAL_CACHE_KEY = "air-particle-material-v2";
+const MATERIAL_CACHE_KEY = "air-particle-material-v3";
 
 interface AirParticleMaterialOptions {
   readonly appearance: AirParticlesParameters["appearance"];
@@ -31,6 +31,10 @@ interface AirParticleMaterialOptions {
 export interface AirParticleMaterial {
   readonly pointsMaterial: PointsMaterial;
   readonly update: (deltaSeconds: number) => void;
+  /** 1 (default) hides particles below the surface; 0 shows them all. */
+  readonly setGroundPresence: (presence: number) => void;
+  /** Switch between square and round points; recompiles once. */
+  readonly setShape: (shape: AirParticleShape) => void;
 }
 
 /** Keep the default opaque; a local field fades before its resident slots recycle. */
@@ -39,8 +43,9 @@ export function createAirParticleMaterial({
   motion,
   streaming,
 }: AirParticleMaterialOptions): AirParticleMaterial {
-  const shape = appearance.shape ?? AIR_PARTICLES_SETTINGS.defaultShape;
+  let shape = appearance.shape ?? AIR_PARTICLES_SETTINGS.defaultShape;
   const timeUniform = { value: 0 };
+  const groundPresenceUniform = { value: 1 };
   const horizontalAmplitudeUniform = {
     value: motion.horizontalAmplitudeMeters,
   };
@@ -56,6 +61,7 @@ export function createAirParticleMaterial({
 
   pointsMaterial.onBeforeCompile = (shader) => {
     shader.uniforms.airParticleTime = timeUniform;
+    shader.uniforms.airParticleGroundPresence = groundPresenceUniform;
     shader.uniforms.airParticleHorizontalAmplitude = horizontalAmplitudeUniform;
     shader.uniforms.airParticleVerticalAmplitude = verticalAmplitudeUniform;
     if (streaming) {
@@ -66,7 +72,10 @@ export function createAirParticleMaterial({
         value: streaming.viewDistanceMeters,
       };
     }
-    shader.vertexShader = patchMotionShader(shader.vertexShader);
+    shader.vertexShader = patchMotionShader(shader.vertexShader).replace(
+      THREE_LOG_DEPTH_VERTEX_SHADER,
+      `gl_PointSize *= airParticleSizeFactor;\n${THREE_LOG_DEPTH_VERTEX_SHADER}`,
+    );
     shader.fragmentShader = patchShapeShader(shader.fragmentShader, shape);
     if (streaming) {
       // Apply the limit after Three.js has converted world size to pixel size.
@@ -93,6 +102,16 @@ export function createAirParticleMaterial({
 
   return {
     pointsMaterial,
+    setShape: (next) => {
+      if (next === shape) return;
+      shape = next;
+      pointsMaterial.needsUpdate = true;
+    },
+    setGroundPresence: (presence) => {
+      groundPresenceUniform.value = Number.isFinite(presence)
+        ? Math.max(0, Math.min(1, presence))
+        : 1;
+    },
     update: (deltaSeconds) => {
       timeUniform.value =
         (timeUniform.value + deltaSeconds * motion.speedMultiplier) %

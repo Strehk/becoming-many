@@ -23,6 +23,7 @@ import {
 } from "./point-cloud-geometry";
 import {
   AIR_PARTICLES_SETTINGS,
+  type AirParticleShape,
   type AirParticlesParameters,
 } from "./point-cloud-settings";
 
@@ -36,6 +37,8 @@ import type { Viewpoint } from "../../../world/viewpoint";
 export interface AirParticlesModuleOptions {
   readonly scene: Scene;
   readonly readPresence?: () => number;
+  /** 1 hides particles below the surface; less shows them, shrinking. */
+  readonly readGroundPresence?: () => number;
   readonly viewpoint: Viewpoint;
   readonly parameters: AirParticlesParameters;
   readonly streamQueue: StreamQueue;
@@ -55,15 +58,28 @@ interface AirParticlesState {
   currentStream: AirParticleStream | undefined;
 }
 
+/** The air module, plus its one presentation switch: square or round points. */
+export interface AirParticlesModule extends WorldModule {
+  readonly setShape: (shape: AirParticleShape) => void;
+}
+
 export function createAirParticlesModule(
   options: AirParticlesModuleOptions,
-): WorldModule {
+): AirParticlesModule {
   const state: AirParticlesState = {
     currentStream: undefined,
   };
+  let shape: AirParticleShape | undefined;
 
   return {
-    load: () => loadAirParticles(state, options),
+    setShape: (next) => {
+      shape = next;
+      state.currentStream?.particleCloud.material.setShape(next);
+    },
+    load: () => {
+      loadAirParticles(state, options);
+      if (shape) state.currentStream?.particleCloud.material.setShape(shape);
+    },
     activate: () => {
       applyPresence(state, options);
       setAirParticlesVisible(state, true);
@@ -111,7 +127,7 @@ function loadAirParticles(
 
 function updateAirParticles(
   state: AirParticlesState,
-  { viewpoint, streamQueue }: AirParticlesModuleOptions,
+  { viewpoint, streamQueue, readGroundPresence }: AirParticlesModuleOptions,
   deltaSeconds: number,
 ): void {
   const stream = state.currentStream;
@@ -119,6 +135,8 @@ function updateAirParticles(
 
   // Animation changes one uniform only. Particle buffers stay untouched.
   stream.particleCloud.material.update(deltaSeconds);
+  if (readGroundPresence)
+    stream.particleCloud.material.setGroundPresence(readGroundPresence());
 
   const changedAssignments = stream.volumeWindow.update(
     viewpoint.worldPosition.x,

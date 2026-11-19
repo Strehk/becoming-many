@@ -1,0 +1,748 @@
+/*
+ * Purpose: The monochrome menu language of the web release.
+ * Context: It follows the earlier beta menu (E-Mus/becoming-many-beta,
+ *   src/experience/menu-theme.ts): uppercase letter-spaced type, a game-menu
+ *   list with a sliding dash, a hint line, bordered choices that fill black,
+ *   the pulsing start-gate pill, and a white halo that keeps black type
+ *   legible over the live air layer. Set in Rubik, the end-credits face.
+ * Responsibility: Screens and reusable pieces; layout.css places them.
+ */
+
+:root {
+  --bm-ink: #05070c;
+  --bm-muted: rgb(5 7 12 / 0.55);
+  --bm-line: rgb(5 7 12 / 0.16);
+  --bm-halo: 0 0 18px rgb(255 255 255 / 0.9), 0 0 42px rgb(255 255 255 / 0.6);
+}
+
+/* 1. Layout */
+.screen {
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: clamp(22px, 4vh, 40px);
+  padding: clamp(20px, 5vh, 56px) clamp(16px, 5vw, 48px);
+  text-align: center;
+}
+
+/* A soft white glow behind the type, transparent where the air drifts. */
+.glow {
+  background: radial-gradient(
+    68% 52% at 50% 42%,
+    rgb(255 255 255 / 0.92) 0%,
+    rgb(255 255 255 / 0.72) 45%,
+    rgb(255 255 255 / 0.28) 75%,
+    rgb(255 255 255 / 0) 100%
+  );
+}
+
+.title,
+.heading {
+  margin: 0;
+  font-weight: 700;
+  line-height: 1.02;
+  text-transform: uppercase;
+  text-shadow: var(--bm-halo);
+}
+
+.title {
+  font-size: clamp(30px, 8.5vw, 68px);
+  letter-spacing: clamp(3px, 1.1vw, 9px);
+}
+
+.heading {
+  font-size: clamp(22px, 5vw, 38px);
+  letter-spacing: clamp(2px, 0.6vw, 5px);
+}
+
+.lede {
+  margin: 0;
+  max-width: 46ch;
+  font-size: clamp(12px, 1.6vw, 14px);
+  font-weight: 400;
+  line-height: 1.6;
+  letter-spacing: 0.02em;
+  color: rgb(5 7 12 / 0.62);
+}
+
+/* 2. The game-menu list */
+.list,
+.bm-modes {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(6px, 1.4vh, 14px);
+  width: auto;
+}
+
+.item,
+.bm-mode,
+.back {
+  position: relative;
+  min-height: 48px;
+  padding: 10px 44px;
+  font-size: clamp(15px, 2.9vw, 23px);
+  font-weight: 600;
+  letter-spacing: clamp(1.5px, 0.35vw, 3.5px);
+  text-transform: uppercase;
+  text-shadow: var(--bm-halo);
+  color: var(--bm-ink);
+  opacity: 0.62;
+  transition:
+    opacity 160ms ease,
+    transform 160ms ease,
+    letter-spacing 160ms ease;
+}
+
+/* The marker that walks down the list, as in a game menu. */
+.item::before,
+.bm-mode::before,
+.back::before {
+  content: "";
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  width: 14px;
+  height: 2px;
+  background: currentColor;
+  transform: translateY(-50%) scaleX(0);
+  transform-origin: left center;
+  transition: transform 160ms ease;
+}
+
+.item:hover,
+.item:focus-visible,
+.bm-mode:hover,
+.bm-mode:focus-visible,
+.back:hover,
+.back:focus-visible {
+  opacity: 1;
+  outline: none;
+  transform: translateX(4px);
+  letter-spacing: clamp(2px, 0.5vw, 4.5px);
+}
+
+.item:hover::before,
+.item:focus-visible::before,
+.bm-mode:hover::before,
+.bm-mode:focus-visible::before,
+.back:hover::before,
+.back:focus-visible::before {
+  transform: translateY(-50%) scaleX(1);
+}
+
+.item--primary {
+  opacity: 1;
+}
+
+.back {
+  min-height: 40px;
+  font-size: clamp(11px, 1.7vw, 13px);
+  letter-spacing: 2px;
+  opacity: 0.42;
+}
+
+.hint {
+  min-height: 1.5em;
+  margin: 2px 0 0;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.5;
+  letter-spacing: 0.01em;
+  color: var(--bm-muted);
+  text-align: center;
+}
+
+/* 3. Modes as list entries: label, then a quiet status */
+.bm-mode {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 14px;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  backdrop-filter: none;
+}
+
+.bm-mode__icon,
+.bm-mode__hint {
+  display: none;
+}
+
+.bm-mode__label {
+  font-size: inherit;
+  font-weight: inherit;
+}
+
+.bm-mode__status {
+  margin: 0;
+  padding: 0;
+  border-radius: 0;
+  background: none;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 2px;
+  color: var(--bm-muted);
+}
+
+.bm-mode__status[data-status="ready"],
+.bm-mode__status[data-status="permission"] {
+  background: none;
+  color: var(--bm-ink);
+}
+
+/* 4. Settings: bordered choices that fill black, plain rows */
+.panel {
+  width: min(520px, 92vw);
+  padding: 0;
+  text-align: left;
+}
+
+.bm-settings {
+  width: 100%;
+  gap: 2px;
+}
+
+.bm-setting {
+  min-height: 52px;
+  border-bottom: 1px solid var(--bm-line);
+}
+
+.bm-setting__label {
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+}
+
+.bm-seg {
+  gap: 6px;
+  padding: 0;
+  border-radius: 0;
+  background: none;
+}
+
+.bm-seg__option {
+  min-width: 52px;
+  padding: 8px 12px;
+  border: 1px solid var(--bm-line);
+  border-radius: 2px;
+  background: rgb(255 255 255 / 0.5);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--bm-ink);
+}
+
+.bm-seg__option:hover {
+  border-color: rgb(5 7 12 / 0.45);
+}
+
+.bm-seg__option[aria-pressed="true"] {
+  border-color: var(--bm-ink);
+  background: var(--bm-ink);
+  color: #fff;
+}
+
+.bm-switch__knob {
+  border: 1px solid var(--bm-line);
+  border-radius: 2px;
+  background: rgb(255 255 255 / 0.5);
+}
+
+.bm-switch__knob::after {
+  top: 3px;
+  left: 3px;
+  border-radius: 1px;
+  background: rgb(5 7 12 / 0.35);
+  box-shadow: none;
+}
+
+.bm-switch[aria-checked="true"] .bm-switch__knob {
+  background: var(--bm-ink);
+}
+
+.bm-switch[aria-checked="true"] .bm-switch__knob::after {
+  background: #fff;
+}
+
+.bm-switch__text,
+.bm-range__value {
+  font-size: 11px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--bm-muted);
+}
+
+.bm-range__input {
+  background: linear-gradient(
+    to right,
+    var(--bm-ink) var(--value, 50%),
+    var(--bm-line) var(--value, 50%)
+  );
+}
+
+.bm-range__input::-webkit-slider-thumb {
+  border-radius: 2px;
+  background: var(--bm-ink);
+  border: 3px solid #fff;
+}
+
+/* 5. Credits keep the end-credits proportions; launch reads quietly */
+.bm-credits {
+  text-shadow: var(--bm-halo);
+}
+
+.launch__mode {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  color: var(--bm-muted);
+}
+
+.launch__text {
+  max-width: 30ch;
+  margin: 0;
+  font-size: clamp(18px, 2.6vw, 28px);
+  font-weight: 500;
+  line-height: 1.35;
+  text-shadow: var(--bm-halo);
+}
+
+.launch__note,
+.launch__gyro {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--bm-muted);
+}
+
+/* 6. The start-gate pill from the beta: loading, then the go-ahead */
+.gate {
+  padding: 12px 22px;
+  border: 1px solid var(--bm-line);
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.72);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+:root[data-ready="true"] .gate--pulse {
+  animation: bm-gate-pulse 2s ease-in-out infinite;
+}
+
+@keyframes bm-gate-pulse {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+
+  50% {
+    opacity: 1;
+  }
+}
+
+/* A hairline progress, black on its own faint track. */
+.line {
+  position: relative;
+  width: min(240px, 60vw);
+  height: 1px;
+  background: var(--bm-line);
+}
+
+.line::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform-origin: left;
+  transform: scaleX(var(--progress, 0));
+  background: var(--bm-ink);
+}
+
+.readout {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  font-variant-numeric: tabular-nums;
+  color: var(--bm-muted);
+}
+
+/* 7. The title the particles form: invisible until the set type takes over */
+.bm-title {
+  position: fixed;
+  z-index: 1;
+  margin: 0;
+  font-weight: 700;
+  line-height: 1.02;
+  text-transform: uppercase;
+  color: var(--bm-ink);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.9s var(--bm-ease);
+}
+
+.bm-title.is-set {
+  opacity: 1;
+}
+
+/* 8. Loading readout: the percentage and the sense being prepared */
+.load__percent {
+  margin: 0;
+  font-weight: 300;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+.load__unit {
+  margin-left: 0.08em;
+  font-size: 0.45em;
+  font-weight: 400;
+  vertical-align: 0.95em;
+  letter-spacing: 0;
+}
+
+.load__sense {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+}
+
+.load__line {
+  margin: 0;
+  max-width: 34ch;
+  min-height: 3em;
+  font-size: clamp(14px, 1.5vw, 17px);
+  font-weight: 400;
+  line-height: 1.5;
+  color: rgb(5 7 12 / 0.62);
+}
+
+.load__readout {
+  transition: opacity 0.6s var(--bm-ease);
+}
+
+:root[data-loaded="true"] .load__readout {
+  opacity: 0;
+}
+
+.load__enter {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+}
+
+/* 9. Air titles (04-06): the type takes over from the ink at once, without a
+   fade; the ink canvas sits exactly over it. The title is made of air, so it
+   keeps the air particles' colour. */
+.air-title .bm-title {
+  color: #202126;
+  transition: none;
+}
+
+.bm-ink {
+  position: fixed;
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* The pointer is drawn by the air itself on screens with a mouse. */
+.air-cursor,
+.air-cursor * {
+  /* biome-ignore lint/complexity/noImportantStyles: every control sets its own pointer cursor */
+  cursor: none !important;
+}
+
+/* 10. Centred menus without the walking marker (07-09): a dash in front of a
+   centred line throws it off its axis, so the hovered entry only darkens. */
+.plain-marker .item::before,
+.plain-marker .bm-mode::before,
+.plain-marker .back::before {
+  display: none;
+}
+
+.plain-marker .item:hover,
+.plain-marker .item:focus-visible,
+.plain-marker .bm-mode:hover,
+.plain-marker .bm-mode:focus-visible,
+.plain-marker .back:hover,
+.plain-marker .back:focus-visible {
+  transform: none;
+}
+
+.load__building {
+  margin: 0;
+  font-size: clamp(14px, 1.5vw, 17px);
+  font-weight: 400;
+  line-height: 1.5;
+  color: var(--bm-muted);
+  text-align: center;
+}
+
+/* The release under the title, in place of a subtitle (07-09). */
+.menu__version {
+  margin-top: -6px;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  font-variant-numeric: tabular-nums;
+  color: var(--bm-muted);
+  text-decoration: none;
+  text-shadow: var(--bm-halo);
+}
+
+.menu__version:hover,
+.menu__version:focus-visible {
+  color: var(--bm-ink);
+  outline: none;
+}
+
+/* The way in, as three equal columns: a centred list cannot carry a status
+   beside each entry without leaning, so each choice stands on its own axis
+   with its icon, its name and its status underneath (07-09). */
+.plain-marker .bm-modes {
+  flex-direction: row;
+  align-items: stretch;
+  justify-content: center;
+  gap: clamp(8px, 3vw, 44px);
+}
+
+.plain-marker .bm-mode {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 12px;
+  min-width: clamp(150px, 16vw, 210px);
+  padding: 22px 12px 18px;
+}
+
+.plain-marker .bm-mode__icon {
+  display: block;
+  height: 30px;
+  opacity: 0.85;
+}
+
+.plain-marker .bm-mode__status {
+  letter-spacing: 0.18em;
+}
+
+/* Hover widens the letter spacing; a name must never break into two lines. */
+.plain-marker .bm-mode__label {
+  white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+  .plain-marker .bm-modes {
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+  }
+
+  .plain-marker .bm-mode {
+    width: min(280px, 80vw);
+    padding: 12px;
+    gap: 6px;
+  }
+
+  .plain-marker .bm-mode__icon {
+    display: none;
+  }
+}
+
+/* Credits under the menu's own title (07-09): the title stays where it is
+   and the credits take the place of the menu below it. */
+.plain-marker .bm-credits__title {
+  display: none;
+}
+
+/* Under the menu's title the credits sit tighter, so the Futurium block and
+   the way back still fit on a desktop screen. */
+.plain-marker .bm-credits {
+  gap: clamp(20px, 3.6vh, 36px);
+}
+
+.plain-marker section[data-screen="credits"] {
+  gap: clamp(14px, 2.4vh, 24px);
+}
+
+/* Pages under the title begin below it; when they are taller than the
+   window they scroll in their own area and never slide under the title. */
+.plain-marker section[data-screen="credits"] {
+  top: calc(var(--title-bottom, 40vh) + 8px);
+  place-content: start center;
+  padding-top: clamp(20px, 4vh, 48px);
+  padding-bottom: 48px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 22px);
+  mask-image: linear-gradient(to bottom, transparent 0, #000 22px);
+}
+
+/* Short desktop windows: the credits under the title tighten further so they
+   still fit without scrolling. */
+@media (min-width: 641px) and (max-height: 820px) {
+  .plain-marker section[data-screen="credits"] {
+    padding-top: 14px;
+    gap: 10px;
+  }
+
+  .plain-marker .bm-credits__group {
+    gap: 8px;
+  }
+
+  .plain-marker .bm-credits__entry {
+    gap: 1px;
+  }
+
+  .plain-marker .bm-credits__name {
+    font-size: 16px;
+  }
+
+  .plain-marker .bm-credits__text,
+  .plain-marker .bm-credits__links {
+    font-size: 12px;
+    line-height: 1.45;
+  }
+
+  .plain-marker .bm-credits__visit-link {
+    padding: 7px 12px;
+  }
+}
+
+/* Ways in this device seems not to take are greyed out, but stay possible:
+   the detection can be wrong. */
+.bm-mode[data-unsuited] {
+  opacity: 0.32;
+}
+
+.bm-mode[data-unsuited]:hover,
+.bm-mode[data-unsuited]:focus-visible {
+  opacity: 0.6;
+}
+
+/* A setting with a sentence under it (the controls): the label above, the
+   options wrapping below, what the chosen one does underneath. */
+.bm-setting--explained {
+  display: grid;
+  justify-items: start;
+  gap: 10px;
+  padding: 14px 0;
+}
+
+.bm-setting--explained .bm-seg {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.bm-seg__option[hidden] {
+  display: none;
+}
+
+.bm-setting[hidden] {
+  display: none;
+}
+
+/* Settings in small groups, each under a quiet heading. */
+.bm-settings {
+  gap: clamp(14px, 2.6vh, 26px);
+}
+
+.bm-settings__group {
+  display: grid;
+}
+
+.bm-settings__heading {
+  margin: 0 0 2px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--bm-muted);
+}
+
+/* Taller than the window (a phone, a short laptop): the settings scroll in
+   their own page, beginning at the top, clear of the legal links below. */
+section[data-screen="settings"] {
+  align-content: start;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-bottom: calc(64px + env(safe-area-inset-bottom));
+}
+
+@supports (align-content: safe center) {
+  section[data-screen="settings"] {
+    align-content: safe center;
+  }
+}
+
+@media (max-width: 640px) {
+  /* Scrolled content fades out under the corner arrow and above the legal
+     links instead of running into them. */
+  section[data-screen="settings"] {
+    padding-top: calc(76px + env(safe-area-inset-top));
+    padding-bottom: calc(96px + env(safe-area-inset-bottom));
+    -webkit-mask-image: linear-gradient(
+      to bottom,
+      transparent calc(56px + env(safe-area-inset-top)),
+      #000 calc(84px + env(safe-area-inset-top)),
+      #000 calc(100% - 76px - env(safe-area-inset-bottom)),
+      transparent calc(100% - 44px - env(safe-area-inset-bottom))
+    );
+    mask-image: linear-gradient(
+      to bottom,
+      transparent calc(56px + env(safe-area-inset-top)),
+      #000 calc(84px + env(safe-area-inset-top)),
+      #000 calc(100% - 76px - env(safe-area-inset-bottom)),
+      transparent calc(100% - 44px - env(safe-area-inset-bottom))
+    );
+  }
+}
+
+/* The device's recommended way: a small word under its button. */
+.bm-setting--explained .bm-seg {
+  row-gap: 22px;
+  padding-bottom: 14px;
+}
+
+.bm-seg__option[data-recommended] {
+  position: relative;
+}
+
+.bm-seg__option[data-recommended]::after {
+  content: attr(data-tag);
+  position: absolute;
+  left: 50%;
+  top: calc(100% + 5px);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--bm-muted);
+  transform: translateX(-50%);
+}
+
+.bm-setting__about {
+  min-height: 2.9em;
+  margin: 0;
+  max-width: 52ch;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.45;
+  color: var(--bm-muted);
+  text-align: left;
+}

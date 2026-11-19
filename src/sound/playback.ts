@@ -92,6 +92,8 @@ export interface VoicePlayback {
   };
   /** Caller-driven linear gain in 0..1; persists across clip changes. Invalid input mutes. */
   readonly setPresence: (presence: number) => void;
+  /** Visitor volume in 0..1 multiplying presence; persists across clip changes. */
+  readonly setVolume: (volume: number) => void;
   readonly stop: () => void;
   readonly unload: () => void;
 }

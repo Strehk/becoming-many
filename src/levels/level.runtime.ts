@@ -5,6 +5,7 @@
  * Boundary: Authored data and concrete world composition live in dedicated level files.
  */
 
+import { Group } from "three";
 import type { PassageSchedule } from "../dramaturgy/passage-schedule";
 import { showLevelStateAt } from "../dramaturgy/show-levels";
 import type { M5Runtime } from "../m5/m5-contract";
@@ -25,8 +26,11 @@ import {
   loadLevelAssets,
 } from "./level-composition";
 import type { LevelPreset } from "./level-preset";
-import type { LevelStartRequest, Run } from "./run-contract";
+import type { LevelStartRequest, Run, RunPreferences } from "./run-contract";
 import type { RunningShow, ShowRuntime } from "./show-contract";
+
+/** How long the hidden ground takes to grow back in after a prelude. */
+const GROUND_GROW_IN_SECONDS = 8;
 
 export async function startLevel(
   surface: WorldViewport,
@@ -76,6 +80,20 @@ class LevelRun {
   private handoffElapsed: number | undefined;
   private mainFieldOfViewDegrees = 0;
   private veil: ReturnType<typeof composeVeil> | undefined;
+  /** A page's overlay objects and per-frame hooks (the web start menu). */
+  private readonly overlay = new Group();
+  private readonly frameHooks = new Set<(deltaSeconds: number) => void>();
+  /** True until the first Play when a page plays a prelude in front. */
+  private preludeActive = false;
+  private preludeGlide = 0;
+  /** The hidden ground under the air: absent in a prelude, grows in on Play. */
+  private groundPresence = 1;
+  private groundModules: readonly WorldModule[] = [];
+  private setAirParticleShape:
+    | ((shape: "square" | "circle") => void)
+    | undefined;
+  /** Absent until a page sets them; the Run then leaves every part as authored. */
+  private preferences: RunPreferences | undefined;
   /** 1 is white, 0 is the world; it falls only while playback runs. */
   private veilPresence = 1;
   private readonly showListeners = new Set<
@@ -91,12 +109,56 @@ class LevelRun {
 
   constructor(private readonly request: LevelStartRequest) {
     this.level = request.preset;
+    if (request.kind === "show" && request.prelude) {
+      this.preludeActive = true;
+      this.groundPresence = 0;
+      this.preludeGlide = request.prelude.glideMetersPerSecond;
+    }
     this.tutorialHeld =
       request.kind === "show" && request.initiallyPaused === true;
     this.signal = request.signal
       ? AbortSignal.any([request.signal, this.lifetime.signal])
       : this.lifetime.signal;
   }
+
+  get stage(): Run["stage"] {
+    // The overlay joins the scene only when a page asks for the stage.
+    if (!this.overlay.parent && !this.signal.aborted) {
+      this.overlay.name = "page-overlay";
+      this.world.scene.add(this.overlay);
+    }
+    return {
+      scene: this.world.scene,
+      camera: this.world.camera,
+      renderer: this.world.renderer,
+      overlay: this.overlay,
+      groundYAt: (worldX, worldZ) =>
+        this.worldSurface?.groundYAt(worldX, worldZ) ?? 0,
+      onFrame: (hook) => {
+        this.frameHooks.add(hook);
+        return () => {
+          this.frameHooks.delete(hook);
+        };
+      },
+    };
+  }
+
+  readonly returnToPrelude: Run["returnToPrelude"] = (glideMetersPerSecond) => {
+    if (this.request.kind !== "show" || !this.request.prelude) return;
+    this.show?.resetTime();
+    this.preludeActive = true;
+    this.preludeGlide = Math.max(0, glideMetersPerSecond);
+    this.groundPresence = 0;
+    for (const module of this.groundModules)
+      this.world.modules.deactivate(module);
+  };
+
+  private readonly readGroundPresence = (): number => this.groundPresence;
+
+  readonly setPreludeGlide: Run["setPreludeGlide"] = (metersPerSecond) => {
+    if (Number.isFinite(metersPerSecond))
+      this.preludeGlide = Math.max(0, metersPerSecond);
+  };
 
   get xr(): Run["xr"] {
     return this.world.xr;
@@ -126,17 +188,72 @@ class LevelRun {
     this.mainFieldOfViewDegrees = fieldOfViewDegrees;
     this.present(presentation, fieldOfViewDegrees);
     this.raiseVeil();
+    // A prelude shows the first world at once; the page fades its canvas in.
+    if (this.preludeActive) {
+      this.veilPresence = 0;
+      this.veil?.setPresence(0);
+    }
     await this.loadComposition();
     this.signal.throwIfAborted();
-    this.controls = composeControls(this.world, this.worldSurface);
+    const preludeInput =
+      this.request.kind === "show" ? this.request.prelude?.input : undefined;
+    this.controls = composeControls(
+      this.world,
+      this.worldSurface,
+      preludeInput ? [preludeInput] : [],
+    );
     if (this.request.kind === "show") {
       await this.startPlayback();
       await this.startTutorial();
       if (!this.request.tutorial) this.openShowWithoutTutorial();
     }
     this.signal.throwIfAborted();
+    this.applyPreferences();
     this.signal.addEventListener("abort", this.onAbort, { once: true });
     this.world.start(this.updateFrame);
+  }
+
+  readonly setPreferences: Run["setPreferences"] = (preferences) => {
+    if (this.signal.aborted) return;
+    const clamp = (
+      value: number,
+      low: number,
+      high: number,
+      fallback: number,
+    ) =>
+      Number.isFinite(value) ? Math.max(low, Math.min(high, value)) : fallback;
+    this.preferences = {
+      volume: clamp(preferences.volume, 0, 1, 1),
+      renderScale: clamp(preferences.renderScale, 0.5, 2, 1),
+      invertPitch: preferences.invertPitch === true,
+      roundParticles: preferences.roundParticles === true,
+      screenCredits: preferences.screenCredits === true,
+    };
+    this.applyPreferences();
+  };
+
+  /** Hand the current preferences to every part that exists right now. */
+  private applyPreferences(): void {
+    if (!this.preferences) return;
+    const { volume, renderScale, invertPitch } = this.preferences;
+    const renderer = this.world?.renderer;
+    if (
+      renderer &&
+      !renderer.xr.isPresenting &&
+      renderer.getPixelRatio() !== renderScale
+    )
+      renderer.setPixelRatio(renderScale);
+    this.voice?.setVolume(volume);
+    const destination = this.audio?.context.destination;
+    if (destination)
+      destination.volume.rampTo(
+        volume <= 0 ? Number.NEGATIVE_INFINITY : 20 * Math.log10(volume),
+        0.1,
+      );
+    this.controls?.flight.setPitchInverted(invertPitch);
+    this.setAirParticleShape?.(
+      this.preferences.roundParticles ? "circle" : "square",
+    );
   }
 
   readonly subscribeShow = (
@@ -309,7 +426,8 @@ class LevelRun {
   private openShowWithoutTutorial(): void {
     if (this.request.kind !== "show") return;
     this.placeRigAtArrival();
-    if (!this.request.initiallyPaused) this.playback?.running.play();
+    if (!this.request.initiallyPaused && !this.request.prelude)
+      this.playback?.running.play();
   }
 
   /** Every Show opens from the origin at the same height above the terrain. */
@@ -427,6 +545,8 @@ class LevelRun {
       level: this.level,
       assets: this.assets,
       forShow: this.request.kind === "show",
+      particles: this.request.particles,
+      readGroundPresence: this.readGroundPresence,
       passages: this.requestedPassages(),
       language:
         this.request.kind === "show"
@@ -441,9 +561,13 @@ class LevelRun {
     this.worldSurface = composition.worldSurface;
     this.reach = composition.reach;
     this.hasGround = composition.hasGround;
+    this.groundModules = composition.groundModules ?? [];
+    this.setAirParticleShape = composition.setAirParticleShape;
     for (const module of composition.modules) {
       this.world.modules.load(module);
-      this.world.modules.activate(module);
+      // A prelude holds the drawn ground back until the piece begins.
+      if (!(this.preludeActive && this.groundModules.includes(module)))
+        this.world.modules.activate(module);
     }
     if (this.request.kind === "show") await this.world.prepareRenderer();
   }
@@ -453,7 +577,18 @@ class LevelRun {
     const sound = await composePlayback(this.request.show, {
       signal: this.signal,
       world: this.world,
-      reach: this.reach,
+      reach: {
+        ...this.reach,
+        // A page that draws the credits over the screen keeps the world's
+        // panel hidden, except in a headset, where no overlay is seen.
+        setEndCreditsPresence: (presence) =>
+          this.reach.setEndCreditsPresence?.(
+            this.preferences?.screenCredits &&
+              !this.world.renderer.xr.isPresenting
+              ? 0
+              : presence,
+          ),
+      },
       worldSurface: this.worldSurface,
     });
     this.audio = sound.audio;
@@ -479,6 +614,17 @@ class LevelRun {
     this.updateVeil(deltaSeconds);
     this.audio?.update();
     this.updateHeightLimits();
+    // After a prelude the ground grows back in under the air, slowly.
+    if (!this.preludeActive && this.groundPresence < 1)
+      this.groundPresence = Math.min(
+        1,
+        this.groundPresence +
+          Math.max(0, deltaSeconds) / GROUND_GROW_IN_SECONDS,
+      );
+    if (this.frameHooks.size === 0) return;
+    // Hooks place overlay objects against this frame's camera.
+    this.world.camera.updateWorldMatrix(true, false);
+    for (const hook of this.frameHooks) hook(deltaSeconds);
   };
 
   /** A Show opens in white; static levels open on their world. */
@@ -508,13 +654,24 @@ class LevelRun {
   }
 
   private updateFlight(deltaSeconds: number): void {
+    const playing = this.readPlayback() === "playing";
+    // The prelude ends with the first Play; later pauses hold flight again.
+    if (playing && this.preludeActive) {
+      this.preludeActive = false;
+      for (const module of this.groundModules)
+        this.world.modules.activate(module);
+    }
+    const speed =
+      this.tutorialRestart ||
+      (!playing && !this.preludeActive) ||
+      (this.handoffElapsed !== undefined && !this.skipTarget)
+        ? 0
+        : playing
+          ? this.flightSpeed()
+          : this.preludeGlide;
     this.controls?.flight.update(
       deltaSeconds,
-      this.tutorialRestart ||
-        this.readPlayback() !== "playing" ||
-        (this.handoffElapsed !== undefined && !this.skipTarget)
-        ? 0
-        : this.flightSpeed(),
+      speed,
       this.world.renderer.xr.isPresenting,
     );
   }
@@ -573,6 +730,10 @@ class LevelRun {
 
   private remainingReleases(): (() => unknown)[] {
     return [
+      () => {
+        this.frameHooks.clear();
+        this.overlay.removeFromParent();
+      },
       () => this.releaseTutorial(),
       () => this.voice?.unload(),
       ...[...this.modules]

@@ -15,6 +15,9 @@ export function createVoicePlayer(options: VoiceOptions): VoicePlayback {
 
 class VoicePlayer implements VoicePlayback {
   private audio: HTMLAudioElement;
+  // A new element starts at full volume, so both factors start at one.
+  private presence = 1;
+  private volume = 1;
   private recording: VoiceRecording | undefined;
   private replacement:
     | {
@@ -305,9 +308,19 @@ class VoicePlayer implements VoicePlayback {
   /** Fade the native source without seeking, pausing or changing its timing. */
   readonly setPresence = (presence: number): void => {
     if (this.unloaded) return;
-    this.audio.volume = Number.isFinite(presence)
+    this.presence = Number.isFinite(presence)
       ? Math.max(0, Math.min(1, presence))
       : 0;
+    this.audio.volume = this.presence * this.volume;
+  };
+
+  /** The visitor's volume scales presence; fades keep their own shape. */
+  readonly setVolume = (volume: number): void => {
+    if (this.unloaded) return;
+    this.volume = Number.isFinite(volume)
+      ? Math.max(0, Math.min(1, volume))
+      : 1;
+    this.audio.volume = this.presence * this.volume;
   };
 
   // 3. Complete, idempotent cancellation includes listeners and native loading.

@@ -28,8 +28,10 @@
     "vite": "^8.2.2"
   },
   "dependencies": {
+    "@mediapipe/tasks-vision": "1.2.0",
     "esp-web-tools": "^10.4.0",
     "lucide-static": "^1.43.0",
+    "qrcode-generator": "1.4.4",
     "three": "^0.185.1",
     "tone": "14.8.49"
   },

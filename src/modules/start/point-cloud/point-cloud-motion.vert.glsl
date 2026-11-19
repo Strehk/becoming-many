@@ -6,6 +6,11 @@
  */
 
 uniform float airParticleTime;
+// 1 hides particles below the world surface; lower values show them, smaller
+// the higher it gets, so a prelude can let the ground grow in.
+uniform float airParticleGroundPresence;
+// Size factor the point size picks up after attenuation.
+float airParticleSizeFactor = 1.0;
 uniform float airParticleHorizontalAmplitude;
 uniform float airParticleVerticalAmplitude;
 attribute float airParticleVisible;
@@ -49,7 +54,12 @@ vec4 getAirParticleClipPosition(vec4 visibleClipPosition, vec3 viewPosition) {
 
   if (airParticleVisible > 0.5) return visibleClipPosition;
 
-  // Points below the sampled world surface remain in the fixed GPU buffer but
-  // are moved beyond clip space before rasterization.
+  // Points below the sampled world surface (0) remain in the fixed GPU buffer
+  // but are moved beyond clip space before rasterization, unless the ground
+  // is not fully present yet. Negative values are always hidden (borrowed).
+  if (airParticleVisible > -0.5 && airParticleGroundPresence < 0.999) {
+    airParticleSizeFactor = 1.0 - airParticleGroundPresence;
+    return visibleClipPosition;
+  }
   return vec4(2.0, 2.0, 2.0, 1.0);
 }

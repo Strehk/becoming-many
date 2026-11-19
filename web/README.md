@@ -1,0 +1,67 @@
+# Web release
+
+Becoming Many in the browser: a start menu in front of the real experience,
+for desktop, VR headset and phone. It runs the application's own code from
+`src/` and its public files from `public/`; the installation is untouched.
+
+## Run and build
+
+```bash
+bunx vite web
+```
+
+```bash
+bunx vite build -c web/vite.config.js
+```
+
+The build lands in `web/dist-pages/` with the base `/becoming-many/` (set
+`PAGES_BASE` for another one) and is published as a static site on GitHub
+Pages. The experience names its public files from the server root
+(`/audio/...`, `/models/...`), so the build moves those paths under the base.
+
+## What it does
+
+- **Loading.** A spinner made of the world's own air particles (with a
+  stand-in on a plain canvas until the world exists) turns until the Show's
+  Run has started behind the menu and the narrator's first recording is in.
+  Then the same particles write the title, "Becoming Many".
+- **Menu.** Start, Settings, Credits, and the legal notice and privacy
+  policy. Start leads to the choice of desktop, VR headset or phone; this
+  device's way is marked recommended and starts at once. The other device's
+  way shows how to get there (on a computer, a QR code for the phone) and
+  offers "start here" for a device taken for the wrong one; VR without a
+  headset shows how to bring one.
+- **Seamless start.** The menu draws into the experience's own world; choosing
+  a way in lets the Show play around the same particles. Two cards come first
+  (headphones, then how to fly, with the device's other ways to steer to
+  switch to); a click skips them.
+- **Flight.** Desktop: W A S D or the arrow keys, or the arms as wings in
+  front of the webcam (pose model in `pose/`, shipped with the page). Phone:
+  turning it like a steering wheel, or turning around with it (360°). VR
+  headset: one click on VR starts the piece in the headset, and the flight
+  goes where the visitor looks; the view stays level and still in the world
+  while the flight turns beneath it (no ICAROS pitch assistance). An
+  autopilot flies on its own and hands over when the visitor steers. Touch
+  (a finger, or the mouse) works on both, and takes over on a phone whose
+  motion sensor is missing or not allowed.
+- **Settings**, from the gear or Esc, pause the piece. Grouped as general
+  (language, volume), flight (controls with the recommended one marked,
+  invert look, autopilot) and display (graphics, fullscreen), plus a timeline
+  to jump between chapters; rows that do nothing for the chosen way are left
+  out, and the page scrolls on small screens.
+- **Sound** is set up for phones and busy computers: one sound context with
+  a roomy output buffer, the organ's echo rooms as native convolution instead
+  of Freeverb's eight AudioWorklets each, a show clock that counts real time
+  while sound runs (a starved audio callback loses time and the narration
+  gets pulled back), and every recording of the language loaded in the
+  background. The installation keeps its own sound; these are opt-ins.
+- **End.** On a screen the title forms again over the credits; a headset
+  keeps the world's own credits panel.
+
+## Files
+
+- `index.html`, `main.js`: the page and its wiring to the Run.
+- `autopilot.js`, `camera-steering.js`, `early-spinner.js`: one job each.
+- `lib/`: the menu flow, its sound, and the borrowing of the air particles
+  (spinner, title, click burst).
+- `styles/`: the monochrome menu language, its layout and the page's pieces.
