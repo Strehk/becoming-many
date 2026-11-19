@@ -37,7 +37,10 @@ Pages. The experience names its public files from the server root
   switch to); a click skips them.
 - **Flight.** Desktop: W A S D or the arrow keys, or the arms as wings in
   front of the webcam (pose model in `pose/`, shipped with the page). Phone:
-  turning it like a steering wheel, or turning around with it (360°). An
+  turning it like a steering wheel, or turning around with it (360°). VR
+  headset: one click on VR starts the piece in the headset, and the flight
+  goes where the visitor looks; the view stays level and still in the world
+  while the flight turns beneath it (no ICAROS pitch assistance). An
   autopilot flies on its own and hands over when the visitor steers. Touch
   (a finger, or the mouse) works on both, and takes over on a phone whose
   motion sensor is missing or not allowed.

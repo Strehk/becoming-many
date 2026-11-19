@@ -18,6 +18,7 @@ import qrcode from "qrcode-generator";
 import { Euler, Quaternion, Vector3 } from "three";
 import { preferWallClock } from "../src/sound/audio-timebase";
 import { preferNativeRooms } from "../src/sound/drone-organ/voices/echo-room";
+import { preferSteadyXrView } from "../src/world/viewer-rig";
 import { createAutopilot } from "./autopilot.js";
 import { createCameraSteering } from "./camera-steering.js";
 import { startEarlySpinner } from "./early-spinner.js";
@@ -46,6 +47,8 @@ showVersion();
 prepareSoundContext();
 preferNativeRooms();
 preferWallClock();
+// A headset here is worn standing or sitting: a level view that stays still.
+preferSteadyXrView();
 
 const experience = Promise.all([
   import("../src/levels/level.runtime"),
@@ -178,6 +181,17 @@ const FLIGHT_KEYS = {
 };
 const pressed = new Set();
 const flying = () => menu.inShow && menu.screen === "show";
+/**
+ * The next frame of the Run. Inside a headset session the page's own
+ * requestAnimationFrame stops; only the session's frames run, and the Run's
+ * frame hooks run on those as on the screen.
+ */
+function onNextFrame(callback) {
+  const off = run.stage.onFrame(() => {
+    off();
+    callback();
+  });
+}
 window.addEventListener("keydown", (event) => {
   if (!flying()) return;
   if (Object.values(FLIGHT_KEYS).flat().includes(event.code)) {
@@ -558,6 +572,34 @@ function resetTakeover() {
   takeover.still = null;
   root.dataset.autopilotState = "manual";
 }
+/**
+ * In a headset the flight goes where the visitor looks, as 360° does on a
+ * phone: the view stays still in the world (preferSteadyXrView), the flight
+ * turns toward the look's heading and climbs or sinks with its pitch.
+ */
+const head = { view: new Quaternion(), body: new Quaternion() };
+function headSteer() {
+  const camera = run?.stage.camera;
+  const body = camera?.parent?.parent;
+  if (!flying() || !body) {
+    steer.rightTilt = 0;
+    steer.forwardTilt = 0;
+    return steer;
+  }
+  camera.getWorldQuaternion(head.view);
+  body.getWorldQuaternion(head.body);
+  // Gentler than on the phone: the flight's own turn inertia overshoots at
+  // more (measured with an emulated headset), and here a wrong heading is
+  // flown, not seen.
+  const error = wrapAngle(yawOf(head.view) - yawOf(head.body));
+  steer.rightTilt = Math.max(-1, Math.min(1, -error));
+  // Looking up climbs.
+  steer.forwardTilt = -Math.max(
+    -1,
+    Math.min(1, pitchOf(head.view) / (Math.PI / 4)),
+  );
+  return steer;
+}
 const preludeInput = {
   readInput(deltaSeconds) {
     const dt = Math.max(0, deltaSeconds);
@@ -568,6 +610,7 @@ const preludeInput = {
       steer.forwardTilt = free ? menu.input.y * 0.05 : 0;
       return steer;
     }
+    if (flightMode === "vr") return headSteer();
     const sensing = performance.now() - orientation.at < 1000;
     if (menu.settings.autopilot && autopilot && flightMode !== "vr") {
       watchTakeover(sensing);
@@ -1268,9 +1311,9 @@ function startIntro(withCards) {
       if (left <= 0) state.advance();
       if (intro === state && remaining() <= voiceAt) play();
     }
-    if (intro === state) requestAnimationFrame(tick);
+    if (intro === state) onNextFrame(tick);
   };
-  requestAnimationFrame(tick);
+  onNextFrame(tick);
 }
 
 // A click, tap, Space or Enter moves on to the next card.
@@ -1327,7 +1370,7 @@ function begin(mode = "desktop") {
     const u = Math.min(1, (performance.now() - started) / 1000 / seconds);
     run.setPreludeGlide(from + (to - from) * u * u * (3 - 2 * u));
     if (u < 1) {
-      requestAnimationFrame(ramp);
+      onNextFrame(ramp);
       return;
     }
     menu.inShow = true;
@@ -1346,7 +1389,7 @@ function begin(mode = "desktop") {
     // The cards are for the screen; in a headset the piece simply begins.
     startIntro(mode !== "vr");
   };
-  requestAnimationFrame(ramp);
+  onNextFrame(ramp);
 }
 
 /** A failed VR request leaves a button for a second try. */

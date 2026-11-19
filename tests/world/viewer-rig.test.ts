@@ -8,9 +8,17 @@
  */
 
 import { describe, expect, test } from "bun:test";
-import { MathUtils, Matrix4, type Object3D, Scene, Vector3 } from "three";
+import {
+  MathUtils,
+  Matrix4,
+  type Object3D,
+  Quaternion,
+  Scene,
+  Vector3,
+} from "three";
 import {
   createViewerRig,
+  preferSteadyXrView,
   XR_VIEW_PITCH_ASSIST_DEGREES,
 } from "../../src/world/viewer-rig";
 
@@ -229,4 +237,38 @@ test("body direction follows rendered pitch and remains independent of mouse/hea
   viewer.group.rotation.x = 0;
   viewer.publish(true);
   expect(viewer.viewpoint.worldBodyDirection.y).toBeCloseTo(0.5);
+});
+
+test("a steady headset view stays level while the flight turns and pitches", () => {
+  preferSteadyXrView();
+  try {
+    const viewer = createViewerRig(XR_VIEW_PITCH_ASSIST_DEGREES);
+    viewer.group.rotateY(0.4);
+    viewer.enterXr();
+    viewer.publish(true);
+    const parent = viewer.camera.parent as Object3D;
+    const atEntry = parent.getWorldQuaternion(new Quaternion());
+    // On entry the view faces the flight, level, without the pitch assistance.
+    const forward = new Vector3(0, 0, -1).applyQuaternion(atEntry);
+    expect(Math.atan2(-forward.x, -forward.z)).toBeCloseTo(0.4);
+    expect(forward.y).toBeCloseTo(0);
+
+    // The flight banks round and climbs; the view under the head does not move.
+    viewer.group.rotateY(1.2);
+    viewer.group.rotateX(0.3);
+    viewer.publish(true);
+    const later = parent.getWorldQuaternion(new Quaternion());
+    expect(later.angleTo(atEntry)).toBeCloseTo(0);
+    // The body is the flight now, so what is placed before it is placed ahead.
+    const flight = new Vector3(0, 0, -1).applyQuaternion(
+      viewer.group.quaternion,
+    );
+    expect(viewer.viewpoint.worldBodyDirection.angleTo(flight)).toBeCloseTo(0);
+
+    // Back on a screen, nothing of it remains on the view pose.
+    viewer.publish(false);
+    expect(parent.quaternion.angleTo(new Quaternion())).toBeCloseTo(0);
+  } finally {
+    preferSteadyXrView(false);
+  }
 });
