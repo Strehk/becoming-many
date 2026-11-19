@@ -46,6 +46,12 @@ Pages. The experience names its public files from the server root
   invert look, autopilot) and display (graphics, fullscreen), plus a timeline
   to jump between chapters; rows that do nothing for the chosen way are left
   out, and the page scrolls on small screens.
+- **Sound** is set up for phones and busy computers: one sound context with
+  a roomy output buffer, the organ's echo rooms as native convolution instead
+  of Freeverb's eight AudioWorklets each, a show clock that counts real time
+  while sound runs (a starved audio callback loses time and the narration
+  gets pulled back), and every recording of the language loaded in the
+  background. The installation keeps its own sound; these are opt-ins.
 - **End.** On a screen the title forms again over the credits; a headset
   keeps the world's own credits panel.
 

@@ -5,12 +5,14 @@
  *   borrows three of its ideas, with the composed values: the wind that carries
  *   the empty White World, the sonar call that measures a room, and a held
  *   chord in the shared hall.
- * Responsibility: Build the Tone graph after the first gesture, play hover,
- *   select and arrival sounds, and follow the volume setting.
+ * Responsibility: Set up the page's sound context, build the Tone graph after
+ *   the first gesture, play hover, select and arrival sounds, and follow the
+ *   volume setting.
  * Boundary: Nothing in src/ imports this file; it only borrows src/ modules.
  */
 
 import {
+  Context,
   Filter,
   Gain,
   getContext,
@@ -23,6 +25,7 @@ import {
   PolySynth,
   Reverb,
   Synth,
+  setContext,
   start,
   Volume,
 } from "tone";
@@ -60,6 +63,20 @@ const HOVER_VOICING = {
   menu: { degree: 8, wall: 0.5 },
   setting: { degree: 15, wall: 0.12 },
 };
+
+/**
+ * Give the whole page one sound context with a roomy output buffer, before the
+ * Run builds its organ on it. Tone's own context asks for the smallest buffer
+ * ("interactive"); on phones, headsets and busy computers the audio thread then
+ * misses its deadline whenever a frame runs long, and the sound crackles and
+ * distorts. Nothing here needs a quick answer: the drones, the wind and the
+ * narration only need to run unbroken, and the menu's calls may lag a little.
+ */
+export function prepareSoundContext() {
+  const current = getContext();
+  if (current.latencyHint === "playback") return;
+  setContext(new Context({ latencyHint: "playback" }), true);
+}
 
 const decibels = (volume) =>
   volume <= 0 ? Number.NEGATIVE_INFINITY : 20 * Math.log10(volume / 100) - 4;

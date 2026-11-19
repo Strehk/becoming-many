@@ -16,6 +16,8 @@
 
 import qrcode from "qrcode-generator";
 import { Euler, Quaternion, Vector3 } from "three";
+import { preferWallClock } from "../src/sound/audio-timebase";
+import { preferNativeRooms } from "../src/sound/drone-organ/voices/echo-room";
 import { createAutopilot } from "./autopilot.js";
 import { createCameraSteering } from "./camera-steering.js";
 import { startEarlySpinner } from "./early-spinner.js";
@@ -31,6 +33,7 @@ import {
 } from "./lib/air-world.js";
 import { renderLegal } from "./lib/legal.js";
 import { createMenuFlow, VISIT_URL } from "./lib/menu-flow.js";
+import { prepareSoundContext } from "./lib/menu-sound.js";
 import { createStageWorld } from "./lib/stage-world.js";
 import { showVersion } from "./lib/version.js";
 
@@ -39,6 +42,10 @@ const phone = window.matchMedia("(pointer: coarse)").matches;
 const finePointer = window.matchMedia("(pointer: fine)").matches;
 root.classList.add("plain-marker");
 showVersion();
+// Before the Run builds its sound: the organ and the menu share this context.
+prepareSoundContext();
+preferNativeRooms();
+preferWallClock();
 
 const experience = Promise.all([
   import("../src/levels/level.runtime"),
@@ -769,9 +776,36 @@ async function startExperience() {
 }
 // The narrator's first recording, in the visitor's language, loads with the
 // world, and the loading waits for it, so the voice is there from its first
-// word. The Run's own narration player then loads every recording of the
-// language in the background, and on a language switch the other language's
-// at once. Fetched into the browser's cache, which the player plays from.
+// word. Every other recording of the language follows in the background, one
+// after another, and on a language switch the other language's: phones do not
+// preload media on their own, and a recording that only starts loading at its
+// cue comes in late and stutters. Fetched into the browser's cache, which the
+// Run's narration player then plays from.
+const fetchedVoices = new Map();
+function fetchVoice(url) {
+  if (!fetchedVoices.has(url))
+    fetchedVoices.set(
+      url,
+      fetch(url, { cache: "force-cache" })
+        .then((response) => (response.ok ? response.arrayBuffer() : null))
+        .catch(() => fetchedVoices.delete(url)),
+    );
+  return fetchedVoices.get(url);
+}
+let voiceQueue = Promise.resolve();
+function fetchVoices(language) {
+  voiceQueue = voiceQueue.then(async () => {
+    const [
+      ,
+      ,
+      { PIECE_SCHEDULE },
+      ,
+      { narrationUrl, resolveNarrationLanguage },
+    ] = await experience;
+    for (const { cueId } of PIECE_SCHEDULE.narration)
+      await fetchVoice(narrationUrl(cueId, resolveNarrationLanguage(language)));
+  });
+}
 const voiceReady = experience
   .then(async (modules) => {
     const [
@@ -783,14 +817,12 @@ const voiceReady = experience
     ] = modules;
     const first = PIECE_SCHEDULE.narration[0]?.cueId;
     if (!first) return;
-    const url = narrationUrl(
-      first,
-      resolveNarrationLanguage(menu.settings.language),
+    await fetchVoice(
+      narrationUrl(first, resolveNarrationLanguage(menu.settings.language)),
     );
-    const response = await fetch(url, { cache: "force-cache" });
-    if (response.ok) await response.arrayBuffer();
   })
-  .catch(() => {});
+  .catch(() => {})
+  .then(() => fetchVoices(menu.settings.language));
 
 // 1b. When the browser cannot run the piece, say why, what to try, and
 // where to fly it for real (the Futurium), instead of a blank page.
@@ -1019,8 +1051,10 @@ function applySettings(_settings, key) {
   });
   variant.borrow?.setShape(round ? "circle" : "square");
   variant.title?.setRound(round);
-  if (run.readLanguage() !== settings.language)
+  if (run.readLanguage() !== settings.language) {
     run.setLanguage(settings.language);
+    fetchVoices(settings.language);
+  }
 }
 menu.on("settings", applySettings);
 
