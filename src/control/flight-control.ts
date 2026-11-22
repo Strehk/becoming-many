@@ -15,8 +15,12 @@ export function createFlightControl(
   const orientation = new Euler(0, 0, 0, "YXZ");
   const direction = new Vector3();
   const input = { forwardTilt: 0, rightTilt: 0 };
+  let pitchSign = 1;
 
   return {
+    setPitchInverted(inverted): void {
+      pitchSign = inverted ? -1 : 1;
+    },
     update(
       deltaSeconds,
       glideSpeedMetersPerSecond = FLIGHT_SETTINGS.glideSpeedMetersPerSecond,
@@ -27,7 +31,8 @@ export function createFlightControl(
       const distance = validNonnegative(glideSpeedMetersPerSecond) * elapsed;
       if (distance === 0) return;
       orientation.setFromQuaternion(flight.quaternion, "YXZ");
-      orientation.x = -input.forwardTilt * FLIGHT_SETTINGS.maximumPitchRadians;
+      orientation.x =
+        -input.forwardTilt * pitchSign * FLIGHT_SETTINGS.maximumPitchRadians;
       orientation.z = -input.rightTilt * FLIGHT_SETTINGS.maximumBankRadians;
       orientation.y -=
         input.rightTilt * FLIGHT_SETTINGS.yawRateRadiansPerSecond * elapsed;

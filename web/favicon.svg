@@ -1,0 +1,16 @@
+<!-- Becoming Many: a cloud of round air particles, the many it is made of. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <title>Becoming Many</title>
+  <rect width="64" height="64" rx="14" fill="#ffffff" />
+  <g fill="#202126" transform="translate(4 4) scale(1.75)">
+    <circle cx="12" cy="13" r="4.2" />
+    <circle cx="19.5" cy="10" r="3.2" />
+    <circle cx="21" cy="18.5" r="4.6" />
+    <circle cx="11" cy="22.5" r="3" />
+    <circle cx="26" cy="12.5" r="2.2" />
+    <circle cx="6" cy="16" r="2" />
+    <circle cx="16" cy="26.5" r="2" />
+    <circle cx="24.5" cy="25.5" r="1.8" />
+    <circle cx="15" cy="5.5" r="1.8" />
+  </g>
+</svg>

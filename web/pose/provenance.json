@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "author": "Google LLC (MediaPipe)",
+  "license": "Apache-2.0",
+  "assets": [
+    {
+      "id": "pose-landmarker-lite",
+      "file": "pose_landmarker_lite.task",
+      "sourcePage": "https://ai.google.dev/edge/mediapipe/solutions/vision/pose_landmarker",
+      "sourceUrl": "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task",
+      "sha256": "59929e1d1ee95287735ddd833b19cf4ac46d29bc7afddbbf6753c459690d574a",
+      "note": "Shipped with the page so the camera steering loads nothing from third-party servers."
+    }
+  ]
+}

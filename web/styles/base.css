@@ -1,0 +1,525 @@
+/*
+ * Purpose: Foundation of the web release's menu.
+ * Responsibility: Rubik (the end-credits typeface), screen switching, and the
+ *   generated settings, modes and credits blocks.
+ * Boundary: screens.css, layout.css and app.css restyle through tokens.
+ */
+
+@font-face {
+  font-family: Rubik;
+  font-style: normal;
+  font-weight: 300 900;
+  font-display: block;
+  src: url("./fonts/rubik-latin.woff2") format("woff2");
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304,
+    U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215,
+    U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: Rubik;
+  font-style: normal;
+  font-weight: 300 900;
+  font-display: block;
+  src: url("./fonts/rubik-latin-ext.woff2") format("woff2");
+  unicode-range:
+    U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308,
+    U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0,
+    U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+:root {
+  --bm-paper: #ffffff;
+  --bm-ink: #202126;
+  --bm-muted: #899096;
+  --bm-line: rgb(32 33 38 / 0.14);
+  --bm-accent: #202126;
+  --bm-teal: #202126;
+  --bm-fade: 0.7s;
+  --bm-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  color-scheme: light;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: var(--bm-paper);
+  color: var(--bm-ink);
+  font-family: Rubik, system-ui, sans-serif;
+  font-weight: 700;
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible {
+  outline: 2px solid var(--bm-accent);
+  outline-offset: 4px;
+}
+
+.bm-canvas {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  touch-action: none;
+}
+
+/* 1. Screens: one active at a time, cross-faded */
+[data-screen] {
+  position: fixed;
+  inset: 0;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition:
+    opacity var(--bm-fade) var(--bm-ease),
+    visibility 0s linear var(--bm-fade);
+}
+
+[data-screen].is-active {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transition: opacity var(--bm-fade) var(--bm-ease);
+}
+
+[data-continue] {
+  opacity: 0;
+  transition: opacity 0.8s var(--bm-ease);
+}
+
+:root[data-ready="true"] [data-continue] {
+  opacity: 1;
+  animation: bm-breathe 2.4s ease-in-out 0.8s infinite;
+}
+
+@keyframes bm-breathe {
+  50% {
+    opacity: 0.35;
+  }
+}
+
+/* 2. Settings */
+.bm-settings {
+  display: grid;
+  gap: 4px;
+  width: min(460px, 100%);
+}
+
+.bm-setting {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 52px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--bm-line);
+}
+
+.bm-setting__label {
+  font-weight: 500;
+  font-size: 16px;
+}
+
+.bm-seg {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 999px;
+  background: var(--bm-line);
+}
+
+.bm-seg__option {
+  padding: 7px 13px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--bm-muted);
+  transition:
+    background 0.25s,
+    color 0.25s;
+}
+
+.bm-seg__option[aria-pressed="true"] {
+  background: var(--bm-ink);
+  color: var(--bm-paper);
+}
+
+.bm-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--bm-muted);
+}
+
+.bm-switch__knob {
+  position: relative;
+  width: 42px;
+  height: 24px;
+  border-radius: 999px;
+  background: var(--bm-line);
+  transition: background 0.25s;
+}
+
+.bm-switch__knob::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--bm-paper);
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.25);
+  transition: transform 0.3s var(--bm-ease);
+}
+
+.bm-switch[aria-checked="true"] .bm-switch__knob {
+  background: var(--bm-accent);
+}
+
+.bm-switch[aria-checked="true"] .bm-switch__knob::after {
+  transform: translateX(18px);
+}
+
+.bm-switch__text {
+  min-width: 2.2em;
+  text-align: right;
+}
+
+.bm-range {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.bm-range__input {
+  appearance: none;
+  width: min(180px, 40vw);
+  height: 4px;
+  border-radius: 999px;
+  background: linear-gradient(
+    to right,
+    var(--bm-accent) var(--value, 50%),
+    var(--bm-line) var(--value, 50%)
+  );
+  cursor: pointer;
+}
+
+.bm-range__input::-webkit-slider-thumb {
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--bm-ink);
+  border: 3px solid var(--bm-paper);
+  box-shadow: 0 0 0 1px var(--bm-line);
+}
+
+.bm-range__input::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--bm-ink);
+  border: 3px solid var(--bm-paper);
+}
+
+.bm-range__value {
+  min-width: 2.2em;
+  text-align: right;
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--bm-muted);
+}
+
+/* 3. Modes */
+.bm-modes {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  width: min(760px, 100%);
+}
+
+.bm-mode {
+  position: relative;
+  display: grid;
+  justify-items: start;
+  gap: 6px;
+  padding: 20px 18px 18px;
+  border: 1px solid var(--bm-line);
+  border-radius: 18px;
+  text-align: left;
+  background: color-mix(in srgb, var(--bm-paper) 70%, transparent);
+  backdrop-filter: blur(6px);
+  transition:
+    border-color 0.3s,
+    transform 0.4s var(--bm-ease),
+    background 0.3s;
+}
+
+.bm-mode:hover,
+.bm-mode:focus-visible {
+  border-color: var(--bm-ink);
+  transform: translateY(-3px);
+}
+
+.bm-icon {
+  width: 30px;
+  height: 30px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.bm-mode__icon {
+  margin-bottom: 10px;
+}
+
+.bm-mode__label {
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.bm-mode__hint {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--bm-muted);
+}
+
+.bm-mode__status {
+  margin-top: 10px;
+  padding: 4px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  background: var(--bm-line);
+  color: var(--bm-muted);
+}
+
+.bm-mode__status[data-status="ready"] {
+  background: color-mix(in srgb, var(--bm-teal) 16%, transparent);
+  color: var(--bm-teal);
+}
+
+.bm-mode__status[data-status="permission"] {
+  background: color-mix(in srgb, var(--bm-accent) 14%, transparent);
+  color: var(--bm-accent);
+}
+
+/* 4. Credits: proportions of the end-credits panel (104 / 40 / 50 px at 2048) */
+.bm-credits {
+  display: grid;
+  justify-items: center;
+  gap: clamp(36px, 7vh, 72px);
+  text-align: center;
+}
+
+.bm-credits__title {
+  margin: 0;
+  font-size: clamp(36px, 5.1vw, 78px);
+  font-weight: 700;
+  line-height: 1.02;
+  letter-spacing: 0.01em;
+}
+
+/* Three columns, each on its own centre line, aligned at the top. */
+.bm-credits__grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: start;
+  gap: clamp(24px, 4vw, 64px);
+  width: min(1000px, 92vw);
+}
+
+.bm-credits__group {
+  display: grid;
+  justify-items: center;
+  gap: 18px;
+}
+
+.bm-credits__label {
+  margin: 0 0 4px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--bm-muted);
+}
+
+.bm-credits__entry {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+}
+
+.bm-credits__name {
+  margin: 0;
+  font-size: clamp(17px, 1.7vw, 22px);
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.bm-credits__links,
+.bm-credits__text {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.5;
+  color: var(--bm-muted);
+}
+
+.bm-credits__text {
+  max-width: 24ch;
+  color: inherit;
+}
+
+/* The line under a link is drawn as part of its own box, not as a text
+   decoration: WebKit on phones paints decorations of a scrolled, masked
+   area in the wrong place. */
+.bm-credit__link {
+  padding-bottom: 2px;
+  color: inherit;
+  text-decoration: none;
+  background-image: linear-gradient(rgb(5 7 12 / 0.22), rgb(5 7 12 / 0.22));
+  background-position: 0 100%;
+  background-repeat: no-repeat;
+  background-size: 100% 1px;
+  transition: background-image 160ms ease;
+}
+
+/* Names that are links (the partners) read as names: no line under them
+   until they are pointed at. */
+.bm-credits__name .bm-credit__link {
+  background-size: 0 1px;
+}
+
+.bm-credit__link:hover,
+.bm-credit__link:focus-visible {
+  background-image: linear-gradient(currentColor, currentColor);
+  background-size: 100% 1px;
+  outline: none;
+}
+
+/* The installation at the Futurium, under the partners, with the way to the
+   tickets. */
+.bm-credits__visit {
+  margin-top: 6px;
+}
+
+.bm-credits__visit .bm-credits__text {
+  max-width: 32ch;
+}
+
+.bm-credits__visit-links {
+  margin: 8px 0 0;
+}
+
+.bm-credits__visit-link {
+  display: inline-block;
+  padding: 9px 14px;
+  border: 1px solid #202126;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-decoration: none;
+  text-transform: uppercase;
+  color: inherit;
+  transition:
+    background 160ms ease,
+    color 160ms ease;
+}
+
+.bm-credits__visit-link:hover,
+.bm-credits__visit-link:focus-visible {
+  background: #202126;
+  color: #fff;
+  outline: none;
+}
+
+/* Each language links to its own page. */
+:root[lang="de"] .bm-credits__visit-link[lang="en"],
+:root[lang="en"] .bm-credits__visit-link[lang="de"] {
+  display: none;
+}
+
+@media (max-width: 640px) {
+  .bm-credits__grid {
+    grid-template-columns: 1fr;
+    gap: 30px;
+  }
+
+  .bm-credits__group {
+    gap: 12px;
+  }
+}
+
+/* 5. Launch hand-off */
+[data-gyro-readout] {
+  display: none;
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+}
+
+:root[data-launch-mode="gyro"][data-launch-status="ready"] [data-gyro-readout] {
+  display: block;
+}
+
+@media (max-width: 640px) {
+  .bm-modes {
+    grid-template-columns: 1fr;
+  }
+
+  .bm-mode {
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    column-gap: 14px;
+    padding: 14px 16px;
+  }
+
+  .bm-mode__icon {
+    grid-row: span 2;
+    margin: 0;
+  }
+
+  .bm-mode__status {
+    grid-column: 3;
+    grid-row: 1 / span 2;
+    margin: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-screen],
+  [data-screen].is-active {
+    transition-duration: 0.01s;
+  }
+}

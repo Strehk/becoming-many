@@ -60,7 +60,8 @@ export interface ExerciseVoiceCue extends VoiceRecording {
  * Offsets follow the initial course cue timeline across translated recordings.
  * Failure must never count as natural completion.
  */
-export interface StartVoice extends Omit<VoicePlayback, "unload" | "play"> {
+export interface StartVoice
+  extends Omit<VoicePlayback, "unload" | "play" | "setVolume"> {
   readonly play: (cue: ExerciseVoiceCue, offsetSeconds: number) => void;
 }
 
