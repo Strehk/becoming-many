@@ -1,5 +1,5 @@
 import { resolve } from "node:path";
-import { defineConfig, type Plugin } from "vite";
+import { defineConfig, loadEnv, type Plugin } from "vite";
 import { levelNameFromPath } from "./shared/level-routes.ts";
 
 function rewriteLevelRequest(request: { url?: string }): void {
@@ -27,7 +27,19 @@ const levelEntryRoutes: Plugin = {
   },
 };
 
-export default defineConfig({
+/**
+ * Extra hostnames the dev and preview servers answer to (e.g. a tunnel to a
+ * personal domain), comma-separated in DEV_ALLOWED_HOSTS; kept out of the
+ * repository in the untracked .env.
+ */
+function allowedHosts(mode: string): string[] {
+  const { DEV_ALLOWED_HOSTS = "" } = loadEnv(mode, import.meta.dirname, "DEV_");
+  return DEV_ALLOWED_HOSTS.split(",")
+    .map((host) => host.trim())
+    .filter(Boolean);
+}
+
+export default defineConfig(({ mode }) => ({
   root: resolve(import.meta.dirname, "src/ui"),
   publicDir: resolve(import.meta.dirname, "public"),
   plugins: [levelEntryRoutes],
@@ -52,10 +64,10 @@ export default defineConfig({
   },
   server: {
     host: true,
-    allowedHosts: ["dev.strehk.eu", "dev.e.strehk.eu"],
+    allowedHosts: allowedHosts(mode),
   },
   preview: {
     host: true,
-    allowedHosts: ["dev.strehk.eu", "dev.e.strehk.eu"],
+    allowedHosts: allowedHosts(mode),
   },
-});
+}));
