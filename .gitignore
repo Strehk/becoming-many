@@ -50,3 +50,6 @@ benchmark-results
 
 # vendored reference projects (separate repositories, read-only here)
 reference
+
+# wrangler local state
+.wrangler
