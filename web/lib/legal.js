@@ -2,15 +2,15 @@
  * Purpose: The legal notice (Impressum) and privacy policy of the web release.
  * Context: A German website needs a legal notice (§ 5 DDG) and a privacy
  *   policy (Art. 13 GDPR), even for a non-commercial project hosted on
- *   GitHub Pages. The texts describe exactly what this page does: hosting on
- *   GitHub Pages, one request to the GitHub API for the release number, the
- *   settings kept in the browser, and nothing else (no cookies, no tracking,
+ *   Cloudflare Workers. The texts describe exactly what this page does:
+ *   hosting on Cloudflare Workers, one request to the GitHub API for the
+ *   release number, the settings kept in the browser, and nothing else (no cookies, no tracking,
  *   no third-party fonts or embeds).
  * Responsibility: Hold both texts in German and English, and render them
  *   with the operator's details into [data-legal] elements.
  * Boundary: Not legal advice; the operator checks the texts before release.
  *   The operator's personal details are not committed: the build reads them
- *   from the LEGAL_* environment variables (see .env.example), and
+ *   from the LEGAL_* environment variables (see .env.example), and the
  *   release build (vite.config.ts, `--mode release`) refuses to build without
  *   them.
  *   Audience-facing German copy, everything around it English.
@@ -79,8 +79,8 @@ const TEXT = {
         "Diese Seite setzt keine Cookies, verwendet kein Tracking und keine Analysedienste und lädt keine Schriften, Videos oder anderen Inhalte von fremden Servern. Alles, was das Erlebnis braucht, kommt von derselben Adresse wie die Seite selbst.",
       ],
       [
-        "Hosting über GitHub Pages",
-        "Die Seite wird über GitHub Pages bereitgestellt, einen Dienst der GitHub, Inc., 88 Colin P. Kelly Jr. Street, San Francisco, CA 94107, USA. Beim Aufruf verarbeitet GitHub technisch notwendige Verbindungsdaten wie deine IP-Adresse, Datum und Uhrzeit, die aufgerufene Datei und Angaben zu Browser und Betriebssystem, um die Seite auszuliefern und den Dienst abzusichern. Rechtsgrundlage ist unser berechtigtes Interesse an einer sicheren und funktionsfähigen Bereitstellung (Art. 6 Abs. 1 lit. f DSGVO). GitHub ist unter dem EU-US Data Privacy Framework zertifiziert. Näheres: https://docs.github.com/site-policy/privacy-policies/github-general-privacy-statement",
+        "Hosting über Cloudflare Workers",
+        "Die Seite wird über Cloudflare Workers bereitgestellt, einen Dienst der Cloudflare, Inc., 101 Townsend St, San Francisco, CA 94107, USA. Beim Aufruf verarbeitet Cloudflare technisch notwendige Verbindungsdaten wie deine IP-Adresse, Datum und Uhrzeit, die aufgerufene Datei und Angaben zu Browser und Betriebssystem, um die Seite auszuliefern und den Dienst abzusichern. Rechtsgrundlage ist unser berechtigtes Interesse an einer sicheren und funktionsfähigen Bereitstellung (Art. 6 Abs. 1 lit. f DSGVO). Cloudflare ist unter dem EU-US Data Privacy Framework zertifiziert. Näheres: https://www.cloudflare.com/privacypolicy/",
       ],
       [
         "Anzeige der Version",
@@ -116,8 +116,8 @@ const TEXT = {
         "This site sets no cookies, uses no tracking or analytics and loads no fonts, videos or other content from third-party servers. Everything the experience needs comes from the same address as the page itself.",
       ],
       [
-        "Hosting on GitHub Pages",
-        "The site is served by GitHub Pages, a service of GitHub, Inc., 88 Colin P. Kelly Jr. Street, San Francisco, CA 94107, USA. When you visit, GitHub processes technically necessary connection data such as your IP address, date and time, the requested file and details about your browser and operating system, to deliver the site and keep the service secure. The legal basis is our legitimate interest in a secure, working site (Art. 6 (1) (f) GDPR). GitHub is certified under the EU-US Data Privacy Framework. More: https://docs.github.com/site-policy/privacy-policies/github-general-privacy-statement",
+        "Hosting on Cloudflare Workers",
+        "The site is served by Cloudflare Workers, a service of Cloudflare, Inc., 101 Townsend St, San Francisco, CA 94107, USA. When you visit, Cloudflare processes technically necessary connection data such as your IP address, date and time, the requested file and details about your browser and operating system, to deliver the site and keep the service secure. The legal basis is our legitimate interest in a secure, working site (Art. 6 (1) (f) GDPR). Cloudflare is certified under the EU-US Data Privacy Framework. More: https://www.cloudflare.com/privacypolicy/",
       ],
       [
         "Version number",
