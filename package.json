@@ -12,6 +12,7 @@
     "station": "bun station/station-server.ts",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
+    "deploy": "bun run build && wrangler deploy",
     "check": "tsc --noEmit",
     "lint": "biome check .",
     "m5-sim": "bun firmware/m5/tools/simulator.ts",
@@ -25,7 +26,8 @@
     "@types/w3c-web-serial": "^1.0.8",
     "playwright": "^1.62.1",
     "typescript": "^7.0.2",
-    "vite": "^8.2.2"
+    "vite": "^8.2.2",
+    "wrangler": "^4.168.0"
   },
   "dependencies": {
     "@mediapipe/tasks-vision": "1.2.0",
