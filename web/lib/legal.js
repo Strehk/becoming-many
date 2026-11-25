@@ -6,31 +6,35 @@
  *   GitHub Pages, one request to the GitHub API for the release number, the
  *   settings kept in the browser, and nothing else (no cookies, no tracking,
  *   no third-party fonts or embeds).
- * Responsibility: Hold the operator's details and both texts in German and
- *   English, and render them into [data-legal] elements.
+ * Responsibility: Hold both texts in German and English, and render them
+ *   with the operator's details into [data-legal] elements.
  * Boundary: Not legal advice; the operator checks the texts before release.
+ *   The operator's personal details are not committed: the build reads them
+ *   from the LEGAL_* environment variables (see .env.example), and
+ *   web/vite.config.js refuses to build without them.
  *   Audience-facing German copy, everything around it English.
  */
 
+const env = import.meta.env ?? {};
+
 /**
- * The responsible person, as published in the legal notice.
+ * The responsible person, as published in the legal notice. Empty values
+ * only occur on the dev server; the build requires them.
  */
 export const OPERATOR = {
-  names: "Erasmus Schmidt",
-  street: "Slabystr. 23",
-  city: "12459 Berlin",
-  country: "Deutschland",
-  email: "info@erasmus-schmidt.de",
+  names: env.LEGAL_NAME ?? "",
+  street: env.LEGAL_STREET ?? "",
+  city: env.LEGAL_CITY ?? "",
+  country: env.LEGAL_COUNTRY ?? "",
+  email: env.LEGAL_EMAIL ?? "",
 };
 
 const UPDATED = { de: "November 2026", en: "November 2026" };
 
-const address = () => [
-  OPERATOR.names,
-  OPERATOR.street,
-  OPERATOR.city,
-  OPERATOR.country,
-];
+const address = () =>
+  [OPERATOR.names, OPERATOR.street, OPERATOR.city, OPERATOR.country].filter(
+    Boolean,
+  );
 
 /** Blocks: [heading, ...paragraphs]; a paragraph array is a list of lines. */
 const TEXT = {

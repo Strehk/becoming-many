@@ -14,6 +14,11 @@ bunx vite web
 bunx vite build -c web/vite.config.js
 ```
 
+The legal notice and privacy policy need the operator's details, which are
+not committed: set `LEGAL_NAME`, `LEGAL_STREET`, `LEGAL_CITY`, `LEGAL_EMAIL`
+(and optionally `LEGAL_COUNTRY`) in the environment or in the repository's
+`.env` (see `.env.example`). The build stops while one is missing.
+
 The build lands in `web/dist-pages/` with the base `/becoming-many/` (set
 `PAGES_BASE` for another one) and is published as a static site on GitHub
 Pages. The experience names its public files from the server root

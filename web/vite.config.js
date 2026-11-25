@@ -10,12 +10,14 @@
  *   root-relative public paths in scripts under the base.
  * Boundary: Only the web release; the installation keeps vite.config.ts.
  *   PAGES_BASE overrides the build's base (default /becoming-many/), and
- *   SITE_URL the address in the share preview.
+ *   SITE_URL the address in the share preview. The legal notice's operator
+ *   details come from the LEGAL_* variables (process environment or the
+ *   repository's .env); a build without the required ones fails.
  */
 
 import { cpSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { defineConfig } from "vite";
+import { defineConfig, loadEnv } from "vite";
 
 const here = import.meta.dirname;
 const repository = resolve(here, "..");
@@ -78,14 +80,35 @@ function publicPathsUnderBase(base) {
   };
 }
 
-export default defineConfig(({ command, isPreview }) => {
+/** Operator details the legal notice cannot be published without. */
+const REQUIRED_LEGAL = [
+  "LEGAL_NAME",
+  "LEGAL_STREET",
+  "LEGAL_CITY",
+  "LEGAL_EMAIL",
+];
+
+function checkLegal(mode, building) {
+  const env = loadEnv(mode, repository, "LEGAL_");
+  const missing = REQUIRED_LEGAL.filter((name) => !env[name]?.trim());
+  if (missing.length === 0) return;
+  const message = `Legal notice incomplete, set ${missing.join(", ")} (see .env.example).`;
+  if (building) throw new Error(message);
+  console.warn(`[web] ${message}`);
+}
+
+export default defineConfig(({ command, mode, isPreview }) => {
   // A preview serves the build, so it uses the build's base.
   const building = command === "build" || isPreview;
   const base = building ? (process.env.PAGES_BASE ?? "/becoming-many/") : "/";
   const outDir = resolve(here, "dist-pages");
+  checkLegal(mode, command === "build");
   return {
     root: here,
     base,
+    // The LEGAL_* variables reach web/lib/legal.js as import.meta.env.
+    envDir: repository,
+    envPrefix: ["VITE_", "LEGAL_"],
     // Serving offers all of public/; the build copies only what ships.
     publicDir: building ? false : resolve(repository, "public"),
     server: { fs: { allow: [repository] } },
