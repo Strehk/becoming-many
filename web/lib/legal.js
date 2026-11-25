@@ -11,7 +11,8 @@
  * Boundary: Not legal advice; the operator checks the texts before release.
  *   The operator's personal details are not committed: the build reads them
  *   from the LEGAL_* environment variables (see .env.example), and
- *   web/vite.config.js refuses to build without them.
+ *   release build (vite.config.ts, `--mode release`) refuses to build without
+ *   them.
  *   Audience-facing German copy, everything around it English.
  */
 

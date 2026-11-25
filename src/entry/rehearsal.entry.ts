@@ -2,7 +2,7 @@ import { requireElement } from "../ui/shared/dom";
 
 /**
  * Purpose: Bootstrap the complete Becoming Many show for rehearsal.
- * Context: The root page is the audience experience without development routes.
+ * Context: The rehearsal page (/dev) is the bare show without development routes.
  * Responsibility: Start the show and mount its rehearsal and WebXR controls.
  * Boundary: Standalone levels enter through standalone-level.entry.ts.
  */

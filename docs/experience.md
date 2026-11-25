@@ -52,7 +52,7 @@ smoothing or automatic neutralization.
 Keyboard and M5 can act together on the same global flight model in every
 experience.
 
-The Experience page provides rehearsal transport. The Conductor page hosts the
+The rehearsal page (`/dev`) provides rehearsal transport. The Conductor page hosts the
 same show in-process for station operation. Show owns playback, language, time,
 and narration; UI only sends commands and displays observations.
 

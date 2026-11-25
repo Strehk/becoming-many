@@ -20,7 +20,7 @@ try {
   const routes =
     process.argv.length > 3
       ? process.argv.slice(3)
-      : ["/conductor.html", "/", "/start"];
+      : ["/conductor.html", "/dev", "/start"];
   for (const path of routes) await verifyRoute(path);
   await verifyCancelledSkip();
   await verifyCancelledRestart();
@@ -91,7 +91,7 @@ async function verifyRoute(path) {
     await page.screenshot({
       path: conductor
         ? "/tmp/conductor-tutorial-ui.png"
-        : path === "/"
+        : path === "/dev"
           ? "/tmp/web-tutorial-timeline.png"
           : "/tmp/start-tutorial-timeline.png",
     });
@@ -288,7 +288,7 @@ async function verifySkipAndTransport(page, track, conductor) {
 }
 
 async function verifyCancelledSkip() {
-  const { page, errors } = await openRun("/");
+  const { page, errors } = await openRun("/dev");
   try {
     await page.evaluate(() => {
       window.timelineRun.skipTutorial(75);

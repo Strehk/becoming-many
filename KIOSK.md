@@ -17,8 +17,9 @@ A station serves its pages from `http://localhost` (see
 [station/README.md](station/README.md)). The one window a station runs is the
 operator page, `http://localhost/conductor.html` — it hosts the world
 in-process and streams it to the headset from its own Start Stream button.
-(`http://localhost/` stays available as the bare rehearsal and development
-page; nothing at the installation opens it.)
+(`http://localhost/dev` stays available as the bare rehearsal and development
+page, and `http://localhost/` shows the web release's start menu; nothing at
+the installation opens either.)
 
 The window opens as a Chromium **app window** — no address bar, no tab strip,
 no bookmarks bar, and no way to type a URL — while staying windowed, so the

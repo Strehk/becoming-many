@@ -51,11 +51,13 @@ async function serveStatic(pathname: string): Promise<Response> {
   // of it is not a page request.
   if (decoded.includes("..")) return new Response("Not found", { status: 404 });
 
+  // The root is the web release's menu; /dev and the stable /echo-style
+  // level links open the bare experience page.
   const relative =
     decoded === "/"
       ? "/index.html"
-      : levelNameFromPath(decoded)
-        ? "/index.html"
+      : /^\/dev\/?$/.test(decoded) || levelNameFromPath(decoded)
+        ? "/dev.html"
         : decoded;
   const file = Bun.file(join(DIST_DIRECTORY, relative));
   if (!(await file.exists())) {

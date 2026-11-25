@@ -243,7 +243,7 @@ async function observeShow(
   const observations: (Awaited<ReturnType<typeof observePlayback>> & {
     pass: string;
   })[] = [];
-  const url = new URL(`/?language=${language}`, values["base-url"]);
+  const url = new URL(`/dev?language=${language}`, values["base-url"]);
   let startup: Awaited<ReturnType<typeof loadShow>> | undefined;
   try {
     startup = await loadShow(page, url);

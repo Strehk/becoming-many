@@ -6,23 +6,28 @@ for desktop, VR headset and phone. It runs the application's own code from
 
 ## Run and build
 
+The menu is the root page of the application: `src/ui/index.html` loads
+`main.js` and the styles from this folder, and the root `vite.config.ts`
+builds it beside the rehearsal page (`/dev`), the Conductor and Flash.
+
 ```bash
-bunx vite web
+bun run dev
 ```
 
 ```bash
-bunx vite build -c web/vite.config.js
+bun run build:release
 ```
 
 The legal notice and privacy policy need the operator's details, which are
 not committed: set `LEGAL_NAME`, `LEGAL_STREET`, `LEGAL_CITY`, `LEGAL_EMAIL`
 (and optionally `LEGAL_COUNTRY`) in the environment or in the repository's
-`.env` (see `.env.example`). The build stops while one is missing.
+`.env` (see `.env.example`), and `SITE_URL` for the share preview. The
+release build (`--mode release`, also used by `bun run deploy`) stops while
+one is missing; every other build only warns.
 
-The build lands in `web/dist-pages/` with the base `/becoming-many/` (set
-`PAGES_BASE` for another one) and is published as a static site on GitHub
-Pages. The experience names its public files from the server root
-(`/audio/...`, `/models/...`), so the build moves those paths under the base.
+The build lands in `dist/` and is published as static assets on Cloudflare
+Workers (`wrangler.jsonc`); unknown paths answer with `public/404.html`.
+`public/share.png` is the share preview image.
 
 ## What it does
 
@@ -65,7 +70,8 @@ Pages. The experience names its public files from the server root
 
 ## Files
 
-- `index.html`, `main.js`: the page and its wiring to the Run.
+- `main.js`: the page's wiring to the Run (the page itself is
+  `src/ui/index.html`).
 - `autopilot.js`, `camera-steering.js`, `early-spinner.js`: one job each.
 - `lib/`: the menu flow, its sound, and the borrowing of the air particles
   (spinner, title, click burst).

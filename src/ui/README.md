@@ -1,9 +1,10 @@
 # Browser UI
 
-The three HTML documents in this folder retain the public routes `/`,
-`/conductor.html` and `/flash.html`. The root page also opens standalone levels
-through `?level=<name>`. Each links `app.css` and loads its browser bootstrap from
-`src/entry/`.
+`index.html` is the web release's start menu at `/`; its styles and scripts
+live in [web/](../../web/README.md). The three other HTML documents keep the
+routes `/dev` (`dev.html`), `/conductor.html` and `/flash.html`. The rehearsal
+page also opens standalone levels through `?level=<name>`. Each links `app.css`
+and loads its browser bootstrap from `src/entry/`.
 
 HTML owns authored controls, SVGs and repeated templates. Surface controllers
 bind declared elements, update observations and end their listeners, timers,

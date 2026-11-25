@@ -384,7 +384,7 @@ async function waitForMainVoice(page, language) {
 }
 
 async function verifyAudience() {
-  const { page, errors } = await openRun("/?language=de");
+  const { page, errors } = await openRun("/dev?language=de");
   try {
     await page.waitForFunction(
       () => window.languageRun.readPlayback() === "playing",

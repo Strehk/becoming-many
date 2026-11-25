@@ -62,10 +62,10 @@ await main();
 async function main(): Promise<void> {
   assertRefactorBranch();
   const availableRoutes = [
-    "/",
+    "/dev",
     "/tutorial",
-    "/?level=echo",
-    "/?level=start",
+    "/dev?level=echo",
+    "/dev?level=start",
     "/conductor.html",
     "/flash.html",
     ...LEVEL_NAMES.map((level) => `/${level}`),
@@ -99,12 +99,12 @@ async function main(): Promise<void> {
     for (const { name, routes, check } of [
       {
         name: "startup-failure",
-        routes: ["/", "/?level=echo", "/conductor.html"],
+        routes: ["/dev", "/dev?level=echo", "/conductor.html"],
         check: checkStartupFailure,
       },
       {
         name: "ui-mount-failure",
-        routes: ["/", "/conductor.html", "/flash.html"],
+        routes: ["/dev", "/conductor.html", "/flash.html"],
         check: checkUiMountFailure,
       },
     ]) {
@@ -118,7 +118,7 @@ async function main(): Promise<void> {
             route,
             join(
               outputDirectory,
-              `${name}-${route === "/" ? "rehearsal" : route.slice(1)}.png`,
+              `${name}-${route === "/dev" ? "rehearsal" : route.slice(1)}.png`,
             ),
           );
           results.push({ route: scenario, passed: true, errors: [] });
@@ -197,8 +197,8 @@ async function runSmokeRoute(
     const startInput = [
       "/start",
       "/tutorial",
-      "/?level=start",
-      "/",
+      "/dev?level=start",
+      "/dev",
       "/conductor.html",
     ].includes(route)
       ? await prepareStartInput(page, baseUrl, route !== "/conductor.html")
@@ -210,7 +210,10 @@ async function runSmokeRoute(
       "Entry URL must remain the requested route",
     );
     observation = await checkEntry(page, route, startInput);
-    if (startInput && ["/start", "/tutorial", "/?level=start"].includes(route))
+    if (
+      startInput &&
+      ["/start", "/tutorial", "/dev?level=start"].includes(route)
+    )
       await checkStartLevel(page, startInput, artifactBase);
     assertRefactorBranch();
     await page.screenshot({
@@ -219,7 +222,9 @@ async function runSmokeRoute(
       caret: "initial",
     });
     if (
-      ["/", "/?level=echo", "/conductor.html", "/flash.html"].includes(route)
+      ["/dev", "/dev?level=echo", "/conductor.html", "/flash.html"].includes(
+        route,
+      )
     ) {
       await checkUiLayout(page, route);
       if (route === "/flash.html") await checkFlashLifecycle(page, baseUrl);
@@ -227,12 +232,12 @@ async function runSmokeRoute(
     if (route === "/conductor.html") await checkConductorStop(page);
     if (
       [
-        "/",
-        "/?level=echo",
+        "/dev",
+        "/dev?level=echo",
         "/conductor.html",
         "/start",
         "/tutorial",
-        "/?level=start",
+        "/dev?level=start",
       ].includes(route)
     ) {
       await page.evaluate(() =>
@@ -261,12 +266,12 @@ async function runSmokeRoute(
         1,
         "Page exit releases WebGL while preserving declared page structure",
       );
-      if (route === "/") {
+      if (route === "/dev") {
         assert.equal(await page.evaluate(() => window.show), undefined);
         assert.equal(await page.locator("[data-rehearsal]").isVisible(), false);
         assert.equal(await page.locator("[data-sections] button").count(), 0);
       }
-      if (route === "/?level=echo")
+      if (route === "/dev?level=echo")
         assert.equal(await page.locator("[data-xr-entry]").isVisible(), false);
     }
     assert.equal(errors.length, 0, errors.join("\n"));
@@ -328,7 +333,7 @@ async function checkEntry(
     };
   }
   await waitForLevel(page);
-  if (route === "/") {
+  if (route === "/dev") {
     assert(startInput);
     await checkRehearsal(page);
   } else
@@ -969,7 +974,7 @@ async function checkUiLayout(page: Page, route: string): Promise<void> {
         ".timeline__track",
         ".conductor__transport-button",
       );
-    } else if (route === "/") {
+    } else if (route === "/dev") {
       await checkScrubbing(
         page,
         ".rehearsal__track",
@@ -980,7 +985,7 @@ async function checkUiLayout(page: Page, route: string): Promise<void> {
     await page.screenshot({
       path: join(
         outputDirectory,
-        `${route === "/" ? "rehearsal" : route.slice(1).replace(".html", "")}-${width}.png`,
+        `${route === "/dev" ? "rehearsal" : route.slice(1).replace(".html", "")}-${width}.png`,
       ),
       fullPage: true,
       caret: "initial",
