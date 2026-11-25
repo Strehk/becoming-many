@@ -11,9 +11,9 @@ export async function checkUiMountFailure(
   route: string,
   artifactPath: string,
 ): Promise<void> {
-  assert(["/", "/conductor.html", "/flash.html"].includes(route));
+  assert(["/dev", "/conductor.html", "/flash.html"].includes(route));
   const isFlash = route === "/flash.html";
-  const isRehearsal = route === "/";
+  const isRehearsal = route === "/dev";
   const expectedMessage = isFlash
     ? "Missing HTMLElement: [data-role='firmware-version']"
     : isRehearsal

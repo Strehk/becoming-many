@@ -43,9 +43,10 @@ bun install
 bun run dev
 ```
 
-The experience page at `/` runs the complete show and includes a rehearsal
-transport. Use `/?level=<name>` or `/<name>` to open one standalone level on
-that same page, and add `&benchmark[=<profile>]` for a deterministic route.
+`/` is the web release: a start menu in front of the complete show for
+desktop, VR headset and phone (see [web/README.md](web/README.md)). The
+rehearsal page at `/dev` runs the complete show with a rehearsal transport.
+Use `/dev?level=<name>` or `/<name>` to open one standalone level on that page, and add `&benchmark[=<profile>]` for a deterministic route.
 See
 [AGENTS.md](AGENTS.md) for conventions and verification commands.
 
@@ -56,7 +57,7 @@ cp .env.example .env
 docker compose up -d
 ```
 
-The station window is `/conductor.html`; `/` remains the bare rehearsal page.
+The station window is `/conductor.html`; `/dev` remains the bare rehearsal page.
 The container serves the built pages plus `/config` and `/health`. See
 [station/README.md](station/README.md) for environment variables, local builds,
 the M5 simulator, and deployment details.

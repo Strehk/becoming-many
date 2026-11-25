@@ -26,7 +26,7 @@ scenarios. Routes must match the existing smoke catalog; omitting the option
 keeps the complete run. For shared UI changes:
 
 ```sh
-bun run test:browser --base-url http://localhost:4180 --route / --route '/?level=echo' --route /conductor.html --route /flash.html --out benchmark-results/browser/ui-smoke
+bun run test:browser --base-url http://localhost:4180 --route /dev --route '/dev?level=echo' --route /conductor.html --route /flash.html --out benchmark-results/browser/ui-smoke
 ```
 
 The browser is visible by default; `--headless` is an explicit functional-only
@@ -49,7 +49,7 @@ reset, and a second play. Flash checks readiness, removes legacy stored password
 and submits synthetic credentials through an isolated in-memory serial port.
 Only SSID/device ID survive reload; the password reaches the simulated port but
 never storage or the page log. No physical serial port or device is accessed.
-The three UI pages and the root page's standalone-level layout are also checked
+The three UI pages and the rehearsal page's standalone-level layout are also checked
 at 1280 and 390 CSS pixels, including Flash scrolling, timeline
 drag/release/cancel, inline-style absence, transport contrast/size, drawer
 focus/inert state, simulated accepted M5 preview geometry and

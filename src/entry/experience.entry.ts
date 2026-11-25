@@ -1,6 +1,7 @@
 /**
- * Purpose: Select the root page's complete-show or standalone-level startup.
- * Context: One experience page replaces a separate standalone document.
+ * Purpose: Select the rehearsal page's complete-show or standalone-level startup.
+ * Context: The rehearsal page at /dev (and /<level> links) replaces a separate standalone
+ *   document; the root page is the web release's menu.
  * Responsibility: Route URL requests without loading standalone tooling for a show.
  * Boundary: The selected entry owns its own lifecycle and browser resources.
  */

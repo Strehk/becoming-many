@@ -26,11 +26,13 @@ diagnostic metadata without restricting steering).
 
 - `/conductor.html` — the station window, served from `dist/` (run
   `bun run build` first). Development uses `bun run dev` independently with
-  empty deployment defaults. `/` stays the bare rehearsal page.
-- The experience page at `/?level=<name>` and named paths such as `/echo` —
+  empty deployment defaults.
+- `/` — the web release's start menu in front of the show (`web/`).
+- `/dev` — the bare rehearsal page (`src/ui/dev.html`).
+- The rehearsal page at `/dev?level=<name>` and named paths such as `/echo` —
   standalone development levels, benchmarks, and opt-in diagnostics. These use
-  the root document; there is no separate diagnostics page.
-- `/start` and `/tutorial` — aliases of `/`, the rehearsal page. They open the
+  the rehearsal document; there is no separate diagnostics page.
+- `/start` and `/tutorial` — aliases of `/dev`, the rehearsal page. They open the
   main Show, since no entry requests the Start tutorial.
 - `/health` — liveness JSON: status and uptime. It reports the process, never
   the show: a healthy server with zero windows is healthy.

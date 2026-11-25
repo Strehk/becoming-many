@@ -2,7 +2,7 @@ import { requireElement } from "../ui/shared/dom";
 
 /**
  * Purpose: Bootstrap standalone development and diagnostic runs.
- * Context: The root page selects this entry without loading it for the complete show.
+ * Context: The rehearsal page selects this entry without loading it for the complete show.
  * Responsibility: Parse level and direct-M5 requests.
  * Boundary: Show rehearsal and Conductor startup live in their own entries.
  */

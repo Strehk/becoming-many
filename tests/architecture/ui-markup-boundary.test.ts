@@ -4,7 +4,7 @@ import { join } from "node:path";
 
 const ROOT = join(import.meta.dirname, "../..");
 const UI = join(ROOT, "src/ui");
-const PAGES = ["index", "conductor", "flash"];
+const PAGES = ["dev", "conductor", "flash"];
 
 test("browser entries declare their structure, stylesheet and module in UI", () => {
   for (const page of PAGES) {
@@ -15,6 +15,13 @@ test("browser entries declare their structure, stylesheet and module in UI", () 
     expect(html).toContain('type="module"');
     expect(html).toContain("/entry/");
   }
+});
+
+test("the root page is the web release's menu, bootstrapped from web/", () => {
+  expect(existsSync(join(ROOT, "web/index.html"))).toBe(false);
+  const html = readFileSync(join(UI, "index.html"), "utf8");
+  expect(html).toContain('href="../../web/styles/base.css"');
+  expect(html).toContain('<script type="module" src="../../web/main.js">');
 });
 
 test("authored browser markup stays in UI and rendering canvases stay off-document", async () => {
